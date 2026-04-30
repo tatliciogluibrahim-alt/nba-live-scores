@@ -20,36 +20,6 @@ type Game = {
   away: Team;
 };
 
-const fallbackGames: Game[] = [
-  {
-    id: "demo-1",
-    date: new Date().toISOString(),
-    status: "live",
-    statusText: "Q3 · 04:18",
-    matchup: "BOS @ NYK",
-    home: { name: "New York Knicks", abbreviation: "NYK", score: 88 },
-    away: { name: "Boston Celtics", abbreviation: "BOS", score: 92 },
-  },
-  {
-    id: "demo-2",
-    date: new Date(Date.now() + 1000 * 60 * 90).toISOString(),
-    status: "upcoming",
-    statusText: "7:30 PM",
-    matchup: "LAL @ GSW",
-    home: { name: "Golden State Warriors", abbreviation: "GSW", score: 0 },
-    away: { name: "Los Angeles Lakers", abbreviation: "LAL", score: 0 },
-  },
-  {
-    id: "demo-3",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
-    status: "final",
-    statusText: "Final",
-    matchup: "MIA @ PHI",
-    home: { name: "Philadelphia 76ers", abbreviation: "PHI", score: 99 },
-    away: { name: "Miami Heat", abbreviation: "MIA", score: 104 },
-  },
-];
-
 function formatGameDateTime(date: string) {
   const gameDate = new Date(date);
 
@@ -67,14 +37,14 @@ function formatGameDateTime(date: string) {
 
 function getStatusClasses(status: Game["status"]) {
   if (status === "live") {
-    return "bg-red-50 text-red-700 ring-red-100";
+    return "bg-orange-100 text-orange-800 ring-orange-200";
   }
 
   if (status === "final") {
     return "bg-slate-200 text-slate-700 ring-slate-300";
   }
 
-  return "bg-blue-50 text-blue-700 ring-blue-100";
+  return "bg-blue-100 text-blue-800 ring-blue-200";
 }
 
 function getStatusLabel(status: Game["status"]) {
@@ -97,13 +67,13 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+      className={`rounded-full px-4 py-2 text-sm font-black transition ${
         active
-          ? "bg-white text-slate-950"
-          : "bg-white/10 text-white ring-1 ring-white/10 hover:bg-white/15"
+          ? "bg-orange-500 text-white shadow-lg shadow-orange-950/20"
+          : "bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/15"
       }`}
     >
-      {label} <span className="opacity-70">{count}</span>
+      {label} <span className="opacity-75">{count}</span>
     </button>
   );
 }
@@ -118,24 +88,26 @@ function TeamLine({
   isLeading: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between py-2">
+    <div className="flex items-center justify-between py-2.5">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-lg font-black tracking-tight">
+          <p className="text-lg font-black tracking-tight text-slate-950">
             {team.abbreviation}
           </p>
 
           {isLeading && showScore && (
-            <span className="rounded-full bg-slate-950 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+            <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white">
               Lead
             </span>
           )}
         </div>
 
-        <p className="truncate text-xs text-slate-500">{team.name}</p>
+        <p className="truncate text-xs font-medium text-slate-500">
+          {team.name}
+        </p>
       </div>
 
-      <div className="ml-4 text-3xl font-black tabular-nums tracking-tight">
+      <div className="ml-4 text-3xl font-black tabular-nums tracking-tight text-slate-950">
         {showScore ? team.score : "–"}
       </div>
     </div>
@@ -148,7 +120,7 @@ function GameCard({ game }: { game: Game }) {
   const awayLeading = game.away.score > game.home.score;
 
   return (
-    <article className="rounded-3xl bg-slate-100 p-4 text-slate-950 shadow-sm">
+    <article className="rounded-[1.7rem] bg-white p-4 text-slate-950 shadow-xl shadow-slate-950/10 ring-1 ring-slate-200/70">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div
           className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-black tracking-wide ring-1 ${getStatusClasses(
@@ -156,30 +128,32 @@ function GameCard({ game }: { game: Game }) {
           )}`}
         >
           {game.status === "live" && (
-            <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />
+            <span className="h-2 w-2 animate-pulse rounded-full bg-orange-600" />
           )}
           {getStatusLabel(game.status)}
         </div>
 
         <div className="text-right">
-          <p className="text-base font-black leading-none">
-            {game.status === "live" ? game.statusText : formatGameDateTime(game.date)}
+          <p className="text-base font-black leading-none text-slate-950">
+            {game.status === "live"
+              ? game.statusText
+              : formatGameDateTime(game.date)}
           </p>
 
-          <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+          <p className="mt-1 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
             {game.matchup}
           </p>
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white px-4 py-2 shadow-sm ring-1 ring-slate-200/70">
+      <div className="rounded-2xl bg-slate-50 px-4 py-2 ring-1 ring-slate-200">
         <TeamLine
           team={game.away}
           showScore={showScore}
           isLeading={awayLeading}
         />
 
-        <div className="h-px bg-slate-100" />
+        <div className="h-px bg-slate-200" />
 
         <TeamLine
           team={game.home}
@@ -192,10 +166,9 @@ function GameCard({ game }: { game: Game }) {
 }
 
 export default function Home() {
-  const [realGames, setRealGames] = useState<Game[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [demoMode, setDemoMode] = useState(false);
   const [activeFilter, setActiveFilter] = useState<GameStatus>("all");
 
   async function fetchGames() {
@@ -210,10 +183,10 @@ export default function Home() {
 
       const data = await response.json();
 
-      setRealGames(data.games);
+      setGames(data.games);
       setLastUpdated(new Date());
     } catch {
-      setRealGames([]);
+      setGames([]);
       setLastUpdated(new Date());
     } finally {
       setLoading(false);
@@ -230,15 +203,13 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  const sourceGames = demoMode ? fallbackGames : realGames;
-
   const filteredGames = useMemo(() => {
-    if (activeFilter === "all") return sourceGames;
-    return sourceGames.filter((game) => game.status === activeFilter);
-  }, [sourceGames, activeFilter]);
+    if (activeFilter === "all") return games;
+    return games.filter((game) => game.status === activeFilter);
+  }, [games, activeFilter]);
 
   const counts = useMemo(() => {
-    return sourceGames.reduce(
+    return games.reduce(
       (total, game) => {
         total.all += 1;
         total[game.status] += 1;
@@ -246,7 +217,7 @@ export default function Home() {
       },
       { all: 0, live: 0, upcoming: 0, final: 0 }
     );
-  }, [sourceGames]);
+  }, [games]);
 
   const filterOptions: { label: string; value: GameStatus; count: number }[] = [
     { label: "All", value: "all", count: counts.all },
@@ -256,56 +227,49 @@ export default function Home() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#050814] px-4 py-5 text-white sm:px-6 md:py-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#1e3a8a_0,#0f172a_34%,#020617_78%)] px-4 py-5 text-white sm:px-6 md:py-8">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-5 rounded-[2rem] bg-white p-5 text-slate-950 shadow-xl shadow-black/20 sm:p-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-white">
-              <span className="h-2 w-2 rounded-full bg-red-500" />
-              NBA this week
+        <header className="mb-5 overflow-hidden rounded-[2rem] bg-white text-slate-950 shadow-2xl shadow-black/25">
+          <div className="border-b border-slate-100 bg-gradient-to-r from-white via-white to-orange-50 p-5 sm:p-6">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-white">
+                <span className="h-2 w-2 rounded-full bg-orange-500" />
+                NBA this week
+              </div>
+
+              <button
+                onClick={fetchGames}
+                disabled={loading}
+                className="rounded-full bg-orange-500 px-4 py-2 text-sm font-black text-white shadow-lg shadow-orange-900/20 transition hover:bg-orange-600 disabled:opacity-60"
+              >
+                {loading ? "Refreshing" : "Refresh"}
+              </button>
             </div>
 
-            <button
-              onClick={() => setDemoMode((current) => !current)}
-              className={`rounded-full px-4 py-2 text-sm font-black transition ${
-                demoMode
-                  ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-slate-100 text-slate-950 hover:bg-slate-200"
-              }`}
-            >
-              {demoMode ? "Hide demo" : "Show demo"}
-            </button>
-          </div>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <h1 className="max-w-3xl text-4xl font-black leading-[0.95] tracking-tight sm:text-5xl lg:text-6xl">
+                  NBA scores,
+                  <br />
+                  without the noise.
+                </h1>
 
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h1 className="text-3xl font-black leading-none tracking-tight sm:text-4xl lg:text-5xl">
-                Scores this week.
-                <br />
-                Live when it matters.
-              </h1>
+                <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-slate-500 sm:text-base">
+                  Check the week’s games, then filter instantly for live,
+                  upcoming, or final scores. Game times are shown in your local
+                  timezone.
+                </p>
+              </div>
 
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
-                Check NBA games across the week, then filter for live, upcoming,
-                or final scores.
-              </p>
+              <div className="hidden rounded-3xl bg-slate-950 px-5 py-4 text-right text-white lg:block">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/45">
+                  Games this week
+                </p>
+                <p className="mt-1 text-4xl font-black">{counts.all}</p>
+              </div>
             </div>
-
-            <button
-              onClick={fetchGames}
-              disabled={loading}
-              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:opacity-60"
-            >
-              {loading ? "Refreshing" : "Refresh"}
-            </button>
           </div>
         </header>
-
-        {demoMode && (
-          <div className="mb-4 rounded-2xl bg-red-500/10 px-4 py-3 text-sm font-bold text-red-100 ring-1 ring-red-400/20">
-            Demo mode is on. These are sample games for previewing the design.
-          </div>
-        )}
 
         <section className="mb-4 flex flex-wrap gap-2">
           {filterOptions.map((option) => (
@@ -319,7 +283,7 @@ export default function Home() {
           ))}
         </section>
 
-        <div className="mb-5 flex flex-col gap-1 rounded-2xl bg-white/10 px-4 py-3 text-sm text-white/70 ring-1 ring-white/10 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-5 flex flex-col gap-1 rounded-2xl bg-white/10 px-4 py-3 text-sm text-white/75 ring-1 ring-white/10 sm:flex-row sm:items-center sm:justify-between">
           <div>
             {lastUpdated
               ? `Updated ${lastUpdated.toLocaleTimeString([], {
@@ -330,11 +294,7 @@ export default function Home() {
               : "Fetching games"}
           </div>
 
-          <div>
-            {demoMode
-              ? "Demo preview"
-              : "Game times shown in your local timezone"}
-          </div>
+          <div>Times shown in your local timezone</div>
         </div>
 
         {filteredGames.length > 0 ? (
