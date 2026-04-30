@@ -184,6 +184,13 @@ function getSeriesSummary(event: ESPNEvent) {
 function cleanGameContext(headline: string) {
   if (!headline) return "";
 
+  const gameMatch = headline.match(/Game\s+\d+/i);
+
+  if (gameMatch) {
+    const isIfNecessary = headline.toLowerCase().includes("if necessary");
+    return `Playoffs • ${gameMatch[0]}${isIfNecessary ? " if necessary" : ""}`;
+  }
+
   return headline
     .replace(/\s*-\s*/g, " • ")
     .replace("If Necessary", "if necessary")
