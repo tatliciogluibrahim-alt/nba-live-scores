@@ -314,7 +314,8 @@ function FilterPill({
             : "bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/15"
         }`}
     >
-      {label} {typeof count === "number" && <span className="opacity-75">{count}</span>}
+      {label}{" "}
+      {typeof count === "number" && <span className="opacity-75">{count}</span>}
     </button>
   );
 }
@@ -469,7 +470,7 @@ function CompactGameRow({ game }: { game: Game }) {
       )}`}
     >
       <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span
               className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide ring-1 ${getStatusClasses(
@@ -485,11 +486,13 @@ function CompactGameRow({ game }: { game: Game }) {
           </div>
 
           <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <TeamLogo team={game.away} />
-              <div>
-                <p className="font-black leading-none">{game.away.abbreviation}</p>
-                <p className="mt-1 text-xs font-medium text-slate-500">
+              <div className="min-w-0">
+                <p className="font-black leading-none">
+                  {game.away.abbreviation}
+                </p>
+                <p className="mt-1 truncate text-xs font-medium text-slate-500">
                   {game.away.name}
                 </p>
               </div>
@@ -499,10 +502,12 @@ function CompactGameRow({ game }: { game: Game }) {
               @
             </div>
 
-            <div className="flex items-center justify-end gap-2 text-right">
-              <div>
-                <p className="font-black leading-none">{game.home.abbreviation}</p>
-                <p className="mt-1 text-xs font-medium text-slate-500">
+            <div className="flex min-w-0 items-center justify-end gap-2 text-right">
+              <div className="min-w-0">
+                <p className="font-black leading-none">
+                  {game.home.abbreviation}
+                </p>
+                <p className="mt-1 truncate text-xs font-medium text-slate-500">
                   {game.home.name}
                 </p>
               </div>
@@ -789,42 +794,60 @@ export default function Home() {
         </header>
 
         <div className="sticky top-0 z-20 mb-4 -mx-4 border-y border-white/10 bg-[#07111f]/82 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 md:top-0">
-          <div className="mx-auto flex max-w-7xl flex-col gap-2">
-            <section className="flex gap-2 overflow-x-auto pr-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <FilterPill
-                label="Today"
-                count={todayGames.length}
-                active={viewScope === "today"}
-                onClick={() => setViewScope("today")}
-              />
+          <div className="mx-auto max-w-7xl">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+              <div>
+                <p className="mb-2 hidden font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-[0.18em] text-white/35 lg:block">
+                  Scope & View
+                </p>
 
-              <FilterPill
-                label="Week"
-                count={games.length}
-                active={viewScope === "week"}
-                onClick={() => setViewScope("week")}
-              />
+                <section className="flex gap-2 overflow-x-auto pr-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <FilterPill
+                    label="Today"
+                    count={todayGames.length}
+                    active={viewScope === "today"}
+                    onClick={() => setViewScope("today")}
+                  />
 
-              <FilterPill
-                label={displayMode === "cards" ? "Cards" : "Compact"}
-                active={displayMode === "cards"}
-                onClick={() =>
-                  setDisplayMode(displayMode === "cards" ? "compact" : "cards")
-                }
-              />
-            </section>
+                  <FilterPill
+                    label="Week"
+                    count={games.length}
+                    active={viewScope === "week"}
+                    onClick={() => setViewScope("week")}
+                  />
 
-            <section className="flex gap-2 overflow-x-auto pr-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {filterOptions.map((option) => (
-                <FilterPill
-                  key={option.value}
-                  label={option.label}
-                  count={option.count}
-                  active={activeFilter === option.value}
-                  onClick={() => setActiveFilter(option.value)}
-                />
-              ))}
-            </section>
+                  <FilterPill
+                    label="Cards"
+                    active={displayMode === "cards"}
+                    onClick={() => setDisplayMode("cards")}
+                  />
+
+                  <FilterPill
+                    label="Compact"
+                    active={displayMode === "compact"}
+                    onClick={() => setDisplayMode("compact")}
+                  />
+                </section>
+              </div>
+
+              <div>
+                <p className="mb-2 hidden text-right font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-[0.18em] text-white/35 lg:block">
+                  Filter
+                </p>
+
+                <section className="flex gap-2 overflow-x-auto pr-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end lg:pr-0">
+                  {filterOptions.map((option) => (
+                    <FilterPill
+                      key={option.value}
+                      label={option.label}
+                      count={option.count}
+                      active={activeFilter === option.value}
+                      onClick={() => setActiveFilter(option.value)}
+                    />
+                  ))}
+                </section>
+              </div>
+            </div>
           </div>
         </div>
 
