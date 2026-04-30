@@ -53,6 +53,53 @@ function getStatusLabel(status: Game["status"]) {
   return "UPCOMING";
 }
 
+function getTeamEdgeLabel(game: Game, side: "away" | "home") {
+  if (game.status === "upcoming") return null;
+
+  const teamScore = game[side].score;
+  const otherSide = side === "away" ? "home" : "away";
+  const otherScore = game[otherSide].score;
+
+  if (teamScore <= otherScore) return null;
+
+  return game.status === "final" ? "WON" : "LEAD";
+}
+
+function getTeamEdgeClasses(game: Game) {
+  if (game.status === "final") {
+    return "bg-emerald-600 text-white";
+  }
+
+  return "bg-orange-500 text-white";
+}
+
+function sortGamesForDisplay(gamesToSort: Game[]) {
+  const statusRank = {
+    live: 0,
+    upcoming: 1,
+    final: 2,
+  };
+
+  return [...gamesToSort].sort((a, b) => {
+    const statusDifference = statusRank[a.status] - statusRank[b.status];
+
+    if (statusDifference !== 0) {
+      return statusDifference;
+    }
+
+    const aTime = new Date(a.date).getTime();
+    const bTime = new Date(b.date).getTime();
+
+    // Live and upcoming games: soonest first.
+    if (a.status === "live" || a.status === "upcoming") {
+      return aTime - bTime;
+    }
+
+    // Final games: most recent first.
+    return bTime - aTime;
+  });
+}
+
 function FilterPill({
   label,
   count,
@@ -79,14 +126,16 @@ function FilterPill({
 }
 
 function TeamLine({
-  team,
-  showScore,
-  isLeading,
+  game,
+  side,
 }: {
-  team: Team;
-  showScore: boolean;
-  isLeading: boolean;
+  game: Game;
+  side: "away" | "home";
 }) {
+  const team = game[side];
+  const showScore = game.status !== "upcoming";
+  const edgeLabel = getTeamEdgeLabel(game, side);
+
   return (
     <div className="flex items-center justify-between py-2.5">
       <div className="min-w-0">
@@ -95,9 +144,13 @@ function TeamLine({
             {team.abbreviation}
           </p>
 
-          {isLeading && showScore && (
-            <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white">
-              Lead
+          {edgeLabel && (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${getTeamEdgeClasses(
+                game
+              )}`}
+            >
+              {edgeLabel}
             </span>
           )}
         </div>
@@ -115,10 +168,6 @@ function TeamLine({
 }
 
 function GameCard({ game }: { game: Game }) {
-  const showScore = game.status !== "upcoming";
-  const homeLeading = game.home.score > game.away.score;
-  const awayLeading = game.away.score > game.home.score;
-
   return (
     <article className="rounded-[1.7rem] bg-white p-4 text-slate-950 shadow-xl shadow-slate-950/10 ring-1 ring-slate-200/70">
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -147,19 +196,11 @@ function GameCard({ game }: { game: Game }) {
       </div>
 
       <div className="rounded-2xl bg-slate-50 px-4 py-2 ring-1 ring-slate-200">
-        <TeamLine
-          team={game.away}
-          showScore={showScore}
-          isLeading={awayLeading}
-        />
+        <TeamLine game={game} side="away" />
 
         <div className="h-px bg-slate-200" />
 
-        <TeamLine
-          team={game.home}
-          showScore={showScore}
-          isLeading={homeLeading}
-        />
+        <TeamLine game={game} side="home" />
       </div>
     </article>
   );
@@ -204,8 +245,12 @@ export default function Home() {
   }, []);
 
   const filteredGames = useMemo(() => {
-    if (activeFilter === "all") return games;
-    return games.filter((game) => game.status === activeFilter);
+    const selectedGames =
+      activeFilter === "all"
+        ? games
+        : games.filter((game) => game.status === activeFilter);
+
+    return sortGamesForDisplay(selectedGames);
   }, [games, activeFilter]);
 
   const counts = useMemo(() => {
@@ -256,7 +301,7 @@ export default function Home() {
 
                 <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-slate-500 sm:text-base">
                   Check the week’s games, then filter instantly for live,
-upcoming, or final scores.
+                  upcoming, or final scores.
                 </p>
               </div>
 

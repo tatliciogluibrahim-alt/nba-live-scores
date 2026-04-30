@@ -32,6 +32,24 @@ type ESPNEvent = {
   }[];
 };
 
+type NormalizedGame = {
+  id: string;
+  date: string;
+  status: "live" | "upcoming" | "final";
+  statusText: string;
+  matchup: string;
+  home: {
+    name: string;
+    abbreviation: string;
+    score: number;
+  };
+  away: {
+    name: string;
+    abbreviation: string;
+    score: number;
+  };
+};
+
 function formatDateForESPN(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -114,7 +132,7 @@ function getStatusText(event: ESPNEvent) {
   return event.status?.type?.shortDetail || "Upcoming";
 }
 
-function normalizeGame(event: ESPNEvent) {
+function normalizeGame(event: ESPNEvent): NormalizedGame {
   return {
     id: event.id,
     date: event.date || "",
@@ -124,6 +142,33 @@ function normalizeGame(event: ESPNEvent) {
     home: getTeam(event, "home"),
     away: getTeam(event, "away"),
   };
+}
+
+function sortGames(games: NormalizedGame[]) {
+  const statusRank = {
+    live: 0,
+    upcoming: 1,
+    final: 2,
+  };
+
+  return games.sort((a, b) => {
+    const statusDifference = statusRank[a.status] - statusRank[b.status];
+
+    if (statusDifference !== 0) {
+      return statusDifference;
+    }
+
+    const aTime = new Date(a.date).getTime();
+    const bTime = new Date(b.date).getTime();
+
+    // Live and upcoming games: soonest first.
+    if (a.status === "live" || a.status === "upcoming") {
+      return aTime - bTime;
+    }
+
+    // Final games: most recent first.
+    return bTime - aTime;
+  });
 }
 
 export async function GET() {
@@ -151,18 +196,16 @@ export async function GET() {
 
     const games = payloads
       .flatMap((payload) => payload.events || [])
-      .map(normalizeGame)
-      .sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
+      .map(normalizeGame);
 
     return Response.json({
-      games,
+      games: sortGames(games),
+      week: weekDates.map(formatDateForESPN),
       lastUpdated: new Date().toISOString(),
     });
   } catch {
     return Response.json(
-      { error: "Live score service unavailable", games: [] },
+      { error: "Score service unavailable", games: [] },
       { status: 500 }
     );
   }
