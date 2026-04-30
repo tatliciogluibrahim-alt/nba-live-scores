@@ -23,6 +23,12 @@ type Game = {
   away: Team;
 };
 
+type GameSection = {
+  title: string;
+  eyebrow?: string;
+  games: Game[];
+};
+
 function formatGameDateTime(date: string) {
   const gameDate = new Date(date);
 
@@ -38,6 +44,47 @@ function formatGameDateTime(date: string) {
   return `${day} • ${time}`;
 }
 
+function formatGameTime(date: string) {
+  return new Date(date).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function getLocalDateKey(date: string) {
+  const gameDate = new Date(date);
+  const year = gameDate.getFullYear();
+  const month = String(gameDate.getMonth() + 1).padStart(2, "0");
+  const day = String(gameDate.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function isSameLocalDay(dateA: Date, dateB: Date) {
+  return (
+    dateA.getFullYear() === dateB.getFullYear() &&
+    dateA.getMonth() === dateB.getMonth() &&
+    dateA.getDate() === dateB.getDate()
+  );
+}
+
+function getSectionTitle(date: string) {
+  const gameDate = new Date(date);
+  const today = new Date();
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  if (isSameLocalDay(gameDate, today)) return "Today";
+  if (isSameLocalDay(gameDate, tomorrow)) return "Tomorrow";
+
+  return gameDate.toLocaleDateString([], {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function getStatusClasses(status: Game["status"]) {
   if (status === "live") {
     return "bg-orange-100 text-orange-800 ring-orange-200";
@@ -48,6 +95,18 @@ function getStatusClasses(status: Game["status"]) {
   }
 
   return "bg-blue-100 text-blue-800 ring-blue-200";
+}
+
+function getCardAccentClasses(status: Game["status"]) {
+  if (status === "live") {
+    return "border-t-4 border-orange-500";
+  }
+
+  if (status === "final") {
+    return "border-t-4 border-emerald-600";
+  }
+
+  return "border-t-4 border-blue-500";
 }
 
 function getStatusLabel(status: Game["status"]) {
@@ -99,6 +158,58 @@ function sortGamesForDisplay(gamesToSort: Game[]) {
 
     return bTime - aTime;
   });
+}
+
+function groupByDay(gamesToGroup: Game[], eyebrow?: string): GameSection[] {
+  const groups = new Map<string, Game[]>();
+
+  gamesToGroup.forEach((game) => {
+    const key = getLocalDateKey(game.date);
+    const existingGames = groups.get(key) || [];
+    groups.set(key, [...existingGames, game]);
+  });
+
+  return Array.from(groups.values()).map((sectionGames) => ({
+    title: getSectionTitle(sectionGames[0].date),
+    eyebrow,
+    games: sectionGames,
+  }));
+}
+
+function buildSections(gamesToSection: Game[], activeFilter: GameStatus): GameSection[] {
+  if (activeFilter === "live") {
+    return gamesToSection.length
+      ? [{ title: "Live Now", eyebrow: "Real-time scores", games: gamesToSection }]
+      : [];
+  }
+
+  if (activeFilter === "upcoming") {
+    return groupByDay(gamesToSection, "Upcoming games");
+  }
+
+  if (activeFilter === "final") {
+    return groupByDay(gamesToSection, "Final scores");
+  }
+
+  const liveGames = gamesToSection.filter((game) => game.status === "live");
+  const upcomingGames = gamesToSection.filter((game) => game.status === "upcoming");
+  const finalGames = gamesToSection.filter((game) => game.status === "final");
+
+  return [
+    ...(liveGames.length
+      ? [{ title: "Live Now", eyebrow: "Real-time scores", games: liveGames }]
+      : []),
+    ...groupByDay(upcomingGames, "Upcoming games"),
+    ...(finalGames.length
+      ? [
+          {
+            title: "Finals Earlier This Week",
+            eyebrow: "Completed games",
+            games: finalGames,
+          },
+        ]
+      : []),
+  ];
 }
 
 function FilterPill({
@@ -187,9 +298,33 @@ function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
   );
 }
 
+function PlayoffBand({ game }: { game: Game }) {
+  if (!game.gameContext && !game.seriesSummary) return null;
+
+  return (
+    <div className="mt-3 rounded-2xl bg-[#07111f] px-3 py-3 text-white ring-1 ring-white/10">
+      {game.gameContext && (
+        <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-orange-300">
+          {game.gameContext}
+        </p>
+      )}
+
+      {game.seriesSummary && (
+        <p className="mt-1 font-[family-name:var(--font-display)] text-base font-black uppercase tracking-wide text-white">
+          {game.seriesSummary}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function GameCard({ game }: { game: Game }) {
   return (
-    <article className="rounded-[1.7rem] bg-[#fffaf2] p-4 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70">
+    <article
+      className={`rounded-[1.7rem] bg-[#fffaf2] p-4 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70 ${getCardAccentClasses(
+        game.status
+      )}`}
+    >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div
           className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide ring-1 ${getStatusClasses(
@@ -223,22 +358,64 @@ function GameCard({ game }: { game: Game }) {
         <TeamLine game={game} side="home" />
       </div>
 
-      {(game.gameContext || game.seriesSummary) && (
-        <div className="mt-3 space-y-2">
-          {game.gameContext && (
-            <div className="rounded-2xl bg-[#fff1df] px-3 py-2 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-orange-800 ring-1 ring-orange-200/80">
-              {game.gameContext}
-            </div>
-          )}
-
-          {game.seriesSummary && (
-            <div className="rounded-2xl bg-[#07111f] px-3 py-2 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-white ring-1 ring-white/10">
-              {game.seriesSummary}
-            </div>
-          )}
-        </div>
-      )}
+      <PlayoffBand game={game} />
     </article>
+  );
+}
+
+function Ticker({
+  games,
+  lastUpdated,
+}: {
+  games: Game[];
+  lastUpdated: Date | null;
+}) {
+  const today = new Date();
+
+  const todaysGames = games.filter((game) =>
+    isSameLocalDay(new Date(game.date), today)
+  );
+
+  const nextGame = games.find((game) => game.status === "live") ||
+    games.find((game) => game.status === "upcoming");
+
+  const liveCount = games.filter((game) => game.status === "live").length;
+
+  const tickerLabel = liveCount
+    ? `${liveCount} live ${liveCount === 1 ? "game" : "games"}`
+    : todaysGames.length
+      ? `${todaysGames.length} today`
+      : "This week";
+
+  const nextLabel = nextGame
+    ? nextGame.status === "live"
+      ? `Live now · ${nextGame.matchup}`
+      : `Next tipoff · ${formatGameTime(nextGame.date)}`
+    : "No upcoming games";
+
+  return (
+    <div className="mb-5 rounded-2xl bg-[#101d33]/90 px-4 py-3 text-white shadow-lg shadow-black/10 ring-1 ring-white/10">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="font-[family-name:var(--font-display)] text-base font-black uppercase tracking-wide text-orange-300">
+            {tickerLabel}
+          </span>
+
+          <span className="hidden h-1.5 w-1.5 rounded-full bg-white/35 sm:block" />
+
+          <span className="text-sm font-semibold text-white/85">{nextLabel}</span>
+        </div>
+
+        <div className="text-sm text-white/60">
+          {lastUpdated
+            ? `Updated ${lastUpdated.toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit",
+              })}`
+            : "Fetching games"}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -290,6 +467,10 @@ export default function Home() {
 
     return sortGamesForDisplay(selectedGames);
   }, [games, activeFilter]);
+
+  const sections = useMemo(() => {
+    return buildSections(filteredGames, activeFilter);
+  }, [filteredGames, activeFilter]);
 
   const counts = useMemo(() => {
     return games.reduce(
@@ -345,7 +526,7 @@ export default function Home() {
                 <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-5xl font-black uppercase leading-[0.86] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
                   NBA scores,
                   <br />
-                  without the noise.
+                  no noise.
                 </h1>
 
                 <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-slate-500 sm:text-base">
@@ -380,15 +561,10 @@ export default function Home() {
           </section>
         </div>
 
+        <Ticker games={games} lastUpdated={lastUpdated} />
+
         <div className="mb-5 flex flex-col gap-1 rounded-2xl bg-[#101d33]/90 px-4 py-3 text-sm text-white/75 shadow-lg shadow-black/10 ring-1 ring-white/10 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            {lastUpdated
-              ? `Updated ${lastUpdated.toLocaleTimeString([], {
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}`
-              : "Fetching games"}
-          </div>
+          <div>Times shown in your local timezone</div>
 
           <div className="font-semibold text-white/85">
             {sponsorPrefix}{" "}
@@ -403,12 +579,36 @@ export default function Home() {
           </div>
         </div>
 
-        {filteredGames.length > 0 ? (
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filteredGames.map((game) => (
-              <GameCard key={game.id} game={game} />
+        {sections.length > 0 ? (
+          <div className="space-y-8">
+            {sections.map((section) => (
+              <section key={`${section.title}-${section.eyebrow || ""}`}>
+                <div className="mb-3 flex items-end justify-between gap-3">
+                  <div>
+                    {section.eyebrow && (
+                      <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-orange-300">
+                        {section.eyebrow}
+                      </p>
+                    )}
+
+                    <h2 className="font-[family-name:var(--font-display)] text-4xl font-black uppercase leading-none tracking-tight text-white">
+                      {section.title}
+                    </h2>
+                  </div>
+
+                  <p className="font-[family-name:var(--font-display)] text-base font-black uppercase tracking-wide text-white/45">
+                    {section.games.length} {section.games.length === 1 ? "game" : "games"}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {section.games.map((game) => (
+                    <GameCard key={game.id} game={game} />
+                  ))}
+                </div>
+              </section>
             ))}
-          </section>
+          </div>
         ) : !hasLoadedOnce ? (
           <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
             <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
