@@ -176,10 +176,19 @@ function groupByDay(gamesToGroup: Game[], eyebrow?: string): GameSection[] {
   }));
 }
 
-function buildSections(gamesToSection: Game[], activeFilter: GameStatus): GameSection[] {
+function buildSections(
+  gamesToSection: Game[],
+  activeFilter: GameStatus
+): GameSection[] {
   if (activeFilter === "live") {
     return gamesToSection.length
-      ? [{ title: "Live Now", eyebrow: "Real-time scores", games: gamesToSection }]
+      ? [
+          {
+            title: "Live Now",
+            eyebrow: "Real-time scores",
+            games: gamesToSection,
+          },
+        ]
       : [];
   }
 
@@ -192,12 +201,20 @@ function buildSections(gamesToSection: Game[], activeFilter: GameStatus): GameSe
   }
 
   const liveGames = gamesToSection.filter((game) => game.status === "live");
-  const upcomingGames = gamesToSection.filter((game) => game.status === "upcoming");
+  const upcomingGames = gamesToSection.filter(
+    (game) => game.status === "upcoming"
+  );
   const finalGames = gamesToSection.filter((game) => game.status === "final");
 
   return [
     ...(liveGames.length
-      ? [{ title: "Live Now", eyebrow: "Real-time scores", games: liveGames }]
+      ? [
+          {
+            title: "Live Now",
+            eyebrow: "Real-time scores",
+            games: liveGames,
+          },
+        ]
       : []),
     ...groupByDay(upcomingGames, "Upcoming games"),
     ...(finalGames.length
@@ -363,12 +380,16 @@ function GameCard({ game }: { game: Game }) {
   );
 }
 
-function Ticker({
+function InfoRail({
   games,
-  lastUpdated,
+  sponsorPrefix,
+  sponsorName,
+  sponsorUrl,
 }: {
   games: Game[];
-  lastUpdated: Date | null;
+  sponsorPrefix: string;
+  sponsorName: string;
+  sponsorUrl: string;
 }) {
   const today = new Date();
 
@@ -376,16 +397,17 @@ function Ticker({
     isSameLocalDay(new Date(game.date), today)
   );
 
-  const nextGame = games.find((game) => game.status === "live") ||
-    games.find((game) => game.status === "upcoming");
-
   const liveCount = games.filter((game) => game.status === "live").length;
+
+  const nextGame =
+    games.find((game) => game.status === "live") ||
+    games.find((game) => game.status === "upcoming");
 
   const tickerLabel = liveCount
     ? `${liveCount} live ${liveCount === 1 ? "game" : "games"}`
     : todaysGames.length
-      ? `${todaysGames.length} today`
-      : "This week";
+    ? `${todaysGames.length} today`
+    : "This week";
 
   const nextLabel = nextGame
     ? nextGame.status === "live"
@@ -403,16 +425,21 @@ function Ticker({
 
           <span className="hidden h-1.5 w-1.5 rounded-full bg-white/35 sm:block" />
 
-          <span className="text-sm font-semibold text-white/85">{nextLabel}</span>
+          <span className="text-sm font-semibold text-white/85">
+            {nextLabel}
+          </span>
         </div>
 
-        <div className="text-sm text-white/60">
-          {lastUpdated
-            ? `Updated ${lastUpdated.toLocaleTimeString([], {
-                hour: "numeric",
-                minute: "2-digit",
-              })}`
-            : "Fetching games"}
+        <div className="font-semibold text-white/85">
+          {sponsorPrefix}{" "}
+          <a
+            href={sponsorUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="font-black text-white underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
+          >
+            {sponsorName}
+          </a>
         </div>
       </div>
     </div>
@@ -423,7 +450,6 @@ export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [activeFilter, setActiveFilter] = useState<GameStatus>("all");
 
   async function fetchGames() {
@@ -439,10 +465,8 @@ export default function Home() {
       const data = await response.json();
 
       setGames(data.games);
-      setLastUpdated(new Date());
     } catch {
       setGames([]);
-      setLastUpdated(new Date());
     } finally {
       setLoading(false);
       setHasLoadedOnce(true);
@@ -561,23 +585,12 @@ export default function Home() {
           </section>
         </div>
 
-        <Ticker games={games} lastUpdated={lastUpdated} />
-
-        <div className="mb-5 flex flex-col gap-1 rounded-2xl bg-[#101d33]/90 px-4 py-3 text-sm text-white/75 shadow-lg shadow-black/10 ring-1 ring-white/10 sm:flex-row sm:items-center sm:justify-between">
-          <div>Times shown in your local timezone</div>
-
-          <div className="font-semibold text-white/85">
-            {sponsorPrefix}{" "}
-            <a
-              href={sponsorUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="font-black text-white underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
-            >
-              {sponsorName}
-            </a>
-          </div>
-        </div>
+        <InfoRail
+          games={games}
+          sponsorPrefix={sponsorPrefix}
+          sponsorName={sponsorName}
+          sponsorUrl={sponsorUrl}
+        />
 
         {sections.length > 0 ? (
           <div className="space-y-8">
@@ -597,7 +610,8 @@ export default function Home() {
                   </div>
 
                   <p className="font-[family-name:var(--font-display)] text-base font-black uppercase tracking-wide text-white/45">
-                    {section.games.length} {section.games.length === 1 ? "game" : "games"}
+                    {section.games.length}{" "}
+                    {section.games.length === 1 ? "game" : "games"}
                   </p>
                 </div>
 
