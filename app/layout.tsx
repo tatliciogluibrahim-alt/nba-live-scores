@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "NBA Live Scores",
   description:
     "A clean weekly NBA scoreboard with live, upcoming, and final game filters.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
