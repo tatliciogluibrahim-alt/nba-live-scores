@@ -469,25 +469,20 @@ function EmptyState({
 
 function BrandLockup() {
   return (
-    <div className="flex items-center gap-3 lg:justify-end">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] bg-[#07111f] shadow-xl shadow-orange-950/15 ring-1 ring-white/10 sm:h-16 sm:w-16">
+    <div className="flex items-center gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] bg-[#07111f] shadow-lg shadow-black/20 ring-1 ring-white/10 sm:h-14 sm:w-14">
         <img
           src="/favicon.svg"
           alt="No Noise Scores logo"
-          className="h-8 w-8 sm:h-10 sm:w-10"
+          className="h-7 w-7 sm:h-8 sm:w-8"
         />
       </div>
 
-      <div>
-        <p className="font-[family-name:var(--font-display)] text-[1.1rem] font-black uppercase leading-[0.9] tracking-[-0.02em] text-orange-500 sm:text-[1.75rem] lg:text-[2.15rem]">
-          No Noise
-          <br />
-          Scores
-        </p>
-        <p className="mt-1 text-sm font-medium leading-5 text-slate-500 sm:text-base">
-          Clean live scores and schedules
-        </p>
-      </div>
+      <p className="font-[family-name:var(--font-display)] text-[1.45rem] font-black uppercase leading-[0.88] tracking-[-0.03em] text-orange-500 sm:text-[1.6rem] lg:text-[1.9rem]">
+        No Noise
+        <br />
+        Scores
+      </p>
     </div>
   );
 }
@@ -575,26 +570,32 @@ export default function Home() {
     <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-36 pt-4 text-white sm:px-6 md:py-8">
       <div className="mx-auto max-w-7xl">
         <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
-          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-5 sm:p-6 lg:p-7">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-              <div>
-                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.55rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.15rem]">
-                  NBA scores,
-                  <br />
-                  no noise.
-                </h1>
+  <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-5 sm:p-6 lg:p-7">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <div>
+        <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.45rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.15rem]">
+          NBA scores,
+          <br />
+          no noise.
+        </h1>
 
-                <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
-                  Today first. Full week when you need it.
-                </p>
-              </div>
+        <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
+          Today first. Full week when you need it.
+        </p>
 
-              <div className="lg:justify-self-end">
-                <BrandLockup />
-              </div>
-            </div>
-          </div>
-        </header>
+        {/* Mobile brand lockup */}
+        <div className="mt-5 lg:hidden">
+          <BrandLockup />
+        </div>
+      </div>
+
+      {/* Desktop brand lockup */}
+      <div className="hidden lg:flex lg:justify-self-end">
+        <BrandLockup />
+      </div>
+    </div>
+  </div>
+</header>
 
         <div className="sticky top-0 z-20 mb-5 -mx-4 border-y border-white/10 bg-[#06101f]/94 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:py-2.5">
           <div className="mx-auto max-w-7xl">
