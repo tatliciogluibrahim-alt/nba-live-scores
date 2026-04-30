@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-eexport const metadata: Metadata = {
+export const metadata: Metadata = {
   title: "NBA Live Scores",
   description: "A clean weekly NBA scoreboard with live, upcoming, and final game filters.",
 };
