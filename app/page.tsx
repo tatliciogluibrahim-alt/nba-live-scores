@@ -243,11 +243,14 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 rounded-full px-4 py-2 font-[family-name:var(--font-display)] text-base font-black uppercase tracking-wide transition ${
-        active
-          ? "bg-orange-500 text-white shadow-lg shadow-orange-950/20"
-          : "bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/15"
-      }`}
+      className={`shrink-0 rounded-full font-[family-name:var(--font-display)] font-black uppercase tracking-wide transition
+        px-4 py-2 text-sm
+        sm:text-base
+        ${
+          active
+            ? "bg-orange-500 text-white shadow-lg shadow-orange-950/20"
+            : "bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/15"
+        }`}
     >
       {label} <span className="opacity-75">{count}</span>
     </button>
@@ -257,14 +260,14 @@ function FilterPill({
 function TeamLogo({ team }: { team: Team }) {
   if (!team.logo) {
     return (
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-600">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-600 sm:h-9 sm:w-9">
         {team.abbreviation}
       </div>
     );
   }
 
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-orange-100">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-orange-100 sm:h-9 sm:w-9">
       <img
         src={team.logo}
         alt=""
@@ -281,13 +284,13 @@ function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
   const edgeLabel = getTeamEdgeLabel(game, side);
 
   return (
-    <div className="flex items-center justify-between py-2.5">
+    <div className="flex items-center justify-between py-2 sm:py-2.5">
       <div className="flex min-w-0 items-center gap-3">
         <TeamLogo team={team} />
 
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <p className="text-lg font-black tracking-tight text-slate-950">
+            <p className="text-base font-black tracking-tight text-slate-950 sm:text-lg">
               {team.abbreviation}
             </p>
 
@@ -302,13 +305,13 @@ function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
             )}
           </div>
 
-          <p className="truncate text-xs font-medium text-slate-500">
+          <p className="truncate text-xs font-medium text-slate-500 sm:text-sm">
             {team.name}
           </p>
         </div>
       </div>
 
-      <div className="ml-4 text-3xl font-black tabular-nums tracking-tight text-slate-950">
+      <div className="ml-4 text-2xl font-black tabular-nums tracking-tight text-slate-950 sm:text-3xl">
         {showScore ? team.score : "–"}
       </div>
     </div>
@@ -319,7 +322,7 @@ function PlayoffBand({ game }: { game: Game }) {
   if (!game.gameContext && !game.seriesSummary) return null;
 
   return (
-    <div className="mt-3 rounded-2xl bg-[#07111f] px-3 py-3 text-white ring-1 ring-white/10">
+    <div className="mt-3 rounded-2xl bg-[#07111f] px-3 py-2.5 text-white ring-1 ring-white/10 sm:py-3">
       {game.gameContext && (
         <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-orange-300">
           {game.gameContext}
@@ -327,7 +330,7 @@ function PlayoffBand({ game }: { game: Game }) {
       )}
 
       {game.seriesSummary && (
-        <p className="mt-1 font-[family-name:var(--font-display)] text-base font-black uppercase tracking-wide text-white">
+        <p className="mt-0.5 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-white sm:mt-1 sm:text-base">
           {game.seriesSummary}
         </p>
       )}
@@ -338,11 +341,11 @@ function PlayoffBand({ game }: { game: Game }) {
 function GameCard({ game }: { game: Game }) {
   return (
     <article
-      className={`rounded-[1.7rem] bg-[#fffaf2] p-4 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70 ${getCardAccentClasses(
+      className={`rounded-[1.45rem] bg-[#fffaf2] p-3 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70 sm:rounded-[1.7rem] sm:p-4 ${getCardAccentClasses(
         game.status
       )}`}
     >
-      <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="mb-2.5 flex items-start justify-between gap-3 sm:mb-3">
         <div
           className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide ring-1 ${getStatusClasses(
             game.status
@@ -355,7 +358,7 @@ function GameCard({ game }: { game: Game }) {
         </div>
 
         <div className="text-right">
-          <p className="font-[family-name:var(--font-display)] text-2xl font-black uppercase leading-none tracking-tight text-slate-950">
+          <p className="font-[family-name:var(--font-display)] text-xl font-black uppercase leading-none tracking-tight text-slate-950 sm:text-2xl">
             {game.status === "live"
               ? game.statusText
               : formatGameDateTime(game.date)}
@@ -425,12 +428,12 @@ function InfoRail({
 
           <span className="hidden h-1.5 w-1.5 rounded-full bg-white/35 sm:block" />
 
-          <span className="text-sm font-semibold text-white/85">
+          <span className="text-sm font-semibold text-white/85 sm:text-base">
             {nextLabel}
           </span>
         </div>
 
-        <div className="font-semibold text-white/85">
+        <div className="text-sm font-semibold text-white/85 sm:text-base">
           {sponsorPrefix}{" "}
           <a
             href={sponsorUrl}
@@ -526,9 +529,9 @@ export default function Home() {
     : "Presented by";
 
   return (
-    <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_20%_0%,rgba(249,115,22,0.20),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(59,130,246,0.18),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.045)_0_1px,transparent_1px_44px)] px-4 py-5 text-white sm:px-6 md:py-8">
+    <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_20%_0%,rgba(249,115,22,0.20),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(59,130,246,0.18),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.045)_0_1px,transparent_1px_44px)] px-4 py-4 text-white sm:px-6 md:py-8">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-5 overflow-hidden rounded-[2rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/40">
+        <header className="mb-4 overflow-hidden rounded-[1.75rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/40 sm:mb-5 sm:rounded-[2rem]">
           <div className="border-b border-orange-100/70 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.16),transparent_34%),linear-gradient(135deg,#fffaf2,#ffffff_55%,#fff3e4)] p-4 sm:p-6">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="inline-flex items-center gap-2 rounded-full bg-[#07111f] px-3 py-1.5 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-white">
@@ -547,13 +550,13 @@ export default function Home() {
 
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-5xl font-black uppercase leading-[0.86] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
+                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[3.25rem] font-black uppercase leading-[0.82] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
                   NBA scores,
                   <br />
                   no noise.
                 </h1>
 
-                <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-slate-500 sm:text-base">
+                <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:text-base">
                   Check the week’s games, then filter instantly for live,
                   upcoming, or final scores.
                 </p>
@@ -593,7 +596,7 @@ export default function Home() {
         />
 
         {sections.length > 0 ? (
-          <div className="space-y-8">
+          <div className="space-y-7 sm:space-y-8">
             {sections.map((section) => (
               <section key={`${section.title}-${section.eyebrow || ""}`}>
                 <div className="mb-3 flex items-end justify-between gap-3">
