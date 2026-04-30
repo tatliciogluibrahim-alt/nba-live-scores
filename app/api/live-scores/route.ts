@@ -12,19 +12,43 @@ type ESPNCompetitor = {
 
 type ESPNEvent = {
   id: string;
+  date?: string;
+  name?: string;
+  shortName?: string;
   status?: {
     displayClock?: string;
     period?: number;
     type?: {
       name?: string;
+      state?: "pre" | "in" | "post";
+      completed?: boolean;
       shortDetail?: string;
       detail?: string;
+      description?: string;
     };
   };
   competitions?: {
     competitors?: ESPNCompetitor[];
   }[];
 };
+
+function formatDateForESPN(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}${month}${day}`;
+}
+
+function getWeekDates() {
+  const today = new Date();
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() + index);
+    return date;
+  });
+}
 
 function getTeam(event: ESPNEvent, homeAway: "home" | "away") {
   const competition = event.competitions?.[0];
@@ -40,18 +64,53 @@ function getTeam(event: ESPNEvent, homeAway: "home" | "away") {
   };
 }
 
-function isLiveGame(event: ESPNEvent) {
-  return event.status?.type?.name === "STATUS_IN_PROGRESS";
+function getGameStatus(event: ESPNEvent) {
+  const status = event.status?.type;
+  const state = status?.state;
+  const name = status?.name;
+
+  if (state === "in" || name === "STATUS_IN_PROGRESS") {
+    return "live";
+  }
+
+  if (state === "post" || status?.completed || name?.includes("FINAL")) {
+    return "final";
+  }
+
+  return "upcoming";
+}
+
+function getStatusText(event: ESPNEvent) {
+  const gameStatus = getGameStatus(event);
+  const period = event.status?.period ? `Q${event.status.period}` : "";
+  const clock = event.status?.displayClock || "";
+
+  if (gameStatus === "live") {
+    if (period && clock) return `${period} · ${clock}`;
+    return event.status?.type?.shortDetail || "Live";
+  }
+
+  if (gameStatus === "final") {
+    return event.status?.type?.shortDetail || "Final";
+  }
+
+  if (event.date) {
+    return new Date(event.date).toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  return event.status?.type?.shortDetail || "Upcoming";
 }
 
 function normalizeGame(event: ESPNEvent) {
-  const period = event.status?.period ? `Q${event.status.period}` : "Live";
-  const clock = event.status?.displayClock || "";
-  const statusText = clock ? `${period} · ${clock}` : period;
-
   return {
     id: event.id,
-    statusText,
+    date: event.date || "",
+    status: getGameStatus(event),
+    statusText: getStatusText(event),
+    matchup: event.shortName || event.name || "",
     home: getTeam(event, "home"),
     away: getTeam(event, "away"),
   };
@@ -59,22 +118,33 @@ function normalizeGame(event: ESPNEvent) {
 
 export async function GET() {
   try {
-    const response = await fetch(ESPN_SCOREBOARD_URL, {
-      next: {
-        revalidate: 10,
-      },
-    });
+    const weekDates = getWeekDates();
 
-    if (!response.ok) {
-      return Response.json(
-        { error: "Could not fetch scoreboard", games: [] },
-        { status: 500 }
+    const responses = await Promise.all(
+      weekDates.map((date) => {
+        const espnDate = formatDateForESPN(date);
+
+        return fetch(`${ESPN_SCOREBOARD_URL}?dates=${espnDate}`, {
+          next: {
+            revalidate: 30,
+          },
+        });
+      })
+    );
+
+    const payloads = await Promise.all(
+      responses.map(async (response) => {
+        if (!response.ok) return { events: [] };
+        return response.json();
+      })
+    );
+
+    const games = payloads
+      .flatMap((payload) => payload.events || [])
+      .map(normalizeGame)
+      .sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
       );
-    }
-
-    const data = await response.json();
-
-    const games = (data.events || []).filter(isLiveGame).map(normalizeGame);
 
     return Response.json({
       games,
