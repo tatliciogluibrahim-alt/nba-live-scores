@@ -92,26 +92,14 @@ function getSectionTitle(date: string) {
 }
 
 function getStatusClasses(status: Game["status"]) {
-  if (status === "live") {
-    return "bg-orange-100 text-orange-800 ring-orange-200";
-  }
-
-  if (status === "final") {
-    return "bg-slate-200 text-slate-700 ring-slate-300";
-  }
-
+  if (status === "live") return "bg-orange-100 text-orange-800 ring-orange-200";
+  if (status === "final") return "bg-slate-200 text-slate-700 ring-slate-300";
   return "bg-blue-100 text-blue-800 ring-blue-200";
 }
 
 function getCardAccentClasses(status: Game["status"]) {
-  if (status === "live") {
-    return "border-t-[3px] border-orange-500";
-  }
-
-  if (status === "final") {
-    return "border-t-[3px] border-emerald-600";
-  }
-
+  if (status === "live") return "border-t-[3px] border-orange-500";
+  if (status === "final") return "border-t-[3px] border-emerald-600";
   return "border-t-[3px] border-blue-500";
 }
 
@@ -134,10 +122,7 @@ function getTeamEdgeLabel(game: Game, side: "away" | "home") {
 }
 
 function getTeamEdgeClasses(game: Game) {
-  if (game.status === "final") {
-    return "bg-emerald-600 text-white";
-  }
-
+  if (game.status === "final") return "bg-emerald-600 text-white";
   return "bg-orange-500 text-white";
 }
 
@@ -161,13 +146,8 @@ function getFinalSummary(game: Game) {
 }
 
 function getGameSubStatus(game: Game) {
-  if (game.status === "live") {
-    return `Live now · ${game.statusText}`;
-  }
-
-  if (game.status === "final") {
-    return getFinalSummary(game);
-  }
+  if (game.status === "live") return `Live now · ${game.statusText}`;
+  if (game.status === "final") return getFinalSummary(game);
 
   const gameDate = new Date(game.date);
   const now = new Date();
@@ -178,21 +158,10 @@ function getGameSubStatus(game: Game) {
   const minutes = Math.round(diffMs / 60000);
   const hours = Math.round(minutes / 60);
 
-  if (minutes < 60) {
-    return `Starts in ${minutes} min`;
-  }
-
-  if (hours < 12) {
-    return `Starts in ${hours} ${hours === 1 ? "hr" : "hrs"}`;
-  }
-
-  if (isSameLocalDay(gameDate, now)) {
-    return "Starts tonight";
-  }
-
-  if (isTomorrow(gameDate)) {
-    return "Tomorrow";
-  }
+  if (minutes < 60) return `Starts in ${minutes} min`;
+  if (hours < 12) return `Starts in ${hours} ${hours === 1 ? "hr" : "hrs"}`;
+  if (isSameLocalDay(gameDate, now)) return "Starts tonight";
+  if (isTomorrow(gameDate)) return "Tomorrow";
 
   return "Upcoming";
 }
@@ -207,16 +176,12 @@ function sortGamesForDisplay(gamesToSort: Game[]) {
   return [...gamesToSort].sort((a, b) => {
     const statusDifference = statusRank[a.status] - statusRank[b.status];
 
-    if (statusDifference !== 0) {
-      return statusDifference;
-    }
+    if (statusDifference !== 0) return statusDifference;
 
     const aTime = new Date(a.date).getTime();
     const bTime = new Date(b.date).getTime();
 
-    if (a.status === "live" || a.status === "upcoming") {
-      return aTime - bTime;
-    }
+    if (a.status === "live" || a.status === "upcoming") return aTime - bTime;
 
     return bTime - aTime;
   });
@@ -244,68 +209,50 @@ function buildSections(
 ): GameSection[] {
   if (activeFilter === "live") {
     return gamesToSection.length
-      ? [
-          {
-            title: "Live Now",
-            eyebrow: "Real-time scores",
-            games: gamesToSection,
-          },
-        ]
+      ? [{ title: "Live Now", eyebrow: "Real-time scores", games: gamesToSection }]
       : [];
   }
 
-  if (activeFilter === "upcoming") {
-    return groupByDay(gamesToSection, "Upcoming games");
-  }
-
-  if (activeFilter === "final") {
-    return groupByDay(gamesToSection, "Final scores");
-  }
+  if (activeFilter === "upcoming") return groupByDay(gamesToSection, "Upcoming games");
+  if (activeFilter === "final") return groupByDay(gamesToSection, "Final scores");
 
   const liveGames = gamesToSection.filter((game) => game.status === "live");
-  const upcomingGames = gamesToSection.filter(
-    (game) => game.status === "upcoming"
-  );
+  const upcomingGames = gamesToSection.filter((game) => game.status === "upcoming");
   const finalGames = gamesToSection.filter((game) => game.status === "final");
 
   return [
     ...(liveGames.length
-      ? [
-          {
-            title: "Live Now",
-            eyebrow: "Real-time scores",
-            games: liveGames,
-          },
-        ]
+      ? [{ title: "Live Now", eyebrow: "Real-time scores", games: liveGames }]
       : []),
     ...groupByDay(upcomingGames, "Upcoming games"),
     ...(finalGames.length
-      ? [
-          {
-            title: "Earlier This Week",
-            eyebrow: "Final scores",
-            games: finalGames,
-          },
-        ]
+      ? [{ title: "Earlier This Week", eyebrow: "Final scores", games: finalGames }]
       : []),
   ];
 }
 
-function TeamLogo({ team }: { team: Team }) {
+function TeamLogo({ team, small = false }: { team: Team; small?: boolean }) {
+  const size = small ? "h-7 w-7" : "h-8 w-8 sm:h-9 sm:w-9";
+  const imageSize = small ? "h-5 w-5" : "h-6 w-6";
+
   if (!team.logo) {
     return (
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-600 sm:h-9 sm:w-9">
+      <div
+        className={`flex ${size} shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-600`}
+      >
         {team.abbreviation}
       </div>
     );
   }
 
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-orange-100 sm:h-9 sm:w-9">
+    <div
+      className={`flex ${size} shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-orange-100`}
+    >
       <img
         src={team.logo}
         alt=""
-        className="h-6 w-6 object-contain"
+        className={`${imageSize} object-contain`}
         loading="lazy"
       />
     </div>
@@ -326,16 +273,16 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3.5 py-1.5 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide transition sm:px-4 sm:py-2 sm:text-sm ${
+      className={`shrink-0 rounded-full px-3 py-1.5 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide transition sm:px-3.5 sm:py-2 sm:text-sm ${
         active
-          ? "bg-orange-500 text-white shadow-lg shadow-orange-950/20"
-          : "bg-white/10 text-white ring-1 ring-white/10 hover:bg-white/15"
+          ? "bg-orange-500 text-white shadow-md shadow-orange-950/20"
+          : "bg-white/10 text-white/80 ring-1 ring-white/10 hover:bg-white/15"
       }`}
     >
       <span className="flex items-center gap-1.5">
         <span>{label}</span>
         {typeof count === "number" && (
-          <span className={`${active ? "text-white/90" : "text-white/60"}`}>
+          <span className={active ? "text-white/90" : "text-white/55"}>
             {count}
           </span>
         )}
@@ -344,7 +291,7 @@ function FilterPill({
   );
 }
 
-function ModeSegmentedControl({
+function ModeToggle({
   value,
   onChange,
 }: {
@@ -352,13 +299,15 @@ function ModeSegmentedControl({
   onChange: (value: DisplayMode) => void;
 }) {
   return (
-    <div className="inline-flex rounded-full bg-white/10 p-1 ring-1 ring-white/10">
+    <div className="flex items-center gap-1.5 text-xs text-white/50">
+      <span className="hidden sm:inline">View</span>
+
       <button
         onClick={() => onChange("compact")}
-        className={`rounded-full px-3 py-1.5 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide transition sm:px-3.5 ${
+        className={`rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide transition ${
           value === "compact"
-            ? "bg-[#fff8ef] text-slate-950 shadow"
-            : "text-white/70 hover:text-white"
+            ? "bg-white text-slate-950"
+            : "bg-white/8 text-white/65 ring-1 ring-white/10"
         }`}
       >
         Compact
@@ -366,10 +315,10 @@ function ModeSegmentedControl({
 
       <button
         onClick={() => onChange("cards")}
-        className={`rounded-full px-3 py-1.5 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide transition sm:px-3.5 ${
+        className={`rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide transition ${
           value === "cards"
-            ? "bg-[#fff8ef] text-slate-950 shadow"
-            : "text-white/70 hover:text-white"
+            ? "bg-white text-slate-950"
+            : "bg-white/8 text-white/65 ring-1 ring-white/10"
         }`}
       >
         Cards
@@ -418,10 +367,22 @@ function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
   );
 }
 
-function PlayoffBand({ game }: { game: Game }) {
+function PlayoffBand({ game, compact = false }: { game: Game; compact?: boolean }) {
   const finalSummary = getFinalSummary(game);
 
   if (!game.gameContext && !game.seriesSummary && !finalSummary) return null;
+
+  if (compact) {
+    return (
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide">
+        {game.gameContext && <span className="text-orange-700">{game.gameContext}</span>}
+        {game.seriesSummary && <span className="text-orange-700">{game.seriesSummary}</span>}
+        {game.status === "final" && finalSummary && (
+          <span className="text-emerald-700">{finalSummary}</span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="mt-3 rounded-2xl bg-[#07111f] px-3 py-2.5 text-white ring-1 ring-white/10">
@@ -495,62 +456,21 @@ function GameCard({ game }: { game: Game }) {
   );
 }
 
-function CompactTeamLine({
-  game,
-  side,
-}: {
-  game: Game;
-  side: "away" | "home";
-}) {
-  const team = game[side];
-  const edgeLabel = getTeamEdgeLabel(game, side);
-
-  return (
-    <div className="flex items-center justify-between py-2">
-      <div className="flex min-w-0 items-center gap-3">
-        <TeamLogo team={team} />
-
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-[1.05rem] font-black leading-none tracking-tight text-slate-950">
-              {team.abbreviation}
-            </p>
-
-            {edgeLabel && (
-              <span
-                className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide ${getTeamEdgeClasses(
-                  game
-                )}`}
-              >
-                {edgeLabel}
-              </span>
-            )}
-          </div>
-
-          <p className="truncate text-sm font-medium text-slate-500">
-            {team.name}
-          </p>
-        </div>
-      </div>
-
-      <div className="ml-3 text-xl font-black tabular-nums leading-none text-slate-950">
-        {game.status === "upcoming" ? "–" : team.score}
-      </div>
-    </div>
-  );
-}
-
 function CompactGameRow({ game }: { game: Game }) {
+  const isUpcoming = game.status === "upcoming";
+  const awayEdgeLabel = getTeamEdgeLabel(game, "away");
+  const homeEdgeLabel = getTeamEdgeLabel(game, "home");
+
   return (
     <article
-      className={`rounded-[1.35rem] bg-[#fffaf2] p-3 text-slate-950 shadow-lg shadow-black/10 ring-1 ring-orange-100/70 ${getCardAccentClasses(
+      className={`rounded-[1.25rem] bg-[#fffaf2] p-3 text-slate-950 shadow-lg shadow-black/10 ring-1 ring-orange-100/70 ${getCardAccentClasses(
         game.status
       )}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div
-            className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide ring-1 ${getStatusClasses(
+            className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide ring-1 ${getStatusClasses(
               game.status
             )}`}
           >
@@ -566,25 +486,76 @@ function CompactGameRow({ game }: { game: Game }) {
         </div>
 
         <div className="shrink-0 text-right">
-          <p className="font-[family-name:var(--font-display)] text-lg font-black uppercase leading-none tracking-tight text-slate-950">
+          <p className="font-[family-name:var(--font-display)] text-base font-black uppercase leading-none tracking-tight text-slate-950">
             {game.status === "live"
               ? game.statusText
               : formatGameDateTime(game.date)}
           </p>
 
-          <p className="mt-1 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+          <p className="mt-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
             {game.matchup}
           </p>
         </div>
       </div>
 
-      <div className="mt-3 rounded-2xl bg-white/90 px-3.5 py-1.5 ring-1 ring-orange-100/80">
-        <CompactTeamLine game={game} side="away" />
-        <div className="h-px bg-orange-100/70" />
-        <CompactTeamLine game={game} side="home" />
+      <div className="mt-3 rounded-2xl bg-white/90 px-3 py-2 ring-1 ring-orange-100/80">
+        <div className="grid grid-cols-[1fr_auto] gap-3">
+          <div className="min-w-0 space-y-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <TeamLogo team={game.away} small />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-black leading-none text-slate-950">
+                    {game.away.abbreviation}
+                  </p>
+                  {awayEdgeLabel && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide ${getTeamEdgeClasses(
+                        game
+                      )}`}
+                    >
+                      {awayEdgeLabel}
+                    </span>
+                  )}
+                </div>
+                <p className="truncate text-xs font-medium text-slate-500">
+                  {game.away.name}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex min-w-0 items-center gap-2">
+              <TeamLogo team={game.home} small />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-black leading-none text-slate-950">
+                    {game.home.abbreviation}
+                  </p>
+                  {homeEdgeLabel && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide ${getTeamEdgeClasses(
+                        game
+                      )}`}
+                    >
+                      {homeEdgeLabel}
+                    </span>
+                  )}
+                </div>
+                <p className="truncate text-xs font-medium text-slate-500">
+                  {game.home.name}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-around text-right text-xl font-black tabular-nums leading-none text-slate-950">
+            <div>{isUpcoming ? "–" : game.away.score}</div>
+            <div>{isUpcoming ? "–" : game.home.score}</div>
+          </div>
+        </div>
       </div>
 
-      <PlayoffBand game={game} />
+      <PlayoffBand game={game} compact />
     </article>
   );
 }
@@ -638,9 +609,7 @@ export default function Home() {
   const [displayMode, setDisplayMode] = useState<DisplayMode>("compact");
 
   useEffect(() => {
-    if (window.innerWidth >= 1024) {
-      setDisplayMode("cards");
-    }
+    if (window.innerWidth >= 1024) setDisplayMode("cards");
   }, []);
 
   async function fetchGames() {
@@ -649,9 +618,7 @@ export default function Home() {
     try {
       const response = await fetch("/api/live-scores");
 
-      if (!response.ok) {
-        throw new Error("Could not fetch games");
-      }
+      if (!response.ok) throw new Error("Could not fetch games");
 
       const data = await response.json();
       setGames(data.games);
@@ -675,7 +642,6 @@ export default function Home() {
 
   const todayGames = useMemo(() => {
     const today = new Date();
-
     return games.filter((game) => isSameLocalDay(new Date(game.date), today));
   }, [games]);
 
@@ -726,33 +692,31 @@ export default function Home() {
     (game) => game.gameContext || game.seriesSummary
   );
 
-  const sponsorPrefix = hasPlayoffCoverage
-    ? "Playoff coverage by"
-    : "Presented by";
+  const sponsorPrefix = hasPlayoffCoverage ? "Coverage by" : "Presented by";
 
   return (
     <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-28 pt-4 text-white sm:px-6 md:py-8">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-4 overflow-hidden rounded-[1.75rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
-          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.14),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-4 sm:p-6">
+        <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
+          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.12),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-4 sm:p-6">
             <div className="flex items-start justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#07111f] px-3 py-1.5 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-white">
+              <div className="inline-flex items-center gap-2 rounded-full bg-[#07111f] px-3 py-1.5 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white sm:text-sm">
                 <span className="h-2 w-2 rounded-full bg-orange-500" />
                 No Noise Scores
               </div>
 
               <div className="rounded-full bg-[#07111f] px-3 py-1.5 text-right text-white ring-1 ring-white/10">
-                <p className="font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-[0.18em] text-white/45">
+                <p className="font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
                   Today
                 </p>
-                <p className="mt-0.5 font-[family-name:var(--font-display)] text-xl font-black leading-none">
+                <p className="mt-0.5 font-[family-name:var(--font-display)] text-lg font-black leading-none">
                   {todayGames.length}
                 </p>
               </div>
             </div>
 
             <div className="mt-4 sm:mt-5">
-              <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.95rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.25rem]">
+              <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.75rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.25rem]">
                 NBA scores,
                 <br />
                 no noise.
@@ -761,22 +725,13 @@ export default function Home() {
               <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
                 Today first. Full week when you need it.
               </p>
-
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500 sm:mt-4">
-                <div className="inline-flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Auto-updates every 30s
-                </div>
-
-                <div>{nextTipoffLabel}</div>
-              </div>
             </div>
           </div>
         </header>
 
-        <div className="sticky top-0 z-20 mb-5 -mx-4 border-y border-white/10 bg-[#06101f]/92 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
+        <div className="sticky top-0 z-20 mb-5 -mx-4 border-y border-white/10 bg-[#06101f]/94 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
           <div className="mx-auto max-w-7xl">
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex gap-2 overflow-x-auto pr-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <FilterPill
@@ -795,10 +750,7 @@ export default function Home() {
                 </div>
 
                 <div className="shrink-0">
-                  <ModeSegmentedControl
-                    value={displayMode}
-                    onChange={setDisplayMode}
-                  />
+                  <ModeToggle value={displayMode} onChange={setDisplayMode} />
                 </div>
               </div>
 
@@ -832,7 +784,7 @@ export default function Home() {
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-1 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between sm:text-sm">
                 <div>{nextTipoffLabel}</div>
 
                 <div>
@@ -841,7 +793,7 @@ export default function Home() {
                     href={sponsorUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-black text-white underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
+                    className="font-black text-white/90 underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
                   >
                     {sponsorName}
                   </a>
