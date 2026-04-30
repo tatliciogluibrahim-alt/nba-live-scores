@@ -7,6 +7,10 @@ type ESPNCompetitor = {
   team?: {
     displayName?: string;
     abbreviation?: string;
+    logo?: string;
+    logos?: {
+      href?: string;
+    }[];
   };
 };
 
@@ -28,6 +32,15 @@ type ESPNEvent = {
     };
   };
   competitions?: {
+    notes?: {
+      headline?: string;
+      type?: string;
+    }[];
+    series?: {
+      summary?: string;
+      title?: string;
+      description?: string;
+    };
     competitors?: ESPNCompetitor[];
   }[];
 };
@@ -38,15 +51,18 @@ type NormalizedGame = {
   status: "live" | "upcoming" | "final";
   statusText: string;
   matchup: string;
+  seriesSummary: string;
   home: {
     name: string;
     abbreviation: string;
     score: number;
+    logo: string;
   };
   away: {
     name: string;
     abbreviation: string;
     score: number;
+    logo: string;
   };
 };
 
@@ -64,8 +80,6 @@ function getWeekDates() {
   const startOfWeek = new Date(today);
   const dayOfWeek = today.getDay();
 
-  // JavaScript uses Sunday = 0, Monday = 1, Tuesday = 2, etc.
-  // This makes Monday the start of the week.
   const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
   startOfWeek.setDate(today.getDate() - daysSinceMonday);
@@ -89,6 +103,7 @@ function getTeam(event: ESPNEvent, homeAway: "home" | "away") {
     name: competitor?.team?.displayName || "TBD",
     abbreviation: competitor?.team?.abbreviation || "TBD",
     score: Number(competitor?.score || 0),
+    logo: competitor?.team?.logo || competitor?.team?.logos?.[0]?.href || "",
   };
 }
 
@@ -132,6 +147,29 @@ function getStatusText(event: ESPNEvent) {
   return event.status?.type?.shortDetail || "Upcoming";
 }
 
+function getSeriesSummary(event: ESPNEvent) {
+  const competition = event.competitions?.[0];
+
+  const directSummary =
+    competition?.series?.summary ||
+    competition?.series?.description ||
+    competition?.series?.title;
+
+  if (directSummary) return directSummary;
+
+  const playoffNote = competition?.notes?.find((note) => {
+    const headline = note.headline?.toLowerCase() || "";
+    return (
+      headline.includes("series") ||
+      headline.includes("leads") ||
+      headline.includes("tied") ||
+      headline.includes("wins")
+    );
+  });
+
+  return playoffNote?.headline || "";
+}
+
 function normalizeGame(event: ESPNEvent): NormalizedGame {
   return {
     id: event.id,
@@ -139,6 +177,7 @@ function normalizeGame(event: ESPNEvent): NormalizedGame {
     status: getGameStatus(event),
     statusText: getStatusText(event),
     matchup: event.shortName || event.name || "",
+    seriesSummary: getSeriesSummary(event),
     home: getTeam(event, "home"),
     away: getTeam(event, "away"),
   };
@@ -161,12 +200,10 @@ function sortGames(games: NormalizedGame[]) {
     const aTime = new Date(a.date).getTime();
     const bTime = new Date(b.date).getTime();
 
-    // Live and upcoming games: soonest first.
     if (a.status === "live" || a.status === "upcoming") {
       return aTime - bTime;
     }
 
-    // Final games: most recent first.
     return bTime - aTime;
   });
 }

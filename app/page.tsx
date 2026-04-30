@@ -8,6 +8,7 @@ type Team = {
   name: string;
   abbreviation: string;
   score: number;
+  logo: string;
 };
 
 type Game = {
@@ -16,6 +17,7 @@ type Game = {
   status: Exclude<GameStatus, "all">;
   statusText: string;
   matchup: string;
+  seriesSummary: string;
   home: Team;
   away: Team;
 };
@@ -90,12 +92,10 @@ function sortGamesForDisplay(gamesToSort: Game[]) {
     const aTime = new Date(a.date).getTime();
     const bTime = new Date(b.date).getTime();
 
-    // Live and upcoming games: soonest first.
     if (a.status === "live" || a.status === "upcoming") {
       return aTime - bTime;
     }
 
-    // Final games: most recent first.
     return bTime - aTime;
   });
 }
@@ -125,6 +125,27 @@ function FilterPill({
   );
 }
 
+function TeamLogo({ team }: { team: Team }) {
+  if (!team.logo) {
+    return (
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-600">
+        {team.abbreviation}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-slate-200">
+      <img
+        src={team.logo}
+        alt=""
+        className="h-6 w-6 object-contain"
+        loading="lazy"
+      />
+    </div>
+  );
+}
+
 function TeamLine({
   game,
   side,
@@ -138,26 +159,30 @@ function TeamLine({
 
   return (
     <div className="flex items-center justify-between py-2.5">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="text-lg font-black tracking-tight text-slate-950">
-            {team.abbreviation}
+      <div className="flex min-w-0 items-center gap-3">
+        <TeamLogo team={team} />
+
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-lg font-black tracking-tight text-slate-950">
+              {team.abbreviation}
+            </p>
+
+            {edgeLabel && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${getTeamEdgeClasses(
+                  game
+                )}`}
+              >
+                {edgeLabel}
+              </span>
+            )}
+          </div>
+
+          <p className="truncate text-xs font-medium text-slate-500">
+            {team.name}
           </p>
-
-          {edgeLabel && (
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${getTeamEdgeClasses(
-                game
-              )}`}
-            >
-              {edgeLabel}
-            </span>
-          )}
         </div>
-
-        <p className="truncate text-xs font-medium text-slate-500">
-          {team.name}
-        </p>
       </div>
 
       <div className="ml-4 text-3xl font-black tabular-nums tracking-tight text-slate-950">
@@ -202,6 +227,12 @@ function GameCard({ game }: { game: Game }) {
 
         <TeamLine game={game} side="home" />
       </div>
+
+      {game.seriesSummary && (
+        <div className="mt-3 rounded-2xl bg-slate-950 px-3 py-2 text-xs font-black uppercase tracking-wide text-white">
+          {game.seriesSummary}
+        </div>
+      )}
     </article>
   );
 }
