@@ -14,9 +14,9 @@ const barlowCondensed = Barlow_Condensed({
 });
 
 export const metadata: Metadata = {
-  title: "NBA Live Scores",
+  title: "No Noise Scores",
   description:
-    "A clean weekly NBA scoreboard with live, upcoming, and final game filters.",
+    "Clean live scores, schedules, and game context without the noise.",
   icons: {
     icon: "/favicon.svg",
   },
