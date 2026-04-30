@@ -208,24 +208,49 @@ function buildSections(
 ): GameSection[] {
   if (activeFilter === "live") {
     return gamesToSection.length
-      ? [{ title: "Live Now", eyebrow: "Real-time scores", games: gamesToSection }]
+      ? [
+          {
+            title: "Live Now",
+            eyebrow: "Real-time scores",
+            games: gamesToSection,
+          },
+        ]
       : [];
   }
 
-  if (activeFilter === "upcoming") return groupByDay(gamesToSection, "Upcoming games");
-  if (activeFilter === "final") return groupByDay(gamesToSection, "Final scores");
+  if (activeFilter === "upcoming") {
+    return groupByDay(gamesToSection, "Upcoming games");
+  }
+
+  if (activeFilter === "final") {
+    return groupByDay(gamesToSection, "Final scores");
+  }
 
   const liveGames = gamesToSection.filter((game) => game.status === "live");
-  const upcomingGames = gamesToSection.filter((game) => game.status === "upcoming");
+  const upcomingGames = gamesToSection.filter(
+    (game) => game.status === "upcoming"
+  );
   const finalGames = gamesToSection.filter((game) => game.status === "final");
 
   return [
     ...(liveGames.length
-      ? [{ title: "Live Now", eyebrow: "Real-time scores", games: liveGames }]
+      ? [
+          {
+            title: "Live Now",
+            eyebrow: "Real-time scores",
+            games: liveGames,
+          },
+        ]
       : []),
     ...groupByDay(upcomingGames, "Upcoming games"),
     ...(finalGames.length
-      ? [{ title: "Earlier This Week", eyebrow: "Final scores", games: finalGames }]
+      ? [
+          {
+            title: "Earlier This Week",
+            eyebrow: "Final scores",
+            games: finalGames,
+          },
+        ]
       : []),
   ];
 }
@@ -456,22 +481,6 @@ function BrandLockup() {
   );
 }
 
-        <div className="min-w-0">
-          <p className="font-[family-name:var(--font-display)] text-[2.2rem] font-black uppercase leading-[0.88] tracking-[-0.03em] text-orange-500">
-            No Noise
-            <br />
-            Scores
-          </p>
-
-          <p className="mt-3 max-w-[13rem] text-base font-medium leading-6 text-white/55">
-            Clean live scores and schedules
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -556,8 +565,8 @@ export default function Home() {
       <div className="mx-auto max-w-7xl">
         <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
           <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-4 sm:p-6 lg:p-7">
-<div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
-                <div>
+            <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
+              <div>
                 <div className="mt-1 sm:mt-2">
                   <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.7rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.15rem]">
                     NBA scores,
