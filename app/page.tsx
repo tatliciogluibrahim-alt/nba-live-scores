@@ -136,7 +136,7 @@ function TeamLogo({ team }: { team: Team }) {
   }
 
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-slate-200">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-orange-100">
       <img
         src={team.logo}
         alt=""
@@ -189,7 +189,7 @@ function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
 
 function GameCard({ game }: { game: Game }) {
   return (
-    <article className="rounded-[1.7rem] bg-white p-4 text-slate-950 shadow-xl shadow-slate-950/10 ring-1 ring-slate-200/70">
+    <article className="rounded-[1.7rem] bg-[#fffaf2] p-4 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div
           className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-black tracking-wide ring-1 ${getStatusClasses(
@@ -215,10 +215,10 @@ function GameCard({ game }: { game: Game }) {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-slate-50 px-4 py-2 ring-1 ring-slate-200">
+      <div className="rounded-2xl bg-white/85 px-4 py-2 ring-1 ring-orange-100/80">
         <TeamLine game={game} side="away" />
 
-        <div className="h-px bg-slate-200" />
+        <div className="h-px bg-orange-100/70" />
 
         <TeamLine game={game} side="home" />
       </div>
@@ -226,13 +226,13 @@ function GameCard({ game }: { game: Game }) {
       {(game.gameContext || game.seriesSummary) && (
         <div className="mt-3 space-y-2">
           {game.gameContext && (
-            <div className="rounded-2xl bg-orange-50 px-3 py-2 text-xs font-black uppercase tracking-wide text-orange-800 ring-1 ring-orange-100">
+            <div className="rounded-2xl bg-[#fff1df] px-3 py-2 text-xs font-black uppercase tracking-wide text-orange-800 ring-1 ring-orange-200/80">
               {game.gameContext}
             </div>
           )}
 
           {game.seriesSummary && (
-            <div className="rounded-2xl bg-slate-950 px-3 py-2 text-xs font-black uppercase tracking-wide text-white">
+            <div className="rounded-2xl bg-[#07111f] px-3 py-2 text-xs font-black uppercase tracking-wide text-white ring-1 ring-white/10">
               {game.seriesSummary}
             </div>
           )}
@@ -321,12 +321,12 @@ export default function Home() {
     : "Presented by";
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#1e3a8a_0,#0f172a_34%,#020617_78%)] px-4 py-5 text-white sm:px-6 md:py-8">
+    <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_20%_0%,rgba(249,115,22,0.20),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(59,130,246,0.18),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.045)_0_1px,transparent_1px_44px)] px-4 py-5 text-white sm:px-6 md:py-8">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-5 overflow-hidden rounded-[2rem] bg-white text-slate-950 shadow-2xl shadow-black/25">
-          <div className="border-b border-slate-100 bg-gradient-to-r from-white via-white to-orange-50 p-4 sm:p-6">
+        <header className="mb-5 overflow-hidden rounded-[2rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/40">
+          <div className="border-b border-orange-100/70 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.16),transparent_34%),linear-gradient(135deg,#fffaf2,#ffffff_55%,#fff3e4)] p-4 sm:p-6">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-white">
+              <div className="inline-flex items-center gap-2 rounded-full bg-[#07111f] px-3 py-1.5 text-xs font-black uppercase tracking-wide text-white">
                 <span className="h-2 w-2 rounded-full bg-orange-500" />
                 NBA this week
               </div>
@@ -354,7 +354,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="hidden rounded-3xl bg-slate-950 px-5 py-4 text-right text-white lg:block">
+              <div className="hidden rounded-3xl bg-[#07111f] px-5 py-4 text-right text-white lg:block">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-white/45">
                   Games this week
                 </p>
@@ -364,7 +364,7 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="sticky top-0 z-20 mb-4 -mx-4 bg-[#13285c]/85 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 md:top-0">
+        <div className="sticky top-0 z-20 mb-4 -mx-4 border-y border-white/10 bg-[#07111f]/82 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 md:top-0">
           <section className="mx-auto flex max-w-7xl gap-2 overflow-x-auto">
             {filterOptions.map((option) => (
               <FilterPill
@@ -378,7 +378,7 @@ export default function Home() {
           </section>
         </div>
 
-        <div className="mb-5 flex flex-col gap-1 rounded-2xl bg-white/10 px-4 py-3 text-sm text-white/75 ring-1 ring-white/10 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-5 flex flex-col gap-1 rounded-2xl bg-[#101d33]/90 px-4 py-3 text-sm text-white/75 shadow-lg shadow-black/10 ring-1 ring-white/10 sm:flex-row sm:items-center sm:justify-between">
           <div>
             {lastUpdated
               ? `Updated ${lastUpdated.toLocaleTimeString([], {
@@ -408,7 +408,7 @@ export default function Home() {
             ))}
           </section>
         ) : !hasLoadedOnce ? (
-          <section className="rounded-[1.75rem] bg-white p-8 text-center text-slate-950 shadow-xl shadow-black/20">
+          <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
             <p className="text-2xl font-black tracking-tight">
               Loading this week’s games...
             </p>
@@ -418,7 +418,7 @@ export default function Home() {
             </p>
           </section>
         ) : (
-          <section className="rounded-[1.75rem] bg-white p-8 text-center text-slate-950 shadow-xl shadow-black/20">
+          <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
             <p className="text-2xl font-black tracking-tight">
               No games found for this filter.
             </p>
