@@ -468,14 +468,24 @@ function EmptyState({
 function BrandLockup() {
   return (
     <div className="hidden lg:flex lg:items-center lg:justify-end">
-      <div className="flex items-center gap-4 rounded-[2rem] bg-[#07111f] px-5 py-5 shadow-2xl shadow-orange-950/20 ring-1 ring-white/10">
-        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[1.5rem] bg-[#0b1629] ring-1 ring-white/10">
+      <div className="flex items-center gap-4">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[1.4rem] bg-[#07111f] shadow-xl shadow-orange-950/15 ring-1 ring-white/10">
           <img
             src="/favicon.svg"
             alt="No Noise Scores logo"
-            className="h-14 w-14"
+            className="h-12 w-12"
           />
         </div>
+
+        <p className="font-[family-name:var(--font-display)] text-[2.15rem] font-black uppercase leading-[0.86] tracking-[-0.035em] text-orange-500">
+          No Noise
+          <br />
+          Scores
+        </p>
+      </div>
+    </div>
+  );
+}
 
         <div className="flex min-w-[10rem] items-center">
           <p className="font-[family-name:var(--font-display)] text-[2.15rem] font-black uppercase leading-[0.86] tracking-[-0.035em] text-orange-500">
