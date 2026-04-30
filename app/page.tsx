@@ -38,20 +38,22 @@ function ScoreRow({
   isLeading: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-white p-4 text-slate-950 shadow-sm">
-      <div>
+    <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 text-slate-950 shadow-sm ring-1 ring-slate-200/70">
+      <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-xl font-black">{team.abbreviation}</p>
+          <p className="text-2xl font-black tracking-tight">{team.abbreviation}</p>
           {isLeading && (
-            <span className="rounded-full bg-slate-950 px-2 py-1 text-xs font-bold text-white">
-              LEAD
+            <span className="rounded-full bg-slate-950 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+              Lead
             </span>
           )}
         </div>
-        <p className="text-sm text-slate-500">{team.name}</p>
+        <p className="truncate text-sm font-medium text-slate-500">{team.name}</p>
       </div>
 
-      <div className="text-5xl font-black tabular-nums">{team.score}</div>
+      <div className="ml-4 text-5xl font-black leading-none tabular-nums tracking-tight">
+        {team.score}
+      </div>
     </div>
   );
 }
@@ -61,17 +63,17 @@ function LiveGameCard({ game }: { game: LiveGame }) {
   const awayLeading = game.away.score > game.home.score;
 
   return (
-    <div className="rounded-3xl bg-slate-100 p-5 text-slate-950">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-sm font-black text-red-700">
+    <article className="rounded-[1.75rem] bg-slate-100 p-4 text-slate-950 shadow-sm ring-1 ring-white/10">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-sm font-black text-red-700 ring-1 ring-red-100">
           <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />
           LIVE
         </div>
 
         <div className="text-right">
-          <p className="text-lg font-black">{game.statusText}</p>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Real-time score
+          <p className="text-xl font-black tracking-tight">{game.statusText}</p>
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+            Score
           </p>
         </div>
       </div>
@@ -80,7 +82,7 @@ function LiveGameCard({ game }: { game: LiveGame }) {
         <ScoreRow team={game.away} isLeading={awayLeading} />
         <ScoreRow team={game.home} isLeading={homeLeading} />
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -130,105 +132,100 @@ export default function Home() {
   }, [games.length]);
 
   return (
-    <main className="min-h-screen bg-slate-950 p-4 text-white md:p-8">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-6 rounded-[2rem] bg-white p-6 text-slate-950 shadow-xl md:p-8">
-          <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+    <main className="min-h-screen bg-[#050814] px-4 py-5 text-white sm:px-6 md:py-8">
+      <div className="mx-auto max-w-3xl">
+        <header className="mb-4 rounded-[1.75rem] bg-white p-5 text-slate-950 shadow-xl shadow-black/20 sm:p-6">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-white">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+              NBA live only
+            </div>
+
+            <button
+              onClick={() => setDemoMode((current) => !current)}
+              className={`rounded-full px-4 py-2 text-sm font-black transition ${
+                demoMode
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-slate-100 text-slate-950 hover:bg-slate-200"
+              }`}
+            >
+              {demoMode ? "Hide demo" : "Show demo"}
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1 text-sm font-bold text-white">
-                NBA live scores only
-              </div>
-
-              <h1 className="text-4xl font-black tracking-tight md:text-6xl">
-                Live games. Nothing else.
+              <h1 className="text-4xl font-black leading-none tracking-tight sm:text-5xl">
+                Live games.
+                <br />
+                Nothing else.
               </h1>
-
-              <p className="mt-3 max-w-2xl text-base text-slate-600 md:text-lg">
-                A stripped-down prototype that only shows NBA games currently in
-                progress and refreshes every 10 seconds.
+              <p className="mt-3 max-w-xl text-sm font-medium leading-6 text-slate-500 sm:text-base">
+                A fast live scoreboard that only shows NBA games currently in
+                progress.
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
-              <button
-                onClick={() => setDemoMode((current) => !current)}
-                className={`rounded-2xl px-5 py-4 font-bold ${
-                  demoMode
-                    ? "bg-red-600 text-white hover:bg-red-700"
-                    : "bg-slate-200 text-slate-950 hover:bg-slate-300"
-                }`}
-              >
-                {demoMode ? "Hide demo" : "Show demo"}
-              </button>
-
-              <button
-                onClick={fetchLiveScores}
-                disabled={loading}
-                className="rounded-2xl bg-slate-950 px-5 py-4 font-bold text-white hover:bg-slate-800 disabled:opacity-60"
-              >
-                {loading ? "Refreshing..." : "Refresh"}
-              </button>
-            </div>
+            <button
+              onClick={fetchLiveScores}
+              disabled={loading}
+              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:opacity-60"
+            >
+              {loading ? "Refreshing" : "Refresh"}
+            </button>
           </div>
         </header>
 
         {demoMode && (
-          <div className="mb-6 rounded-3xl bg-red-500/10 p-4 text-sm font-bold text-red-100 ring-1 ring-red-400/20">
+          <div className="mb-4 rounded-2xl bg-red-500/10 px-4 py-3 text-sm font-bold text-red-100 ring-1 ring-red-400/20">
             Demo mode is on. These are sample scores for previewing the design.
-            Real live-score data is hidden until you turn demo mode off.
           </div>
         )}
 
-        <section className="mb-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-3xl bg-white/10 p-5">
-            <p className="text-sm font-semibold text-white/60">Status</p>
-            <p className="mt-2 flex items-center gap-2 text-3xl font-black">
-              <span className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
-              Live
-            </p>
-          </div>
-
-          <div className="rounded-3xl bg-white/10 p-5">
-            <p className="text-sm font-semibold text-white/60">
+        <section className="mb-4 grid grid-cols-2 gap-3">
+          <div className="rounded-3xl bg-white/10 p-4 ring-1 ring-white/10">
+            <p className="text-xs font-black uppercase tracking-wide text-white/45">
               Games showing
             </p>
-            <p className="mt-2 text-3xl font-black">{gameCountText}</p>
+            <p className="mt-2 text-3xl font-black tracking-tight">
+              {gameCountText}
+            </p>
           </div>
 
-          <div className="rounded-3xl bg-white/10 p-5">
-            <p className="text-sm font-semibold text-white/60">
-              Update cadence
+          <div className="rounded-3xl bg-white/10 p-4 ring-1 ring-white/10">
+            <p className="text-xs font-black uppercase tracking-wide text-white/45">
+              Refresh
             </p>
-            <p className="mt-2 text-3xl font-black">10 sec</p>
+            <p className="mt-2 text-3xl font-black tracking-tight">10 sec</p>
           </div>
         </section>
 
-        <div className="mb-6 flex flex-col gap-3 rounded-3xl bg-white/10 p-4 text-sm text-white/70 md:flex-row md:items-center md:justify-between">
+        <div className="mb-4 flex flex-col gap-1 rounded-3xl bg-white/10 px-4 py-3 text-sm font-medium text-white/65 ring-1 ring-white/10 sm:flex-row sm:items-center sm:justify-between">
           <div>
             {lastUpdated
-              ? `Last updated ${lastUpdated.toLocaleTimeString([], {
+              ? `Updated ${lastUpdated.toLocaleTimeString([], {
                   hour: "numeric",
                   minute: "2-digit",
                   second: "2-digit",
                 })}`
-              : "Fetching live scores..."}
+              : "Fetching live scores"}
           </div>
 
           <div>{demoMode ? "Demo preview" : "Connected to live feed"}</div>
         </div>
 
         {games.length > 0 ? (
-          <section className="grid gap-4 md:grid-cols-2">
+          <section className="grid gap-4">
             {games.map((game) => (
               <LiveGameCard key={game.id} game={game} />
             ))}
           </section>
         ) : (
-          <section className="rounded-[2rem] bg-white p-10 text-center text-slate-950 shadow-xl">
-            <p className="text-3xl font-black">
+          <section className="rounded-[1.75rem] bg-white p-8 text-center text-slate-950 shadow-xl shadow-black/20">
+            <p className="text-2xl font-black tracking-tight">
               No NBA games are live right now.
             </p>
-            <p className="mt-3 text-slate-500">
+            <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
               Upcoming and final games are intentionally hidden.
             </p>
           </section>
