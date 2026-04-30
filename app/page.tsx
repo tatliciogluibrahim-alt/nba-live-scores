@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 
 type GameStatus = "all" | "live" | "upcoming" | "final";
 type ViewScope = "today" | "week";
-type DisplayMode = "cards" | "compact";
 
 type Team = {
   name: string;
@@ -231,28 +230,21 @@ function buildSections(
   ];
 }
 
-function TeamLogo({ team, small = false }: { team: Team; small?: boolean }) {
-  const size = small ? "h-7 w-7" : "h-8 w-8 sm:h-9 sm:w-9";
-  const imageSize = small ? "h-5 w-5" : "h-6 w-6";
-
+function TeamLogo({ team }: { team: Team }) {
   if (!team.logo) {
     return (
-      <div
-        className={`flex ${size} shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-600`}
-      >
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-600 sm:h-9 sm:w-9">
         {team.abbreviation}
       </div>
     );
   }
 
   return (
-    <div
-      className={`flex ${size} shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-orange-100`}
-    >
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-orange-100 sm:h-9 sm:w-9">
       <img
         src={team.logo}
         alt=""
-        className={`${imageSize} object-contain`}
+        className="h-6 w-6 object-contain"
         loading="lazy"
       />
     </div>
@@ -273,7 +265,7 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3 py-1.5 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide transition sm:px-3.5 sm:py-1.5 sm:text-xs ${
+      className={`shrink-0 rounded-full px-3 py-1.5 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide transition sm:px-4 sm:py-2 sm:text-xs ${
         active
           ? "bg-orange-500 text-white shadow-md shadow-orange-950/20"
           : "bg-white/10 text-white/80 ring-1 ring-white/10 hover:bg-white/15"
@@ -282,46 +274,12 @@ function FilterPill({
       <span className="flex items-center gap-1.5">
         <span>{label}</span>
         {typeof count === "number" && (
-          <span className={active ? "text-white/90" : "text-white/55"}>
+          <span className={active ? "text-white/90" : "text-white/50"}>
             {count}
           </span>
         )}
       </span>
     </button>
-  );
-}
-
-function ModeToggle({
-  value,
-  onChange,
-}: {
-  value: DisplayMode;
-  onChange: (value: DisplayMode) => void;
-}) {
-  return (
-    <div className="inline-flex items-center gap-1 rounded-full bg-white/6 p-1 ring-1 ring-white/10">
-      <button
-        onClick={() => onChange("compact")}
-        className={`rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide transition sm:text-[11px] ${
-          value === "compact"
-            ? "bg-white text-slate-950"
-            : "text-white/65 hover:bg-white/8"
-        }`}
-      >
-        Compact
-      </button>
-
-      <button
-        onClick={() => onChange("cards")}
-        className={`rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide transition sm:text-[11px] ${
-          value === "cards"
-            ? "bg-white text-slate-950"
-            : "text-white/65 hover:bg-white/8"
-        }`}
-      >
-        Cards
-      </button>
-    </div>
   );
 }
 
@@ -331,7 +289,7 @@ function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
   const edgeLabel = getTeamEdgeLabel(game, side);
 
   return (
-    <div className="flex items-center justify-between py-2.5">
+    <div className="flex items-center justify-between py-2.5 sm:py-3">
       <div className="flex min-w-0 items-center gap-3">
         <TeamLogo team={team} />
 
@@ -365,22 +323,10 @@ function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
   );
 }
 
-function PlayoffBand({ game, compact = false }: { game: Game; compact?: boolean }) {
+function PlayoffBand({ game }: { game: Game }) {
   const finalSummary = getFinalSummary(game);
 
   if (!game.gameContext && !game.seriesSummary && !finalSummary) return null;
-
-  if (compact) {
-    return (
-      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide">
-        {game.gameContext && <span className="text-orange-700">{game.gameContext}</span>}
-        {game.seriesSummary && <span className="text-orange-700">{game.seriesSummary}</span>}
-        {game.status === "final" && finalSummary && (
-          <span className="text-emerald-700">{finalSummary}</span>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="mt-3 rounded-2xl bg-[#07111f] px-3 py-2.5 text-white ring-1 ring-white/10">
@@ -408,14 +354,14 @@ function PlayoffBand({ game, compact = false }: { game: Game; compact?: boolean 
 function GameCard({ game }: { game: Game }) {
   return (
     <article
-      className={`rounded-[1.45rem] bg-[#fffaf2] p-3.5 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70 sm:rounded-[1.7rem] sm:p-4 ${getCardAccentClasses(
+      className={`rounded-[1.35rem] bg-[#fffaf2] p-3.5 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70 sm:rounded-[1.65rem] sm:p-4 ${getCardAccentClasses(
         game.status
       )}`}
     >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <div
-            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide ring-1 ${getStatusClasses(
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide ring-1 ${getStatusClasses(
               game.status
             )}`}
           >
@@ -437,7 +383,7 @@ function GameCard({ game }: { game: Game }) {
               : formatGameDateTime(game.date)}
           </p>
 
-          <p className="mt-1 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+          <p className="mt-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
             {game.matchup}
           </p>
         </div>
@@ -450,110 +396,6 @@ function GameCard({ game }: { game: Game }) {
       </div>
 
       <PlayoffBand game={game} />
-    </article>
-  );
-}
-
-function CompactGameRow({ game }: { game: Game }) {
-  const isUpcoming = game.status === "upcoming";
-  const awayEdgeLabel = getTeamEdgeLabel(game, "away");
-  const homeEdgeLabel = getTeamEdgeLabel(game, "home");
-
-  return (
-    <article
-      className={`rounded-[1.25rem] bg-[#fffaf2] p-3 text-slate-950 shadow-lg shadow-black/10 ring-1 ring-orange-100/70 ${getCardAccentClasses(
-        game.status
-      )}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div
-            className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide ring-1 ${getStatusClasses(
-              game.status
-            )}`}
-          >
-            {game.status === "live" && (
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-600" />
-            )}
-            {getStatusLabel(game.status)}
-          </div>
-
-          <p className="mt-1 text-xs font-bold text-slate-500">
-            {getGameSubStatus(game)}
-          </p>
-        </div>
-
-        <div className="shrink-0 text-right">
-          <p className="font-[family-name:var(--font-display)] text-base font-black uppercase leading-none tracking-tight text-slate-950">
-            {game.status === "live"
-              ? game.statusText
-              : formatGameDateTime(game.date)}
-          </p>
-
-          <p className="mt-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
-            {game.matchup}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-3 rounded-2xl bg-white/90 px-3 py-2 ring-1 ring-orange-100/80">
-        <div className="grid grid-cols-[1fr_auto] gap-3">
-          <div className="min-w-0 space-y-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <TeamLogo team={game.away} small />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-black leading-none text-slate-950">
-                    {game.away.abbreviation}
-                  </p>
-                  {awayEdgeLabel && (
-                    <span
-                      className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide ${getTeamEdgeClasses(
-                        game
-                      )}`}
-                    >
-                      {awayEdgeLabel}
-                    </span>
-                  )}
-                </div>
-                <p className="truncate text-xs font-medium text-slate-500">
-                  {game.away.name}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex min-w-0 items-center gap-2">
-              <TeamLogo team={game.home} small />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-black leading-none text-slate-950">
-                    {game.home.abbreviation}
-                  </p>
-                  {homeEdgeLabel && (
-                    <span
-                      className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide ${getTeamEdgeClasses(
-                        game
-                      )}`}
-                    >
-                      {homeEdgeLabel}
-                    </span>
-                  )}
-                </div>
-                <p className="truncate text-xs font-medium text-slate-500">
-                  {game.home.name}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col justify-around text-right text-xl font-black tabular-nums leading-none text-slate-950">
-            <div>{isUpcoming ? "–" : game.away.score}</div>
-            <div>{isUpcoming ? "–" : game.home.score}</div>
-          </div>
-        </div>
-      </div>
-
-      <PlayoffBand game={game} compact />
     </article>
   );
 }
@@ -571,7 +413,7 @@ function EmptyState({
     return (
       <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
         <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-          No live games right now.
+          No live games right now
         </p>
 
         <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -586,7 +428,7 @@ function EmptyState({
   return (
     <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
       <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-        No games found.
+        No games found
       </p>
 
       <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -598,21 +440,51 @@ function EmptyState({
   );
 }
 
+function HeroMetaCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-[#07111f] px-4 py-3 text-white ring-1 ring-white/10">
+      <p className="font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
+        {label}
+      </p>
+      <p className="mt-1 text-lg font-black tracking-tight text-white">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function HeroMetaPill({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-full bg-[#07111f] px-3 py-2 text-white ring-1 ring-white/10">
+      <p className="font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
+        {label}
+      </p>
+      <p className="mt-0.5 text-sm font-black tracking-tight text-white">
+        {value}
+      </p>
+    </div>
+  );
+}
+
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
-  const [loading, setLoading] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [activeFilter, setActiveFilter] = useState<GameStatus>("all");
   const [viewScope, setViewScope] = useState<ViewScope>("today");
-  const [displayMode, setDisplayMode] = useState<DisplayMode>("compact");
-
-  useEffect(() => {
-    if (window.innerWidth >= 1024) setDisplayMode("cards");
-  }, []);
 
   async function fetchGames() {
-    setLoading(true);
-
     try {
       const response = await fetch("/api/live-scores");
 
@@ -623,7 +495,6 @@ export default function Home() {
     } catch {
       setGames([]);
     } finally {
-      setLoading(false);
       setHasLoadedOnce(true);
     }
   }
@@ -683,6 +554,8 @@ export default function Home() {
       : `Next tipoff · ${formatGameTime(nextGame.date)}`
     : "No upcoming games";
 
+  const nextTipoffTime = nextGame ? formatGameTime(nextGame.date) : "TBD";
+
   const sponsorName = "Ibra-Heem";
   const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
 
@@ -696,30 +569,46 @@ export default function Home() {
     <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-28 pt-4 text-white sm:px-6 md:py-8">
       <div className="mx-auto max-w-7xl">
         <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
-          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.12),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-4 sm:p-6">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#07111f] px-3 py-1.5 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white sm:text-sm">
-              <span className="h-2 w-2 rounded-full bg-orange-500" />
-              No Noise Scores
-            </div>
+          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.10),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-4 sm:p-6 lg:p-7">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-[#07111f] px-3 py-1.5 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white sm:text-sm">
+                  <span className="h-2 w-2 rounded-full bg-orange-500" />
+                  No Noise Scores
+                </div>
 
-            <div className="mt-4 sm:mt-5">
-              <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.75rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.25rem]">
-                NBA scores,
-                <br />
-                no noise.
-              </h1>
+                <div className="mt-4 sm:mt-5">
+                  <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.7rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.15rem]">
+                    NBA scores,
+                    <br />
+                    no noise.
+                  </h1>
 
-              <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
-                Today first. Full week when you need it.
-              </p>
+                  <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
+                    Today first. Full week when you need it.
+                  </p>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2 lg:hidden">
+                  <HeroMetaPill label="Today" value={`${todayGames.length} games`} />
+                  <HeroMetaPill label="Next tipoff" value={nextTipoffTime} />
+                  <HeroMetaPill label="Auto-updates" value="Every 30s" />
+                </div>
+              </div>
+
+              <div className="hidden lg:flex lg:flex-col lg:gap-3">
+                <HeroMetaCard label="Today" value={`${todayGames.length} games`} />
+                <HeroMetaCard label="Next tipoff" value={nextTipoffTime} />
+                <HeroMetaCard label="Auto-updates" value="Every 30s" />
+              </div>
             </div>
           </div>
         </header>
 
-        <div className="sticky top-0 z-20 mb-5 -mx-4 border-y border-white/10 bg-[#06101f]/92 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6">
+        <div className="sticky top-0 z-20 mb-5 -mx-4 border-y border-white/10 bg-[#06101f]/92 px-4 py-2.5 backdrop-blur-md sm:-mx-6 sm:px-6">
           <div className="mx-auto max-w-7xl">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <FilterPill
                     label="Today"
@@ -736,39 +625,35 @@ export default function Home() {
                   />
                 </div>
 
-                <div className="shrink-0">
-                  <ModeToggle value={displayMode} onChange={setDisplayMode} />
+                <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
+                  <FilterPill
+                    label="All"
+                    count={counts.all}
+                    active={activeFilter === "all"}
+                    onClick={() => setActiveFilter("all")}
+                  />
+
+                  <FilterPill
+                    label="Live"
+                    count={counts.live}
+                    active={activeFilter === "live"}
+                    onClick={() => setActiveFilter("live")}
+                  />
+
+                  <FilterPill
+                    label="Upcoming"
+                    count={counts.upcoming}
+                    active={activeFilter === "upcoming"}
+                    onClick={() => setActiveFilter("upcoming")}
+                  />
+
+                  <FilterPill
+                    label="Final"
+                    count={counts.final}
+                    active={activeFilter === "final"}
+                    onClick={() => setActiveFilter("final")}
+                  />
                 </div>
-              </div>
-
-              <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <FilterPill
-                  label="All"
-                  count={counts.all}
-                  active={activeFilter === "all"}
-                  onClick={() => setActiveFilter("all")}
-                />
-
-                <FilterPill
-                  label="Live"
-                  count={counts.live}
-                  active={activeFilter === "live"}
-                  onClick={() => setActiveFilter("live")}
-                />
-
-                <FilterPill
-                  label="Upcoming"
-                  count={counts.upcoming}
-                  active={activeFilter === "upcoming"}
-                  onClick={() => setActiveFilter("upcoming")}
-                />
-
-                <FilterPill
-                  label="Final"
-                  count={counts.final}
-                  active={activeFilter === "final"}
-                  onClick={() => setActiveFilter("final")}
-                />
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[13px] leading-5 text-white/60">
@@ -813,19 +698,11 @@ export default function Home() {
                   </p>
                 </div>
 
-                {displayMode === "cards" ? (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {section.games.map((game) => (
-                      <GameCard key={game.id} game={game} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-                    {section.games.map((game) => (
-                      <CompactGameRow key={game.id} game={game} />
-                    ))}
-                  </div>
-                )}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {section.games.map((game) => (
+                    <GameCard key={game.id} game={game} />
+                  ))}
+                </div>
               </section>
             ))}
           </div>
