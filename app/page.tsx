@@ -93,12 +93,10 @@ function sortGamesForDisplay(gamesToSort: Game[]) {
     const aTime = new Date(a.date).getTime();
     const bTime = new Date(b.date).getTime();
 
-    // Live and upcoming games: soonest first.
     if (a.status === "live" || a.status === "upcoming") {
       return aTime - bTime;
     }
 
-    // Final games: most recent first.
     return bTime - aTime;
   });
 }
@@ -117,7 +115,7 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-4 py-2 text-sm font-black transition ${
+      className={`shrink-0 rounded-full px-4 py-2 text-sm font-black transition ${
         active
           ? "bg-orange-500 text-white shadow-lg shadow-orange-950/20"
           : "bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/15"
@@ -247,6 +245,7 @@ function GameCard({ game }: { game: Game }) {
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [activeFilter, setActiveFilter] = useState<GameStatus>("all");
 
@@ -269,6 +268,7 @@ export default function Home() {
       setLastUpdated(new Date());
     } finally {
       setLoading(false);
+      setHasLoadedOnce(true);
     }
   }
 
@@ -324,8 +324,8 @@ export default function Home() {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#1e3a8a_0,#0f172a_34%,#020617_78%)] px-4 py-5 text-white sm:px-6 md:py-8">
       <div className="mx-auto max-w-7xl">
         <header className="mb-5 overflow-hidden rounded-[2rem] bg-white text-slate-950 shadow-2xl shadow-black/25">
-          <div className="border-b border-slate-100 bg-gradient-to-r from-white via-white to-orange-50 p-5 sm:p-6">
-            <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="border-b border-slate-100 bg-gradient-to-r from-white via-white to-orange-50 p-4 sm:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <div className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-white">
                 <span className="h-2 w-2 rounded-full bg-orange-500" />
                 NBA this week
@@ -364,17 +364,19 @@ export default function Home() {
           </div>
         </header>
 
-        <section className="mb-4 flex flex-wrap gap-2">
-          {filterOptions.map((option) => (
-            <FilterPill
-              key={option.value}
-              label={option.label}
-              count={option.count}
-              active={activeFilter === option.value}
-              onClick={() => setActiveFilter(option.value)}
-            />
-          ))}
-        </section>
+        <div className="sticky top-0 z-20 mb-4 -mx-4 bg-[#13285c]/85 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 md:top-0">
+          <section className="mx-auto flex max-w-7xl gap-2 overflow-x-auto">
+            {filterOptions.map((option) => (
+              <FilterPill
+                key={option.value}
+                label={option.label}
+                count={option.count}
+                active={activeFilter === option.value}
+                onClick={() => setActiveFilter(option.value)}
+              />
+            ))}
+          </section>
+        </div>
 
         <div className="mb-5 flex flex-col gap-1 rounded-2xl bg-white/10 px-4 py-3 text-sm text-white/75 ring-1 ring-white/10 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -392,7 +394,7 @@ export default function Home() {
               href={sponsorUrl}
               target="_blank"
               rel="noreferrer"
-              className="font-black text-white hover:text-orange-200"
+              className="font-black text-white underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
             >
               {sponsorName}
             </a>
@@ -404,6 +406,16 @@ export default function Home() {
             {filteredGames.map((game) => (
               <GameCard key={game.id} game={game} />
             ))}
+          </section>
+        ) : !hasLoadedOnce ? (
+          <section className="rounded-[1.75rem] bg-white p-8 text-center text-slate-950 shadow-xl shadow-black/20">
+            <p className="text-2xl font-black tracking-tight">
+              Loading this week’s games...
+            </p>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Pulling the latest scoreboard.
+            </p>
           </section>
         ) : (
           <section className="rounded-[1.75rem] bg-white p-8 text-center text-slate-950 shadow-xl shadow-black/20">
