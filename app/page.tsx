@@ -32,16 +32,16 @@ const fallbackGames: Game[] = [
   },
   {
     id: "demo-2",
-    date: new Date().toISOString(),
+    date: new Date(Date.now() + 1000 * 60 * 90).toISOString(),
     status: "upcoming",
-    statusText: "8:30 PM",
+    statusText: "7:30 PM",
     matchup: "LAL @ GSW",
     home: { name: "Golden State Warriors", abbreviation: "GSW", score: 0 },
     away: { name: "Los Angeles Lakers", abbreviation: "LAL", score: 0 },
   },
   {
     id: "demo-3",
-    date: new Date(Date.now() - 86400000).toISOString(),
+    date: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
     status: "final",
     statusText: "Final",
     matchup: "MIA @ PHI",
@@ -50,12 +50,19 @@ const fallbackGames: Game[] = [
   },
 ];
 
-function formatGameDate(date: string) {
-  return new Date(date).toLocaleDateString([], {
+function formatGameDateTime(date: string) {
+  const gameDate = new Date(date);
+
+  const day = gameDate.toLocaleDateString([], {
     weekday: "short",
-    month: "short",
-    day: "numeric",
   });
+
+  const time = gameDate.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  return `${day} • ${time}`;
 }
 
 function getStatusClasses(status: Game["status"]) {
@@ -76,36 +83,59 @@ function getStatusLabel(status: Game["status"]) {
   return "UPCOMING";
 }
 
-function ScoreRow({
-  team,
-  isLeading,
-  showScore,
+function FilterPill({
+  label,
+  count,
+  active,
+  onClick,
 }: {
-  team: Team;
-  isLeading: boolean;
-  showScore: boolean;
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 text-slate-950 shadow-sm ring-1 ring-slate-200/70">
+    <button
+      onClick={onClick}
+      className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+        active
+          ? "bg-white text-slate-950"
+          : "bg-white/10 text-white ring-1 ring-white/10 hover:bg-white/15"
+      }`}
+    >
+      {label} <span className="opacity-70">{count}</span>
+    </button>
+  );
+}
+
+function TeamLine({
+  team,
+  showScore,
+  isLeading,
+}: {
+  team: Team;
+  showScore: boolean;
+  isLeading: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between py-2">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-2xl font-black tracking-tight">
+          <p className="text-lg font-black tracking-tight">
             {team.abbreviation}
           </p>
 
           {isLeading && showScore && (
-            <span className="rounded-full bg-slate-950 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+            <span className="rounded-full bg-slate-950 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
               Lead
             </span>
           )}
         </div>
 
-        <p className="truncate text-sm font-medium text-slate-500">
-          {team.name}
-        </p>
+        <p className="truncate text-xs text-slate-500">{team.name}</p>
       </div>
 
-      <div className="ml-4 text-5xl font-black leading-none tabular-nums tracking-tight">
+      <div className="ml-4 text-3xl font-black tabular-nums tracking-tight">
         {showScore ? team.score : "–"}
       </div>
     </div>
@@ -118,10 +148,10 @@ function GameCard({ game }: { game: Game }) {
   const awayLeading = game.away.score > game.home.score;
 
   return (
-    <article className="rounded-[1.75rem] bg-slate-100 p-4 text-slate-950 shadow-sm ring-1 ring-white/10">
-      <div className="mb-4 flex items-center justify-between gap-4">
+    <article className="rounded-3xl bg-slate-100 p-4 text-slate-950 shadow-sm">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div
-          className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-black ring-1 ${getStatusClasses(
+          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-black tracking-wide ring-1 ${getStatusClasses(
             game.status
           )}`}
         >
@@ -132,23 +162,29 @@ function GameCard({ game }: { game: Game }) {
         </div>
 
         <div className="text-right">
-          <p className="text-xl font-black tracking-tight">{game.statusText}</p>
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
-            {formatGameDate(game.date)}
+          <p className="text-base font-black leading-none">
+            {game.status === "live" ? game.statusText : formatGameDateTime(game.date)}
+          </p>
+
+          <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+            {game.matchup}
           </p>
         </div>
       </div>
 
-      <div className="space-y-3">
-        <ScoreRow
+      <div className="rounded-2xl bg-white px-4 py-2 shadow-sm ring-1 ring-slate-200/70">
+        <TeamLine
           team={game.away}
+          showScore={showScore}
           isLeading={awayLeading}
-          showScore={showScore}
         />
-        <ScoreRow
+
+        <div className="h-px bg-slate-100" />
+
+        <TeamLine
           team={game.home}
-          isLeading={homeLeading}
           showScore={showScore}
+          isLeading={homeLeading}
         />
       </div>
     </article>
@@ -221,11 +257,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#050814] px-4 py-5 text-white sm:px-6 md:py-8">
-      <div className="mx-auto max-w-3xl">
-        <header className="mb-4 rounded-[1.75rem] bg-white p-5 text-slate-950 shadow-xl shadow-black/20 sm:p-6">
-          <div className="mb-5 flex items-center justify-between gap-3">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-5 rounded-[2rem] bg-white p-5 text-slate-950 shadow-xl shadow-black/20 sm:p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <div className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-white">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+              <span className="h-2 w-2 rounded-full bg-red-500" />
               NBA this week
             </div>
 
@@ -241,15 +277,15 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="text-4xl font-black leading-none tracking-tight sm:text-5xl">
+              <h1 className="text-3xl font-black leading-none tracking-tight sm:text-4xl lg:text-5xl">
                 Scores this week.
                 <br />
                 Live when it matters.
               </h1>
 
-              <p className="mt-3 max-w-xl text-sm font-medium leading-6 text-slate-500 sm:text-base">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
                 Check NBA games across the week, then filter for live, upcoming,
                 or final scores.
               </p>
@@ -271,26 +307,19 @@ export default function Home() {
           </div>
         )}
 
-        <section className="mb-4 grid grid-cols-4 gap-2">
+        <section className="mb-4 flex flex-wrap gap-2">
           {filterOptions.map((option) => (
-            <button
+            <FilterPill
               key={option.value}
+              label={option.label}
+              count={option.count}
+              active={activeFilter === option.value}
               onClick={() => setActiveFilter(option.value)}
-              className={`rounded-2xl px-3 py-3 text-left transition ${
-                activeFilter === option.value
-                  ? "bg-white text-slate-950"
-                  : "bg-white/10 text-white ring-1 ring-white/10"
-              }`}
-            >
-              <p className="text-xs font-black uppercase tracking-wide opacity-60">
-                {option.label}
-              </p>
-              <p className="mt-1 text-2xl font-black">{option.count}</p>
-            </button>
+            />
           ))}
         </section>
 
-        <div className="mb-4 flex flex-col gap-1 rounded-3xl bg-white/10 px-4 py-3 text-sm font-medium text-white/65 ring-1 ring-white/10 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-5 flex flex-col gap-1 rounded-2xl bg-white/10 px-4 py-3 text-sm text-white/70 ring-1 ring-white/10 sm:flex-row sm:items-center sm:justify-between">
           <div>
             {lastUpdated
               ? `Updated ${lastUpdated.toLocaleTimeString([], {
@@ -301,11 +330,15 @@ export default function Home() {
               : "Fetching games"}
           </div>
 
-          <div>{demoMode ? "Demo preview" : "Connected to live feed"}</div>
+          <div>
+            {demoMode
+              ? "Demo preview"
+              : "Game times shown in your local timezone"}
+          </div>
         </div>
 
         {filteredGames.length > 0 ? (
-          <section className="grid gap-4">
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filteredGames.map((game) => (
               <GameCard key={game.id} game={game} />
             ))}
@@ -315,7 +348,8 @@ export default function Home() {
             <p className="text-2xl font-black tracking-tight">
               No games found for this filter.
             </p>
-            <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
               Try switching to All, Upcoming, Live, or Final.
             </p>
           </section>
