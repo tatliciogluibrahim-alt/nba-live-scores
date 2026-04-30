@@ -81,6 +81,8 @@ function getWeekDates() {
   const startOfWeek = new Date(today);
   const dayOfWeek = today.getDay();
 
+  // JavaScript uses Sunday = 0, Monday = 1, Tuesday = 2, etc.
+  // This makes Monday the start of the week.
   const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
   startOfWeek.setDate(today.getDate() - daysSinceMonday);
@@ -170,6 +172,7 @@ function getSeriesSummary(event: ESPNEvent) {
 
   const playoffNote = competition?.notes?.find((note) => {
     const headline = note.headline?.toLowerCase() || "";
+
     return (
       headline.includes("series") ||
       headline.includes("leads") ||
@@ -238,10 +241,12 @@ function sortGames(games: NormalizedGame[]) {
     const aTime = new Date(a.date).getTime();
     const bTime = new Date(b.date).getTime();
 
+    // Live and upcoming games: soonest first.
     if (a.status === "live" || a.status === "upcoming") {
       return aTime - bTime;
     }
 
+    // Final games: most recent first.
     return bTime - aTime;
   });
 }

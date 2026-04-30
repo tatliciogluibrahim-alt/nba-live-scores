@@ -93,10 +93,12 @@ function sortGamesForDisplay(gamesToSort: Game[]) {
     const aTime = new Date(a.date).getTime();
     const bTime = new Date(b.date).getTime();
 
+    // Live and upcoming games: soonest first.
     if (a.status === "live" || a.status === "upcoming") {
       return aTime - bTime;
     }
 
+    // Final games: most recent first.
     return bTime - aTime;
   });
 }
@@ -147,13 +149,7 @@ function TeamLogo({ team }: { team: Team }) {
   );
 }
 
-function TeamLine({
-  game,
-  side,
-}: {
-  game: Game;
-  side: "away" | "home";
-}) {
+function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
   const team = game[side];
   const showScore = game.status !== "upcoming";
   const edgeLabel = getTeamEdgeLabel(game, side);
@@ -313,6 +309,17 @@ export default function Home() {
     { label: "Final", value: "final", count: counts.final },
   ];
 
+  const sponsorName = "Ibra-Heem";
+  const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
+
+  const hasPlayoffCoverage = games.some(
+    (game) => game.gameContext || game.seriesSummary
+  );
+
+  const sponsorPrefix = hasPlayoffCoverage
+    ? "Playoff coverage by"
+    : "Presented by";
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#1e3a8a_0,#0f172a_34%,#020617_78%)] px-4 py-5 text-white sm:px-6 md:py-8">
       <div className="mx-auto max-w-7xl">
@@ -375,12 +382,21 @@ export default function Home() {
               ? `Updated ${lastUpdated.toLocaleTimeString([], {
                   hour: "numeric",
                   minute: "2-digit",
-                  second: "2-digit",
                 })}`
               : "Fetching games"}
           </div>
 
-          <div>Times shown in your local timezone</div>
+          <div className="font-semibold text-white/85">
+            {sponsorPrefix}{" "}
+            <a
+              href={sponsorUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="font-black text-white hover:text-orange-200"
+            >
+              {sponsorName}
+            </a>
+          </div>
         </div>
 
         {filteredGames.length > 0 ? (
