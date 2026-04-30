@@ -43,9 +43,19 @@ function formatDateForESPN(date: Date) {
 function getWeekDates() {
   const today = new Date();
 
+  const startOfWeek = new Date(today);
+  const dayOfWeek = today.getDay();
+
+  // JavaScript uses Sunday = 0, Monday = 1, Tuesday = 2, etc.
+  // This makes Monday the start of the week.
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+  startOfWeek.setDate(today.getDate() - daysSinceMonday);
+  startOfWeek.setHours(0, 0, 0, 0);
+
   return Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() + index);
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + index);
     return date;
   });
 }

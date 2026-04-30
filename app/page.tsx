@@ -256,8 +256,7 @@ export default function Home() {
 
                 <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-slate-500 sm:text-base">
                   Check the week’s games, then filter instantly for live,
-                  upcoming, or final scores. Game times are shown in your local
-                  timezone.
+upcoming, or final scores.
                 </p>
               </div>
 
