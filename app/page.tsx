@@ -487,18 +487,6 @@ function BrandLockup() {
   );
 }
 
-        <div className="flex min-w-[10rem] items-center">
-          <p className="font-[family-name:var(--font-display)] text-[2.15rem] font-black uppercase leading-[0.86] tracking-[-0.035em] text-orange-500">
-            No Noise
-            <br />
-            Scores
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
