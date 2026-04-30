@@ -115,7 +115,7 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 rounded-full px-4 py-2 text-sm font-black transition ${
+      className={`shrink-0 rounded-full px-4 py-2 font-[family-name:var(--font-display)] text-base font-black uppercase tracking-wide transition ${
         active
           ? "bg-orange-500 text-white shadow-lg shadow-orange-950/20"
           : "bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/15"
@@ -165,7 +165,7 @@ function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
 
             {edgeLabel && (
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${getTeamEdgeClasses(
+                className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide ${getTeamEdgeClasses(
                   game
                 )}`}
               >
@@ -192,7 +192,7 @@ function GameCard({ game }: { game: Game }) {
     <article className="rounded-[1.7rem] bg-[#fffaf2] p-4 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div
-          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-black tracking-wide ring-1 ${getStatusClasses(
+          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide ring-1 ${getStatusClasses(
             game.status
           )}`}
         >
@@ -203,13 +203,13 @@ function GameCard({ game }: { game: Game }) {
         </div>
 
         <div className="text-right">
-          <p className="text-base font-black leading-none text-slate-950">
+          <p className="font-[family-name:var(--font-display)] text-2xl font-black uppercase leading-none tracking-tight text-slate-950">
             {game.status === "live"
               ? game.statusText
               : formatGameDateTime(game.date)}
           </p>
 
-          <p className="mt-1 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+          <p className="mt-1 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-slate-500">
             {game.matchup}
           </p>
         </div>
@@ -226,13 +226,13 @@ function GameCard({ game }: { game: Game }) {
       {(game.gameContext || game.seriesSummary) && (
         <div className="mt-3 space-y-2">
           {game.gameContext && (
-            <div className="rounded-2xl bg-[#fff1df] px-3 py-2 text-xs font-black uppercase tracking-wide text-orange-800 ring-1 ring-orange-200/80">
+            <div className="rounded-2xl bg-[#fff1df] px-3 py-2 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-orange-800 ring-1 ring-orange-200/80">
               {game.gameContext}
             </div>
           )}
 
           {game.seriesSummary && (
-            <div className="rounded-2xl bg-[#07111f] px-3 py-2 text-xs font-black uppercase tracking-wide text-white ring-1 ring-white/10">
+            <div className="rounded-2xl bg-[#07111f] px-3 py-2 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-white ring-1 ring-white/10">
               {game.seriesSummary}
             </div>
           )}
@@ -326,7 +326,7 @@ export default function Home() {
         <header className="mb-5 overflow-hidden rounded-[2rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/40">
           <div className="border-b border-orange-100/70 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.16),transparent_34%),linear-gradient(135deg,#fffaf2,#ffffff_55%,#fff3e4)] p-4 sm:p-6">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#07111f] px-3 py-1.5 text-xs font-black uppercase tracking-wide text-white">
+              <div className="inline-flex items-center gap-2 rounded-full bg-[#07111f] px-3 py-1.5 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-white">
                 <span className="h-2 w-2 rounded-full bg-orange-500" />
                 NBA this week
               </div>
@@ -334,7 +334,7 @@ export default function Home() {
               <button
                 onClick={fetchGames}
                 disabled={loading}
-                className="rounded-full bg-orange-500 px-4 py-2 text-sm font-black text-white shadow-lg shadow-orange-900/20 transition hover:bg-orange-600 disabled:opacity-60"
+                className="rounded-full bg-orange-500 px-4 py-2 font-[family-name:var(--font-display)] text-base font-black uppercase tracking-wide text-white shadow-lg shadow-orange-900/20 transition hover:bg-orange-600 disabled:opacity-60"
               >
                 {loading ? "Refreshing" : "Refresh"}
               </button>
@@ -342,7 +342,7 @@ export default function Home() {
 
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <h1 className="max-w-3xl text-4xl font-black leading-[0.95] tracking-tight sm:text-5xl lg:text-6xl">
+                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-5xl font-black uppercase leading-[0.86] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
                   NBA scores,
                   <br />
                   without the noise.
@@ -355,10 +355,12 @@ export default function Home() {
               </div>
 
               <div className="hidden rounded-3xl bg-[#07111f] px-5 py-4 text-right text-white lg:block">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/45">
+                <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-white/45">
                   Games this week
                 </p>
-                <p className="mt-1 text-4xl font-black">{counts.all}</p>
+                <p className="mt-1 font-[family-name:var(--font-display)] text-5xl font-black">
+                  {counts.all}
+                </p>
               </div>
             </div>
           </div>
@@ -409,7 +411,7 @@ export default function Home() {
           </section>
         ) : !hasLoadedOnce ? (
           <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
-            <p className="text-2xl font-black tracking-tight">
+            <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
               Loading this week’s games...
             </p>
 
@@ -419,7 +421,7 @@ export default function Home() {
           </section>
         ) : (
           <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
-            <p className="text-2xl font-black tracking-tight">
+            <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
               No games found for this filter.
             </p>
 
