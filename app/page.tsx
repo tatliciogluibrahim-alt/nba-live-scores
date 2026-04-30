@@ -91,6 +91,11 @@ function getSectionTitle(date: string) {
   });
 }
 
+function getSectionDisplayTitle(section: GameSection) {
+  const gameLabel = section.games.length === 1 ? "game" : "games";
+  return `${section.title} · ${section.games.length} ${gameLabel}`;
+}
+
 function getStatusClasses(status: Game["status"]) {
   if (status === "live") {
     return "bg-orange-100 text-orange-800 ring-orange-200";
@@ -282,8 +287,8 @@ function buildSections(
     ...(finalGames.length
       ? [
           {
-            title: "Finals Earlier This Week",
-            eyebrow: "Completed games",
+            title: "Earlier This Week",
+            eyebrow: "Final scores",
             games: finalGames,
           },
         ]
@@ -296,21 +301,28 @@ function FilterPill({
   count,
   active,
   onClick,
+  subtle = false,
 }: {
   label: string;
   count?: number;
   active: boolean;
   onClick: () => void;
+  subtle?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       className={`shrink-0 rounded-full font-[family-name:var(--font-display)] font-black uppercase tracking-wide transition
-        px-4 py-2 text-sm
-        sm:text-base
+        ${
+          subtle
+            ? "px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm"
+            : "px-4 py-2 text-sm sm:text-base"
+        }
         ${
           active
             ? "bg-orange-500 text-white shadow-lg shadow-orange-950/20"
+            : subtle
+            ? "bg-white/5 text-white/75 ring-1 ring-white/10 hover:bg-white/10"
             : "bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/15"
         }`}
     >
@@ -544,72 +556,6 @@ function CompactGameRow({ game }: { game: Game }) {
   );
 }
 
-function InfoRail({
-  games,
-  sponsorPrefix,
-  sponsorName,
-  sponsorUrl,
-}: {
-  games: Game[];
-  sponsorPrefix: string;
-  sponsorName: string;
-  sponsorUrl: string;
-}) {
-  const today = new Date();
-
-  const todaysGames = games.filter((game) =>
-    isSameLocalDay(new Date(game.date), today)
-  );
-
-  const liveCount = games.filter((game) => game.status === "live").length;
-
-  const nextGame = sortGamesForDisplay(
-    games.filter((game) => game.status === "live" || game.status === "upcoming")
-  )[0];
-
-  const tickerLabel = liveCount
-    ? `${liveCount} live ${liveCount === 1 ? "game" : "games"}`
-    : todaysGames.length
-    ? `${todaysGames.length} today`
-    : "This week";
-
-  const nextLabel = nextGame
-    ? nextGame.status === "live"
-      ? `Live now · ${nextGame.matchup}`
-      : `Next tipoff · ${formatGameTime(nextGame.date)}`
-    : "No upcoming games";
-
-  return (
-    <div className="mb-5 rounded-2xl bg-[#101d33]/90 px-4 py-3 text-white shadow-lg shadow-black/10 ring-1 ring-white/10">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="font-[family-name:var(--font-display)] text-base font-black uppercase tracking-wide text-orange-300">
-            {tickerLabel}
-          </span>
-
-          <span className="hidden h-1.5 w-1.5 rounded-full bg-white/35 sm:block" />
-
-          <span className="text-sm font-semibold text-white/85 sm:text-base">
-            {nextLabel}
-          </span>
-        </div>
-
-        <div className="text-sm font-semibold text-white/85 sm:text-base">
-          {sponsorPrefix}{" "}
-          <a
-            href={sponsorUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="font-black text-white underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
-          >
-            {sponsorName}
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function EmptyState({
   activeFilter,
   viewScope,
@@ -729,11 +675,17 @@ export default function Home() {
     )[0];
   }, [games]);
 
-  const filterOptions: { label: string; value: GameStatus; count: number }[] = [
-    { label: "All", value: "all", count: counts.all },
-    { label: "Live", value: "live", count: counts.live },
-    { label: "Upcoming", value: "upcoming", count: counts.upcoming },
-    { label: "Final", value: "final", count: counts.final },
+  const nextTipoffLabel = nextGame
+    ? nextGame.status === "live"
+      ? "Live now"
+      : formatGameTime(nextGame.date)
+    : "TBD";
+
+  const filterOptions: { label: string; value: GameStatus }[] = [
+    { label: "All", value: "all" },
+    { label: "Live", value: "live" },
+    { label: "Upcoming", value: "upcoming" },
+    { label: "Final", value: "final" },
   ];
 
   const sponsorName = "Ibra-Heem";
@@ -776,109 +728,105 @@ export default function Home() {
                 </h1>
 
                 <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:text-base">
-                  Check today’s games first, then switch to the full week when
-                  you need the wider scoreboard.
+                  Today first. Full week when you need it.
                 </p>
               </div>
 
               <div className="hidden rounded-3xl bg-[#07111f] px-5 py-4 text-right text-white lg:block">
                 <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-white/45">
-                  Games today
+                  Next tipoff
                 </p>
                 <p className="mt-1 font-[family-name:var(--font-display)] text-5xl font-black">
-                  {todayGames.length}
+                  {nextTipoffLabel}
                 </p>
               </div>
             </div>
           </div>
         </header>
 
-        <div className="sticky top-0 z-20 mb-4 -mx-4 border-y border-white/10 bg-[#07111f]/82 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 md:top-0">
+        <div className="sticky top-0 z-20 mb-5 -mx-4 border-y border-white/10 bg-[#07111f]/82 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 md:top-0">
           <div className="mx-auto max-w-7xl">
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+              <section className="flex gap-2 overflow-x-auto pr-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <FilterPill
+                  label="Today"
+                  count={todayGames.length}
+                  active={viewScope === "today"}
+                  onClick={() => setViewScope("today")}
+                />
+
+                <FilterPill
+                  label="Week"
+                  count={games.length}
+                  active={viewScope === "week"}
+                  onClick={() => setViewScope("week")}
+                />
+
+                <FilterPill
+                  label="Cards"
+                  active={displayMode === "cards"}
+                  onClick={() => setDisplayMode("cards")}
+                  subtle
+                />
+
+                <FilterPill
+                  label="Compact"
+                  active={displayMode === "compact"}
+                  onClick={() => setDisplayMode("compact")}
+                  subtle
+                />
+              </section>
+
+              <section className="flex gap-2 overflow-x-auto pr-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end lg:pr-0">
+                {filterOptions.map((option) => (
+                  <FilterPill
+                    key={option.value}
+                    label={option.label}
+                    active={activeFilter === option.value}
+                    onClick={() => setActiveFilter(option.value)}
+                  />
+                ))}
+              </section>
+            </div>
+
+            <div className="mt-3 flex flex-col gap-1 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="mb-2 hidden font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-[0.18em] text-white/35 lg:block">
-                  Scope & View
-                </p>
-
-                <section className="flex gap-2 overflow-x-auto pr-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <FilterPill
-                    label="Today"
-                    count={todayGames.length}
-                    active={viewScope === "today"}
-                    onClick={() => setViewScope("today")}
-                  />
-
-                  <FilterPill
-                    label="Week"
-                    count={games.length}
-                    active={viewScope === "week"}
-                    onClick={() => setViewScope("week")}
-                  />
-
-                  <FilterPill
-                    label="Cards"
-                    active={displayMode === "cards"}
-                    onClick={() => setDisplayMode("cards")}
-                  />
-
-                  <FilterPill
-                    label="Compact"
-                    active={displayMode === "compact"}
-                    onClick={() => setDisplayMode("compact")}
-                  />
-                </section>
+                {nextGame
+                  ? nextGame.status === "live"
+                    ? `Live now · ${nextGame.matchup}`
+                    : `Next tipoff · ${formatGameTime(nextGame.date)}`
+                  : "No upcoming games"}
               </div>
 
               <div>
-                <p className="mb-2 hidden text-right font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-[0.18em] text-white/35 lg:block">
-                  Filter
-                </p>
-
-                <section className="flex gap-2 overflow-x-auto pr-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end lg:pr-0">
-                  {filterOptions.map((option) => (
-                    <FilterPill
-                      key={option.value}
-                      label={option.label}
-                      count={option.count}
-                      active={activeFilter === option.value}
-                      onClick={() => setActiveFilter(option.value)}
-                    />
-                  ))}
-                </section>
+                {sponsorPrefix}{" "}
+                <a
+                  href={sponsorUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-black text-white underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
+                >
+                  {sponsorName}
+                </a>
               </div>
             </div>
           </div>
         </div>
 
-        <InfoRail
-          games={games}
-          sponsorPrefix={sponsorPrefix}
-          sponsorName={sponsorName}
-          sponsorUrl={sponsorUrl}
-        />
-
         {sections.length > 0 ? (
           <div className="space-y-7 sm:space-y-8">
             {sections.map((section) => (
               <section key={`${section.title}-${section.eyebrow || ""}`}>
-                <div className="mb-3 flex items-end justify-between gap-3">
-                  <div>
-                    {section.eyebrow && (
-                      <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-orange-300">
-                        {section.eyebrow}
-                      </p>
-                    )}
+                <div className="mb-3">
+                  {section.eyebrow && (
+                    <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-orange-300">
+                      {section.eyebrow}
+                    </p>
+                  )}
 
-                    <h2 className="font-[family-name:var(--font-display)] text-4xl font-black uppercase leading-none tracking-tight text-white">
-                      {section.title}
-                    </h2>
-                  </div>
-
-                  <p className="font-[family-name:var(--font-display)] text-base font-black uppercase tracking-wide text-white/45">
-                    {section.games.length}{" "}
-                    {section.games.length === 1 ? "game" : "games"}
-                  </p>
+                  <h2 className="font-[family-name:var(--font-display)] text-4xl font-black uppercase leading-none tracking-tight text-white">
+                    {getSectionDisplayTitle(section)}
+                  </h2>
                 </div>
 
                 {displayMode === "cards" ? (
@@ -900,7 +848,7 @@ export default function Home() {
         ) : !hasLoadedOnce ? (
           <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
             <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-              Loading this week’s games...
+              Loading scores...
             </p>
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
