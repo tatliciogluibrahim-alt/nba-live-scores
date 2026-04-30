@@ -440,40 +440,30 @@ function EmptyState({
   );
 }
 
-function HeroMetaCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function BrandLockup() {
   return (
-    <div className="rounded-2xl bg-[#07111f] px-4 py-3 text-white ring-1 ring-white/10">
-      <p className="font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
-        {label}
-      </p>
-      <p className="mt-1 text-lg font-black tracking-tight text-white">
-        {value}
-      </p>
-    </div>
-  );
-}
+    <div className="hidden lg:flex lg:justify-end">
+      <div className="flex items-center gap-5 rounded-[2rem] bg-[#07111f] px-6 py-5 shadow-2xl shadow-orange-950/20 ring-1 ring-white/10">
+        <div className="flex h-24 w-24 items-center justify-center rounded-[1.45rem] bg-[#0b1629] ring-1 ring-white/10">
+          <img
+            src="/favicon.svg"
+            alt="No Noise Scores logo"
+            className="h-14 w-14"
+          />
+        </div>
 
-function HeroMetaPill({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-full bg-[#07111f] px-3 py-2 text-white ring-1 ring-white/10">
-      <p className="font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
-        {label}
-      </p>
-      <p className="mt-0.5 text-sm font-black tracking-tight text-white">
-        {value}
-      </p>
+        <div className="min-w-0">
+          <p className="font-[family-name:var(--font-display)] text-[2.2rem] font-black uppercase leading-[0.88] tracking-[-0.03em] text-orange-500">
+            No Noise
+            <br />
+            Scores
+          </p>
+
+          <p className="mt-3 max-w-[13rem] text-base font-medium leading-6 text-white/55">
+            Clean live scores and schedules
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -554,68 +544,49 @@ export default function Home() {
       : `Next tipoff · ${formatGameTime(nextGame.date)}`
     : "No upcoming games";
 
-  const nextTipoffTime = nextGame ? formatGameTime(nextGame.date) : "TBD";
-
   const sponsorName = "Ibra-Heem";
   const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
-
-  const hasPlayoffCoverage = games.some(
-    (game) => game.gameContext || game.seriesSummary
-  );
-
-  const sponsorPrefix = hasPlayoffCoverage ? "Coverage by" : "Presented by";
 
   return (
     <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-28 pt-4 text-white sm:px-6 md:py-8">
       <div className="mx-auto max-w-7xl">
-      <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
-  <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.14),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-4 sm:p-6 lg:p-7">
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center">
-      <div>
-        <div className="inline-flex items-center gap-2 rounded-full bg-[#07111f] px-3 py-1.5 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white sm:text-sm">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#ff7a1a]" />
-          NBA
-        </div>
+        <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
+          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-4 sm:p-6 lg:p-7">
+            <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-center">
+              <div>
+                <div className="mt-1 sm:mt-2">
+                  <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.7rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.15rem]">
+                    NBA scores,
+                    <br />
+                    no noise.
+                  </h1>
 
-        <div className="mt-4 sm:mt-5">
-          <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.7rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.15rem]">
-            NBA scores,
-            <br />
-            no noise.
-          </h1>
+                  <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
+                    Today first. Full week when you need it.
+                  </p>
+                </div>
 
-          <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
-            Today first. Full week when you need it.
-          </p>
-        </div>
-      </div>
+                <div className="mt-4 flex items-center gap-3 lg:hidden">
+                  <img
+                    src="/favicon.svg"
+                    alt="No Noise Scores"
+                    className="h-9 w-9"
+                  />
+                  <div>
+                    <p className="font-[family-name:var(--font-display)] text-lg font-black uppercase leading-none tracking-tight text-orange-500">
+                      No Noise Scores
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-slate-500">
+                      Clean live scores and schedules
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-      <div className="hidden lg:flex lg:justify-end">
-        <div className="flex items-center gap-4 rounded-[2rem] bg-[#07111f] px-5 py-5 shadow-2xl shadow-orange-950/20 ring-1 ring-white/10">
-          <div className="flex h-20 w-20 items-center justify-center rounded-[1.4rem] bg-[#07111f] ring-1 ring-white/8">
-            <img
-              src="/favicon.svg"
-              alt="No Noise Scores logo"
-              className="h-12 w-12"
-            />
+              <BrandLockup />
+            </div>
           </div>
-
-          <div className="min-w-0">
-            <p className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-[0.28em] text-[#ff7a1a]">
-              No Noise
-            </p>
-            <p className="mt-1 font-[family-name:var(--font-display)] text-[2rem] font-black uppercase leading-[0.9] tracking-[-0.03em] text-white">
-              Scores
-            </p>
-            <p className="mt-2 text-sm font-medium text-white/55">
-              Clean live scores and schedules
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</header>
+        </header>
 
         <div className="sticky top-0 z-20 mb-5 -mx-4 border-y border-white/10 bg-[#06101f]/92 px-4 py-2.5 backdrop-blur-md sm:-mx-6 sm:px-6">
           <div className="mx-auto max-w-7xl">
@@ -668,16 +639,16 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[13px] leading-5 text-white/60">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[13px] leading-5 text-white/65">
                 <div>{nextTipoffLabel}</div>
 
                 <div>
-                  {sponsorPrefix}{" "}
+                  Sponsored by{" "}
                   <a
                     href={sponsorUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-black text-white/85 underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
+                    className="font-black text-white underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
                   >
                     {sponsorName}
                   </a>
