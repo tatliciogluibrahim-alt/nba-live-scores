@@ -51,6 +51,7 @@ type NormalizedGame = {
   status: "live" | "upcoming" | "final";
   statusText: string;
   matchup: string;
+  gameContext: string;
   seriesSummary: string;
   home: {
     name: string;
@@ -147,15 +148,25 @@ function getStatusText(event: ESPNEvent) {
   return event.status?.type?.shortDetail || "Upcoming";
 }
 
+function cleanSeriesSummary(summary: string) {
+  if (!summary) return "";
+
+  return summary
+    .replace(/\blead series\b/i, "leads series")
+    .replace(/\blead\b/i, "leads")
+    .trim();
+}
+
 function getSeriesSummary(event: ESPNEvent) {
   const competition = event.competitions?.[0];
 
   const directSummary =
     competition?.series?.summary ||
     competition?.series?.description ||
-    competition?.series?.title;
+    competition?.series?.title ||
+    "";
 
-  if (directSummary) return directSummary;
+  if (directSummary) return cleanSeriesSummary(directSummary);
 
   const playoffNote = competition?.notes?.find((note) => {
     const headline = note.headline?.toLowerCase() || "";
@@ -167,7 +178,26 @@ function getSeriesSummary(event: ESPNEvent) {
     );
   });
 
-  return playoffNote?.headline || "";
+  return cleanSeriesSummary(playoffNote?.headline || "");
+}
+
+function cleanGameContext(headline: string) {
+  if (!headline) return "";
+
+  return headline
+    .replace(/\s*-\s*/g, " • ")
+    .replace("If Necessary", "if necessary")
+    .trim();
+}
+
+function getGameContext(event: ESPNEvent) {
+  const competition = event.competitions?.[0];
+
+  const eventNote = competition?.notes?.find((note) => {
+    return note.type === "event" && note.headline;
+  });
+
+  return cleanGameContext(eventNote?.headline || "");
 }
 
 function normalizeGame(event: ESPNEvent): NormalizedGame {
@@ -177,6 +207,7 @@ function normalizeGame(event: ESPNEvent): NormalizedGame {
     status: getGameStatus(event),
     statusText: getStatusText(event),
     matchup: event.shortName || event.name || "",
+    gameContext: getGameContext(event),
     seriesSummary: getSeriesSummary(event),
     home: getTeam(event, "home"),
     away: getTeam(event, "away"),

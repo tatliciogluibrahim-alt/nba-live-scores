@@ -17,6 +17,7 @@ type Game = {
   status: Exclude<GameStatus, "all">;
   statusText: string;
   matchup: string;
+  gameContext: string;
   seriesSummary: string;
   home: Team;
   away: Team;
@@ -228,9 +229,19 @@ function GameCard({ game }: { game: Game }) {
         <TeamLine game={game} side="home" />
       </div>
 
-      {game.seriesSummary && (
-        <div className="mt-3 rounded-2xl bg-slate-950 px-3 py-2 text-xs font-black uppercase tracking-wide text-white">
-          {game.seriesSummary}
+      {(game.gameContext || game.seriesSummary) && (
+        <div className="mt-3 space-y-2">
+          {game.gameContext && (
+            <div className="rounded-2xl bg-orange-50 px-3 py-2 text-xs font-black uppercase tracking-wide text-orange-800 ring-1 ring-orange-100">
+              {game.gameContext}
+            </div>
+          )}
+
+          {game.seriesSummary && (
+            <div className="rounded-2xl bg-slate-950 px-3 py-2 text-xs font-black uppercase tracking-wide text-white">
+              {game.seriesSummary}
+            </div>
+          )}
         </div>
       )}
     </article>
