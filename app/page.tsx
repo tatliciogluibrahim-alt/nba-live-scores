@@ -273,7 +273,7 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3 py-1.5 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide transition sm:px-3.5 sm:py-2 sm:text-sm ${
+      className={`shrink-0 rounded-full px-3 py-1.5 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide transition sm:px-3.5 sm:py-1.5 sm:text-xs ${
         active
           ? "bg-orange-500 text-white shadow-md shadow-orange-950/20"
           : "bg-white/10 text-white/80 ring-1 ring-white/10 hover:bg-white/15"
@@ -299,15 +299,13 @@ function ModeToggle({
   onChange: (value: DisplayMode) => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5 text-xs text-white/50">
-      <span className="hidden sm:inline">View</span>
-
+    <div className="inline-flex items-center gap-1 rounded-full bg-white/6 p-1 ring-1 ring-white/10">
       <button
         onClick={() => onChange("compact")}
-        className={`rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide transition ${
+        className={`rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide transition sm:text-[11px] ${
           value === "compact"
             ? "bg-white text-slate-950"
-            : "bg-white/8 text-white/65 ring-1 ring-white/10"
+            : "text-white/65 hover:bg-white/8"
         }`}
       >
         Compact
@@ -315,10 +313,10 @@ function ModeToggle({
 
       <button
         onClick={() => onChange("cards")}
-        className={`rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide transition ${
+        className={`rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide transition sm:text-[11px] ${
           value === "cards"
             ? "bg-white text-slate-950"
-            : "bg-white/8 text-white/65 ring-1 ring-white/10"
+            : "text-white/65 hover:bg-white/8"
         }`}
       >
         Cards
@@ -699,20 +697,9 @@ export default function Home() {
       <div className="mx-auto max-w-7xl">
         <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
           <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.12),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-4 sm:p-6">
-            <div className="flex items-start justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#07111f] px-3 py-1.5 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white sm:text-sm">
-                <span className="h-2 w-2 rounded-full bg-orange-500" />
-                No Noise Scores
-              </div>
-
-              <div className="rounded-full bg-[#07111f] px-3 py-1.5 text-right text-white ring-1 ring-white/10">
-                <p className="font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
-                  Today
-                </p>
-                <p className="mt-0.5 font-[family-name:var(--font-display)] text-lg font-black leading-none">
-                  {todayGames.length}
-                </p>
-              </div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#07111f] px-3 py-1.5 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white sm:text-sm">
+              <span className="h-2 w-2 rounded-full bg-orange-500" />
+              No Noise Scores
             </div>
 
             <div className="mt-4 sm:mt-5">
@@ -729,11 +716,11 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="sticky top-0 z-20 mb-5 -mx-4 border-y border-white/10 bg-[#06101f]/94 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
+        <div className="sticky top-0 z-20 mb-5 -mx-4 border-y border-white/10 bg-[#06101f]/92 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6">
           <div className="mx-auto max-w-7xl">
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex gap-2 overflow-x-auto pr-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <FilterPill
                     label="Today"
                     count={todayGames.length}
@@ -754,7 +741,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="flex gap-2 overflow-x-auto pr-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <FilterPill
                   label="All"
                   count={counts.all}
@@ -784,7 +771,7 @@ export default function Home() {
                 />
               </div>
 
-              <div className="flex flex-col gap-1 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between sm:text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[13px] leading-5 text-white/60">
                 <div>{nextTipoffLabel}</div>
 
                 <div>
@@ -793,7 +780,7 @@ export default function Home() {
                     href={sponsorUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-black text-white/90 underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
+                    className="font-black text-white/85 underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
                   >
                     {sponsorName}
                   </a>
