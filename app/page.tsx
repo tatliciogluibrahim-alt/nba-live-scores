@@ -443,14 +443,18 @@ function EmptyState({
 function BrandLockup() {
   return (
     <div className="hidden lg:flex lg:justify-end">
-      <div className="flex items-center gap-5 rounded-[2rem] bg-[#07111f] px-6 py-5 shadow-2xl shadow-orange-950/20 ring-1 ring-white/10">
-        <div className="flex h-24 w-24 items-center justify-center rounded-[1.45rem] bg-[#0b1629] ring-1 ring-white/10">
+      <div className="flex h-[220px] w-full max-w-[320px] items-center justify-center rounded-[2rem] bg-[#07111f] shadow-2xl shadow-orange-950/20 ring-1 ring-white/10">
+        <div className="flex h-28 w-28 items-center justify-center rounded-[1.75rem] bg-[#0b1629] ring-1 ring-white/10">
           <img
             src="/favicon.svg"
             alt="No Noise Scores logo"
-            className="h-14 w-14"
+            className="h-16 w-16"
           />
         </div>
+      </div>
+    </div>
+  );
+}
 
         <div className="min-w-0">
           <p className="font-[family-name:var(--font-display)] text-[2.2rem] font-black uppercase leading-[0.88] tracking-[-0.03em] text-orange-500">
@@ -552,8 +556,8 @@ export default function Home() {
       <div className="mx-auto max-w-7xl">
         <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
           <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-4 sm:p-6 lg:p-7">
-            <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-center">
-              <div>
+<div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
+                <div>
                 <div className="mt-1 sm:mt-2">
                   <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.7rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.15rem]">
                     NBA scores,
