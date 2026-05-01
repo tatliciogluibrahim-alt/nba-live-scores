@@ -567,7 +567,7 @@ export default function Home() {
           <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-5 sm:p-6 lg:p-7">
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div>
-                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.45rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.15rem]">
+                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.35rem] font-black uppercase leading-[0.92] tracking-[-0.035em] text-slate-950 sm:text-6xl sm:leading-[0.9] lg:text-[5rem]">
                   NBA scores,
                   <br />
                   no noise.
@@ -597,8 +597,8 @@ export default function Home() {
           </div>
         </header>
 
-<div className="fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+0.45rem)] z-[999] px-3 sm:px-6 md:top-3">
-  <div className="mx-auto max-w-7xl rounded-[1.15rem] border border-white/10 bg-[#06101f]/82 px-3 py-2 shadow-xl shadow-black/25 backdrop-blur-xl">
+<div className="sticky top-2 z-[999] mb-6 -mx-4 px-4 pt-2 sm:-mx-6 sm:px-6 md:top-3">
+  <div className="mx-auto max-w-7xl rounded-[1.15rem] border border-white/10 bg-[#06101f]/92 px-3 py-2 shadow-xl shadow-black/25 backdrop-blur-xl sm:px-4">
     <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <FilterPill
@@ -648,8 +648,6 @@ export default function Home() {
     </div>
   </div>
 </div>
-
-<div className="h-[86px] sm:h-[72px] lg:h-[58px]" />
 
         {sections.length > 0 ? (
           <div className="space-y-7 sm:space-y-8">
