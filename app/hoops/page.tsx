@@ -22,9 +22,9 @@ type LeaderboardEntry = {
   createdAt: string;
 };
 
-const GAME_SECONDS = 60;
-const BEST_SCORE_STORAGE_KEY = "no-noise-hoops-best-score";
-const LEADERBOARD_STORAGE_KEY = "no-noise-hoops-top-10";
+const GAME_SECONDS = 30;
+const BEST_SCORE_STORAGE_KEY = "no-noise-hoops-best-score-30s";
+const LEADERBOARD_STORAGE_KEY = "no-noise-hoops-top-10-30s";
 
 function triggerLightHaptic() {
   if (typeof navigator !== "undefined" && navigator.vibrate) {
@@ -111,7 +111,7 @@ function BackToScoresLink() {
   return (
     <Link
       href="/"
-      className="inline-flex items-center rounded-full bg-[#fffaf2] px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide text-slate-950 shadow-lg shadow-black/15 ring-1 ring-orange-100/70 transition hover:bg-orange-500 hover:text-white hover:ring-orange-500/30"
+      className="inline-flex items-center rounded-full bg-[#07111f] px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide text-white shadow-lg shadow-black/25 ring-1 ring-white/15 transition hover:bg-orange-500 hover:text-white hover:ring-orange-500/30"
     >
       Back to Scores
     </Link>
@@ -300,7 +300,7 @@ export default function HoopsPage() {
 
     const interval = setInterval(() => {
       setMeterValue((currentValue) => {
-        let nextValue = currentValue + meterDirectionRef.current * 1.15;
+        let nextValue = currentValue + meterDirectionRef.current * 1.65;
 
         if (nextValue >= 100) {
           nextValue = 100;
@@ -345,8 +345,8 @@ export default function HoopsPage() {
     triggerLightHaptic();
 
     const distanceFromPerfect = Math.abs(meterValue - 50);
-    const isPerfect = distanceFromPerfect <= 6;
-    const makeChance = Math.max(0.18, 1 - distanceFromPerfect / 68);
+    const isPerfect = distanceFromPerfect <= 4;
+    const makeChance = Math.max(0.12, 1 - distanceFromPerfect / 56);
     const isMake = isPerfect || Math.random() < makeChance;
     const points = isPerfect ? 3 : isMake ? 2 : -1;
     const nextShotId = shotIdRef.current + 1;
@@ -518,7 +518,7 @@ export default function HoopsPage() {
                 {phase === "playing" ? "Shoot" : "Shoot Around"}
               </button>
 
-              <p className="mt-3 text-center text-xs font-semibold text-white/35">
+              <p className="mt-3 text-center text-xs font-semibold text-white/45">
                 Tap, click, or press spacebar to shoot. Misses cost 1 point.
               </p>
             </div>
@@ -535,7 +535,7 @@ export default function HoopsPage() {
                     Quiet shootaround.
                   </h2>
                   <p className="mt-4 text-sm font-medium leading-6 text-slate-500">
-                    Sixty seconds. Time the meter. Perfect releases are worth three.
+                    Thirty seconds. Time the meter. Perfect releases are worth three.
                   </p>
                 </div>
 
@@ -658,7 +658,7 @@ export default function HoopsPage() {
                       <button
                         type="button"
                         onClick={handleSaveScore}
-                        className="rounded-full bg-slate-950 px-4 py-2 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white transition hover:bg-orange-500"
+                        className="rounded-full bg-[#07111f] px-4 py-2 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white shadow-md shadow-black/15 ring-1 ring-slate-800 transition hover:bg-orange-500 hover:ring-orange-500"
                       >
                         Save
                       </button>
@@ -683,7 +683,7 @@ export default function HoopsPage() {
                   </button>
                   <Link
                     href="/"
-                    className="rounded-full bg-slate-950 px-5 py-3 text-center font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white ring-1 ring-slate-800 transition hover:bg-orange-500 hover:ring-orange-500"
+                    className="rounded-full bg-[#07111f] px-5 py-3 text-center font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white shadow-md shadow-black/15 ring-1 ring-slate-800 transition hover:bg-orange-500 hover:ring-orange-500"
                   >
                     Back to Scores
                   </Link>
