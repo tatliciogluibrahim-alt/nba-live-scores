@@ -344,7 +344,7 @@ function FilterPill({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`shrink-0 rounded-full px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide transition sm:px-3.5 sm:text-xs ${
+      className={`shrink-0 rounded-full px-2.5 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-wide transition sm:px-3 sm:text-xs ${
         active
           ? "bg-orange-500 text-white shadow-md shadow-orange-950/20"
           : "bg-white/10 text-white/75 ring-1 ring-white/10 hover:bg-white/15"
@@ -372,7 +372,7 @@ function FavoriteTeamSelect({
   onChange: (teamAbbreviation: string | null) => void;
 }) {
   return (
-    <label className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 py-1.5 pl-3 pr-2 font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide text-white/75 ring-1 ring-white/10 sm:text-xs">
+    <label className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 py-1.5 pl-2.5 pr-2 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-wide text-white/75 ring-1 ring-white/10 sm:text-xs">
       <span className="text-white/45">Team:</span>
 
       <span className="relative">
