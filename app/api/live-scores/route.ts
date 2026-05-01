@@ -103,8 +103,20 @@ function formatDateForESPN(date: Date) {
   return `${year}${month}${day}`;
 }
 
+function getScoreboardToday() {
+  const now = new Date();
+  const scoreboardToday = new Date(now);
+
+  if (now.getHours() < 5) {
+    scoreboardToday.setDate(scoreboardToday.getDate() - 1);
+  }
+
+  return scoreboardToday;
+}
+
 function getWeekDates() {
-  const monday = getMonday(new Date());
+  const monday = getMonday(getScoreboardToday());
+
 
   return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(monday);

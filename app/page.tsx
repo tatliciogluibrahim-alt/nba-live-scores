@@ -485,39 +485,53 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState<GameStatus>("all");
   const [viewScope, setViewScope] = useState<ViewScope>("today");
 
-  useEffect(() => {
-    const controller = new AbortController();
+ useEffect(() => {
+  let isMounted = true;
+  let isFetching = false;
+  let controller: AbortController | null = null;
 
-    async function fetchGames() {
-      try {
-        const response = await fetch("/api/live-scores", {
-          signal: controller.signal,
-        });
+  async function fetchGames() {
+    if (isFetching) return;
 
-        if (!response.ok) throw new Error("Could not fetch games");
+    isFetching = true;
+    controller = new AbortController();
 
-        const data = await response.json();
+    try {
+      const response = await fetch("/api/live-scores", {
+        signal: controller.signal,
+      });
+
+      if (!response.ok) throw new Error("Could not fetch games");
+
+      const data = await response.json();
+
+      if (isMounted) {
         setGames(data.games);
-      } catch {
-        if (!controller.signal.aborted) {
-          setGames([]);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setHasLoadedOnce(true);
-        }
       }
+    } catch {
+      if (isMounted && !controller.signal.aborted) {
+        setGames([]);
+      }
+    } finally {
+      if (isMounted) {
+        setHasLoadedOnce(true);
+      }
+
+      isFetching = false;
     }
+  }
 
-    fetchGames();
+  fetchGames();
 
-    const interval = setInterval(fetchGames, 30000);
+  const interval = setInterval(fetchGames, 30000);
 
-    return () => {
-      controller.abort();
-      clearInterval(interval);
-    };
-  }, []);
+  return () => {
+    isMounted = false;
+    controller?.abort();
+    clearInterval(interval);
+  };
+}, []);
+
 
   const todayGames = useMemo(() => {
     const scoreboardToday = getScoreboardToday();
@@ -556,15 +570,23 @@ export default function Home() {
   }, [scopedGames]);
 
   const nextUpcomingGame = useMemo(() => {
-    return games.reduce<Game | undefined>((next, game) => {
-      if (game.status !== "upcoming") return next;
-      if (!next) return game;
+  let nextGame: Game | undefined;
+  let nextTime = Infinity;
 
-      return new Date(game.date).getTime() < new Date(next.date).getTime()
-        ? game
-        : next;
-    }, undefined);
-  }, [games]);
+  games.forEach((game) => {
+    if (game.status !== "upcoming") return;
+
+    const gameTime = new Date(game.date).getTime();
+
+    if (gameTime < nextTime) {
+      nextTime = gameTime;
+      nextGame = game;
+    }
+  });
+
+  return nextGame;
+}, [games]);
+
 
   const sponsorName = "Ibra-Heem";
   const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
