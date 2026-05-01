@@ -597,7 +597,7 @@ export default function Home() {
           </div>
         </header>
 
-<div className="sticky top-2 z-[999] mb-6 -mx-4 px-4 pt-2 sm:-mx-6 sm:px-6 md:top-3">
+<div className="mx-auto max-w-7xl rounded-[1.15rem] border border-white/10 bg-[#06101f]/92 px-3 py-2 shadow-xl shadow-black/25 backdrop-blur-xl sm:px-4">
   <div className="mx-auto max-w-7xl rounded-[1.15rem] border border-white/10 bg-[#06101f]/92 px-3 py-2 shadow-xl shadow-black/25 backdrop-blur-xl sm:px-4">
     <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
