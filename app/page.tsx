@@ -2,9 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type GameStatus = "all" | "live" | "upcoming" | "final";
-type ViewScope = "today" | "week";
-
 type Team = {
   name: string;
   abbreviation: string;
@@ -15,7 +12,7 @@ type Team = {
 type Game = {
   id: string;
   date: string;
-  status: Exclude<GameStatus, "all">;
+  status: "live" | "upcoming" | "final";
   statusText: string;
   matchup: string;
   gameContext: string;
@@ -24,696 +21,489 @@ type Game = {
   away: Team;
 };
 
-type GameSection = {
-  title: string;
-  eyebrow?: string;
+type ApiResponse = {
   games: Game[];
+  count: number;
+  updatedAt: string;
+  error?: string;
 };
 
-function formatGameDateTime(date: string) {
-  const gameDate = new Date(date);
+type ScopeFilter = "today" | "week";
+type StatusFilter = "all" | "live" | "upcoming" | "final";
 
-  const day = gameDate.toLocaleDateString([], {
-    weekday: "short",
-  });
+const POLL_INTERVAL = 30000;
 
-  const time = gameDate.toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+export default function HomePage() {
+  const [games, setGames] = useState<Game[]>([]);
+  const [scope, setScope] = useState<ScopeFilter>("today");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [loading, setLoading] = useState(true);
 
-  return `${day} • ${time}`;
-}
+  useEffect(() => {
+    let mounted = true;
 
-function formatGameTime(date: string) {
-  return new Date(date).toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+    const fetchGames = async () => {
+      try {
+        const response = await fetch("/api/live-scores", { cache: "no-store" });
+        const data: ApiResponse = await response.json();
 
-function getLocalDateKey(date: string) {
-  const gameDate = new Date(date);
-  const year = gameDate.getFullYear();
-  const month = String(gameDate.getMonth() + 1).padStart(2, "0");
-  const day = String(gameDate.getDate()).padStart(2, "0");
+        if (!mounted) return;
+        setGames(Array.isArray(data.games) ? data.games : []);
+      } catch (error) {
+        console.error("Failed to fetch games", error);
+        if (!mounted) return;
+        setGames([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
 
-  return `${year}-${month}-${day}`;
-}
+    fetchGames();
+    const interval = setInterval(fetchGames, POLL_INTERVAL);
 
-function isSameLocalDay(dateA: Date, dateB: Date) {
-  return (
-    dateA.getFullYear() === dateB.getFullYear() &&
-    dateA.getMonth() === dateB.getMonth() &&
-    dateA.getDate() === dateB.getDate()
-  );
-}
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
-function isTomorrow(date: Date) {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const todayGames = useMemo(() => {
+    return games.filter((game) => isSameLocalDay(game.date, new Date()));
+  }, [games]);
 
-  return isSameLocalDay(date, tomorrow);
-}
+  const weekGames = useMemo(() => games, [games]);
 
-function getSectionTitle(date: string) {
-  const gameDate = new Date(date);
-  const today = new Date();
+  const scopedGames = scope === "today" ? todayGames : weekGames;
 
-  if (isSameLocalDay(gameDate, today)) return "Today";
-  if (isTomorrow(gameDate)) return "Tomorrow";
+  const filteredGames = useMemo(() => {
+    if (statusFilter === "all") return scopedGames;
+    return scopedGames.filter((game) => game.status === statusFilter);
+  }, [scopedGames, statusFilter]);
 
-  return gameDate.toLocaleDateString([], {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
-}
+  const liveGames = filteredGames.filter((game) => game.status === "live");
+  const upcomingGames = filteredGames.filter((game) => game.status === "upcoming");
+  const finalGames = filteredGames.filter((game) => game.status === "final");
 
-function getStatusClasses(status: Game["status"]) {
-  if (status === "live") return "bg-orange-100 text-orange-800 ring-orange-200";
-  if (status === "final") return "bg-slate-200 text-slate-700 ring-slate-300";
-  return "bg-blue-100 text-blue-800 ring-blue-200";
-}
+  const groupedUpcoming = groupGamesByDay(upcomingGames);
+  const groupedFinal = groupGamesByDay(finalGames);
 
-function getCardAccentClasses(status: Game["status"]) {
-  if (status === "live") return "border-t-[3px] border-orange-500";
-  if (status === "final") return "border-t-[3px] border-emerald-600";
-  return "border-t-[3px] border-blue-500";
-}
-
-function getStatusLabel(status: Game["status"]) {
-  if (status === "live") return "LIVE";
-  if (status === "final") return "FINAL";
-  return "UPCOMING";
-}
-
-function getTeamEdgeLabel(game: Game, side: "away" | "home") {
-  if (game.status === "upcoming") return null;
-
-  const teamScore = game[side].score;
-  const otherSide = side === "away" ? "home" : "away";
-  const otherScore = game[otherSide].score;
-
-  if (teamScore <= otherScore) return null;
-
-  return game.status === "final" ? "WON" : "LEAD";
-}
-
-function getTeamEdgeClasses(game: Game) {
-  if (game.status === "final") return "bg-emerald-600 text-white";
-  return "bg-orange-500 text-white";
-}
-
-function getWinningTeam(game: Game) {
-  if (game.status === "upcoming") return null;
-
-  if (game.away.score > game.home.score) return game.away;
-  if (game.home.score > game.away.score) return game.home;
-
-  return null;
-}
-
-function getFinalSummary(game: Game) {
-  if (game.status !== "final") return "";
-
-  const winner = getWinningTeam(game);
-
-  if (!winner) return "Final";
-
-  return `${winner.abbreviation} won ${game.away.score}-${game.home.score}`;
-}
-
-function getGameSubStatus(game: Game) {
-  if (game.status === "live") return `Live now · ${game.statusText}`;
-  if (game.status === "final") return getFinalSummary(game);
-
-  const gameDate = new Date(game.date);
-  const now = new Date();
-  const diffMs = gameDate.getTime() - now.getTime();
-
-  if (diffMs <= 0) return "Starting soon";
-
-  const minutes = Math.round(diffMs / 60000);
-  const hours = Math.round(minutes / 60);
-
-  if (minutes < 60) return `Starts in ${minutes} min`;
-  if (hours < 12) return `Starts in ${hours} ${hours === 1 ? "hr" : "hrs"}`;
-  if (isSameLocalDay(gameDate, now)) return "Starts tonight";
-  if (isTomorrow(gameDate)) return "Tomorrow";
-
-  return "Upcoming";
-}
-
-function sortGamesForDisplay(gamesToSort: Game[]) {
-  const statusRank = {
-    live: 0,
-    upcoming: 1,
-    final: 2,
-  };
-
-  return [...gamesToSort].sort((a, b) => {
-    const statusDifference = statusRank[a.status] - statusRank[b.status];
-
-    if (statusDifference !== 0) return statusDifference;
-
-    const aTime = new Date(a.date).getTime();
-    const bTime = new Date(b.date).getTime();
-
-    if (a.status === "live" || a.status === "upcoming") return aTime - bTime;
-
-    return bTime - aTime;
-  });
-}
-
-function groupByDay(gamesToGroup: Game[], eyebrow?: string): GameSection[] {
-  const groups = new Map<string, Game[]>();
-
-  gamesToGroup.forEach((game) => {
-    const key = getLocalDateKey(game.date);
-    const existingGames = groups.get(key) || [];
-    groups.set(key, [...existingGames, game]);
-  });
-
-  return Array.from(groups.values()).map((sectionGames) => ({
-    title: getSectionTitle(sectionGames[0].date),
-    eyebrow,
-    games: sectionGames,
-  }));
-}
-
-function buildSections(
-  gamesToSection: Game[],
-  activeFilter: GameStatus
-): GameSection[] {
-  if (activeFilter === "live") {
-    return gamesToSection.length
-      ? [
-          {
-            title: "Live Now",
-            eyebrow: "Real-time scores",
-            games: gamesToSection,
-          },
-        ]
-      : [];
-  }
-
-  if (activeFilter === "upcoming") {
-    return groupByDay(gamesToSection, "Upcoming games");
-  }
-
-  if (activeFilter === "final") {
-    return groupByDay(gamesToSection, "Final scores");
-  }
-
-  const liveGames = gamesToSection.filter((game) => game.status === "live");
-  const upcomingGames = gamesToSection.filter(
-    (game) => game.status === "upcoming"
-  );
-  const finalGames = gamesToSection.filter((game) => game.status === "final");
-
-  return [
-    ...(liveGames.length
-      ? [
-          {
-            title: "Live Now",
-            eyebrow: "Real-time scores",
-            games: liveGames,
-          },
-        ]
-      : []),
-    ...groupByDay(upcomingGames, "Upcoming games"),
-    ...(finalGames.length
-      ? [
-          {
-            title: "Earlier This Week",
-            eyebrow: "Final scores",
-            games: finalGames,
-          },
-        ]
-      : []),
-  ];
-}
-
-function TeamLogo({ team }: { team: Team }) {
-  if (!team.logo) {
-    return (
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-600 sm:h-9 sm:w-9">
-        {team.abbreviation}
-      </div>
-    );
-  }
+  const todayCounts = getCounts(todayGames);
+  const weekCounts = getCounts(weekGames);
+  const activeCounts = scope === "today" ? todayCounts : weekCounts;
 
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-orange-100 sm:h-9 sm:w-9">
-      <img
-        src={team.logo}
-        alt=""
-        className="h-6 w-6 object-contain"
-        loading="lazy"
-      />
-    </div>
-  );
-}
+    <main className="min-h-screen bg-[#02122d] text-white">
+      <div className="mx-auto max-w-[1280px] px-4 pb-16 pt-4 sm:px-6 sm:pt-5 lg:px-8">
+        <Hero />
 
-function FilterPill({
-  label,
-  count,
-  active,
-  onClick,
-}: {
-  label: string;
-  count?: number;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`shrink-0 rounded-full px-3.5 py-1.5 font-[family-name:var(--font-display)] text-[0.82rem] font-black uppercase tracking-wide transition sm:px-4 sm:text-xs ${
-        active
-          ? "bg-orange-500 text-white shadow-md shadow-orange-950/20"
-          : "bg-white/10 text-white/80 ring-1 ring-white/10 hover:bg-white/15"
-      }`}
-    >
-      <span className="flex items-center gap-1.5">
-        <span>{label}</span>
-        {typeof count === "number" && (
-          <span className={active ? "text-white/90" : "text-white/50"}>
-            {count}
-          </span>
-        )}
-      </span>
-    </button>
-  );
-}
+        <div className="sticky top-0 z-30 mt-6 rounded-[24px] border border-white/10 bg-[linear-gradient(90deg,rgba(2,18,45,0.98),rgba(0,18,52,0.98))] backdrop-blur">
+          <div className="flex flex-col gap-4 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <FilterPill
+                active={scope === "today"}
+                onClick={() => setScope("today")}
+                label={`TODAY ${todayGames.length}`}
+              />
+              <FilterPill
+                active={scope === "week"}
+                onClick={() => setScope("week")}
+                label={`WEEK ${weekGames.length}`}
+              />
+            </div>
 
-function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
-  const team = game[side];
-  const showScore = game.status !== "upcoming";
-  const edgeLabel = getTeamEdgeLabel(game, side);
-
-  return (
-    <div className="flex items-center justify-between py-2.5 sm:py-3">
-      <div className="flex min-w-0 items-center gap-3">
-        <TeamLogo team={team} />
-
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-base font-black tracking-tight text-slate-950 sm:text-lg">
-              {team.abbreviation}
-            </p>
-
-            {edgeLabel && (
-              <span
-                className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide ${getTeamEdgeClasses(
-                  game
-                )}`}
-              >
-                {edgeLabel}
-              </span>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <FilterPill
+                active={statusFilter === "all"}
+                onClick={() => setStatusFilter("all")}
+                label={`ALL ${activeCounts.all}`}
+              />
+              <FilterPill
+                active={statusFilter === "live"}
+                onClick={() => setStatusFilter("live")}
+                label={`LIVE ${activeCounts.live}`}
+              />
+              <FilterPill
+                active={statusFilter === "upcoming"}
+                onClick={() => setStatusFilter("upcoming")}
+                label={`UPCOMING ${activeCounts.upcoming}`}
+              />
+              <FilterPill
+                active={statusFilter === "final"}
+                onClick={() => setStatusFilter("final")}
+                label={`FINAL ${activeCounts.final}`}
+              />
+            </div>
           </div>
+        </div>
 
-          <p className="truncate text-xs font-medium text-slate-500 sm:text-sm">
-            {team.name}
+        {loading ? (
+          <div className="mt-10 rounded-[28px] border border-white/10 bg-white/[0.03] px-6 py-10 text-center text-lg text-white/70">
+            Loading scores...
+          </div>
+        ) : filteredGames.length === 0 ? (
+          <div className="mt-10 rounded-[28px] border border-white/10 bg-white/[0.03] px-6 py-10 text-center">
+            <p className="text-2xl font-semibold text-white">No games found.</p>
+            <p className="mt-2 text-white/60">Try switching filters or scope.</p>
+          </div>
+        ) : (
+          <>
+            {liveGames.length > 0 && (
+              <section className="mt-10">
+                <SectionHeader
+                  eyebrow="REAL-TIME SCORES"
+                  title="LIVE NOW"
+                  count={`${liveGames.length} ${liveGames.length === 1 ? "GAME" : "GAMES"}`}
+                />
+
+                <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+                  {liveGames.map((game) => (
+                    <GameCard key={game.id} game={game} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {Object.entries(groupedUpcoming).map(([label, items]) => (
+              <section key={`upcoming-${label}`} className="mt-10">
+                <SectionHeader
+                  eyebrow="UPCOMING GAMES"
+                  title={label.toUpperCase()}
+                  count={`${items.length} ${items.length === 1 ? "GAME" : "GAMES"}`}
+                />
+
+                <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+                  {items.map((game) => (
+                    <GameCard key={game.id} game={game} />
+                  ))}
+                </div>
+              </section>
+            ))}
+
+            {Object.entries(groupedFinal).map(([label, items]) => (
+              <section key={`final-${label}`} className="mt-10">
+                <SectionHeader
+                  eyebrow="FINAL SCORES"
+                  title={label.toUpperCase()}
+                  count={`${items.length} ${items.length === 1 ? "GAME" : "GAMES"}`}
+                />
+
+                <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+                  {items.map((game) => (
+                    <GameCard key={game.id} game={game} />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </>
+        )}
+      </div>
+    </main>
+  );
+}
+
+function Hero() {
+  return (
+    <section className="overflow-hidden rounded-[34px] border border-[#d8d2ca] bg-[linear-gradient(90deg,#f4f1eb_0%,#f2efe9_68%,#f4dfd0_100%)] px-6 py-7 shadow-[0_20px_50px_rgba(0,0,0,0.18)] sm:px-7 sm:py-8 lg:px-8 lg:py-9">
+      <div className="grid gap-8 lg:grid-cols-[1fr_280px] lg:items-center">
+        <div>
+          <h1 className="max-w-[540px] text-[3rem] font-black uppercase leading-[0.92] tracking-[-0.04em] text-[#000c30] sm:text-[4rem] lg:text-[5rem]">
+            NBA SCORES,
+            <br />
+            NO NOISE.
+          </h1>
+
+          <p className="mt-5 text-[18px] font-medium text-[#6e7f9c] sm:text-[20px]">
+            Sponsored by{" "}
+            <a
+              href="https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo"
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-[#0c1a36] underline decoration-[#f57b20] decoration-2 underline-offset-4"
+            >
+              Ibra-Heem
+            </a>
           </p>
         </div>
-      </div>
 
-      <div className="ml-4 text-2xl font-black tabular-nums tracking-tight text-slate-950">
-        {showScore ? team.score : "–"}
+        <div className="flex items-center justify-start lg:justify-end">
+          <div className="flex items-center gap-4 rounded-[28px] bg-[#02122d] px-5 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+            <div className="flex h-[76px] w-[76px] items-center justify-center rounded-[24px] bg-[#041735] shadow-inner">
+              <div className="flex h-[54px] w-[54px] items-center justify-center rounded-[18px] bg-[#04112d] text-[28px] text-[#ff7a18]">
+                ⊛
+              </div>
+            </div>
+
+            <div className="text-[30px] font-black uppercase leading-[0.92] tracking-[-0.03em] text-[#ff7a18]">
+              NO NOISE
+              <br />
+              SCORES
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-function PlayoffBand({ game }: { game: Game }) {
-  const finalSummary = getFinalSummary(game);
-
-  if (!game.gameContext && !game.seriesSummary && !finalSummary) return null;
-
+function SectionHeader({
+  eyebrow,
+  title,
+  count,
+}: {
+  eyebrow: string;
+  title: string;
+  count: string;
+}) {
   return (
-    <div className="mt-3 rounded-[1.3rem] bg-[#07111f] px-4 py-3 text-white ring-1 ring-white/10">
-      {game.status === "final" && finalSummary && (
-        <p className="font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-emerald-300">
-          {finalSummary}
+    <div className="flex items-end justify-between gap-4">
+      <div>
+        <p className="text-[14px] font-black uppercase tracking-[0.24em] text-[#f0b36d]">
+          {eyebrow}
         </p>
-      )}
+        <h2 className="mt-1 text-[2.5rem] font-black uppercase leading-none tracking-[-0.04em] text-white sm:text-[3.25rem]">
+          {title}
+        </h2>
+      </div>
 
-      <div className="flex flex-wrap gap-x-3 gap-y-1">
-        {game.gameContext && (
-          <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-orange-300">
-            {game.gameContext}
-          </p>
-        )}
-
-        {game.seriesSummary && (
-          <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-white">
-            {game.seriesSummary}
-          </p>
-        )}
+      <div className="pb-2 text-[14px] font-black uppercase tracking-[0.22em] text-white/45">
+        {count}
       </div>
     </div>
   );
 }
 
 function GameCard({ game }: { game: Game }) {
+  const isLive = game.status === "live";
+  const isUpcoming = game.status === "upcoming";
+  const isFinal = game.status === "final";
+
+  const leader = getLeader(game);
+  const startTime = formatGameTime(game.date);
+  const matchup = game.matchup;
+  const topLine = isLive
+    ? `Live now · ${game.statusText}`
+    : isUpcoming
+    ? getUpcomingSubtext(game.date)
+    : "Final";
+
   return (
     <article
-      className={`rounded-[1.6rem] bg-[#fffaf2] p-3.5 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70 sm:rounded-[1.65rem] sm:p-4 ${getCardAccentClasses(
-        game.status
-      )}`}
+      className={`rounded-[30px] border bg-[#f4f1eb] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.2)] sm:p-5 ${
+        isLive ? "border-[#f57b20] border-[3px]" : "border-[#d7d1c9]"
+      }`}
     >
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div
-            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide ring-1 ${getStatusClasses(
-              game.status
-            )}`}
-          >
-            {game.status === "live" && (
-              <span className="h-2 w-2 animate-pulse rounded-full bg-orange-600" />
-            )}
-            {getStatusLabel(game.status)}
+      <div className="flex items-start justify-between gap-4">
+        <StatusBadge status={game.status} />
+
+        <div className="text-right">
+          <div className="text-[2.2rem] font-black uppercase leading-none tracking-[-0.04em] text-[#000c30] sm:text-[2.7rem]">
+            {isLive ? game.statusText : startTime}
           </div>
-
-          <p className="mt-2 text-sm font-bold text-slate-500">
-            {getGameSubStatus(game)}
-          </p>
-        </div>
-
-        <div className="shrink-0 text-right">
-          <p className="font-[family-name:var(--font-display)] text-[1.6rem] font-black uppercase leading-none tracking-tight text-slate-950 sm:text-xl">
-            {game.status === "live"
-              ? game.statusText
-              : formatGameDateTime(game.date)}
-          </p>
-
-          <p className="mt-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
-            {game.matchup}
-          </p>
+          <div className="mt-1 text-[13px] font-black uppercase tracking-[0.22em] text-[#72829d]">
+            {matchup}
+          </div>
         </div>
       </div>
 
-      <div className="rounded-[1.45rem] bg-white/90 px-4 py-2 ring-1 ring-orange-100/80">
-        <TeamLine game={game} side="away" />
-        <div className="h-px bg-orange-100/70" />
-        <TeamLine game={game} side="home" />
+      <div className="mt-4 text-[18px] font-semibold text-[#71819d]">{topLine}</div>
+
+      <div className="mt-4 rounded-[24px] border border-[#e5ddd1] bg-[#fbfaf7] px-4 py-3">
+        <TeamRow
+          team={game.away}
+          showLeader={leader === "away"}
+          leaderLabel={isFinal ? "WON" : "LEAD"}
+        />
+
+        <div className="my-3 border-t border-[#ede3d7]" />
+
+        <TeamRow
+          team={game.home}
+          showLeader={leader === "home"}
+          leaderLabel={isFinal ? "WON" : "LEAD"}
+        />
       </div>
 
-      <PlayoffBand game={game} />
+      {(game.gameContext || game.seriesSummary) && (
+        <div className="mt-4 rounded-[22px] bg-[#02122d] px-4 py-3 text-white">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px] font-black uppercase tracking-[0.04em]">
+            {game.gameContext && <span className="text-[#f0b36d]">{game.gameContext}</span>}
+            {game.seriesSummary && <span className="text-white">{game.seriesSummary}</span>}
+          </div>
+        </div>
+      )}
     </article>
   );
 }
 
-function EmptyState({
-  activeFilter,
-  viewScope,
-  nextGame,
+function TeamRow({
+  team,
+  showLeader,
+  leaderLabel,
 }: {
-  activeFilter: GameStatus;
-  viewScope: ViewScope;
-  nextGame?: Game;
+  team: Team;
+  showLeader: boolean;
+  leaderLabel: string;
 }) {
-  if (activeFilter === "live") {
-    return (
-      <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
-        <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-          No live games right now
-        </p>
-
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          {nextGame
-            ? `Next tipoff: ${formatGameTime(nextGame.date)} · ${nextGame.matchup}`
-            : "Check back soon for live scores."}
-        </p>
-      </section>
-    );
-  }
-
   return (
-    <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
-      <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-        No games found
-      </p>
+    <div className="grid grid-cols-[1fr_auto] items-center gap-4">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#eedfcb] bg-white">
+          {team.logo ? (
+            <img
+              src={team.logo}
+              alt={team.name}
+              className="h-8 w-8 object-contain"
+            />
+          ) : (
+            <span className="text-xs font-bold text-[#001133]">{team.abbreviation}</span>
+          )}
+        </div>
 
-      <p className="mt-2 text-sm leading-6 text-slate-500">
-        {viewScope === "today"
-          ? "Try switching to Week to see the full schedule."
-          : "Try switching filters to see more games."}
-      </p>
-    </section>
-  );
-}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[1.05rem] font-black uppercase text-[#000c30] sm:text-[1.2rem]">
+              {team.abbreviation}
+            </span>
 
-function BrandLockup() {
-  return (
-    <div className="flex items-center gap-3 lg:justify-end">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] bg-[#07111f] shadow-lg shadow-black/20 ring-1 ring-white/10 sm:h-14 sm:w-14">
-        <img
-          src="/favicon.svg"
-          alt="No Noise Scores logo"
-          className="h-7 w-7 sm:h-8 sm:w-8"
-        />
+            {showLeader && (
+              <span className="rounded-full bg-[#f57b20] px-3 py-1 text-[11px] font-black uppercase tracking-[0.05em] text-white">
+                {leaderLabel}
+              </span>
+            )}
+          </div>
+
+          <p className="truncate text-[15px] text-[#6f7f9b] sm:text-[16px]">{team.name}</p>
+        </div>
       </div>
 
-      <p className="font-[family-name:var(--font-display)] text-[1.45rem] font-black uppercase leading-[0.88] tracking-[-0.03em] text-orange-500 sm:text-[1.6rem] lg:text-[1.9rem]">
-        No Noise
-        <br />
-        Scores
-      </p>
+      <div className="text-[2rem] font-black leading-none tracking-[-0.04em] text-[#000c30] sm:text-[2.4rem]">
+        {Number.isFinite(team.score) ? team.score : 0}
+      </div>
     </div>
   );
 }
 
-export default function Home() {
-  const [games, setGames] = useState<Game[]>([]);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<GameStatus>("all");
-  const [viewScope, setViewScope] = useState<ViewScope>("today");
-
-  async function fetchGames() {
-    try {
-      const response = await fetch("/api/live-scores");
-
-      if (!response.ok) throw new Error("Could not fetch games");
-
-      const data = await response.json();
-      setGames(data.games);
-    } catch {
-      setGames([]);
-    } finally {
-      setHasLoadedOnce(true);
-    }
+function StatusBadge({ status }: { status: Game["status"] }) {
+  if (status === "live") {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border border-[#efc89b] bg-[#f8efdf] px-4 py-2 text-[14px] font-black uppercase tracking-[0.04em] text-[#b2501d]">
+        <span className="h-3 w-3 rounded-full bg-[#e67a37]" />
+        LIVE
+      </div>
+    );
   }
 
-  useEffect(() => {
-    fetchGames();
-
-    const interval = setInterval(() => {
-      fetchGames();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const todayGames = useMemo(() => {
-    const today = new Date();
-    return games.filter((game) => isSameLocalDay(new Date(game.date), today));
-  }, [games]);
-
-  const scopedGames = useMemo(() => {
-    return viewScope === "today" ? todayGames : games;
-  }, [games, todayGames, viewScope]);
-
-  const filteredGames = useMemo(() => {
-    const selectedGames =
-      activeFilter === "all"
-        ? scopedGames
-        : scopedGames.filter((game) => game.status === activeFilter);
-
-    return sortGamesForDisplay(selectedGames);
-  }, [scopedGames, activeFilter]);
-
-  const sections = useMemo(() => {
-    return buildSections(filteredGames, activeFilter);
-  }, [filteredGames, activeFilter]);
-
-  const counts = useMemo(() => {
-    return scopedGames.reduce(
-      (total, game) => {
-        total.all += 1;
-        total[game.status] += 1;
-        return total;
-      },
-      { all: 0, live: 0, upcoming: 0, final: 0 }
+  if (status === "upcoming") {
+    return (
+      <div className="inline-flex items-center rounded-full border border-[#bcd0f5] bg-[#d9e5f8] px-4 py-2 text-[14px] font-black uppercase tracking-[0.04em] text-[#2749c7]">
+        UPCOMING
+      </div>
     );
-  }, [scopedGames]);
-
-  const nextUpcomingGame = useMemo(() => {
-    return sortGamesForDisplay(
-      games.filter((game) => game.status === "upcoming")
-    )[0];
-  }, [games]);
-
-  const nextTipoffLabel = nextUpcomingGame
-    ? `Next tipoff · ${formatGameTime(nextUpcomingGame.date)}`
-    : counts.live > 0
-      ? `${counts.live} live ${counts.live === 1 ? "game" : "games"} now`
-      : "No upcoming games";
-
-  const sponsorName = "Ibra-Heem";
-  const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
+  }
 
   return (
-    <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-36 pt-4 text-white sm:px-6 md:py-8">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
-          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-5 sm:p-6 lg:p-7">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-              <div>
-                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.45rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.15rem]">
-                  NBA scores,
-                  <br />
-                  no noise.
-                </h1>
-
-                <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
-                  Today first. Full week when you need it.
-                </p>
-
-                <div className="mt-4 lg:hidden">
-                  <BrandLockup />
-                </div>
-              </div>
-
-              <div className="hidden lg:flex lg:justify-self-end">
-                <BrandLockup />
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <div className="sticky top-0 z-50 mb-5 -mx-4 px-4 pt-2 sm:-mx-6 sm:px-6 md:top-3">
-          <div className="mx-auto max-w-7xl rounded-[1.4rem] border border-white/10 bg-[#06101f]/94 px-3 py-3 shadow-2xl shadow-black/25 backdrop-blur-xl sm:px-4">
-            <div className="flex flex-col gap-3 lg:gap-2.5">
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <FilterPill
-                    label="Today"
-                    count={todayGames.length}
-                    active={viewScope === "today"}
-                    onClick={() => setViewScope("today")}
-                  />
-
-                  <FilterPill
-                    label="Week"
-                    count={games.length}
-                    active={viewScope === "week"}
-                    onClick={() => setViewScope("week")}
-                  />
-                </div>
-
-                <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
-                  <FilterPill
-                    label="All"
-                    count={counts.all}
-                    active={activeFilter === "all"}
-                    onClick={() => setActiveFilter("all")}
-                  />
-
-                  <FilterPill
-                    label="Live"
-                    count={counts.live}
-                    active={activeFilter === "live"}
-                    onClick={() => setActiveFilter("live")}
-                  />
-
-                  <FilterPill
-                    label="Upcoming"
-                    count={counts.upcoming}
-                    active={activeFilter === "upcoming"}
-                    onClick={() => setActiveFilter("upcoming")}
-                  />
-
-                  <FilterPill
-                    label="Final"
-                    count={counts.final}
-                    active={activeFilter === "final"}
-                    onClick={() => setActiveFilter("final")}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs leading-5 text-white/60">
-                <div>{nextTipoffLabel}</div>
-
-                <a
-                  href={sponsorUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full bg-white/6 px-3 py-1.5 text-white/75 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
-                >
-                  <span className="text-white/45">Sponsored by</span>
-                  <span className="font-black text-white underline decoration-orange-400 decoration-2 underline-offset-4">
-                    {sponsorName}
-                  </span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {sections.length > 0 ? (
-          <div className="space-y-7 sm:space-y-8">
-            {sections.map((section) => (
-              <section key={`${section.title}-${section.eyebrow || ""}`}>
-                <div className="mb-3 flex items-end justify-between gap-3">
-                  <div>
-                    {section.eyebrow && (
-                      <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-orange-300">
-                        {section.eyebrow}
-                      </p>
-                    )}
-
-                    <h2 className="font-[family-name:var(--font-display)] text-4xl font-black uppercase leading-none tracking-tight text-white sm:text-5xl">
-                      {section.title}
-                    </h2>
-                  </div>
-
-                  <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-white/45">
-                    {section.games.length}{" "}
-                    {section.games.length === 1 ? "game" : "games"}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {section.games.map((game) => (
-                    <GameCard key={game.id} game={game} />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        ) : !hasLoadedOnce ? (
-          <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
-            <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-              Loading scores...
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Pulling the latest scoreboard.
-            </p>
-          </section>
-        ) : (
-          <EmptyState
-            activeFilter={activeFilter}
-            viewScope={viewScope}
-            nextGame={nextUpcomingGame}
-          />
-        )}
-      </div>
-    </main>
+    <div className="inline-flex items-center rounded-full border border-[#d8dde8] bg-[#eef1f6] px-4 py-2 text-[14px] font-black uppercase tracking-[0.04em] text-[#61708b]">
+      FINAL
+    </div>
   );
+}
+
+function FilterPill({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full px-4 py-3 text-[15px] font-medium uppercase tracking-[0.02em] transition ${
+        active
+          ? "bg-[#f57b20] text-white shadow-[0_8px_20px_rgba(245,123,32,0.28)]"
+          : "bg-white/10 text-white/78 hover:bg-white/14"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function getCounts(games: Game[]) {
+  return {
+    all: games.length,
+    live: games.filter((game) => game.status === "live").length,
+    upcoming: games.filter((game) => game.status === "upcoming").length,
+    final: games.filter((game) => game.status === "final").length,
+  };
+}
+
+function isSameLocalDay(dateA: string, dateB: Date) {
+  const a = new Date(dateA);
+
+  return (
+    a.getFullYear() === dateB.getFullYear() &&
+    a.getMonth() === dateB.getMonth() &&
+    a.getDate() === dateB.getDate()
+  );
+}
+
+function groupGamesByDay(games: Game[]) {
+  return games.reduce<Record<string, Game[]>>((acc, game) => {
+    const label = getDayLabel(game.date);
+    if (!acc[label]) acc[label] = [];
+    acc[label].push(game);
+    return acc;
+  }, {});
+}
+
+function getDayLabel(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(now.getDate() + 1);
+
+  if (isSameLocalDay(dateString, now)) return "Today";
+  if (isSameLocalDay(dateString, tomorrow)) return "Tomorrow";
+
+  return date.toLocaleDateString(undefined, { weekday: "long" });
+}
+
+function formatGameTime(dateString: string) {
+  return new Date(dateString)
+    .toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    })
+    .toUpperCase();
+}
+
+function getUpcomingSubtext(dateString: string) {
+  const now = new Date();
+  const start = new Date(dateString);
+  const diffMs = start.getTime() - now.getTime();
+
+  if (diffMs <= 0) return "Starting soon";
+
+  const totalMinutes = Math.round(diffMs / (1000 * 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours <= 0) {
+    return `Starts in ${minutes} min`;
+  }
+
+  if (minutes === 0) {
+    return `Starts in ${hours} hr${hours > 1 ? "s" : ""}`;
+  }
+
+  return `Starts in ${hours} hr${hours > 1 ? "s" : ""} ${minutes} min`;
+}
+
+function getLeader(game: Game): "home" | "away" | null {
+  if (game.status === "upcoming") return null;
+  if (game.home.score === game.away.score) return null;
+  return game.home.score > game.away.score ? "home" : "away";
 }
