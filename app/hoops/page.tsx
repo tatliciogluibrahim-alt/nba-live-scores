@@ -12,8 +12,19 @@ type ShotFeedback = {
   perfect: boolean;
 };
 
+type LeaderboardEntry = {
+  initials: string;
+  score: number;
+  accuracy: number;
+  bestStreak: number;
+  shotsMade: number;
+  shotsAttempted: number;
+  createdAt: string;
+};
+
 const GAME_SECONDS = 60;
 const BEST_SCORE_STORAGE_KEY = "no-noise-hoops-best-score";
+const LEADERBOARD_STORAGE_KEY = "no-noise-hoops-top-10";
 
 function triggerLightHaptic() {
   if (typeof navigator !== "undefined" && navigator.vibrate) {
@@ -27,6 +38,40 @@ function getSavedBestScore() {
   const savedScore = Number(localStorage.getItem(BEST_SCORE_STORAGE_KEY));
 
   return Number.isFinite(savedScore) ? savedScore : 0;
+}
+
+function sortLeaderboard(entries: LeaderboardEntry[]) {
+  return [...entries]
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
+      return b.bestStreak - a.bestStreak;
+    })
+    .slice(0, 10);
+}
+
+function getSavedLeaderboard() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(LEADERBOARD_STORAGE_KEY) || "[]"
+    ) as LeaderboardEntry[];
+
+    if (!Array.isArray(parsed)) return [];
+
+    return sortLeaderboard(
+      parsed.filter(
+        (entry) =>
+          typeof entry.initials === "string" &&
+          typeof entry.score === "number" &&
+          typeof entry.accuracy === "number" &&
+          typeof entry.bestStreak === "number"
+      )
+    );
+  } catch {
+    return [];
+  }
 }
 
 function getAccuracy(shotsMade: number, shotsAttempted: number) {
@@ -48,11 +93,25 @@ function formatClock(seconds: number) {
   return `0:${String(seconds).padStart(2, "0")}`;
 }
 
+function scoreQualifiesForLeaderboard(
+  score: number,
+  leaderboard: LeaderboardEntry[]
+) {
+  if (score <= 0) return false;
+  if (leaderboard.length < 10) return true;
+
+  return score > leaderboard[leaderboard.length - 1].score;
+}
+
+function cleanInitials(value: string) {
+  return value.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 3);
+}
+
 function BackToScoresLink() {
   return (
     <Link
       href="/"
-      className="inline-flex items-center rounded-full bg-white/10 px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide text-white/75 ring-1 ring-white/10 transition hover:bg-white/15 hover:text-white"
+      className="inline-flex items-center rounded-full bg-[#fffaf2] px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide text-slate-950 shadow-lg shadow-black/15 ring-1 ring-orange-100/70 transition hover:bg-orange-500 hover:text-white hover:ring-orange-500/30"
     >
       Back to Scores
     </Link>
@@ -72,6 +131,37 @@ function StatTile({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+function LeaderboardList({ entries }: { entries: LeaderboardEntry[] }) {
+  if (entries.length === 0) {
+    return (
+      <div className="rounded-[1rem] bg-slate-950 px-3 py-3 text-sm font-semibold text-white/45">
+        No scores saved yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-[1rem] bg-slate-950 text-white ring-1 ring-slate-800">
+      {entries.map((entry, index) => (
+        <div
+          key={`${entry.createdAt}-${entry.initials}-${index}`}
+          className="grid grid-cols-[2rem_1fr_auto] items-center gap-2 border-b border-white/10 px-3 py-2 last:border-b-0"
+        >
+          <span className="font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-wide text-orange-300">
+            {index + 1}
+          </span>
+          <span className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide">
+            {entry.initials}
+          </span>
+          <span className="font-[family-name:var(--font-display)] text-lg font-black tabular-nums">
+            {entry.score}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ShotMeter({ value }: { value: number }) {
   return (
     <div>
@@ -82,7 +172,7 @@ function ShotMeter({ value }: { value: number }) {
       </div>
 
       <div className="relative h-4 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/10">
-        <div className="absolute left-1/2 top-0 h-full w-[10%] -translate-x-1/2 bg-orange-400/35" />
+        <div className="absolute left-1/2 top-0 h-full w-[14%] -translate-x-1/2 bg-orange-400/35" />
         <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-orange-200/80" />
         <div
           className="absolute top-1/2 h-7 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg shadow-orange-500/30"
@@ -125,7 +215,7 @@ function HoopScene({ lastShot }: { lastShot: ShotFeedback | null }) {
       {lastShot && (
         <div
           key={lastShot.id}
-          className={`no-noise-hoops-ball absolute bottom-10 left-11 flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-[#07111f] shadow-xl shadow-orange-950/25 ${
+          className={`no-noise-hoops-ball absolute flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-[#07111f] shadow-xl shadow-orange-950/25 ${
             lastShot.made ? "no-noise-hoops-ball-made" : "no-noise-hoops-ball-miss"
           }`}
         >
@@ -168,6 +258,9 @@ export default function HoopsPage() {
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [bestScore, setBestScore] = useState(getSavedBestScore);
+  const [leaderboard, setLeaderboard] = useState(getSavedLeaderboard);
+  const [initials, setInitials] = useState("YOU");
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
   const [meterValue, setMeterValue] = useState(50);
   const [lastShot, setLastShot] = useState<ShotFeedback | null>(null);
   const [gameEndsAt, setGameEndsAt] = useState<number | null>(null);
@@ -195,6 +288,7 @@ export default function HoopsPage() {
     setShotsMade(0);
     setStreak(0);
     setBestStreak(0);
+    setScoreSubmitted(false);
     setMeterValue(50);
     setLastShot(null);
     setGameEndsAt(Date.now() + GAME_SECONDS * 1000);
@@ -206,7 +300,7 @@ export default function HoopsPage() {
 
     const interval = setInterval(() => {
       setMeterValue((currentValue) => {
-        let nextValue = currentValue + meterDirectionRef.current * 2.4;
+        let nextValue = currentValue + meterDirectionRef.current * 1.15;
 
         if (nextValue >= 100) {
           nextValue = 100;
@@ -251,10 +345,10 @@ export default function HoopsPage() {
     triggerLightHaptic();
 
     const distanceFromPerfect = Math.abs(meterValue - 50);
-    const isPerfect = distanceFromPerfect <= 4;
-    const makeChance = Math.max(0.08, 1 - distanceFromPerfect / 55);
+    const isPerfect = distanceFromPerfect <= 6;
+    const makeChance = Math.max(0.18, 1 - distanceFromPerfect / 68);
     const isMake = isPerfect || Math.random() < makeChance;
-    const points = isPerfect ? 3 : isMake ? 2 : 0;
+    const points = isPerfect ? 3 : isMake ? 2 : -1;
     const nextShotId = shotIdRef.current + 1;
 
     shotIdRef.current = nextShotId;
@@ -279,10 +373,11 @@ export default function HoopsPage() {
       return;
     }
 
+    setScore((currentScore) => Math.max(0, currentScore + points));
     setStreak(0);
     setLastShot({
       id: nextShotId,
-      label: "Miss",
+      label: "-1",
       made: false,
       perfect: false,
     });
@@ -303,9 +398,34 @@ export default function HoopsPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleShoot, phase]);
 
+  function handleSaveScore() {
+    const cleanName = cleanInitials(initials) || "YOU";
+    const nextEntry: LeaderboardEntry = {
+      initials: cleanName,
+      score,
+      accuracy,
+      bestStreak,
+      shotsMade,
+      shotsAttempted,
+      createdAt: new Date().toISOString(),
+    };
+    const nextLeaderboard = sortLeaderboard([...leaderboard, nextEntry]);
+
+    localStorage.setItem(
+      LEADERBOARD_STORAGE_KEY,
+      JSON.stringify(nextLeaderboard)
+    );
+    setLeaderboard(nextLeaderboard);
+    setScoreSubmitted(true);
+  }
+
   const accuracy = getAccuracy(shotsMade, shotsAttempted);
   const rating = getRating(score);
   const isNewBestScore = phase === "ended" && score > runStartingBestScore;
+  const canSaveScore =
+    phase === "ended" &&
+    !scoreSubmitted &&
+    scoreQualifiesForLeaderboard(score, leaderboard);
 
   return (
     <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.13),transparent_30%)] px-4 py-5 text-white sm:px-6 md:py-8">
@@ -313,30 +433,42 @@ export default function HoopsPage() {
         @keyframes no-noise-hoops-made {
           0% {
             opacity: 1;
-            transform: translate(0, 0) scale(1);
+            left: 2.75rem;
+            top: calc(100% - 4.75rem);
+            transform: scale(1) rotate(0deg);
           }
           58% {
             opacity: 1;
-            transform: translate(42vw, -9.5rem) scale(0.72);
+            left: 50%;
+            top: 4.55rem;
+            transform: translateX(-50%) scale(0.72) rotate(170deg);
           }
           100% {
             opacity: 0;
-            transform: translate(48vw, -7rem) scale(0.46);
+            left: 50%;
+            top: 6.25rem;
+            transform: translateX(-50%) scale(0.38) rotate(270deg);
           }
         }
 
         @keyframes no-noise-hoops-miss {
           0% {
             opacity: 1;
-            transform: translate(0, 0) scale(1);
+            left: 2.75rem;
+            top: calc(100% - 4.75rem);
+            transform: scale(1) rotate(0deg);
           }
           62% {
             opacity: 1;
-            transform: translate(39vw, -10.5rem) scale(0.74);
+            left: 47%;
+            top: 4.35rem;
+            transform: translateX(-50%) scale(0.72) rotate(165deg);
           }
           100% {
             opacity: 0;
-            transform: translate(55vw, -2rem) scale(0.5);
+            left: 76%;
+            top: 11rem;
+            transform: translateX(-50%) scale(0.5) rotate(300deg);
           }
         }
 
@@ -387,14 +519,14 @@ export default function HoopsPage() {
               </button>
 
               <p className="mt-3 text-center text-xs font-semibold text-white/35">
-                Tap, click, or press spacebar to shoot.
+                Tap, click, or press spacebar to shoot. Misses cost 1 point.
               </p>
             </div>
           </div>
 
           <aside className="rounded-[1.75rem] bg-[#fffaf2] p-5 text-slate-950 shadow-2xl shadow-black/25 ring-1 ring-orange-100/70">
             {phase === "ready" && (
-              <div className="flex h-full flex-col justify-between gap-8">
+              <div className="flex h-full flex-col justify-between gap-6">
                 <div>
                   <p className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-[0.18em] text-orange-500">
                     No ads. No odds. Just shots.
@@ -423,6 +555,13 @@ export default function HoopsPage() {
                   >
                     Start
                   </button>
+                </div>
+
+                <div>
+                  <p className="mb-2 font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-[0.18em] text-slate-500">
+                    Top 10
+                  </p>
+                  <LeaderboardList entries={leaderboard} />
                 </div>
               </div>
             )}
@@ -467,7 +606,7 @@ export default function HoopsPage() {
             )}
 
             {phase === "ended" && (
-              <div className="flex h-full flex-col justify-between gap-6">
+              <div className="flex h-full flex-col justify-between gap-5">
                 <div>
                   <p className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-[0.18em] text-orange-500">
                     Final Buzzer
@@ -501,6 +640,39 @@ export default function HoopsPage() {
                   <StatTile label="Best Streak" value={bestStreak} />
                 </div>
 
+                {canSaveScore && (
+                  <div className="rounded-[1.15rem] bg-orange-50 px-3 py-3 ring-1 ring-orange-100">
+                    <p className="font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-[0.18em] text-orange-600">
+                      Save Top 10
+                    </p>
+                    <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
+                      <input
+                        value={initials}
+                        onChange={(event) =>
+                          setInitials(cleanInitials(event.target.value))
+                        }
+                        maxLength={3}
+                        aria-label="Three-letter initials"
+                        className="min-w-0 rounded-full border border-orange-200 bg-white px-4 py-2 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-slate-950 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveScore}
+                        className="rounded-full bg-slate-950 px-4 py-2 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white transition hover:bg-orange-500"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="mb-2 font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-[0.18em] text-slate-500">
+                    Top 10
+                  </p>
+                  <LeaderboardList entries={leaderboard} />
+                </div>
+
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <button
                     type="button"
@@ -511,7 +683,7 @@ export default function HoopsPage() {
                   </button>
                   <Link
                     href="/"
-                    className="rounded-full bg-slate-950 px-5 py-3 text-center font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white transition hover:bg-slate-800"
+                    className="rounded-full bg-slate-950 px-5 py-3 text-center font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white ring-1 ring-slate-800 transition hover:bg-orange-500 hover:ring-orange-500"
                   >
                     Back to Scores
                   </Link>
