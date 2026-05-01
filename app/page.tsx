@@ -13,6 +13,11 @@ type Team = {
   logo: string;
 };
 
+type FavoriteTeamOption = {
+  name: string;
+  abbreviation: string;
+};
+
 type Game = {
   id: string;
   date: string;
@@ -31,7 +36,8 @@ type GameSection = {
   games: Game[];
 };
 
-const FOLLOWED_TEAM_STORAGE_KEY = "no-noise-followed-team";
+const FAVORITE_TEAM_STORAGE_KEY = "no-noise-favorite-team";
+const OLD_FOLLOWED_TEAM_STORAGE_KEY = "no-noise-followed-team";
 
 function formatGameDateTime(date: string) {
   const gameDate = new Date(date);
@@ -98,12 +104,31 @@ function isTomorrow(date: Date) {
   return isSameScoreboardDay(date, scoreboardTomorrow);
 }
 
-function isTeamInGame(game: Game, teamAbbreviation: string | null) {
-  if (!teamAbbreviation) return false;
+function gameIncludesTeam(game: Game, favoriteTeamAbbr: string | null) {
+  if (!favoriteTeamAbbr) return false;
 
   return (
-    game.away.abbreviation === teamAbbreviation ||
-    game.home.abbreviation === teamAbbreviation
+    game.away.abbreviation === favoriteTeamAbbr ||
+    game.home.abbreviation === favoriteTeamAbbr
+  );
+}
+
+function getAvailableTeams(games: Game[]) {
+  const teamsByAbbr = new Map<string, FavoriteTeamOption>();
+
+  games.forEach((game) => {
+    [game.away, game.home].forEach((team) => {
+      if (!team.abbreviation || team.abbreviation === "TBD") return;
+
+      teamsByAbbr.set(team.abbreviation, {
+        abbreviation: team.abbreviation,
+        name: team.name,
+      });
+    });
+  });
+
+  return Array.from(teamsByAbbr.values()).sort((a, b) =>
+    a.abbreviation.localeCompare(b.abbreviation)
   );
 }
 
@@ -196,7 +221,7 @@ function getGameSubStatus(game: Game) {
   return "Upcoming";
 }
 
-function sortGamesForDisplay(gamesToSort: Game[]) {
+function sortGamesForDisplay(gamesToSort: Game[], favoriteTeamAbbr: string | null) {
   const statusRank = {
     live: 0,
     upcoming: 1,
@@ -207,6 +232,11 @@ function sortGamesForDisplay(gamesToSort: Game[]) {
     const statusDifference = statusRank[a.status] - statusRank[b.status];
 
     if (statusDifference !== 0) return statusDifference;
+
+    const aIsFavorite = gameIncludesTeam(a, favoriteTeamAbbr);
+    const bIsFavorite = gameIncludesTeam(b, favoriteTeamAbbr);
+
+    if (aIsFavorite !== bIsFavorite) return aIsFavorite ? -1 : 1;
 
     const aTime = new Date(a.date).getTime();
     const bTime = new Date(b.date).getTime();
@@ -256,6 +286,10 @@ function buildSections(
     return groupByDay(gamesToSection, "Final scores");
   }
 
+  if (activeFilter === "my-team") {
+    return groupByDay(gamesToSection, "My team");
+  }
+
   const liveGames = gamesToSection.filter((game) => game.status === "live");
   const upcomingGames = gamesToSection.filter((game) => game.status === "upcoming");
   const finalGames = gamesToSection.filter((game) => game.status === "final");
@@ -296,21 +330,25 @@ function FilterPill({
   label,
   count,
   active,
+  disabled = false,
   onClick,
 }: {
   label: string;
   count?: number;
   active: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
+      disabled={disabled}
       className={`shrink-0 rounded-full px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide transition sm:px-3.5 sm:text-xs ${
         active
           ? "bg-orange-500 text-white shadow-md shadow-orange-950/20"
           : "bg-white/10 text-white/75 ring-1 ring-white/10 hover:bg-white/15"
-      }`}
+      } ${disabled ? "cursor-not-allowed opacity-40 hover:bg-white/10" : ""}`}
     >
       <span className="flex items-center gap-1.5">
         <span>{label}</span>
@@ -324,21 +362,55 @@ function FilterPill({
   );
 }
 
+function FavoriteTeamSelect({
+  teams,
+  favoriteTeamAbbr,
+  onChange,
+}: {
+  teams: FavoriteTeamOption[];
+  favoriteTeamAbbr: string | null;
+  onChange: (teamAbbreviation: string | null) => void;
+}) {
+  return (
+    <label className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 py-1.5 pl-3 pr-2 font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide text-white/75 ring-1 ring-white/10 sm:text-xs">
+      <span className="text-white/45">Team:</span>
+
+      <span className="relative">
+        <select
+          value={favoriteTeamAbbr || ""}
+          onChange={(event) => onChange(event.target.value || null)}
+          className="max-w-[8.5rem] appearance-none bg-transparent py-0 pl-0 pr-5 font-[family-name:var(--font-display)] font-black uppercase text-white outline-none sm:max-w-[11rem]"
+          aria-label="Favorite team"
+        >
+          <option value="">Pick</option>
+          {teams.map((team) => (
+            <option key={team.abbreviation} value={team.abbreviation}>
+              {team.abbreviation}
+            </option>
+          ))}
+        </select>
+
+        <span className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-white/45">
+          ▾
+        </span>
+      </span>
+    </label>
+  );
+}
+
 function TeamLine({
   game,
   side,
-  followedTeam,
-  onToggleFollowTeam,
+  favoriteTeamAbbr,
 }: {
   game: Game;
   side: "away" | "home";
-  followedTeam: string | null;
-  onToggleFollowTeam: (teamAbbreviation: string) => void;
+  favoriteTeamAbbr: string | null;
 }) {
   const team = game[side];
   const showScore = game.status !== "upcoming";
   const edgeLabel = getTeamEdgeLabel(game, side);
-  const isFollowed = followedTeam === team.abbreviation;
+  const isFavoriteTeam = favoriteTeamAbbr === team.abbreviation;
 
   return (
     <div className="flex items-center justify-between py-2.5 sm:py-3">
@@ -351,18 +423,11 @@ function TeamLine({
               {team.abbreviation}
             </p>
 
-            <button
-              type="button"
-              onClick={() => onToggleFollowTeam(team.abbreviation)}
-              className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide transition ${
-                isFollowed
-                  ? "bg-orange-500 text-white"
-                  : "bg-slate-100 text-slate-500 hover:bg-orange-100 hover:text-orange-700"
-              }`}
-              aria-label={`${isFollowed ? "Unfollow" : "Follow"} ${team.name}`}
-            >
-              {isFollowed ? "Following" : "Follow"}
-            </button>
+            {isFavoriteTeam && (
+              <span className="rounded-full bg-orange-100 px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide text-orange-700">
+                MY TEAM
+              </span>
+            )}
 
             {edgeLabel && (
               <span
@@ -420,12 +485,10 @@ function PlayoffBand({ game }: { game: Game }) {
 
 function GameCard({
   game,
-  followedTeam,
-  onToggleFollowTeam,
+  favoriteTeamAbbr,
 }: {
   game: Game;
-  followedTeam: string | null;
-  onToggleFollowTeam: (teamAbbreviation: string) => void;
+  favoriteTeamAbbr: string | null;
 }) {
   return (
     <article
@@ -465,19 +528,9 @@ function GameCard({
       </div>
 
       <div className="rounded-[1.45rem] bg-white/90 px-4 py-2 ring-1 ring-orange-100/80">
-        <TeamLine
-          game={game}
-          side="away"
-          followedTeam={followedTeam}
-          onToggleFollowTeam={onToggleFollowTeam}
-        />
+        <TeamLine game={game} side="away" favoriteTeamAbbr={favoriteTeamAbbr} />
         <div className="h-px bg-orange-100/70" />
-        <TeamLine
-          game={game}
-          side="home"
-          followedTeam={followedTeam}
-          onToggleFollowTeam={onToggleFollowTeam}
-        />
+        <TeamLine game={game} side="home" favoriteTeamAbbr={favoriteTeamAbbr} />
       </div>
 
       <PlayoffBand game={game} />
@@ -518,7 +571,9 @@ function EmptyState({
         </p>
 
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          Try switching to Week or follow a different team.
+          {viewScope === "today"
+            ? "Try switching to Week or pick a different team."
+            : "Try picking a different team."}
         </p>
       </section>
     );
@@ -564,11 +619,19 @@ export default function Home() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [activeFilter, setActiveFilter] = useState<GameFilter>("all");
   const [viewScope, setViewScope] = useState<ViewScope>("today");
-  const [followedTeam, setFollowedTeam] = useState<string | null>(null);
+  const [favoriteTeamAbbr, setFavoriteTeamAbbr] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   useEffect(() => {
-    setFollowedTeam(localStorage.getItem(FOLLOWED_TEAM_STORAGE_KEY));
+    const storedFavoriteTeam =
+      localStorage.getItem(FAVORITE_TEAM_STORAGE_KEY) ||
+      localStorage.getItem(OLD_FOLLOWED_TEAM_STORAGE_KEY);
+
+    if (storedFavoriteTeam) {
+      setFavoriteTeamAbbr(storedFavoriteTeam);
+      localStorage.setItem(FAVORITE_TEAM_STORAGE_KEY, storedFavoriteTeam);
+      localStorage.removeItem(OLD_FOLLOWED_TEAM_STORAGE_KEY);
+    }
   }, []);
 
   useEffect(() => {
@@ -621,23 +684,23 @@ export default function Home() {
     };
   }, []);
 
-  function handleToggleFollowTeam(teamAbbreviation: string) {
-    setFollowedTeam((currentTeam) => {
-      const nextTeam = currentTeam === teamAbbreviation ? null : teamAbbreviation;
+  function handleFavoriteTeamChange(teamAbbreviation: string | null) {
+    setFavoriteTeamAbbr(teamAbbreviation);
 
-      if (nextTeam) {
-        localStorage.setItem(FOLLOWED_TEAM_STORAGE_KEY, nextTeam);
-      } else {
-        localStorage.removeItem(FOLLOWED_TEAM_STORAGE_KEY);
-      }
+    if (teamAbbreviation) {
+      localStorage.setItem(FAVORITE_TEAM_STORAGE_KEY, teamAbbreviation);
+    } else {
+      localStorage.removeItem(FAVORITE_TEAM_STORAGE_KEY);
 
-      if (!nextTeam && activeFilter === "my-team") {
+      if (activeFilter === "my-team") {
         setActiveFilter("all");
       }
-
-      return nextTeam;
-    });
+    }
   }
+
+  const availableTeams = useMemo(() => {
+    return getAvailableTeams(games);
+  }, [games]);
 
   const todayGames = useMemo(() => {
     const scoreboardToday = getScoreboardToday();
@@ -654,13 +717,13 @@ export default function Home() {
   const filteredGames = useMemo(() => {
     const selectedGames = scopedGames.filter((game) => {
       if (activeFilter === "all") return true;
-      if (activeFilter === "my-team") return isTeamInGame(game, followedTeam);
+      if (activeFilter === "my-team") return gameIncludesTeam(game, favoriteTeamAbbr);
 
       return game.status === activeFilter;
     });
 
-    return sortGamesForDisplay(selectedGames);
-  }, [scopedGames, activeFilter, followedTeam]);
+    return sortGamesForDisplay(selectedGames, favoriteTeamAbbr);
+  }, [scopedGames, activeFilter, favoriteTeamAbbr]);
 
   const sections = useMemo(() => {
     return buildSections(filteredGames, activeFilter);
@@ -672,7 +735,7 @@ export default function Home() {
         total.all += 1;
         total[game.status] += 1;
 
-        if (isTeamInGame(game, followedTeam)) {
+        if (gameIncludesTeam(game, favoriteTeamAbbr)) {
           total.myTeam += 1;
         }
 
@@ -680,7 +743,7 @@ export default function Home() {
       },
       { all: 0, myTeam: 0, live: 0, upcoming: 0, final: 0 }
     );
-  }, [scopedGames, followedTeam]);
+  }, [scopedGames, favoriteTeamAbbr]);
 
   const nextUpcomingGame = useMemo(() => {
     let nextGame: Game | undefined;
@@ -757,6 +820,12 @@ export default function Home() {
                   active={viewScope === "week"}
                   onClick={() => setViewScope("week")}
                 />
+
+                <FavoriteTeamSelect
+                  teams={availableTeams}
+                  favoriteTeamAbbr={favoriteTeamAbbr}
+                  onChange={handleFavoriteTeamChange}
+                />
               </div>
 
               <p className="order-last px-1 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-[0.18em] text-white/35 lg:order-none lg:mx-3 lg:shrink-0 lg:px-0 lg:text-right">
@@ -771,14 +840,13 @@ export default function Home() {
                   onClick={() => setActiveFilter("all")}
                 />
 
-                {followedTeam && (
-                  <FilterPill
-                    label="My Team"
-                    count={counts.myTeam}
-                    active={activeFilter === "my-team"}
-                    onClick={() => setActiveFilter("my-team")}
-                  />
-                )}
+                <FilterPill
+                  label="My Team"
+                  count={counts.myTeam}
+                  active={activeFilter === "my-team"}
+                  disabled={!favoriteTeamAbbr}
+                  onClick={() => setActiveFilter("my-team")}
+                />
 
                 <FilterPill
                   label="Live"
@@ -833,8 +901,7 @@ export default function Home() {
                     <GameCard
                       key={game.id}
                       game={game}
-                      followedTeam={followedTeam}
-                      onToggleFollowTeam={handleToggleFollowTeam}
+                      favoriteTeamAbbr={favoriteTeamAbbr}
                     />
                   ))}
                 </div>
