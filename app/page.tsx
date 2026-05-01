@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type GameStatus = "all" | "live" | "upcoming" | "final";
+type GameStatus = "live" | "upcoming" | "final";
+type GameFilter = "all" | "my-team" | GameStatus;
 type ViewScope = "today" | "week";
 
 type Team = {
@@ -15,7 +16,7 @@ type Team = {
 type Game = {
   id: string;
   date: string;
-  status: Exclude<GameStatus, "all">;
+  status: GameStatus;
   statusText: string;
   matchup: string;
   gameContext: string;
@@ -29,6 +30,8 @@ type GameSection = {
   eyebrow?: string;
   games: Game[];
 };
+
+const FOLLOWED_TEAM_STORAGE_KEY = "no-noise-followed-team";
 
 function formatGameDateTime(date: string) {
   const gameDate = new Date(date);
@@ -46,6 +49,18 @@ function formatGameTime(date: string) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function formatLastUpdated(updatedAt: Date | null) {
+  if (!updatedAt) return "Updating scores";
+
+  const diffMs = Date.now() - updatedAt.getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
+
+  if (diffMinutes < 1) return "Updated just now";
+  if (diffMinutes === 1) return "Updated 1 min ago";
+
+  return `Updated ${diffMinutes} min ago`;
 }
 
 function getLocalDateKey(date: string) {
@@ -81,6 +96,15 @@ function isTomorrow(date: Date) {
   scoreboardTomorrow.setDate(scoreboardTomorrow.getDate() + 1);
 
   return isSameScoreboardDay(date, scoreboardTomorrow);
+}
+
+function isTeamInGame(game: Game, teamAbbreviation: string | null) {
+  if (!teamAbbreviation) return false;
+
+  return (
+    game.away.abbreviation === teamAbbreviation ||
+    game.home.abbreviation === teamAbbreviation
+  );
 }
 
 function getSectionTitle(date: string) {
@@ -216,7 +240,7 @@ function groupByDay(gamesToGroup: Game[], eyebrow?: string): GameSection[] {
 
 function buildSections(
   gamesToSection: Game[],
-  activeFilter: GameStatus
+  activeFilter: GameFilter
 ): GameSection[] {
   if (activeFilter === "live") {
     return gamesToSection.length
@@ -300,10 +324,21 @@ function FilterPill({
   );
 }
 
-function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
+function TeamLine({
+  game,
+  side,
+  followedTeam,
+  onToggleFollowTeam,
+}: {
+  game: Game;
+  side: "away" | "home";
+  followedTeam: string | null;
+  onToggleFollowTeam: (teamAbbreviation: string) => void;
+}) {
   const team = game[side];
   const showScore = game.status !== "upcoming";
   const edgeLabel = getTeamEdgeLabel(game, side);
+  const isFollowed = followedTeam === team.abbreviation;
 
   return (
     <div className="flex items-center justify-between py-2.5 sm:py-3">
@@ -311,10 +346,23 @@ function TeamLine({ game, side }: { game: Game; side: "away" | "home" }) {
         <TeamLogo team={team} />
 
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="text-base font-black tracking-tight text-slate-950 sm:text-lg">
               {team.abbreviation}
             </p>
+
+            <button
+              type="button"
+              onClick={() => onToggleFollowTeam(team.abbreviation)}
+              className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-wide transition ${
+                isFollowed
+                  ? "bg-orange-500 text-white"
+                  : "bg-slate-100 text-slate-500 hover:bg-orange-100 hover:text-orange-700"
+              }`}
+              aria-label={`${isFollowed ? "Unfollow" : "Follow"} ${team.name}`}
+            >
+              {isFollowed ? "Following" : "Follow"}
+            </button>
 
             {edgeLabel && (
               <span
@@ -370,7 +418,15 @@ function PlayoffBand({ game }: { game: Game }) {
   );
 }
 
-function GameCard({ game }: { game: Game }) {
+function GameCard({
+  game,
+  followedTeam,
+  onToggleFollowTeam,
+}: {
+  game: Game;
+  followedTeam: string | null;
+  onToggleFollowTeam: (teamAbbreviation: string) => void;
+}) {
   return (
     <article
       className={`rounded-[1.6rem] bg-[#fffaf2] p-3.5 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70 sm:rounded-[1.65rem] sm:p-4 ${getCardAccentClasses(
@@ -409,9 +465,19 @@ function GameCard({ game }: { game: Game }) {
       </div>
 
       <div className="rounded-[1.45rem] bg-white/90 px-4 py-2 ring-1 ring-orange-100/80">
-        <TeamLine game={game} side="away" />
+        <TeamLine
+          game={game}
+          side="away"
+          followedTeam={followedTeam}
+          onToggleFollowTeam={onToggleFollowTeam}
+        />
         <div className="h-px bg-orange-100/70" />
-        <TeamLine game={game} side="home" />
+        <TeamLine
+          game={game}
+          side="home"
+          followedTeam={followedTeam}
+          onToggleFollowTeam={onToggleFollowTeam}
+        />
       </div>
 
       <PlayoffBand game={game} />
@@ -424,7 +490,7 @@ function EmptyState({
   viewScope,
   nextGame,
 }: {
-  activeFilter: GameStatus;
+  activeFilter: GameFilter;
   viewScope: ViewScope;
   nextGame?: Game;
 }) {
@@ -439,6 +505,20 @@ function EmptyState({
           {nextGame
             ? `Next tipoff: ${formatGameTime(nextGame.date)} · ${nextGame.matchup}`
             : "Check back soon for live scores."}
+        </p>
+      </section>
+    );
+  }
+
+  if (activeFilter === "my-team") {
+    return (
+      <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
+        <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
+          No team games found
+        </p>
+
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Try switching to Week or follow a different team.
         </p>
       </section>
     );
@@ -482,56 +562,82 @@ function BrandLockup() {
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<GameStatus>("all");
+  const [activeFilter, setActiveFilter] = useState<GameFilter>("all");
   const [viewScope, setViewScope] = useState<ViewScope>("today");
+  const [followedTeam, setFollowedTeam] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
- useEffect(() => {
-  let isMounted = true;
-  let isFetching = false;
-  let controller: AbortController | null = null;
+  useEffect(() => {
+    setFollowedTeam(localStorage.getItem(FOLLOWED_TEAM_STORAGE_KEY));
+  }, []);
 
-  async function fetchGames() {
-    if (isFetching) return;
+  useEffect(() => {
+    let isMounted = true;
+    let isFetching = false;
+    let controller: AbortController | null = null;
 
-    isFetching = true;
-    controller = new AbortController();
+    async function fetchGames() {
+      if (isFetching) return;
 
-    try {
-      const response = await fetch("/api/live-scores", {
-        signal: controller.signal,
-      });
+      isFetching = true;
 
-      if (!response.ok) throw new Error("Could not fetch games");
+      const requestController = new AbortController();
+      controller = requestController;
 
-      const data = await response.json();
+      try {
+        const response = await fetch("/api/live-scores", {
+          signal: requestController.signal,
+        });
 
-      if (isMounted) {
-        setGames(data.games);
+        if (!response.ok) throw new Error("Could not fetch games");
+
+        const data = await response.json();
+
+        if (isMounted) {
+          setGames(data.games);
+          setLastUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : new Date());
+        }
+      } catch {
+        if (isMounted && !requestController.signal.aborted) {
+          setGames([]);
+        }
+      } finally {
+        if (isMounted) {
+          setHasLoadedOnce(true);
+        }
+
+        isFetching = false;
       }
-    } catch {
-      if (isMounted && !controller.signal.aborted) {
-        setGames([]);
-      }
-    } finally {
-      if (isMounted) {
-        setHasLoadedOnce(true);
-      }
-
-      isFetching = false;
     }
+
+    fetchGames();
+
+    const interval = setInterval(fetchGames, 30000);
+
+    return () => {
+      isMounted = false;
+      controller?.abort();
+      clearInterval(interval);
+    };
+  }, []);
+
+  function handleToggleFollowTeam(teamAbbreviation: string) {
+    setFollowedTeam((currentTeam) => {
+      const nextTeam = currentTeam === teamAbbreviation ? null : teamAbbreviation;
+
+      if (nextTeam) {
+        localStorage.setItem(FOLLOWED_TEAM_STORAGE_KEY, nextTeam);
+      } else {
+        localStorage.removeItem(FOLLOWED_TEAM_STORAGE_KEY);
+      }
+
+      if (!nextTeam && activeFilter === "my-team") {
+        setActiveFilter("all");
+      }
+
+      return nextTeam;
+    });
   }
-
-  fetchGames();
-
-  const interval = setInterval(fetchGames, 30000);
-
-  return () => {
-    isMounted = false;
-    controller?.abort();
-    clearInterval(interval);
-  };
-}, []);
-
 
   const todayGames = useMemo(() => {
     const scoreboardToday = getScoreboardToday();
@@ -546,13 +652,15 @@ export default function Home() {
   }, [games, todayGames, viewScope]);
 
   const filteredGames = useMemo(() => {
-    const selectedGames =
-      activeFilter === "all"
-        ? scopedGames
-        : scopedGames.filter((game) => game.status === activeFilter);
+    const selectedGames = scopedGames.filter((game) => {
+      if (activeFilter === "all") return true;
+      if (activeFilter === "my-team") return isTeamInGame(game, followedTeam);
+
+      return game.status === activeFilter;
+    });
 
     return sortGamesForDisplay(selectedGames);
-  }, [scopedGames, activeFilter]);
+  }, [scopedGames, activeFilter, followedTeam]);
 
   const sections = useMemo(() => {
     return buildSections(filteredGames, activeFilter);
@@ -563,30 +671,34 @@ export default function Home() {
       (total, game) => {
         total.all += 1;
         total[game.status] += 1;
+
+        if (isTeamInGame(game, followedTeam)) {
+          total.myTeam += 1;
+        }
+
         return total;
       },
-      { all: 0, live: 0, upcoming: 0, final: 0 }
+      { all: 0, myTeam: 0, live: 0, upcoming: 0, final: 0 }
     );
-  }, [scopedGames]);
+  }, [scopedGames, followedTeam]);
 
   const nextUpcomingGame = useMemo(() => {
-  let nextGame: Game | undefined;
-  let nextTime = Infinity;
+    let nextGame: Game | undefined;
+    let nextTime = Infinity;
 
-  games.forEach((game) => {
-    if (game.status !== "upcoming") return;
+    games.forEach((game) => {
+      if (game.status !== "upcoming") return;
 
-    const gameTime = new Date(game.date).getTime();
+      const gameTime = new Date(game.date).getTime();
 
-    if (gameTime < nextTime) {
-      nextTime = gameTime;
-      nextGame = game;
-    }
-  });
+      if (gameTime < nextTime) {
+        nextTime = gameTime;
+        nextGame = game;
+      }
+    });
 
-  return nextGame;
-}, [games]);
-
+    return nextGame;
+  }, [games]);
 
   const sponsorName = "Ibra-Heem";
   const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
@@ -647,6 +759,10 @@ export default function Home() {
                 />
               </div>
 
+              <p className="order-last px-1 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-[0.18em] text-white/35 lg:order-none lg:mx-3 lg:shrink-0 lg:px-0 lg:text-right">
+                {formatLastUpdated(lastUpdatedAt)}
+              </p>
+
               <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
                 <FilterPill
                   label="All"
@@ -654,6 +770,15 @@ export default function Home() {
                   active={activeFilter === "all"}
                   onClick={() => setActiveFilter("all")}
                 />
+
+                {followedTeam && (
+                  <FilterPill
+                    label="My Team"
+                    count={counts.myTeam}
+                    active={activeFilter === "my-team"}
+                    onClick={() => setActiveFilter("my-team")}
+                  />
+                )}
 
                 <FilterPill
                   label="Live"
@@ -705,7 +830,12 @@ export default function Home() {
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {section.games.map((game) => (
-                    <GameCard key={game.id} game={game} />
+                    <GameCard
+                      key={game.id}
+                      game={game}
+                      followedTeam={followedTeam}
+                      onToggleFollowTeam={handleToggleFollowTeam}
+                    />
                   ))}
                 </div>
               </section>
