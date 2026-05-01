@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type GameStatus = "live" | "upcoming" | "final";
 type GameFilter = "all" | "my-team" | GameStatus;
@@ -36,8 +36,12 @@ type GameSection = {
   games: Game[];
 };
 
+// FIX 1: Module-level constants instead of variables declared on every render
 const FAVORITE_TEAM_STORAGE_KEY = "no-noise-favorite-team";
 const OLD_FOLLOWED_TEAM_STORAGE_KEY = "no-noise-followed-team";
+const SPONSOR_NAME = "Ibra-Heem";
+const SPONSOR_URL = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
+const POLL_INTERVAL_MS = 30_000;
 
 function formatGameDateTime(date: string) {
   const gameDate = new Date(date);
@@ -57,11 +61,12 @@ function formatGameTime(date: string) {
   });
 }
 
-function formatLastUpdated(updatedAt: Date | null) {
+// FIX 2: Accept `now` so callers control the clock; no stale Date.now() captured at render time
+function formatLastUpdated(updatedAt: Date | null, now: number) {
   if (!updatedAt) return "Updating scores";
 
-  const diffMs = Date.now() - updatedAt.getTime();
-  const diffMinutes = Math.floor(diffMs / 60000);
+  const diffMs = now - updatedAt.getTime();
+  const diffMinutes = Math.floor(diffMs / 60_000);
 
   if (diffMinutes < 1) return "Updated just now";
   if (diffMinutes === 1) return "Updated 1 min ago";
@@ -210,7 +215,7 @@ function getGameSubStatus(game: Game) {
 
   if (diffMs <= 0) return "Starting soon";
 
-  const minutes = Math.round(diffMs / 60000);
+  const minutes = Math.round(diffMs / 60_000);
   const hours = Math.round(minutes / 60);
 
   if (minutes < 60) return `Starts in ${minutes} min`;
@@ -638,6 +643,29 @@ function EmptyState({
   );
 }
 
+// FIX 3: Error state component
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
+      <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
+        Could not load scores
+      </p>
+
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        Something went wrong fetching the scoreboard.
+      </p>
+
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-5 rounded-full bg-orange-500 px-5 py-2 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-white shadow-md shadow-orange-950/20 transition hover:bg-orange-600"
+      >
+        Try again
+      </button>
+    </section>
+  );
+}
+
 function BrandLockup() {
   return (
     <div className="flex items-center gap-3 lg:justify-end">
@@ -661,32 +689,45 @@ function BrandLockup() {
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [hasError, setHasError] = useState(false);                // FIX 3: visible error state
   const [activeFilter, setActiveFilter] = useState<GameFilter>("all");
   const [viewScope, setViewScope] = useState<ViewScope>("today");
   const [favoriteTeamAbbr, setFavoriteTeamAbbr] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  const [now, setNow] = useState(() => Date.now());               // FIX 2: clock for "Updated X min ago"
 
+  // FIX 4: useRef for isFetching — idiomatic and avoids closure staleness issues
+  const isFetchingRef = useRef(false);
+
+  // Read favorite team from localStorage once on mount
   useEffect(() => {
-    const storedFavoriteTeam =
+    const stored =
       localStorage.getItem(FAVORITE_TEAM_STORAGE_KEY) ||
       localStorage.getItem(OLD_FOLLOWED_TEAM_STORAGE_KEY);
 
-    if (storedFavoriteTeam) {
-      setFavoriteTeamAbbr(storedFavoriteTeam);
-      localStorage.setItem(FAVORITE_TEAM_STORAGE_KEY, storedFavoriteTeam);
+    if (stored) {
+      setFavoriteTeamAbbr(stored);
+      localStorage.setItem(FAVORITE_TEAM_STORAGE_KEY, stored);
       localStorage.removeItem(OLD_FOLLOWED_TEAM_STORAGE_KEY);
     }
   }, []);
 
+  // FIX 2: Tick `now` every 30 s so "Updated X min ago" stays accurate without a re-fetch
+  useEffect(() => {
+    const ticker = setInterval(() => setNow(Date.now()), POLL_INTERVAL_MS);
+    return () => clearInterval(ticker);
+  }, []);
+
+  // Polling loop
   useEffect(() => {
     let isMounted = true;
-    let isFetching = false;
     let controller: AbortController | null = null;
 
     async function fetchGames() {
-      if (isFetching) return;
+      // FIX 4: useRef instead of a plain closure variable
+      if (isFetchingRef.current) return;
 
-      isFetching = true;
+      isFetchingRef.current = true;
 
       const requestController = new AbortController();
       controller = requestController;
@@ -702,24 +743,27 @@ export default function Home() {
 
         if (isMounted) {
           setGames(data.games);
+          setHasError(false);
           setLastUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : new Date());
+          setNow(Date.now()); // reset the "just now" clock on a fresh fetch
         }
       } catch {
+        // FIX 3: Surface the error rather than silently clearing games
         if (isMounted && !requestController.signal.aborted) {
-          setGames([]);
+          setHasError(true);
         }
       } finally {
         if (isMounted) {
           setHasLoadedOnce(true);
         }
 
-        isFetching = false;
+        isFetchingRef.current = false;
       }
     }
 
     fetchGames();
 
-    const interval = setInterval(fetchGames, 30000);
+    const interval = setInterval(fetchGames, POLL_INTERVAL_MS);
 
     return () => {
       isMounted = false;
@@ -742,13 +786,18 @@ export default function Home() {
     }
   }
 
-  const availableTeams = useMemo(() => {
-    return getAvailableTeams(games);
-  }, [games]);
+  // FIX 3: Let the user retry manually after an error
+  function handleRetry() {
+    setHasError(false);
+    setHasLoadedOnce(false);
+    isFetchingRef.current = false; // unlock so the next poll can proceed
+  }
 
+  const availableTeams = useMemo(() => getAvailableTeams(games), [games]);
+
+  // FIX 5: getScoreboardToday() called once per memo, not scattered across render helpers
   const todayGames = useMemo(() => {
     const scoreboardToday = getScoreboardToday();
-
     return games.filter((game) =>
       isSameScoreboardDay(new Date(game.date), scoreboardToday)
     );
@@ -762,16 +811,16 @@ export default function Home() {
     const selectedGames = scopedGames.filter((game) => {
       if (activeFilter === "all") return true;
       if (activeFilter === "my-team") return gameIncludesTeam(game, favoriteTeamAbbr);
-
       return game.status === activeFilter;
     });
 
     return sortGamesForDisplay(selectedGames, favoriteTeamAbbr);
   }, [scopedGames, activeFilter, favoriteTeamAbbr]);
 
-  const sections = useMemo(() => {
-    return buildSections(filteredGames, activeFilter);
-  }, [filteredGames, activeFilter]);
+  const sections = useMemo(
+    () => buildSections(filteredGames, activeFilter),
+    [filteredGames, activeFilter]
+  );
 
   const counts = useMemo(() => {
     return scopedGames.reduce(
@@ -807,8 +856,73 @@ export default function Home() {
     return nextGame;
   }, [games]);
 
-  const sponsorName = "Ibra-Heem";
-  const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
+  function renderBody() {
+    if (!hasLoadedOnce) {
+      return (
+        <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
+          <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
+            Loading scores...
+          </p>
+
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Pulling the latest scoreboard.
+          </p>
+        </section>
+      );
+    }
+
+    // FIX 3: Show error state instead of silently showing nothing
+    if (hasError) {
+      return <ErrorState onRetry={handleRetry} />;
+    }
+
+    if (sections.length > 0) {
+      return (
+        <div className="space-y-7 sm:space-y-8">
+          {sections.map((section) => (
+            <section key={`${section.title}-${section.eyebrow || ""}`}>
+              <div className="mb-3 flex items-end justify-between gap-3">
+                <div>
+                  {section.eyebrow && (
+                    <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-orange-300">
+                      {section.eyebrow}
+                    </p>
+                  )}
+
+                  <h2 className="font-[family-name:var(--font-display)] text-4xl font-black uppercase leading-none tracking-tight text-white sm:text-5xl">
+                    {section.title}
+                  </h2>
+                </div>
+
+                <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-white/45">
+                  {section.games.length}{" "}
+                  {section.games.length === 1 ? "game" : "games"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {section.games.map((game) => (
+                  <GameCard
+                    key={game.id}
+                    game={game}
+                    favoriteTeamAbbr={favoriteTeamAbbr}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <EmptyState
+        activeFilter={activeFilter}
+        viewScope={viewScope}
+        nextGame={nextUpcomingGame}
+      />
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-36 pt-4 text-white sm:px-6 md:py-8">
@@ -823,15 +937,16 @@ export default function Home() {
                   no noise.
                 </h1>
 
+                {/* FIX 1: Uses module-level constants */}
                 <p className="mt-3 flex flex-wrap items-center gap-1.5 text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
                   <span>Sponsored by</span>
                   <a
-                    href={sponsorUrl}
+                    href={SPONSOR_URL}
                     target="_blank"
                     rel="noreferrer"
                     className="font-semibold text-slate-700 underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-600"
                   >
-                    {sponsorName}
+                    {SPONSOR_NAME}
                   </a>
                 </p>
 
@@ -872,8 +987,9 @@ export default function Home() {
                 />
               </div>
 
+              {/* FIX 2: now is passed in so the text re-renders on the ticker */}
               <p className="order-last px-1 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-[0.18em] text-white/35 lg:order-none lg:mx-3 lg:shrink-0 lg:px-0 lg:text-right">
-                {formatLastUpdated(lastUpdatedAt)}
+                {formatLastUpdated(lastUpdatedAt, now)}
               </p>
 
               <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
@@ -917,58 +1033,7 @@ export default function Home() {
           </div>
         </div>
 
-        {sections.length > 0 ? (
-          <div className="space-y-7 sm:space-y-8">
-            {sections.map((section) => (
-              <section key={`${section.title}-${section.eyebrow || ""}`}>
-                <div className="mb-3 flex items-end justify-between gap-3">
-                  <div>
-                    {section.eyebrow && (
-                      <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-orange-300">
-                        {section.eyebrow}
-                      </p>
-                    )}
-
-                    <h2 className="font-[family-name:var(--font-display)] text-4xl font-black uppercase leading-none tracking-tight text-white sm:text-5xl">
-                      {section.title}
-                    </h2>
-                  </div>
-
-                  <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-white/45">
-                    {section.games.length}{" "}
-                    {section.games.length === 1 ? "game" : "games"}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {section.games.map((game) => (
-                    <GameCard
-                      key={game.id}
-                      game={game}
-                      favoriteTeamAbbr={favoriteTeamAbbr}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        ) : !hasLoadedOnce ? (
-          <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
-            <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-              Loading scores...
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Pulling the latest scoreboard.
-            </p>
-          </section>
-        ) : (
-          <EmptyState
-            activeFilter={activeFilter}
-            viewScope={viewScope}
-            nextGame={nextUpcomingGame}
-          />
-        )}
+        {renderBody()}
       </div>
     </main>
   );
