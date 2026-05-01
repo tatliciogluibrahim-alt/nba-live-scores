@@ -290,16 +290,16 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3.5 py-1.5 font-[family-name:var(--font-display)] text-[0.82rem] font-black uppercase tracking-wide transition sm:px-4 sm:text-xs ${
+      className={`shrink-0 rounded-full px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide transition sm:px-3.5 sm:text-xs ${
         active
           ? "bg-orange-500 text-white shadow-md shadow-orange-950/20"
-          : "bg-white/10 text-white/80 ring-1 ring-white/10 hover:bg-white/15"
+          : "bg-white/10 text-white/75 ring-1 ring-white/10 hover:bg-white/15"
       }`}
     >
       <span className="flex items-center gap-1.5">
         <span>{label}</span>
         {typeof count === "number" && (
-          <span className={active ? "text-white/90" : "text-white/50"}>
+          <span className={active ? "text-white/90" : "text-white/45"}>
             {count}
           </span>
         )}
@@ -597,9 +597,10 @@ export default function Home() {
           </div>
         </header>
 
-<div className="sticky top-[calc(env(safe-area-inset-top)+0.5rem)] z-[999] mb-6 -mx-4 px-4 pt-2 sm:-mx-6 sm:px-6 md:top-3">          <div className="mx-auto max-w-7xl rounded-[1.35rem] border border-white/10 bg-[#06101f]/95 px-3 py-3 shadow-2xl shadow-black/30 backdrop-blur-xl sm:px-4">
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+<div className="fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+0.45rem)] z-[999] px-3 sm:px-6 md:top-3">
+  <div className="mx-auto max-w-7xl rounded-[1.15rem] border border-white/10 bg-[#06101f]/82 px-3 py-2 shadow-xl shadow-black/25 backdrop-blur-xl">
+    <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <FilterPill
           label="Today"
           count={todayGames.length}
@@ -615,7 +616,7 @@ export default function Home() {
         />
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
+      <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
         <FilterPill
           label="All"
           count={counts.all}
@@ -647,6 +648,8 @@ export default function Home() {
     </div>
   </div>
 </div>
+
+<div className="h-[86px] sm:h-[72px] lg:h-[58px]" />
 
         {sections.length > 0 ? (
           <div className="space-y-7 sm:space-y-8">
