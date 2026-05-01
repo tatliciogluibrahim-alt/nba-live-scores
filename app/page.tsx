@@ -33,16 +33,12 @@ type GameSection = {
 function formatGameDateTime(date: string) {
   const gameDate = new Date(date);
 
-  const day = gameDate.toLocaleDateString([], {
+  return `${gameDate.toLocaleDateString([], {
     weekday: "short",
-  });
-
-  const time = gameDate.toLocaleTimeString([], {
+  })} • ${gameDate.toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
-  });
-
-  return `${day} • ${time}`;
+  })}`;
 }
 
 function formatGameTime(date: string) {
@@ -61,26 +57,37 @@ function getLocalDateKey(date: string) {
   return `${year}-${month}-${day}`;
 }
 
-function isSameLocalDay(dateA: Date, dateB: Date) {
+function getScoreboardToday() {
+  const now = new Date();
+  const scoreboardToday = new Date(now);
+
+  if (now.getHours() < 5) {
+    scoreboardToday.setDate(scoreboardToday.getDate() - 1);
+  }
+
+  return scoreboardToday;
+}
+
+function isSameScoreboardDay(gameDate: Date, scoreboardDate: Date) {
   return (
-    dateA.getFullYear() === dateB.getFullYear() &&
-    dateA.getMonth() === dateB.getMonth() &&
-    dateA.getDate() === dateB.getDate()
+    gameDate.getFullYear() === scoreboardDate.getFullYear() &&
+    gameDate.getMonth() === scoreboardDate.getMonth() &&
+    gameDate.getDate() === scoreboardDate.getDate()
   );
 }
 
 function isTomorrow(date: Date) {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const scoreboardTomorrow = getScoreboardToday();
+  scoreboardTomorrow.setDate(scoreboardTomorrow.getDate() + 1);
 
-  return isSameLocalDay(date, tomorrow);
+  return isSameScoreboardDay(date, scoreboardTomorrow);
 }
 
 function getSectionTitle(date: string) {
   const gameDate = new Date(date);
-  const today = new Date();
+  const scoreboardToday = getScoreboardToday();
 
-  if (isSameLocalDay(gameDate, today)) return "Today";
+  if (isSameScoreboardDay(gameDate, scoreboardToday)) return "Today";
   if (isTomorrow(gameDate)) return "Tomorrow";
 
   return gameDate.toLocaleDateString([], {
@@ -159,7 +166,7 @@ function getGameSubStatus(game: Game) {
 
   if (minutes < 60) return `Starts in ${minutes} min`;
   if (hours < 12) return `Starts in ${hours} ${hours === 1 ? "hr" : "hrs"}`;
-  if (isSameLocalDay(gameDate, now)) return "Starts tonight";
+  if (isSameScoreboardDay(gameDate, getScoreboardToday())) return "Starts tonight";
   if (isTomorrow(gameDate)) return "Tomorrow";
 
   return "Upcoming";
@@ -191,8 +198,13 @@ function groupByDay(gamesToGroup: Game[], eyebrow?: string): GameSection[] {
 
   gamesToGroup.forEach((game) => {
     const key = getLocalDateKey(game.date);
-    const existingGames = groups.get(key) || [];
-    groups.set(key, [...existingGames, game]);
+    const existingGames = groups.get(key);
+
+    if (existingGames) {
+      existingGames.push(game);
+    } else {
+      groups.set(key, [game]);
+    }
   });
 
   return Array.from(groups.values()).map((sectionGames) => ({
@@ -208,13 +220,7 @@ function buildSections(
 ): GameSection[] {
   if (activeFilter === "live") {
     return gamesToSection.length
-      ? [
-          {
-            title: "Live Now",
-            eyebrow: "Real-time scores",
-            games: gamesToSection,
-          },
-        ]
+      ? [{ title: "Live Now", eyebrow: "Real-time scores", games: gamesToSection }]
       : [];
   }
 
@@ -227,30 +233,16 @@ function buildSections(
   }
 
   const liveGames = gamesToSection.filter((game) => game.status === "live");
-  const upcomingGames = gamesToSection.filter(
-    (game) => game.status === "upcoming"
-  );
+  const upcomingGames = gamesToSection.filter((game) => game.status === "upcoming");
   const finalGames = gamesToSection.filter((game) => game.status === "final");
 
   return [
     ...(liveGames.length
-      ? [
-          {
-            title: "Live Now",
-            eyebrow: "Real-time scores",
-            games: liveGames,
-          },
-        ]
+      ? [{ title: "Live Now", eyebrow: "Real-time scores", games: liveGames }]
       : []),
     ...groupByDay(upcomingGames, "Upcoming games"),
     ...(finalGames.length
-      ? [
-          {
-            title: "Earlier This Week",
-            eyebrow: "Final scores",
-            games: finalGames,
-          },
-        ]
+      ? [{ title: "Earlier This Week", eyebrow: "Final scores", games: finalGames }]
       : []),
   ];
 }
@@ -478,7 +470,7 @@ function BrandLockup() {
         />
       </div>
 
-      <p className="font-[family-name:var(--font-display)] text-[1.45rem] font-black uppercase leading-[0.88] tracking-[-0.03em] text-orange-500 sm:text-[1.6rem] lg:text-[1.9rem]">
+      <p className="font-[family-name:var(--font-display)] text-[1.45rem] font-black uppercase leading-[0.88] tracking-tight text-orange-500 sm:text-[1.6rem] lg:text-[1.9rem]">
         No Noise
         <br />
         Scores
@@ -493,34 +485,46 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState<GameStatus>("all");
   const [viewScope, setViewScope] = useState<ViewScope>("today");
 
-  async function fetchGames() {
-    try {
-      const response = await fetch("/api/live-scores");
-
-      if (!response.ok) throw new Error("Could not fetch games");
-
-      const data = await response.json();
-      setGames(data.games);
-    } catch {
-      setGames([]);
-    } finally {
-      setHasLoadedOnce(true);
-    }
-  }
-
   useEffect(() => {
+    const controller = new AbortController();
+
+    async function fetchGames() {
+      try {
+        const response = await fetch("/api/live-scores", {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) throw new Error("Could not fetch games");
+
+        const data = await response.json();
+        setGames(data.games);
+      } catch {
+        if (!controller.signal.aborted) {
+          setGames([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setHasLoadedOnce(true);
+        }
+      }
+    }
+
     fetchGames();
 
-    const interval = setInterval(() => {
-      fetchGames();
-    }, 30000);
+    const interval = setInterval(fetchGames, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, []);
 
   const todayGames = useMemo(() => {
-    const today = new Date();
-    return games.filter((game) => isSameLocalDay(new Date(game.date), today));
+    const scoreboardToday = getScoreboardToday();
+
+    return games.filter((game) =>
+      isSameScoreboardDay(new Date(game.date), scoreboardToday)
+    );
   }, [games]);
 
   const scopedGames = useMemo(() => {
@@ -552,9 +556,14 @@ export default function Home() {
   }, [scopedGames]);
 
   const nextUpcomingGame = useMemo(() => {
-    return sortGamesForDisplay(
-      games.filter((game) => game.status === "upcoming")
-    )[0];
+    return games.reduce<Game | undefined>((next, game) => {
+      if (game.status !== "upcoming") return next;
+      if (!next) return game;
+
+      return new Date(game.date).getTime() < new Date(next.date).getTime()
+        ? game
+        : next;
+    }, undefined);
   }, [games]);
 
   const sponsorName = "Ibra-Heem";
@@ -567,14 +576,14 @@ export default function Home() {
           <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-5 sm:p-6 lg:p-7">
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div>
-                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.35rem] font-black uppercase leading-[0.92] tracking-[-0.035em] text-slate-950 sm:text-6xl sm:leading-[0.9] lg:text-[5rem]">
+                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.35rem] font-black uppercase leading-[0.92] tracking-tight text-slate-950 sm:text-6xl sm:leading-[0.9] lg:text-[5rem]">
                   NBA scores,
                   <br />
                   no noise.
                 </h1>
 
-                <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
-                  Sponsored by{" "}
+                <p className="mt-3 flex flex-wrap items-center gap-1.5 text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
+                  <span>Sponsored by</span>
                   <a
                     href={sponsorUrl}
                     target="_blank"
@@ -597,57 +606,57 @@ export default function Home() {
           </div>
         </header>
 
-<div className="mb-10 -mx-4 px-4 pt-2 sm:mb-12 sm:-mx-6 sm:px-6">
-  <div className="mx-auto max-w-7xl rounded-[1.15rem] border border-white/10 bg-[#06101f]/92 px-3 py-2 shadow-xl shadow-black/25 backdrop-blur-xl sm:px-4">
-    <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <FilterPill
-          label="Today"
-          count={todayGames.length}
-          active={viewScope === "today"}
-          onClick={() => setViewScope("today")}
-        />
+        <div className="mb-10 -mx-4 px-4 pt-2 sm:mb-12 sm:-mx-6 sm:px-6">
+          <div className="mx-auto max-w-7xl rounded-[1.15rem] border border-white/10 bg-[#06101f]/92 px-3 py-2 shadow-xl shadow-black/25 backdrop-blur-xl sm:px-4">
+            <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <FilterPill
+                  label="Today"
+                  count={todayGames.length}
+                  active={viewScope === "today"}
+                  onClick={() => setViewScope("today")}
+                />
 
-        <FilterPill
-          label="Week"
-          count={games.length}
-          active={viewScope === "week"}
-          onClick={() => setViewScope("week")}
-        />
-      </div>
+                <FilterPill
+                  label="Week"
+                  count={games.length}
+                  active={viewScope === "week"}
+                  onClick={() => setViewScope("week")}
+                />
+              </div>
 
-      <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
-        <FilterPill
-          label="All"
-          count={counts.all}
-          active={activeFilter === "all"}
-          onClick={() => setActiveFilter("all")}
-        />
+              <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
+                <FilterPill
+                  label="All"
+                  count={counts.all}
+                  active={activeFilter === "all"}
+                  onClick={() => setActiveFilter("all")}
+                />
 
-        <FilterPill
-          label="Live"
-          count={counts.live}
-          active={activeFilter === "live"}
-          onClick={() => setActiveFilter("live")}
-        />
+                <FilterPill
+                  label="Live"
+                  count={counts.live}
+                  active={activeFilter === "live"}
+                  onClick={() => setActiveFilter("live")}
+                />
 
-        <FilterPill
-          label="Upcoming"
-          count={counts.upcoming}
-          active={activeFilter === "upcoming"}
-          onClick={() => setActiveFilter("upcoming")}
-        />
+                <FilterPill
+                  label="Upcoming"
+                  count={counts.upcoming}
+                  active={activeFilter === "upcoming"}
+                  onClick={() => setActiveFilter("upcoming")}
+                />
 
-        <FilterPill
-          label="Final"
-          count={counts.final}
-          active={activeFilter === "final"}
-          onClick={() => setActiveFilter("final")}
-        />
-      </div>
-    </div>
-  </div>
-</div>
+                <FilterPill
+                  label="Final"
+                  count={counts.final}
+                  active={activeFilter === "final"}
+                  onClick={() => setActiveFilter("final")}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
 
         {sections.length > 0 ? (
           <div className="space-y-7 sm:space-y-8">
