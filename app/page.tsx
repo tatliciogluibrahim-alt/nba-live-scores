@@ -344,7 +344,7 @@ function FilterPill({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`shrink-0 rounded-full px-2.5 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-wide transition sm:px-3 sm:text-xs ${
+      className={`shrink-0 rounded-full px-2.5 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-wide transition sm:px-3 sm:text-[0.72rem] ${
         active
           ? "bg-orange-500 text-white shadow-md shadow-orange-950/20"
           : "bg-white/10 text-white/75 ring-1 ring-white/10 hover:bg-white/15"
@@ -362,7 +362,7 @@ function FilterPill({
   );
 }
 
-function FavoriteTeamSelect({
+function FavoriteTeamPicker({
   teams,
   favoriteTeamAbbr,
   onChange,
@@ -371,30 +371,74 @@ function FavoriteTeamSelect({
   favoriteTeamAbbr: string | null;
   onChange: (teamAbbreviation: string | null) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedTeam = teams.find((team) => team.abbreviation === favoriteTeamAbbr);
+
   return (
-    <label className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 py-1.5 pl-2.5 pr-2 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-wide text-white/75 ring-1 ring-white/10 sm:text-xs">
-      <span className="text-white/45">Team:</span>
-
-      <span className="relative">
-        <select
-          value={favoriteTeamAbbr || ""}
-          onChange={(event) => onChange(event.target.value || null)}
-          className="max-w-[8.5rem] appearance-none bg-transparent py-0 pl-0 pr-5 font-[family-name:var(--font-display)] font-black uppercase text-white outline-none sm:max-w-[11rem]"
-          aria-label="Favorite team"
-        >
-          <option value="">Pick</option>
-          {teams.map((team) => (
-            <option key={team.abbreviation} value={team.abbreviation}>
-              {team.abbreviation}
-            </option>
-          ))}
-        </select>
-
-        <span className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-white/45">
-          ▾
+    <div
+      className="relative shrink-0"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setIsOpen(false);
+        }
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className="flex items-center gap-1.5 rounded-full bg-white/10 py-1.5 pl-2.5 pr-2 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-wide text-white/75 ring-1 ring-white/10 transition hover:bg-white/15 sm:pl-3 sm:text-[0.72rem]"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+      >
+        <span className="text-white/45">Team:</span>
+        <span className="text-white">
+          {selectedTeam ? selectedTeam.abbreviation : "Pick"}
         </span>
-      </span>
-    </label>
+        <span className="text-white/45">▾</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 top-full z-30 mt-2 w-44 overflow-hidden rounded-[1rem] border border-white/10 bg-[#06101f] py-1.5 shadow-2xl shadow-black/40 ring-1 ring-black/20">
+          <button
+            type="button"
+            onClick={() => {
+              onChange(null);
+              setIsOpen(false);
+            }}
+            className={`flex w-full items-center justify-between px-3 py-2 text-left font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide transition hover:bg-white/10 ${
+              !favoriteTeamAbbr ? "text-orange-300" : "text-white/70"
+            }`}
+          >
+            Pick
+          </button>
+
+          <div className="max-h-64 overflow-y-auto [scrollbar-width:thin]">
+            {teams.map((team) => (
+              <button
+                key={team.abbreviation}
+                type="button"
+                onClick={() => {
+                  onChange(team.abbreviation);
+                  setIsOpen(false);
+                }}
+                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition hover:bg-white/10 ${
+                  favoriteTeamAbbr === team.abbreviation
+                    ? "text-orange-300"
+                    : "text-white/80"
+                }`}
+              >
+                <span className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide">
+                  {team.abbreviation}
+                </span>
+                <span className="truncate text-xs font-semibold normal-case tracking-normal text-white/45">
+                  {team.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -806,7 +850,7 @@ export default function Home() {
         <div className="mb-10 -mx-4 px-4 pt-2 sm:mb-12 sm:-mx-6 sm:px-6">
           <div className="mx-auto max-w-7xl rounded-[1.15rem] border border-white/10 bg-[#06101f]/92 px-3 py-2 shadow-xl shadow-black/25 backdrop-blur-xl sm:px-4">
             <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex flex-wrap gap-1.5 pr-2">
                 <FilterPill
                   label="Today"
                   count={todayGames.length}
@@ -821,7 +865,7 @@ export default function Home() {
                   onClick={() => setViewScope("week")}
                 />
 
-                <FavoriteTeamSelect
+                <FavoriteTeamPicker
                   teams={availableTeams}
                   favoriteTeamAbbr={favoriteTeamAbbr}
                   onChange={handleFavoriteTeamChange}
