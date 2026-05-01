@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type GameStatus = "live" | "upcoming" | "final";
@@ -481,16 +483,20 @@ function FavoriteTeamPicker({
 }
 
 function CountdownText({ date }: { date: string }) {
-  const [label, setLabel] = useState(() => formatCountdown(date));
+  const [label, setLabel] = useState("Starting soon");
 
   useEffect(() => {
-    setLabel(formatCountdown(date));
-
-    const interval = setInterval(() => {
+    const updateCountdown = () => {
       setLabel(formatCountdown(date));
-    }, 1000);
+    };
 
-    return () => clearInterval(interval);
+    const initialTimeout = setTimeout(updateCountdown, 0);
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
   }, [date]);
 
   return <>{label}</>;
@@ -735,15 +741,6 @@ function EmptyState({
               : "Try picking a different team."}
         </p>
 
-        {nextFavoriteGame && (
-          <button
-            type="button"
-            onClick={triggerLightHaptic}
-            className="mt-4 rounded-full bg-orange-500 px-4 py-2 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-orange-500/25"
-          >
-            Set a reminder
-          </button>
-        )}
       </section>
     );
   }
@@ -826,9 +823,13 @@ export default function Home() {
       localStorage.getItem(OLD_FOLLOWED_TEAM_STORAGE_KEY);
 
     if (storedFavoriteTeam) {
-      setFavoriteTeamAbbr(storedFavoriteTeam);
-      localStorage.setItem(FAVORITE_TEAM_STORAGE_KEY, storedFavoriteTeam);
-      localStorage.removeItem(OLD_FOLLOWED_TEAM_STORAGE_KEY);
+      const hydrationTimeout = setTimeout(() => {
+        setFavoriteTeamAbbr(storedFavoriteTeam);
+        localStorage.setItem(FAVORITE_TEAM_STORAGE_KEY, storedFavoriteTeam);
+        localStorage.removeItem(OLD_FOLLOWED_TEAM_STORAGE_KEY);
+      }, 0);
+
+      return () => clearTimeout(hydrationTimeout);
     }
   }, []);
 
@@ -1004,20 +1005,21 @@ export default function Home() {
   const nextFavoriteGame = useMemo(() => {
     let nextGame: Game | undefined;
     let nextTime = Infinity;
+    const currentTime = lastUpdatedAt?.getTime() ?? 0;
 
     games.forEach((game) => {
       if (!gameIncludesTeam(game, favoriteTeamAbbr)) return;
 
       const gameTime = new Date(game.date).getTime();
 
-      if (gameTime > Date.now() && gameTime < nextTime) {
+      if (gameTime > currentTime && gameTime < nextTime) {
         nextTime = gameTime;
         nextGame = game;
       }
     });
 
     return nextGame;
-  }, [games, favoriteTeamAbbr]);
+  }, [games, favoriteTeamAbbr, lastUpdatedAt]);
 
   const sponsorName = "Ibra-Heem";
   const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
@@ -1055,6 +1057,13 @@ export default function Home() {
 
         .no-noise-score-pop {
           animation: no-noise-score-pop 0.8s ease-out;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .no-noise-live-card,
+          .no-noise-score-pop {
+            animation: none !important;
+          }
         }
       `}</style>
 

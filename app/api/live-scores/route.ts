@@ -92,6 +92,8 @@ const PLAYOFF_HEADLINE_PREFIXES = [
   "West 1st Round - ",
 ];
 
+const ESPN_FETCH_TIMEOUT_MS = 8000;
+
 function getMonday(date: Date) {
   const localDate = new Date(date);
   const day = localDate.getDay();
@@ -262,30 +264,48 @@ function normalizeGame(event: ESPNEvent): NormalizedGame | null {
 
 async function fetchGamesForDate(date: string) {
   const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${date}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ESPN_FETCH_TIMEOUT_MS);
 
-  const response = await fetch(url, {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-  });
+  try {
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ESPN scoreboard for ${date}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ESPN scoreboard for ${date}`);
+    }
+
+    const data = (await response.json()) as ESPNScoreboardResponse;
+
+    return data.events ?? [];
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const data = (await response.json()) as ESPNScoreboardResponse;
-
-  return data.events ?? [];
 }
 
 export async function GET() {
   try {
     const weekDates = getWeekDates();
 
-    const eventGroups = await Promise.all(
+    const eventResults = await Promise.allSettled(
       weekDates.map((date) => fetchGamesForDate(date))
     );
 
-    const events = eventGroups.flat();
+    const failedDates: string[] = [];
+    const events = eventResults.flatMap((result, index) => {
+      if (result.status === "fulfilled") return result.value;
+
+      failedDates.push(weekDates[index]);
+      console.warn(
+        `Unable to fetch ESPN scoreboard for ${weekDates[index]}:`,
+        result.reason
+      );
+
+      return [];
+    });
     const gamesById = new Map<string, NormalizedGame>();
 
     events.forEach((event) => {
@@ -298,7 +318,13 @@ export async function GET() {
     );
 
     return NextResponse.json(
-      { games, count: games.length, week: weekDates, updatedAt: new Date().toISOString() },
+      {
+        games,
+        count: games.length,
+        week: weekDates,
+        failedDates,
+        updatedAt: new Date().toISOString(),
+      },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
   } catch (error) {
