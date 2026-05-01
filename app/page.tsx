@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type GameStatus = "live" | "upcoming" | "final";
@@ -785,9 +786,40 @@ function SectionHeader({ section }: { section: GameSection }) {
   );
 }
 
+function HoopsEasterEggLink() {
+  return (
+    <Link
+      href="/hoops"
+      aria-label="Open No Noise Hoops"
+      title="No Noise Hoops"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#07111f]/5 text-orange-500/55 ring-1 ring-orange-500/10 transition hover:bg-orange-500 hover:text-white hover:ring-orange-500/25 focus:outline-none focus:ring-2 focus:ring-orange-400/70"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h18" />
+        <path d="M12 3c-3 3.4-3 14.6 0 18" />
+        <path d="M12 3c3 3.4 3 14.6 0 18" />
+        <path d="M5.7 5.8c3.7 2.8 8.9 2.8 12.6 0" />
+        <path d="M5.7 18.2c3.7-2.8 8.9-2.8 12.6 0" />
+      </svg>
+    </Link>
+  );
+}
+
 function BrandLockup() {
   return (
     <div className="flex items-center gap-3 lg:justify-end">
+      <HoopsEasterEggLink />
+
       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] bg-[#07111f] shadow-lg shadow-black/20 ring-1 ring-white/10 sm:h-14 sm:w-14">
         <img
           src="/favicon.svg"
