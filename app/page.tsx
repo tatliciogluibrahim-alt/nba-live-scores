@@ -290,7 +290,7 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3.5 py-2 font-[family-name:var(--font-display)] text-[0.82rem] font-black uppercase tracking-wide transition sm:px-4 sm:text-xs ${
+      className={`shrink-0 rounded-full px-3.5 py-1.5 font-[family-name:var(--font-display)] text-[0.82rem] font-black uppercase tracking-wide transition sm:px-4 sm:text-xs ${
         active
           ? "bg-orange-500 text-white shadow-md shadow-orange-950/20"
           : "bg-white/10 text-white/80 ring-1 ring-white/10 hover:bg-white/15"
@@ -469,7 +469,7 @@ function EmptyState({
 
 function BrandLockup() {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 lg:justify-end">
       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] bg-[#07111f] shadow-lg shadow-black/20 ring-1 ring-white/10 sm:h-14 sm:w-14">
         <img
           src="/favicon.svg"
@@ -551,17 +551,17 @@ export default function Home() {
     );
   }, [scopedGames]);
 
-  const nextGame = useMemo(() => {
+  const nextUpcomingGame = useMemo(() => {
     return sortGamesForDisplay(
-      games.filter((game) => game.status === "live" || game.status === "upcoming")
+      games.filter((game) => game.status === "upcoming")
     )[0];
   }, [games]);
 
-  const nextTipoffLabel = nextGame
-    ? nextGame.status === "live"
-      ? `Live now · ${nextGame.matchup}`
-      : `Next tipoff · ${formatGameTime(nextGame.date)}`
-    : "No upcoming games";
+  const nextTipoffLabel = nextUpcomingGame
+    ? `Next tipoff · ${formatGameTime(nextUpcomingGame.date)}`
+    : counts.live > 0
+      ? `${counts.live} live ${counts.live === 1 ? "game" : "games"} now`
+      : "No upcoming games";
 
   const sponsorName = "Ibra-Heem";
   const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
@@ -570,35 +570,33 @@ export default function Home() {
     <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-36 pt-4 text-white sm:px-6 md:py-8">
       <div className="mx-auto max-w-7xl">
         <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
-  <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-5 sm:p-6 lg:p-7">
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-      <div>
-        <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.45rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.15rem]">
-          NBA scores,
-          <br />
-          no noise.
-        </h1>
+          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-5 sm:p-6 lg:p-7">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+              <div>
+                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.45rem] font-black uppercase leading-[0.82] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[5.15rem]">
+                  NBA scores,
+                  <br />
+                  no noise.
+                </h1>
 
-        <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
-          Today first. Full week when you need it.
-        </p>
+                <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
+                  Today first. Full week when you need it.
+                </p>
 
-        {/* Mobile brand lockup */}
-        <div className="mt-5 lg:hidden">
-          <BrandLockup />
-        </div>
-      </div>
+                <div className="mt-4 lg:hidden">
+                  <BrandLockup />
+                </div>
+              </div>
 
-      {/* Desktop brand lockup */}
-      <div className="hidden lg:flex lg:justify-self-end">
-        <BrandLockup />
-      </div>
-    </div>
-  </div>
-</header>
+              <div className="hidden lg:flex lg:justify-self-end">
+                <BrandLockup />
+              </div>
+            </div>
+          </div>
+        </header>
 
-        <div className="sticky top-0 z-20 mb-5 -mx-4 border-y border-white/10 bg-[#06101f]/94 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:py-2.5">
-          <div className="mx-auto max-w-7xl">
+        <div className="sticky top-0 z-50 mb-5 -mx-4 px-4 pt-2 sm:-mx-6 sm:px-6 md:top-3">
+          <div className="mx-auto max-w-7xl rounded-[1.4rem] border border-white/10 bg-[#06101f]/94 px-3 py-3 shadow-2xl shadow-black/25 backdrop-blur-xl sm:px-4">
             <div className="flex flex-col gap-3 lg:gap-2.5">
               <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -648,20 +646,20 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[13px] leading-5 text-white/65">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs leading-5 text-white/60">
                 <div>{nextTipoffLabel}</div>
 
-                <div>
-                  Sponsored by{" "}
-                  <a
-                    href={sponsorUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-black text-white underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-200"
-                  >
+                <a
+                  href={sponsorUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full bg-white/6 px-3 py-1.5 text-white/75 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
+                >
+                  <span className="text-white/45">Sponsored by</span>
+                  <span className="font-black text-white underline decoration-orange-400 decoration-2 underline-offset-4">
                     {sponsorName}
-                  </a>
-                </div>
+                  </span>
+                </a>
               </div>
             </div>
           </div>
@@ -712,7 +710,7 @@ export default function Home() {
           <EmptyState
             activeFilter={activeFilter}
             viewScope={viewScope}
-            nextGame={nextGame}
+            nextGame={nextUpcomingGame}
           />
         )}
       </div>

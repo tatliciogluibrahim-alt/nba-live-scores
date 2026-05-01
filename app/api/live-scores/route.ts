@@ -1,48 +1,74 @@
-const ESPN_SCOREBOARD_URL =
-  "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
+import { NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
+
+type ESPNTeam = {
+  id?: string;
+  abbreviation?: string;
+  displayName?: string;
+  shortDisplayName?: string;
+  logos?: {
+    href?: string;
+  }[];
+};
 
 type ESPNCompetitor = {
-  homeAway: "home" | "away";
+  homeAway?: "home" | "away";
   score?: string;
-  team?: {
-    displayName?: string;
-    abbreviation?: string;
-    logo?: string;
-    logos?: {
-      href?: string;
-    }[];
+  team?: ESPNTeam;
+};
+
+type ESPNStatus = {
+  clock?: number;
+  displayClock?: string;
+  period?: number;
+  type?: {
+    id?: string;
+    name?: string;
+    state?: string;
+    completed?: boolean;
+    description?: string;
+    detail?: string;
+    shortDetail?: string;
+  };
+};
+
+type ESPNCompetition = {
+  id?: string;
+  date?: string;
+  status?: ESPNStatus;
+  competitors?: ESPNCompetitor[];
+  notes?: {
+    type?: string;
+    headline?: string;
+  }[];
+  series?: {
+    type?: string;
+    title?: string;
+    summary?: string;
+    completed?: boolean;
+    totalCompetitions?: number;
   };
 };
 
 type ESPNEvent = {
-  id: string;
-  date?: string;
+  id?: string;
   name?: string;
   shortName?: string;
-  status?: {
-    displayClock?: string;
-    period?: number;
-    type?: {
-      name?: string;
-      state?: "pre" | "in" | "post";
-      completed?: boolean;
-      shortDetail?: string;
-      detail?: string;
-      description?: string;
-    };
-  };
-  competitions?: {
-    notes?: {
-      headline?: string;
-      type?: string;
-    }[];
-    series?: {
-      summary?: string;
-      title?: string;
-      description?: string;
-    };
-    competitors?: ESPNCompetitor[];
-  }[];
+  date?: string;
+  status?: ESPNStatus;
+  competitions?: ESPNCompetition[];
+};
+
+type ESPNScoreboardResponse = {
+  events?: ESPNEvent[];
+};
+
+type Team = {
+  name: string;
+  abbreviation: string;
+  score: number;
+  logo: string;
 };
 
 type NormalizedGame = {
@@ -53,19 +79,20 @@ type NormalizedGame = {
   matchup: string;
   gameContext: string;
   seriesSummary: string;
-  home: {
-    name: string;
-    abbreviation: string;
-    score: number;
-    logo: string;
-  };
-  away: {
-    name: string;
-    abbreviation: string;
-    score: number;
-    logo: string;
-  };
+  home: Team;
+  away: Team;
 };
+
+function getMonday(date: Date) {
+  const localDate = new Date(date);
+  const day = localDate.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+
+  localDate.setDate(localDate.getDate() + diff);
+  localDate.setHours(0, 0, 0, 0);
+
+  return localDate;
+}
 
 function formatDateForESPN(date: Date) {
   const year = date.getFullYear();
@@ -76,217 +103,251 @@ function formatDateForESPN(date: Date) {
 }
 
 function getWeekDates() {
-  const today = new Date();
-
-  const startOfWeek = new Date(today);
-  const dayOfWeek = today.getDay();
-
-  // JavaScript uses Sunday = 0, Monday = 1, Tuesday = 2, etc.
-  // This makes Monday the start of the week.
-  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-
-  startOfWeek.setDate(today.getDate() - daysSinceMonday);
-  startOfWeek.setHours(0, 0, 0, 0);
+  const monday = getMonday(new Date());
 
   return Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(startOfWeek);
-    date.setDate(startOfWeek.getDate() + index);
-    return date;
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    return formatDateForESPN(date);
   });
 }
 
-function getTeam(event: ESPNEvent, homeAway: "home" | "away") {
-  const competition = event.competitions?.[0];
+function getGameStatus(status?: ESPNStatus): "live" | "upcoming" | "final" {
+  const state = status?.type?.state;
+  const completed = status?.type?.completed;
 
-  const competitor = competition?.competitors?.find(
-    (team) => team.homeAway === homeAway
-  );
-
-  return {
-    name: competitor?.team?.displayName || "TBD",
-    abbreviation: competitor?.team?.abbreviation || "TBD",
-    score: Number(competitor?.score || 0),
-    logo: competitor?.team?.logo || competitor?.team?.logos?.[0]?.href || "",
-  };
-}
-
-function getGameStatus(event: ESPNEvent) {
-  const status = event.status?.type;
-  const state = status?.state;
-  const name = status?.name;
-
-  if (state === "in" || name === "STATUS_IN_PROGRESS") {
-    return "live";
+  if (completed || state === "post") {
+    return "final";
   }
 
-  if (state === "post" || status?.completed || name?.includes("FINAL")) {
-    return "final";
+  if (state === "in") {
+    return "live";
   }
 
   return "upcoming";
 }
 
-function getStatusText(event: ESPNEvent) {
-  const gameStatus = getGameStatus(event);
-  const period = event.status?.period ? `Q${event.status.period}` : "";
-  const clock = event.status?.displayClock || "";
+function formatLiveStatus({
+  period,
+  displayClock,
+  description,
+  detail,
+  shortDetail,
+}: {
+  period: number;
+  displayClock: string;
+  description?: string;
+  detail?: string;
+  shortDetail?: string;
+}) {
+  const statusText = `${description || ""} ${detail || ""} ${
+    shortDetail || ""
+  }`.toLowerCase();
 
-  if (gameStatus === "live") {
-    if (period && clock) return `${period} · ${clock}`;
-    return event.status?.type?.shortDetail || "Live";
+  const clock = displayClock?.trim();
+
+  if (statusText.includes("halftime")) {
+    return "End Q2";
+  }
+
+  if (period === 1 && (clock === "0.0" || clock === "0:00")) {
+    return "End Q1";
+  }
+
+  if (period === 2 && (clock === "0.0" || clock === "0:00")) {
+    return "End Q2";
+  }
+
+  if (period === 3 && (clock === "0.0" || clock === "0:00")) {
+    return "End Q3";
+  }
+
+  if (period === 4 && (clock === "0.0" || clock === "0:00")) {
+    return "End Q4";
+  }
+
+  if (period > 4) {
+    const overtimePeriod = period - 4;
+    return overtimePeriod === 1 ? `OT · ${clock}` : `${overtimePeriod}OT · ${clock}`;
+  }
+
+  if (!period || !clock) {
+    return "Live";
+  }
+
+  return `Q${period} · ${clock}`;
+}
+
+function formatStatusText(status: ESPNStatus | undefined, gameStatus: NormalizedGame["status"]) {
+  if (gameStatus === "upcoming") {
+    return "Upcoming";
   }
 
   if (gameStatus === "final") {
-    return event.status?.type?.shortDetail || "Final";
+    return "Final";
   }
 
-  if (event.date) {
-    return new Date(event.date).toLocaleTimeString([], {
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  }
-
-  return event.status?.type?.shortDetail || "Upcoming";
-}
-
-function cleanSeriesSummary(summary: string) {
-  if (!summary) return "";
-
-  return summary
-    .replace(/\blead series\b/i, "leads series")
-    .replace(/\blead\b/i, "leads")
-    .trim();
-}
-
-function getSeriesSummary(event: ESPNEvent) {
-  const competition = event.competitions?.[0];
-
-  const directSummary =
-    competition?.series?.summary ||
-    competition?.series?.description ||
-    competition?.series?.title ||
-    "";
-
-  if (directSummary) return cleanSeriesSummary(directSummary);
-
-  const playoffNote = competition?.notes?.find((note) => {
-    const headline = note.headline?.toLowerCase() || "";
-
-    return (
-      headline.includes("series") ||
-      headline.includes("leads") ||
-      headline.includes("tied") ||
-      headline.includes("wins")
-    );
+  return formatLiveStatus({
+    period: status?.period || 0,
+    displayClock: status?.displayClock || "",
+    description: status?.type?.description,
+    detail: status?.type?.detail,
+    shortDetail: status?.type?.shortDetail,
   });
-
-  return cleanSeriesSummary(playoffNote?.headline || "");
 }
 
-function cleanGameContext(headline: string) {
-  if (!headline) return "";
-
-  const gameMatch = headline.match(/Game\s+\d+/i);
-
-  if (gameMatch) {
-    const isIfNecessary = headline.toLowerCase().includes("if necessary");
-    return `Playoffs • ${gameMatch[0]}${isIfNecessary ? " if necessary" : ""}`;
+function cleanGameContext(headline?: string) {
+  if (!headline) {
+    return "";
   }
 
   return headline
-    .replace(/\s*-\s*/g, " • ")
+    .replace("East 1st Round - ", "")
+    .replace("West 1st Round - ", "")
+    .replace("Eastern Conference First Round - ", "")
+    .replace("Western Conference First Round - ", "")
     .replace("If Necessary", "if necessary")
+    .replace("Game", "Game")
     .trim();
 }
 
-function getGameContext(event: ESPNEvent) {
+function normalizeSeriesSummary(summary?: string) {
+  if (!summary) {
+    return "";
+  }
+
+  return summary
+    .replace("lead series", "leads series")
+    .replace("Lead series", "Leads series")
+    .toUpperCase();
+}
+
+function normalizeTeam(competitor?: ESPNCompetitor): Team {
+  const team = competitor?.team;
+
+  return {
+    name: team?.displayName || team?.shortDisplayName || "Team",
+    abbreviation: team?.abbreviation || "TBD",
+    score: Number(competitor?.score || 0),
+    logo: team?.logos?.[0]?.href || "",
+  };
+}
+
+function normalizeGame(event: ESPNEvent): NormalizedGame | null {
   const competition = event.competitions?.[0];
 
-  const eventNote = competition?.notes?.find((note) => {
-    return note.type === "event" && note.headline;
-  });
+  if (!competition) {
+    return null;
+  }
 
-  return cleanGameContext(eventNote?.headline || "");
-}
+  const status = competition.status || event.status;
+  const gameStatus = getGameStatus(status);
 
-function normalizeGame(event: ESPNEvent): NormalizedGame {
+  const competitors = competition.competitors || [];
+  const homeCompetitor = competitors.find(
+    (competitor) => competitor.homeAway === "home"
+  );
+  const awayCompetitor = competitors.find(
+    (competitor) => competitor.homeAway === "away"
+  );
+
+  if (!homeCompetitor || !awayCompetitor) {
+    return null;
+  }
+
+  const home = normalizeTeam(homeCompetitor);
+  const away = normalizeTeam(awayCompetitor);
+
+  const headline = competition.notes?.[0]?.headline || "";
+  const gameContext = cleanGameContext(headline);
+
   return {
-    id: event.id,
-    date: event.date || "",
-    status: getGameStatus(event),
-    statusText: getStatusText(event),
-    matchup: event.shortName || event.name || "",
-    gameContext: getGameContext(event),
-    seriesSummary: getSeriesSummary(event),
-    home: getTeam(event, "home"),
-    away: getTeam(event, "away"),
+    id: event.id || competition.id || `${away.abbreviation}-${home.abbreviation}-${event.date}`,
+    date: event.date || competition.date || new Date().toISOString(),
+    status: gameStatus,
+    statusText: formatStatusText(status, gameStatus),
+    matchup: `${away.abbreviation} @ ${home.abbreviation}`,
+    gameContext,
+    seriesSummary: normalizeSeriesSummary(competition.series?.summary),
+    home,
+    away,
   };
 }
 
-function sortGames(games: NormalizedGame[]) {
-  const statusRank = {
-    live: 0,
-    upcoming: 1,
-    final: 2,
-  };
+async function fetchGamesForDate(date: string) {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${date}`;
 
-  return games.sort((a, b) => {
-    const statusDifference = statusRank[a.status] - statusRank[b.status];
-
-    if (statusDifference !== 0) {
-      return statusDifference;
-    }
-
-    const aTime = new Date(a.date).getTime();
-    const bTime = new Date(b.date).getTime();
-
-    // Live and upcoming games: soonest first.
-    if (a.status === "live" || a.status === "upcoming") {
-      return aTime - bTime;
-    }
-
-    // Final games: most recent first.
-    return bTime - aTime;
+  const response = await fetch(url, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/json",
+    },
   });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ESPN scoreboard for ${date}`);
+  }
+
+  const data = (await response.json()) as ESPNScoreboardResponse;
+
+  return data.events || [];
 }
 
 export async function GET() {
   try {
     const weekDates = getWeekDates();
 
-    const responses = await Promise.all(
-      weekDates.map((date) => {
-        const espnDate = formatDateForESPN(date);
-
-        return fetch(`${ESPN_SCOREBOARD_URL}?dates=${espnDate}`, {
-          next: {
-            revalidate: 30,
-          },
-        });
-      })
+    const eventGroups = await Promise.all(
+      weekDates.map((date) => fetchGamesForDate(date))
     );
 
-    const payloads = await Promise.all(
-      responses.map(async (response) => {
-        if (!response.ok) return { events: [] };
-        return response.json();
-      })
-    );
+    const events = eventGroups.flat();
 
-    const games = payloads
-      .flatMap((payload) => payload.events || [])
-      .map(normalizeGame);
+    const gamesById = new Map<string, NormalizedGame>();
 
-    return Response.json({
-      games: sortGames(games),
-      week: weekDates.map(formatDateForESPN),
-      lastUpdated: new Date().toISOString(),
+    events.forEach((event) => {
+      const game = normalizeGame(event);
+
+      if (!game) {
+        return;
+      }
+
+      gamesById.set(game.id, game);
     });
-  } catch {
-    return Response.json(
-      { error: "Score service unavailable", games: [] },
-      { status: 500 }
+
+    const games = Array.from(gamesById.values()).sort((a, b) => {
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+
+    return NextResponse.json(
+      {
+        games,
+        count: games.length,
+        week: weekDates,
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
+  } catch (error) {
+    console.error("NBA live scores API error:", error);
+
+    return NextResponse.json(
+      {
+        games: [],
+        count: 0,
+        error: "Unable to fetch live scores",
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
     );
   }
 }
