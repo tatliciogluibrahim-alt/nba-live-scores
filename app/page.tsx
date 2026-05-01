@@ -268,7 +268,7 @@ function TeamLogo({ team }: { team: Team }) {
     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-orange-100 sm:h-9 sm:w-9">
       <img
         src={team.logo}
-        alt=""
+        alt={`${team.name} logo`}
         className="h-6 w-6 object-contain"
         loading="lazy"
       />
@@ -597,57 +597,57 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="sticky top-0 z-50 mb-6 -mx-4 px-4 pt-2 sm:-mx-6 sm:px-6 md:top-3">
-          <div className="mx-auto max-w-7xl rounded-[1.35rem] border border-white/10 bg-[#06101f]/94 px-3 py-3 shadow-2xl shadow-black/25 backdrop-blur-xl sm:px-4">
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <FilterPill
-                  label="Today"
-                  count={todayGames.length}
-                  active={viewScope === "today"}
-                  onClick={() => setViewScope("today")}
-                />
+       <div className="sticky top-2 z-50 mb-6 -mx-4 px-4 pt-2 sm:-mx-6 sm:px-6 md:top-3">
+  <div className="mx-auto max-w-7xl rounded-[1.35rem] border border-white/10 bg-[#06101f]/94 px-3 py-3 shadow-2xl shadow-black/25 backdrop-blur-xl sm:px-4">
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <FilterPill
+          label="Today"
+          count={todayGames.length}
+          active={viewScope === "today"}
+          onClick={() => setViewScope("today")}
+        />
 
-                <FilterPill
-                  label="Week"
-                  count={games.length}
-                  active={viewScope === "week"}
-                  onClick={() => setViewScope("week")}
-                />
-              </div>
+        <FilterPill
+          label="Week"
+          count={games.length}
+          active={viewScope === "week"}
+          onClick={() => setViewScope("week")}
+        />
+      </div>
 
-              <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
-                <FilterPill
-                  label="All"
-                  count={counts.all}
-                  active={activeFilter === "all"}
-                  onClick={() => setActiveFilter("all")}
-                />
+      <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
+        <FilterPill
+          label="All"
+          count={counts.all}
+          active={activeFilter === "all"}
+          onClick={() => setActiveFilter("all")}
+        />
 
-                <FilterPill
-                  label="Live"
-                  count={counts.live}
-                  active={activeFilter === "live"}
-                  onClick={() => setActiveFilter("live")}
-                />
+        <FilterPill
+          label="Live"
+          count={counts.live}
+          active={activeFilter === "live"}
+          onClick={() => setActiveFilter("live")}
+        />
 
-                <FilterPill
-                  label="Upcoming"
-                  count={counts.upcoming}
-                  active={activeFilter === "upcoming"}
-                  onClick={() => setActiveFilter("upcoming")}
-                />
+        <FilterPill
+          label="Upcoming"
+          count={counts.upcoming}
+          active={activeFilter === "upcoming"}
+          onClick={() => setActiveFilter("upcoming")}
+        />
 
-                <FilterPill
-                  label="Final"
-                  count={counts.final}
-                  active={activeFilter === "final"}
-                  onClick={() => setActiveFilter("final")}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        <FilterPill
+          label="Final"
+          count={counts.final}
+          active={activeFilter === "final"}
+          onClick={() => setActiveFilter("final")}
+        />
+      </div>
+    </div>
+  </div>
+</div>
 
         {sections.length > 0 ? (
           <div className="space-y-7 sm:space-y-8">
