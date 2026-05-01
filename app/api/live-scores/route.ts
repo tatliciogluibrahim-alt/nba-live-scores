@@ -7,6 +7,7 @@ type ESPNTeam = {
   abbreviation?: string;
   displayName?: string;
   shortDisplayName?: string;
+  logo?: string;
   logos?: {
     href?: string;
   }[];
@@ -229,7 +230,7 @@ function normalizeTeam(competitor?: ESPNCompetitor): Team {
     name: team?.displayName || team?.shortDisplayName || "Team",
     abbreviation: team?.abbreviation || "TBD",
     score: Number(competitor?.score || 0),
-    logo: team?.logos?.[0]?.href || "",
+    logo: team?.logos?.[0]?.href || team?.logo || "",
   };
 }
 
