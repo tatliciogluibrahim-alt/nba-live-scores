@@ -36,12 +36,14 @@ type GameSection = {
   games: Game[];
 };
 
-// FIX 1: Module-level constants instead of variables declared on every render
 const FAVORITE_TEAM_STORAGE_KEY = "no-noise-favorite-team";
 const OLD_FOLLOWED_TEAM_STORAGE_KEY = "no-noise-followed-team";
-const SPONSOR_NAME = "Ibra-Heem";
-const SPONSOR_URL = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
-const POLL_INTERVAL_MS = 30_000;
+
+function triggerLightHaptic() {
+  if (typeof navigator !== "undefined" && navigator.vibrate) {
+    navigator.vibrate(8);
+  }
+}
 
 function formatGameDateTime(date: string) {
   const gameDate = new Date(date);
@@ -61,17 +63,35 @@ function formatGameTime(date: string) {
   });
 }
 
-// FIX 2: Accept `now` so callers control the clock; no stale Date.now() captured at render time
-function formatLastUpdated(updatedAt: Date | null, now: number) {
+function formatLastUpdated(updatedAt: Date | null) {
   if (!updatedAt) return "Updating scores";
 
-  const diffMs = now - updatedAt.getTime();
-  const diffMinutes = Math.floor(diffMs / 60_000);
+  const diffMs = Date.now() - updatedAt.getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
 
   if (diffMinutes < 1) return "Updated just now";
   if (diffMinutes === 1) return "Updated 1 min ago";
 
   return `Updated ${diffMinutes} min ago`;
+}
+
+function formatCountdown(targetDate: string) {
+  const diffMs = new Date(targetDate).getTime() - Date.now();
+
+  if (diffMs <= 0) return "Starting soon";
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `Starts in ${hours}:${String(minutes).padStart(2, "0")}:${String(
+      seconds
+    ).padStart(2, "0")}`;
+  }
+
+  return `Starts in ${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 function getLocalDateKey(date: string) {
@@ -158,7 +178,7 @@ function getStatusClasses(status: Game["status"]) {
 }
 
 function getCardAccentClasses(status: Game["status"]) {
-  if (status === "live") return "border-t-[3px] border-orange-500";
+  if (status === "live") return "no-noise-live-card border-t-[3px] border-orange-500";
   if (status === "final") return "border-t-[3px] border-emerald-600";
   return "border-t-[3px] border-blue-500";
 }
@@ -186,13 +206,18 @@ function getTeamEdgeClasses(game: Game) {
   return "bg-orange-500 text-white";
 }
 
-function getWinningTeam(game: Game) {
+function getWinningSide(game: Game) {
   if (game.status === "upcoming") return null;
-
-  if (game.away.score > game.home.score) return game.away;
-  if (game.home.score > game.away.score) return game.home;
-
+  if (game.away.score > game.home.score) return "away";
+  if (game.home.score > game.away.score) return "home";
   return null;
+}
+
+function getWinningTeam(game: Game) {
+  const winningSide = getWinningSide(game);
+  if (!winningSide) return null;
+
+  return game[winningSide];
 }
 
 function getFinalSummary(game: Game) {
@@ -215,7 +240,7 @@ function getGameSubStatus(game: Game) {
 
   if (diffMs <= 0) return "Starting soon";
 
-  const minutes = Math.round(diffMs / 60_000);
+  const minutes = Math.round(diffMs / 60000);
   const hours = Math.round(minutes / 60);
 
   if (minutes < 60) return `Starts in ${minutes} min`;
@@ -234,14 +259,14 @@ function sortGamesForDisplay(gamesToSort: Game[], favoriteTeamAbbr: string | nul
   };
 
   return [...gamesToSort].sort((a, b) => {
-    const statusDifference = statusRank[a.status] - statusRank[b.status];
-
-    if (statusDifference !== 0) return statusDifference;
-
     const aIsFavorite = gameIncludesTeam(a, favoriteTeamAbbr);
     const bIsFavorite = gameIncludesTeam(b, favoriteTeamAbbr);
 
     if (aIsFavorite !== bIsFavorite) return aIsFavorite ? -1 : 1;
+
+    const statusDifference = statusRank[a.status] - statusRank[b.status];
+
+    if (statusDifference !== 0) return statusDifference;
 
     const aTime = new Date(a.date).getTime();
     const bTime = new Date(b.date).getTime();
@@ -347,11 +372,14 @@ function FilterPill({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => {
+        triggerLightHaptic();
+        onClick();
+      }}
       disabled={disabled}
       className={`shrink-0 rounded-full px-2.5 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-wide transition sm:px-3 sm:text-[0.72rem] ${
         active
-          ? "bg-orange-500 text-white shadow-md shadow-orange-950/20"
+          ? "bg-orange-500 text-white shadow-lg shadow-orange-500/30"
           : "bg-white/10 text-white/75 ring-1 ring-white/10 hover:bg-white/15"
       } ${disabled ? "cursor-not-allowed opacity-40 hover:bg-white/10" : ""}`}
     >
@@ -390,7 +418,10 @@ function FavoriteTeamPicker({
     >
       <button
         type="button"
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={() => {
+          triggerLightHaptic();
+          setIsOpen((current) => !current);
+        }}
         className="flex items-center gap-1.5 rounded-full bg-white/10 py-1.5 pl-2.5 pr-2 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-wide text-white/75 ring-1 ring-white/10 transition hover:bg-white/15 sm:pl-3 sm:text-[0.72rem]"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -407,6 +438,7 @@ function FavoriteTeamPicker({
           <button
             type="button"
             onClick={() => {
+              triggerLightHaptic();
               onChange(null);
               setIsOpen(false);
             }}
@@ -423,6 +455,7 @@ function FavoriteTeamPicker({
                 key={team.abbreviation}
                 type="button"
                 onClick={() => {
+                  triggerLightHaptic();
                   onChange(team.abbreviation);
                   setIsOpen(false);
                 }}
@@ -447,22 +480,66 @@ function FavoriteTeamPicker({
   );
 }
 
+function CountdownText({ date }: { date: string }) {
+  const [label, setLabel] = useState(() => formatCountdown(date));
+
+  useEffect(() => {
+    setLabel(formatCountdown(date));
+
+    const interval = setInterval(() => {
+      setLabel(formatCountdown(date));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [date]);
+
+  return <>{label}</>;
+}
+
+function ScoreBlock({
+  score,
+  isChanged,
+}: {
+  score: number;
+  isChanged: boolean;
+}) {
+  return (
+    <div
+      className={`ml-4 min-w-[3.25rem] text-right text-[2.15rem] font-black leading-none tabular-nums tracking-tight text-slate-950 sm:text-[2.35rem] ${
+        isChanged ? "no-noise-score-pop" : ""
+      }`}
+    >
+      {score}
+    </div>
+  );
+}
+
 function TeamLine({
   game,
   side,
   favoriteTeamAbbr,
+  changedScoreKeys,
 }: {
   game: Game;
   side: "away" | "home";
   favoriteTeamAbbr: string | null;
+  changedScoreKeys: Set<string>;
 }) {
   const team = game[side];
   const showScore = game.status !== "upcoming";
   const edgeLabel = getTeamEdgeLabel(game, side);
+  const winningSide = getWinningSide(game);
+  const isWinner = winningSide === side;
+  const isLoser = Boolean(winningSide && winningSide !== side);
   const isFavoriteTeam = favoriteTeamAbbr === team.abbreviation;
+  const changedScoreKey = `${game.id}-${side}`;
 
   return (
-    <div className="flex items-center justify-between py-2.5 sm:py-3">
+    <div
+      className={`-mx-2 flex items-center justify-between rounded-[1rem] px-2 py-2.5 transition sm:py-3 ${
+        isWinner ? "bg-orange-50/70" : ""
+      } ${isLoser ? "opacity-60" : ""}`}
+    >
       <div className="flex min-w-0 items-center gap-3">
         <TeamLogo team={team} />
 
@@ -495,9 +572,16 @@ function TeamLine({
         </div>
       </div>
 
-      <div className="ml-4 text-2xl font-black tabular-nums tracking-tight text-slate-950">
-        {showScore ? team.score : "–"}
-      </div>
+      {showScore ? (
+        <ScoreBlock
+          score={team.score}
+          isChanged={changedScoreKeys.has(changedScoreKey)}
+        />
+      ) : (
+        <div className="ml-4 min-w-[3.25rem] text-right text-[2.15rem] font-black leading-none tracking-tight text-slate-950 sm:text-[2.35rem]">
+          –
+        </div>
+      )}
     </div>
   );
 }
@@ -535,10 +619,14 @@ function PlayoffBand({ game }: { game: Game }) {
 function GameCard({
   game,
   favoriteTeamAbbr,
+  changedScoreKeys,
 }: {
   game: Game;
   favoriteTeamAbbr: string | null;
+  changedScoreKeys: Set<string>;
 }) {
+  const isFavoriteGame = gameIncludesTeam(game, favoriteTeamAbbr);
+
   return (
     <article
       className={`rounded-[1.6rem] bg-[#fffaf2] p-3.5 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70 sm:rounded-[1.65rem] sm:p-4 ${getCardAccentClasses(
@@ -559,7 +647,11 @@ function GameCard({
           </div>
 
           <p className="mt-2 text-sm font-bold text-slate-500">
-            {getGameSubStatus(game)}
+            {game.status === "upcoming" && isFavoriteGame ? (
+              <CountdownText date={game.date} />
+            ) : (
+              getGameSubStatus(game)
+            )}
           </p>
         </div>
 
@@ -577,9 +669,19 @@ function GameCard({
       </div>
 
       <div className="rounded-[1.45rem] bg-white/90 px-4 py-2 ring-1 ring-orange-100/80">
-        <TeamLine game={game} side="away" favoriteTeamAbbr={favoriteTeamAbbr} />
+        <TeamLine
+          game={game}
+          side="away"
+          favoriteTeamAbbr={favoriteTeamAbbr}
+          changedScoreKeys={changedScoreKeys}
+        />
         <div className="h-px bg-orange-100/70" />
-        <TeamLine game={game} side="home" favoriteTeamAbbr={favoriteTeamAbbr} />
+        <TeamLine
+          game={game}
+          side="home"
+          favoriteTeamAbbr={favoriteTeamAbbr}
+          changedScoreKeys={changedScoreKeys}
+        />
       </div>
 
       <PlayoffBand game={game} />
@@ -590,11 +692,15 @@ function GameCard({
 function EmptyState({
   activeFilter,
   viewScope,
+  favoriteTeamAbbr,
   nextGame,
+  nextFavoriteGame,
 }: {
   activeFilter: GameFilter;
   viewScope: ViewScope;
+  favoriteTeamAbbr: string | null;
   nextGame?: Game;
+  nextFavoriteGame?: Game;
 }) {
   if (activeFilter === "live") {
     return (
@@ -616,14 +722,28 @@ function EmptyState({
     return (
       <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
         <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-          No team games found
+          {favoriteTeamAbbr ? `No ${favoriteTeamAbbr} game today` : "No team selected"}
         </p>
 
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          {viewScope === "today"
-            ? "Try switching to Week or pick a different team."
-            : "Try picking a different team."}
+          {nextFavoriteGame
+            ? `Next game: ${formatGameDateTime(nextFavoriteGame.date)} · ${
+                nextFavoriteGame.matchup
+              }`
+            : viewScope === "today"
+              ? "Try switching to Week or pick a different team."
+              : "Try picking a different team."}
         </p>
+
+        {nextFavoriteGame && (
+          <button
+            type="button"
+            onClick={triggerLightHaptic}
+            className="mt-4 rounded-full bg-orange-500 px-4 py-2 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-orange-500/25"
+          >
+            Set a reminder
+          </button>
+        )}
       </section>
     );
   }
@@ -643,26 +763,28 @@ function EmptyState({
   );
 }
 
-// FIX 3: Error state component
-function ErrorState({ onRetry }: { onRetry: () => void }) {
+function SectionHeader({ section }: { section: GameSection }) {
   return (
-    <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
-      <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-        Could not load scores
-      </p>
+    <div className="mb-3 flex items-end justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        {section.eyebrow && (
+          <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-orange-300">
+            {section.eyebrow}
+          </p>
+        )}
 
-      <p className="mt-2 text-sm leading-6 text-slate-500">
-        Something went wrong fetching the scoreboard.
-      </p>
+        <div className="flex items-center gap-4">
+          <h2 className="shrink-0 font-[family-name:var(--font-display)] text-4xl font-black uppercase leading-none tracking-tight text-white sm:text-5xl">
+            {section.title}
+          </h2>
+          <div className="h-px flex-1 bg-gradient-to-r from-orange-400/45 to-transparent" />
+        </div>
+      </div>
 
-      <button
-        type="button"
-        onClick={onRetry}
-        className="mt-5 rounded-full bg-orange-500 px-5 py-2 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-white shadow-md shadow-orange-950/20 transition hover:bg-orange-600"
-      >
-        Try again
-      </button>
-    </section>
+      <p className="shrink-0 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-white/45">
+        {section.games.length} {section.games.length === 1 ? "game" : "games"}
+      </p>
+    </div>
   );
 }
 
@@ -689,45 +811,36 @@ function BrandLockup() {
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [hasError, setHasError] = useState(false);                // FIX 3: visible error state
   const [activeFilter, setActiveFilter] = useState<GameFilter>("all");
   const [viewScope, setViewScope] = useState<ViewScope>("today");
   const [favoriteTeamAbbr, setFavoriteTeamAbbr] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
-  const [now, setNow] = useState(() => Date.now());               // FIX 2: clock for "Updated X min ago"
+  const [changedScoreKeys, setChangedScoreKeys] = useState<Set<string>>(new Set());
 
-  // FIX 4: useRef for isFetching — idiomatic and avoids closure staleness issues
-  const isFetchingRef = useRef(false);
+  const previousScoresRef = useRef<Map<string, number>>(new Map());
+  const scoreAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Read favorite team from localStorage once on mount
   useEffect(() => {
-    const stored =
+    const storedFavoriteTeam =
       localStorage.getItem(FAVORITE_TEAM_STORAGE_KEY) ||
       localStorage.getItem(OLD_FOLLOWED_TEAM_STORAGE_KEY);
 
-    if (stored) {
-      setFavoriteTeamAbbr(stored);
-      localStorage.setItem(FAVORITE_TEAM_STORAGE_KEY, stored);
+    if (storedFavoriteTeam) {
+      setFavoriteTeamAbbr(storedFavoriteTeam);
+      localStorage.setItem(FAVORITE_TEAM_STORAGE_KEY, storedFavoriteTeam);
       localStorage.removeItem(OLD_FOLLOWED_TEAM_STORAGE_KEY);
     }
   }, []);
 
-  // FIX 2: Tick `now` every 30 s so "Updated X min ago" stays accurate without a re-fetch
-  useEffect(() => {
-    const ticker = setInterval(() => setNow(Date.now()), POLL_INTERVAL_MS);
-    return () => clearInterval(ticker);
-  }, []);
-
-  // Polling loop
   useEffect(() => {
     let isMounted = true;
+    let isFetching = false;
     let controller: AbortController | null = null;
 
     async function fetchGames() {
-      // FIX 4: useRef instead of a plain closure variable
-      if (isFetchingRef.current) return;
+      if (isFetching) return;
 
-      isFetchingRef.current = true;
+      isFetching = true;
 
       const requestController = new AbortController();
       controller = requestController;
@@ -740,35 +853,72 @@ export default function Home() {
         if (!response.ok) throw new Error("Could not fetch games");
 
         const data = await response.json();
+        const nextGames = (data.games || []) as Game[];
 
         if (isMounted) {
-          setGames(data.games);
-          setHasError(false);
+          const nextScores = new Map<string, number>();
+          const changedKeys = new Set<string>();
+          const hadPreviousScores = previousScoresRef.current.size > 0;
+
+          nextGames.forEach((game) => {
+            (["away", "home"] as const).forEach((side) => {
+              const key = `${game.id}-${side}`;
+              const nextScore = game[side].score;
+              const previousScore = previousScoresRef.current.get(key);
+
+              nextScores.set(key, nextScore);
+
+              if (
+                hadPreviousScores &&
+                typeof previousScore === "number" &&
+                previousScore !== nextScore
+              ) {
+                changedKeys.add(key);
+              }
+            });
+          });
+
+          previousScoresRef.current = nextScores;
+          setGames(nextGames);
           setLastUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : new Date());
-          setNow(Date.now()); // reset the "just now" clock on a fresh fetch
+
+          if (changedKeys.size > 0) {
+            setChangedScoreKeys(changedKeys);
+
+            if (scoreAnimationTimeoutRef.current) {
+              clearTimeout(scoreAnimationTimeoutRef.current);
+            }
+
+            scoreAnimationTimeoutRef.current = setTimeout(() => {
+              setChangedScoreKeys(new Set());
+            }, 900);
+          }
         }
       } catch {
-        // FIX 3: Surface the error rather than silently clearing games
         if (isMounted && !requestController.signal.aborted) {
-          setHasError(true);
+          setGames([]);
         }
       } finally {
         if (isMounted) {
           setHasLoadedOnce(true);
         }
 
-        isFetchingRef.current = false;
+        isFetching = false;
       }
     }
 
     fetchGames();
 
-    const interval = setInterval(fetchGames, POLL_INTERVAL_MS);
+    const interval = setInterval(fetchGames, 30000);
 
     return () => {
       isMounted = false;
       controller?.abort();
       clearInterval(interval);
+
+      if (scoreAnimationTimeoutRef.current) {
+        clearTimeout(scoreAnimationTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -786,18 +936,13 @@ export default function Home() {
     }
   }
 
-  // FIX 3: Let the user retry manually after an error
-  function handleRetry() {
-    setHasError(false);
-    setHasLoadedOnce(false);
-    isFetchingRef.current = false; // unlock so the next poll can proceed
-  }
+  const availableTeams = useMemo(() => {
+    return getAvailableTeams(games);
+  }, [games]);
 
-  const availableTeams = useMemo(() => getAvailableTeams(games), [games]);
-
-  // FIX 5: getScoreboardToday() called once per memo, not scattered across render helpers
   const todayGames = useMemo(() => {
     const scoreboardToday = getScoreboardToday();
+
     return games.filter((game) =>
       isSameScoreboardDay(new Date(game.date), scoreboardToday)
     );
@@ -811,16 +956,16 @@ export default function Home() {
     const selectedGames = scopedGames.filter((game) => {
       if (activeFilter === "all") return true;
       if (activeFilter === "my-team") return gameIncludesTeam(game, favoriteTeamAbbr);
+
       return game.status === activeFilter;
     });
 
     return sortGamesForDisplay(selectedGames, favoriteTeamAbbr);
   }, [scopedGames, activeFilter, favoriteTeamAbbr]);
 
-  const sections = useMemo(
-    () => buildSections(filteredGames, activeFilter),
-    [filteredGames, activeFilter]
-  );
+  const sections = useMemo(() => {
+    return buildSections(filteredGames, activeFilter);
+  }, [filteredGames, activeFilter]);
 
   const counts = useMemo(() => {
     return scopedGames.reduce(
@@ -856,76 +1001,63 @@ export default function Home() {
     return nextGame;
   }, [games]);
 
-  function renderBody() {
-    if (!hasLoadedOnce) {
-      return (
-        <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
-          <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-            Loading scores...
-          </p>
+  const nextFavoriteGame = useMemo(() => {
+    let nextGame: Game | undefined;
+    let nextTime = Infinity;
 
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Pulling the latest scoreboard.
-          </p>
-        </section>
-      );
-    }
+    games.forEach((game) => {
+      if (!gameIncludesTeam(game, favoriteTeamAbbr)) return;
 
-    // FIX 3: Show error state instead of silently showing nothing
-    if (hasError) {
-      return <ErrorState onRetry={handleRetry} />;
-    }
+      const gameTime = new Date(game.date).getTime();
 
-    if (sections.length > 0) {
-      return (
-        <div className="space-y-7 sm:space-y-8">
-          {sections.map((section) => (
-            <section key={`${section.title}-${section.eyebrow || ""}`}>
-              <div className="mb-3 flex items-end justify-between gap-3">
-                <div>
-                  {section.eyebrow && (
-                    <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-orange-300">
-                      {section.eyebrow}
-                    </p>
-                  )}
+      if (gameTime > Date.now() && gameTime < nextTime) {
+        nextTime = gameTime;
+        nextGame = game;
+      }
+    });
 
-                  <h2 className="font-[family-name:var(--font-display)] text-4xl font-black uppercase leading-none tracking-tight text-white sm:text-5xl">
-                    {section.title}
-                  </h2>
-                </div>
+    return nextGame;
+  }, [games, favoriteTeamAbbr]);
 
-                <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-white/45">
-                  {section.games.length}{" "}
-                  {section.games.length === 1 ? "game" : "games"}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {section.games.map((game) => (
-                  <GameCard
-                    key={game.id}
-                    game={game}
-                    favoriteTeamAbbr={favoriteTeamAbbr}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      );
-    }
-
-    return (
-      <EmptyState
-        activeFilter={activeFilter}
-        viewScope={viewScope}
-        nextGame={nextUpcomingGame}
-      />
-    );
-  }
+  const sponsorName = "Ibra-Heem";
+  const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
 
   return (
     <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-36 pt-4 text-white sm:px-6 md:py-8">
+      <style jsx global>{`
+        @keyframes no-noise-live-card {
+          0%,
+          100% {
+            box-shadow: 0 18px 35px rgba(0, 0, 0, 0.15);
+          }
+          50% {
+            box-shadow: 0 18px 35px rgba(0, 0, 0, 0.15),
+              0 -2px 18px rgba(249, 115, 22, 0.22);
+          }
+        }
+
+        @keyframes no-noise-score-pop {
+          0% {
+            transform: scale(1);
+          }
+          35% {
+            transform: scale(1.13);
+            color: #f97316;
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        .no-noise-live-card {
+          animation: no-noise-live-card 2.4s ease-in-out infinite;
+        }
+
+        .no-noise-score-pop {
+          animation: no-noise-score-pop 0.8s ease-out;
+        }
+      `}</style>
+
       <div className="mx-auto max-w-7xl">
         <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
           <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-5 sm:p-6 lg:p-7">
@@ -937,16 +1069,15 @@ export default function Home() {
                   no noise.
                 </h1>
 
-                {/* FIX 1: Uses module-level constants */}
                 <p className="mt-3 flex flex-wrap items-center gap-1.5 text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
                   <span>Sponsored by</span>
                   <a
-                    href={SPONSOR_URL}
+                    href={sponsorUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="font-semibold text-slate-700 underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-600"
                   >
-                    {SPONSOR_NAME}
+                    {sponsorName}
                   </a>
                 </p>
 
@@ -987,9 +1118,8 @@ export default function Home() {
                 />
               </div>
 
-              {/* FIX 2: now is passed in so the text re-renders on the ticker */}
               <p className="order-last px-1 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-[0.18em] text-white/35 lg:order-none lg:mx-3 lg:shrink-0 lg:px-0 lg:text-right">
-                {formatLastUpdated(lastUpdatedAt, now)}
+                {formatLastUpdated(lastUpdatedAt)}
               </p>
 
               <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
@@ -1033,7 +1163,44 @@ export default function Home() {
           </div>
         </div>
 
-        {renderBody()}
+        {sections.length > 0 ? (
+          <div className="space-y-7 sm:space-y-8">
+            {sections.map((section) => (
+              <section key={`${section.title}-${section.eyebrow || ""}`}>
+                <SectionHeader section={section} />
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {section.games.map((game) => (
+                    <GameCard
+                      key={game.id}
+                      game={game}
+                      favoriteTeamAbbr={favoriteTeamAbbr}
+                      changedScoreKeys={changedScoreKeys}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : !hasLoadedOnce ? (
+          <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
+            <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
+              Loading scores...
+            </p>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Pulling the latest scoreboard.
+            </p>
+          </section>
+        ) : (
+          <EmptyState
+            activeFilter={activeFilter}
+            viewScope={viewScope}
+            favoriteTeamAbbr={favoriteTeamAbbr}
+            nextGame={nextUpcomingGame}
+            nextFavoriteGame={nextFavoriteGame}
+          />
+        )}
       </div>
     </main>
   );
