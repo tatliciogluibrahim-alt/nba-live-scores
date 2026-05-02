@@ -380,7 +380,7 @@ function FilterPill({
         onClick();
       }}
       disabled={disabled}
-      className={`shrink-0 rounded-full px-2.5 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-wide transition sm:px-3 sm:text-[0.72rem] ${
+      className={`flex h-9 shrink-0 items-center rounded-full px-2.5 font-[family-name:var(--font-display)] text-[0.66rem] font-black uppercase leading-none tracking-wide transition active:scale-[0.98] sm:h-9 sm:px-3 sm:text-[0.72rem] ${
         active
           ? "bg-orange-500 text-white shadow-lg shadow-orange-500/30"
           : "bg-white/10 text-white/75 ring-1 ring-white/10 hover:bg-white/15"
@@ -425,7 +425,7 @@ function FavoriteTeamPicker({
           triggerLightHaptic();
           setIsOpen((current) => !current);
         }}
-        className="flex items-center gap-1.5 rounded-full bg-white/10 py-1.5 pl-2.5 pr-2 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-wide text-white/75 ring-1 ring-white/10 transition hover:bg-white/15 sm:pl-3 sm:text-[0.72rem]"
+        className="flex h-9 items-center gap-1.5 rounded-full bg-white/10 pl-2.5 pr-2 font-[family-name:var(--font-display)] text-[0.66rem] font-black uppercase leading-none tracking-wide text-white/75 ring-1 ring-white/10 transition hover:bg-white/15 active:scale-[0.98] sm:pl-3 sm:text-[0.72rem]"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
@@ -1031,7 +1031,7 @@ export default function Home() {
   const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
 
   return (
-    <main className="min-h-screen bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-36 pt-4 text-white sm:px-6 md:py-8">
+    <main className="min-h-[100svh] bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-[calc(env(safe-area-inset-bottom)+6rem)] pt-[calc(env(safe-area-inset-top)+1rem)] text-white sm:px-6 md:pb-36 md:pt-[calc(env(safe-area-inset-top)+2rem)]">
       <style jsx global>{`
         @keyframes no-noise-live-card {
           0%,
@@ -1075,10 +1075,10 @@ export default function Home() {
 
       <div className="mx-auto max-w-7xl">
         <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
-          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-5 sm:p-6 lg:p-7">
+          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-4 sm:p-6 lg:p-7">
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div>
-                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.35rem] font-black uppercase leading-[0.92] tracking-tight text-slate-950 sm:text-6xl sm:leading-[0.9] lg:text-[5rem]">
+                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.15rem] font-black uppercase leading-[0.92] tracking-tight text-slate-950 sm:text-6xl sm:leading-[0.9] lg:text-[5rem]">
                   NBA scores,
                   <br />
                   no noise.
@@ -1108,10 +1108,10 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="mb-10 -mx-4 px-4 pt-2 sm:mb-12 sm:-mx-6 sm:px-6">
-          <div className="mx-auto max-w-7xl rounded-[1.15rem] border border-white/10 bg-[#06101f]/92 px-3 py-2 shadow-xl shadow-black/25 backdrop-blur-xl sm:px-4">
-            <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-wrap gap-1.5 pr-2">
+        <div className="mb-9 -mx-4 px-4 pt-1 sm:mb-12 sm:-mx-6 sm:px-6">
+          <div className="mx-auto max-w-7xl rounded-[1.35rem] border border-white/10 bg-[#06101f]/94 p-2.5 shadow-xl shadow-black/25 backdrop-blur-xl sm:px-3">
+            <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center">
+              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <FilterPill
                   label="Today"
                   count={todayGames.length}
@@ -1137,7 +1137,7 @@ export default function Home() {
                 {formatLastUpdated(lastUpdatedAt)}
               </p>
 
-              <div className="flex gap-1.5 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
+              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
                 <FilterPill
                   label="All"
                   count={counts.all}
