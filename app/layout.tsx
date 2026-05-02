@@ -15,17 +15,28 @@ const displayFont = Anton({
 
 export const metadata: Metadata = {
   title: "No Noise Scores",
-  description: "A clean weekly NBA scoreboard with live, upcoming, and final game filters.",
+  description: "NBA scores, no noise.",
+  applicationName: "No Noise Scores",
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
     apple: "/favicon.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "No Noise Scores",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  minimumScale: 1,
   viewportFit: "cover",
   themeColor: "#07111f",
   colorScheme: "dark",

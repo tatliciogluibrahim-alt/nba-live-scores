@@ -2,11 +2,12 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePushNotifications } from "@/lib/usePushNotifications";
 
 type GameStatus = "live" | "upcoming" | "final";
 type GameFilter = "all" | "my-team" | GameStatus;
-type ViewScope = "today" | "week";
 
 type Team = {
   name: string;
@@ -714,13 +715,11 @@ function GameCard({
 
 function EmptyState({
   activeFilter,
-  viewScope,
   favoriteTeamAbbr,
   nextGame,
   nextFavoriteGame,
 }: {
   activeFilter: GameFilter;
-  viewScope: ViewScope;
   favoriteTeamAbbr: string | null;
   nextGame?: Game;
   nextFavoriteGame?: Game;
@@ -745,19 +744,14 @@ function EmptyState({
     return (
       <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
         <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-          {favoriteTeamAbbr ? `No ${favoriteTeamAbbr} game today` : "No team selected"}
+          {favoriteTeamAbbr ? `No ${favoriteTeamAbbr} games this week` : "No team selected"}
         </p>
 
         <p className="mt-2 text-sm leading-6 text-slate-500">
           {nextFavoriteGame
-            ? `Next game: ${formatGameDateTime(nextFavoriteGame.date)} · ${
-                nextFavoriteGame.matchup
-              }`
-            : viewScope === "today"
-              ? "Try switching to Week or pick a different team."
-              : "Try picking a different team."}
+            ? `Next game: ${formatGameDateTime(nextFavoriteGame.date)} · ${nextFavoriteGame.matchup}`
+            : "Try picking a different team."}
         </p>
-
       </section>
     );
   }
@@ -769,9 +763,7 @@ function EmptyState({
       </p>
 
       <p className="mt-2 text-sm leading-6 text-slate-500">
-        {viewScope === "today"
-          ? "Try switching to Week to see the full schedule."
-          : "Try switching filters to see more games."}
+        Try a different filter.
       </p>
     </section>
   );
@@ -793,13 +785,15 @@ export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [activeFilter, setActiveFilter] = useState<GameFilter>("all");
-  const [viewScope, setViewScope] = useState<ViewScope>("today");
   const [favoriteTeamAbbr, setFavoriteTeamAbbr] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const [changedScoreKeys, setChangedScoreKeys] = useState<Set<string>>(new Set());
 
   const previousScoresRef = useRef<Map<string, number>>(new Map());
   const scoreAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Request push notification permission once user picks a team
+  usePushNotifications(favoriteTeamAbbr);
 
   useEffect(() => {
     const storedFavoriteTeam =
@@ -868,6 +862,7 @@ export default function Home() {
           setLastUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : new Date());
 
           if (changedKeys.size > 0) {
+            triggerLightHaptic();
             setChangedScoreKeys(changedKeys);
 
             if (scoreAnimationTimeoutRef.current) {
@@ -925,35 +920,23 @@ export default function Home() {
     return getAvailableTeams(games);
   }, [games]);
 
-  const todayGames = useMemo(() => {
-    const scoreboardToday = getScoreboardToday();
-
-    return games.filter((game) =>
-      isSameScoreboardDay(new Date(game.date), scoreboardToday)
-    );
-  }, [games]);
-
-  const scopedGames = useMemo(() => {
-    return viewScope === "today" ? todayGames : games;
-  }, [games, todayGames, viewScope]);
-
+  // Always show the full week — sections are already grouped by day (Today, Tomorrow, etc.)
   const filteredGames = useMemo(() => {
-    const selectedGames = scopedGames.filter((game) => {
+    const selectedGames = games.filter((game) => {
       if (activeFilter === "all") return true;
       if (activeFilter === "my-team") return gameIncludesTeam(game, favoriteTeamAbbr);
-
       return game.status === activeFilter;
     });
 
     return sortGamesForDisplay(selectedGames, favoriteTeamAbbr);
-  }, [scopedGames, activeFilter, favoriteTeamAbbr]);
+  }, [games, activeFilter, favoriteTeamAbbr]);
 
   const sections = useMemo(() => {
     return buildSections(filteredGames, activeFilter);
   }, [filteredGames, activeFilter]);
 
   const counts = useMemo(() => {
-    return scopedGames.reduce(
+    return games.reduce(
       (total, game) => {
         total.all += 1;
         total[game.status] += 1;
@@ -966,7 +949,7 @@ export default function Home() {
       },
       { all: 0, myTeam: 0, live: 0, upcoming: 0, final: 0 }
     );
-  }, [scopedGames, favoriteTeamAbbr]);
+  }, [games, favoriteTeamAbbr]);
 
   const nextUpcomingGame = useMemo(() => {
     let nextGame: Game | undefined;
@@ -1060,69 +1043,61 @@ export default function Home() {
               No Noise Scores
             </span>
           </div>
-          <p className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.18em] text-white/35">
-            {formatLastUpdated(lastUpdatedAt)}
-          </p>
+
+          <div className="flex items-center gap-3">
+            <p className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.18em] text-white/35">
+              {formatLastUpdated(lastUpdatedAt)}
+            </p>
+            <Link
+              href="/hoops"
+              aria-label="Play Hoops mini-game"
+              title="Secret mini-game 🏀"
+              className="text-base leading-none text-white/20 transition hover:text-white/60 active:scale-90"
+            >
+              🏀
+            </Link>
+          </div>
         </header>
 
         <div className="mb-5 sm:mb-8">
           <div className="rounded-[1.15rem] border border-white/10 bg-[#06101f]/94 p-1.5 shadow-xl shadow-black/25 backdrop-blur-xl sm:p-2">
-            <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              <FilterPill
-                label="Today"
-                count={todayGames.length}
-                active={viewScope === "today"}
-                onClick={() => setViewScope("today")}
-              />
+            <div className="flex items-center gap-1.5">
+              {/* Scrollable pills — overflow is isolated here so the picker dropdown is never clipped */}
+              <div className="flex flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <FilterPill
+                  label="Live"
+                  count={counts.live}
+                  active={activeFilter === "live"}
+                  onClick={() => setActiveFilter(activeFilter === "live" ? "all" : "live")}
+                />
 
-              <FilterPill
-                label="Week"
-                count={games.length}
-                active={viewScope === "week"}
-                onClick={() => setViewScope("week")}
-              />
+                <FilterPill
+                  label="Upcoming"
+                  compactLabel="Next"
+                  count={counts.upcoming}
+                  active={activeFilter === "upcoming"}
+                  onClick={() => setActiveFilter(activeFilter === "upcoming" ? "all" : "upcoming")}
+                />
 
-              <div className="mx-0.5 h-4 w-px shrink-0 bg-white/15" />
+                <FilterPill
+                  label="Final"
+                  count={counts.final}
+                  active={activeFilter === "final"}
+                  onClick={() => setActiveFilter(activeFilter === "final" ? "all" : "final")}
+                />
 
-              <FilterPill
-                label="All"
-                count={counts.all}
-                active={activeFilter === "all"}
-                onClick={() => setActiveFilter("all")}
-              />
+                <FilterPill
+                  label="My Team"
+                  compactLabel="Mine"
+                  count={counts.myTeam}
+                  active={activeFilter === "my-team"}
+                  disabled={!favoriteTeamAbbr}
+                  onClick={() => setActiveFilter(activeFilter === "my-team" ? "all" : "my-team")}
+                />
+              </div>
 
-              <FilterPill
-                label="Live"
-                count={counts.live}
-                active={activeFilter === "live"}
-                onClick={() => setActiveFilter("live")}
-              />
-
-              <FilterPill
-                label="Upcoming"
-                compactLabel="Next"
-                count={counts.upcoming}
-                active={activeFilter === "upcoming"}
-                onClick={() => setActiveFilter("upcoming")}
-              />
-
-              <FilterPill
-                label="Final"
-                count={counts.final}
-                active={activeFilter === "final"}
-                onClick={() => setActiveFilter("final")}
-              />
-
-              <FilterPill
-                label="My Team"
-                compactLabel="Mine"
-                count={counts.myTeam}
-                active={activeFilter === "my-team"}
-                disabled={!favoriteTeamAbbr}
-                onClick={() => setActiveFilter("my-team")}
-              />
-
-              <div className="ml-auto shrink-0">
+              {/* Picker lives outside the overflow container so its dropdown opens freely */}
+              <div className="shrink-0 pl-0.5">
                 <FavoriteTeamPicker
                   teams={availableTeams}
                   favoriteTeamAbbr={favoriteTeamAbbr}
@@ -1165,7 +1140,6 @@ export default function Home() {
         ) : (
           <EmptyState
             activeFilter={activeFilter}
-            viewScope={viewScope}
             favoriteTeamAbbr={favoriteTeamAbbr}
             nextGame={nextUpcomingGame}
             nextFavoriteGame={nextFavoriteGame}
