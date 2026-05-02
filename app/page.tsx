@@ -1111,7 +1111,7 @@ export default function Home() {
         <div className="mb-9 -mx-4 px-4 pt-1 sm:mb-12 sm:-mx-6 sm:px-6">
           <div className="mx-auto max-w-7xl rounded-[1.35rem] border border-white/10 bg-[#06101f]/94 p-2.5 shadow-xl shadow-black/25 backdrop-blur-xl sm:px-3">
             <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center">
-              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex flex-wrap gap-1.5 pr-1">
                 <FilterPill
                   label="Today"
                   count={todayGames.length}
