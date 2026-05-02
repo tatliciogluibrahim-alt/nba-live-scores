@@ -681,11 +681,11 @@ function GameCard({
 
           {game.status !== "final" && (
             <p className="mt-1 truncate text-[0.78rem] font-bold leading-tight text-slate-500">
-              {game.status === "upcoming" && isFavoriteGame ? (
-                <CountdownText date={game.date} />
-              ) : (
-                getGameSubStatus(game)
-              )}
+              {game.status === "live"
+                ? "Live now"
+                : game.status === "upcoming" && isFavoriteGame
+                  ? <CountdownText date={game.date} />
+                  : getGameSubStatus(game)}
             </p>
           )}
         </div>
