@@ -2,7 +2,6 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type GameStatus = "live" | "upcoming" | "final";
@@ -382,7 +381,7 @@ function FilterPill({
         onClick();
       }}
       disabled={disabled}
-      className={`flex h-7 w-full min-w-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] transition active:scale-[0.98] sm:h-8 sm:px-3 sm:text-[0.76rem] lg:w-auto ${
+      className={`flex h-7 w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] transition active:scale-[0.98] sm:h-8 sm:px-3 sm:text-[0.76rem] ${
         active
           ? "bg-orange-500 text-white shadow-md shadow-orange-500/25"
           : "bg-white/8 text-white/68 ring-1 ring-white/10 hover:bg-white/14"
@@ -453,7 +452,7 @@ function FavoriteTeamPicker({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-30 mt-2 w-44 overflow-hidden rounded-[1rem] border border-white/10 bg-[#06101f] py-1.5 shadow-2xl shadow-black/40 ring-1 ring-black/20">
+        <div className="absolute bottom-full right-0 z-30 mb-2 w-44 overflow-hidden rounded-[1rem] border border-white/10 bg-[#06101f] py-1.5 shadow-2xl shadow-black/40 ring-1 ring-black/20">
           <button
             type="button"
             onClick={() => {
@@ -780,53 +779,15 @@ function EmptyState({
 
 function SectionHeader({ section }: { section: GameSection }) {
   return (
-    <div className="mb-2.5 flex items-end justify-between gap-3">
-      <div className="min-w-0 flex-1">
-        {section.eyebrow && (
-          <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-orange-300">
-            {section.eyebrow}
-          </p>
-        )}
-
-        <div className="flex items-center gap-4">
-          <h2 className="shrink-0 font-[family-name:var(--font-display)] text-[2.55rem] font-black uppercase leading-none tracking-tight text-white sm:text-5xl">
-            {section.title}
-          </h2>
-          <div className="h-px flex-1 bg-gradient-to-r from-orange-400/45 to-transparent" />
-        </div>
-      </div>
-
-      <p className="shrink-0 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-[0.16em] text-white/45 sm:text-sm">
-        {section.games.length} {section.games.length === 1 ? "game" : "games"}
+    <div className="mb-2.5">
+      <p className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-white/45">
+        {section.title}
       </p>
+      <hr className="border-white/10" />
     </div>
   );
 }
 
-function BrandLockup() {
-  return (
-    <div className="flex items-center gap-2.5 lg:gap-3 lg:justify-end">
-      <Link
-        href="/hoops"
-        aria-label="Open No Noise Hoops"
-        title="No Noise Hoops"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.9rem] bg-[#07111f] shadow-lg shadow-black/20 ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:shadow-orange-500/20 focus:outline-none focus:ring-2 focus:ring-orange-400/70 sm:h-14 sm:w-14 sm:rounded-[1rem]"
-      >
-        <img
-          src="/favicon.svg"
-          alt="No Noise Scores logo"
-          className="h-6 w-6 sm:h-8 sm:w-8"
-        />
-      </Link>
-
-      <p className="font-[family-name:var(--font-display)] text-[1.15rem] font-black uppercase leading-[0.88] tracking-tight text-orange-500 sm:text-[1.6rem] lg:text-[1.9rem]">
-        No Noise
-        <br />
-        Scores
-      </p>
-    </div>
-  );
-}
 
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
@@ -1044,11 +1005,8 @@ export default function Home() {
     return nextGame;
   }, [games, favoriteTeamAbbr, lastUpdatedAt]);
 
-  const sponsorName = "Ibra-Heem";
-  const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
-
   return (
-    <main className="min-h-[100svh] bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-3 pb-[calc(env(safe-area-inset-bottom)+5rem)] pt-[calc(env(safe-area-inset-top)+0.65rem)] text-white sm:px-6 md:pb-36 md:pt-[calc(env(safe-area-inset-top)+2rem)]">
+    <main className="min-h-[100svh] bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-[calc(env(safe-area-inset-bottom)+5rem)] pt-[calc(env(safe-area-inset-top)+0.65rem)] text-white sm:px-6 md:pb-36 md:pt-[calc(env(safe-area-inset-top)+2rem)]">
       <style jsx global>{`
         @keyframes no-noise-live-card {
           0%,
@@ -1091,106 +1049,84 @@ export default function Home() {
       `}</style>
 
       <div className="mx-auto max-w-7xl">
-        <header className="mb-3 overflow-hidden rounded-[1.35rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
-          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-3.5 sm:p-6 lg:p-7">
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-              <div>
-                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[1.82rem] font-black uppercase leading-[0.9] tracking-tight text-slate-950 sm:text-6xl sm:leading-[0.9] lg:text-[5rem]">
-                  NBA scores,
-                  <br />
-                  no noise.
-                </h1>
-
-                <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[0.95rem] font-medium leading-6 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
-                  <span>Sponsored by</span>
-                  <a
-                    href={sponsorUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-semibold text-slate-700 underline decoration-orange-400 decoration-2 underline-offset-4 transition hover:text-orange-600"
-                  >
-                    {sponsorName}
-                  </a>
-                </p>
-
-                <div className="mt-3 lg:hidden">
-                  <BrandLockup />
-                </div>
-              </div>
-
-              <div className="hidden lg:flex lg:justify-self-end">
-                <BrandLockup />
-              </div>
-            </div>
+        <header className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+          <div className="flex items-center gap-2">
+            <img
+              src="/favicon.svg"
+              alt="No Noise Scores logo"
+              className="h-5 w-5"
+            />
+            <span className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-tight text-white">
+              No Noise Scores
+            </span>
           </div>
+          <p className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.18em] text-white/35">
+            {formatLastUpdated(lastUpdatedAt)}
+          </p>
         </header>
 
-        <div className="mb-7 -mx-3 px-3 pt-1 sm:mb-12 sm:-mx-6 sm:px-6">
-          <div className="mx-auto max-w-7xl rounded-[1.15rem] border border-white/10 bg-[#06101f]/94 p-1.5 shadow-xl shadow-black/25 backdrop-blur-xl sm:p-2.5">
-            <div className="grid gap-1.5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center">
-              <div className="grid grid-cols-[0.8fr_0.8fr_1.25fr] gap-1.5">
-                <FilterPill
-                  label="Today"
-                  count={todayGames.length}
-                  active={viewScope === "today"}
-                  onClick={() => setViewScope("today")}
-                />
+        <div className="mb-5 sm:mb-8">
+          <div className="rounded-[1.15rem] border border-white/10 bg-[#06101f]/94 p-1.5 shadow-xl shadow-black/25 backdrop-blur-xl sm:p-2">
+            <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <FilterPill
+                label="Today"
+                count={todayGames.length}
+                active={viewScope === "today"}
+                onClick={() => setViewScope("today")}
+              />
 
-                <FilterPill
-                  label="Week"
-                  count={games.length}
-                  active={viewScope === "week"}
-                  onClick={() => setViewScope("week")}
-                />
+              <FilterPill
+                label="Week"
+                count={games.length}
+                active={viewScope === "week"}
+                onClick={() => setViewScope("week")}
+              />
 
+              <div className="mx-0.5 h-4 w-px shrink-0 bg-white/15" />
+
+              <FilterPill
+                label="All"
+                count={counts.all}
+                active={activeFilter === "all"}
+                onClick={() => setActiveFilter("all")}
+              />
+
+              <FilterPill
+                label="Live"
+                count={counts.live}
+                active={activeFilter === "live"}
+                onClick={() => setActiveFilter("live")}
+              />
+
+              <FilterPill
+                label="Upcoming"
+                compactLabel="Next"
+                count={counts.upcoming}
+                active={activeFilter === "upcoming"}
+                onClick={() => setActiveFilter("upcoming")}
+              />
+
+              <FilterPill
+                label="Final"
+                count={counts.final}
+                active={activeFilter === "final"}
+                onClick={() => setActiveFilter("final")}
+              />
+
+              <FilterPill
+                label="My Team"
+                compactLabel="Mine"
+                count={counts.myTeam}
+                active={activeFilter === "my-team"}
+                disabled={!favoriteTeamAbbr}
+                onClick={() => setActiveFilter("my-team")}
+              />
+
+              <div className="ml-auto shrink-0">
                 <FavoriteTeamPicker
                   teams={availableTeams}
                   favoriteTeamAbbr={favoriteTeamAbbr}
                   onChange={handleFavoriteTeamChange}
-                />
-              </div>
-
-              <p className="order-last px-1 pb-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-[0.18em] text-white/35 lg:order-none lg:mx-3 lg:shrink-0 lg:px-0 lg:pb-0 lg:text-right">
-                {formatLastUpdated(lastUpdatedAt)}
-              </p>
-
-              <div className="grid grid-cols-5 gap-1.5 lg:flex lg:justify-end">
-                <FilterPill
-                  label="All"
-                  count={counts.all}
-                  active={activeFilter === "all"}
-                  onClick={() => setActiveFilter("all")}
-                />
-
-                <FilterPill
-                  label="My Team"
-                  compactLabel="Mine"
-                  count={counts.myTeam}
-                  active={activeFilter === "my-team"}
-                  disabled={!favoriteTeamAbbr}
-                  onClick={() => setActiveFilter("my-team")}
-                />
-
-                <FilterPill
-                  label="Live"
-                  count={counts.live}
-                  active={activeFilter === "live"}
-                  onClick={() => setActiveFilter("live")}
-                />
-
-                <FilterPill
-                  label="Upcoming"
-                  compactLabel="Next"
-                  count={counts.upcoming}
-                  active={activeFilter === "upcoming"}
-                  onClick={() => setActiveFilter("upcoming")}
-                />
-
-                <FilterPill
-                  label="Final"
-                  count={counts.final}
-                  active={activeFilter === "final"}
-                  onClick={() => setActiveFilter("final")}
                 />
               </div>
             </div>
