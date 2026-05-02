@@ -361,12 +361,14 @@ function TeamLogo({ team }: { team: Team }) {
 
 function FilterPill({
   label,
+  compactLabel,
   count,
   active,
   disabled = false,
   onClick,
 }: {
   label: string;
+  compactLabel?: string;
   count?: number;
   active: boolean;
   disabled?: boolean;
@@ -380,16 +382,30 @@ function FilterPill({
         onClick();
       }}
       disabled={disabled}
-      className={`flex h-9 shrink-0 items-center rounded-full px-2.5 font-[family-name:var(--font-display)] text-[0.66rem] font-black uppercase leading-none tracking-wide transition active:scale-[0.98] sm:h-9 sm:px-3 sm:text-[0.72rem] ${
+      className={`flex h-7 w-full min-w-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] transition active:scale-[0.98] sm:h-8 sm:px-3 sm:text-[0.76rem] lg:w-auto ${
         active
-          ? "bg-orange-500 text-white shadow-lg shadow-orange-500/30"
-          : "bg-white/10 text-white/75 ring-1 ring-white/10 hover:bg-white/15"
-      } ${disabled ? "cursor-not-allowed opacity-40 hover:bg-white/10" : ""}`}
+          ? "bg-orange-500 text-white shadow-md shadow-orange-500/25"
+          : "bg-white/8 text-white/68 ring-1 ring-white/10 hover:bg-white/14"
+      } ${disabled ? "cursor-not-allowed opacity-30 hover:bg-white/8" : ""}`}
     >
-      <span className="flex items-center gap-1.5">
-        <span>{label}</span>
+      <span className="flex min-w-0 items-center justify-center gap-1">
+        <span className="truncate">
+          {compactLabel ? (
+            <>
+              <span className="sm:hidden">{compactLabel}</span>
+              <span className="hidden sm:inline">{label}</span>
+            </>
+          ) : (
+            label
+          )}
+        </span>
+
         {typeof count === "number" && (
-          <span className={active ? "text-white/90" : "text-white/45"}>
+          <span
+            className={`rounded-full px-1 py-0.5 text-[0.62rem] leading-none ${
+              active ? "bg-white/15 text-white/90" : "bg-white/5 text-white/38"
+            }`}
+          >
             {count}
           </span>
         )}
@@ -412,7 +428,7 @@ function FavoriteTeamPicker({
 
   return (
     <div
-      className="relative shrink-0"
+      className="relative min-w-0 shrink-0"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) {
           setIsOpen(false);
@@ -425,15 +441,15 @@ function FavoriteTeamPicker({
           triggerLightHaptic();
           setIsOpen((current) => !current);
         }}
-        className="flex h-9 items-center gap-1.5 rounded-full bg-white/10 pl-2.5 pr-2 font-[family-name:var(--font-display)] text-[0.66rem] font-black uppercase leading-none tracking-wide text-white/75 ring-1 ring-white/10 transition hover:bg-white/15 active:scale-[0.98] sm:pl-3 sm:text-[0.72rem]"
+        className="flex h-7 w-full min-w-0 items-center justify-center gap-1.5 rounded-full bg-white/8 pl-2 pr-1.5 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] text-white/68 ring-1 ring-white/10 transition hover:bg-white/14 active:scale-[0.98] sm:h-8 sm:pl-3 sm:text-[0.76rem]"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span className="text-white/45">Team:</span>
+        <span className="text-white/40">Team</span>
         <span className="text-white">
           {selectedTeam ? selectedTeam.abbreviation : "Pick"}
         </span>
-        <span className="text-white/45">▾</span>
+        <span className="text-[0.6rem] text-white/40">▾</span>
       </button>
 
       {isOpen && (
@@ -543,16 +559,16 @@ function TeamLine({
 
   return (
     <div
-      className={`-mx-2 flex items-center justify-between rounded-[1rem] px-2 py-2.5 transition sm:py-3 ${
+      className={`-mx-1.5 flex items-center justify-between rounded-[0.9rem] px-1.5 py-2 transition sm:py-3 ${
         isWinner ? "bg-orange-50/70" : ""
       } ${isLoser ? "opacity-60" : ""}`}
     >
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
         <TeamLogo team={team} />
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-base font-black tracking-tight text-slate-950 sm:text-lg">
+            <p className="text-[0.95rem] font-black tracking-tight text-slate-950 sm:text-lg">
               {team.abbreviation}
             </p>
 
@@ -573,7 +589,7 @@ function TeamLine({
             )}
           </div>
 
-          <p className="truncate text-xs font-medium text-slate-500 sm:text-sm">
+          <p className="truncate text-[0.74rem] font-semibold leading-tight text-slate-500 sm:text-sm">
             {team.name}
           </p>
         </div>
@@ -585,7 +601,7 @@ function TeamLine({
           isChanged={changedScoreKeys.has(changedScoreKey)}
         />
       ) : (
-        <div className="ml-4 min-w-[3.25rem] text-right text-[2.15rem] font-black leading-none tracking-tight text-slate-950 sm:text-[2.35rem]">
+        <div className="ml-3 min-w-[2.5rem] text-right text-[1.45rem] font-black leading-none tracking-tight text-slate-300 sm:min-w-[3.25rem] sm:text-[2.35rem]">
           –
         </div>
       )}
@@ -599,7 +615,7 @@ function PlayoffBand({ game }: { game: Game }) {
   if (!game.gameContext && !game.seriesSummary && !finalSummary) return null;
 
   return (
-    <div className="mt-3 rounded-[1.3rem] bg-[#07111f] px-4 py-3 text-white ring-1 ring-white/10">
+    <div className="mt-2.5 rounded-[1rem] bg-[#07111f] px-3 py-2.5 text-white ring-1 ring-white/10">
       {game.status === "final" && finalSummary && (
         <p className="font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-emerald-300">
           {finalSummary}
@@ -636,24 +652,24 @@ function GameCard({
 
   return (
     <article
-      className={`rounded-[1.6rem] bg-[#fffaf2] p-3.5 text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70 sm:rounded-[1.65rem] sm:p-4 ${getCardAccentClasses(
+      className={`overflow-hidden rounded-[1.2rem] bg-[#fffaf2] text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70 sm:rounded-[1.65rem] ${getCardAccentClasses(
         game.status
       )}`}
     >
-      <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 border-b border-orange-100/80 bg-white/55 px-3 py-2.5">
         <div className="min-w-0">
           <div
-            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-wide ring-1 ${getStatusClasses(
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide ring-1 ${getStatusClasses(
               game.status
             )}`}
           >
             {game.status === "live" && (
-              <span className="h-2 w-2 animate-pulse rounded-full bg-orange-600" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-600" />
             )}
             {getStatusLabel(game.status)}
           </div>
 
-          <p className="mt-2 text-sm font-bold text-slate-500">
+          <p className="mt-1 truncate text-[0.78rem] font-bold leading-tight text-slate-500">
             {game.status === "upcoming" && isFavoriteGame ? (
               <CountdownText date={game.date} />
             ) : (
@@ -663,35 +679,36 @@ function GameCard({
         </div>
 
         <div className="shrink-0 text-right">
-          <p className="font-[family-name:var(--font-display)] text-[1.6rem] font-black uppercase leading-none tracking-tight text-slate-950 sm:text-xl">
+          <p className="font-[family-name:var(--font-display)] text-[1.08rem] font-black uppercase leading-none tracking-tight text-slate-950 sm:text-xl">
             {game.status === "live"
               ? game.statusText
               : formatGameDateTime(game.date)}
           </p>
 
-          <p className="mt-1 font-[family-name:var(--font-display)] text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+          <p className="mt-1 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-[0.14em] text-slate-500">
             {game.matchup}
           </p>
         </div>
       </div>
 
-      <div className="rounded-[1.45rem] bg-white/90 px-4 py-2 ring-1 ring-orange-100/80">
-        <TeamLine
-          game={game}
-          side="away"
-          favoriteTeamAbbr={favoriteTeamAbbr}
-          changedScoreKeys={changedScoreKeys}
-        />
-        <div className="h-px bg-orange-100/70" />
-        <TeamLine
-          game={game}
-          side="home"
-          favoriteTeamAbbr={favoriteTeamAbbr}
-          changedScoreKeys={changedScoreKeys}
-        />
-      </div>
+      <div className="px-3 py-2.5 sm:px-4 sm:py-3">
+        <div className="divide-y divide-orange-100/80">
+          <TeamLine
+            game={game}
+            side="away"
+            favoriteTeamAbbr={favoriteTeamAbbr}
+            changedScoreKeys={changedScoreKeys}
+          />
+          <TeamLine
+            game={game}
+            side="home"
+            favoriteTeamAbbr={favoriteTeamAbbr}
+            changedScoreKeys={changedScoreKeys}
+          />
+        </div>
 
-      <PlayoffBand game={game} />
+        <PlayoffBand game={game} />
+      </div>
     </article>
   );
 }
@@ -763,7 +780,7 @@ function EmptyState({
 
 function SectionHeader({ section }: { section: GameSection }) {
   return (
-    <div className="mb-3 flex items-end justify-between gap-3">
+    <div className="mb-2.5 flex items-end justify-between gap-3">
       <div className="min-w-0 flex-1">
         {section.eyebrow && (
           <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-orange-300">
@@ -772,14 +789,14 @@ function SectionHeader({ section }: { section: GameSection }) {
         )}
 
         <div className="flex items-center gap-4">
-          <h2 className="shrink-0 font-[family-name:var(--font-display)] text-4xl font-black uppercase leading-none tracking-tight text-white sm:text-5xl">
+          <h2 className="shrink-0 font-[family-name:var(--font-display)] text-[2.55rem] font-black uppercase leading-none tracking-tight text-white sm:text-5xl">
             {section.title}
           </h2>
           <div className="h-px flex-1 bg-gradient-to-r from-orange-400/45 to-transparent" />
         </div>
       </div>
 
-      <p className="shrink-0 font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-[0.18em] text-white/45">
+      <p className="shrink-0 font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-[0.16em] text-white/45 sm:text-sm">
         {section.games.length} {section.games.length === 1 ? "game" : "games"}
       </p>
     </div>
@@ -788,21 +805,21 @@ function SectionHeader({ section }: { section: GameSection }) {
 
 function BrandLockup() {
   return (
-    <div className="flex items-center gap-3 lg:justify-end">
+    <div className="flex items-center gap-2.5 lg:gap-3 lg:justify-end">
       <Link
         href="/hoops"
         aria-label="Open No Noise Hoops"
         title="No Noise Hoops"
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] bg-[#07111f] shadow-lg shadow-black/20 ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:shadow-orange-500/20 focus:outline-none focus:ring-2 focus:ring-orange-400/70 sm:h-14 sm:w-14"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.9rem] bg-[#07111f] shadow-lg shadow-black/20 ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:shadow-orange-500/20 focus:outline-none focus:ring-2 focus:ring-orange-400/70 sm:h-14 sm:w-14 sm:rounded-[1rem]"
       >
         <img
           src="/favicon.svg"
           alt="No Noise Scores logo"
-          className="h-7 w-7 sm:h-8 sm:w-8"
+          className="h-6 w-6 sm:h-8 sm:w-8"
         />
       </Link>
 
-      <p className="font-[family-name:var(--font-display)] text-[1.45rem] font-black uppercase leading-[0.88] tracking-tight text-orange-500 sm:text-[1.6rem] lg:text-[1.9rem]">
+      <p className="font-[family-name:var(--font-display)] text-[1.15rem] font-black uppercase leading-[0.88] tracking-tight text-orange-500 sm:text-[1.6rem] lg:text-[1.9rem]">
         No Noise
         <br />
         Scores
@@ -1031,7 +1048,7 @@ export default function Home() {
   const sponsorUrl = "https://open.spotify.com/artist/1yNArQC2GYbKr3M7H7vpXo";
 
   return (
-    <main className="min-h-[100svh] bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-[calc(env(safe-area-inset-bottom)+6rem)] pt-[calc(env(safe-area-inset-top)+1rem)] text-white sm:px-6 md:pb-36 md:pt-[calc(env(safe-area-inset-top)+2rem)]">
+    <main className="min-h-[100svh] bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-3 pb-[calc(env(safe-area-inset-bottom)+5rem)] pt-[calc(env(safe-area-inset-top)+0.65rem)] text-white sm:px-6 md:pb-36 md:pt-[calc(env(safe-area-inset-top)+2rem)]">
       <style jsx global>{`
         @keyframes no-noise-live-card {
           0%,
@@ -1074,17 +1091,17 @@ export default function Home() {
       `}</style>
 
       <div className="mx-auto max-w-7xl">
-        <header className="mb-4 overflow-hidden rounded-[1.65rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
-          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-4 sm:p-6 lg:p-7">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <header className="mb-3 overflow-hidden rounded-[1.35rem] bg-[#fff8ef] text-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/35 sm:mb-5 sm:rounded-[2rem]">
+          <div className="bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.11),transparent_34%),linear-gradient(135deg,#fffaf2,#fffefb_54%,#fff3e4)] p-3.5 sm:p-6 lg:p-7">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div>
-                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[2.15rem] font-black uppercase leading-[0.92] tracking-tight text-slate-950 sm:text-6xl sm:leading-[0.9] lg:text-[5rem]">
+                <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[1.82rem] font-black uppercase leading-[0.9] tracking-tight text-slate-950 sm:text-6xl sm:leading-[0.9] lg:text-[5rem]">
                   NBA scores,
                   <br />
                   no noise.
                 </h1>
 
-                <p className="mt-3 flex flex-wrap items-center gap-1.5 text-base font-medium leading-7 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
+                <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[0.95rem] font-medium leading-6 text-slate-500 sm:mt-4 sm:text-lg sm:leading-8">
                   <span>Sponsored by</span>
                   <a
                     href={sponsorUrl}
@@ -1096,7 +1113,7 @@ export default function Home() {
                   </a>
                 </p>
 
-                <div className="mt-4 lg:hidden">
+                <div className="mt-3 lg:hidden">
                   <BrandLockup />
                 </div>
               </div>
@@ -1108,10 +1125,10 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="mb-9 -mx-4 px-4 pt-1 sm:mb-12 sm:-mx-6 sm:px-6">
-          <div className="mx-auto max-w-7xl rounded-[1.35rem] border border-white/10 bg-[#06101f]/94 p-2.5 shadow-xl shadow-black/25 backdrop-blur-xl sm:px-3">
-            <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center">
-              <div className="flex flex-wrap gap-1.5 pr-1">
+        <div className="mb-7 -mx-3 px-3 pt-1 sm:mb-12 sm:-mx-6 sm:px-6">
+          <div className="mx-auto max-w-7xl rounded-[1.15rem] border border-white/10 bg-[#06101f]/94 p-1.5 shadow-xl shadow-black/25 backdrop-blur-xl sm:p-2.5">
+            <div className="grid gap-1.5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center">
+              <div className="grid grid-cols-[0.8fr_0.8fr_1.25fr] gap-1.5">
                 <FilterPill
                   label="Today"
                   count={todayGames.length}
@@ -1133,11 +1150,11 @@ export default function Home() {
                 />
               </div>
 
-              <p className="order-last px-1 font-[family-name:var(--font-display)] text-[10px] font-black uppercase tracking-[0.18em] text-white/35 lg:order-none lg:mx-3 lg:shrink-0 lg:px-0 lg:text-right">
+              <p className="order-last px-1 pb-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-[0.18em] text-white/35 lg:order-none lg:mx-3 lg:shrink-0 lg:px-0 lg:pb-0 lg:text-right">
                 {formatLastUpdated(lastUpdatedAt)}
               </p>
 
-              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-end">
+              <div className="grid grid-cols-5 gap-1.5 lg:flex lg:justify-end">
                 <FilterPill
                   label="All"
                   count={counts.all}
@@ -1147,6 +1164,7 @@ export default function Home() {
 
                 <FilterPill
                   label="My Team"
+                  compactLabel="Mine"
                   count={counts.myTeam}
                   active={activeFilter === "my-team"}
                   disabled={!favoriteTeamAbbr}
@@ -1162,6 +1180,7 @@ export default function Home() {
 
                 <FilterPill
                   label="Upcoming"
+                  compactLabel="Next"
                   count={counts.upcoming}
                   active={activeFilter === "upcoming"}
                   onClick={() => setActiveFilter("upcoming")}
@@ -1179,12 +1198,12 @@ export default function Home() {
         </div>
 
         {sections.length > 0 ? (
-          <div className="space-y-7 sm:space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {sections.map((section) => (
               <section key={`${section.title}-${section.eyebrow || ""}`}>
                 <SectionHeader section={section} />
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3">
                   {section.games.map((game) => (
                     <GameCard
                       key={game.id}
