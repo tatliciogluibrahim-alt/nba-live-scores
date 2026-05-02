@@ -441,7 +441,7 @@ function FavoriteTeamPicker({
           triggerLightHaptic();
           setIsOpen((current) => !current);
         }}
-        className="flex h-7 w-full min-w-0 items-center justify-center gap-1.5 rounded-full bg-white/8 pl-2 pr-1.5 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] text-white/68 ring-1 ring-white/10 transition hover:bg-white/14 active:scale-[0.98] sm:h-8 sm:pl-3 sm:text-[0.76rem]"
+        className="flex h-7 w-auto shrink-0 items-center justify-center gap-1.5 rounded-full bg-white/8 pl-2 pr-1.5 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] text-white/68 ring-1 ring-white/10 transition hover:bg-white/14 active:scale-[0.98] sm:h-8 sm:pl-3 sm:text-[0.76rem]"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
@@ -453,7 +453,7 @@ function FavoriteTeamPicker({
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 z-30 mb-2 w-44 overflow-hidden rounded-[1rem] border border-white/10 bg-[#06101f] py-1.5 shadow-2xl shadow-black/40 ring-1 ring-black/20">
+        <div className="absolute right-0 top-full z-30 mt-2 w-48 overflow-hidden rounded-[1rem] border border-white/10 bg-[#06101f] py-1.5 shadow-2xl shadow-black/40 ring-1 ring-black/20">
           <button
             type="button"
             onClick={() => {
