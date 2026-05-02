@@ -83,18 +83,25 @@ function formatCountdown(targetDate: string) {
 
   if (diffMs <= 0) return "Starting soon";
 
-  const totalSeconds = Math.floor(diffMs / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+  const totalMinutes = Math.floor(diffMs / 60000);
+  const totalHours = Math.floor(totalMinutes / 60);
 
-  if (hours > 0) {
-    return `Starts in ${hours}:${String(minutes).padStart(2, "0")}:${String(
-      seconds
-    ).padStart(2, "0")}`;
+  if (totalMinutes < 5) {
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    if (h > 0) {
+      return `Starts in ${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+    return `Starts in ${m}:${String(s).padStart(2, "0")}`;
   }
 
-  return `Starts in ${minutes}:${String(seconds).padStart(2, "0")}`;
+  if (totalMinutes < 60) return `In ${totalMinutes} min`;
+
+  if (totalHours < 6) return `In ${totalHours} ${totalHours === 1 ? "hr" : "hrs"}`;
+
+  return `Tonight · ${formatGameTime(targetDate)}`;
 }
 
 function getLocalDateKey(date: string) {
@@ -382,17 +389,17 @@ function FilterPill({
         onClick();
       }}
       disabled={disabled}
-      className={`flex h-7 w-auto shrink-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] transition active:scale-[0.98] sm:h-8 sm:px-3 sm:text-[0.76rem] ${
+      className={`flex h-7 w-auto min-w-fit shrink-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] transition active:scale-[0.98] sm:h-8 sm:px-3 sm:text-[0.76rem] ${
         active
           ? "bg-orange-500 text-white shadow-md shadow-orange-500/25"
           : "bg-white/8 text-white/68 ring-1 ring-white/10 hover:bg-white/14"
-      } ${disabled ? "cursor-not-allowed opacity-30 hover:bg-white/8" : ""}`}
+      } ${disabled ? "pointer-events-none opacity-20" : ""}`}
     >
-      <span className="flex min-w-0 items-center justify-center gap-1">
-        <span className="truncate">
+      <span className="flex items-center justify-center gap-1">
+        <span>
           {compactLabel ? (
             <>
-              <span className="sm:hidden">{compactLabel}</span>
+              <span className="whitespace-nowrap sm:hidden">{compactLabel}</span>
               <span className="hidden sm:inline">{label}</span>
             </>
           ) : (
@@ -507,8 +514,11 @@ function CountdownText({ date }: { date: string }) {
       setLabel(formatCountdown(date));
     };
 
+    const getInterval = () =>
+      new Date(date).getTime() - Date.now() < 300000 ? 1000 : 60000;
+
     const initialTimeout = setTimeout(updateCountdown, 0);
-    const interval = setInterval(updateCountdown, 1000);
+    const interval = setInterval(updateCountdown, getInterval());
 
     return () => {
       clearTimeout(initialTimeout);
@@ -669,13 +679,15 @@ function GameCard({
             {getStatusLabel(game.status)}
           </div>
 
-          <p className="mt-1 truncate text-[0.78rem] font-bold leading-tight text-slate-500">
-            {game.status === "upcoming" && isFavoriteGame ? (
-              <CountdownText date={game.date} />
-            ) : (
-              getGameSubStatus(game)
-            )}
-          </p>
+          {game.status !== "final" && (
+            <p className="mt-1 truncate text-[0.78rem] font-bold leading-tight text-slate-500">
+              {game.status === "upcoming" && isFavoriteGame ? (
+                <CountdownText date={game.date} />
+              ) : (
+                getGameSubStatus(game)
+              )}
+            </p>
+          )}
         </div>
 
         <div className="shrink-0 text-right">
@@ -1044,19 +1056,18 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <p className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.18em] text-white/35">
-              {formatLastUpdated(lastUpdatedAt)}
-            </p>
-            <Link
-              href="/hoops"
-              aria-label="Play Hoops mini-game"
-              title="Secret mini-game 🏀"
-              className="text-base leading-none text-white/20 transition hover:text-white/60 active:scale-90"
-            >
-              🏀
-            </Link>
-          </div>
+          <Link
+            href="/hoops"
+            aria-label="Open No Noise Hoops"
+            title="No Noise Hoops"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full opacity-25 transition hover:opacity-60 active:scale-95"
+          >
+            <img
+              src="/favicon.svg"
+              alt=""
+              className="h-5 w-5"
+            />
+          </Link>
         </header>
 
         <div className="mb-5 sm:mb-8">
@@ -1068,6 +1079,7 @@ export default function Home() {
                   label="Live"
                   count={counts.live}
                   active={activeFilter === "live"}
+                  disabled={counts.live === 0 && activeFilter !== "live"}
                   onClick={() => setActiveFilter(activeFilter === "live" ? "all" : "live")}
                 />
 
@@ -1076,6 +1088,7 @@ export default function Home() {
                   compactLabel="Next"
                   count={counts.upcoming}
                   active={activeFilter === "upcoming"}
+                  disabled={counts.upcoming === 0 && activeFilter !== "upcoming"}
                   onClick={() => setActiveFilter(activeFilter === "upcoming" ? "all" : "upcoming")}
                 />
 
@@ -1083,6 +1096,7 @@ export default function Home() {
                   label="Final"
                   count={counts.final}
                   active={activeFilter === "final"}
+                  disabled={counts.final === 0 && activeFilter !== "final"}
                   onClick={() => setActiveFilter(activeFilter === "final" ? "all" : "final")}
                 />
 
@@ -1107,6 +1121,10 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        <p className="mb-4 px-1 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-[0.16em] text-white/28">
+          {formatLastUpdated(lastUpdatedAt)}
+        </p>
 
         {sections.length > 0 ? (
           <div className="space-y-6 sm:space-y-8">
