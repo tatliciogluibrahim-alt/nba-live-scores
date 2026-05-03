@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePushNotifications } from "@/lib/usePushNotifications";
 
 type GameStatus = "live" | "upcoming" | "final";
@@ -786,14 +786,6 @@ function SectionHeader({ section }: { section: GameSection }) {
 }
 
 // ─── Bracket ────────────────────────────────────────────────────────────────
-
-// Round ordering for display (Finals first = most dramatic)
-const ROUND_ORDER: Record<string, number> = {
-  "NBA Finals": 0,
-  "Conf Finals": 1,
-  "Second Round": 2,
-  "First Round": 3,
-};
 
 type SeriesInfo = {
   key: string;
