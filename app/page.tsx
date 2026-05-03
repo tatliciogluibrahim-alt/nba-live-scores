@@ -29,6 +29,8 @@ type Game = {
   matchup: string;
   gameContext: string;
   seriesSummary: string;
+  seriesConference: string;
+  seriesRound: string;
   home: Team;
   away: Team;
 };
@@ -785,13 +787,21 @@ function SectionHeader({ section }: { section: GameSection }) {
 
 // ─── Bracket ────────────────────────────────────────────────────────────────
 
+// Round ordering for display (Finals first = most dramatic)
+const ROUND_ORDER: Record<string, number> = {
+  "NBA Finals": 0,
+  "Conf Finals": 1,
+  "Second Round": 2,
+  "First Round": 3,
+};
+
 type SeriesInfo = {
   key: string;
   abbrA: string;
   abbrB: string;
   teamA: Team & { wins: number };
   teamB: Team & { wins: number };
-  conference: "East" | "West" | "Finals";
+  conference: string;
   round: string;
   summary: string;
   status: "live" | "upcoming" | "complete";
@@ -800,8 +810,51 @@ type SeriesInfo = {
   games: Game[];
 };
 
+/** Parse the authoritative series record from the seriesSummary string.
+ *  Handles: "PHI WINS SERIES 4-3", "DEN LEADS SERIES 3-1", "SERIES TIED 2-2"
+ *  abbrA and abbrB are the canonical sorted abbreviations for this series. */
+function parseSeriesWins(
+  summary: string,
+  abbrA: string,
+  abbrB: string
+): { winsA: number; winsB: number } {
+  const s = summary.toUpperCase();
+
+  // "PHI WIN(S) SERIES 4-3"
+  const winsMatch = s.match(/(\w+)\s+WINS?\s+SERIES\s+(\d+)-(\d+)/);
+  if (winsMatch) {
+    const winner = winsMatch[1];
+    const hi = parseInt(winsMatch[2]);
+    const lo = parseInt(winsMatch[3]);
+    const aWon =
+      winner === abbrA.toUpperCase() ||
+      (!winner.includes(abbrB.toUpperCase()) && hi > lo);
+    return aWon ? { winsA: hi, winsB: lo } : { winsA: lo, winsB: hi };
+  }
+
+  // "DEN LEAD(S) SERIES 3-1"
+  const leadsMatch = s.match(/(\w+)\s+LEADS?\s+SERIES\s+(\d+)-(\d+)/);
+  if (leadsMatch) {
+    const leader = leadsMatch[1];
+    const hi = parseInt(leadsMatch[2]);
+    const lo = parseInt(leadsMatch[3]);
+    const aLeads = leader === abbrA.toUpperCase();
+    return aLeads ? { winsA: hi, winsB: lo } : { winsA: lo, winsB: hi };
+  }
+
+  // "SERIES TIED 3-3"
+  const tiedMatch = s.match(/SERIES\s+TIED\s+(\d+)-(\d+)/);
+  if (tiedMatch) {
+    const n = parseInt(tiedMatch[1]);
+    return { winsA: n, winsB: n };
+  }
+
+  return { winsA: 0, winsB: 0 };
+}
+
 function buildBracketSeries(allGames: Game[]): SeriesInfo[] {
-  const playoffGames = allGames.filter((g) => g.gameContext);
+  // Only playoff games have a seriesRound set
+  const playoffGames = allGames.filter((g) => g.seriesRound);
   if (!playoffGames.length) return [];
 
   const seriesMap = new Map<string, Game[]>();
@@ -824,56 +877,32 @@ function buildBracketSeries(allGames: Game[]): SeriesInfo[] {
         return sg[0].away;
       };
 
-      let winsA = 0;
-      let winsB = 0;
-      sg.filter((g) => g.status === "final").forEach((g) => {
-        const awayWon = g.away.score > g.home.score;
-        if (awayWon) {
-          if (g.away.abbreviation === abbrA) winsA++;
-          else winsB++;
-        } else {
-          if (g.home.abbreviation === abbrA) winsA++;
-          else winsB++;
-        }
-      });
+      // Use the most recent seriesSummary (from newest final game, or any game)
+      const withSummary = sg
+        .filter((g) => g.seriesSummary)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const summary = withSummary[0]?.seriesSummary ?? "";
 
-      const ctx = sg.find((g) => g.gameContext)?.gameContext ?? "";
-      const conference: SeriesInfo["conference"] = /nba finals/i.test(ctx)
-        ? "Finals"
-        : ctx.includes("Eastern")
-          ? "East"
-          : ctx.includes("Western")
-            ? "West"
-            : "Finals";
+      // Parse authoritative wins from summary string
+      const { winsA, winsB } = summary
+        ? parseSeriesWins(summary, abbrA, abbrB)
+        : { winsA: 0, winsB: 0 };
 
-      let round = "Playoffs";
-      if (/nba finals/i.test(ctx)) round = "NBA Finals";
-      else if (/conference finals/i.test(ctx)) round = "Conf Finals";
-      else if (/second round/i.test(ctx)) round = "Second Round";
-      else if (/first round/i.test(ctx)) round = "First Round";
-
-      const finalGames = sg
-        .filter((g) => g.status === "final")
-        .sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-      const summary =
-        finalGames[0]?.seriesSummary ||
-        sg.find((g) => g.seriesSummary)?.seriesSummary ||
-        "";
+      // Conference + round come from the API-level extraction
+      const conference = sg.find((g) => g.seriesConference)?.seriesConference ?? "";
+      const round = sg.find((g) => g.seriesRound)?.seriesRound ?? "";
 
       const liveGame = sg.find((g) => g.status === "live");
       const upcomingGames = sg
         .filter((g) => g.status === "upcoming")
-        .sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       const nextGame = liveGame ?? upcomingGames[0];
       const status: SeriesInfo["status"] = liveGame
         ? "live"
         : upcomingGames.length > 0
           ? "upcoming"
           : "complete";
+
       const isGame7 = status !== "complete" && winsA === 3 && winsB === 3;
 
       return {
@@ -893,16 +922,15 @@ function buildBracketSeries(allGames: Game[]): SeriesInfo[] {
     }
   );
 
+  // Sort within each series group: live → game7 → upcoming → complete
   return series.sort((a, b) => {
-    const rank = (s: SeriesInfo) => {
+    const urgency = (s: SeriesInfo) => {
       if (s.status === "live") return 0;
       if (s.isGame7) return 1;
       if (s.status === "upcoming") return 2;
       return 3;
     };
-    const diff = rank(a) - rank(b);
-    if (diff !== 0) return diff;
-    return b.teamA.wins + b.teamB.wins - (a.teamA.wins + a.teamB.wins);
+    return urgency(a) - urgency(b);
   });
 }
 
@@ -920,12 +948,16 @@ function SeriesCard({
     ? isSameScoreboardDay(gameDate, getScoreboardToday())
     : false;
   const isTomorrowGame = gameDate ? isTomorrow(gameDate) : false;
+
+  // Game 7 urgency label
   const urgentLabel = series.isGame7
     ? isTonight
       ? "Game 7 Tonight"
       : isTomorrowGame
         ? "Game 7 Tomorrow"
-        : null
+        : series.status === "live"
+          ? "Game 7"
+          : null
     : null;
 
   const leadingTeam =
@@ -934,71 +966,54 @@ function SeriesCard({
       : series.teamB.wins > series.teamA.wins
         ? series.teamB
         : null;
-  const isSeriesOver =
-    series.teamA.wins === 4 || series.teamB.wins === 4;
+  const isSeriesOver = series.teamA.wins === 4 || series.teamB.wins === 4;
+
+  // Next game label
+  let nextGameLabel = "";
+  if (series.nextGame) {
+    if (series.status === "live") {
+      nextGameLabel = `Live · ${series.nextGame.statusText}`;
+    } else {
+      nextGameLabel = formatGameDateTime(series.nextGame.date);
+    }
+  }
+
+  const teams = [series.teamA, series.teamB] as (Team & { wins: number })[];
 
   return (
     <div
-      className={`overflow-hidden rounded-[1.2rem] bg-[#ffffff] shadow-sm ${
+      className={`overflow-hidden rounded-[1.35rem] bg-[#ffffff] ${
         series.status === "live"
           ? "ring-2 ring-orange-400"
           : "ring-1 ring-[#e8e0d4]"
       }`}
     >
-      {/* Card header */}
-      <div
-        className={`flex items-center justify-between gap-2 border-b border-[#e8e0d4] px-3 py-2 ${
-          series.status === "live" ? "bg-orange-50" : "bg-[#f8f5f0]"
-        }`}
-      >
-        <div className="flex items-center gap-1.5">
-          <span className="font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide text-[#a89880]">
-            {series.round}
-          </span>
-          {series.status === "live" && (
-            <span className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide text-orange-700 ring-1 ring-orange-200">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-600" />
-              Live
-            </span>
-          )}
-          {isMyTeam && (
-            <span className="rounded-full bg-orange-100 px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide text-orange-700">
-              MY TEAM
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5">
-          {urgentLabel && (
-            <span className="rounded-full bg-orange-500 px-2 py-0.5 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide text-white">
-              {urgentLabel}
-            </span>
-          )}
-          {isSeriesOver && leadingTeam && (
-            <span className="font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide text-emerald-600">
-              {leadingTeam.abbreviation} wins
-            </span>
-          )}
-        </div>
-      </div>
+      {/* Left accent + teams */}
+      <div className="flex">
+        {/* Colored side bar */}
+        <div
+          className={`w-[3px] shrink-0 ${
+            series.status === "live"
+              ? "bg-orange-500"
+              : isSeriesOver
+                ? "bg-emerald-500"
+                : "bg-[#d4cdc0]"
+          }`}
+        />
 
-      {/* Teams */}
-      <div className="px-3 py-3">
-        {([series.teamA, series.teamB] as (Team & { wins: number })[]).map(
-          (team) => {
-            const isLeading =
-              leadingTeam?.abbreviation === team.abbreviation;
+        <div className="flex-1 px-3 py-3">
+          {/* Team rows */}
+          {teams.map((team, idx) => {
+            const isLeading = leadingTeam?.abbreviation === team.abbreviation;
             const isTrailing =
-              leadingTeam !== null &&
-              leadingTeam.abbreviation !== team.abbreviation;
+              isSeriesOver && leadingTeam !== null && !isLeading;
             return (
               <div
                 key={team.abbreviation}
-                className={`flex items-center justify-between py-1.5 ${
-                  isTrailing && isSeriesOver ? "opacity-40" : ""
-                }`}
+                className={`flex items-center justify-between ${idx === 0 ? "pb-2" : "pt-2 border-t border-[#f0ece4]"} ${isTrailing ? "opacity-35" : ""}`}
               >
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-[#e8e0d4]">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f8f5f0] ring-1 ring-[#e8e0d4]">
                     {team.logo ? (
                       <img
                         src={team.logo}
@@ -1011,37 +1026,89 @@ function SeriesCard({
                       </span>
                     )}
                   </div>
-                  <span className="text-sm font-black tracking-tight text-[#1a1208]">
-                    {team.abbreviation}
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`text-[0.9rem] font-black tracking-tight ${
+                          isTrailing ? "text-[#a89880]" : "text-[#1a1208]"
+                        }`}
+                      >
+                        {team.abbreviation}
+                      </span>
+                      {isMyTeam && team.abbreviation === favoriteTeamAbbr && (
+                        <span className="rounded-full bg-orange-100 px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-orange-700">
+                          ★
+                        </span>
+                      )}
+                      {isSeriesOver && isLeading && (
+                        <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-emerald-700">
+                          WIN
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[0.68rem] font-medium text-[#a89880]">
+                      {team.name}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Win pips + count */}
+                <div className="flex items-center gap-1.5">
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-2 w-2 rounded-full ${
+                          i < team.wins
+                            ? isSeriesOver && isLeading
+                              ? "bg-emerald-500"
+                              : series.status === "live"
+                                ? "bg-orange-500"
+                                : "bg-[#1a1208]"
+                            : "bg-[#e8e0d4]"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span
+                    className={`w-5 text-right text-[1.4rem] font-black tabular-nums leading-none ${
+                      isTrailing ? "text-[#c0b0a0]" : "text-[#1a1208]"
+                    }`}
+                  >
+                    {team.wins}
                   </span>
                 </div>
-                <span
-                  className={`text-2xl font-black tabular-nums leading-none ${
-                    isLeading ? "text-[#1a1208]" : "text-[#c0b0a0]"
-                  }`}
-                >
-                  {team.wins}
-                </span>
               </div>
             );
-          }
-        )}
+          })}
 
-        {/* Series summary */}
-        {series.summary && (
-          <p className="mt-1.5 text-[0.72rem] font-semibold text-[#a89880]">
-            {series.summary}
-          </p>
-        )}
-
-        {/* Next game time */}
-        {series.nextGame && (
-          <p className="mt-1 text-[0.72rem] font-semibold text-[#a89880]">
-            {series.status === "live"
-              ? `Live · ${series.nextGame.statusText}`
-              : formatGameDateTime(series.nextGame.date)}
-          </p>
-        )}
+          {/* Footer: status + next game */}
+          <div className="mt-2.5 flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {urgentLabel && (
+                <span className="rounded-full bg-orange-500 px-2 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-white">
+                  {urgentLabel}
+                </span>
+              )}
+              {series.status === "live" && !urgentLabel && (
+                <span className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-orange-700">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-600" />
+                  Live
+                </span>
+              )}
+              {series.summary && (
+                <span className="text-[0.68rem] font-semibold text-[#a89880]">
+                  {series.summary}
+                </span>
+              )}
+            </div>
+            {nextGameLabel && (
+              <span className="shrink-0 text-[0.68rem] font-semibold text-[#a89880]">
+                {nextGameLabel}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1058,55 +1125,102 @@ function BracketView({
 
   if (allSeries.length === 0) {
     return (
-      <div className="rounded-[1.75rem] bg-[#ffffff] p-8 text-center ring-1 ring-[#e8e0d4] shadow-sm">
-        <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight text-[#1a1208]">
+      <div className="rounded-[1.75rem] bg-[#ffffff] p-10 text-center ring-1 ring-[#e8e0d4]">
+        <p className="font-[family-name:var(--font-display)] text-3xl font-black uppercase tracking-tight text-[#1a1208]">
           No playoff series
         </p>
         <p className="mt-2 text-sm leading-6 text-[#a89880]">
-          Playoff bracket will appear here once games are scheduled.
+          Bracket will appear here once the playoffs begin.
         </p>
       </div>
     );
   }
 
-  const finalsSeries = allSeries.filter((s) => s.conference === "Finals");
-  const eastSeries = allSeries.filter((s) => s.conference === "East");
-  const westSeries = allSeries.filter((s) => s.conference === "West");
+  // Group by round, display in round order
+  const roundGroups = new Map<string, SeriesInfo[]>();
+  allSeries.forEach((s) => {
+    const r = s.round || "Playoffs";
+    if (!roundGroups.has(r)) roundGroups.set(r, []);
+    roundGroups.get(r)!.push(s);
+  });
 
-  function ConferenceSection({
-    title,
-    series,
-  }: {
-    title: string;
-    series: SeriesInfo[];
-  }) {
-    if (!series.length) return null;
-    return (
-      <div>
-        <div className="mb-2.5">
-          <p className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[#a89880]">
-            {title}
-          </p>
-          <hr className="border-[#d4cdc0]" />
-        </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {series.map((s) => (
-            <SeriesCard
-              key={s.key}
-              series={s}
-              favoriteTeamAbbr={favoriteTeamAbbr}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const orderedRounds = Array.from(roundGroups.entries()).sort(
+    ([rA], [rB]) =>
+      (ROUND_ORDER[rA] ?? 99) - (ROUND_ORDER[rB] ?? 99)
+  );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
-      <ConferenceSection title="NBA Finals" series={finalsSeries} />
-      <ConferenceSection title="Eastern Conference" series={eastSeries} />
-      <ConferenceSection title="Western Conference" series={westSeries} />
+    <div className="max-w-4xl mx-auto space-y-7">
+      {orderedRounds.map(([round, roundSeries]) => {
+        // Within each round, split East vs West
+        const east = roundSeries.filter((s) => s.conference === "East");
+        const west = roundSeries.filter((s) => s.conference === "West");
+        const finals = roundSeries.filter(
+          (s) => s.conference === "Finals" || (!east.length && !west.length)
+        );
+
+        return (
+          <div key={round}>
+            {/* Round header */}
+            <div className="mb-3">
+              <p className="mb-1.5 font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.1em] text-[#a89880]">
+                {round}
+              </p>
+              <hr className="border-[#d4cdc0]" />
+            </div>
+
+            {/* Finals: single column, centered */}
+            {finals.length > 0 && (
+              <div className="mx-auto max-w-sm">
+                {finals.map((s) => (
+                  <SeriesCard
+                    key={s.key}
+                    series={s}
+                    favoriteTeamAbbr={favoriteTeamAbbr}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* East + West side by side */}
+            {(east.length > 0 || west.length > 0) && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* East column */}
+                {east.length > 0 && (
+                  <div className="space-y-2.5">
+                    <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
+                      East
+                    </p>
+                    {east.map((s) => (
+                      <SeriesCard
+                        key={s.key}
+                        series={s}
+                        favoriteTeamAbbr={favoriteTeamAbbr}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* West column */}
+                {west.length > 0 && (
+                  <div className="space-y-2.5">
+                    <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
+                      West
+                    </p>
+                    {west.map((s) => (
+                      <SeriesCard
+                        key={s.key}
+                        series={s}
+                        favoriteTeamAbbr={favoriteTeamAbbr}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

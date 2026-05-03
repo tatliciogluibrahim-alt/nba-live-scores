@@ -80,6 +80,8 @@ type NormalizedGame = {
   matchup: string;
   gameContext: string;
   seriesSummary: string;
+  seriesConference: string; // "East" | "West" | "Finals" | ""
+  seriesRound: string;      // "First Round" | "Second Round" | "Conf Finals" | "NBA Finals" | ""
   home: Team;
   away: Team;
 };
@@ -193,6 +195,47 @@ function formatStatusText(
   });
 }
 
+function extractSeriesInfo(headline?: string): {
+  seriesConference: string;
+  seriesRound: string;
+} {
+  if (!headline) return { seriesConference: "", seriesRound: "" };
+  const h = headline.toLowerCase();
+
+  if (/nba finals/i.test(h)) {
+    return { seriesConference: "Finals", seriesRound: "NBA Finals" };
+  }
+  if (/eastern.*(conference finals|conf finals)/i.test(h)) {
+    return { seriesConference: "East", seriesRound: "Conf Finals" };
+  }
+  if (/western.*(conference finals|conf finals)/i.test(h)) {
+    return { seriesConference: "West", seriesRound: "Conf Finals" };
+  }
+  if (/eastern.*(second round|2nd round)/i.test(h)) {
+    return { seriesConference: "East", seriesRound: "Second Round" };
+  }
+  if (/western.*(second round|2nd round)/i.test(h)) {
+    return { seriesConference: "West", seriesRound: "Second Round" };
+  }
+  if (/eastern.*(first round|1st round)/i.test(h)) {
+    return { seriesConference: "East", seriesRound: "First Round" };
+  }
+  if (/western.*(first round|1st round)/i.test(h)) {
+    return { seriesConference: "West", seriesRound: "First Round" };
+  }
+  // Some ESPN formats use "East" / "West" abbreviations
+  if (/^east\s+(1st|first|2nd|second|conf)/i.test(h)) {
+    const round = /2nd|second/i.test(h) ? "Second Round" : /conf/i.test(h) ? "Conf Finals" : "First Round";
+    return { seriesConference: "East", seriesRound: round };
+  }
+  if (/^west\s+(1st|first|2nd|second|conf)/i.test(h)) {
+    const round = /2nd|second/i.test(h) ? "Second Round" : /conf/i.test(h) ? "Conf Finals" : "First Round";
+    return { seriesConference: "West", seriesRound: round };
+  }
+
+  return { seriesConference: "", seriesRound: "" };
+}
+
 // FIX: Removed the no-op `.replace("Game", "Game")` line
 function cleanGameContext(headline?: string) {
   if (!headline) return "";
@@ -244,7 +287,9 @@ function normalizeGame(event: ESPNEvent): NormalizedGame | null {
 
   const home = normalizeTeam(homeCompetitor);
   const away = normalizeTeam(awayCompetitor);
-  const gameContext = cleanGameContext(competition.notes?.[0]?.headline);
+  const rawHeadline = competition.notes?.[0]?.headline;
+  const gameContext = cleanGameContext(rawHeadline);
+  const { seriesConference, seriesRound } = extractSeriesInfo(rawHeadline);
 
   return {
     id:
@@ -257,6 +302,8 @@ function normalizeGame(event: ESPNEvent): NormalizedGame | null {
     matchup: `${away.abbreviation} @ ${home.abbreviation}`,
     gameContext,
     seriesSummary: normalizeSeriesSummary(competition.series?.summary),
+    seriesConference,
+    seriesRound,
     home,
     away,
   };
