@@ -355,7 +355,7 @@ function TeamLogo({ team }: { team: Team }) {
   }
 
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-orange-100 sm:h-9 sm:w-9">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-[#e8e0d4] sm:h-9 sm:w-9">
       <img
         src={team.logo}
         alt={`${team.name} logo`}
@@ -392,7 +392,7 @@ function FilterPill({
       className={`flex h-7 w-auto shrink-0 min-w-0 overflow-visible items-center justify-center rounded-full px-2 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] transition active:scale-[0.98] sm:h-8 sm:px-3 sm:text-[0.76rem] ${
         active
           ? "bg-orange-500 text-white shadow-md shadow-orange-500/25"
-          : "bg-white/8 text-white/68 ring-1 ring-white/10 hover:bg-white/14"
+          : "bg-[#e8e2d8] text-[#8a7a66] ring-1 ring-[#d4cdc0] hover:bg-[#ddd7cc]"
       } ${disabled ? "pointer-events-none opacity-20" : ""}`}
     >
       <span className="flex items-center justify-center gap-1">
@@ -401,7 +401,7 @@ function FilterPill({
         {typeof count === "number" && (
           <span
             className={`rounded-full px-1 py-0.5 text-[0.62rem] leading-none ${
-              active ? "bg-white/15 text-white/90" : "bg-white/5 text-white/38"
+              active ? "bg-white/20 text-white/90" : "bg-[#1a1208]/8 text-[#8a7a66]"
             }`}
           >
             {count}
@@ -439,19 +439,19 @@ function FavoriteTeamPicker({
           triggerLightHaptic();
           setIsOpen((current) => !current);
         }}
-        className="flex h-7 w-auto shrink-0 items-center justify-center gap-1.5 rounded-full bg-white/8 pl-2 pr-1.5 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] text-white/68 ring-1 ring-white/10 transition hover:bg-white/14 active:scale-[0.98] sm:h-8 sm:pl-3 sm:text-[0.76rem]"
+        className="flex h-7 w-auto shrink-0 items-center justify-center gap-1.5 rounded-full bg-[#e8e2d8] pl-2 pr-1.5 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] text-[#8a7a66] ring-1 ring-[#d4cdc0] transition hover:bg-[#ddd7cc] active:scale-[0.98] sm:h-8 sm:pl-3 sm:text-[0.76rem]"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span className="text-white/40">Team</span>
-        <span className="text-white">
+        <span className="text-[#a89880]">Team</span>
+        <span className="text-[#1a1208]">
           {selectedTeam ? selectedTeam.abbreviation : "Pick"}
         </span>
-        <span className="text-[0.6rem] text-white/40">▾</span>
+        <span className="text-[0.6rem] text-[#a89880]">▾</span>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full z-30 mt-2 w-48 overflow-hidden rounded-[1rem] border border-white/10 bg-[#06101f] py-1.5 shadow-2xl shadow-black/40 ring-1 ring-black/20">
+        <div className="absolute right-0 top-full z-30 mt-2 w-48 overflow-hidden rounded-[1rem] border border-[#d4cdc0] bg-[#ffffff] py-1.5 shadow-xl shadow-black/10 ring-1 ring-black/5">
           <button
             type="button"
             onClick={() => {
@@ -459,8 +459,8 @@ function FavoriteTeamPicker({
               onChange(null);
               setIsOpen(false);
             }}
-            className={`flex w-full items-center justify-between px-3 py-2 text-left font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide transition hover:bg-white/10 ${
-              !favoriteTeamAbbr ? "text-orange-300" : "text-white/70"
+            className={`flex w-full items-center justify-between px-3 py-2 text-left font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide transition hover:bg-[#f0ece4] ${
+              !favoriteTeamAbbr ? "text-orange-600" : "text-[#a89880]"
             }`}
           >
             Pick
@@ -476,16 +476,16 @@ function FavoriteTeamPicker({
                   onChange(team.abbreviation);
                   setIsOpen(false);
                 }}
-                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition hover:bg-white/10 ${
+                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition hover:bg-[#f0ece4] ${
                   favoriteTeamAbbr === team.abbreviation
-                    ? "text-orange-300"
-                    : "text-white/80"
+                    ? "text-orange-600"
+                    : "text-[#1a1208]"
                 }`}
               >
                 <span className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide">
                   {team.abbreviation}
                 </span>
-                <span className="truncate text-xs font-semibold normal-case tracking-normal text-white/45">
+                <span className="truncate text-xs font-semibold normal-case tracking-normal text-[#a89880]">
                   {team.name}
                 </span>
               </button>
@@ -529,7 +529,7 @@ function ScoreBlock({
 }) {
   return (
     <div
-      className={`ml-4 min-w-[3.25rem] text-right text-[2.15rem] font-black leading-none tabular-nums tracking-tight text-slate-950 sm:text-[2.35rem] ${
+      className={`ml-4 min-w-[3.25rem] text-right text-[2.15rem] font-black leading-none tabular-nums tracking-tight text-[#1a1208] sm:text-[2.35rem] ${
         isChanged ? "no-noise-score-pop" : ""
       }`}
     >
@@ -569,7 +569,7 @@ function TeamLine({
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[0.95rem] font-black tracking-tight text-slate-950 sm:text-lg">
+            <p className="text-[0.95rem] font-black tracking-tight text-[#1a1208] sm:text-lg">
               {team.abbreviation}
             </p>
 
@@ -590,7 +590,7 @@ function TeamLine({
             )}
           </div>
 
-          <p className="truncate text-[0.74rem] font-semibold leading-tight text-slate-500 sm:text-sm">
+          <p className="truncate text-[0.74rem] font-semibold leading-tight text-[#a89880] sm:text-sm">
             {team.name}
           </p>
         </div>
@@ -602,7 +602,7 @@ function TeamLine({
           isChanged={changedScoreKeys.has(changedScoreKey)}
         />
       ) : (
-        <div className="ml-3 min-w-[2.5rem] text-right text-[1.45rem] font-black leading-none tracking-tight text-slate-300 sm:min-w-[3.25rem] sm:text-[2.35rem]">
+        <div className="ml-3 min-w-[2.5rem] text-right text-[1.45rem] font-black leading-none tracking-tight text-[#d4cdc0] sm:min-w-[3.25rem] sm:text-[2.35rem]">
           –
         </div>
       )}
@@ -616,7 +616,7 @@ function PlayoffBand({ game }: { game: Game }) {
   if (!game.gameContext && !game.seriesSummary && !finalSummary) return null;
 
   return (
-    <div className="mt-2.5 rounded-[1rem] bg-[#07111f] px-3 py-2.5 text-white ring-1 ring-white/10">
+    <div className="mt-2.5 rounded-[1rem] bg-[#1a1208] px-3 py-2.5 text-white ring-1 ring-white/10">
       {game.status === "final" && finalSummary && (
         <p className="font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-emerald-300">
           {finalSummary}
@@ -653,11 +653,11 @@ function GameCard({
 
   return (
     <article
-      className={`overflow-hidden rounded-[1.2rem] bg-[#fffaf2] text-slate-950 shadow-xl shadow-black/15 ring-1 ring-orange-100/70 sm:rounded-[1.65rem] ${getCardAccentClasses(
+      className={`overflow-hidden rounded-[1.2rem] bg-[#ffffff] text-[#1a1208] shadow-xl shadow-black/15 ring-1 ring-[#e8e0d4] sm:rounded-[1.65rem] ${getCardAccentClasses(
         game.status
       )}`}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-orange-100/80 bg-white/55 px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3 border-b border-[#e8e0d4] bg-[#f8f5f0] px-3 py-2.5">
         <div className="min-w-0">
           <div
             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide ring-1 ${getStatusClasses(
@@ -671,7 +671,7 @@ function GameCard({
           </div>
 
           {game.status !== "final" && (
-            <p className="mt-1 truncate text-[0.78rem] font-bold leading-tight text-slate-500">
+            <p className="mt-1 truncate text-[0.78rem] font-bold leading-tight text-[#a89880]">
               {game.status === "live"
                 ? "Live now"
                 : game.status === "upcoming" && isFavoriteGame
@@ -682,20 +682,20 @@ function GameCard({
         </div>
 
         <div className="shrink-0 text-right">
-          <p className="font-[family-name:var(--font-display)] text-[1.08rem] font-black uppercase leading-none tracking-tight text-slate-950 sm:text-xl">
+          <p className="font-[family-name:var(--font-display)] text-[1.08rem] font-black uppercase leading-none tracking-tight text-[#1a1208] sm:text-xl">
             {game.status === "live"
               ? game.statusText
               : formatGameDateTime(game.date)}
           </p>
 
-          <p className="mt-1 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-[0.14em] text-slate-500">
+          <p className="mt-1 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-[0.14em] text-[#a89880]">
             {game.matchup}
           </p>
         </div>
       </div>
 
       <div className="px-3 py-2.5 sm:px-4 sm:py-3">
-        <div className="divide-y divide-orange-100/80">
+        <div className="divide-y divide-[#e8e0d4]">
           <TeamLine
             game={game}
             side="away"
@@ -729,12 +729,12 @@ function EmptyState({
 }) {
   if (activeFilter === "live") {
     return (
-      <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
+      <section className="rounded-[1.75rem] bg-[#ffffff] p-8 text-center text-[#1a1208] shadow-xl shadow-black/20 ring-1 ring-[#e8e0d4]">
         <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
           No live games right now
         </p>
 
-        <p className="mt-2 text-sm leading-6 text-slate-500">
+        <p className="mt-2 text-sm leading-6 text-[#a89880]">
           {nextGame
             ? `Next tipoff: ${formatGameTime(nextGame.date)} · ${nextGame.matchup}`
             : "Check back soon for live scores."}
@@ -745,12 +745,12 @@ function EmptyState({
 
   if (activeFilter === "my-team") {
     return (
-      <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
+      <section className="rounded-[1.75rem] bg-[#ffffff] p-8 text-center text-[#1a1208] shadow-xl shadow-black/20 ring-1 ring-[#e8e0d4]">
         <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
           {favoriteTeamAbbr ? `No ${favoriteTeamAbbr} games this week` : "No team selected"}
         </p>
 
-        <p className="mt-2 text-sm leading-6 text-slate-500">
+        <p className="mt-2 text-sm leading-6 text-[#a89880]">
           {nextFavoriteGame
             ? `Next game: ${formatGameDateTime(nextFavoriteGame.date)} · ${nextFavoriteGame.matchup}`
             : "Try picking a different team."}
@@ -760,12 +760,12 @@ function EmptyState({
   }
 
   return (
-    <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
+    <section className="rounded-[1.75rem] bg-[#ffffff] p-8 text-center text-[#1a1208] shadow-xl shadow-black/20 ring-1 ring-[#e8e0d4]">
       <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
         No games found
       </p>
 
-      <p className="mt-2 text-sm leading-6 text-slate-500">
+      <p className="mt-2 text-sm leading-6 text-[#a89880]">
         Try a different filter.
       </p>
     </section>
@@ -775,18 +775,346 @@ function EmptyState({
 function SectionHeader({ section }: { section: GameSection }) {
   return (
     <div className="mb-2.5">
-      <p className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-white/45">
+      <p className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[#a89880]">
         {section.title}
       </p>
-      <hr className="border-white/10" />
+      <hr className="border-[#d4cdc0]" />
     </div>
   );
 }
 
+// ─── Bracket ────────────────────────────────────────────────────────────────
+
+type SeriesInfo = {
+  key: string;
+  abbrA: string;
+  abbrB: string;
+  teamA: Team & { wins: number };
+  teamB: Team & { wins: number };
+  conference: "East" | "West" | "Finals";
+  round: string;
+  summary: string;
+  status: "live" | "upcoming" | "complete";
+  isGame7: boolean;
+  nextGame?: Game;
+  games: Game[];
+};
+
+function buildBracketSeries(allGames: Game[]): SeriesInfo[] {
+  const playoffGames = allGames.filter((g) => g.gameContext);
+  if (!playoffGames.length) return [];
+
+  const seriesMap = new Map<string, Game[]>();
+  playoffGames.forEach((game) => {
+    const [a, b] = [game.away.abbreviation, game.home.abbreviation].sort();
+    const key = `${a}-${b}`;
+    if (!seriesMap.has(key)) seriesMap.set(key, []);
+    seriesMap.get(key)!.push(game);
+  });
+
+  const series: SeriesInfo[] = Array.from(seriesMap.entries()).map(
+    ([key, sg]) => {
+      const [abbrA, abbrB] = key.split("-");
+
+      const getTeamData = (abbr: string): Team => {
+        for (const g of sg) {
+          if (g.away.abbreviation === abbr) return g.away;
+          if (g.home.abbreviation === abbr) return g.home;
+        }
+        return sg[0].away;
+      };
+
+      let winsA = 0;
+      let winsB = 0;
+      sg.filter((g) => g.status === "final").forEach((g) => {
+        const awayWon = g.away.score > g.home.score;
+        if (awayWon) {
+          if (g.away.abbreviation === abbrA) winsA++;
+          else winsB++;
+        } else {
+          if (g.home.abbreviation === abbrA) winsA++;
+          else winsB++;
+        }
+      });
+
+      const ctx = sg.find((g) => g.gameContext)?.gameContext ?? "";
+      const conference: SeriesInfo["conference"] = /nba finals/i.test(ctx)
+        ? "Finals"
+        : ctx.includes("Eastern")
+          ? "East"
+          : ctx.includes("Western")
+            ? "West"
+            : "Finals";
+
+      let round = "Playoffs";
+      if (/nba finals/i.test(ctx)) round = "NBA Finals";
+      else if (/conference finals/i.test(ctx)) round = "Conf Finals";
+      else if (/second round/i.test(ctx)) round = "Second Round";
+      else if (/first round/i.test(ctx)) round = "First Round";
+
+      const finalGames = sg
+        .filter((g) => g.status === "final")
+        .sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+      const summary =
+        finalGames[0]?.seriesSummary ||
+        sg.find((g) => g.seriesSummary)?.seriesSummary ||
+        "";
+
+      const liveGame = sg.find((g) => g.status === "live");
+      const upcomingGames = sg
+        .filter((g) => g.status === "upcoming")
+        .sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+      const nextGame = liveGame ?? upcomingGames[0];
+      const status: SeriesInfo["status"] = liveGame
+        ? "live"
+        : upcomingGames.length > 0
+          ? "upcoming"
+          : "complete";
+      const isGame7 = status !== "complete" && winsA === 3 && winsB === 3;
+
+      return {
+        key,
+        abbrA,
+        abbrB,
+        teamA: { ...getTeamData(abbrA), wins: winsA },
+        teamB: { ...getTeamData(abbrB), wins: winsB },
+        conference,
+        round,
+        summary,
+        status,
+        isGame7,
+        nextGame,
+        games: sg,
+      };
+    }
+  );
+
+  return series.sort((a, b) => {
+    const rank = (s: SeriesInfo) => {
+      if (s.status === "live") return 0;
+      if (s.isGame7) return 1;
+      if (s.status === "upcoming") return 2;
+      return 3;
+    };
+    const diff = rank(a) - rank(b);
+    if (diff !== 0) return diff;
+    return b.teamA.wins + b.teamB.wins - (a.teamA.wins + a.teamB.wins);
+  });
+}
+
+function SeriesCard({
+  series,
+  favoriteTeamAbbr,
+}: {
+  series: SeriesInfo;
+  favoriteTeamAbbr: string | null;
+}) {
+  const isMyTeam =
+    series.abbrA === favoriteTeamAbbr || series.abbrB === favoriteTeamAbbr;
+  const gameDate = series.nextGame ? new Date(series.nextGame.date) : null;
+  const isTonight = gameDate
+    ? isSameScoreboardDay(gameDate, getScoreboardToday())
+    : false;
+  const isTomorrowGame = gameDate ? isTomorrow(gameDate) : false;
+  const urgentLabel = series.isGame7
+    ? isTonight
+      ? "Game 7 Tonight"
+      : isTomorrowGame
+        ? "Game 7 Tomorrow"
+        : null
+    : null;
+
+  const leadingTeam =
+    series.teamA.wins > series.teamB.wins
+      ? series.teamA
+      : series.teamB.wins > series.teamA.wins
+        ? series.teamB
+        : null;
+  const isSeriesOver =
+    series.teamA.wins === 4 || series.teamB.wins === 4;
+
+  return (
+    <div
+      className={`overflow-hidden rounded-[1.2rem] bg-[#ffffff] shadow-sm ${
+        series.status === "live"
+          ? "ring-2 ring-orange-400"
+          : "ring-1 ring-[#e8e0d4]"
+      }`}
+    >
+      {/* Card header */}
+      <div
+        className={`flex items-center justify-between gap-2 border-b border-[#e8e0d4] px-3 py-2 ${
+          series.status === "live" ? "bg-orange-50" : "bg-[#f8f5f0]"
+        }`}
+      >
+        <div className="flex items-center gap-1.5">
+          <span className="font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide text-[#a89880]">
+            {series.round}
+          </span>
+          {series.status === "live" && (
+            <span className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide text-orange-700 ring-1 ring-orange-200">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-600" />
+              Live
+            </span>
+          )}
+          {isMyTeam && (
+            <span className="rounded-full bg-orange-100 px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide text-orange-700">
+              MY TEAM
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5">
+          {urgentLabel && (
+            <span className="rounded-full bg-orange-500 px-2 py-0.5 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide text-white">
+              {urgentLabel}
+            </span>
+          )}
+          {isSeriesOver && leadingTeam && (
+            <span className="font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-wide text-emerald-600">
+              {leadingTeam.abbreviation} wins
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Teams */}
+      <div className="px-3 py-3">
+        {([series.teamA, series.teamB] as (Team & { wins: number })[]).map(
+          (team) => {
+            const isLeading =
+              leadingTeam?.abbreviation === team.abbreviation;
+            const isTrailing =
+              leadingTeam !== null &&
+              leadingTeam.abbreviation !== team.abbreviation;
+            return (
+              <div
+                key={team.abbreviation}
+                className={`flex items-center justify-between py-1.5 ${
+                  isTrailing && isSeriesOver ? "opacity-40" : ""
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-[#e8e0d4]">
+                    {team.logo ? (
+                      <img
+                        src={team.logo}
+                        alt=""
+                        className="h-5 w-5 object-contain"
+                      />
+                    ) : (
+                      <span className="text-[8px] font-black text-[#1a1208]">
+                        {team.abbreviation}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm font-black tracking-tight text-[#1a1208]">
+                    {team.abbreviation}
+                  </span>
+                </div>
+                <span
+                  className={`text-2xl font-black tabular-nums leading-none ${
+                    isLeading ? "text-[#1a1208]" : "text-[#c0b0a0]"
+                  }`}
+                >
+                  {team.wins}
+                </span>
+              </div>
+            );
+          }
+        )}
+
+        {/* Series summary */}
+        {series.summary && (
+          <p className="mt-1.5 text-[0.72rem] font-semibold text-[#a89880]">
+            {series.summary}
+          </p>
+        )}
+
+        {/* Next game time */}
+        {series.nextGame && (
+          <p className="mt-1 text-[0.72rem] font-semibold text-[#a89880]">
+            {series.status === "live"
+              ? `Live · ${series.nextGame.statusText}`
+              : formatGameDateTime(series.nextGame.date)}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BracketView({
+  games,
+  favoriteTeamAbbr,
+}: {
+  games: Game[];
+  favoriteTeamAbbr: string | null;
+}) {
+  const allSeries = buildBracketSeries(games);
+
+  if (allSeries.length === 0) {
+    return (
+      <div className="rounded-[1.75rem] bg-[#ffffff] p-8 text-center ring-1 ring-[#e8e0d4] shadow-sm">
+        <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight text-[#1a1208]">
+          No playoff series
+        </p>
+        <p className="mt-2 text-sm leading-6 text-[#a89880]">
+          Playoff bracket will appear here once games are scheduled.
+        </p>
+      </div>
+    );
+  }
+
+  const finalsSeries = allSeries.filter((s) => s.conference === "Finals");
+  const eastSeries = allSeries.filter((s) => s.conference === "East");
+  const westSeries = allSeries.filter((s) => s.conference === "West");
+
+  function ConferenceSection({
+    title,
+    series,
+  }: {
+    title: string;
+    series: SeriesInfo[];
+  }) {
+    if (!series.length) return null;
+    return (
+      <div>
+        <div className="mb-2.5">
+          <p className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[#a89880]">
+            {title}
+          </p>
+          <hr className="border-[#d4cdc0]" />
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {series.map((s) => (
+            <SeriesCard
+              key={s.key}
+              series={s}
+              favoriteTeamAbbr={favoriteTeamAbbr}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+      <ConferenceSection title="NBA Finals" series={finalsSeries} />
+      <ConferenceSection title="Eastern Conference" series={eastSeries} />
+      <ConferenceSection title="Western Conference" series={westSeries} />
+    </div>
+  );
+}
 
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [activeTab, setActiveTab] = useState<"scores" | "bracket">("scores");
   const [activeFilter, setActiveFilter] = useState<GameFilter>("all");
   const [favoriteTeamAbbr, setFavoriteTeamAbbr] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
@@ -992,7 +1320,7 @@ export default function Home() {
   }, [games, favoriteTeamAbbr, lastUpdatedAt]);
 
   return (
-    <main className="min-h-[100svh] bg-[#07111f] bg-[radial-gradient(circle_at_18%_0%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(59,130,246,0.15),transparent_30%)] px-4 pb-[calc(env(safe-area-inset-bottom)+5rem)] pt-[calc(env(safe-area-inset-top)+0.65rem)] text-white sm:px-6 md:pb-36 md:pt-[calc(env(safe-area-inset-top)+2rem)]">
+    <main className="min-h-[100svh] bg-[#f5f1ea] px-4 pb-[calc(env(safe-area-inset-bottom)+5rem)] pt-[calc(env(safe-area-inset-top)+0.65rem)] text-[#1a1208] sm:px-6 md:pb-36 md:pt-[calc(env(safe-area-inset-top)+2rem)]">
       <style jsx global>{`
         @keyframes no-noise-live-card {
           0%,
@@ -1042,7 +1370,7 @@ export default function Home() {
               alt="No Noise Scores logo"
               className="h-5 w-5"
             />
-            <span className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-tight text-white">
+            <span className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-tight text-[#1a1208]">
               No Noise Scores
             </span>
           </div>
@@ -1061,100 +1389,134 @@ export default function Home() {
           </Link>
         </header>
 
-        <div className="mb-5 sm:mb-8">
-          <div className="rounded-[1.15rem] border border-white/10 bg-[#06101f]/94 p-1.5 shadow-xl shadow-black/25 backdrop-blur-xl sm:p-2">
-            <div className="flex items-center gap-1.5">
-              {/* Scrollable pills — overflow is isolated here so the picker dropdown is never clipped */}
-              <div className="flex flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                <FilterPill
-                  label="Live"
-                  count={counts.live}
-                  active={activeFilter === "live"}
-                  disabled={counts.live === 0 && activeFilter !== "live"}
-                  onClick={() => setActiveFilter(activeFilter === "live" ? "all" : "live")}
-                />
-
-                <FilterPill
-                  label="Upcoming"
-                  compactLabel="Next"
-                  count={counts.upcoming}
-                  active={activeFilter === "upcoming"}
-                  disabled={counts.upcoming === 0 && activeFilter !== "upcoming"}
-                  onClick={() => setActiveFilter(activeFilter === "upcoming" ? "all" : "upcoming")}
-                />
-
-                <FilterPill
-                  label="Final"
-                  count={counts.final}
-                  active={activeFilter === "final"}
-                  disabled={counts.final === 0 && activeFilter !== "final"}
-                  onClick={() => setActiveFilter(activeFilter === "final" ? "all" : "final")}
-                />
-
-                <FilterPill
-                  label="My Team"
-                  compactLabel="Mine"
-                  count={counts.myTeam}
-                  active={activeFilter === "my-team"}
-                  disabled={!favoriteTeamAbbr}
-                  onClick={() => setActiveFilter(activeFilter === "my-team" ? "all" : "my-team")}
-                />
-              </div>
-
-              {/* Picker lives outside the overflow container so its dropdown opens freely */}
-              <div className="shrink-0 pl-0.5">
-                <FavoriteTeamPicker
-                  teams={availableTeams}
-                  favoriteTeamAbbr={favoriteTeamAbbr}
-                  onChange={handleFavoriteTeamChange}
-                />
-              </div>
-            </div>
-          </div>
+        {/* Tab nav */}
+        <div className="mb-3 flex gap-2 px-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab("scores")}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition ${
+              activeTab === "scores"
+                ? "bg-[#1a1208] text-[#f5f1ea]"
+                : "text-[#8a7a66]"
+            }`}
+          >
+            Scores
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("bracket")}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition ${
+              activeTab === "bracket"
+                ? "bg-[#1a1208] text-[#f5f1ea]"
+                : "text-[#8a7a66]"
+            }`}
+          >
+            Bracket
+          </button>
         </div>
 
-        <p className="mb-4 px-1 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-[0.16em] text-white/28">
-          {formatLastUpdated(lastUpdatedAt)}
-        </p>
-
-        {sections.length > 0 ? (
-          <div className="max-w-4xl mx-auto">
-          <div className="space-y-6 sm:space-y-8">
-            {sections.map((section) => (
-              <section key={`${section.title}-${section.eyebrow || ""}`}>
-                <SectionHeader section={section} />
-
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-2">
-                  {section.games.map((game) => (
-                    <GameCard
-                      key={game.id}
-                      game={game}
-                      favoriteTeamAbbr={favoriteTeamAbbr}
-                      changedScoreKeys={changedScoreKeys}
+        {activeTab === "scores" && (
+          <>
+            <div className="mb-5 sm:mb-8">
+              <div className="rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1.5 shadow-sm sm:p-2">
+                <div className="flex items-center gap-1.5">
+                  {/* Scrollable pills — overflow is isolated here so the picker dropdown is never clipped */}
+                  <div className="flex flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    <FilterPill
+                      label="Live"
+                      count={counts.live}
+                      active={activeFilter === "live"}
+                      disabled={counts.live === 0 && activeFilter !== "live"}
+                      onClick={() => setActiveFilter(activeFilter === "live" ? "all" : "live")}
                     />
+
+                    <FilterPill
+                      label="Upcoming"
+                      compactLabel="Next"
+                      count={counts.upcoming}
+                      active={activeFilter === "upcoming"}
+                      disabled={counts.upcoming === 0 && activeFilter !== "upcoming"}
+                      onClick={() => setActiveFilter(activeFilter === "upcoming" ? "all" : "upcoming")}
+                    />
+
+                    <FilterPill
+                      label="Final"
+                      count={counts.final}
+                      active={activeFilter === "final"}
+                      disabled={counts.final === 0 && activeFilter !== "final"}
+                      onClick={() => setActiveFilter(activeFilter === "final" ? "all" : "final")}
+                    />
+
+                    <FilterPill
+                      label="My Team"
+                      compactLabel="Mine"
+                      count={counts.myTeam}
+                      active={activeFilter === "my-team"}
+                      disabled={!favoriteTeamAbbr}
+                      onClick={() => setActiveFilter(activeFilter === "my-team" ? "all" : "my-team")}
+                    />
+                  </div>
+
+                  {/* Picker lives outside the overflow container so its dropdown opens freely */}
+                  <div className="shrink-0 pl-0.5">
+                    <FavoriteTeamPicker
+                      teams={availableTeams}
+                      favoriteTeamAbbr={favoriteTeamAbbr}
+                      onChange={handleFavoriteTeamChange}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="mb-4 px-1 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+              {formatLastUpdated(lastUpdatedAt)}
+            </p>
+
+            {sections.length > 0 ? (
+              <div className="max-w-4xl mx-auto">
+                <div className="space-y-6 sm:space-y-8">
+                  {sections.map((section) => (
+                    <section key={`${section.title}-${section.eyebrow || ""}`}>
+                      <SectionHeader section={section} />
+
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-2">
+                        {section.games.map((game) => (
+                          <GameCard
+                            key={game.id}
+                            game={game}
+                            favoriteTeamAbbr={favoriteTeamAbbr}
+                            changedScoreKeys={changedScoreKeys}
+                          />
+                        ))}
+                      </div>
+                    </section>
                   ))}
                 </div>
-              </section>
-            ))}
-          </div>
-          </div>
-        ) : !hasLoadedOnce ? (
-          <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
-            <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-              Loading scores...
-            </p>
+              </div>
+            ) : !hasLoadedOnce ? (
+              <section className="rounded-[1.75rem] bg-[#ffffff] p-8 text-center text-[#1a1208] shadow-sm ring-1 ring-[#e8e0d4]">
+                <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
+                  Loading scores...
+                </p>
 
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Pulling the latest scoreboard.
-            </p>
-          </section>
-        ) : (
-          <EmptyState
-            activeFilter={activeFilter}
-            favoriteTeamAbbr={favoriteTeamAbbr}
-            nextGame={nextUpcomingGame}
-            nextFavoriteGame={nextFavoriteGame}
-          />
+                <p className="mt-2 text-sm leading-6 text-[#a89880]">
+                  Pulling the latest scoreboard.
+                </p>
+              </section>
+            ) : (
+              <EmptyState
+                activeFilter={activeFilter}
+                favoriteTeamAbbr={favoriteTeamAbbr}
+                nextGame={nextUpcomingGame}
+                nextFavoriteGame={nextFavoriteGame}
+              />
+            )}
+          </>
+        )}
+
+        {activeTab === "bracket" && (
+          <BracketView games={games} favoriteTeamAbbr={favoriteTeamAbbr} />
         )}
       </div>
     </main>
