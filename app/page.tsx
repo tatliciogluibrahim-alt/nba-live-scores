@@ -612,33 +612,311 @@ function TeamLine({
   );
 }
 
+// ── Share card ────────────────────────────────────────────────────────────────
+
+type SharePayload =
+  | { kind: "game"; game: Game }
+  | { kind: "series"; series: SeriesInfo };
+
+function ShareCardCanvas({ payload }: { payload: SharePayload }) {
+  const isGame = payload.kind === "game";
+
+  // Derived display values
+  const teamA = isGame ? payload.game.away : payload.series.teamA;
+  const teamB = isGame ? payload.game.home : payload.series.teamB;
+  const contextLine = isGame
+    ? (() => {
+        const g = payload.game;
+        if (g.status === "final") return `Final · ${g.matchup}`;
+        if (g.status === "live") return `Live · ${g.statusText} · ${g.matchup}`;
+        return `Upcoming · ${g.matchup}`;
+      })()
+    : (() => {
+        const s = payload.series;
+        const wA = s.teamA.wins;
+        const wB = s.teamB.wins;
+        if (wA === 4 || wB === 4) {
+          const winner = wA === 4 ? s.teamA : s.teamB;
+          return `${winner.abbreviation} wins series ${Math.max(wA,wB)}–${Math.min(wA,wB)}`;
+        }
+        if (s.isGame7) return `Game 7 · ${s.summary || `${s.abbrA} vs ${s.abbrB}`}`;
+        return s.summary || `${s.abbrA} vs ${s.abbrB}`;
+      })();
+
+  return (
+    <div
+      style={{
+        width: 540,
+        height: 540,
+        background: "#f5f1ea",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: 48,
+        fontFamily: "system-ui, -apple-system, sans-serif",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Wordmark */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div
+          style={{
+            width: 22,
+            height: 22,
+            background: "#e85d04",
+            borderRadius: "50%",
+          }}
+        />
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 900,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "#1a1208",
+          }}
+        >
+          No Noise Scores
+        </span>
+      </div>
+
+      {/* Teams */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {[teamA, teamB].map((team, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              {team.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={team.logo}
+                  alt=""
+                  style={{ width: 56, height: 56, objectFit: "contain" }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 56, height: 56, borderRadius: "50%",
+                    background: "#e8e0d4", display: "flex",
+                    alignItems: "center", justifyContent: "center",
+                    fontSize: 14, fontWeight: 900, color: "#1a1208",
+                  }}
+                >
+                  {team.abbreviation}
+                </div>
+              )}
+              <span
+                style={{
+                  fontSize: 48,
+                  fontWeight: 900,
+                  letterSpacing: "-0.03em",
+                  color: "#1a1208",
+                  lineHeight: 1,
+                }}
+              >
+                {team.abbreviation}
+              </span>
+            </div>
+
+            {/* Score or win dots */}
+            {isGame ? (
+              <span
+                style={{
+                  fontSize: 56,
+                  fontWeight: 900,
+                  letterSpacing: "-0.04em",
+                  color: "#1a1208",
+                  lineHeight: 1,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {i === 0 ? payload.game.away.score : payload.game.home.score}
+              </span>
+            ) : (
+              <div style={{ display: "flex", gap: 6 }}>
+                {Array.from({ length: 7 }).map((_, di) => {
+                  const wins = i === 0
+                    ? (payload as { kind: "series"; series: SeriesInfo }).series.teamA.wins
+                    : (payload as { kind: "series"; series: SeriesInfo }).series.teamB.wins;
+                  return (
+                    <div
+                      key={di}
+                      style={{
+                        width: 14, height: 14, borderRadius: "50%",
+                        background: di < wins ? "#e85d04" : "#d4cdc0",
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Context + footer */}
+      <div>
+        <p
+          style={{
+            fontSize: 16,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "#e85d04",
+            marginBottom: 8,
+          }}
+        >
+          {contextLine}
+        </p>
+        <p style={{ fontSize: 12, fontWeight: 500, color: "#a89880" }}>
+          noNoisescores.com
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ShareModal({
+  payload,
+  onClose,
+}: {
+  payload: SharePayload;
+  onClose: () => void;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function handleSave() {
+    if (!cardRef.current || isSaving) return;
+    setIsSaving(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(cardRef.current, {
+        pixelRatio: 2,
+        cacheBust: true,
+      });
+
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], "no-noise-scores.png", { type: "image/png" });
+
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.share &&
+        navigator.canShare?.({ files: [file] })
+      ) {
+        await navigator.share({ files: [file], title: "No Noise Scores" });
+      } else {
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = "no-noise-scores.png";
+        link.click();
+      }
+    } catch (e) {
+      console.error("Share failed", e);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="flex flex-col items-center gap-4 rounded-[1.5rem] bg-[#f5f1ea] p-5 shadow-2xl">
+        {/* Preview — rendered at 540px, captured at 1080px via pixelRatio:2 */}
+        <div
+          ref={cardRef}
+          style={{ width: 300, height: 300, transform: "scale(1)", transformOrigin: "top left", pointerEvents: "none" }}
+          className="overflow-hidden rounded-2xl shadow-lg"
+        >
+          {/* Inner at 540×540 scaled down to 300×300 via CSS */}
+          <div style={{ width: 540, height: 540, transform: "scale(0.5556)", transformOrigin: "top left" }}>
+            <ShareCardCanvas payload={payload} />
+          </div>
+        </div>
+
+        <div className="flex w-full gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-full border border-[#d4cdc0] py-2.5 text-sm font-bold text-[#8a7a66] transition hover:bg-[#e8e2d8]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 rounded-full bg-[#1a1208] py-2.5 text-sm font-bold text-[#f5f1ea] transition hover:bg-[#2a1e10] disabled:opacity-50"
+          >
+            {isSaving ? "Saving…" : "Save Image"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShareButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label="Share"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-white/70 transition hover:bg-white/30 active:scale-95"
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="18" cy="5" r="3"/>
+        <circle cx="6" cy="12" r="3"/>
+        <circle cx="18" cy="19" r="3"/>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+      </svg>
+    </button>
+  );
+}
+
 function PlayoffBand({ game }: { game: Game }) {
+  const [shareOpen, setShareOpen] = useState(false);
   const finalSummary = getFinalSummary(game);
 
   if (!game.gameContext && !game.seriesSummary && !finalSummary) return null;
 
   return (
-    <div className="mt-2.5 rounded-[1rem] bg-[#1a1208] px-3 py-2.5 text-white ring-1 ring-white/10">
-      {game.status === "final" && finalSummary && (
-        <p className="font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-emerald-300">
-          {finalSummary}
-        </p>
-      )}
+    <>
+      <div className="mt-2.5 rounded-[1rem] bg-[#1a1208] px-3 py-2.5 text-white ring-1 ring-white/10">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            {game.status === "final" && finalSummary && (
+              <p className="font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-emerald-300">
+                {finalSummary}
+              </p>
+            )}
 
-      <div className="flex flex-wrap gap-x-3 gap-y-1">
-        {game.gameContext && (
-          <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-orange-300">
-            {game.gameContext}
-          </p>
-        )}
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {game.gameContext && (
+                <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-orange-300">
+                  {game.gameContext}
+                </p>
+              )}
 
-        {game.seriesSummary && (
-          <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-white">
-            {game.seriesSummary}
-          </p>
-        )}
+              {game.seriesSummary && (
+                <p className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-wide text-white">
+                  {game.seriesSummary}
+                </p>
+              )}
+            </div>
+          </div>
+          <ShareButton onClick={() => setShareOpen(true)} />
+        </div>
       </div>
-    </div>
+      {shareOpen && (
+        <ShareModal
+          payload={{ kind: "game", game }}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -954,6 +1232,7 @@ function SeriesCard({
   series: SeriesInfo;
   favoriteTeamAbbr: string | null;
 }) {
+  const [shareOpen, setShareOpen] = useState(false);
   const isSeriesOver = series.teamA.wins === 4 || series.teamB.wins === 4;
   const winner = isSeriesOver
     ? series.teamA.wins === 4
@@ -994,6 +1273,7 @@ function SeriesCard({
   const teams = [series.teamA, series.teamB] as (Team & { wins: number })[];
 
   return (
+    <>
     <div
       className="overflow-hidden rounded-[1.35rem]"
       style={{
@@ -1159,16 +1439,37 @@ function SeriesCard({
                 </span>
               )}
             </div>
-            {/* Next game time (non-live, non-tier1 only) */}
-            {series.nextGame && series.status !== "live" && !isTier1 && (
-              <span className="shrink-0 text-[0.68rem] font-semibold text-[#a89880]">
-                {formatGameDateTime(series.nextGame.date)}
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Next game time (non-live, non-tier1 only) */}
+              {series.nextGame && series.status !== "live" && !isTier1 && (
+                <span className="shrink-0 text-[0.68rem] font-semibold text-[#a89880]">
+                  {formatGameDateTime(series.nextGame.date)}
+                </span>
+              )}
+              {/* Share button */}
+              <button
+                type="button"
+                aria-label="Share series"
+                onClick={() => setShareOpen(true)}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e8e0d4] text-[#8a7a66] transition hover:bg-[#d4cdc0] active:scale-95"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
+    {shareOpen && (
+      <ShareModal
+        payload={{ kind: "series", series }}
+        onClose={() => setShareOpen(false)}
+      />
+    )}
+  </>
   );
 }
 
@@ -1205,57 +1506,61 @@ function PendingSeriesCard({
     winner: (Team & { wins: number }) | null;
     feeder: SeriesInfo | null;
     idx: number;
-  }) => (
-    <div
-      className={`flex items-center justify-between ${
-        idx === 1 ? "mt-2 border-t border-[#ede8e0] pt-2" : ""
-      }`}
-      style={{ opacity: winner ? 1 : 0.45 }}
-    >
-      <div className="flex items-center gap-2.5">
+  }) => {
+    if (!winner) {
+      // TBD: no dots, just a muted "Awaits winner of…" line
+      return (
         <div
-          className="flex shrink-0 items-center justify-center rounded-full"
-          style={{
-            width: 32,
-            height: 32,
-            background: "#ede8e0",
-            boxShadow: "0 0 0 1px #e0d8d0",
-          }}
+          className={`flex items-center gap-2 ${
+            idx === 1 ? "mt-2 border-t border-[#ede8e0] pt-2" : ""
+          }`}
         >
-          {winner?.logo ? (
-            <img
-              src={winner.logo}
-              alt=""
-              className="h-5 w-5 object-contain"
-            />
-          ) : (
-            <span className="text-[0.55rem] font-black text-[#a89880]">
-              TBD
-            </span>
-          )}
-        </div>
-        <div>
-          <span className="text-[0.9rem] font-black tracking-tight text-[#1a1208]">
-            {winner ? winner.abbreviation : "TBD"}
+          <div
+            className="flex shrink-0 items-center justify-center rounded-full"
+            style={{ width: 32, height: 32, background: "#ede8e0", boxShadow: "0 0 0 1px #e0d8d0" }}
+          >
+            <span className="text-[0.5rem] font-black text-[#a89880]">TBD</span>
+          </div>
+          <span className="text-[0.72rem] font-medium text-[#a89880]">
+            {feeder ? `Awaits winner of ${feeder.abbrA} vs ${feeder.abbrB}` : "TBD"}
           </span>
-          {!winner && feeder && (
-            <p className="text-[0.65rem] font-medium text-[#a89880]">
-              {feeder.abbrA} vs {feeder.abbrB}
-            </p>
-          )}
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={`flex items-center justify-between ${
+          idx === 1 ? "mt-2 border-t border-[#ede8e0] pt-2" : ""
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className="flex shrink-0 items-center justify-center rounded-full"
+            style={{ width: 32, height: 32, background: "#ede8e0", boxShadow: "0 0 0 1px #e0d8d0" }}
+          >
+            {winner.logo ? (
+              <img src={winner.logo} alt="" className="h-5 w-5 object-contain" />
+            ) : (
+              <span className="text-[0.55rem] font-black text-[#a89880]">{winner.abbreviation}</span>
+            )}
+          </div>
+          <span className="text-[0.9rem] font-black tracking-tight text-[#1a1208]">
+            {winner.abbreviation}
+          </span>
+        </div>
+        <div className="flex shrink-0 items-center gap-2.5 pl-2">
+          <WinDots wins={0} dotColor="#d4cdc0" />
+          <span
+            className="tabular-nums leading-none text-[#d4cdc0]"
+            style={{ width: 18, textAlign: "right", fontSize: "1.3rem", fontWeight: 900 }}
+          >
+            –
+          </span>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2.5 pl-2">
-        <WinDots wins={0} dotColor="#d4cdc0" />
-        <span
-          className="tabular-nums leading-none text-[#d4cdc0]"
-          style={{ width: 18, textAlign: "right", fontSize: "1.3rem", fontWeight: 900 }}
-        >
-          –
-        </span>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div
@@ -1275,6 +1580,180 @@ function PendingSeriesCard({
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── TeamView ──────────────────────────────────────────────────────────────────
+
+function SeriesGameRow({ game, teamAbbr }: { game: Game; teamAbbr: string }) {
+  const isHome = game.home.abbreviation === teamAbbr;
+  const myTeam = isHome ? game.home : game.away;
+  const opp = isHome ? game.away : game.home;
+  const isWin =
+    game.status === "final" && myTeam.score > opp.score;
+  const isLoss =
+    game.status === "final" && myTeam.score < opp.score;
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 odd:bg-[#f8f5f0]">
+      <div className="flex items-center gap-2 min-w-0">
+        {game.status === "final" && (
+          <span
+            className="w-5 shrink-0 text-center text-[0.65rem] font-black uppercase"
+            style={{ color: isWin ? "#2d7a3a" : isLoss ? "#a89880" : "#a89880" }}
+          >
+            {isWin ? "W" : isLoss ? "L" : "–"}
+          </span>
+        )}
+        {game.status === "live" && (
+          <span className="w-5 shrink-0 text-center text-[0.65rem] font-black uppercase text-[#e85d04]">
+            ▶
+          </span>
+        )}
+        {game.status === "upcoming" && (
+          <span className="w-5 shrink-0 text-center text-[0.65rem] font-semibold text-[#a89880]">
+            –
+          </span>
+        )}
+        <div className="flex items-center gap-1.5 min-w-0">
+          {opp.logo ? (
+            <img src={opp.logo} alt="" className="h-4 w-4 shrink-0 object-contain" />
+          ) : null}
+          <span className="text-[0.78rem] font-black tracking-tight text-[#1a1208]">
+            {isHome ? "vs" : "@"} {opp.abbreviation}
+          </span>
+        </div>
+        <span className="text-[0.68rem] font-medium text-[#a89880] truncate">
+          {game.gameContext}
+        </span>
+      </div>
+      <div className="shrink-0 text-right">
+        {game.status !== "upcoming" ? (
+          <span
+            className="text-[0.85rem] font-black tabular-nums"
+            style={{ color: isWin ? "#2d7a3a" : isLoss ? "#a89880" : "#1a1208" }}
+          >
+            {myTeam.score}–{opp.score}
+          </span>
+        ) : (
+          <span className="text-[0.72rem] font-semibold text-[#a89880]">
+            {formatGameTime(game.date)}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TeamView({
+  games,
+  favoriteTeamAbbr,
+  changedScoreKeys,
+}: {
+  games: Game[];
+  favoriteTeamAbbr: string;
+  changedScoreKeys: Set<string>;
+}) {
+  const allSeries = buildBracketSeries(games);
+
+  // Find this team's data
+  const teamGames = games.filter((g) => gameIncludesTeam(g, favoriteTeamAbbr));
+  const teamData = (() => {
+    for (const g of teamGames) {
+      if (g.away.abbreviation === favoriteTeamAbbr) return g.away;
+      if (g.home.abbreviation === favoriteTeamAbbr) return g.home;
+    }
+    return null;
+  })();
+
+  // Next upcoming game
+  const nextGame = teamGames
+    .filter((g) => g.status === "upcoming" || g.status === "live")
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
+  // Playoff series for this team
+  const teamSeries = allSeries.filter(
+    (s) => s.abbrA === favoriteTeamAbbr || s.abbrB === favoriteTeamAbbr
+  );
+
+  // Playoff record: sum wins across all series
+  const { totalWins, totalLosses } = teamSeries.reduce(
+    (acc, s) => {
+      const isA = s.abbrA === favoriteTeamAbbr;
+      acc.totalWins += isA ? s.teamA.wins : s.teamB.wins;
+      acc.totalLosses += isA ? s.teamB.wins : s.teamA.wins;
+      return acc;
+    },
+    { totalWins: 0, totalLosses: 0 }
+  );
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-6">
+      {/* Team header */}
+      <div className="flex items-center gap-3 px-1">
+        {teamData?.logo ? (
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white ring-2 ring-[#e8e0d4]">
+            <img src={teamData.logo} alt="" className="h-8 w-8 object-contain" />
+          </div>
+        ) : null}
+        <div>
+          <p className="font-[family-name:var(--font-display)] text-2xl font-black uppercase tracking-tight text-[#1a1208]">
+            {teamData?.name ?? favoriteTeamAbbr}
+          </p>
+          {teamSeries.length > 0 && (
+            <p className="text-[0.72rem] font-bold uppercase tracking-wide text-[#a89880]">
+              Playoff record: {totalWins}–{totalLosses}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Next game */}
+      {nextGame && (
+        <div>
+          <p className="mb-2 px-1 text-[0.65rem] font-semibold uppercase tracking-wide text-[#a89880]">
+            {nextGame.status === "live" ? "In Progress" : "Next Game"}
+          </p>
+          <GameCard
+            game={nextGame}
+            favoriteTeamAbbr={favoriteTeamAbbr}
+            changedScoreKeys={changedScoreKeys}
+          />
+        </div>
+      )}
+
+      {/* Playoff series */}
+      {teamSeries.length > 0 && (
+        <div className="space-y-5">
+          {teamSeries.map((series) => {
+            const seriesGames = [...series.games].sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            );
+            return (
+              <div key={series.key}>
+                <p className="mb-2 px-1 text-[0.65rem] font-semibold uppercase tracking-wide text-[#a89880]">
+                  {series.round}
+                </p>
+                <SeriesCard series={series} favoriteTeamAbbr={favoriteTeamAbbr} />
+                <div className="mt-2 overflow-hidden rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]">
+                  {seriesGames.map((g) => (
+                    <SeriesGameRow key={g.id} game={g} teamAbbr={favoriteTeamAbbr} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {teamSeries.length === 0 && teamGames.length === 0 && (
+        <div className="rounded-[1.75rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
+          <p className="font-[family-name:var(--font-display)] text-2xl font-black uppercase tracking-tight text-[#1a1208]">
+            No games this week
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1432,25 +1911,35 @@ function BracketView({
   const hasSecondRound =
     firstRound.length > 0 || secondRound.length > 0;
 
+  const hasGame7Tonight = firstRound.some((s) => s.isGame7 && s.status !== "complete");
+
+  // Sort first round: live first, then game7 tonight, then upcoming, then complete
+  const sortedFirstRound = [...firstRound].sort((a, b) => {
+    const rank = (s: SeriesInfo) => {
+      if (s.status === "live") return 0;
+      if (s.isGame7 && isSameScoreboardDay(s.nextGame ? new Date(s.nextGame.date) : new Date(0), getScoreboardToday())) return 1;
+      if (s.status === "upcoming") return 2;
+      return 3;
+    };
+    return rank(a) - rank(b);
+  });
+
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      {/* NBA Finals */}
-      {finals.length > 0 && (
+      {/* First Round */}
+      {firstRound.length > 0 && (
         <div>
-          <RoundHeader title="NBA Finals" />
-          <div className="mx-auto max-w-sm space-y-2.5">
-            {finals.map((s) => (
-              <SeriesCard key={s.key} series={s} favoriteTeamAbbr={favoriteTeamAbbr} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Conference Finals */}
-      {confFinals.length > 0 && (
-        <div>
-          <RoundHeader title="Conf Finals" />
-          <EastWestGrid series={confFinals} />
+          <RoundHeader
+            title="First Round"
+            note={
+              hasGame7Tonight ? (
+                <span className="text-xs font-bold uppercase tracking-wide" style={{ color: "#e85d04" }}>
+                  Game 7s tonight
+                </span>
+              ) : undefined
+            }
+          />
+          <EastWestGrid series={sortedFirstRound} />
         </div>
       )}
 
@@ -1493,11 +1982,23 @@ function BracketView({
         </div>
       )}
 
-      {/* First Round */}
-      {firstRound.length > 0 && (
+      {/* Conference Finals */}
+      {confFinals.length > 0 && (
         <div>
-          <RoundHeader title="First Round" />
-          <EastWestGrid series={firstRound} />
+          <RoundHeader title="Conf Finals" />
+          <EastWestGrid series={confFinals} />
+        </div>
+      )}
+
+      {/* NBA Finals */}
+      {finals.length > 0 && (
+        <div>
+          <RoundHeader title="NBA Finals" />
+          <div className="mx-auto max-w-sm space-y-2.5">
+            {finals.map((s) => (
+              <SeriesCard key={s.key} series={s} favoriteTeamAbbr={favoriteTeamAbbr} />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -1507,7 +2008,7 @@ function BracketView({
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [activeTab, setActiveTab] = useState<"scores" | "bracket">("scores");
+  const [activeTab, setActiveTab] = useState<"scores" | "bracket" | "team">("scores");
   const [activeFilter, setActiveFilter] = useState<GameFilter>("all");
   const [favoriteTeamAbbr, setFavoriteTeamAbbr] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
@@ -1636,6 +2137,9 @@ export default function Home() {
 
       if (activeFilter === "my-team") {
         setActiveFilter("all");
+      }
+      if (activeTab === "team") {
+        setActiveTab("scores");
       }
     }
   }
@@ -1795,6 +2299,19 @@ export default function Home() {
           >
             Scores
           </button>
+          {favoriteTeamAbbr && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("team")}
+              className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition ${
+                activeTab === "team"
+                  ? "bg-[#1a1208] text-[#f5f1ea]"
+                  : "text-[#8a7a66]"
+              }`}
+            >
+              {favoriteTeamAbbr}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setActiveTab("bracket")}
@@ -1906,6 +2423,14 @@ export default function Home() {
               />
             )}
           </>
+        )}
+
+        {activeTab === "team" && favoriteTeamAbbr && (
+          <TeamView
+            games={games}
+            favoriteTeamAbbr={favoriteTeamAbbr}
+            changedScoreKeys={changedScoreKeys}
+          />
         )}
 
         {activeTab === "bracket" && (
