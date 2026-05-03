@@ -389,23 +389,14 @@ function FilterPill({
         onClick();
       }}
       disabled={disabled}
-      className={`flex h-7 w-auto min-w-fit shrink-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] transition active:scale-[0.98] sm:h-8 sm:px-3 sm:text-[0.76rem] ${
+      className={`flex h-7 w-auto shrink-0 min-w-0 overflow-visible items-center justify-center rounded-full px-2 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] transition active:scale-[0.98] sm:h-8 sm:px-3 sm:text-[0.76rem] ${
         active
           ? "bg-orange-500 text-white shadow-md shadow-orange-500/25"
           : "bg-white/8 text-white/68 ring-1 ring-white/10 hover:bg-white/14"
       } ${disabled ? "pointer-events-none opacity-20" : ""}`}
     >
       <span className="flex items-center justify-center gap-1">
-        <span>
-          {compactLabel ? (
-            <>
-              <span className="whitespace-nowrap sm:hidden">{compactLabel}</span>
-              <span className="hidden sm:inline">{label}</span>
-            </>
-          ) : (
-            label
-          )}
-        </span>
+        <span className="whitespace-nowrap">{compactLabel ?? label}</span>
 
         {typeof count === "number" && (
           <span
@@ -1127,12 +1118,13 @@ export default function Home() {
         </p>
 
         {sections.length > 0 ? (
+          <div className="max-w-4xl mx-auto">
           <div className="space-y-6 sm:space-y-8">
             {sections.map((section) => (
               <section key={`${section.title}-${section.eyebrow || ""}`}>
                 <SectionHeader section={section} />
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-2">
                   {section.games.map((game) => (
                     <GameCard
                       key={game.id}
@@ -1144,6 +1136,7 @@ export default function Home() {
                 </div>
               </section>
             ))}
+          </div>
           </div>
         ) : !hasLoadedOnce ? (
           <section className="rounded-[1.75rem] bg-[#fffaf2] p-8 text-center text-slate-950 shadow-xl shadow-black/20 ring-1 ring-orange-100/70">
