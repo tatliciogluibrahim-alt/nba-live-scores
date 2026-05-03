@@ -926,6 +926,27 @@ function buildBracketSeries(allGames: Game[]): SeriesInfo[] {
   });
 }
 
+// ── Win dots: 7 dots (max games), 10px, 5px gap ─────────────────────────────
+function WinDots({ wins, dotColor }: { wins: number; dotColor: string }) {
+  return (
+    <div className="flex shrink-0" style={{ gap: 5 }}>
+      {Array.from({ length: 7 }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: "50%",
+            backgroundColor: i < wins ? dotColor : "#d4cdc0",
+            flexShrink: 0,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Three-tier series card ───────────────────────────────────────────────────
 function SeriesCard({
   series,
   favoriteTeamAbbr,
@@ -933,79 +954,122 @@ function SeriesCard({
   series: SeriesInfo;
   favoriteTeamAbbr: string | null;
 }) {
-  const isMyTeam =
-    series.abbrA === favoriteTeamAbbr || series.abbrB === favoriteTeamAbbr;
+  const isSeriesOver = series.teamA.wins === 4 || series.teamB.wins === 4;
+  const winner = isSeriesOver
+    ? series.teamA.wins === 4
+      ? series.teamA
+      : series.teamB
+    : null;
+
   const gameDate = series.nextGame ? new Date(series.nextGame.date) : null;
   const isTonight = gameDate
     ? isSameScoreboardDay(gameDate, getScoreboardToday())
     : false;
   const isTomorrowGame = gameDate ? isTomorrow(gameDate) : false;
 
-  // Game 7 urgency label
-  const urgentLabel = series.isGame7
-    ? isTonight
-      ? "Game 7 Tonight"
-      : isTomorrowGame
-        ? "Game 7 Tomorrow"
-        : series.status === "live"
-          ? "Game 7"
+  // Tier 1 = live OR game7 tonight
+  const isTier1 = series.status === "live" || (series.isGame7 && isTonight);
+  // Tier 3 = complete
+  const isTier3 = isSeriesOver;
+
+  // Accent colors: orange for active, green for complete, neutral for upcoming
+  const accentColor = isTier1 ? "#e85d04" : isTier3 ? "#2d7a3a" : "#d4cdc0";
+
+  // Game 7 label
+  const game7Label = series.isGame7
+    ? series.status === "live"
+      ? "Game 7"
+      : isTonight
+        ? "Game 7 Tonight"
+        : isTomorrowGame
+          ? "Game 7 Tomorrow"
           : null
     : null;
 
-  const leadingTeam =
-    series.teamA.wins > series.teamB.wins
-      ? series.teamA
-      : series.teamB.wins > series.teamA.wins
-        ? series.teamB
-        : null;
-  const isSeriesOver = series.teamA.wins === 4 || series.teamB.wins === 4;
-
-  // Next game label
-  let nextGameLabel = "";
-  if (series.nextGame) {
-    if (series.status === "live") {
-      nextGameLabel = `Live · ${series.nextGame.statusText}`;
-    } else {
-      nextGameLabel = formatGameDateTime(series.nextGame.date);
-    }
-  }
+  const nextGameTime =
+    series.nextGame && series.status !== "live"
+      ? formatGameTime(series.nextGame.date)
+      : null;
 
   const teams = [series.teamA, series.teamB] as (Team & { wins: number })[];
 
   return (
     <div
-      className={`overflow-hidden rounded-[1.35rem] bg-[#ffffff] ${
-        series.status === "live"
-          ? "ring-2 ring-orange-400"
-          : "ring-1 ring-[#e8e0d4]"
-      }`}
+      className="overflow-hidden rounded-[1.35rem]"
+      style={{
+        border: isTier1
+          ? "2px solid #e85d04"
+          : "1px solid #e8e0d4",
+        background: isTier3 ? "#f9f7f3" : "#ffffff",
+      }}
     >
-      {/* Left accent + teams */}
       <div className="flex">
-        {/* Colored side bar */}
-        <div
-          className={`w-[3px] shrink-0 ${
-            series.status === "live"
-              ? "bg-orange-500"
-              : isSeriesOver
-                ? "bg-emerald-500"
-                : "bg-[#d4cdc0]"
-          }`}
-        />
+        {/* Left accent bar — 3px, tier-colored */}
+        <div style={{ width: 3, flexShrink: 0, background: accentColor }} />
 
         <div className="flex-1 px-3 py-3">
+          {/* Tier 1: Game 7 badge + time */}
+          {isTier1 && game7Label && (
+            <div className="mb-3 flex items-center gap-2.5">
+              <span
+                style={{
+                  background: "#e85d04",
+                  color: "#fff",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  padding: "4px 10px",
+                  borderRadius: 6,
+                  letterSpacing: "0.07em",
+                  textTransform: "uppercase",
+                  fontFamily: "var(--font-display)",
+                  lineHeight: 1,
+                }}
+              >
+                {game7Label}
+              </span>
+              {nextGameTime && (
+                <span className="text-[0.72rem] font-semibold text-[#a89880]">
+                  {nextGameTime}
+                </span>
+              )}
+              {series.status === "live" && (
+                <span className="flex items-center gap-1 text-[0.72rem] font-bold text-[#e85d04]">
+                  <span
+                    className="h-1.5 w-1.5 animate-pulse rounded-full"
+                    style={{ background: "#e85d04" }}
+                  />
+                  {series.nextGame?.statusText ?? "Live"}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Team rows */}
           {teams.map((team, idx) => {
-            const isLeading = leadingTeam?.abbreviation === team.abbreviation;
-            const isTrailing =
-              isSeriesOver && leadingTeam !== null && !isLeading;
+            const isWinner = winner?.abbreviation === team.abbreviation;
+            const isLoser = isSeriesOver && !isWinner;
+            const isMyTeamRow = team.abbreviation === favoriteTeamAbbr;
+            const dotColor = isLoser ? "#d4cdc0" : accentColor;
+
             return (
               <div
                 key={team.abbreviation}
-                className={`flex items-center justify-between ${idx === 0 ? "pb-2" : "pt-2 border-t border-[#f0ece4]"} ${isTrailing ? "opacity-35" : ""}`}
+                className={`flex items-center justify-between ${
+                  idx === 1 ? "mt-2 border-t border-[#f0ece4] pt-2" : ""
+                }`}
+                style={{ opacity: isLoser ? 0.35 : 1 }}
               >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f8f5f0] ring-1 ring-[#e8e0d4]">
+                {/* Logo + name */}
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div
+                    className="flex shrink-0 items-center justify-center rounded-full"
+                    style={{
+                      width: 32,
+                      height: 32,
+                      background: "#f8f5f0",
+                      boxShadow: "0 0 0 1px #e8e0d4",
+                    }}
+                  >
                     {team.logo ? (
                       <img
                         src={team.logo}
@@ -1018,54 +1082,44 @@ function SeriesCard({
                       </span>
                     )}
                   </div>
-                  <div>
+
+                  <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span
-                        className={`text-[0.9rem] font-black tracking-tight ${
-                          isTrailing ? "text-[#a89880]" : "text-[#1a1208]"
-                        }`}
-                      >
+                      <span className="text-[0.9rem] font-black tracking-tight text-[#1a1208]">
                         {team.abbreviation}
                       </span>
-                      {isMyTeam && team.abbreviation === favoriteTeamAbbr && (
-                        <span className="rounded-full bg-orange-100 px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-orange-700">
-                          ★
+                      {isMyTeamRow && (
+                        <span className="rounded-full bg-orange-100 px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-[#e85d04]">
+                          MY TEAM
                         </span>
                       )}
-                      {isSeriesOver && isLeading && (
-                        <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-emerald-700">
+                      {isSeriesOver && isWinner && (
+                        <span
+                          className="rounded-full px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-white"
+                          style={{ background: "#2d7a3a" }}
+                        >
                           WIN
                         </span>
                       )}
                     </div>
-                    <span className="text-[0.68rem] font-medium text-[#a89880]">
+                    <span className="block truncate text-[0.67rem] font-medium text-[#a89880]">
                       {team.name}
                     </span>
                   </div>
                 </div>
 
-                {/* Win pips + count */}
-                <div className="flex items-center gap-1.5">
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`h-2 w-2 rounded-full ${
-                          i < team.wins
-                            ? isSeriesOver && isLeading
-                              ? "bg-emerald-500"
-                              : series.status === "live"
-                                ? "bg-orange-500"
-                                : "bg-[#1a1208]"
-                            : "bg-[#e8e0d4]"
-                        }`}
-                      />
-                    ))}
-                  </div>
+                {/* Dots + win count */}
+                <div className="flex shrink-0 items-center gap-2.5 pl-2">
+                  <WinDots wins={team.wins} dotColor={dotColor} />
                   <span
-                    className={`w-5 text-right text-[1.4rem] font-black tabular-nums leading-none ${
-                      isTrailing ? "text-[#c0b0a0]" : "text-[#1a1208]"
-                    }`}
+                    className="tabular-nums leading-none"
+                    style={{
+                      width: 18,
+                      textAlign: "right",
+                      fontSize: "1.3rem",
+                      fontWeight: 900,
+                      color: isLoser ? "#c0b0a0" : "#1a1208",
+                    }}
                   >
                     {team.wins}
                   </span>
@@ -1074,18 +1128,29 @@ function SeriesCard({
             );
           })}
 
-          {/* Footer: status + next game */}
-          <div className="mt-2.5 flex items-center justify-between gap-2">
+          {/* Footer */}
+          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-1.5">
             <div className="flex flex-wrap items-center gap-1.5">
-              {urgentLabel && (
-                <span className="rounded-full bg-orange-500 px-2 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-white">
-                  {urgentLabel}
+              {/* Live badge (non-game7) */}
+              {series.status === "live" && !isTier1 && (
+                <span
+                  className="flex items-center gap-1 rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide"
+                  style={{ background: "#fff0e8", color: "#e85d04" }}
+                >
+                  <span
+                    className="h-1.5 w-1.5 animate-pulse rounded-full"
+                    style={{ background: "#e85d04" }}
+                  />
+                  {series.nextGame?.statusText ?? "Live"}
                 </span>
               )}
-              {series.status === "live" && !urgentLabel && (
-                <span className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-orange-700">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-600" />
-                  Live
+              {/* Non-tier-1 game7 badge */}
+              {game7Label && !isTier1 && (
+                <span
+                  className="rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide"
+                  style={{ background: "#fff0e8", color: "#e85d04" }}
+                >
+                  {game7Label}
                 </span>
               )}
               {series.summary && (
@@ -1094,9 +1159,10 @@ function SeriesCard({
                 </span>
               )}
             </div>
-            {nextGameLabel && (
+            {/* Next game time (non-live, non-tier1 only) */}
+            {series.nextGame && series.status !== "live" && !isTier1 && (
               <span className="shrink-0 text-[0.68rem] font-semibold text-[#a89880]">
-                {nextGameLabel}
+                {formatGameDateTime(series.nextGame.date)}
               </span>
             )}
           </div>
@@ -1106,6 +1172,114 @@ function SeriesCard({
   );
 }
 
+// ── Tier 2: pending second-round slot ────────────────────────────────────────
+function PendingSeriesCard({
+  feeder1,
+  feeder2,
+}: {
+  feeder1: SeriesInfo | null;
+  feeder2: SeriesInfo | null;
+}) {
+  const getWinner = (s: SeriesInfo | null) => {
+    if (!s) return null;
+    if (s.teamA.wins === 4) return s.teamA;
+    if (s.teamB.wins === 4) return s.teamB;
+    return null;
+  };
+
+  const winner1 = getWinner(feeder1);
+  const winner2 = getWinner(feeder2);
+
+  let statusNote = "Starts TBD";
+  if (winner1 && winner2) statusNote = "Series upcoming";
+  else if (winner1)
+    statusNote = `${winner1.abbreviation} advances · Awaiting other winner`;
+  else if (winner2)
+    statusNote = `${winner2.abbreviation} advances · Awaiting other winner`;
+
+  const TeamSlot = ({
+    winner,
+    feeder,
+    idx,
+  }: {
+    winner: (Team & { wins: number }) | null;
+    feeder: SeriesInfo | null;
+    idx: number;
+  }) => (
+    <div
+      className={`flex items-center justify-between ${
+        idx === 1 ? "mt-2 border-t border-[#ede8e0] pt-2" : ""
+      }`}
+      style={{ opacity: winner ? 1 : 0.45 }}
+    >
+      <div className="flex items-center gap-2.5">
+        <div
+          className="flex shrink-0 items-center justify-center rounded-full"
+          style={{
+            width: 32,
+            height: 32,
+            background: "#ede8e0",
+            boxShadow: "0 0 0 1px #e0d8d0",
+          }}
+        >
+          {winner?.logo ? (
+            <img
+              src={winner.logo}
+              alt=""
+              className="h-5 w-5 object-contain"
+            />
+          ) : (
+            <span className="text-[0.55rem] font-black text-[#a89880]">
+              TBD
+            </span>
+          )}
+        </div>
+        <div>
+          <span className="text-[0.9rem] font-black tracking-tight text-[#1a1208]">
+            {winner ? winner.abbreviation : "TBD"}
+          </span>
+          {!winner && feeder && (
+            <p className="text-[0.65rem] font-medium text-[#a89880]">
+              {feeder.abbrA} vs {feeder.abbrB}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2.5 pl-2">
+        <WinDots wins={0} dotColor="#d4cdc0" />
+        <span
+          className="tabular-nums leading-none text-[#d4cdc0]"
+          style={{ width: 18, textAlign: "right", fontSize: "1.3rem", fontWeight: 900 }}
+        >
+          –
+        </span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      className="overflow-hidden rounded-[1.35rem]"
+      style={{
+        border: "1px dashed #d4cdc0",
+        background: "#faf8f4",
+      }}
+    >
+      <div className="flex">
+        <div style={{ width: 3, flexShrink: 0, background: "#e8e0d4" }} />
+        <div className="flex-1 px-3 py-3">
+          <TeamSlot winner={winner1} feeder={feeder1} idx={0} />
+          <TeamSlot winner={winner2} feeder={feeder2} idx={1} />
+          <p className="mt-2.5 text-[0.68rem] font-semibold text-[#a89880]">
+            {statusNote}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── BracketView ───────────────────────────────────────────────────────────────
 function BracketView({
   games,
   favoriteTeamAbbr,
@@ -1128,91 +1302,204 @@ function BracketView({
     );
   }
 
-  // Group by round, display in round order
-  const roundGroups = new Map<string, SeriesInfo[]>();
-  allSeries.forEach((s) => {
-    const r = s.round || "Playoffs";
-    if (!roundGroups.has(r)) roundGroups.set(r, []);
-    roundGroups.get(r)!.push(s);
-  });
+  const firstRound = allSeries.filter((s) => s.round === "First Round");
+  const secondRound = allSeries.filter((s) => s.round === "Second Round");
+  const confFinals = allSeries.filter((s) => s.round === "Conf Finals");
+  const finals = allSeries.filter((s) => s.round === "NBA Finals");
 
-  const orderedRounds = Array.from(roundGroups.entries()).sort(
-    ([rA], [rB]) =>
-      (ROUND_ORDER[rA] ?? 99) - (ROUND_ORDER[rB] ?? 99)
-  );
+  const firstRoundActive = firstRound.some((s) => s.status !== "complete");
+
+  // Round section header
+  function RoundHeader({
+    title,
+    note,
+  }: {
+    title: string;
+    note?: ReactNode;
+  }) {
+    return (
+      <div className="mb-3">
+        <div className="mb-1.5 flex items-center gap-2">
+          <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.1em] text-[#a89880]">
+            {title}
+          </p>
+          {note}
+        </div>
+        <hr className="border-[#d4cdc0]" />
+      </div>
+    );
+  }
+
+  // East + West two-column grid of actual SeriesCards
+  function EastWestGrid({ series }: { series: SeriesInfo[] }) {
+    const east = series
+      .filter((s) => s.conference === "East")
+      .sort((a, b) => {
+        const rank = (x: SeriesInfo) =>
+          x.status === "live" ? 0 : x.isGame7 ? 1 : x.status === "upcoming" ? 2 : 3;
+        return rank(a) - rank(b);
+      });
+    const west = series
+      .filter((s) => s.conference === "West")
+      .sort((a, b) => {
+        const rank = (x: SeriesInfo) =>
+          x.status === "live" ? 0 : x.isGame7 ? 1 : x.status === "upcoming" ? 2 : 3;
+        return rank(a) - rank(b);
+      });
+    if (!east.length && !west.length) return null;
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {east.length > 0 && (
+          <div className="space-y-2.5">
+            <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
+              East
+            </p>
+            {east.map((s) => (
+              <SeriesCard key={s.key} series={s} favoriteTeamAbbr={favoriteTeamAbbr} />
+            ))}
+          </div>
+        )}
+        {west.length > 0 && (
+          <div className="space-y-2.5">
+            <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
+              West
+            </p>
+            {west.map((s) => (
+              <SeriesCard key={s.key} series={s} favoriteTeamAbbr={favoriteTeamAbbr} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Build second round display: pair first-round series into slots,
+  // use actual second-round series when available, otherwise pending cards.
+  function SecondRoundConf({
+    conf,
+  }: {
+    conf: string;
+  }) {
+    const confFirst = firstRound
+      .filter((s) => s.conference === conf)
+      .sort((a, b) => a.key.localeCompare(b.key));
+    const confActual = secondRound.filter((s) => s.conference === conf);
+
+    if (!confFirst.length && !confActual.length) return null;
+
+    const slots: ReactNode[] = [];
+
+    // Pair first-round series: [0,1] → slot 0, [2,3] → slot 1, etc.
+    for (let i = 0; i < Math.max(confFirst.length, confActual.length * 2); i += 2) {
+      const f1 = confFirst[i] ?? null;
+      const f2 = confFirst[i + 1] ?? null;
+      const slotIdx = Math.floor(i / 2);
+
+      // Try to match an actual second-round series to this slot
+      const w1 = f1 ? (f1.teamA.wins === 4 ? f1.teamA : f1.teamB.wins === 4 ? f1.teamB : null) : null;
+      const w2 = f2 ? (f2.teamA.wins === 4 ? f2.teamA : f2.teamB.wins === 4 ? f2.teamB : null) : null;
+
+      const matchedActual =
+        w1 && w2
+          ? (confActual.find((s) => {
+              const t = new Set([s.abbrA, s.abbrB]);
+              return t.has(w1.abbreviation) && t.has(w2.abbreviation);
+            }) ?? confActual[slotIdx] ?? null)
+          : confActual[slotIdx] ?? null;
+
+      if (matchedActual) {
+        slots.push(
+          <SeriesCard
+            key={matchedActual.key}
+            series={matchedActual}
+            favoriteTeamAbbr={favoriteTeamAbbr}
+          />
+        );
+      } else {
+        slots.push(
+          <PendingSeriesCard
+            key={`pending-${conf}-${slotIdx}`}
+            feeder1={f1}
+            feeder2={f2}
+          />
+        );
+      }
+    }
+
+    return <>{slots}</>;
+  }
+
+  const hasSecondRound =
+    firstRound.length > 0 || secondRound.length > 0;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-7">
-      {orderedRounds.map(([round, roundSeries]) => {
-        // Within each round, split East vs West
-        const east = roundSeries.filter((s) => s.conference === "East");
-        const west = roundSeries.filter((s) => s.conference === "West");
-        const finals = roundSeries.filter(
-          (s) => s.conference === "Finals" || (!east.length && !west.length)
-        );
+    <div className="mx-auto max-w-4xl space-y-8">
+      {/* NBA Finals */}
+      {finals.length > 0 && (
+        <div>
+          <RoundHeader title="NBA Finals" />
+          <div className="mx-auto max-w-sm space-y-2.5">
+            {finals.map((s) => (
+              <SeriesCard key={s.key} series={s} favoriteTeamAbbr={favoriteTeamAbbr} />
+            ))}
+          </div>
+        </div>
+      )}
 
-        return (
-          <div key={round}>
-            {/* Round header */}
-            <div className="mb-3">
-              <p className="mb-1.5 font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.1em] text-[#a89880]">
-                {round}
-              </p>
-              <hr className="border-[#d4cdc0]" />
-            </div>
+      {/* Conference Finals */}
+      {confFinals.length > 0 && (
+        <div>
+          <RoundHeader title="Conf Finals" />
+          <EastWestGrid series={confFinals} />
+        </div>
+      )}
 
-            {/* Finals: single column, centered */}
-            {finals.length > 0 && (
-              <div className="mx-auto max-w-sm">
-                {finals.map((s) => (
-                  <SeriesCard
-                    key={s.key}
-                    series={s}
-                    favoriteTeamAbbr={favoriteTeamAbbr}
-                  />
-                ))}
+      {/* Second Round */}
+      {hasSecondRound && (
+        <div>
+          <RoundHeader
+            title="Second Round"
+            note={
+              firstRoundActive ? (
+                <span
+                  className="text-[0.65rem] font-bold"
+                  style={{ color: "#e85d04" }}
+                >
+                  Advancing soon
+                </span>
+              ) : undefined
+            }
+          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {(firstRound.some((s) => s.conference === "East") ||
+              secondRound.some((s) => s.conference === "East")) && (
+              <div className="space-y-2.5">
+                <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
+                  East
+                </p>
+                <SecondRoundConf conf="East" />
               </div>
             )}
-
-            {/* East + West side by side */}
-            {(east.length > 0 || west.length > 0) && (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* East column */}
-                {east.length > 0 && (
-                  <div className="space-y-2.5">
-                    <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
-                      East
-                    </p>
-                    {east.map((s) => (
-                      <SeriesCard
-                        key={s.key}
-                        series={s}
-                        favoriteTeamAbbr={favoriteTeamAbbr}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* West column */}
-                {west.length > 0 && (
-                  <div className="space-y-2.5">
-                    <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
-                      West
-                    </p>
-                    {west.map((s) => (
-                      <SeriesCard
-                        key={s.key}
-                        series={s}
-                        favoriteTeamAbbr={favoriteTeamAbbr}
-                      />
-                    ))}
-                  </div>
-                )}
+            {(firstRound.some((s) => s.conference === "West") ||
+              secondRound.some((s) => s.conference === "West")) && (
+              <div className="space-y-2.5">
+                <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
+                  West
+                </p>
+                <SecondRoundConf conf="West" />
               </div>
             )}
           </div>
-        );
-      })}
+        </div>
+      )}
+
+      {/* First Round */}
+      {firstRound.length > 0 && (
+        <div>
+          <RoundHeader title="First Round" />
+          <EastWestGrid series={firstRound} />
+        </div>
+      )}
     </div>
   );
 }
