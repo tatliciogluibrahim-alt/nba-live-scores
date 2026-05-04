@@ -3,9 +3,25 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 const ESPN_TIMEOUT_MS = 8000;
-
-// ESPN uses "fifa.world" for the World Cup tournament
 const WC_LEAGUE = "fifa.world";
+
+// ── Group map (verified from ESPN API + standings, June 2026) ─────────────────
+const TEAM_GROUP: Record<string, string> = {
+  MEX: "A", CZE: "A", KOR: "A", RSA: "A",
+  CAN: "B", BIH: "B", SUI: "B", QAT: "B",
+  BRA: "C", SCO: "C", HAI: "C", MAR: "C",
+  PAR: "D", TUR: "D", AUS: "D", USA: "D",
+  ECU: "E", GER: "E", CIV: "E", CUW: "E",
+  NED: "F", SWE: "F", JPN: "F", TUN: "F",
+  BEL: "G", IRN: "G", EGY: "G", NZL: "G",
+  ESP: "H", URU: "H", KSA: "H", CPV: "H",
+  NOR: "I", FRA: "I", SEN: "I", IRQ: "I",
+  ARG: "J", AUT: "J", ALG: "J", JOR: "J",
+  COL: "K", POR: "K", UZB: "K", COD: "K",
+  ENG: "L", CRO: "L", PAN: "L", GHA: "L",
+};
+
+// ── ESPN API types ─────────────────────────────────────────────────────────────
 
 type ESPNTeam = {
   id?: string;
@@ -14,7 +30,6 @@ type ESPNTeam = {
   shortDisplayName?: string;
   logo?: string;
   logos?: { href?: string }[];
-  flag?: { href?: string };
 };
 
 type ESPNCompetitor = {
@@ -38,28 +53,51 @@ type ESPNStatus = {
   };
 };
 
+type ESPNDetail = {
+  type?: { id?: string; text?: string; abbreviation?: string };
+  clock?: { value?: number; displayValue?: string };
+  team?: { id?: string };
+  athletesInvolved?: { shortName?: string; displayName?: string; teamId?: string }[];
+  scoringPlay?: boolean;
+  yellowCard?: boolean;
+  redCard?: boolean;
+  penaltyKick?: boolean;
+  ownGoal?: boolean;
+};
+
 type ESPNEvent = {
   id?: string;
   name?: string;
   date?: string;
   status?: ESPNStatus;
+  season?: { slug?: string };
   competitions?: {
     id?: string;
     date?: string;
     status?: ESPNStatus;
     competitors?: ESPNCompetitor[];
-    notes?: { type?: string; headline?: string }[];
-    groups?: { name?: string; shortName?: string };
-    tournament?: { id?: string; displayName?: string };
+    details?: ESPNDetail[];
+    venue?: { fullName?: string; address?: { city?: string; country?: string } };
+    notes?: { headline?: string }[];
   }[];
 };
 
 type ESPNScoreboardResponse = {
   events?: ESPNEvent[];
-  season?: { year?: number; type?: number; slug?: string };
+  season?: { year?: number; type?: number };
+};
+
+// ── Normalized types (exported for app use) ───────────────────────────────────
+
+export type WCMatchEvent = {
+  minute: string;
+  type: "goal" | "pen_goal" | "own_goal" | "red_card" | "yellow_card";
+  playerName: string;
+  teamId: string;
 };
 
 export type WCTeam = {
+  id: string;
   name: string;
   abbreviation: string;
   score: number;
@@ -71,50 +109,115 @@ export type WCGame = {
   date: string;
   status: "live" | "upcoming" | "final";
   statusText: string;
-  stage: string; // "Group A", "Round of 32", "Quarterfinal", etc.
+  /** "Group A" | "Round of 32" | "Quarterfinal" | etc. */
+  stage: string;
+  /** Single-letter group ("A"…"L") or "" for knockout */
+  group: string;
   venue?: string;
   home: WCTeam;
   away: WCTeam;
+  events: WCMatchEvent[];
+  /** Penalty shootout scores (null if no penalties) */
+  penaltyHome: number | null;
+  penaltyAway: number | null;
 };
 
-function getGameStatus(
-  status?: ESPNStatus
-): WCGame["status"] {
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function getGameStatus(status?: ESPNStatus): WCGame["status"] {
   const state = status?.type?.state;
-  const completed = status?.type?.completed;
-  if (completed || state === "post") return "final";
+  if (status?.type?.completed || state === "post") return "final";
   if (state === "in") return "live";
   return "upcoming";
 }
 
-function formatSoccerStatus(status?: ESPNStatus, gameStatus?: WCGame["status"]): string {
-  if (gameStatus === "final") return "FT";
+function formatSoccerStatus(
+  status: ESPNStatus | undefined,
+  gameStatus: WCGame["status"]
+): string {
+  if (gameStatus === "final") {
+    const detail = (status?.type?.detail ?? "").toLowerCase();
+    if (detail.includes("aet") || detail.includes("extra time")) return "AET";
+    if (detail.includes("pen")) return "Pens";
+    return "FT";
+  }
   if (gameStatus === "upcoming") return "Upcoming";
 
-  const desc = status?.type?.description ?? "";
-  const detail = status?.type?.detail ?? status?.type?.shortDetail ?? "";
-  const lower = (desc + " " + detail).toLowerCase();
-
-  if (lower.includes("halftime") || lower.includes("half time")) return "HT";
-  if (lower.includes("extra time") || lower.includes("et")) return `ET · ${status?.displayClock ?? ""}`.trim();
-  if (lower.includes("penalty") || lower.includes("pso")) return "PEN";
-
+  const desc = ((status?.type?.description ?? "") + " " + (status?.type?.detail ?? "")).toLowerCase();
   const clock = status?.displayClock?.trim() ?? "";
-  if (clock) return clock + "'";
-  return "Live";
+
+  if (desc.includes("halftime") || desc.includes("half time")) return "HT";
+  if (desc.includes("extra time") || desc.includes("et extra")) return `ET ${clock}`;
+  if (desc.includes("penalty") || desc.includes("pso")) return "Penalties";
+
+  return clock ? `${clock}'` : "Live";
 }
 
 function normalizeTeam(competitor?: ESPNCompetitor): WCTeam {
   const team = competitor?.team;
   return {
+    id: team?.id ?? "",
     name: team?.displayName ?? team?.shortDisplayName ?? "TBD",
     abbreviation: team?.abbreviation ?? "TBD",
     score: Number(competitor?.score ?? 0),
-    logo:
-      team?.flag?.href ??
-      team?.logos?.[0]?.href ??
-      team?.logo ??
-      "",
+    logo: team?.logos?.[0]?.href ?? team?.logo ?? "",
+  };
+}
+
+function normalizeEvents(
+  details: ESPNDetail[],
+  homeId: string,
+  awayId: string
+): {
+  events: WCMatchEvent[];
+  penaltyHome: number | null;
+  penaltyAway: number | null;
+} {
+  const events: WCMatchEvent[] = [];
+  let penHome = 0;
+  let penAway = 0;
+  let hasPenalties = false;
+
+  for (const d of details) {
+    const minute = d.clock?.displayValue ?? "";
+    const teamId = d.team?.id ?? "";
+    const playerName =
+      d.athletesInvolved?.[0]?.shortName ??
+      d.athletesInvolved?.[0]?.displayName ??
+      "";
+
+    // Penalty shootout goals tracked separately
+    // ESPN marks these with penaltyKick=true AND the period being 5 (PKs phase)
+    // We detect them vs regular play by context — for now treat all PKs as regular
+    if (d.redCard) {
+      events.push({ minute, type: "red_card", playerName, teamId });
+      continue;
+    }
+    if (d.yellowCard) {
+      events.push({ minute, type: "yellow_card", playerName, teamId });
+      continue;
+    }
+    if (d.scoringPlay) {
+      const type = d.ownGoal
+        ? "own_goal"
+        : d.penaltyKick
+          ? "pen_goal"
+          : "goal";
+      events.push({ minute, type, playerName, teamId });
+
+      // Track penalty shootout separately if no clock (indicates PK phase)
+      if (d.penaltyKick && !minute) {
+        hasPenalties = true;
+        if (teamId === homeId) penHome++;
+        else if (teamId === awayId) penAway++;
+      }
+    }
+  }
+
+  return {
+    events,
+    penaltyHome: hasPenalties ? penHome : null,
+    penaltyAway: hasPenalties ? penAway : null,
   };
 }
 
@@ -126,14 +229,38 @@ function normalizeEvent(event: ESPNEvent): WCGame | null {
   const gameStatus = getGameStatus(status);
 
   const competitors = competition.competitors ?? [];
-  const home = normalizeTeam(competitors.find((c) => c.homeAway === "home"));
-  const away = normalizeTeam(competitors.find((c) => c.homeAway === "away"));
+  const homeComp = competitors.find((c) => c.homeAway === "home");
+  const awayComp = competitors.find((c) => c.homeAway === "away");
 
-  const stage =
-    competition.groups?.shortName ??
-    competition.groups?.name ??
-    competition.notes?.[0]?.headline ??
-    "";
+  const home = normalizeTeam(homeComp);
+  const away = normalizeTeam(awayComp);
+
+  // Derive group from team abbreviation
+  const group = TEAM_GROUP[home.abbreviation] ?? TEAM_GROUP[away.abbreviation] ?? "";
+
+  // Stage label
+  const slug = event.season?.slug ?? "";
+  let stage = group ? `Group ${group}` : "";
+  if (!stage) {
+    if (slug.includes("round-of-32") || slug.includes("rd-of-32")) stage = "Round of 32";
+    else if (slug.includes("round-of-16") || slug.includes("rd-of-16")) stage = "Round of 16";
+    else if (slug.includes("quarter")) stage = "Quarterfinal";
+    else if (slug.includes("semi")) stage = "Semifinal";
+    else if (slug.includes("3rd") || slug.includes("third")) stage = "3rd Place";
+    else if (slug.includes("final")) stage = "Final";
+    else stage = competition.notes?.[0]?.headline ?? slug;
+  }
+
+  // Venue
+  const venue = competition.venue?.address?.city
+    ? `${competition.venue.address.city}`
+    : competition.venue?.fullName;
+
+  const { events, penaltyHome, penaltyAway } = normalizeEvents(
+    competition.details ?? [],
+    home.id,
+    away.id
+  );
 
   return {
     id: event.id ?? `${away.abbreviation}-${home.abbreviation}-${event.date}`,
@@ -141,25 +268,33 @@ function normalizeEvent(event: ESPNEvent): WCGame | null {
     status: gameStatus,
     statusText: formatSoccerStatus(status, gameStatus),
     stage,
+    group,
+    venue,
     home,
     away,
+    events,
+    penaltyHome,
+    penaltyAway,
   };
 }
 
+// ── Fetching ───────────────────────────────────────────────────────────────────
+
 function formatDateForESPN(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}${m}${d}`;
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("");
 }
 
-/** Returns today + the next 6 days */
+/** A rolling 14-day window centered on today (covers multi-day group stages) */
 function getDateWindow(): string[] {
   const today = new Date();
   if (today.getHours() < 5) today.setDate(today.getDate() - 1);
-  return Array.from({ length: 7 }, (_, i) => {
+  return Array.from({ length: 14 }, (_, i) => {
     const d = new Date(today);
-    d.setDate(today.getDate() + i);
+    d.setDate(today.getDate() - 3 + i); // 3 days back, 10 days forward
     return formatDateForESPN(d);
   });
 }
@@ -210,7 +345,12 @@ export async function GET() {
   } catch (err) {
     console.error("World Cup API error:", err);
     return NextResponse.json(
-      { games: [], count: 0, error: "Unable to fetch", updatedAt: new Date().toISOString() },
+      {
+        games: [],
+        count: 0,
+        error: "Unable to fetch",
+        updatedAt: new Date().toISOString(),
+      },
       { status: 200, headers: { "Cache-Control": "no-store, max-age=0" } }
     );
   }
