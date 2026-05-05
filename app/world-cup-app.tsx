@@ -558,8 +558,8 @@ function ScheduleMatchRow({
 
   return (
     <div
-      className={`flex items-center gap-2 rounded-[0.9rem] px-3 py-2.5 ${isMyGame ? "ring-2" : "bg-white ring-1 ring-[#e8e0d4]"}`}
-      style={isMyGame ? { background: `${accentColor}0a`, ringColor: accentColor } : {}}
+      className={`flex items-center gap-2 rounded-[0.9rem] px-3 py-2.5 ${isMyGame ? "" : "bg-white ring-1 ring-[#e8e0d4]"}`}
+      style={isMyGame ? { background: `${accentColor}0a`, outline: `2px solid ${accentColor}` } : {}}
     >
       {/* Date */}
       <div className="w-14 shrink-0">
