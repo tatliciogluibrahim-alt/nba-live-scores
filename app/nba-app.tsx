@@ -767,7 +767,7 @@ function ShareCardCanvas({ payload }: { payload: SharePayload }) {
           {contextLine}
         </p>
         <p style={{ fontSize: 12, fontWeight: 500, color: "#a89880" }}>
-          noNoisescores.com
+          nonoisescores.app
         </p>
       </div>
     </div>

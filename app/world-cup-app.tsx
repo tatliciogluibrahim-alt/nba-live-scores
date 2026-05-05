@@ -119,11 +119,11 @@ function generateICS(countryCode: string, game: WCGame): string {
       ? game.away.abbreviation
       : game.home.abbreviation;
   const summary = `⚽ ${countryCode} vs ${opponent} — FIFA World Cup 2026`;
-  const desc = `${game.stage} · Watch on FOX / Telemundo / Peacock\\nNo Noise Scores`;
+  const desc = `${game.stage} · Watch on FOX / Telemundo / Peacock\\nnonoisescores.app`;
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//No Noise Scores//FIFA WC 2026//EN",
+    "PRODID:-//No Noise Scores//nonoisescores.app//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
@@ -133,7 +133,7 @@ function generateICS(countryCode: string, game: WCGame): string {
     `DESCRIPTION:${desc}`,
     `LOCATION:${game.venue ?? "USA / Canada / Mexico"}`,
     "STATUS:CONFIRMED",
-    `UID:wc2026-${game.id}@nonoisescores`,
+    `UID:wc2026-${game.id}@nonoisescores.app`,
     "END:VEVENT",
     "END:VCALENDAR",
   ].join("\r\n");

@@ -4,12 +4,12 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "No Noise Scores",
     short_name: "No Noise",
-    description: "NBA scores, no noise.",
+    description: "Live sports scores, no noise. NBA Playoffs + FIFA World Cup 2026.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#07111f",
-    theme_color: "#07111f",
+    background_color: "#f5f1ea",
+    theme_color: "#f5f1ea",
     categories: ["sports", "news"],
     icons: [
       {

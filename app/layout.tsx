@@ -17,6 +17,22 @@ export const metadata: Metadata = {
   title: "No Noise Scores",
   description: "Live sports scores, no noise. NBA Playoffs + FIFA World Cup 2026.",
   applicationName: "No Noise Scores",
+  metadataBase: new URL("https://nonoisescores.app"),
+  alternates: {
+    canonical: "https://nonoisescores.app",
+  },
+  openGraph: {
+    title: "No Noise Scores",
+    description: "Live sports scores, no noise. NBA Playoffs + FIFA World Cup 2026.",
+    url: "https://nonoisescores.app",
+    siteName: "No Noise Scores",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "No Noise Scores",
+    description: "Live sports scores, no noise.",
+  },
   manifest: "/manifest.webmanifest",
   icons: {
     icon: "/favicon.svg",
@@ -26,7 +42,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "No Noise Scores",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
   formatDetection: {
     telephone: false,
