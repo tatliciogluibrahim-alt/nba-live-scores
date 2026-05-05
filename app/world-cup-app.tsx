@@ -1330,6 +1330,38 @@ export default function WorldCupApp({
         {/* Pre-tournament */}
         {hasLoadedOnce && !hasTournamentStarted && (
           <div className="mx-auto max-w-4xl space-y-6">
+            {/* Toolbar preview — Groups active, Table + Schedule disabled until June 11 */}
+            <div className="mb-1">
+              <div className="rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1.5 shadow-sm sm:p-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 gap-0.5 rounded-full bg-[#d4cdc0]/50 p-0.5">
+                    {(["groups", "table", "schedule"] as WCViewMode[]).map((mode) => {
+                      const labels: Record<WCViewMode, string> = { groups: "Groups", table: "Table", schedule: "Schedule" };
+                      const isActive = mode === "groups";
+                      return (
+                        <button
+                          key={mode}
+                          type="button"
+                          disabled={!isActive}
+                          title={!isActive ? "Unlocks June 11" : undefined}
+                          className={`rounded-full px-2 py-1 text-[0.6rem] font-extrabold uppercase leading-none transition ${
+                            isActive
+                              ? "bg-white text-[#1a1208] shadow-sm"
+                              : "cursor-not-allowed opacity-40 text-[#a89880]"
+                          }`}
+                        >
+                          {labels[mode]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <span className="text-[0.55rem] font-semibold whitespace-nowrap text-[#a89880]">
+                    Table &amp; Schedule unlock June 11
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <PreTournamentBanner selectedCountry={selectedCountry} accentColor={accentColor} nextGame={nextCountryGame} />
             {games.length > 0 && (
               <div>
