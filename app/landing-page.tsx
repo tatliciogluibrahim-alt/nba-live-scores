@@ -4,6 +4,7 @@
 
 export type AppSport = "none" | "nba" | "world-cup";
 
+// ── Active events ──────────────────────────────────────────────────────────────
 const ACTIVE_CARDS: {
   id: AppSport;
   eyebrow: string;
@@ -51,11 +52,42 @@ const ACTIVE_CARDS: {
   },
 ];
 
-const COMING_SOON_CARDS: { eyebrow: string; title: string }[] = [
-  { eyebrow: "Football", title: "NFL Playoffs" },
-  { eyebrow: "College Basketball", title: "March Madness" },
-  { eyebrow: "Soccer", title: "Champions League" },
-  { eyebrow: "Multi-Sport", title: "Olympics 2028" },
+// ── Upcoming events ────────────────────────────────────────────────────────────
+const COMING_SOON_CARDS: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  badge: string;
+  accentBar: string;
+}[] = [
+  {
+    eyebrow: "Football",
+    title: "NFL Playoffs",
+    description: "Wild Card through the Super Bowl. One team, one run.",
+    badge: "JAN 2027",
+    accentBar: "#013369",
+  },
+  {
+    eyebrow: "College Basketball",
+    title: "March Madness",
+    description: "68 teams. Bracket chaos. Follow every upset.",
+    badge: "MAR 2027",
+    accentBar: "#1D5FA4",
+  },
+  {
+    eyebrow: "Soccer",
+    title: "Champions League",
+    description: "Knockouts, finals & the biggest nights in club football.",
+    badge: "COMING SOON",
+    accentBar: "#1B3A7A",
+  },
+  {
+    eyebrow: "Multi-Sport",
+    title: "Olympics 2028",
+    description: "Track your country across every event in Los Angeles.",
+    badge: "LA 2028",
+    accentBar: "#0085C7",
+  },
 ];
 
 export default function LandingPage({
@@ -66,6 +98,7 @@ export default function LandingPage({
   return (
     <main className="min-h-[100svh] bg-[#f5f1ea] px-4 pb-16 pt-[calc(env(safe-area-inset-top)+1.75rem)] sm:px-6 md:pt-14">
       <div className="mx-auto max-w-4xl">
+
         {/* Wordmark */}
         <header className="mb-10 flex items-center gap-2">
           <img src="/favicon.svg" alt="" className="h-5 w-5" />
@@ -75,18 +108,21 @@ export default function LandingPage({
         </header>
 
         {/* Hero */}
-        <div className="mb-10 max-w-xs">
+        <div className="mb-10 max-w-sm">
           <h1 className="font-[family-name:var(--font-display)] text-[2.6rem] font-black uppercase leading-[0.95] tracking-tight text-[#1a1208]">
-            Pick your moment.
+            Pick your sport.
           </h1>
-          <p className="mt-3 text-[0.9rem] font-medium text-[#a89880]">
-            Live scores for the games that matter.
+          <p className="mt-3 text-[0.9rem] font-medium leading-snug text-[#a89880]">
+            Live scores for the moments that matter.
+            <br className="hidden sm:block" />
+            {" "}No feeds, no clutter.
           </p>
         </div>
 
         {/* Cards grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Active sport cards */}
+
+          {/* ── Active event cards ── */}
           {ACTIVE_CARDS.map((card) => (
             <button
               key={card.id}
@@ -103,12 +139,7 @@ export default function LandingPage({
               }}
             >
               {/* Top accent stripe */}
-              <div
-                style={{
-                  height: 3,
-                  background: card.accentBar,
-                }}
-              />
+              <div style={{ height: 3, background: card.accentBar }} />
 
               <div className="p-5">
                 {/* Eyebrow + badge row */}
@@ -121,10 +152,7 @@ export default function LandingPage({
                   </span>
                   <span
                     className="rounded-full px-2 py-0.5 text-[0.58rem] font-black uppercase tracking-wide"
-                    style={{
-                      background: card.badgeBg,
-                      color: card.badgeText,
-                    }}
+                    style={{ background: card.badgeBg, color: card.badgeText }}
                   >
                     {card.badge}
                   </span>
@@ -169,31 +197,50 @@ export default function LandingPage({
             </button>
           ))}
 
-          {/* Coming Soon cards */}
+          {/* ── Coming soon event cards ── */}
           {COMING_SOON_CARDS.map((card) => (
             <div
               key={card.title}
-              className="relative overflow-hidden rounded-[1.35rem] opacity-40"
+              className="relative overflow-hidden rounded-[1.35rem]"
               style={{
                 background: "#f0ece4",
-                border: "1px solid #d4cdc0",
-                cursor: "not-allowed",
+                border: "1px solid #ddd8cf",
+                cursor: "default",
+                opacity: 0.52,
               }}
             >
-              <div style={{ height: 3, background: "#c0b0a0" }} />
+              {/* Top accent stripe — each event's own color, desaturated */}
+              <div style={{ height: 3, background: card.accentBar, opacity: 0.45 }} />
+
               <div className="p-5">
-                <span className="text-[0.6rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-                  {card.eyebrow}
-                </span>
-                <h2 className="mt-3 font-[family-name:var(--font-display)] text-[1.45rem] font-black uppercase leading-tight tracking-tight text-[#8a7a66]">
+                {/* Eyebrow + badge row */}
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <span className="text-[0.6rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+                    {card.eyebrow}
+                  </span>
+                  <span className="rounded-full bg-[#e4ddd3] px-2 py-0.5 text-[0.58rem] font-black uppercase tracking-wide text-[#a89880]">
+                    {card.badge}
+                  </span>
+                </div>
+
+                {/* Title */}
+                <h2 className="font-[family-name:var(--font-display)] text-[1.45rem] font-black uppercase leading-tight tracking-tight text-[#7a6e62]">
                   {card.title}
                 </h2>
-                <p className="mt-5 text-[0.7rem] font-black uppercase tracking-wide text-[#a89880]">
+
+                {/* Description */}
+                <p className="mt-2 text-[0.78rem] font-medium leading-snug text-[#a89880]">
+                  {card.description}
+                </p>
+
+                {/* Coming soon label */}
+                <p className="mt-5 text-[0.68rem] font-black uppercase tracking-[0.1em] text-[#b8aa9a]">
                   Coming Soon
                 </p>
               </div>
             </div>
           ))}
+
         </div>
       </div>
     </main>
