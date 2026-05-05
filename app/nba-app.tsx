@@ -2039,10 +2039,13 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
     let isMounted = true;
     let isFetching = false;
     let controller: AbortController | null = null;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    // TEN: 10 s polling when any game is live, 30 s otherwise
+    let hasLiveGames = false;
 
     async function fetchGames() {
       if (isFetching) return;
-
       isFetching = true;
 
       const requestController = new AbortController();
@@ -2097,28 +2100,32 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
               setChangedScoreKeys(new Set());
             }, 900);
           }
+
+          // Adjust polling cadence based on whether any game is live
+          const nowLive = nextGames.some((g) => g.status === "live");
+          if (nowLive !== hasLiveGames) {
+            hasLiveGames = nowLive;
+            if (intervalId) clearInterval(intervalId);
+            intervalId = setInterval(fetchGames, hasLiveGames ? 10000 : 30000);
+          }
         }
       } catch {
         if (isMounted && !requestController.signal.aborted) {
           setGames([]);
         }
       } finally {
-        if (isMounted) {
-          setHasLoadedOnce(true);
-        }
-
+        if (isMounted) setHasLoadedOnce(true);
         isFetching = false;
       }
     }
 
     fetchGames();
-
-    const interval = setInterval(fetchGames, 30000);
+    intervalId = setInterval(fetchGames, 30000);
 
     return () => {
       isMounted = false;
       controller?.abort();
-      clearInterval(interval);
+      if (intervalId) clearInterval(intervalId);
 
       if (scoreAnimationTimeoutRef.current) {
         clearTimeout(scoreAnimationTimeoutRef.current);
