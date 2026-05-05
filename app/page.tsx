@@ -35,11 +35,10 @@ export default function Home() {
   }
 
   function goBack() {
-    // Return to the sport-selector landing page.
-    // Preferences (WC country, NBA team) are intentionally kept in localStorage
-    // so each sport re-opens exactly where the user left it. The only thing that
-    // resets is the active sport route — view-local state (activeTab, filters)
-    // resets naturally because the component unmounts.
+    // Clear WC country so the next WC entry shows the pre-launch banner
+    // with the "Pick your country" header button, not the picker overlay.
+    setWcCountry(null);
+    localStorage.removeItem(WC_COUNTRY_KEY);
     selectSport("none");
   }
 

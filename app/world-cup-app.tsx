@@ -106,7 +106,9 @@ const NYC_VENUES: Venue[] = [
 
 // ── ICS Calendar Generation (SIX) ─────────────────────────────────────────────
 function fmtICSDate(d: Date): string {
-  return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const iso = d.toISOString();
+  const noMillis = iso.substring(0, iso.indexOf("."));
+  return noMillis.replace(/[-:]/g, "") + "Z";
 }
 
 function generateICS(countryCode: string, game: WCGame): string {
@@ -814,9 +816,9 @@ function VenueSheet({
             {NYC_VENUES.map((v) => (
               <div key={v.name} className="flex items-start justify-between gap-3 rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
                 <div className="min-w-0">
-                  <p className="text-[0.85rem] font-black text-[#1a1208]">{v.name}</p>
-                  <p className="text-[0.7rem] font-medium text-[#8a7a66]">{v.address} · {v.neighborhood}</p>
-                  <p className="mt-0.5 text-[0.65rem] font-medium text-[#a89880]">{v.note}</p>
+                  <p className="text-[0.72rem] font-black text-[#1a1208] sm:text-[0.85rem]">{v.name}</p>
+                  <p className="text-[0.62rem] font-medium text-[#8a7a66] sm:text-[0.7rem]">{v.address} · {v.neighborhood}</p>
+                  <p className="mt-0.5 text-[0.58rem] font-medium text-[#a89880] sm:text-[0.65rem]">{v.note}</p>
                 </div>
                 <a
                   href={v.mapUrl}
@@ -1117,13 +1119,10 @@ export default function WorldCupApp({
   const [games, setGames] = useState<WCGame[]>([]);
   const [activeFilter, setActiveFilter] = useState<WCFilter>("all");
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
-  // Show picker only on a genuine first visit (no saved country in localStorage).
-  // If the user already has a country saved, go straight to the main view.
-  const [showPicker, setShowPicker] = useState(() =>
-    typeof window === "undefined"
-      ? !selectedCountry
-      : !localStorage.getItem(WC_COUNTRY_KEY) && !selectedCountry
-  );
+  // The picker overlay is opened only via explicit user action (the "Pick country"
+  // button in the header). It never auto-opens on mount so that navigating back
+  // to WC after goBack() always shows the pre-launch / game view first.
+  const [showPicker, setShowPicker] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [viewMode, setViewMode] = useState<WCViewMode>("groups");
   const [venueGame, setVenueGame] = useState<WCGame | null>(null);
