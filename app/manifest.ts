@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "No Noise Scores",
     short_name: "No Noise",
-    description: "Live sports scores, no noise. NBA Playoffs + FIFA World Cup 2026.",
+    description: "Live scores for the sports moments that matter. No noise.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",

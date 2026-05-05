@@ -17,7 +17,7 @@ const displayFont = Anton({
 
 export const metadata: Metadata = {
   title: "No Noise Scores",
-  description: "Live sports scores, no noise. NBA Playoffs + FIFA World Cup 2026.",
+  description: "Live scores for the sports moments that matter. No noise.",
   applicationName: "No Noise Scores",
   metadataBase: new URL("https://nonoisescores.app"),
   alternates: {
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "No Noise Scores",
-    description: "Live sports scores, no noise. NBA Playoffs + FIFA World Cup 2026.",
+    description: "Live scores for the sports moments that matter. No noise.",
     url: "https://nonoisescores.app",
     siteName: "No Noise Scores",
     type: "website",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "No Noise Scores",
-    description: "Live sports scores, no noise.",
+    description: "Live scores for the sports moments that matter.",
   },
   manifest: "/manifest.webmanifest",
   icons: {

@@ -23,7 +23,7 @@ const ACTIVE_CARDS: {
     id: "nba",
     eyebrow: "Basketball",
     title: "NBA Playoffs",
-    description: "Live scores, series tracking, bracket view & share cards.",
+    description: "Live scores, series tracking & share cards.",
     badge: "LIVE NOW",
     bg: "#1a1208",
     cardBorder: "transparent",
@@ -38,8 +38,7 @@ const ACTIVE_CARDS: {
     id: "world-cup",
     eyebrow: "Soccer",
     title: "FIFA World Cup 2026",
-    description:
-      "Tracking all 48 teams. Pick your country. Follow the path to the final.",
+    description: "48 teams. Pick your country. Follow the path to the final.",
     badge: "JUNE 2026",
     bg: "#ffffff",
     cardBorder: "#e8e0d4",
@@ -53,8 +52,10 @@ const ACTIVE_CARDS: {
 ];
 
 const COMING_SOON_CARDS: { eyebrow: string; title: string }[] = [
+  { eyebrow: "Football", title: "NFL Playoffs" },
   { eyebrow: "College Basketball", title: "March Madness" },
-  { eyebrow: "Football", title: "NFL Season" },
+  { eyebrow: "Soccer", title: "Champions League" },
+  { eyebrow: "Multi-Sport", title: "Olympics 2028" },
 ];
 
 export default function LandingPage({
@@ -76,10 +77,10 @@ export default function LandingPage({
         {/* Hero */}
         <div className="mb-10 max-w-xs">
           <h1 className="font-[family-name:var(--font-display)] text-[2.6rem] font-black uppercase leading-[0.95] tracking-tight text-[#1a1208]">
-            Pick your sport.
+            Pick your moment.
           </h1>
           <p className="mt-3 text-[0.9rem] font-medium text-[#a89880]">
-            Live scores, no noise.
+            Live scores for the games that matter.
           </p>
         </div>
 
