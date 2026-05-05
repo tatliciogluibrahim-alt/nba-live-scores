@@ -2,7 +2,6 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePushNotifications } from "@/lib/usePushNotifications";
 
@@ -2282,14 +2281,6 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          <Link
-            href="/hoops"
-            aria-label="Open No Noise Hoops"
-            title="No Noise Hoops"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full opacity-25 transition hover:opacity-60 active:scale-95"
-          >
-            <img src="/favicon.svg" alt="" className="h-5 w-5" />
-          </Link>
         </header>
 
         {/* Tab nav */}

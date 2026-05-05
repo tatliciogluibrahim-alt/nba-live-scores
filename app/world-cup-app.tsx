@@ -2,12 +2,10 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { WCGame, WCMatchEvent, WCTeam } from "./api/world-cup/route";
 
 // ── Verified 2026 World Cup groups (12 groups of 4, 48 teams) ─────────────────
-// Source: ESPN standings API + schedule cross-check, May 2026
-
 export const WC_GROUPS: Record<string, string[]> = {
   A: ["MEX", "CZE", "KOR", "RSA"],
   B: ["CAN", "BIH", "SUI", "QAT"],
@@ -28,31 +26,19 @@ Object.entries(WC_GROUPS).forEach(([g, teams]) => {
   teams.forEach((t) => { TEAM_GROUP[t] = g; });
 });
 
-// ── Country color map (primary flag/kit color, ESPN abbreviations) ─────────────
+// ── Country color map ──────────────────────────────────────────────────────────
 export const COUNTRY_COLOR_MAP: Record<string, string> = {
-  // Group A
   MEX: "#006847", CZE: "#D7141A", KOR: "#003478", RSA: "#007A4D",
-  // Group B
   CAN: "#D80621", BIH: "#002395", SUI: "#E30613", QAT: "#8D1B3D",
-  // Group C
   BRA: "#009C3B", SCO: "#003F87", HAI: "#003F7F", MAR: "#C1272D",
-  // Group D
   PAR: "#D52B1E", TUR: "#E30A17", AUS: "#012169", USA: "#002868",
-  // Group E
   ECU: "#FFD100", GER: "#000000", CIV: "#F77F00", CUW: "#003DA5",
-  // Group F
   NED: "#FF6600", SWE: "#006AA7", JPN: "#BC002D", TUN: "#E70013",
-  // Group G
   BEL: "#CF091F", IRN: "#239F40", EGY: "#C8102E", NZL: "#00247D",
-  // Group H
   ESP: "#AA151B", URU: "#001489", KSA: "#006C35", CPV: "#003893",
-  // Group I
   NOR: "#EF2B2D", FRA: "#002395", SEN: "#00853F", IRQ: "#007A3D",
-  // Group J
   ARG: "#74ACDF", AUT: "#ED2939", ALG: "#006233", JOR: "#007A3D",
-  // Group K
   COL: "#FCD116", POR: "#006600", UZB: "#1EB53A", COD: "#007FFF",
-  // Group L
   ENG: "#CF091F", CRO: "#FF0000", PAN: "#005293", GHA: "#006B3F",
 };
 
@@ -72,7 +58,7 @@ const COUNTRY_NAME: Record<string, string> = {
   ENG: "England", CRO: "Croatia", PAN: "Panama", GHA: "Ghana",
 };
 
-// ESPN 3-letter → ISO 2-letter for flag emoji generation
+// ESPN 3-letter → ISO 2-letter for flag emoji
 const TO_ISO2: Record<string, string> = {
   MEX: "MX", CZE: "CZ", KOR: "KR", RSA: "ZA",
   CAN: "CA", BIH: "BA", SUI: "CH", QAT: "QA",
@@ -98,8 +84,126 @@ function flagEmoji(code: string): string {
     .join("");
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── NYC Watching Venues (hardcoded, SEVEN) ─────────────────────────────────────
+type Venue = {
+  name: string;
+  address: string;
+  neighborhood: string;
+  note: string;
+  mapUrl: string;
+};
 
+const NYC_VENUES: Venue[] = [
+  { name: "Nevada Smith's", address: "74 3rd Ave", neighborhood: "East Village", note: "NYC's original soccer bar since 1980", mapUrl: "https://maps.google.com/?q=Nevada+Smiths+74+3rd+Ave+New+York+NY" },
+  { name: "Smithfield Hall", address: "138 W 25th St", neighborhood: "Chelsea", note: "34 screens, 400-person capacity", mapUrl: "https://maps.google.com/?q=Smithfield+Hall+138+W+25th+St+New+York+NY" },
+  { name: "Foley's NY", address: "18 W 33rd St", neighborhood: "Midtown", note: "Classic sports pub, World Cup regulars", mapUrl: "https://maps.google.com/?q=Foleys+NY+18+W+33rd+St+New+York+NY" },
+  { name: "Legends NYC", address: "6 W 33rd St", neighborhood: "Midtown", note: "Massive bar near MSG, multiple levels", mapUrl: "https://maps.google.com/?q=Legends+NYC+6+W+33rd+St+New+York+NY" },
+  { name: "Riviera Bar & Grill", address: "225 W 14th St", neighborhood: "West Village", note: "Dedicated WC viewing parties every match", mapUrl: "https://maps.google.com/?q=Riviera+Bar+225+W+14th+St+New+York+NY" },
+  { name: "Olivia's", address: "315 Court St", neighborhood: "Carroll Gardens, BK", note: "Best atmosphere in Brooklyn for soccer", mapUrl: "https://maps.google.com/?q=Olivias+315+Court+St+Brooklyn+NY" },
+  { name: "The Breslin", address: "16 W 29th St", neighborhood: "NoMad", note: "Upscale pub with excellent screens", mapUrl: "https://maps.google.com/?q=The+Breslin+16+W+29th+St+New+York+NY" },
+  { name: "The Ship", address: "158 W 23rd St", neighborhood: "Chelsea", note: "British pub, best for European match times", mapUrl: "https://maps.google.com/?q=The+Ship+158+W+23rd+St+New+York+NY" },
+];
+
+// ── ICS Calendar Generation (SIX) ─────────────────────────────────────────────
+function fmtICSDate(d: Date): string {
+  return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+}
+
+function generateICS(countryCode: string, game: WCGame): string {
+  const start = new Date(game.date);
+  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+  const opponent =
+    game.home.abbreviation === countryCode
+      ? game.away.abbreviation
+      : game.home.abbreviation;
+  const summary = `⚽ ${countryCode} vs ${opponent} — FIFA World Cup 2026`;
+  const desc = `${game.stage} · Watch on FOX / Telemundo / Peacock\\nNo Noise Scores`;
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//No Noise Scores//FIFA WC 2026//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `SUMMARY:${summary}`,
+    `DTSTART:${fmtICSDate(start)}`,
+    `DTEND:${fmtICSDate(end)}`,
+    `DESCRIPTION:${desc}`,
+    `LOCATION:${game.venue ?? "USA / Canada / Mexico"}`,
+    "STATUS:CONFIRMED",
+    `UID:wc2026-${game.id}@nonoisescores`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+function downloadICS(content: string, filename: string) {
+  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Group Standings Calculation (THREE) ───────────────────────────────────────
+type TeamStats = {
+  code: string;
+  P: number; // played
+  W: number; // wins
+  D: number; // draws
+  L: number; // losses
+  GF: number; // goals for
+  GA: number; // goals against
+  GD: number; // goal difference
+  Pts: number; // points
+};
+
+function calcGroupStandings(groupCode: string, games: WCGame[]): TeamStats[] {
+  const teams = WC_GROUPS[groupCode] ?? [];
+  const stats: Record<string, TeamStats> = {};
+  teams.forEach((code) => {
+    stats[code] = { code, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 };
+  });
+
+  const finished = games.filter((g) => g.group === groupCode && g.status === "final");
+  finished.forEach((g) => {
+    const h = g.home.abbreviation;
+    const a = g.away.abbreviation;
+    if (!stats[h] || !stats[a]) return;
+    const hg = g.home.score;
+    const ag = g.away.score;
+    stats[h].P++;
+    stats[a].P++;
+    stats[h].GF += hg;
+    stats[h].GA += ag;
+    stats[a].GF += ag;
+    stats[a].GA += hg;
+    if (hg > ag) {
+      stats[h].W++;
+      stats[h].Pts += 3;
+      stats[a].L++;
+    } else if (hg < ag) {
+      stats[a].W++;
+      stats[a].Pts += 3;
+      stats[h].L++;
+    } else {
+      stats[h].D++;
+      stats[h].Pts++;
+      stats[a].D++;
+      stats[a].Pts++;
+    }
+    stats[h].GD = stats[h].GF - stats[h].GA;
+    stats[a].GD = stats[a].GF - stats[a].GA;
+  });
+
+  return Object.values(stats).sort(
+    (a, b) => b.Pts - a.Pts || b.GD - a.GD || b.GF - a.GF
+  );
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
 function formatTime(date: string) {
   return new Date(date).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
@@ -109,65 +213,49 @@ function formatDateTime(date: string) {
   return `${d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })} · ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
 }
 
+function formatDateHeader(date: string) {
+  return new Date(date).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+}
+
 function formatLastUpdated(updatedAt: Date | null) {
   if (!updatedAt) return "Updating…";
   const m = Math.floor((Date.now() - updatedAt.getTime()) / 60000);
   if (m < 1) return "Updated just now";
-  return `Updated ${m} min ago`;
+  return `Updated ${m}m ago`;
 }
 
-// Events for a specific team (by team id)
-function eventsForTeam(
-  events: WCMatchEvent[],
-  teamId: string,
-  side: "home" | "away",
-  home: WCTeam,
-  away: WCTeam
-): WCMatchEvent[] {
-  return events.filter((e) => {
-    if (e.teamId === teamId) return true;
-    // Fallback: if teamId is empty, match by position
-    if (!e.teamId && side === "home" && e.teamId !== away.id) return false;
-    return false;
-  });
+function countdown(date: string): string {
+  const diff = new Date(date).getTime() - Date.now();
+  if (diff <= 0) return "Starting now";
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  if (h >= 24) {
+    const d = Math.floor(h / 24);
+    return `in ${d}d ${h % 24}h`;
+  }
+  if (h > 0) return `in ${h}h ${m}m`;
+  return `in ${m}m`;
 }
 
 // ── Match events display ───────────────────────────────────────────────────────
-
 function EventIcon({ type }: { type: WCMatchEvent["type"] }) {
   if (type === "goal") return <span className="text-[0.7rem] leading-none">⚽</span>;
   if (type === "pen_goal") return <span className="text-[0.7rem] leading-none">🎯</span>;
   if (type === "own_goal") return <span className="text-[0.7rem] leading-none">⚽</span>;
-  if (type === "red_card") return (
-    <span
-      className="inline-block rounded-sm text-white"
-      style={{ background: "#D00000", width: 8, height: 11, fontSize: 0, verticalAlign: "middle" }}
-    />
-  );
-  if (type === "yellow_card") return (
-    <span
-      className="inline-block rounded-sm"
-      style={{ background: "#FFCC00", width: 8, height: 11, fontSize: 0, verticalAlign: "middle" }}
-    />
-  );
+  if (type === "red_card")
+    return <span className="inline-block rounded-sm" style={{ background: "#D00000", width: 8, height: 11, fontSize: 0, verticalAlign: "middle" }} />;
+  if (type === "yellow_card")
+    return <span className="inline-block rounded-sm" style={{ background: "#FFCC00", width: 8, height: 11, fontSize: 0, verticalAlign: "middle" }} />;
   return null;
 }
 
-/** One line per scorer: "Mbappé 23', 45+2'" or "Mbappé 23' (pen)" */
 function GoalLine({ event }: { event: WCMatchEvent }) {
-  const suffix =
-    event.type === "pen_goal"
-      ? " (pen)"
-      : event.type === "own_goal"
-        ? " (og)"
-        : "";
+  const suffix = event.type === "pen_goal" ? " (pen)" : event.type === "own_goal" ? " (og)" : "";
   return (
     <span className="inline-flex items-center gap-1 text-[0.65rem] font-medium text-[#8a7a66]">
       <EventIcon type={event.type} />
-      {event.playerName && (
-        <span>{event.playerName}{suffix}</span>
-      )}
-      {event.minute && <span className="text-[#c0b0a0]">{event.minute}'</span>}
+      {event.playerName && <span>{event.playerName}{suffix}</span>}
+      {event.minute && <span className="text-[#c0b0a0]">{event.minute}&apos;</span>}
     </span>
   );
 }
@@ -177,100 +265,51 @@ function RedCardBadge({ count }: { count: number }) {
   return (
     <span className="flex items-center gap-0.5">
       {Array.from({ length: count }).map((_, i) => (
-        <span
-          key={i}
-          className="inline-block rounded-sm"
-          style={{ background: "#D00000", width: 7, height: 10 }}
-        />
+        <span key={i} className="inline-block rounded-sm" style={{ background: "#D00000", width: 7, height: 10 }} />
       ))}
     </span>
   );
 }
 
-// ── Team row ───────────────────────────────────────────────────────────────────
-
+// ── Team row in game card ──────────────────────────────────────────────────────
 function WCTeamRow({
-  team,
-  events,
-  isWinner,
-  isLoser,
-  showScore,
-  isMyCountry,
-  accentColor,
+  team, events, isWinner, isLoser, showScore, isMyCountry, accentColor,
 }: {
-  team: WCTeam;
-  events: WCMatchEvent[];
-  isWinner: boolean;
-  isLoser: boolean;
-  showScore: boolean;
-  isMyCountry: boolean;
-  accentColor: string;
+  team: WCTeam; events: WCMatchEvent[]; isWinner: boolean; isLoser: boolean;
+  showScore: boolean; isMyCountry: boolean; accentColor: string;
 }) {
-  const goals = events.filter(
-    (e) => e.type === "goal" || e.type === "pen_goal" || e.type === "own_goal"
-  );
+  const goals = events.filter((e) => ["goal", "pen_goal", "own_goal"].includes(e.type));
   const redCards = events.filter((e) => e.type === "red_card").length;
   const flag = flagEmoji(team.abbreviation);
 
   return (
-    <div
-      className="px-3 py-2"
-      style={{ opacity: isLoser ? 0.5 : 1 }}
-    >
-      {/* Team name row */}
+    <div className="px-3 py-2" style={{ opacity: isLoser ? 0.5 : 1 }}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          {/* Flag / Logo */}
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-[#e8e0d4]">
-            {team.logo ? (
-              <img src={team.logo} alt="" className="h-5 w-5 object-contain" />
-            ) : (
-              <span className="text-[1rem] leading-none">{flag}</span>
-            )}
+            {team.logo
+              ? <img src={team.logo} alt="" className="h-5 w-5 object-contain" />
+              : <span className="text-[1rem] leading-none">{flag}</span>}
           </div>
-
           <div className="flex min-w-0 items-center gap-2">
-            <span
-              className="text-[0.95rem] font-black tracking-tight"
-              style={{ color: isWinner ? accentColor : "#1a1208" }}
-            >
+            <span className="text-[0.95rem] font-black tracking-tight" style={{ color: isWinner ? accentColor : "#1a1208" }}>
               {team.abbreviation}
             </span>
-
-            {/* Red cards */}
             <RedCardBadge count={redCards} />
-
-            {/* My country label */}
             {isMyCountry && (
-              <span
-                className="rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-white"
-                style={{ background: accentColor }}
-              >
+              <span className="rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-white" style={{ background: accentColor }}>
                 Mine
               </span>
             )}
           </div>
         </div>
-
-        {/* Score */}
-        {showScore ? (
-          <span
-            className="min-w-[1.8rem] text-right text-[1.9rem] font-black tabular-nums leading-none tracking-tight"
-            style={{ color: isWinner ? accentColor : isLoser ? "#a89880" : "#1a1208" }}
-          >
-            {team.score}
-          </span>
-        ) : (
-          <span className="min-w-[1.8rem] text-right text-[1.5rem] font-black leading-none text-[#d4cdc0]">–</span>
-        )}
+        {showScore
+          ? <span className="min-w-[1.8rem] text-right text-[1.9rem] font-black tabular-nums leading-none tracking-tight" style={{ color: isWinner ? accentColor : isLoser ? "#a89880" : "#1a1208" }}>{team.score}</span>
+          : <span className="min-w-[1.8rem] text-right text-[1.5rem] font-black leading-none text-[#d4cdc0]">–</span>}
       </div>
-
-      {/* Goalscorers */}
       {goals.length > 0 && (
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-10">
-          {goals.map((ev, i) => (
-            <GoalLine key={i} event={ev} />
-          ))}
+          {goals.map((ev, i) => <GoalLine key={i} event={ev} />)}
         </div>
       )}
     </div>
@@ -278,98 +317,55 @@ function WCTeamRow({
 }
 
 // ── Game Card ──────────────────────────────────────────────────────────────────
-
 function WCGameCard({
-  game,
-  selectedCountry,
-  accentColor,
+  game, selectedCountry, accentColor, onWatch,
 }: {
-  game: WCGame;
-  selectedCountry: string | null;
-  accentColor: string;
+  game: WCGame; selectedCountry: string | null; accentColor: string;
+  onWatch?: (game: WCGame) => void;
 }) {
   const showScore = game.status !== "upcoming";
   const awayWin = showScore && game.status === "final" && game.away.score > game.home.score;
   const homeWin = showScore && game.status === "final" && game.home.score > game.away.score;
   const isLive = game.status === "live";
-
   const hasPenalties = game.penaltyHome !== null && game.penaltyAway !== null;
 
-  // Split events by team
   const homeEvents = game.events.filter((e) => e.teamId === game.home.id);
-  const awayEvents = game.events.filter((e) => {
-    // Own goals count for the OTHER team's display
-    if (e.type === "own_goal") return e.teamId === game.away.id ? false : e.teamId === game.home.id;
-    return e.teamId === game.away.id;
-  });
+  const awayEvents = game.events.filter((e) => e.teamId === game.away.id);
 
-  // Status chip color
   const statusColor = isLive ? accentColor : game.status === "final" ? "#2d7a3a" : "#94a3b8";
-
   const topBorder = isLive ? accentColor : game.status === "final" ? "#2d7a3a" : "#d4cdc0";
+
+  const isMyGame = selectedCountry &&
+    (game.home.abbreviation === selectedCountry || game.away.abbreviation === selectedCountry);
+  const showWatchBtn = Boolean(onWatch) && (isMyGame || game.group === "");
 
   return (
     <article
       className="overflow-hidden rounded-[1.2rem] bg-white text-[#1a1208] shadow-lg shadow-black/8 ring-1 ring-[#e8e0d4]"
       style={{ borderTop: `3px solid ${topBorder}` }}
     >
-      {/* Header: stage · status */}
-      <div
-        className="flex items-center justify-between gap-3 border-b border-[#f0ece4] px-3 py-2"
-        style={{ background: isLive ? `${accentColor}08` : "#f8f5f0" }}
-      >
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 border-b border-[#f0ece4] px-3 py-2" style={{ background: isLive ? `${accentColor}08` : "#f8f5f0" }}>
         <div className="flex min-w-0 items-center gap-2">
-          {/* Stage label */}
           {game.stage && (
-            <span className="text-[0.62rem] font-black uppercase tracking-[0.1em] text-[#a89880]">
-              {game.stage}
-            </span>
+            <span className="text-[0.62rem] font-black uppercase tracking-[0.1em] text-[#a89880]">{game.stage}</span>
           )}
         </div>
-
         <div className="flex shrink-0 items-center gap-1.5">
-          {isLive && (
-            <span
-              className="h-1.5 w-1.5 animate-pulse rounded-full"
-              style={{ background: accentColor }}
-            />
-          )}
-          <span
-            className="text-[0.65rem] font-black uppercase tracking-wide"
-            style={{ color: statusColor }}
-          >
-            {isLive
-              ? `Live · ${game.statusText}`
-              : game.status === "final"
-                ? game.statusText
-                : formatTime(game.date)}
+          {isLive && <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: accentColor }} />}
+          <span className="text-[0.65rem] font-black uppercase tracking-wide" style={{ color: statusColor }}>
+            {isLive ? `Live · ${game.statusText}` : game.status === "final" ? game.statusText : formatTime(game.date)}
           </span>
         </div>
       </div>
 
       {/* Teams */}
       <div className="divide-y divide-[#f0ece4]">
-        <WCTeamRow
-          team={game.away}
-          events={awayEvents}
-          isWinner={awayWin}
-          isLoser={homeWin}
-          showScore={showScore}
-          isMyCountry={game.away.abbreviation === selectedCountry}
-          accentColor={accentColor}
-        />
-        <WCTeamRow
-          team={game.home}
-          events={homeEvents}
-          isWinner={homeWin}
-          isLoser={awayWin}
-          showScore={showScore}
-          isMyCountry={game.home.abbreviation === selectedCountry}
-          accentColor={accentColor}
-        />
+        <WCTeamRow team={game.away} events={awayEvents} isWinner={awayWin} isLoser={homeWin} showScore={showScore} isMyCountry={game.away.abbreviation === selectedCountry} accentColor={accentColor} />
+        <WCTeamRow team={game.home} events={homeEvents} isWinner={homeWin} isLoser={awayWin} showScore={showScore} isMyCountry={game.home.abbreviation === selectedCountry} accentColor={accentColor} />
       </div>
 
-      {/* Footer: penalties / venue / upcoming datetime */}
+      {/* Footer */}
       <div className="border-t border-[#f0ece4] px-3 py-1.5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
@@ -379,43 +375,635 @@ function WCGameCard({
               </span>
             )}
             {game.venue && (
-              <span className="truncate text-[0.62rem] font-medium text-[#c0b0a0]">
-                {game.venue}
+              <span className="truncate text-[0.62rem] font-medium text-[#c0b0a0]">{game.venue}</span>
+            )}
+            {game.status === "upcoming" && (
+              <span className="text-[0.62rem] font-semibold text-[#a89880]">
+                {countdown(game.date)}
               </span>
             )}
           </div>
-          {game.status === "upcoming" && (
-            <span className="shrink-0 text-[0.62rem] font-semibold text-[#a89880]">
-              {formatDateTime(game.date)}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {game.status === "upcoming" && (
+              <span className="shrink-0 text-[0.62rem] font-semibold text-[#a89880]">{formatDateTime(game.date)}</span>
+            )}
+            {showWatchBtn && (
+              <button
+                type="button"
+                onClick={() => onWatch!(game)}
+                className="shrink-0 rounded-full px-2 py-0.5 text-[0.6rem] font-black uppercase tracking-wide text-white transition active:scale-95"
+                style={{ background: accentColor }}
+              >
+                Watch 📍
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </article>
   );
 }
 
-// ── Country Picker ─────────────────────────────────────────────────────────────
+// ── Group Standings Table (THREE) ─────────────────────────────────────────────
+function GroupStandingsTable({
+  groupCode, stats, selectedCountry, accentColor,
+}: {
+  groupCode: string; stats: TeamStats[]; selectedCountry: string | null; accentColor: string;
+}) {
+  const [expanded, setExpanded] = useState<string | null>(null);
 
+  return (
+    <div className="overflow-hidden rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]">
+      {stats.map((s, idx) => {
+        const isAdvancing = idx < 2;
+        const isEliminated = idx >= 2;
+        const isMe = s.code === selectedCountry;
+        const flag = flagEmoji(s.code);
+        const rowBg = isAdvancing
+          ? "bg-[#f0faf4]"
+          : isEliminated
+            ? "bg-[#fff5f5]"
+            : "bg-white";
+        const isExpanded = expanded === s.code;
+
+        return (
+          <div key={s.code}>
+            {/* Mobile-first: full row always visible */}
+            <button
+              type="button"
+              onClick={() => setExpanded(isExpanded ? null : s.code)}
+              className={`w-full border-b border-[#f0ece4] last:border-0 ${rowBg} transition active:brightness-95`}
+            >
+              {/* Always-visible row */}
+              <div className="grid items-center gap-1 px-3 py-2.5" style={{ gridTemplateColumns: "1.2rem 1.4rem minmax(0,1fr) 1.6rem 1.6rem" }}>
+                {/* Position */}
+                <span className={`text-[0.68rem] font-black tabular-nums ${isAdvancing ? "text-[#2d7a3a]" : "text-[#a89880]"}`}>
+                  {idx + 1}
+                </span>
+                {/* Flag */}
+                <span className="text-base leading-none">{flag}</span>
+                {/* Name */}
+                <span
+                  className="min-w-0 truncate text-left text-[0.78rem] font-black uppercase tracking-tight"
+                  style={{ color: isMe ? (accentColor === "#000000" ? "#1a1208" : accentColor) : "#1a1208" }}
+                >
+                  {COUNTRY_NAME[s.code] ?? s.code}
+                  {isMe && <span className="ml-1.5 text-[0.55rem] font-black" style={{ color: accentColor }}>●</span>}
+                </span>
+                {/* Pts */}
+                <span className={`text-right text-[0.88rem] font-black tabular-nums ${isAdvancing ? "text-[#2d7a3a]" : "#1a1208"}`}>
+                  {s.Pts}
+                </span>
+                {/* Status icon */}
+                <span className="text-center text-[0.7rem]">
+                  {isAdvancing ? "✅" : idx === 2 ? "🟡" : "❌"}
+                </span>
+              </div>
+
+              {/* Expanded stats */}
+              {isExpanded && (
+                <div className="grid grid-cols-7 gap-1 border-t border-[#f0ece4] px-3 pb-2.5 pt-1.5 text-[0.65rem]">
+                  {[
+                    { label: "P", val: s.P },
+                    { label: "W", val: s.W },
+                    { label: "D", val: s.D },
+                    { label: "L", val: s.L },
+                    { label: "GF", val: s.GF },
+                    { label: "GA", val: s.GA },
+                    { label: "GD", val: s.GD > 0 ? `+${s.GD}` : s.GD },
+                  ].map(({ label, val }) => (
+                    <div key={label} className="flex flex-col items-center gap-0.5">
+                      <span className="font-black uppercase text-[#c0b0a0]">{label}</span>
+                      <span className="font-black tabular-nums text-[#1a1208]">{val}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Full Standings View (THREE) ───────────────────────────────────────────────
+function StandingsView({
+  games, selectedCountry, accentColor,
+}: {
+  games: WCGame[]; selectedCountry: string | null; accentColor: string;
+}) {
+  const groupLetters = "ABCDEFGHIJKL".split("");
+  const myGroup = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
+
+  return (
+    <div className="space-y-6">
+      <p className="px-1 text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+        Tap a team to see full stats · ✅ Advancing · 🟡 Possible · ❌ Eliminated
+      </p>
+      {groupLetters.map((letter) => {
+        const stats = calcGroupStandings(letter, games);
+        const isMyGroup = myGroup === letter;
+        return (
+          <div key={letter}>
+            <div className="mb-2 flex items-center gap-3">
+              <p
+                className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.12em]"
+                style={{ color: isMyGroup ? accentColor : "#a89880" }}
+              >
+                Group {letter}
+              </p>
+              {isMyGroup && selectedCountry && (
+                <span
+                  className="rounded-full px-1.5 py-0.5 text-[0.55rem] font-black uppercase tracking-wide text-white"
+                  style={{ background: accentColor }}
+                >
+                  {flagEmoji(selectedCountry)} {selectedCountry}
+                </span>
+              )}
+              <div className="flex-1 border-t border-[#e8e0d4]" />
+              <div className="flex items-center gap-1">
+                {(WC_GROUPS[letter] ?? []).map((t) => (
+                  <span key={t} className="text-[0.55rem] font-bold uppercase tracking-wide" style={{ color: t === selectedCountry ? accentColor : "#c0b0a0" }}>
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <GroupStandingsTable
+              groupCode={letter}
+              stats={stats}
+              selectedCountry={selectedCountry}
+              accentColor={accentColor}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Schedule View (FOUR) ──────────────────────────────────────────────────────
+type ScheduleFilter = "all" | "group" | "knockout" | "my-country";
+
+function ScheduleMatchRow({
+  game, selectedCountry, accentColor,
+}: {
+  game: WCGame; selectedCountry: string | null; accentColor: string;
+}) {
+  const isMyGame = selectedCountry &&
+    (game.home.abbreviation === selectedCountry || game.away.abbreviation === selectedCountry);
+  const isLive = game.status === "live";
+  const isFinal = game.status === "final";
+
+  return (
+    <div
+      className={`flex items-center gap-2 rounded-[0.9rem] px-3 py-2.5 ${isMyGame ? "ring-2" : "bg-white ring-1 ring-[#e8e0d4]"}`}
+      style={isMyGame ? { background: `${accentColor}0a`, ringColor: accentColor } : {}}
+    >
+      {/* Date */}
+      <div className="w-14 shrink-0">
+        <p className="text-[0.6rem] font-bold uppercase text-[#a89880]">
+          {new Date(game.date).toLocaleDateString([], { month: "short", day: "numeric" })}
+        </p>
+        <p className="text-[0.62rem] font-semibold text-[#c0b0a0]">
+          {formatTime(game.date)}
+        </p>
+      </div>
+
+      {/* Away team */}
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+        <span className="truncate text-[0.8rem] font-black uppercase tracking-tight" style={{ color: isMyGame && game.away.abbreviation === selectedCountry ? accentColor : "#1a1208" }}>
+          {game.away.abbreviation}
+        </span>
+        <span className="text-base leading-none">{flagEmoji(game.away.abbreviation)}</span>
+      </div>
+
+      {/* Score / VS */}
+      <div className="w-16 shrink-0 text-center">
+        {isFinal ? (
+          <span className="text-[1rem] font-black tabular-nums text-[#1a1208]">
+            {game.away.score} – {game.home.score}
+          </span>
+        ) : isLive ? (
+          <div className="flex items-center justify-center gap-1">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: accentColor }} />
+            <span className="text-[0.8rem] font-black" style={{ color: accentColor }}>
+              {game.away.score} – {game.home.score}
+            </span>
+          </div>
+        ) : (
+          <span className="text-[0.75rem] font-bold text-[#c0b0a0]">vs</span>
+        )}
+      </div>
+
+      {/* Home team */}
+      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+        <span className="text-base leading-none">{flagEmoji(game.home.abbreviation)}</span>
+        <span className="truncate text-[0.8rem] font-black uppercase tracking-tight" style={{ color: isMyGame && game.home.abbreviation === selectedCountry ? accentColor : "#1a1208" }}>
+          {game.home.abbreviation}
+        </span>
+      </div>
+
+      {/* Status */}
+      <div className="w-14 shrink-0 text-right">
+        {isLive ? (
+          <span className="text-[0.6rem] font-black uppercase" style={{ color: accentColor }}>
+            {game.statusText}
+          </span>
+        ) : isFinal ? (
+          <span className="text-[0.6rem] font-bold uppercase text-[#2d7a3a]">FT</span>
+        ) : (
+          <span className="text-[0.58rem] font-semibold text-[#a89880]">{countdown(game.date)}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ScheduleView({
+  games, selectedCountry, accentColor,
+}: {
+  games: WCGame[]; selectedCountry: string | null; accentColor: string;
+}) {
+  const [scheduleFilter, setScheduleFilter] = useState<ScheduleFilter>("all");
+
+  const filtered = useMemo(() => {
+    return games.filter((g) => {
+      if (scheduleFilter === "group") return g.group !== "";
+      if (scheduleFilter === "knockout") return g.group === "";
+      if (scheduleFilter === "my-country")
+        return g.away.abbreviation === selectedCountry || g.home.abbreviation === selectedCountry;
+      return true;
+    });
+  }, [games, scheduleFilter, selectedCountry]);
+
+  // Group by group letter (for group stage), then knockout
+  const sections = useMemo(() => {
+    if (scheduleFilter === "knockout") {
+      return [{ label: "Knockout Stage", games: filtered }];
+    }
+    if (scheduleFilter === "my-country") {
+      return [{ label: `${COUNTRY_NAME[selectedCountry ?? ""] ?? "My Country"} Matches`, games: filtered }];
+    }
+
+    const byGroup: Record<string, WCGame[]> = {};
+    const knockout: WCGame[] = [];
+    filtered.forEach((g) => {
+      if (g.group) {
+        byGroup[g.group] = [...(byGroup[g.group] ?? []), g];
+      } else {
+        knockout.push(g);
+      }
+    });
+
+    const result: { label: string; games: WCGame[] }[] = [];
+    "ABCDEFGHIJKL".split("").forEach((letter) => {
+      if (byGroup[letter]?.length) {
+        result.push({ label: `Group ${letter}`, games: byGroup[letter] });
+      }
+    });
+    if (knockout.length) result.push({ label: "Knockout Stage", games: knockout });
+    return result;
+  }, [filtered, scheduleFilter, selectedCountry]);
+
+  return (
+    <div className="space-y-6">
+      {/* Filter strip */}
+      <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+        {(["all", "group", "knockout", "my-country"] as ScheduleFilter[]).map((f) => {
+          if (f === "my-country" && !selectedCountry) return null;
+          const labels: Record<ScheduleFilter, string> = {
+            all: "All Matches",
+            group: "Group Stage",
+            knockout: "Knockout",
+            "my-country": selectedCountry ?? "My Country",
+          };
+          return (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setScheduleFilter(f)}
+              className={`shrink-0 rounded-full px-3 py-1 text-[0.65rem] font-extrabold uppercase tracking-wide transition active:scale-95 ${scheduleFilter === f ? "text-white" : "bg-[#e8e2d8] text-[#8a7a66]"}`}
+              style={scheduleFilter === f ? { background: accentColor } : {}}
+            >
+              {labels[f]}
+            </button>
+          );
+        })}
+      </div>
+
+      {sections.map(({ label, games: gs }) => {
+        const isMyGroup = selectedCountry ? gs.some((g) => g.home.abbreviation === selectedCountry || g.away.abbreviation === selectedCountry) : false;
+        return (
+          <div key={label}>
+            <div className="mb-2 flex items-center gap-3">
+              <p
+                className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.12em]"
+                style={{ color: isMyGroup ? accentColor : "#a89880" }}
+              >
+                {label}
+              </p>
+              <div className="flex-1 border-t border-[#e8e0d4]" />
+              <p className="text-[0.58rem] font-semibold text-[#c0b0a0]">{gs.length} matches</p>
+            </div>
+            <div className="space-y-1.5">
+              {gs.map((g) => (
+                <ScheduleMatchRow
+                  key={g.id}
+                  game={g}
+                  selectedCountry={selectedCountry}
+                  accentColor={accentColor}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {sections.length === 0 && (
+        <div className="rounded-[1.2rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
+          <p className="text-sm font-semibold text-[#a89880]">No matches found.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Venue Sheet (SEVEN) ───────────────────────────────────────────────────────
+function VenueSheet({
+  game, accentColor, onClose,
+}: {
+  game: WCGame; accentColor: string; onClose: () => void;
+}) {
+  const matchLabel = `${game.away.abbreviation} vs ${game.home.abbreviation}`;
+  const matchTime = formatDateTime(game.date);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative w-full max-w-lg overflow-hidden rounded-t-[1.75rem] bg-[#f5f1ea] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="h-1 w-10 rounded-full bg-[#d4cdc0]" />
+        </div>
+
+        {/* Header */}
+        <div className="px-5 pb-3 pt-1">
+          <p className="font-[family-name:var(--font-display)] text-base font-black uppercase tracking-tight text-[#1a1208]">
+            Watch in NYC 📍
+          </p>
+          <p className="mt-0.5 text-[0.72rem] font-semibold text-[#a89880]">
+            {matchLabel} · {matchTime}
+          </p>
+        </div>
+
+        {/* Venue list */}
+        <div className="max-h-[60vh] overflow-y-auto px-4">
+          <div className="space-y-2 pb-2">
+            {NYC_VENUES.map((v) => (
+              <div key={v.name} className="flex items-start justify-between gap-3 rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
+                <div className="min-w-0">
+                  <p className="text-[0.85rem] font-black text-[#1a1208]">{v.name}</p>
+                  <p className="text-[0.7rem] font-medium text-[#8a7a66]">{v.address} · {v.neighborhood}</p>
+                  <p className="mt-0.5 text-[0.65rem] font-medium text-[#a89880]">{v.note}</p>
+                </div>
+                <a
+                  href={v.mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 rounded-full px-2.5 py-1 text-[0.62rem] font-black uppercase tracking-wide text-white transition active:scale-95"
+                  style={{ background: accentColor }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Go →
+                </a>
+              </div>
+            ))}
+          </div>
+          <p className="pb-3 pt-1 text-center text-[0.6rem] text-[#c0b0a0]">
+            More cities coming soon · NYC only for now
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Calendar Reminder (SIX) ───────────────────────────────────────────────────
+function CalendarReminder({
+  country, nextGame, accentColor,
+}: {
+  country: string; nextGame: WCGame | null; accentColor: string;
+}) {
+  const [state, setState] = useState<"idle" | "done" | "skipped">("idle");
+  const [notifState, setNotifState] = useState<"idle" | "granted" | "denied">("idle");
+
+  const name = COUNTRY_NAME[country] ?? country;
+  const flag = flagEmoji(country);
+
+  async function handleRemind() {
+    // 1. Generate + download ICS
+    if (nextGame) {
+      const ics = generateICS(country, nextGame);
+      downloadICS(ics, `wc2026-${country.toLowerCase()}.ics`);
+    }
+
+    // 2. Request browser notification permission
+    if ("Notification" in window && Notification.permission === "default") {
+      const perm = await Notification.requestPermission();
+      setNotifState(perm === "granted" ? "granted" : "denied");
+    } else if (Notification.permission === "granted") {
+      setNotifState("granted");
+    }
+
+    // 3. Store preference
+    localStorage.setItem("no-noise-wc-notify", country);
+    setState("done");
+  }
+
+  if (state !== "idle") return null;
+
+  return (
+    <div
+      className="mt-4 flex items-center justify-between gap-3 rounded-[1rem] px-4 py-3"
+      style={{ background: `${accentColor}14`, border: `1px solid ${accentColor}28` }}
+    >
+      <div className="min-w-0">
+        <p className="text-[0.78rem] font-black text-[#1a1208]">
+          {flag} Get notified when {name} plays
+        </p>
+        <p className="text-[0.65rem] font-medium text-[#8a7a66]">
+          Save match to calendar
+          {nextGame ? ` · ${formatDateTime(nextGame.date)}` : ""}
+        </p>
+      </div>
+      <div className="flex shrink-0 gap-2">
+        <button
+          type="button"
+          onClick={() => setState("skipped")}
+          className="rounded-full bg-white px-2.5 py-1 text-[0.62rem] font-bold text-[#a89880] ring-1 ring-[#e8e0d4] transition active:scale-95"
+        >
+          Skip
+        </button>
+        <button
+          type="button"
+          onClick={handleRemind}
+          className="rounded-full px-2.5 py-1 text-[0.62rem] font-black text-white transition active:scale-95"
+          style={{ background: accentColor }}
+        >
+          Remind Me
+        </button>
+      </div>
+      {notifState === "denied" && (
+        <p className="text-[0.6rem] text-[#D00000]">Notifications blocked</p>
+      )}
+    </div>
+  );
+}
+
+// ── Pre-tournament banner ──────────────────────────────────────────────────────
+function PreTournamentBanner({
+  selectedCountry, accentColor, nextGame,
+}: {
+  selectedCountry: string | null; accentColor: string; nextGame: WCGame | null;
+}) {
+  const kickoff = new Date("2026-06-11T19:00:00Z");
+  const now = new Date();
+  const diffMs = kickoff.getTime() - now.getTime();
+  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  const flag = selectedCountry ? flagEmoji(selectedCountry) : "⚽";
+  const name = selectedCountry ? COUNTRY_NAME[selectedCountry] : null;
+  const group = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
+
+  return (
+    <div className="rounded-[1.35rem] p-6" style={{ background: `${accentColor}12`, border: `1px solid ${accentColor}28` }}>
+      <div className="mb-4 text-center">
+        {days > 0 ? (
+          <>
+            <p className="font-[family-name:var(--font-display)] text-5xl font-black leading-none tracking-tight" style={{ color: accentColor }}>{days}</p>
+            <p className="mt-1 text-[0.75rem] font-bold uppercase tracking-wide text-[#a89880]">days until kickoff</p>
+          </>
+        ) : (
+          <p className="font-[family-name:var(--font-display)] text-2xl font-black uppercase tracking-tight" style={{ color: accentColor }}>
+            Kicks off today!
+          </p>
+        )}
+      </div>
+
+      {selectedCountry && (
+        <div className="mx-auto max-w-xs rounded-xl p-4 text-center" style={{ background: `${accentColor}18` }}>
+          <span className="text-4xl leading-none">{flag}</span>
+          <p className="mt-2 font-[family-name:var(--font-display)] text-lg font-black uppercase tracking-tight" style={{ color: accentColor === "#000000" ? "#1a1208" : accentColor }}>
+            {name}
+          </p>
+          {group && (
+            <p className="mt-1 text-[0.65rem] font-semibold uppercase tracking-widest text-[#a89880]">
+              Group {group} · {WC_GROUPS[group].join(" · ")}
+            </p>
+          )}
+        </div>
+      )}
+
+      {selectedCountry && (
+        <CalendarReminder country={selectedCountry} nextGame={nextGame} accentColor={accentColor} />
+      )}
+
+      <p className="mt-4 text-center text-[0.7rem] font-medium text-[#a89880]">
+        Opening match · June 11 · Mexico City · FOX / Peacock
+      </p>
+    </div>
+  );
+}
+
+// ── Filter pill ────────────────────────────────────────────────────────────────
+type WCFilter = "all" | "live" | "upcoming" | "final" | "my-country";
+
+function WCPill({
+  label, active, disabled, count, accentColor, onClick,
+}: {
+  label: string; active: boolean; disabled?: boolean; count?: number;
+  accentColor: string; onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex h-7 w-auto shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] transition active:scale-[0.98] sm:h-8 ${disabled ? "pointer-events-none opacity-20" : ""}`}
+      style={
+        active
+          ? { background: accentColor, color: accentColor === "#FFCC00" || accentColor === "#FFD100" || accentColor === "#FCD116" ? "#1a1208" : "#fff", boxShadow: `0 2px 8px ${accentColor}40` }
+          : { background: "#e8e2d8", color: "#8a7a66", boxShadow: "0 0 0 1px #d4cdc0" }
+      }
+    >
+      <span className="whitespace-nowrap">{label}</span>
+      {typeof count === "number" && (
+        <span className="rounded-full px-1 py-0.5 text-[0.55rem] leading-none" style={active ? { background: "rgba(255,255,255,0.22)" } : { background: "rgba(26,18,8,0.07)", color: "#8a7a66" }}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// ── Group section (groups view) ────────────────────────────────────────────────
+function GroupSection({
+  groupLabel, games, selectedCountry, accentColor, onWatch,
+}: {
+  groupLabel: string; games: WCGame[]; selectedCountry: string | null;
+  accentColor: string; onWatch?: (game: WCGame) => void;
+}) {
+  const teams = WC_GROUPS[groupLabel] ?? [];
+  const isMyGroup = selectedCountry ? teams.includes(selectedCountry) : false;
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <p className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.12em]" style={{ color: isMyGroup ? accentColor : "#a89880" }}>
+            Group {groupLabel}
+          </p>
+          {isMyGroup && selectedCountry && (
+            <span className="rounded-full px-1.5 py-0.5 text-[0.55rem] font-black uppercase tracking-wide text-white" style={{ background: accentColor }}>
+              {flagEmoji(selectedCountry)} {selectedCountry}
+            </span>
+          )}
+        </div>
+        <div className="flex-1 border-t border-[#e8e0d4]" />
+        <div className="flex items-center gap-1">
+          {teams.map((t) => (
+            <span key={t} className="text-[0.55rem] font-bold uppercase tracking-wide" style={{ color: t === selectedCountry ? accentColor : "#c0b0a0", fontWeight: t === selectedCountry ? 900 : 700 }}>
+              {t}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {games.map((g) => (
+          <WCGameCard key={g.id} game={g} selectedCountry={selectedCountry} accentColor={accentColor} onWatch={onWatch} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Country Picker ─────────────────────────────────────────────────────────────
 function CountryPicker({ onSelect }: { onSelect: (code: string) => void }) {
   const [query, setQuery] = useState("");
-
   const groups = Object.entries(WC_GROUPS);
-
   const filteredGroups = query.trim()
-    ? // Flat search across all groups
-      [
-        [
-          "Results",
-          groups
-            .flatMap(([, teams]) => teams)
-            .filter(
-              (code) =>
-                code.toLowerCase().includes(query.toLowerCase()) ||
-                (COUNTRY_NAME[code] ?? "").toLowerCase().includes(query.toLowerCase())
-            ),
-        ] as [string, string[]],
-      ]
+    ? [[
+        "Results",
+        groups.flatMap(([, teams]) => teams).filter(
+          (code) => code.toLowerCase().includes(query.toLowerCase()) ||
+            (COUNTRY_NAME[code] ?? "").toLowerCase().includes(query.toLowerCase())
+        ),
+      ] as [string, string[]]]
     : groups;
 
   return (
@@ -424,12 +1012,8 @@ function CountryPicker({ onSelect }: { onSelect: (code: string) => void }) {
         <p className="font-[family-name:var(--font-display)] text-2xl font-black uppercase tracking-tight text-[#1a1208]">
           Pick your country
         </p>
-        <p className="mt-1.5 text-sm text-[#a89880]">
-          Your team's colors follow you everywhere.
-        </p>
+        <p className="mt-1.5 text-sm text-[#a89880]">Your team&apos;s colors follow you everywhere.</p>
       </div>
-
-      {/* Search */}
       <input
         type="text"
         placeholder="Search…"
@@ -437,8 +1021,6 @@ function CountryPicker({ onSelect }: { onSelect: (code: string) => void }) {
         onChange={(e) => setQuery(e.target.value)}
         className="mb-5 w-full rounded-[0.9rem] border border-[#d4cdc0] bg-white px-4 py-2.5 text-sm font-semibold text-[#1a1208] placeholder-[#c0b0a0] outline-none focus:border-[#a89880]"
       />
-
-      {/* Groups */}
       <div className="space-y-5">
         {filteredGroups.map(([groupLabel, teams]) => (
           <div key={groupLabel}>
@@ -448,26 +1030,20 @@ function CountryPicker({ onSelect }: { onSelect: (code: string) => void }) {
             <div className="grid grid-cols-2 gap-2">
               {(teams as string[]).map((code) => {
                 const accent = COUNTRY_COLOR_MAP[code] ?? "#006847";
-                const flag = flagEmoji(code);
-                const name = COUNTRY_NAME[code] ?? code;
                 return (
                   <button
                     key={code}
                     type="button"
                     onClick={() => onSelect(code)}
                     className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-2.5 ring-1 ring-[#e8e0d4] transition hover:ring-2 active:scale-[0.97]"
-                    style={{ "--accent": accent } as React.CSSProperties}
                   >
-                    <span className="text-xl leading-none">{flag}</span>
+                    <span className="text-xl leading-none">{flagEmoji(code)}</span>
                     <div className="min-w-0 text-left">
-                      <span
-                        className="block truncate text-[0.72rem] font-black uppercase tracking-tight"
-                        style={{ color: accent === "#000000" ? "#1a1208" : accent }}
-                      >
+                      <span className="block truncate text-[0.72rem] font-black uppercase tracking-tight" style={{ color: accent === "#000000" ? "#1a1208" : accent }}>
                         {code}
                       </span>
                       <span className="block truncate text-[0.62rem] font-medium text-[#a89880]">
-                        {name}
+                        {COUNTRY_NAME[code] ?? code}
                       </span>
                     </div>
                   </button>
@@ -481,270 +1057,79 @@ function CountryPicker({ onSelect }: { onSelect: (code: string) => void }) {
   );
 }
 
-// ── Pre-tournament banner ──────────────────────────────────────────────────────
-
-function PreTournamentBanner({
-  selectedCountry,
-  accentColor,
-}: {
-  selectedCountry: string | null;
-  accentColor: string;
-}) {
-  const kickoff = new Date("2026-06-11T19:00:00Z");
-  const now = new Date();
-  const diffMs = kickoff.getTime() - now.getTime();
-  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  const flag = selectedCountry ? flagEmoji(selectedCountry) : "⚽";
-  const name = selectedCountry ? COUNTRY_NAME[selectedCountry] : null;
-  const group = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
-
-  return (
-    <div
-      className="rounded-[1.35rem] p-6"
-      style={{ background: `${accentColor}12`, border: `1px solid ${accentColor}28` }}
-    >
-      {/* Countdown */}
-      <div className="mb-4 text-center">
-        {days > 0 ? (
-          <>
-            <p
-              className="font-[family-name:var(--font-display)] text-5xl font-black leading-none tracking-tight"
-              style={{ color: accentColor }}
-            >
-              {days}
-            </p>
-            <p className="mt-1 text-[0.75rem] font-bold uppercase tracking-wide text-[#a89880]">
-              days until kickoff
-            </p>
-          </>
-        ) : (
-          <p
-            className="font-[family-name:var(--font-display)] text-2xl font-black uppercase tracking-tight"
-            style={{ color: accentColor }}
-          >
-            Kicks off today!
-          </p>
-        )}
-      </div>
-
-      {/* Country card */}
-      {selectedCountry && (
-        <div
-          className="mx-auto max-w-xs rounded-xl p-4 text-center"
-          style={{ background: `${accentColor}18` }}
-        >
-          <span className="text-4xl leading-none">{flag}</span>
-          <p
-            className="mt-2 font-[family-name:var(--font-display)] text-lg font-black uppercase tracking-tight"
-            style={{ color: accentColor === "#000000" ? "#1a1208" : accentColor }}
-          >
-            {name}
-          </p>
-          {group && (
-            <p className="mt-1 text-[0.65rem] font-semibold uppercase tracking-widest text-[#a89880]">
-              Group {group} · {WC_GROUPS[group].join(" · ")}
-            </p>
-          )}
-        </div>
-      )}
-
-      <p className="mt-4 text-center text-[0.7rem] font-medium text-[#a89880]">
-        Opening match · June 11 · Mexico City · FOX / Peacock
-      </p>
-    </div>
-  );
-}
-
-// ── Filter pill ────────────────────────────────────────────────────────────────
-
-type WCFilter = "all" | "live" | "upcoming" | "final" | "my-country";
-
-function WCPill({
-  label,
-  active,
-  disabled,
-  count,
-  accentColor,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  disabled?: boolean;
-  count?: number;
-  accentColor: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={`flex h-7 w-auto shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] transition active:scale-[0.98] sm:h-8 ${
-        disabled ? "pointer-events-none opacity-20" : ""
-      }`}
-      style={
-        active
-          ? {
-              background: accentColor,
-              color: accentColor === "#FFCC00" || accentColor === "#FFD100" || accentColor === "#FCD116" ? "#1a1208" : "#fff",
-              boxShadow: `0 2px 8px ${accentColor}40`,
-            }
-          : { background: "#e8e2d8", color: "#8a7a66", boxShadow: "0 0 0 1px #d4cdc0" }
-      }
-    >
-      <span className="whitespace-nowrap">{label}</span>
-      {typeof count === "number" && (
-        <span
-          className="rounded-full px-1 py-0.5 text-[0.55rem] leading-none"
-          style={active ? { background: "rgba(255,255,255,0.22)" } : { background: "rgba(26,18,8,0.07)", color: "#8a7a66" }}
-        >
-          {count}
-        </span>
-      )}
-    </button>
-  );
-}
-
-// ── Group section view ─────────────────────────────────────────────────────────
-
-function GroupSection({
-  groupLabel,
-  games,
-  selectedCountry,
-  accentColor,
-}: {
-  groupLabel: string;
-  games: WCGame[];
-  selectedCountry: string | null;
-  accentColor: string;
-}) {
-  const teams = WC_GROUPS[groupLabel] ?? [];
-  const isMyGroup = selectedCountry ? teams.includes(selectedCountry) : false;
-
-  return (
-    <div>
-      {/* Group header */}
-      <div className="mb-2 flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <p
-            className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.12em]"
-            style={{ color: isMyGroup ? accentColor : "#a89880" }}
-          >
-            Group {groupLabel}
-          </p>
-          {isMyGroup && selectedCountry && (
-            <span
-              className="rounded-full px-1.5 py-0.5 text-[0.55rem] font-black uppercase tracking-wide text-white"
-              style={{ background: accentColor }}
-            >
-              {flagEmoji(selectedCountry)} {selectedCountry}
-            </span>
-          )}
-        </div>
-        <div className="flex-1 border-t border-[#e8e0d4]" />
-        {/* Team pills */}
-        <div className="flex items-center gap-1">
-          {teams.map((t) => (
-            <span
-              key={t}
-              className="text-[0.55rem] font-bold uppercase tracking-wide"
-              style={{
-                color: t === selectedCountry ? accentColor : "#c0b0a0",
-                fontWeight: t === selectedCountry ? 900 : 700,
-              }}
-            >
-              {t}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Games */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {games.map((g) => (
-          <WCGameCard
-            key={g.id}
-            game={g}
-            selectedCountry={selectedCountry}
-            accentColor={accentColor}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ── WorldCupApp ────────────────────────────────────────────────────────────────
+type WCViewMode = "groups" | "table" | "schedule";
 
 const WC_COUNTRY_KEY = "no-noise-wc-country";
 
 export default function WorldCupApp({
-  onBack,
-  selectedCountry,
-  onSelectCountry,
+  onBack, selectedCountry, onSelectCountry,
 }: {
-  onBack: () => void;
-  selectedCountry: string | null;
-  onSelectCountry: (code: string | null) => void;
+  onBack: () => void; selectedCountry: string | null; onSelectCountry: (code: string | null) => void;
 }) {
   const [games, setGames] = useState<WCGame[]>([]);
   const [activeFilter, setActiveFilter] = useState<WCFilter>("all");
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(!selectedCountry);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [viewMode, setViewMode] = useState<"groups" | "schedule">("groups");
+  const [viewMode, setViewMode] = useState<WCViewMode>("groups");
+  const [venueGame, setVenueGame] = useState<WCGame | null>(null);
+  const [refreshFlash, setRefreshFlash] = useState(false);
 
-  const previousScoresRef = useRef<Map<string, number>>(new Map());
-  const animTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previousCountsRef = useRef<number>(0);
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const accentColor =
-    selectedCountry ? (COUNTRY_COLOR_MAP[selectedCountry] ?? "#006847") : "#006847";
-
+  const accentColor = selectedCountry ? (COUNTRY_COLOR_MAP[selectedCountry] ?? "#006847") : "#006847";
   const countryInfo = selectedCountry
     ? { code: selectedCountry, name: COUNTRY_NAME[selectedCountry] ?? selectedCountry, flag: flagEmoji(selectedCountry) }
     : null;
 
-  // Fetch
-  useEffect(() => {
-    let mounted = true;
+  // Smart polling: 10s when live, 30s otherwise (FIVE + EIGHT)
+  const fetchGames = useCallback(async (mounted: { current: boolean }) => {
+    try {
+      const res = await fetch("/api/world-cup");
+      if (!res.ok) return;
+      const data = await res.json();
+      const next = (data.games ?? []) as WCGame[];
+      if (!mounted.current) return;
 
-    async function load() {
-      try {
-        const res = await fetch("/api/world-cup");
-        if (!res.ok) return;
-        const data = await res.json();
-        const next = (data.games ?? []) as WCGame[];
-
-        if (mounted) {
-          const nextScores = new Map<string, number>();
-          const hadPrev = previousScoresRef.current.size > 0;
-
-          next.forEach((g) => {
-            (["away", "home"] as const).forEach((side) => {
-              const key = `${g.id}-${side}`;
-              nextScores.set(key, g[side].score);
-            });
-          });
-
-          previousScoresRef.current = nextScores;
-          setGames(next);
-          setLastUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : new Date());
-          void hadPrev; // suppress unused warning
-        }
-      } catch { /* silent */ } finally {
-        if (mounted) setHasLoadedOnce(true);
+      const prevCount = previousCountsRef.current;
+      const liveCount = next.filter((g) => g.status === "live").length;
+      if (prevCount !== liveCount && prevCount > 0) {
+        setRefreshFlash(true);
+        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        flashTimeoutRef.current = setTimeout(() => setRefreshFlash(false), 1200);
       }
+      previousCountsRef.current = liveCount;
+      setGames(next);
+      setLastUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : new Date());
+    } catch { /* silent */ } finally {
+      if (mounted.current) setHasLoadedOnce(true);
     }
-
-    load();
-    const interval = setInterval(load, 30000);
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-      if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
-    };
   }, []);
+
+  useEffect(() => {
+    const mounted = { current: true };
+    fetchGames(mounted);
+
+    // Dynamic interval: 10s for live games, 30s for pre/post
+    let intervalId: ReturnType<typeof setInterval>;
+    function scheduleNext() {
+      const hasLive = previousCountsRef.current > 0;
+      intervalId = setInterval(() => {
+        fetchGames(mounted);
+        clearInterval(intervalId);
+        scheduleNext();
+      }, hasLive ? 10000 : 30000);
+    }
+    scheduleNext();
+
+    return () => {
+      mounted.current = false;
+      clearInterval(intervalId);
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    };
+  }, [fetchGames]);
 
   function handleSelectCountry(code: string) {
     onSelectCountry(code);
@@ -752,9 +1137,17 @@ export default function WorldCupApp({
     setShowPicker(false);
   }
 
-  const hasTournamentStarted = games.some(
-    (g) => g.status === "live" || g.status === "final"
-  );
+  const hasTournamentStarted = games.some((g) => g.status === "live" || g.status === "final");
+
+  // User's next upcoming game (for calendar)
+  const nextCountryGame = useMemo(() => {
+    if (!selectedCountry) return null;
+    return games.find(
+      (g) =>
+        g.status === "upcoming" &&
+        (g.home.abbreviation === selectedCountry || g.away.abbreviation === selectedCountry)
+    ) ?? null;
+  }, [games, selectedCountry]);
 
   // Counts for filter bar
   const counts = useMemo(() => {
@@ -763,14 +1156,13 @@ export default function WorldCupApp({
       if (g.status === "live") c.live++;
       if (g.status === "upcoming") c.upcoming++;
       if (g.status === "final") c.final++;
-      if (selectedCountry &&
-        (g.away.abbreviation === selectedCountry || g.home.abbreviation === selectedCountry))
+      if (selectedCountry && (g.away.abbreviation === selectedCountry || g.home.abbreviation === selectedCountry))
         c.myCountry++;
     });
     return c;
   }, [games, selectedCountry]);
 
-  // Filtered games for schedule/filter view
+  // Filtered + sorted games
   const filteredGames = useMemo(() => {
     const f = games.filter((g) => {
       if (activeFilter === "live") return g.status === "live";
@@ -780,37 +1172,22 @@ export default function WorldCupApp({
         return g.away.abbreviation === selectedCountry || g.home.abbreviation === selectedCountry;
       return true;
     });
-    // Live first, then upcoming, then final (within each status, sort by date)
     const rank = (s: WCGame["status"]) => s === "live" ? 0 : s === "upcoming" ? 1 : 2;
-    return [...f].sort((a, b) =>
-      rank(a.status) - rank(b.status) || new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    return [...f].sort((a, b) => rank(a.status) - rank(b.status) || new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [games, activeFilter, selectedCountry]);
 
-  // Group stage sections (only used in group view)
   const groupSections = useMemo(() => {
     if (activeFilter !== "all") return null;
-
-    // Group games only (games with group letter set)
     const groupGames = filteredGames.filter((g) => g.group !== "");
     const sections: { label: string; games: WCGame[] }[] = [];
-
     "ABCDEFGHIJKL".split("").forEach((letter) => {
       const gms = groupGames.filter((g) => g.group === letter);
-      if (gms.length > 0) {
-        sections.push({ label: letter, games: gms });
-      }
+      if (gms.length > 0) sections.push({ label: letter, games: gms });
     });
-
     return sections.length > 0 ? sections : null;
   }, [filteredGames, activeFilter]);
 
-  // Knockout games (no group letter)
-  const knockoutGames = useMemo(() =>
-    filteredGames.filter((g) => g.group === ""),
-    [filteredGames]
-  );
-
+  const knockoutGames = useMemo(() => filteredGames.filter((g) => g.group === ""), [filteredGames]);
   const showGroups = viewMode === "groups" && activeFilter === "all" && groupSections !== null;
 
   return (
@@ -819,11 +1196,7 @@ export default function WorldCupApp({
         {/* Header */}
         <header className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onBack}
-              className="flex items-center gap-1 text-[#a89880] transition hover:text-[#1a1208] active:scale-95"
-            >
+            <button type="button" onClick={onBack} className="flex items-center gap-1 text-[#a89880] transition hover:text-[#1a1208] active:scale-95">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M15 18l-6-6 6-6" />
               </svg>
@@ -840,8 +1213,6 @@ export default function WorldCupApp({
               </span>
             </div>
           </div>
-
-          {/* Country badge */}
           {countryInfo ? (
             <button
               type="button"
@@ -868,12 +1239,7 @@ export default function WorldCupApp({
           <div className="fixed inset-0 z-50 overflow-y-auto bg-[#f5f1ea] px-4 pb-16 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
             <div className="mx-auto max-w-lg">
               <div className="mb-4 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setShowPicker(false)}
-                  disabled={!selectedCountry}
-                  className="text-[0.72rem] font-bold text-[#a89880] disabled:opacity-30"
-                >
+                <button type="button" onClick={() => setShowPicker(false)} disabled={!selectedCountry} className="text-[0.72rem] font-bold text-[#a89880] disabled:opacity-30">
                   ← Back
                 </button>
                 <img src="/favicon.svg" alt="" className="h-4 w-4 opacity-30" />
@@ -883,34 +1249,28 @@ export default function WorldCupApp({
           </div>
         )}
 
+        {/* Venue sheet overlay */}
+        {venueGame && (
+          <VenueSheet game={venueGame} accentColor={accentColor} onClose={() => setVenueGame(null)} />
+        )}
+
         {/* Loading */}
         {!hasLoadedOnce && (
           <div className="rounded-[1.75rem] bg-white p-10 text-center ring-1 ring-[#e8e0d4]">
-            <p className="font-[family-name:var(--font-display)] text-3xl font-black uppercase tracking-tight text-[#1a1208]">
-              Loading…
-            </p>
+            <p className="font-[family-name:var(--font-display)] text-3xl font-black uppercase tracking-tight text-[#1a1208]">Loading…</p>
           </div>
         )}
 
-        {/* Pre-tournament: show banner + early fixtures */}
+        {/* Pre-tournament */}
         {hasLoadedOnce && !hasTournamentStarted && (
           <div className="mx-auto max-w-4xl space-y-6">
-            <PreTournamentBanner selectedCountry={selectedCountry} accentColor={accentColor} />
-
-            {/* Upcoming fixtures preview */}
+            <PreTournamentBanner selectedCountry={selectedCountry} accentColor={accentColor} nextGame={nextCountryGame} />
             {games.length > 0 && (
               <div>
-                <p className="mb-2 px-1 text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
-                  Opening Fixtures
-                </p>
+                <p className="mb-2 px-1 text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">Opening Fixtures</p>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   {games.slice(0, 6).map((g) => (
-                    <WCGameCard
-                      key={g.id}
-                      game={g}
-                      selectedCountry={selectedCountry}
-                      accentColor={accentColor}
-                    />
+                    <WCGameCard key={g.id} game={g} selectedCountry={selectedCountry} accentColor={accentColor} onWatch={setVenueGame} />
                   ))}
                 </div>
               </div>
@@ -918,100 +1278,111 @@ export default function WorldCupApp({
           </div>
         )}
 
-        {/* Active tournament view */}
+        {/* Active tournament */}
         {hasLoadedOnce && hasTournamentStarted && (
           <>
-            {/* Filter + view mode bar */}
+            {/* Toolbar: view mode + filter pills */}
             <div className="mb-5 sm:mb-6">
               <div className="rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1.5 shadow-sm sm:p-2">
                 <div className="flex items-center gap-1.5">
-                  {/* View mode toggle (left side) */}
+                  {/* View mode toggle */}
                   <div className="flex shrink-0 gap-0.5 rounded-full bg-[#d4cdc0]/50 p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("groups")}
-                      className={`rounded-full px-2 py-1 text-[0.6rem] font-extrabold uppercase leading-none transition ${viewMode === "groups" ? "bg-white text-[#1a1208] shadow-sm" : "text-[#a89880]"}`}
-                    >
-                      Groups
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("schedule")}
-                      className={`rounded-full px-2 py-1 text-[0.6rem] font-extrabold uppercase leading-none transition ${viewMode === "schedule" ? "bg-white text-[#1a1208] shadow-sm" : "text-[#a89880]"}`}
-                    >
-                      All
-                    </button>
+                    {(["groups", "table", "schedule"] as WCViewMode[]).map((mode) => {
+                      const labels: Record<WCViewMode, string> = { groups: "Groups", table: "Table", schedule: "Schedule" };
+                      return (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setViewMode(mode)}
+                          className={`rounded-full px-2 py-1 text-[0.6rem] font-extrabold uppercase leading-none transition ${viewMode === mode ? "bg-white text-[#1a1208] shadow-sm" : "text-[#a89880]"}`}
+                        >
+                          {labels[mode]}
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div className="h-4 w-px bg-[#d4cdc0]" />
-
-                  {/* Filter pills */}
-                  <div className="flex flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
-                    <WCPill label="Live" count={counts.live} active={activeFilter === "live"} disabled={counts.live === 0} accentColor={accentColor}
-                      onClick={() => setActiveFilter(activeFilter === "live" ? "all" : "live")} />
-                    <WCPill label="Next" count={counts.upcoming} active={activeFilter === "upcoming"} disabled={counts.upcoming === 0} accentColor={accentColor}
-                      onClick={() => setActiveFilter(activeFilter === "upcoming" ? "all" : "upcoming")} />
-                    <WCPill label="Final" count={counts.final} active={activeFilter === "final"} disabled={counts.final === 0} accentColor={accentColor}
-                      onClick={() => setActiveFilter(activeFilter === "final" ? "all" : "final")} />
-                    {selectedCountry && (
-                      <WCPill label={selectedCountry} count={counts.myCountry} active={activeFilter === "my-country"} disabled={counts.myCountry === 0} accentColor={accentColor}
-                        onClick={() => setActiveFilter(activeFilter === "my-country" ? "all" : "my-country")} />
-                    )}
-                  </div>
+                  {/* Filter pills (only for groups view) */}
+                  {viewMode !== "table" && viewMode !== "schedule" && (
+                    <>
+                      <div className="h-4 w-px bg-[#d4cdc0]" />
+                      <div className="flex flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
+                        <WCPill label="Live" count={counts.live} active={activeFilter === "live"} disabled={counts.live === 0} accentColor={accentColor}
+                          onClick={() => setActiveFilter(activeFilter === "live" ? "all" : "live")} />
+                        <WCPill label="Next" count={counts.upcoming} active={activeFilter === "upcoming"} disabled={counts.upcoming === 0} accentColor={accentColor}
+                          onClick={() => setActiveFilter(activeFilter === "upcoming" ? "all" : "upcoming")} />
+                        <WCPill label="Final" count={counts.final} active={activeFilter === "final"} disabled={counts.final === 0} accentColor={accentColor}
+                          onClick={() => setActiveFilter(activeFilter === "final" ? "all" : "final")} />
+                        {selectedCountry && (
+                          <WCPill label={selectedCountry} count={counts.myCountry} active={activeFilter === "my-country"} disabled={counts.myCountry === 0} accentColor={accentColor}
+                            onClick={() => setActiveFilter(activeFilter === "my-country" ? "all" : "my-country")} />
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
 
-            <p className="mb-4 px-1 text-[9px] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
-              {formatLastUpdated(lastUpdatedAt)}
+            {/* Updated at + refresh flash */}
+            <p className={`mb-4 px-1 text-[9px] font-black uppercase tracking-[0.16em] transition ${refreshFlash ? "text-[#2d7a3a]" : "text-[#c0b0a0]"}`}>
+              {refreshFlash ? "↻ Updated" : formatLastUpdated(lastUpdatedAt)}
             </p>
 
             <div className="mx-auto max-w-4xl space-y-8">
+              {/* Standings table view */}
+              {viewMode === "table" && (
+                <StandingsView games={games} selectedCountry={selectedCountry} accentColor={accentColor} />
+              )}
+
+              {/* Schedule view */}
+              {viewMode === "schedule" && (
+                <ScheduleView games={games} selectedCountry={selectedCountry} accentColor={accentColor} />
+              )}
+
               {/* Groups view */}
-              {showGroups && groupSections!.map(({ label, games: gs }) => (
-                <GroupSection
-                  key={label}
-                  groupLabel={label}
-                  games={gs}
-                  selectedCountry={selectedCountry}
-                  accentColor={accentColor}
-                />
-              ))}
-
-              {/* Knockout games (always shown flat) */}
-              {knockoutGames.length > 0 && (
-                <div>
-                  <div className="mb-2 flex items-center gap-3">
-                    <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#a89880]">
-                      Knockout Stage
-                    </p>
-                    <div className="flex-1 border-t border-[#e8e0d4]" />
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {knockoutGames.map((g) => (
-                      <WCGameCard key={g.id} game={g} selectedCountry={selectedCountry} accentColor={accentColor} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Schedule / filtered flat view */}
-              {!showGroups && filteredGames.length > 0 && (
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {filteredGames.map((g) => (
-                    <WCGameCard key={g.id} game={g} selectedCountry={selectedCountry} accentColor={accentColor} />
+              {viewMode === "groups" && (
+                <>
+                  {showGroups && groupSections!.map(({ label, games: gs }) => (
+                    <GroupSection
+                      key={label}
+                      groupLabel={label}
+                      games={gs}
+                      selectedCountry={selectedCountry}
+                      accentColor={accentColor}
+                      onWatch={setVenueGame}
+                    />
                   ))}
-                </div>
-              )}
 
-              {/* Empty state */}
-              {filteredGames.length === 0 && knockoutGames.length === 0 && (
-                <div className="rounded-[1.75rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
-                  <p className="font-[family-name:var(--font-display)] text-2xl font-black uppercase tracking-tight text-[#1a1208]">
-                    No matches
-                  </p>
-                  <p className="mt-2 text-sm text-[#a89880]">Try a different filter.</p>
-                </div>
+                  {knockoutGames.length > 0 && (
+                    <div>
+                      <div className="mb-2 flex items-center gap-3">
+                        <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#a89880]">Knockout Stage</p>
+                        <div className="flex-1 border-t border-[#e8e0d4]" />
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {knockoutGames.map((g) => (
+                          <WCGameCard key={g.id} game={g} selectedCountry={selectedCountry} accentColor={accentColor} onWatch={setVenueGame} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!showGroups && filteredGames.length > 0 && (
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {filteredGames.map((g) => (
+                        <WCGameCard key={g.id} game={g} selectedCountry={selectedCountry} accentColor={accentColor} onWatch={setVenueGame} />
+                      ))}
+                    </div>
+                  )}
+
+                  {filteredGames.length === 0 && knockoutGames.length === 0 && (
+                    <div className="rounded-[1.75rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
+                      <p className="font-[family-name:var(--font-display)] text-2xl font-black uppercase tracking-tight text-[#1a1208]">No matches</p>
+                      <p className="mt-2 text-sm text-[#a89880]">Try a different filter.</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </>

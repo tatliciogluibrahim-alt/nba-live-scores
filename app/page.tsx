@@ -35,6 +35,9 @@ export default function Home() {
   }
 
   function goBack() {
+    // Reset all sport-specific state so each sport starts fresh (ONE + NINE)
+    setWcCountry(null);
+    localStorage.removeItem(WC_COUNTRY_KEY);
     selectSport("none");
   }
 

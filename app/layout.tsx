@@ -15,7 +15,7 @@ const displayFont = Anton({
 
 export const metadata: Metadata = {
   title: "No Noise Scores",
-  description: "NBA scores, no noise.",
+  description: "Live sports scores, no noise. NBA Playoffs + FIFA World Cup 2026.",
   applicationName: "No Noise Scores",
   manifest: "/manifest.webmanifest",
   icons: {
@@ -38,8 +38,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   minimumScale: 1,
   viewportFit: "cover",
-  themeColor: "#07111f",
-  colorScheme: "dark",
+  themeColor: "#f5f1ea",
+  colorScheme: "light",
 };
 
 export default function RootLayout({
