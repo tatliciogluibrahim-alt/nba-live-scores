@@ -7,10 +7,6 @@ import WorldCupApp from "./world-cup-app";
 
 const SPORT_KEY = "no-noise-sport";
 const WC_COUNTRY_KEY = "no-noise-wc-country";
-// Keys owned by other sport views — cleared on every sport switch so each
-// sport always opens in a clean default state (NINE)
-const NBA_TEAM_KEY = "no-noise-favorite-team";
-const NBA_TEAM_KEY_OLD = "no-noise-followed-team";
 
 export default function Home() {
   const [sport, setSport] = useState<AppSport>("none");
@@ -39,13 +35,11 @@ export default function Home() {
   }
 
   function goBack() {
-    // NINE: full state reset — every sport opens from a clean default
-    // World Cup
-    setWcCountry(null);
-    localStorage.removeItem(WC_COUNTRY_KEY);
-    // NBA (activeTab is local state so it auto-resets on unmount; team is persisted)
-    localStorage.removeItem(NBA_TEAM_KEY);
-    localStorage.removeItem(NBA_TEAM_KEY_OLD);
+    // Return to the sport-selector landing page.
+    // Preferences (WC country, NBA team) are intentionally kept in localStorage
+    // so each sport re-opens exactly where the user left it. The only thing that
+    // resets is the active sport route — view-local state (activeTab, filters)
+    // resets naturally because the component unmounts.
     selectSport("none");
   }
 

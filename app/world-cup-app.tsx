@@ -551,32 +551,60 @@ function ScheduleMatchRow({
 }: {
   game: WCGame; selectedCountry: string | null; accentColor: string;
 }) {
-  const isMyGame = selectedCountry &&
-    (game.home.abbreviation === selectedCountry || game.away.abbreviation === selectedCountry);
+  const isMyGame = Boolean(
+    selectedCountry &&
+    (game.home.abbreviation === selectedCountry || game.away.abbreviation === selectedCountry)
+  );
   const isLive = game.status === "live";
   const isFinal = game.status === "final";
+  const isUpcoming = game.status === "upcoming";
+
+  // Winner tinting for completed rows
+  const awayWon = isFinal && game.away.score > game.home.score;
+  const homeWon = isFinal && game.home.score > game.away.score;
+
+  const rowStyle = isMyGame
+    ? { background: `${accentColor}0d`, outline: `2px solid ${accentColor}40` }
+    : isFinal
+      ? { background: "#f8f5f0" }
+      : { background: "#ffffff" };
 
   return (
     <div
-      className={`flex items-center gap-2 rounded-[0.9rem] px-3 py-2.5 ${isMyGame ? "" : "bg-white ring-1 ring-[#e8e0d4]"}`}
-      style={isMyGame ? { background: `${accentColor}0a`, outline: `2px solid ${accentColor}` } : {}}
+      className="flex items-center gap-2 rounded-[0.9rem] px-3 py-2.5 ring-1 ring-[#e8e0d4]"
+      style={rowStyle}
     >
-      {/* Date */}
-      <div className="w-14 shrink-0">
-        <p className="text-[0.6rem] font-bold uppercase text-[#a89880]">
-          {new Date(game.date).toLocaleDateString([], { month: "short", day: "numeric" })}
-        </p>
-        <p className="text-[0.62rem] font-semibold text-[#c0b0a0]">
-          {formatTime(game.date)}
-        </p>
+      {/* Date / time */}
+      <div className="w-[3.2rem] shrink-0">
+        {isFinal ? (
+          <p className="text-[0.62rem] font-black uppercase tracking-wide text-[#2d7a3a]">FT</p>
+        ) : isLive ? (
+          <div className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: accentColor }} />
+            <span className="text-[0.6rem] font-black uppercase" style={{ color: accentColor }}>{game.statusText}</span>
+          </div>
+        ) : (
+          <>
+            <p className="text-[0.6rem] font-bold uppercase text-[#a89880]">
+              {new Date(game.date).toLocaleDateString([], { month: "short", day: "numeric" })}
+            </p>
+            <p className="text-[0.58rem] font-medium text-[#c0b0a0]">{formatTime(game.date)}</p>
+          </>
+        )}
       </div>
 
       {/* Away team */}
       <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
-        <span className="truncate text-[0.8rem] font-black uppercase tracking-tight" style={{ color: isMyGame && game.away.abbreviation === selectedCountry ? accentColor : "#1a1208" }}>
+        <span
+          className="truncate text-[0.8rem] font-black uppercase tracking-tight"
+          style={{
+            color: isMyGame && game.away.abbreviation === selectedCountry ? accentColor : "#1a1208",
+            opacity: isFinal && !awayWon ? 0.45 : 1,
+          }}
+        >
           {game.away.abbreviation}
         </span>
-        <span className="text-base leading-none">{flagEmoji(game.away.abbreviation)}</span>
+        <span className="shrink-0 text-base leading-none">{flagEmoji(game.away.abbreviation)}</span>
       </div>
 
       {/* Score / VS */}
@@ -586,37 +614,38 @@ function ScheduleMatchRow({
             {game.away.score} – {game.home.score}
           </span>
         ) : isLive ? (
-          <div className="flex items-center justify-center gap-1">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: accentColor }} />
-            <span className="text-[0.8rem] font-black" style={{ color: accentColor }}>
-              {game.away.score} – {game.home.score}
-            </span>
-          </div>
+          <span className="text-[0.85rem] font-black tabular-nums" style={{ color: accentColor }}>
+            {game.away.score} – {game.home.score}
+          </span>
         ) : (
-          <span className="text-[0.75rem] font-bold text-[#c0b0a0]">vs</span>
+          <span className="text-[0.7rem] font-bold text-[#c0b0a0]">
+            {isUpcoming ? countdown(game.date) : "vs"}
+          </span>
         )}
       </div>
 
       {/* Home team */}
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <span className="text-base leading-none">{flagEmoji(game.home.abbreviation)}</span>
-        <span className="truncate text-[0.8rem] font-black uppercase tracking-tight" style={{ color: isMyGame && game.home.abbreviation === selectedCountry ? accentColor : "#1a1208" }}>
+        <span className="shrink-0 text-base leading-none">{flagEmoji(game.home.abbreviation)}</span>
+        <span
+          className="truncate text-[0.8rem] font-black uppercase tracking-tight"
+          style={{
+            color: isMyGame && game.home.abbreviation === selectedCountry ? accentColor : "#1a1208",
+            opacity: isFinal && !homeWon ? 0.45 : 1,
+          }}
+        >
           {game.home.abbreviation}
         </span>
       </div>
 
-      {/* Status */}
-      <div className="w-14 shrink-0 text-right">
-        {isLive ? (
-          <span className="text-[0.6rem] font-black uppercase" style={{ color: accentColor }}>
-            {game.statusText}
+      {/* Penalty note for completed matches */}
+      {isFinal && game.penaltyHome !== null && (
+        <div className="shrink-0 text-right">
+          <span className="text-[0.58rem] font-bold text-[#a89880]">
+            ({game.penaltyAway}–{game.penaltyHome})
           </span>
-        ) : isFinal ? (
-          <span className="text-[0.6rem] font-bold uppercase text-[#2d7a3a]">FT</span>
-        ) : (
-          <span className="text-[0.58rem] font-semibold text-[#a89880]">{countdown(game.date)}</span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -694,7 +723,20 @@ function ScheduleView({
       </div>
 
       {sections.map(({ label, games: gs }) => {
-        const isMyGroup = selectedCountry ? gs.some((g) => g.home.abbreviation === selectedCountry || g.away.abbreviation === selectedCountry) : false;
+        const isMyGroup = selectedCountry
+          ? gs.some((g) => g.home.abbreviation === selectedCountry || g.away.abbreviation === selectedCountry)
+          : false;
+
+        // Count by status for section label
+        const liveCount = gs.filter((g) => g.status === "live").length;
+        const finalCount = gs.filter((g) => g.status === "final").length;
+        const upcomingCount = gs.filter((g) => g.status === "upcoming").length;
+        const statusNote = liveCount
+          ? `${liveCount} live`
+          : finalCount === gs.length
+            ? "all final"
+            : `${finalCount} final · ${upcomingCount} upcoming`;
+
         return (
           <div key={label}>
             <div className="mb-2 flex items-center gap-3">
@@ -704,8 +746,13 @@ function ScheduleView({
               >
                 {label}
               </p>
+              {isMyGroup && selectedCountry && (
+                <span className="text-[0.55rem] font-black" style={{ color: accentColor }}>
+                  {flagEmoji(selectedCountry)}
+                </span>
+              )}
               <div className="flex-1 border-t border-[#e8e0d4]" />
-              <p className="text-[0.58rem] font-semibold text-[#c0b0a0]">{gs.length} matches</p>
+              <p className="text-[0.58rem] font-semibold text-[#c0b0a0]">{statusNote}</p>
             </div>
             <div className="space-y-1.5">
               {gs.map((g) => (
@@ -1070,7 +1117,13 @@ export default function WorldCupApp({
   const [games, setGames] = useState<WCGame[]>([]);
   const [activeFilter, setActiveFilter] = useState<WCFilter>("all");
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
-  const [showPicker, setShowPicker] = useState(!selectedCountry);
+  // Show picker only on a genuine first visit (no saved country in localStorage).
+  // If the user already has a country saved, go straight to the main view.
+  const [showPicker, setShowPicker] = useState(() =>
+    typeof window === "undefined"
+      ? !selectedCountry
+      : !localStorage.getItem(WC_COUNTRY_KEY) && !selectedCountry
+  );
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [viewMode, setViewMode] = useState<WCViewMode>("groups");
   const [venueGame, setVenueGame] = useState<WCGame | null>(null);
@@ -1162,19 +1215,27 @@ export default function WorldCupApp({
     return c;
   }, [games, selectedCountry]);
 
-  // Filtered + sorted games
+  // Filtered + sorted games.
+  // selectedCountry is only needed when activeFilter === "my-country"; for all
+  // other filters it has no effect on ordering so we read it through a stable
+  // ref to avoid re-sorting the list every time the user changes country.
+  const selectedCountryRef = useRef(selectedCountry);
+  selectedCountryRef.current = selectedCountry;
+
   const filteredGames = useMemo(() => {
+    const country = selectedCountryRef.current;
     const f = games.filter((g) => {
       if (activeFilter === "live") return g.status === "live";
       if (activeFilter === "upcoming") return g.status === "upcoming";
       if (activeFilter === "final") return g.status === "final";
       if (activeFilter === "my-country")
-        return g.away.abbreviation === selectedCountry || g.home.abbreviation === selectedCountry;
+        return g.away.abbreviation === country || g.home.abbreviation === country;
       return true;
     });
     const rank = (s: WCGame["status"]) => s === "live" ? 0 : s === "upcoming" ? 1 : 2;
     return [...f].sort((a, b) => rank(a.status) - rank(b.status) || new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [games, activeFilter, selectedCountry]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [games, activeFilter]); // selectedCountry intentionally omitted for "all" stability
 
   const groupSections = useMemo(() => {
     if (activeFilter !== "all") return null;
@@ -1239,8 +1300,14 @@ export default function WorldCupApp({
           <div className="fixed inset-0 z-50 overflow-y-auto bg-[#f5f1ea] px-4 pb-16 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
             <div className="mx-auto max-w-lg">
               <div className="mb-4 flex items-center justify-between">
-                <button type="button" onClick={() => setShowPicker(false)} disabled={!selectedCountry} className="text-[0.72rem] font-bold text-[#a89880] disabled:opacity-30">
-                  ← Back
+                {/* Always enabled — even without a country selection you can dismiss
+                    the picker and see the main view with a "Pick country" button */}
+                <button
+                  type="button"
+                  onClick={() => setShowPicker(false)}
+                  className="flex items-center gap-1 text-[0.72rem] font-bold text-[#a89880] transition hover:text-[#1a1208] active:scale-95"
+                >
+                  ← {selectedCountry ? "Back" : "Skip for now"}
                 </button>
                 <img src="/favicon.svg" alt="" className="h-4 w-4 opacity-30" />
               </div>
