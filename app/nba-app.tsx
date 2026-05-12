@@ -620,15 +620,14 @@ type SharePayload =
 function ShareCardCanvas({ payload }: { payload: SharePayload }) {
   const isGame = payload.kind === "game";
 
-  // Derived display values
   const teamA = isGame ? payload.game.away : payload.series.teamA;
   const teamB = isGame ? payload.game.home : payload.series.teamB;
   const contextLine = isGame
     ? (() => {
         const g = payload.game;
-        if (g.status === "final") return `Final · ${g.matchup}`;
-        if (g.status === "live") return `Live · ${g.statusText} · ${g.matchup}`;
-        return `Upcoming · ${g.matchup}`;
+        if (g.status === "final") return `FINAL · ${g.matchup}`;
+        if (g.status === "live") return `LIVE · ${g.statusText} · ${g.matchup}`;
+        return `UPCOMING · ${g.matchup}`;
       })()
     : (() => {
         const s = payload.series;
@@ -636,11 +635,44 @@ function ShareCardCanvas({ payload }: { payload: SharePayload }) {
         const wB = s.teamB.wins;
         if (wA === 4 || wB === 4) {
           const winner = wA === 4 ? s.teamA : s.teamB;
-          return `${winner.abbreviation} wins series ${Math.max(wA,wB)}–${Math.min(wA,wB)}`;
+          return `${winner.abbreviation} WINS SERIES ${Math.max(wA, wB)}–${Math.min(wA, wB)}`;
         }
-        if (s.isGame7) return `Game 7 · ${s.summary || `${s.abbrA} vs ${s.abbrB}`}`;
-        return s.summary || `${s.abbrA} vs ${s.abbrB}`;
+        if (s.isGame7) return `GAME 7 · ${s.summary || `${s.abbrA} VS ${s.abbrB}`}`;
+        return (s.summary || `${s.abbrA} VS ${s.abbrB}`).toUpperCase();
       })();
+
+  function renderTeamLogo(team: Team) {
+    if (team.logo) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={team.logo}
+          alt=""
+          style={{ width: 58, height: 58, objectFit: "contain" }}
+        />
+      );
+    }
+
+    return (
+      <div
+        style={{
+          width: 58,
+          height: 58,
+          borderRadius: "50%",
+          background: "#fffaf2",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 14,
+          fontWeight: 900,
+          color: "#1a1208",
+          boxShadow: "0 0 0 1px #e8e0d4",
+        }}
+      >
+        {team.abbreviation}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -651,80 +683,87 @@ function ShareCardCanvas({ payload }: { payload: SharePayload }) {
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        padding: 48,
+        padding: 42,
         fontFamily: "system-ui, -apple-system, sans-serif",
         boxSizing: "border-box",
       }}
     >
-      {/* Wordmark */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div
-          style={{
-            width: 22,
-            height: 22,
-            background: "#e85d04",
-            borderRadius: "50%",
-          }}
-        />
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 900,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            color: "#1a1208",
-          }}
-        >
-          No Noise Scores
-        </span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              background: "#07111f",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 10px 22px rgba(7,17,31,0.18)",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/favicon.svg" alt="" style={{ width: 25, height: 25 }} />
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 900, color: "#e85d04", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              No Noise
+            </p>
+            <p style={{ margin: "2px 0 0", fontSize: 18, fontWeight: 950, color: "#1a1208", textTransform: "uppercase", letterSpacing: "-0.03em", lineHeight: 1 }}>
+              Scores
+            </p>
+          </div>
+        </div>
+
+        <p style={{ margin: 0, maxWidth: 230, textAlign: "right", fontSize: 13, fontWeight: 800, color: "#e85d04", textTransform: "uppercase", letterSpacing: "0.06em", lineHeight: 1.25 }}>
+          {contextLine}
+        </p>
       </div>
 
-      {/* Teams */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+          borderRadius: 28,
+          background: "#fffaf2",
+          padding: "26px 24px",
+          boxShadow: "0 0 0 1px #e8e0d4, 0 18px 38px rgba(26,18,8,0.08)",
+        }}
+      >
         {[teamA, teamB].map((team, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              {team.logo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={team.logo}
-                  alt=""
-                  style={{ width: 56, height: 56, objectFit: "contain" }}
-                />
-              ) : (
-                <div
+          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18 }}>
+            <div style={{ display: "flex", minWidth: 0, alignItems: "center", gap: 16 }}>
+              {renderTeamLogo(team)}
+              <div style={{ minWidth: 0 }}>
+                <p
                   style={{
-                    width: 56, height: 56, borderRadius: "50%",
-                    background: "#e8e0d4", display: "flex",
-                    alignItems: "center", justifyContent: "center",
-                    fontSize: 14, fontWeight: 900, color: "#1a1208",
+                    margin: 0,
+                    fontSize: 52,
+                    fontWeight: 950,
+                    letterSpacing: "-0.055em",
+                    color: "#1a1208",
+                    lineHeight: 0.92,
                   }}
                 >
                   {team.abbreviation}
-                </div>
-              )}
-              <span
-                style={{
-                  fontSize: 48,
-                  fontWeight: 900,
-                  letterSpacing: "-0.03em",
-                  color: "#1a1208",
-                  lineHeight: 1,
-                }}
-              >
-                {team.abbreviation}
-              </span>
+                </p>
+                <p style={{ margin: "5px 0 0", fontSize: 13, fontWeight: 700, color: "#a89880", lineHeight: 1.1 }}>
+                  {team.name}
+                </p>
+              </div>
             </div>
 
-            {/* Score or win dots */}
             {isGame ? (
               <span
                 style={{
-                  fontSize: 56,
-                  fontWeight: 900,
-                  letterSpacing: "-0.04em",
+                  minWidth: 82,
+                  textAlign: "right",
+                  fontSize: 64,
+                  fontWeight: 950,
+                  letterSpacing: "-0.06em",
                   color: "#1a1208",
-                  lineHeight: 1,
+                  lineHeight: 0.92,
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
@@ -740,7 +779,9 @@ function ShareCardCanvas({ payload }: { payload: SharePayload }) {
                     <div
                       key={di}
                       style={{
-                        width: 14, height: 14, borderRadius: "50%",
+                        width: 14,
+                        height: 14,
+                        borderRadius: "50%",
                         background: di < wins ? "#e85d04" : "#d4cdc0",
                       }}
                     />
@@ -752,22 +793,12 @@ function ShareCardCanvas({ payload }: { payload: SharePayload }) {
         ))}
       </div>
 
-      {/* Context + footer */}
-      <div>
-        <p
-          style={{
-            fontSize: 16,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            color: "#e85d04",
-            marginBottom: 8,
-          }}
-        >
-          {contextLine}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#a89880", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          No feeds. No clutter.
         </p>
-        <p style={{ fontSize: 12, fontWeight: 500, color: "#a89880" }}>
-          nonoisescores.app
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#a89880" }}>
+          nonoisescores.app · @nonoisescores
         </p>
       </div>
     </div>

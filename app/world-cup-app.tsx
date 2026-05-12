@@ -790,11 +790,59 @@ function VenueSheet({
 // ── Countdown Hero (compact, pre-tournament only) ──────────────────────────────
 const WC_KICKOFF = new Date("2026-06-11T19:00:00Z");
 
-function CountdownHero() {
+function CountdownHero({
+  hasCountry,
+  onPickCountry,
+}: {
+  hasCountry: boolean;
+  onPickCountry: () => void;
+}) {
   const now = new Date();
   const diffMs = WC_KICKOFF.getTime() - now.getTime();
   if (diffMs <= 0) return null;
   const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (!hasCountry) {
+    return (
+      <div className="overflow-hidden rounded-[1.35rem] bg-white ring-1 ring-[#e8e0d4]">
+        <div className="border-b border-[#f0ece4] px-4 py-3">
+          <div className="flex items-end justify-between gap-3">
+            <div className="flex items-baseline gap-2">
+              <span className="font-[family-name:var(--font-display)] text-[3.3rem] font-black leading-none tracking-tight text-[#1a1208]">
+                {days}
+              </span>
+              <span className="pb-1 text-[0.68rem] font-black uppercase tracking-[0.1em] text-[#a89880]">
+                days
+              </span>
+            </div>
+            <span className="pb-1 text-right text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-[#c0b0a0]">
+              June 11 · Mexico City
+            </span>
+          </div>
+        </div>
+
+        <div className="px-4 py-4">
+          <p className="font-[family-name:var(--font-display)] text-[2rem] font-black uppercase leading-none tracking-tight text-[#1a1208]">
+            Pick your country.
+          </p>
+          <p className="mt-2 text-[0.92rem] font-black text-[#006847]">
+            Follow the tournament without the noise.
+          </p>
+          <p className="mt-2 text-[0.82rem] font-medium leading-5 text-[#8a7a66]">
+            Choose a country to see group context, match reminders, and team-colored updates.
+          </p>
+
+          <button
+            type="button"
+            onClick={onPickCountry}
+            className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[#006847] px-4 py-3 text-[0.78rem] font-black uppercase tracking-wide text-white shadow-lg shadow-[#006847]/15 transition active:scale-[0.98] sm:w-auto"
+          >
+            Pick country
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3 px-0.5">
@@ -868,27 +916,6 @@ function CountryModule({
           Change
         </button>
       </div>
-    </div>
-  );
-}
-
-// ── No-Country CTA (soft prompt) ───────────────────────────────────────────────
-function NoCountryCTA({ onPickCountry }: { onPickCountry: () => void }) {
-  return (
-    <div className="rounded-[1.2rem] border border-dashed border-[#d4cdc0] bg-white/70 px-5 py-4">
-      <p className="text-[0.82rem] font-semibold leading-snug text-[#8a7a66]">
-        Pick your country to personalize the tournament.
-      </p>
-      <button
-        type="button"
-        onClick={onPickCountry}
-        className="mt-2.5 flex items-center gap-1 text-[0.7rem] font-black uppercase tracking-wide text-[#006847] transition active:scale-95"
-      >
-        Choose a team
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M5 12h14M12 5l7 7-7 7" />
-        </svg>
-      </button>
     </div>
   );
 }
@@ -1315,16 +1342,17 @@ export default function WorldCupApp({
 
             {/* Hero: countdown + country module */}
             <div className="space-y-3">
-              <CountdownHero />
+              <CountdownHero
+                hasCountry={Boolean(selectedCountry)}
+                onPickCountry={() => setShowPicker(true)}
+              />
 
-              {selectedCountry ? (
+              {selectedCountry && (
                 <CountryModule
                   selectedCountry={selectedCountry}
                   accentColor={accentColor}
                   onChangeTap={() => setShowPicker(true)}
                 />
-              ) : (
-                <NoCountryCTA onPickCountry={() => setShowPicker(true)} />
               )}
 
               {selectedCountry && (
@@ -1338,8 +1366,8 @@ export default function WorldCupApp({
 
             {/* Toolbar preview: Groups active, Table + Schedule locked */}
             <div className="rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1.5 shadow-sm sm:p-2">
-              <div className="flex items-center gap-2">
-                <div className="flex shrink-0 gap-0.5 rounded-full bg-[#d4cdc0]/50 p-0.5">
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+                <div className="grid grid-cols-3 gap-0.5 rounded-full bg-[#d4cdc0]/50 p-0.5 sm:flex sm:shrink-0">
                   {(["groups", "table", "schedule"] as WCViewMode[]).map((mode) => {
                     const labels: Record<WCViewMode, string> = { groups: "Groups", table: "Table", schedule: "Schedule" };
                     const isActive = mode === "groups";
@@ -1349,7 +1377,7 @@ export default function WorldCupApp({
                         type="button"
                         disabled={!isActive}
                         title={!isActive ? "Unlocks June 11" : undefined}
-                        className={`rounded-full px-2 py-1 text-[0.6rem] font-extrabold uppercase leading-none transition ${
+                        className={`rounded-full px-2 py-1.5 text-[0.6rem] font-extrabold uppercase leading-none transition ${
                           isActive
                             ? "bg-white text-[#1a1208] shadow-sm"
                             : "cursor-not-allowed opacity-55 text-[#a89880]"
@@ -1360,7 +1388,7 @@ export default function WorldCupApp({
                     );
                   })}
                 </div>
-                <span className="text-[0.55rem] font-semibold whitespace-nowrap text-[#a89880]">
+                <span className="px-1 text-[0.58rem] font-semibold leading-snug text-[#a89880] sm:whitespace-nowrap sm:px-0">
                   Table &amp; Schedule unlock June 11
                 </span>
               </div>
