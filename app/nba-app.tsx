@@ -2023,39 +2023,30 @@ function LockedSeriesCard({
   body: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-[1.35rem] border border-dashed border-[#d4cdc0] bg-[#faf8f4]">
+    <div className="overflow-hidden rounded-[1.35rem] border border-[#e8e0d4] bg-[#fbf8f3]">
       <div className="flex">
         <div className="w-[3px] shrink-0 bg-[#e8e0d4]" />
-        <div className="flex-1 px-3 py-3">
-          <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex-1 px-3 py-3.5">
+          <div className="mb-2.5 flex items-start justify-between gap-3">
             <div>
-              <p className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase text-[#a89880]">
+              <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.1em] text-[#a89880]">
                 {label}
               </p>
-              <p className="mt-0.5 text-[0.72rem] font-semibold text-[#8a7a66]">
+              <p className="mt-1 text-[0.7rem] font-medium leading-snug text-[#8a7a66]">
                 {body}
               </p>
             </div>
-            <span className="rounded-full bg-[#ede8df] px-2.5 py-1 font-[family-name:var(--font-display)] text-[8px] font-black uppercase text-[#8a7a66] ring-1 ring-[#d4cdc0]">
-              Soon
+            <span className="rounded-full bg-white/70 px-2 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-[#a89880] ring-1 ring-[#e0d8d0]">
+              Next
             </span>
           </div>
 
-          {[0, 1].map((slot) => (
-            <div
-              key={slot}
-              className={`flex items-center gap-2.5 ${
-                slot === 1 ? "mt-2 border-t border-[#ede8e0] pt-2" : ""
-              }`}
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ede8e0] ring-1 ring-[#e0d8d0]">
-                <span className="text-[0.5rem] font-black text-[#a89880]">TBD</span>
-              </div>
-              <span className="text-[0.72rem] font-semibold text-[#a89880]">
-                Awaiting matchup
-              </span>
-            </div>
-          ))}
+          <div className="flex items-center gap-2 rounded-full bg-white/60 px-3 py-2 ring-1 ring-[#ede8e0]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#d4cdc0]" />
+            <span className="text-[0.66rem] font-semibold uppercase tracking-wide text-[#a89880]">
+              Awaiting winners
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -2172,23 +2163,28 @@ function BracketConferenceSection({
   const columns = getConferenceRoundColumns(series);
   if (!columns.length) return null;
 
+  // Dynamic grid: match column count up to 3 so we never leave a sparse
+  // gap on lg+ screens. 1 column → centered; 2 → two columns; 3 → three.
+  const lgClass =
+    columns.length >= 3 ? "lg:grid-cols-3" : columns.length === 2 ? "lg:grid-cols-2" : "lg:grid-cols-1";
+
   return (
-    <section className="space-y-3">
-      <div className="flex items-end justify-between gap-4 px-1">
+    <section className="overflow-hidden rounded-[1.6rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
+      <div className="flex items-end justify-between gap-4 border-b border-[#ede8df] px-4 py-3 sm:px-5">
         <div>
-          <p className="font-[family-name:var(--font-display)] text-3xl font-black uppercase text-[#1a1208]">
-            {conference}
+          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+            {conference}ern Conference
           </p>
-          <p className="text-[0.72rem] font-bold uppercase text-[#a89880]">
-            Playoff path
+          <p className="mt-0.5 font-[family-name:var(--font-display)] text-2xl font-black uppercase text-[#1a1208] sm:text-3xl">
+            {conference} Board
           </p>
         </div>
-        <span className="rounded-full bg-[#ede8df] px-3 py-1 font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase text-[#8a7a66] ring-1 ring-[#d4cdc0]">
+        <span className="rounded-full bg-white px-3 py-1 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-wide text-[#8a7a66] ring-1 ring-[#e8e0d4]">
           {series.length} active
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className={`grid grid-cols-1 gap-4 p-4 sm:p-5 ${lgClass}`}>
         {columns.map((column) => (
           <BracketRoundColumn
             key={column.key}
@@ -2272,7 +2268,7 @@ function BracketView({
   const upcomingCount = allSeries.filter((series) => series.status === "upcoming").length;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-6">
       <header className="flex flex-col gap-4 px-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase text-[#e85d04]">
@@ -2295,7 +2291,8 @@ function BracketView({
         </div>
       </header>
 
-      <div className="space-y-8">
+      {/* East / West boards: stacked on mobile, side-by-side on xl+ */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <BracketConferenceSection
           conference="East"
           series={eastSeries}
@@ -2307,39 +2304,41 @@ function BracketView({
           series={westSeries}
           favoriteTeamAbbr={favoriteTeamAbbr}
         />
+      </div>
 
-        {unknownSeries.length > 0 && (
-          <section className="space-y-3">
-            <div className="px-1">
-              <p className="font-[family-name:var(--font-display)] text-3xl font-black uppercase text-[#1a1208]">
-                Series View
-              </p>
-              <p className="text-[0.72rem] font-bold uppercase text-[#a89880]">
-                Matchups from available playoff context
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {unknownSeries.map((series) => (
-                <SeriesCard
-                  key={series.key}
-                  series={series}
-                  favoriteTeamAbbr={favoriteTeamAbbr}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+      {unknownSeries.length > 0 && (
+        <section className="overflow-hidden rounded-[1.6rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
+          <div className="border-b border-[#ede8df] px-4 py-3 sm:px-5">
+            <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+              Additional Series
+            </p>
+            <p className="mt-0.5 font-[family-name:var(--font-display)] text-2xl font-black uppercase text-[#1a1208] sm:text-3xl">
+              Series View
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-2 xl:grid-cols-3">
+            {unknownSeries.map((series) => (
+              <SeriesCard
+                key={series.key}
+                series={series}
+                favoriteTeamAbbr={favoriteTeamAbbr}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
-        {(finals.length > 0 || hasConferenceSeries) && (
-          <section className="space-y-3">
-            <div className="px-1 text-center">
-              <p className="font-[family-name:var(--font-display)] text-3xl font-black uppercase text-[#1a1208]">
-                NBA Finals
-              </p>
-              <p className="text-[0.72rem] font-bold uppercase text-[#a89880]">
-                Championship series
-              </p>
-            </div>
+      {(finals.length > 0 || hasConferenceSeries) && (
+        <section className="overflow-hidden rounded-[1.6rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
+          <div className="border-b border-[#ede8df] px-4 py-3 text-center sm:px-5">
+            <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#e85d04]">
+              The Finals
+            </p>
+            <p className="mt-0.5 font-[family-name:var(--font-display)] text-2xl font-black uppercase text-[#1a1208] sm:text-3xl">
+              NBA Finals
+            </p>
+          </div>
+          <div className="p-4 sm:p-5">
             <div className="mx-auto grid max-w-md grid-cols-1 gap-4">
               {finals.length > 0 ? (
                 finals.map((series) => (
@@ -2356,9 +2355,9 @@ function BracketView({
                 />
               )}
             </div>
-          </section>
-        )}
-      </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

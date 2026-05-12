@@ -4,7 +4,66 @@
 
 ## Latest Update: Opus Frontend Design Pass — 2026-05-11
 
-### Files Changed
+### Polish Pass 2 (same day)
+
+**NBA Series Board — desktop board structure**
+
+- Container widened: `max-w-6xl` → `max-w-7xl`
+- East and West are now visually distinct **boards**: each wrapped in a soft warm-cream card (`bg-[#fbf8f3]` + `ring-1 ring-[#e8e0d4]`) with a divider-separated header that reads `EASTERN CONFERENCE / East Board` and `WESTERN CONFERENCE / West Board`
+- On xl+ screens, East and West render **side-by-side** (`grid-cols-1 xl:grid-cols-2`) so the board feels like a complete playoff path at a glance — no more sparse single-column desktop layout
+- Each conference's round grid now adapts to column count: 1 column → centered, 2 → two-col, 3 → three-col. No more empty gap on `lg:grid-cols-3` when only 2 rounds are live
+- **Additional Series** and **NBA Finals** sections also wrapped in matching board cards for consistent rhythm
+- `LockedSeriesCard` redesigned: removed dashed border + "TBD" avatars; replaced with a single rounded pill that reads `Awaiting winners` — feels intentional, not broken/empty
+
+**NBA NY/PHI coverage**
+
+- Persistence logic from the earlier pass already saves any series the app has seen at `final` state with a 4-X record under `no-noise-nba-series-memory-v1`
+- No code change in this polish pass — the existing mechanism does pick up a series like `NYK WINS SERIES 4-2` the moment it appears in the ESPN feed with that `seriesSummary`. From there it persists for 90 days, so NYK vs PHI surfaces on the Series Board even after ESPN drops the games from the live scoreboard window
+- If a series never appears with a "WINS SERIES" summary while the app is open, it cannot be reconstructed (no backend, no historical fetch). This is a known data limitation, not a missing feature
+
+**World Cup Table — neutral pre-tournament**
+
+- `GroupStandingsTable` and `StandingsView` now take a `hasTournamentStarted` prop
+- Pre-tournament: **no green top-2 row tint, no ✅/🟡/❌ status column, no "advancing" green-coloured points or rank** — all four teams render in neutral palette
+- The status column is removed entirely from the grid template pre-tournament (5-col → 4-col) so the row doesn't keep an empty slot
+- Selected country still gets a subtle row tint using the country accent at very low alpha (`${accentColor}0d`), and the bullet/coloured country name still appear — preserved as personalization, not qualification implication
+- StandingsView legend pre-tournament reads: `Tap a team to see full stats · All teams start neutral until June 11`
+
+**World Cup Groups — no-country preview**
+
+- New `GroupsPreview` component renders below the no-country hero on the Groups tab
+- Editorial header strip: `GROUPS AVAILABLE NOW —————— Pick country →`
+- Shows the first 4 groups (A, B, C, D) as compact preview cards with flag + abbreviation chips — no points, no implied status
+- Footer line: `Showing 4 of 12 groups. Pick your country to see yours up top.`
+- Hidden once a country is selected so it doesn't compete with `CountryModule`
+
+**World Cup Schedule copy**
+
+- Pre-tournament empty state heading: `Full fixture times coming soon` → **`Full fixtures loading soon`**
+- Pre-tournament empty state body: `Group draw is set. Kickoff times are being finalized for June 11.` → **`Groups are available now. Match times will appear here once confirmed.`**
+- Groups tab empty state (when API returns zero games) uses the same updated copy for consistency
+
+### Codex Inspection Notes
+
+When Codex reviews this branch, the highest-value areas to inspect are:
+
+1. `app/nba-app.tsx`
+   - `BracketView`: the persistence flow (`useEffect` hydrate on mount + `useEffect` persist on completion). Verify it doesn't double-write, and that `mergeSeriesWithMemory` deduplicates correctly when a series appears in both live and remembered sets
+   - `persistedFromSeries` / `hydrateSeriesFromPersisted` round-trip: ensure `Team` shape is stable so cached entries still render correctly when the `Team` type evolves
+   - `BracketConferenceSection` dynamic grid class — confirm Tailwind doesn't strip `lg:grid-cols-1`/`lg:grid-cols-2` (they appear as static class strings, should be safe)
+   - `LockedSeriesCard` reflow: confirm it still reads well at all column widths
+2. `app/world-cup-app.tsx`
+   - `GroupStandingsTable` 4-col vs 5-col grid switching — verify alignment with neighbouring rows
+   - `GroupsPreview` only renders on the Groups tab when there is no country selected — confirm it disappears as soon as a country is picked
+   - `StandingsView` receives `hasTournamentStarted` from both pre-tournament and active-tournament call sites
+3. `app/CHANGELOG_PRODUCT.md`
+   - This entry is appended under the latest section, not overwriting
+
+Build: `npm run build` passes cleanly.
+
+---
+
+### Files Changed (initial pass)
 
 - `app/world-cup-app.tsx`
 - `app/nba-app.tsx`

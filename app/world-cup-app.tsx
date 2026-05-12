@@ -392,19 +392,27 @@ function WCGameCard({
 
 // ── Group Standings Table ──────────────────────────────────────────────────────
 function GroupStandingsTable({
-  groupCode, stats, selectedCountry, accentColor,
+  groupCode, stats, selectedCountry, accentColor, hasTournamentStarted,
 }: {
-  groupCode: string; stats: TeamStats[]; selectedCountry: string | null; accentColor: string;
+  groupCode: string; stats: TeamStats[]; selectedCountry: string | null; accentColor: string; hasTournamentStarted: boolean;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  // Pre-tournament: do not imply qualification status. No green tint, no
+  // ✅/🟡/❌. Selected country gets only a subtle row highlight.
   return (
     <div className="overflow-hidden rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]">
       {stats.map((s, idx) => {
-        const isAdvancing = idx < 2;
+        const isAdvancing = hasTournamentStarted && idx < 2;
+        const isPossible = hasTournamentStarted && idx === 2;
+        const isEliminated = hasTournamentStarted && idx === 3;
         const isMe = s.code === selectedCountry;
+        const meBg = isMe ? { background: `${accentColor}0d` } : undefined;
         const rowBg = isAdvancing ? "bg-[#f0faf4]" : "bg-white";
         const isExpanded = expanded === s.code;
+        const gridCols = hasTournamentStarted
+          ? "1.2rem 1.4rem minmax(0,1fr) 1.6rem 1.6rem"
+          : "1.2rem 1.4rem minmax(0,1fr) 1.6rem";
 
         return (
           <div key={s.code}>
@@ -412,8 +420,9 @@ function GroupStandingsTable({
               type="button"
               onClick={() => setExpanded(isExpanded ? null : s.code)}
               className={`w-full border-b border-[#f0ece4] last:border-0 ${rowBg} transition active:brightness-95`}
+              style={meBg}
             >
-              <div className="grid items-center gap-1 px-3 py-2.5" style={{ gridTemplateColumns: "1.2rem 1.4rem minmax(0,1fr) 1.6rem 1.6rem" }}>
+              <div className="grid items-center gap-1 px-3 py-2.5" style={{ gridTemplateColumns: gridCols }}>
                 <span className={`text-[0.68rem] font-black tabular-nums ${isAdvancing ? "text-[#2d7a3a]" : "text-[#a89880]"}`}>
                   {idx + 1}
                 </span>
@@ -428,9 +437,11 @@ function GroupStandingsTable({
                 <span className={`text-right text-[0.88rem] font-black tabular-nums ${isAdvancing ? "text-[#2d7a3a]" : "text-[#1a1208]"}`}>
                   {s.Pts}
                 </span>
-                <span className="text-center text-[0.7rem]">
-                  {isAdvancing ? "✅" : idx === 2 ? "🟡" : "❌"}
-                </span>
+                {hasTournamentStarted && (
+                  <span className="text-center text-[0.7rem]">
+                    {isAdvancing ? "✅" : isPossible ? "🟡" : isEliminated ? "❌" : ""}
+                  </span>
+                )}
               </div>
 
               {isExpanded && (
@@ -459,6 +470,64 @@ function GroupStandingsTable({
   );
 }
 
+// ── Groups Preview (no-country pre-tournament) ─────────────────────────────────
+function GroupsPreview({ onPickCountry }: { onPickCountry: () => void }) {
+  // Show a tasteful preview of the first few groups so the no-country state
+  // doesn't feel empty. Pure preview — no implied status, no fake data.
+  const previewGroups = ["A", "B", "C", "D"];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3 px-1">
+        <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+          Groups available now
+        </p>
+        <div className="flex-1 border-t border-[#e8e0d4]" />
+        <button
+          type="button"
+          onClick={onPickCountry}
+          className="shrink-0 text-[0.6rem] font-black uppercase tracking-wide text-[#006847] transition hover:text-[#1a1208]"
+        >
+          Pick country →
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {previewGroups.map((letter) => {
+          const teams = WC_GROUPS[letter] ?? [];
+          return (
+            <div
+              key={letter}
+              className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]"
+            >
+              <div className="mb-1.5 flex items-baseline justify-between">
+                <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.12em] text-[#a89880]">
+                  Group {letter}
+                </p>
+                <span className="text-[0.55rem] font-semibold uppercase tracking-wide text-[#c0b0a0]">
+                  4 teams
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-2.5 gap-y-1">
+                {teams.map((t) => (
+                  <span key={t} className="flex items-center gap-1 text-[0.7rem] font-bold uppercase tracking-tight text-[#1a1208]">
+                    <span className="text-sm leading-none">{flagEmoji(t)}</span>
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="px-1 text-[0.6rem] font-medium text-[#c0b0a0]">
+        Showing 4 of 12 groups. Pick your country to see yours up top.
+      </p>
+    </div>
+  );
+}
+
 // ── Pre-tournament Table note ──────────────────────────────────────────────────
 function PreTournamentTableNote({ accentColor }: { accentColor: string }) {
   return (
@@ -481,9 +550,9 @@ function PreTournamentTableNote({ accentColor }: { accentColor: string }) {
 
 // ── Full Standings View ────────────────────────────────────────────────────────
 function StandingsView({
-  games, selectedCountry, accentColor,
+  games, selectedCountry, accentColor, hasTournamentStarted,
 }: {
-  games: WCGame[]; selectedCountry: string | null; accentColor: string;
+  games: WCGame[]; selectedCountry: string | null; accentColor: string; hasTournamentStarted: boolean;
 }) {
   const groupLetters = "ABCDEFGHIJKL".split("");
   const myGroup = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
@@ -491,7 +560,9 @@ function StandingsView({
   return (
     <div className="space-y-6">
       <p className="px-1 text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
-        Tap a team to see full stats · ✅ Advancing · 🟡 Possible · ❌ Eliminated
+        {hasTournamentStarted
+          ? "Tap a team to see full stats · ✅ Advancing · 🟡 Possible · ❌ Eliminated"
+          : "Tap a team to see full stats · All teams start neutral until June 11"}
       </p>
       {groupLetters.map((letter) => {
         const stats = calcGroupStandings(letter, games);
@@ -527,6 +598,7 @@ function StandingsView({
               stats={stats}
               selectedCountry={selectedCountry}
               accentColor={accentColor}
+              hasTournamentStarted={hasTournamentStarted}
             />
           </div>
         );
@@ -741,11 +813,11 @@ function ScheduleView({
       {sections.length === 0 && (
         <div className="rounded-[1.2rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
           <p className="font-[family-name:var(--font-display)] text-[1.05rem] font-black uppercase tracking-tight text-[#1a1208]">
-            {!hasTournamentStarted ? "Full fixture times coming soon" : "No matches found"}
+            {!hasTournamentStarted ? "Full fixtures loading soon" : "No matches found"}
           </p>
           <p className="mx-auto mt-1.5 max-w-sm text-[0.78rem] font-medium leading-snug text-[#8a7a66]">
             {!hasTournamentStarted
-              ? "Group draw is set. Kickoff times are being finalized for June 11."
+              ? "Groups are available now. Match times will appear here once confirmed."
               : "Try a different filter or check back as games come in."}
           </p>
         </div>
@@ -1432,19 +1504,23 @@ export default function WorldCupApp({
               {viewMode === "groups" && games.length === 0 && (
                 <div className="rounded-[1.2rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
                   <p className="font-[family-name:var(--font-display)] text-[1.1rem] font-black uppercase tracking-tight text-[#1a1208]">
-                    Fixtures land soon
+                    Full fixtures loading soon
                   </p>
                   <p className="mt-1.5 text-[0.78rem] font-medium text-[#8a7a66]">
-                    Opening match details and the full group draw are loading in.
+                    Groups are available now. Match times will appear here once confirmed.
                   </p>
                 </div>
+              )}
+
+              {viewMode === "groups" && !selectedCountry && (
+                <GroupsPreview onPickCountry={() => setShowPicker(true)} />
               )}
 
               {viewMode === "table" && (
                 <PreTournamentTableNote accentColor={accentColor} />
               )}
               {viewMode === "table" && (
-                <StandingsView games={games} selectedCountry={selectedCountry} accentColor={accentColor} />
+                <StandingsView games={games} selectedCountry={selectedCountry} accentColor={accentColor} hasTournamentStarted={hasTournamentStarted} />
               )}
 
               {viewMode === "schedule" && (
@@ -1509,7 +1585,7 @@ export default function WorldCupApp({
 
             <div className="mx-auto max-w-4xl space-y-8">
               {viewMode === "table" && (
-                <StandingsView games={games} selectedCountry={selectedCountry} accentColor={accentColor} />
+                <StandingsView games={games} selectedCountry={selectedCountry} accentColor={accentColor} hasTournamentStarted={hasTournamentStarted} />
               )}
 
               {viewMode === "schedule" && (
