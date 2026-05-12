@@ -689,33 +689,34 @@ function ShareCardCanvas({ payload }: { payload: SharePayload }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
+              width: 38,
+              height: 38,
+              borderRadius: 12,
               background: "#07111f",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 10px 22px rgba(7,17,31,0.18)",
+              boxShadow: "0 8px 18px rgba(7,17,31,0.22)",
+              flexShrink: 0,
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/favicon.svg" alt="" style={{ width: 25, height: 25 }} />
+            <img src="/favicon.svg" alt="" style={{ width: 22, height: 22 }} />
           </div>
-          <div>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 900, color: "#e85d04", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <p style={{ margin: 0, fontSize: 9, fontWeight: 900, color: "#e85d04", textTransform: "uppercase", letterSpacing: "0.14em", lineHeight: 1 }}>
               No Noise
             </p>
-            <p style={{ margin: "2px 0 0", fontSize: 18, fontWeight: 950, color: "#1a1208", textTransform: "uppercase", letterSpacing: "-0.03em", lineHeight: 1 }}>
+            <p style={{ margin: "3px 0 0", fontSize: 17, fontWeight: 950, color: "#1a1208", textTransform: "uppercase", letterSpacing: "-0.04em", lineHeight: 1 }}>
               Scores
             </p>
           </div>
         </div>
 
-        <p style={{ margin: 0, maxWidth: 230, textAlign: "right", fontSize: 13, fontWeight: 800, color: "#e85d04", textTransform: "uppercase", letterSpacing: "0.06em", lineHeight: 1.25 }}>
+        <p style={{ margin: 0, maxWidth: 220, textAlign: "right", fontSize: 12, fontWeight: 900, color: "#e85d04", textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1.3 }}>
           {contextLine}
         </p>
       </div>
@@ -893,7 +894,7 @@ function ShareButton({ onClick }: { onClick: () => void }) {
       type="button"
       aria-label="Share"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-white/70 transition hover:bg-white/30 active:scale-95"
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/30 text-white/90 transition hover:bg-white/50 active:scale-95"
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="18" cy="5" r="3"/>
@@ -1084,11 +1085,11 @@ function EmptyState({
 
 function SectionHeader({ section }: { section: GameSection }) {
   return (
-    <div className="mb-2.5">
-      <p className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[#a89880]">
+    <div className="mb-2.5 flex items-center gap-3">
+      <p className="shrink-0 font-[family-name:var(--font-display)] text-[0.6rem] font-black uppercase tracking-[0.12em] text-[#a89880]">
         {section.title}
       </p>
-      <hr className="border-[#d4cdc0]" />
+      <div className="flex-1 border-t border-[#d4cdc0]" />
     </div>
   );
 }
@@ -2154,9 +2155,6 @@ function BracketView({
           <h2 className="mt-1 font-[family-name:var(--font-display)] text-4xl font-black uppercase text-[#1a1208] sm:text-5xl">
             Playoff Bracket
           </h2>
-          <p className="mt-1 max-w-xl text-sm leading-6 text-[#8a7a66]">
-            Series cards update from live playoff matchups and the series context already shown on Scores.
-          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <span className="rounded-full bg-[#1a1208] px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase text-[#f5f1ea]">

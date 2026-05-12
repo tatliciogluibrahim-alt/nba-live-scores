@@ -206,7 +206,7 @@ export default function LandingPage({
                 background: "#f0ece4",
                 border: "1px solid #ddd8cf",
                 cursor: "default",
-                opacity: 0.52,
+                opacity: 0.55,
               }}
             >
               {/* Top accent stripe — each event's own color, desaturated */}

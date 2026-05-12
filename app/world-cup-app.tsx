@@ -1388,8 +1388,9 @@ export default function WorldCupApp({
                     );
                   })}
                 </div>
-                <span className="px-1 text-[0.58rem] font-semibold leading-snug text-[#a89880] sm:whitespace-nowrap sm:px-0">
-                  Table &amp; Schedule unlock June 11
+                <span className="px-1 text-[0.58rem] font-semibold leading-snug text-[#a89880] sm:px-0">
+                  <span className="sm:hidden">🔒 Unlocks June 11</span>
+                  <span className="hidden sm:inline whitespace-nowrap">Table &amp; Schedule unlock June 11</span>
                 </span>
               </div>
             </div>
