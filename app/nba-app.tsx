@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePushNotifications } from "@/lib/usePushNotifications";
 
 type GameStatus = "live" | "upcoming" | "final";
@@ -1107,6 +1107,8 @@ type SeriesInfo = {
   status: "live" | "upcoming" | "complete";
   isGame7: boolean;
   nextGame?: Game;
+  latestGame?: Game;
+  source: "api" | "inferred";
   games: Game[];
 };
 
@@ -1152,9 +1154,199 @@ function parseSeriesWins(
   return { winsA: 0, winsB: 0 };
 }
 
+function getSeriesContextText(games: Game[]) {
+  return games
+    .flatMap((game) => [
+      game.seriesConference,
+      game.seriesRound,
+      game.gameContext,
+      game.seriesSummary,
+      game.matchup,
+    ])
+    .filter(Boolean)
+    .join(" ");
+}
+
+function isBracketCandidateGame(game: Game) {
+  if (
+    !game.away.abbreviation ||
+    !game.home.abbreviation ||
+    game.away.abbreviation === "TBD" ||
+    game.home.abbreviation === "TBD"
+  ) {
+    return false;
+  }
+
+  const text = getSeriesContextText([game]).toLowerCase();
+
+  return Boolean(
+    game.seriesRound ||
+      game.seriesConference ||
+      game.seriesSummary ||
+      /playoff|series|first round|1st round|second round|2nd round|semifinals|semi-finals|conference finals|conf finals|nba finals|game\s+[1-7]/i.test(
+        text
+      )
+  );
+}
+
+function inferSeriesConference(games: Game[]) {
+  const explicit = games.find((game) => game.seriesConference)?.seriesConference;
+  if (explicit) return explicit;
+
+  const text = getSeriesContextText(games).toLowerCase();
+  if (/nba finals/.test(text)) return "Finals";
+  if (/(eastern|east)\b/.test(text)) return "East";
+  if (/(western|west)\b/.test(text)) return "West";
+
+  return "";
+}
+
+function inferSeriesRound(games: Game[]) {
+  const explicit = games.find((game) => game.seriesRound)?.seriesRound;
+  if (explicit) return explicit;
+
+  const text = getSeriesContextText(games).toLowerCase();
+  if (/nba finals/.test(text)) return "NBA Finals";
+  if (/conference finals|conf finals|east finals|west finals/.test(text)) return "Conf Finals";
+  if (/semifinals|semi-finals|second round|2nd round/.test(text)) return "Second Round";
+  if (/first round|1st round/.test(text)) return "First Round";
+
+  return "Playoff Series";
+}
+
+function getRoundRank(round: string) {
+  if (round === "First Round") return 0;
+  if (round === "Second Round") return 1;
+  if (round === "Conf Finals") return 2;
+  if (round === "NBA Finals") return 3;
+  return 4;
+}
+
+function getSeriesUrgencyRank(series: SeriesInfo) {
+  if (series.status === "live") return 0;
+  if (series.isGame7) return 1;
+  if (series.status === "upcoming") return 2;
+  return 3;
+}
+
+function deriveWinsFromFinalGames(
+  games: Game[],
+  abbrA: string,
+  abbrB: string
+) {
+  return games.reduce(
+    (wins, game) => {
+      if (game.status !== "final") return wins;
+
+      const winner = getWinningTeam(game);
+      if (!winner) return wins;
+
+      if (winner.abbreviation === abbrA) wins.winsA += 1;
+      if (winner.abbreviation === abbrB) wins.winsB += 1;
+
+      return wins;
+    },
+    { winsA: 0, winsB: 0 }
+  );
+}
+
+function prettifySeriesSummary(summary: string) {
+  const compact = summary.replace(/\s+/g, " ").trim();
+  const upper = compact.toUpperCase();
+
+  const winnerMatch = upper.match(/(\w+)\s+WINS?\s+SERIES\s+(\d+)-(\d+)/);
+  if (winnerMatch) {
+    return `${winnerMatch[1]} wins series ${winnerMatch[2]}-${winnerMatch[3]}`;
+  }
+
+  const leaderMatch = upper.match(/(\w+)\s+LEADS?\s+SERIES\s+(\d+)-(\d+)/);
+  if (leaderMatch) {
+    return `${leaderMatch[1]} leads series ${leaderMatch[2]}-${leaderMatch[3]}`;
+  }
+
+  const tiedMatch = upper.match(/SERIES\s+TIED\s+(\d+)-(\d+)/);
+  if (tiedMatch) return `Series tied ${tiedMatch[1]}-${tiedMatch[2]}`;
+
+  return compact;
+}
+
+function getSeriesRecord(series: SeriesInfo) {
+  const winsA = series.teamA.wins;
+  const winsB = series.teamB.wins;
+
+  if (winsA === 0 && winsB === 0 && series.summary) {
+    return prettifySeriesSummary(series.summary);
+  }
+
+  if (winsA === winsB) return `Series tied ${winsA}-${winsB}`;
+
+  const leader = winsA > winsB ? series.teamA : series.teamB;
+  const high = Math.max(winsA, winsB);
+  const low = Math.min(winsA, winsB);
+
+  if (high === 4) return `${leader.abbreviation} wins series ${high}-${low}`;
+
+  return `${leader.abbreviation} leads series ${high}-${low}`;
+}
+
+function getSeriesRoundLabel(round: string) {
+  if (round === "Second Round") return "Semifinals";
+  if (round === "Conf Finals") return "Conference Finals";
+  if (round === "NBA Finals") return "NBA Finals";
+  if (round === "First Round") return "First Round";
+  return "Playoff Series";
+}
+
+function getSeriesLabel(series: SeriesInfo) {
+  if (series.round === "NBA Finals" || series.conference === "Finals") {
+    return "NBA Finals";
+  }
+
+  if (series.conference === "East" || series.conference === "West") {
+    if (series.round === "Conf Finals") return `${series.conference} Finals`;
+    if (series.round === "Second Round") return `${series.conference} Semifinals`;
+    if (series.round === "First Round") return `${series.conference} First Round`;
+    return `${series.conference} Series`;
+  }
+
+  return getSeriesRoundLabel(series.round);
+}
+
+function getSeriesGameLabel(series: SeriesInfo) {
+  const context =
+    series.nextGame?.gameContext ||
+    series.latestGame?.gameContext ||
+    series.games.find((game) => game.gameContext)?.gameContext ||
+    "";
+  const match = context.match(/game\s+[1-7]/i);
+
+  return match ? match[0].replace(/^game/i, "Game") : "";
+}
+
+function getSeriesStatusLabel(series: SeriesInfo) {
+  if (series.status === "live") return "Live";
+  if (series.nextGame?.status === "upcoming") return "Upcoming";
+  if (series.latestGame?.status === "final") return "Final";
+  if (series.status === "complete") return "Final";
+  return "Upcoming";
+}
+
+function getSeriesStatusPillClasses(series: SeriesInfo) {
+  const statusLabel = getSeriesStatusLabel(series);
+
+  if (statusLabel === "Live") {
+    return "bg-orange-100 text-orange-800 ring-orange-200";
+  }
+
+  if (statusLabel === "Final") {
+    return "bg-slate-200 text-slate-700 ring-slate-300";
+  }
+
+  return "bg-blue-100 text-blue-800 ring-blue-200";
+}
+
 function buildBracketSeries(allGames: Game[]): SeriesInfo[] {
-  // Only playoff games have a seriesRound set
-  const playoffGames = allGames.filter((g) => g.seriesRound);
+  const playoffGames = allGames.filter(isBracketCandidateGame);
   if (!playoffGames.length) return [];
 
   const seriesMap = new Map<string, Game[]>();
@@ -1168,32 +1360,37 @@ function buildBracketSeries(allGames: Game[]): SeriesInfo[] {
   const series: SeriesInfo[] = Array.from(seriesMap.entries()).map(
     ([key, sg]) => {
       const [abbrA, abbrB] = key.split("-");
+      const sortedGames = [...sg].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      const latestGame = [...sortedGames].reverse()[0];
 
       const getTeamData = (abbr: string): Team => {
-        for (const g of sg) {
+        for (const g of sortedGames) {
           if (g.away.abbreviation === abbr) return g.away;
           if (g.home.abbreviation === abbr) return g.home;
         }
-        return sg[0].away;
+        return sortedGames[0].away;
       };
 
       // Use the most recent seriesSummary (from newest final game, or any game)
-      const withSummary = sg
+      const withSummary = sortedGames
         .filter((g) => g.seriesSummary)
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       const summary = withSummary[0]?.seriesSummary ?? "";
 
-      // Parse authoritative wins from summary string
-      const { winsA, winsB } = summary
+      const parsedWins = summary
         ? parseSeriesWins(summary, abbrA, abbrB)
         : { winsA: 0, winsB: 0 };
+      const fallbackWins = deriveWinsFromFinalGames(sortedGames, abbrA, abbrB);
+      const hasParsedRecord = parsedWins.winsA > 0 || parsedWins.winsB > 0;
+      const { winsA, winsB } = hasParsedRecord ? parsedWins : fallbackWins;
 
-      // Conference + round come from the API-level extraction
-      const conference = sg.find((g) => g.seriesConference)?.seriesConference ?? "";
-      const round = sg.find((g) => g.seriesRound)?.seriesRound ?? "";
+      const conference = inferSeriesConference(sortedGames);
+      const round = inferSeriesRound(sortedGames);
 
-      const liveGame = sg.find((g) => g.status === "live");
-      const upcomingGames = sg
+      const liveGame = sortedGames.find((g) => g.status === "live");
+      const upcomingGames = sortedGames
         .filter((g) => g.status === "upcoming")
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       const nextGame = liveGame ?? upcomingGames[0];
@@ -1217,20 +1414,24 @@ function buildBracketSeries(allGames: Game[]): SeriesInfo[] {
         status,
         isGame7,
         nextGame,
-        games: sg,
+        latestGame,
+        source: sortedGames.some((game) => game.seriesRound || game.seriesConference)
+          ? "api"
+          : "inferred",
+        games: sortedGames,
       };
     }
   );
 
-  // Sort within each series group: live → game7 → upcoming → complete
+  // Sort by bracket order, then urgency inside each round.
   return series.sort((a, b) => {
-    const urgency = (s: SeriesInfo) => {
-      if (s.status === "live") return 0;
-      if (s.isGame7) return 1;
-      if (s.status === "upcoming") return 2;
-      return 3;
-    };
-    return urgency(a) - urgency(b);
+    const roundDifference = getRoundRank(a.round) - getRoundRank(b.round);
+    if (roundDifference !== 0) return roundDifference;
+
+    const conferenceDifference = a.conference.localeCompare(b.conference);
+    if (conferenceDifference !== 0) return conferenceDifference;
+
+    return getSeriesUrgencyRank(a) - getSeriesUrgencyRank(b);
   });
 }
 
@@ -1301,6 +1502,12 @@ function SeriesCard({
       : null;
 
   const teams = [series.teamA, series.teamB] as (Team & { wins: number })[];
+  const seriesGameLabel = getSeriesGameLabel(series);
+  const seriesLabel = seriesGameLabel
+    ? `${getSeriesLabel(series)} · ${seriesGameLabel}`
+    : getSeriesLabel(series);
+  const seriesRecord = getSeriesRecord(series);
+  const statusLabel = getSeriesStatusLabel(series);
 
   return (
     <>
@@ -1318,6 +1525,27 @@ function SeriesCard({
         <div style={{ width: 3, flexShrink: 0, background: accentColor }} />
 
         <div className="flex-1 px-3 py-3">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase text-[#a89880]">
+                {seriesLabel}
+              </p>
+              <p className="mt-0.5 text-[0.72rem] font-semibold text-[#8a7a66]">
+                {seriesRecord}
+              </p>
+            </div>
+            <span
+              className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[8px] font-black uppercase ring-1 ${getSeriesStatusPillClasses(
+                series
+              )}`}
+            >
+              {statusLabel === "Live" && (
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-600" />
+              )}
+              {statusLabel}
+            </span>
+          </div>
+
           {/* Tier 1: Game 7 badge + time */}
           {isTier1 && game7Label && (
             <div className="mb-3 flex items-center gap-2.5">
@@ -1463,17 +1691,12 @@ function SeriesCard({
                   {game7Label}
                 </span>
               )}
-              {series.summary && (
-                <span className="text-[0.68rem] font-semibold text-[#a89880]">
-                  {series.summary}
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-2">
               {/* Next game time (non-live, non-tier1 only) */}
               {series.nextGame && series.status !== "live" && !isTier1 && (
                 <span className="shrink-0 text-[0.68rem] font-semibold text-[#a89880]">
-                  {formatGameDateTime(series.nextGame.date)}
+                  Next: {formatGameDateTime(series.nextGame.date)}
                 </span>
               )}
               {/* Share button */}
@@ -1500,117 +1723,6 @@ function SeriesCard({
       />
     )}
   </>
-  );
-}
-
-// ── Tier 2: pending second-round slot ────────────────────────────────────────
-function PendingSeriesCard({
-  feeder1,
-  feeder2,
-}: {
-  feeder1: SeriesInfo | null;
-  feeder2: SeriesInfo | null;
-}) {
-  const getWinner = (s: SeriesInfo | null) => {
-    if (!s) return null;
-    if (s.teamA.wins === 4) return s.teamA;
-    if (s.teamB.wins === 4) return s.teamB;
-    return null;
-  };
-
-  const winner1 = getWinner(feeder1);
-  const winner2 = getWinner(feeder2);
-
-  let statusNote = "Starts TBD";
-  if (winner1 && winner2) statusNote = "Series upcoming";
-  else if (winner1)
-    statusNote = `${winner1.abbreviation} advances · Awaiting other winner`;
-  else if (winner2)
-    statusNote = `${winner2.abbreviation} advances · Awaiting other winner`;
-
-  const TeamSlot = ({
-    winner,
-    feeder,
-    idx,
-  }: {
-    winner: (Team & { wins: number }) | null;
-    feeder: SeriesInfo | null;
-    idx: number;
-  }) => {
-    if (!winner) {
-      // TBD: no dots, just a muted "Awaits winner of…" line
-      return (
-        <div
-          className={`flex items-center gap-2 ${
-            idx === 1 ? "mt-2 border-t border-[#ede8e0] pt-2" : ""
-          }`}
-        >
-          <div
-            className="flex shrink-0 items-center justify-center rounded-full"
-            style={{ width: 32, height: 32, background: "#ede8e0", boxShadow: "0 0 0 1px #e0d8d0" }}
-          >
-            <span className="text-[0.5rem] font-black text-[#a89880]">TBD</span>
-          </div>
-          <span className="text-[0.72rem] font-medium text-[#a89880]">
-            {feeder ? `Awaits winner of ${feeder.abbrA} vs ${feeder.abbrB}` : "TBD"}
-          </span>
-        </div>
-      );
-    }
-
-    return (
-      <div
-        className={`flex items-center justify-between ${
-          idx === 1 ? "mt-2 border-t border-[#ede8e0] pt-2" : ""
-        }`}
-      >
-        <div className="flex items-center gap-2.5">
-          <div
-            className="flex shrink-0 items-center justify-center rounded-full"
-            style={{ width: 32, height: 32, background: "#ede8e0", boxShadow: "0 0 0 1px #e0d8d0" }}
-          >
-            {winner.logo ? (
-              <img src={winner.logo} alt="" className="h-5 w-5 object-contain" />
-            ) : (
-              <span className="text-[0.55rem] font-black text-[#a89880]">{winner.abbreviation}</span>
-            )}
-          </div>
-          <span className="text-[0.9rem] font-black tracking-tight text-[#1a1208]">
-            {winner.abbreviation}
-          </span>
-        </div>
-        <div className="flex shrink-0 items-center gap-2.5 pl-2">
-          <WinDots wins={0} dotColor="#d4cdc0" />
-          <span
-            className="tabular-nums leading-none text-[#d4cdc0]"
-            style={{ width: 18, textAlign: "right", fontSize: "1.3rem", fontWeight: 900 }}
-          >
-            –
-          </span>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div
-      className="overflow-hidden rounded-[1.35rem]"
-      style={{
-        border: "1px dashed #d4cdc0",
-        background: "#faf8f4",
-      }}
-    >
-      <div className="flex">
-        <div style={{ width: 3, flexShrink: 0, background: "#e8e0d4" }} />
-        <div className="flex-1 px-3 py-3">
-          <TeamSlot winner={winner1} feeder={feeder1} idx={0} />
-          <TeamSlot winner={winner2} feeder={feeder2} idx={1} />
-          <p className="mt-2.5 text-[0.68rem] font-semibold text-[#a89880]">
-            {statusNote}
-          </p>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -1789,248 +1901,340 @@ function TeamView({
 }
 
 // ── BracketView ───────────────────────────────────────────────────────────────
+function BracketEmptyState({
+  onBackToScores,
+}: {
+  onBackToScores: () => void;
+}) {
+  return (
+    <section className="mx-auto max-w-2xl rounded-[1.75rem] bg-[#ffffff] p-8 text-center text-[#1a1208] shadow-xl shadow-black/10 ring-1 ring-[#e8e0d4] sm:p-10">
+      <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase text-[#1a1208] sm:text-5xl">
+        Bracket loading soon
+      </p>
+      <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#8a7a66]">
+        Scores are live now. Series view appears when playoff matchups are available.
+      </p>
+      <button
+        type="button"
+        onClick={onBackToScores}
+        className="mt-6 rounded-full bg-[#1a1208] px-5 py-2.5 font-[family-name:var(--font-display)] text-xs font-black uppercase text-[#f5f1ea] transition hover:bg-[#2a1e10] active:scale-95"
+      >
+        Back to Scores
+      </button>
+    </section>
+  );
+}
+
+function LockedSeriesCard({
+  label,
+  body,
+}: {
+  label: string;
+  body: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[1.35rem] border border-dashed border-[#d4cdc0] bg-[#faf8f4]">
+      <div className="flex">
+        <div className="w-[3px] shrink-0 bg-[#e8e0d4]" />
+        <div className="flex-1 px-3 py-3">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <p className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase text-[#a89880]">
+                {label}
+              </p>
+              <p className="mt-0.5 text-[0.72rem] font-semibold text-[#8a7a66]">
+                {body}
+              </p>
+            </div>
+            <span className="rounded-full bg-[#ede8df] px-2.5 py-1 font-[family-name:var(--font-display)] text-[8px] font-black uppercase text-[#8a7a66] ring-1 ring-[#d4cdc0]">
+              Soon
+            </span>
+          </div>
+
+          {[0, 1].map((slot) => (
+            <div
+              key={slot}
+              className={`flex items-center gap-2.5 ${
+                slot === 1 ? "mt-2 border-t border-[#ede8e0] pt-2" : ""
+              }`}
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ede8e0] ring-1 ring-[#e0d8d0]">
+                <span className="text-[0.5rem] font-black text-[#a89880]">TBD</span>
+              </div>
+              <span className="text-[0.72rem] font-semibold text-[#a89880]">
+                Awaiting matchup
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BracketRoundColumn({
+  title,
+  series,
+  favoriteTeamAbbr,
+  lockedBody,
+}: {
+  title: string;
+  series: SeriesInfo[];
+  favoriteTeamAbbr: string | null;
+  lockedBody?: string;
+}) {
+  if (!series.length && !lockedBody) return null;
+
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between gap-3 px-0.5">
+        <p className="font-[family-name:var(--font-display)] text-[0.66rem] font-black uppercase text-[#a89880]">
+          {title}
+        </p>
+        <span className="text-[0.62rem] font-bold uppercase text-[#c0b0a0]">
+          {series.length ? `${series.length} series` : "Locked"}
+        </span>
+      </div>
+
+      {series.length > 0 ? (
+        series.map((item) => (
+          <SeriesCard
+            key={item.key}
+            series={item}
+            favoriteTeamAbbr={favoriteTeamAbbr}
+          />
+        ))
+      ) : (
+        <LockedSeriesCard label={title} body={lockedBody ?? "Matchup coming soon"} />
+      )}
+    </div>
+  );
+}
+
+function getConferenceRoundColumns(series: SeriesInfo[]) {
+  const byRound = (round: string) =>
+    series
+      .filter((item) => item.round === round)
+      .sort((a, b) => getSeriesUrgencyRank(a) - getSeriesUrgencyRank(b));
+
+  const firstRound = byRound("First Round");
+  const semifinals = byRound("Second Round");
+  const confFinals = byRound("Conf Finals");
+  const hasAnySeries = firstRound.length > 0 || semifinals.length > 0 || confFinals.length > 0;
+
+  const columns: {
+    key: string;
+    title: string;
+    series: SeriesInfo[];
+    lockedBody?: string;
+  }[] = [];
+
+  if (firstRound.length > 0) {
+    columns.push({
+      key: "first",
+      title: "First Round",
+      series: firstRound,
+    });
+  }
+
+  if (semifinals.length > 0) {
+    columns.push({
+      key: "semis",
+      title: "Semifinals",
+      series: semifinals,
+    });
+  } else if (firstRound.length > 0) {
+    columns.push({
+      key: "semis-locked",
+      title: "Semifinals",
+      series: [],
+      lockedBody: "First-round winners slot in here.",
+    });
+  }
+
+  if (confFinals.length > 0) {
+    columns.push({
+      key: "finals",
+      title: "Conference Finals",
+      series: confFinals,
+    });
+  } else if (hasAnySeries) {
+    columns.push({
+      key: "finals-locked",
+      title: "Conference Finals",
+      series: [],
+      lockedBody: "Semifinal winners slot in here.",
+    });
+  }
+
+  return columns;
+}
+
+function BracketConferenceSection({
+  conference,
+  series,
+  favoriteTeamAbbr,
+}: {
+  conference: "East" | "West";
+  series: SeriesInfo[];
+  favoriteTeamAbbr: string | null;
+}) {
+  const columns = getConferenceRoundColumns(series);
+  if (!columns.length) return null;
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-end justify-between gap-4 px-1">
+        <div>
+          <p className="font-[family-name:var(--font-display)] text-3xl font-black uppercase text-[#1a1208]">
+            {conference}
+          </p>
+          <p className="text-[0.72rem] font-bold uppercase text-[#a89880]">
+            Playoff path
+          </p>
+        </div>
+        <span className="rounded-full bg-[#ede8df] px-3 py-1 font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase text-[#8a7a66] ring-1 ring-[#d4cdc0]">
+          {series.length} active
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {columns.map((column) => (
+          <BracketRoundColumn
+            key={column.key}
+            title={column.title}
+            series={column.series}
+            favoriteTeamAbbr={favoriteTeamAbbr}
+            lockedBody={column.lockedBody}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function BracketView({
   games,
   favoriteTeamAbbr,
+  onBackToScores,
 }: {
   games: Game[];
   favoriteTeamAbbr: string | null;
+  onBackToScores: () => void;
 }) {
   const allSeries = buildBracketSeries(games);
 
   if (allSeries.length === 0) {
-    return (
-      <div className="rounded-[1.75rem] bg-[#ffffff] p-10 text-center ring-1 ring-[#e8e0d4]">
-        <p className="font-[family-name:var(--font-display)] text-3xl font-black uppercase tracking-tight text-[#1a1208]">
-          No playoff series
-        </p>
-        <p className="mt-2 text-sm leading-6 text-[#a89880]">
-          Bracket will appear here once the playoffs begin.
-        </p>
-      </div>
-    );
+    return <BracketEmptyState onBackToScores={onBackToScores} />;
   }
 
-  const firstRound = allSeries.filter((s) => s.round === "First Round");
-  const secondRound = allSeries.filter((s) => s.round === "Second Round");
-  const confFinals = allSeries.filter((s) => s.round === "Conf Finals");
-  const finals = allSeries.filter((s) => s.round === "NBA Finals");
-
-  const firstRoundActive = firstRound.some((s) => s.status !== "complete");
-
-  // Round section header
-  function RoundHeader({
-    title,
-    note,
-  }: {
-    title: string;
-    note?: ReactNode;
-  }) {
-    return (
-      <div className="mb-3">
-        <div className="mb-1.5 flex items-center gap-2">
-          <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.1em] text-[#a89880]">
-            {title}
-          </p>
-          {note}
-        </div>
-        <hr className="border-[#d4cdc0]" />
-      </div>
-    );
-  }
-
-  // East + West two-column grid of actual SeriesCards
-  function EastWestGrid({ series }: { series: SeriesInfo[] }) {
-    const east = series
-      .filter((s) => s.conference === "East")
-      .sort((a, b) => {
-        const rank = (x: SeriesInfo) =>
-          x.status === "live" ? 0 : x.isGame7 ? 1 : x.status === "upcoming" ? 2 : 3;
-        return rank(a) - rank(b);
-      });
-    const west = series
-      .filter((s) => s.conference === "West")
-      .sort((a, b) => {
-        const rank = (x: SeriesInfo) =>
-          x.status === "live" ? 0 : x.isGame7 ? 1 : x.status === "upcoming" ? 2 : 3;
-        return rank(a) - rank(b);
-      });
-    if (!east.length && !west.length) return null;
-    return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {east.length > 0 && (
-          <div className="space-y-2.5">
-            <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
-              East
-            </p>
-            {east.map((s) => (
-              <SeriesCard key={s.key} series={s} favoriteTeamAbbr={favoriteTeamAbbr} />
-            ))}
-          </div>
-        )}
-        {west.length > 0 && (
-          <div className="space-y-2.5">
-            <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
-              West
-            </p>
-            {west.map((s) => (
-              <SeriesCard key={s.key} series={s} favoriteTeamAbbr={favoriteTeamAbbr} />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Build second round display: pair first-round series into slots,
-  // use actual second-round series when available, otherwise pending cards.
-  function SecondRoundConf({
-    conf,
-  }: {
-    conf: string;
-  }) {
-    const confFirst = firstRound
-      .filter((s) => s.conference === conf)
-      .sort((a, b) => a.key.localeCompare(b.key));
-    const confActual = secondRound.filter((s) => s.conference === conf);
-
-    if (!confFirst.length && !confActual.length) return null;
-
-    const slots: ReactNode[] = [];
-
-    // Pair first-round series: [0,1] → slot 0, [2,3] → slot 1, etc.
-    for (let i = 0; i < Math.max(confFirst.length, confActual.length * 2); i += 2) {
-      const f1 = confFirst[i] ?? null;
-      const f2 = confFirst[i + 1] ?? null;
-      const slotIdx = Math.floor(i / 2);
-
-      // Try to match an actual second-round series to this slot
-      const w1 = f1 ? (f1.teamA.wins === 4 ? f1.teamA : f1.teamB.wins === 4 ? f1.teamB : null) : null;
-      const w2 = f2 ? (f2.teamA.wins === 4 ? f2.teamA : f2.teamB.wins === 4 ? f2.teamB : null) : null;
-
-      const matchedActual =
-        w1 && w2
-          ? (confActual.find((s) => {
-              const t = new Set([s.abbrA, s.abbrB]);
-              return t.has(w1.abbreviation) && t.has(w2.abbreviation);
-            }) ?? confActual[slotIdx] ?? null)
-          : confActual[slotIdx] ?? null;
-
-      if (matchedActual) {
-        slots.push(
-          <SeriesCard
-            key={matchedActual.key}
-            series={matchedActual}
-            favoriteTeamAbbr={favoriteTeamAbbr}
-          />
-        );
-      } else {
-        slots.push(
-          <PendingSeriesCard
-            key={`pending-${conf}-${slotIdx}`}
-            feeder1={f1}
-            feeder2={f2}
-          />
-        );
-      }
-    }
-
-    return <>{slots}</>;
-  }
-
-  const hasSecondRound =
-    firstRound.length > 0 || secondRound.length > 0;
-
-  const hasGame7Tonight = firstRound.some((s) => s.isGame7 && s.status !== "complete");
-
-  // Sort first round: live first, then game7 tonight, then upcoming, then complete
-  const sortedFirstRound = [...firstRound].sort((a, b) => {
-    const rank = (s: SeriesInfo) => {
-      if (s.status === "live") return 0;
-      if (s.isGame7 && isSameScoreboardDay(s.nextGame ? new Date(s.nextGame.date) : new Date(0), getScoreboardToday())) return 1;
-      if (s.status === "upcoming") return 2;
-      return 3;
-    };
-    return rank(a) - rank(b);
-  });
+  const eastSeries = allSeries.filter((series) => series.conference === "East");
+  const westSeries = allSeries.filter((series) => series.conference === "West");
+  const finals = allSeries.filter(
+    (series) => series.round === "NBA Finals" || series.conference === "Finals"
+  );
+  const unknownSeries = allSeries.filter(
+    (series) =>
+      series.conference !== "East" &&
+      series.conference !== "West" &&
+      series.conference !== "Finals" &&
+      series.round !== "NBA Finals"
+  );
+  const hasConferenceSeries = eastSeries.length > 0 || westSeries.length > 0;
+  const liveCount = allSeries.filter((series) => series.status === "live").length;
+  const upcomingCount = allSeries.filter((series) => series.status === "upcoming").length;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      {/* First Round */}
-      {firstRound.length > 0 && (
+    <div className="mx-auto max-w-6xl space-y-8">
+      <header className="flex flex-col gap-4 px-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <RoundHeader
-            title="First Round"
-            note={
-              hasGame7Tonight ? (
-                <span className="text-xs font-bold uppercase tracking-wide" style={{ color: "#e85d04" }}>
-                  Game 7s tonight
-                </span>
-              ) : undefined
-            }
-          />
-          <EastWestGrid series={sortedFirstRound} />
+          <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase text-[#e85d04]">
+            NBA Playoffs
+          </p>
+          <h2 className="mt-1 font-[family-name:var(--font-display)] text-4xl font-black uppercase text-[#1a1208] sm:text-5xl">
+            Playoff Bracket
+          </h2>
+          <p className="mt-1 max-w-xl text-sm leading-6 text-[#8a7a66]">
+            Series cards update from live playoff matchups and the series context already shown on Scores.
+          </p>
         </div>
-      )}
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full bg-[#1a1208] px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase text-[#f5f1ea]">
+            {allSeries.length} series
+          </span>
+          <span className="rounded-full bg-orange-100 px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase text-orange-800 ring-1 ring-orange-200">
+            {liveCount} live
+          </span>
+          <span className="rounded-full bg-blue-100 px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase text-blue-800 ring-1 ring-blue-200">
+            {upcomingCount} upcoming
+          </span>
+        </div>
+      </header>
 
-      {/* Second Round */}
-      {hasSecondRound && (
-        <div>
-          <RoundHeader
-            title="Second Round"
-            note={
-              firstRoundActive ? (
-                <span
-                  className="text-[0.65rem] font-bold"
-                  style={{ color: "#e85d04" }}
-                >
-                  Advancing soon
-                </span>
-              ) : undefined
-            }
-          />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {(firstRound.some((s) => s.conference === "East") ||
-              secondRound.some((s) => s.conference === "East")) && (
-              <div className="space-y-2.5">
-                <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
-                  East
-                </p>
-                <SecondRoundConf conf="East" />
-              </div>
-            )}
-            {(firstRound.some((s) => s.conference === "West") ||
-              secondRound.some((s) => s.conference === "West")) && (
-              <div className="space-y-2.5">
-                <p className="px-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-[#c0b0a0]">
-                  West
-                </p>
-                <SecondRoundConf conf="West" />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <div className="space-y-8">
+        <BracketConferenceSection
+          conference="East"
+          series={eastSeries}
+          favoriteTeamAbbr={favoriteTeamAbbr}
+        />
 
-      {/* Conference Finals */}
-      {confFinals.length > 0 && (
-        <div>
-          <RoundHeader title="Conf Finals" />
-          <EastWestGrid series={confFinals} />
-        </div>
-      )}
+        <BracketConferenceSection
+          conference="West"
+          series={westSeries}
+          favoriteTeamAbbr={favoriteTeamAbbr}
+        />
 
-      {/* NBA Finals */}
-      {finals.length > 0 && (
-        <div>
-          <RoundHeader title="NBA Finals" />
-          <div className="mx-auto max-w-sm space-y-2.5">
-            {finals.map((s) => (
-              <SeriesCard key={s.key} series={s} favoriteTeamAbbr={favoriteTeamAbbr} />
-            ))}
-          </div>
-        </div>
-      )}
+        {unknownSeries.length > 0 && (
+          <section className="space-y-3">
+            <div className="px-1">
+              <p className="font-[family-name:var(--font-display)] text-3xl font-black uppercase text-[#1a1208]">
+                Series View
+              </p>
+              <p className="text-[0.72rem] font-bold uppercase text-[#a89880]">
+                Matchups from available playoff context
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {unknownSeries.map((series) => (
+                <SeriesCard
+                  key={series.key}
+                  series={series}
+                  favoriteTeamAbbr={favoriteTeamAbbr}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {(finals.length > 0 || hasConferenceSeries) && (
+          <section className="space-y-3">
+            <div className="px-1 text-center">
+              <p className="font-[family-name:var(--font-display)] text-3xl font-black uppercase text-[#1a1208]">
+                NBA Finals
+              </p>
+              <p className="text-[0.72rem] font-bold uppercase text-[#a89880]">
+                Championship series
+              </p>
+            </div>
+            <div className="mx-auto grid max-w-md grid-cols-1 gap-4">
+              {finals.length > 0 ? (
+                finals.map((series) => (
+                  <SeriesCard
+                    key={series.key}
+                    series={series}
+                    favoriteTeamAbbr={favoriteTeamAbbr}
+                  />
+                ))
+              ) : (
+                <LockedSeriesCard
+                  label="NBA Finals"
+                  body="Conference champions slot in here."
+                />
+              )}
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }
@@ -2469,7 +2673,11 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
         )}
 
         {activeTab === "bracket" && (
-          <BracketView games={games} favoriteTeamAbbr={favoriteTeamAbbr} />
+          <BracketView
+            games={games}
+            favoriteTeamAbbr={favoriteTeamAbbr}
+            onBackToScores={() => setActiveTab("scores")}
+          />
         )}
       </div>
     </main>

@@ -90,8 +90,21 @@ type NormalizedGame = {
 const PLAYOFF_HEADLINE_PREFIXES = [
   "Eastern Conference First Round - ",
   "Western Conference First Round - ",
+  "Eastern Conference Second Round - ",
+  "Western Conference Second Round - ",
+  "Eastern Conference Semifinals - ",
+  "Western Conference Semifinals - ",
+  "Eastern Conference Finals - ",
+  "Western Conference Finals - ",
+  "NBA Finals - ",
   "East 1st Round - ",
   "West 1st Round - ",
+  "East 2nd Round - ",
+  "West 2nd Round - ",
+  "East Semifinals - ",
+  "West Semifinals - ",
+  "East Finals - ",
+  "West Finals - ",
 ];
 
 const ESPN_FETCH_TIMEOUT_MS = 8000;
@@ -195,42 +208,33 @@ function formatStatusText(
   });
 }
 
-function extractSeriesInfo(headline?: string): {
+function extractSeriesInfo(context?: string): {
   seriesConference: string;
   seriesRound: string;
 } {
-  if (!headline) return { seriesConference: "", seriesRound: "" };
-  const h = headline.toLowerCase();
+  if (!context) return { seriesConference: "", seriesRound: "" };
+  const h = context.toLowerCase();
 
   if (/nba finals/i.test(h)) {
     return { seriesConference: "Finals", seriesRound: "NBA Finals" };
   }
-  if (/eastern.*(conference finals|conf finals)/i.test(h)) {
+  if (/\b(eastern conference finals|eastern conf finals|east finals|east conf finals)\b/i.test(h)) {
     return { seriesConference: "East", seriesRound: "Conf Finals" };
   }
-  if (/western.*(conference finals|conf finals)/i.test(h)) {
+  if (/\b(western conference finals|western conf finals|west finals|west conf finals)\b/i.test(h)) {
     return { seriesConference: "West", seriesRound: "Conf Finals" };
   }
-  if (/eastern.*(second round|2nd round)/i.test(h)) {
+  if (/(eastern|east).*(semifinals|semi-finals|second round|2nd round)/i.test(h)) {
     return { seriesConference: "East", seriesRound: "Second Round" };
   }
-  if (/western.*(second round|2nd round)/i.test(h)) {
+  if (/(western|west).*(semifinals|semi-finals|second round|2nd round)/i.test(h)) {
     return { seriesConference: "West", seriesRound: "Second Round" };
   }
-  if (/eastern.*(first round|1st round)/i.test(h)) {
+  if (/(eastern|east).*(first round|1st round)/i.test(h)) {
     return { seriesConference: "East", seriesRound: "First Round" };
   }
-  if (/western.*(first round|1st round)/i.test(h)) {
+  if (/(western|west).*(first round|1st round)/i.test(h)) {
     return { seriesConference: "West", seriesRound: "First Round" };
-  }
-  // Some ESPN formats use "East" / "West" abbreviations
-  if (/^east\s+(1st|first|2nd|second|conf)/i.test(h)) {
-    const round = /2nd|second/i.test(h) ? "Second Round" : /conf/i.test(h) ? "Conf Finals" : "First Round";
-    return { seriesConference: "East", seriesRound: round };
-  }
-  if (/^west\s+(1st|first|2nd|second|conf)/i.test(h)) {
-    const round = /2nd|second/i.test(h) ? "Second Round" : /conf/i.test(h) ? "Conf Finals" : "First Round";
-    return { seriesConference: "West", seriesRound: round };
   }
 
   return { seriesConference: "", seriesRound: "" };
@@ -247,6 +251,15 @@ function cleanGameContext(headline?: string) {
   }
 
   return cleaned
+    .replace(
+      /^(Eastern|Western) Conference (First Round|Second Round|Semifinals|Semi-Finals|Conference Finals|Finals)\s*-\s*/i,
+      ""
+    )
+    .replace(
+      /^(East|West) (1st Round|First Round|2nd Round|Second Round|Semifinals|Semi-Finals|Conf Finals|Finals)\s*-\s*/i,
+      ""
+    )
+    .replace(/^NBA Finals\s*-\s*/i, "")
     .replace("If Necessary", "if necessary")
     .trim();
 }
@@ -287,9 +300,19 @@ function normalizeGame(event: ESPNEvent): NormalizedGame | null {
 
   const home = normalizeTeam(homeCompetitor);
   const away = normalizeTeam(awayCompetitor);
-  const rawHeadline = competition.notes?.[0]?.headline;
-  const gameContext = cleanGameContext(rawHeadline);
-  const { seriesConference, seriesRound } = extractSeriesInfo(rawHeadline);
+  const rawHeadline = competition.notes?.find((note) => note.headline)?.headline;
+  const seriesTitle = competition.series?.title;
+  const seriesContext = [
+    rawHeadline,
+    seriesTitle,
+    competition.series?.summary,
+    event.name,
+    event.shortName,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const gameContext = cleanGameContext(rawHeadline ?? seriesTitle);
+  const { seriesConference, seriesRound } = extractSeriesInfo(seriesContext);
 
   return {
     id:
