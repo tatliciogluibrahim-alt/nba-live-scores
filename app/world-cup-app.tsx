@@ -207,10 +207,6 @@ function formatDateTime(date: string) {
   return `${d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })} · ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
 }
 
-function formatDateHeader(date: string) {
-  return new Date(date).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
-}
-
 function formatLastUpdated(updatedAt: Date | null) {
   if (!updatedAt) return "Updating…";
   const m = Math.floor((Date.now() - updatedAt.getTime()) / 60000);
@@ -392,16 +388,35 @@ function WCGameCard({
 
 // ── Group Standings Table ──────────────────────────────────────────────────────
 function GroupStandingsTable({
-  groupCode, stats, selectedCountry, accentColor, hasTournamentStarted,
+  stats, selectedCountry, accentColor, hasTournamentStarted,
 }: {
-  groupCode: string; stats: TeamStats[]; selectedCountry: string | null; accentColor: string; hasTournamentStarted: boolean;
+  stats: TeamStats[]; selectedCountry: string | null; accentColor: string; hasTournamentStarted: boolean;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const gridCols = hasTournamentStarted
+    ? "1.1rem minmax(4.75rem,1fr) 1.25rem 1.25rem 1.25rem 1.25rem 1.45rem 1.65rem 1.25rem"
+    : "1.1rem minmax(4.75rem,1fr) 1.25rem 1.25rem 1.25rem 1.25rem 1.45rem 1.65rem";
+  const headerCells = hasTournamentStarted
+    ? ["#", "Team", "P", "W", "D", "L", "GD", "PTS", ""]
+    : ["#", "Team", "P", "W", "D", "L", "GD", "PTS"];
 
   // Pre-tournament: do not imply qualification status. No green tint, no
   // ✅/🟡/❌. Selected country gets only a subtle row highlight.
   return (
     <div className="overflow-hidden rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]">
+      <div className="grid items-center gap-1 border-b border-[#f0ece4] bg-[#f8f5f0] px-2.5 py-2 sm:px-3" style={{ gridTemplateColumns: gridCols }}>
+        {headerCells.map((label) => (
+          <span
+            key={label || "status"}
+            className={`text-[0.55rem] font-black uppercase tracking-wide text-[#c0b0a0] ${
+              label === "Team" ? "text-left" : "text-right"
+            }`}
+          >
+            {label}
+          </span>
+        ))}
+      </div>
+
       {stats.map((s, idx) => {
         const isAdvancing = hasTournamentStarted && idx < 2;
         const isPossible = hasTournamentStarted && idx === 2;
@@ -410,9 +425,14 @@ function GroupStandingsTable({
         const meBg = isMe ? { background: `${accentColor}0d` } : undefined;
         const rowBg = isAdvancing ? "bg-[#f0faf4]" : "bg-white";
         const isExpanded = expanded === s.code;
-        const gridCols = hasTournamentStarted
-          ? "1.2rem 1.4rem minmax(0,1fr) 1.6rem 1.6rem"
-          : "1.2rem 1.4rem minmax(0,1fr) 1.6rem";
+        const statCells = [
+          s.P,
+          s.W,
+          s.D,
+          s.L,
+          s.GD > 0 ? `+${s.GD}` : s.GD,
+          s.Pts,
+        ];
 
         return (
           <div key={s.code}>
@@ -422,21 +442,32 @@ function GroupStandingsTable({
               className={`w-full border-b border-[#f0ece4] last:border-0 ${rowBg} transition active:brightness-95`}
               style={meBg}
             >
-              <div className="grid items-center gap-1 px-3 py-2.5" style={{ gridTemplateColumns: gridCols }}>
+              <div className="grid items-center gap-1 px-2.5 py-2.5 sm:px-3" style={{ gridTemplateColumns: gridCols }}>
                 <span className={`text-[0.68rem] font-black tabular-nums ${isAdvancing ? "text-[#2d7a3a]" : "text-[#a89880]"}`}>
                   {idx + 1}
                 </span>
-                <span className="text-base leading-none">{flagEmoji(s.code)}</span>
-                <span
-                  className="min-w-0 truncate text-left text-[0.78rem] font-black uppercase tracking-tight"
-                  style={{ color: isMe ? safeTextColor(accentColor) : "#1a1208" }}
-                >
-                  {COUNTRY_NAME[s.code] ?? s.code}
-                  {isMe && <span className="ml-1.5 text-[0.55rem] font-black" style={{ color: accentColor }}>●</span>}
+                <span className="flex min-w-0 items-center gap-1.5 text-left">
+                  <span className="shrink-0 text-base leading-none">{flagEmoji(s.code)}</span>
+                  <span
+                    className="min-w-0 truncate text-[0.72rem] font-black uppercase tracking-tight sm:text-[0.78rem]"
+                    style={{ color: isMe ? safeTextColor(accentColor) : "#1a1208" }}
+                  >
+                    {COUNTRY_NAME[s.code] ?? s.code}
+                  </span>
+                  {isMe && <span className="shrink-0 text-[0.5rem] font-black" style={{ color: accentColor }}>●</span>}
                 </span>
-                <span className={`text-right text-[0.88rem] font-black tabular-nums ${isAdvancing ? "text-[#2d7a3a]" : "text-[#1a1208]"}`}>
-                  {s.Pts}
-                </span>
+                {statCells.map((value, cellIndex) => (
+                  <span
+                    key={cellIndex}
+                    className={`text-right text-[0.72rem] font-black tabular-nums sm:text-[0.8rem] ${
+                      hasTournamentStarted && isAdvancing && cellIndex === statCells.length - 1
+                        ? "text-[#2d7a3a]"
+                        : "text-[#1a1208]"
+                    }`}
+                  >
+                    {value}
+                  </span>
+                ))}
                 {hasTournamentStarted && (
                   <span className="text-center text-[0.7rem]">
                     {isAdvancing ? "✅" : isPossible ? "🟡" : isEliminated ? "❌" : ""}
@@ -445,7 +476,7 @@ function GroupStandingsTable({
               </div>
 
               {isExpanded && (
-                <div className="grid grid-cols-7 gap-1 border-t border-[#f0ece4] px-3 pb-2.5 pt-1.5 text-[0.65rem]">
+                <div className="grid grid-cols-2 gap-1 border-t border-[#f0ece4] px-3 pb-2.5 pt-1.5 text-[0.65rem] sm:grid-cols-7">
                   {[
                     { label: "P", val: s.P },
                     { label: "W", val: s.W },
@@ -594,7 +625,6 @@ function StandingsView({
               </div>
             </div>
             <GroupStandingsTable
-              groupCode={letter}
               stats={stats}
               selectedCountry={selectedCountry}
               accentColor={accentColor}
@@ -726,6 +756,8 @@ function ScheduleView({
   }, [games, scheduleFilter, selectedCountry]);
 
   const sections = useMemo(() => {
+    if (filtered.length === 0) return [];
+
     if (scheduleFilter === "knockout") {
       return [{ label: "Knockout Stage", games: filtered }];
     }
@@ -750,11 +782,11 @@ function ScheduleView({
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+      <div className="flex flex-wrap gap-2 pb-1 sm:flex-nowrap sm:overflow-x-auto sm:[scrollbar-width:none] sm:[-ms-overflow-style:none] sm:[&::-webkit-scrollbar]:hidden">
         {(["all", "group", "knockout", "my-country"] as ScheduleFilter[]).map((f) => {
           if (f === "my-country" && !selectedCountry) return null;
           const labels: Record<ScheduleFilter, string> = {
-            all: "All Matches", group: "Group Stage", knockout: "Knockout",
+            all: "All", group: "Groups", knockout: "Knockout",
             "my-country": selectedCountry ?? "My Country",
           };
           return (
@@ -1272,7 +1304,9 @@ export default function WorldCupApp({
 
   useEffect(() => {
     const mounted = { current: true };
-    fetchGames(mounted);
+    const initialFetchTimeout = setTimeout(() => {
+      fetchGames(mounted);
+    }, 0);
     let intervalId: ReturnType<typeof setInterval>;
     function scheduleNext() {
       const hasLive = previousCountsRef.current > 0;
@@ -1285,6 +1319,7 @@ export default function WorldCupApp({
     scheduleNext();
     return () => {
       mounted.current = false;
+      clearTimeout(initialFetchTimeout);
       clearInterval(intervalId);
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     };
@@ -1319,23 +1354,18 @@ export default function WorldCupApp({
     return c;
   }, [games, selectedCountry]);
 
-  const selectedCountryRef = useRef(selectedCountry);
-  selectedCountryRef.current = selectedCountry;
-
   const filteredGames = useMemo(() => {
-    const country = selectedCountryRef.current;
     const f = games.filter((g) => {
       if (activeFilter === "live") return g.status === "live";
       if (activeFilter === "upcoming") return g.status === "upcoming";
       if (activeFilter === "final") return g.status === "final";
       if (activeFilter === "my-country")
-        return g.away.abbreviation === country || g.home.abbreviation === country;
+        return g.away.abbreviation === selectedCountry || g.home.abbreviation === selectedCountry;
       return true;
     });
     const rank = (s: WCGame["status"]) => s === "live" ? 0 : s === "upcoming" ? 1 : 2;
     return [...f].sort((a, b) => rank(a.status) - rank(b.status) || new Date(a.date).getTime() - new Date(b.date).getTime());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [games, activeFilter]);
+  }, [games, activeFilter, selectedCountry]);
 
   const groupSections = useMemo(() => {
     if (activeFilter !== "all") return null;

@@ -149,6 +149,25 @@ function getWeekDates() {
   });
 }
 
+function getDateWindow(startOffset: number, endOffset: number) {
+  const today = getScoreboardToday();
+  const dates: string[] = [];
+
+  for (let offset = startOffset; offset <= endOffset; offset += 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + offset);
+    dates.push(formatDateForESPN(date));
+  }
+
+  return dates;
+}
+
+function getSeriesDates() {
+  // The score feed stays focused on the current week, but the Series Board needs
+  // recent finals too so completed playoff matchups do not vanish on Monday.
+  return getDateWindow(-14, 7);
+}
+
 function getGameStatus(status?: ESPNStatus): "live" | "upcoming" | "final" {
   const state = status?.type?.state;
   const completed = status?.type?.completed;
@@ -359,39 +378,54 @@ async function fetchGamesForDate(date: string) {
 export async function GET() {
   try {
     const weekDates = getWeekDates();
+    const seriesDates = getSeriesDates();
+    const weekDateSet = new Set(weekDates);
+    const fetchDates = Array.from(new Set([...weekDates, ...seriesDates]));
 
     const eventResults = await Promise.allSettled(
-      weekDates.map((date) => fetchGamesForDate(date))
+      fetchDates.map((date) => fetchGamesForDate(date))
     );
 
     const failedDates: string[] = [];
-    const events = eventResults.flatMap((result, index) => {
-      if (result.status === "fulfilled") return result.value;
-
-      failedDates.push(weekDates[index]);
-      console.warn(
-        `Unable to fetch ESPN scoreboard for ${weekDates[index]}:`,
-        result.reason
-      );
-
-      return [];
-    });
     const gamesById = new Map<string, NormalizedGame>();
+    const seriesGamesById = new Map<string, NormalizedGame>();
 
-    events.forEach((event) => {
-      const game = normalizeGame(event);
-      if (game) gamesById.set(game.id, game);
+    eventResults.forEach((result, index) => {
+      const date = fetchDates[index];
+
+      if (result.status === "rejected") {
+        failedDates.push(date);
+        console.warn(`Unable to fetch ESPN scoreboard for ${date}:`, result.reason);
+        return;
+      }
+
+      result.value.forEach((event) => {
+        const game = normalizeGame(event);
+        if (!game) return;
+
+        seriesGamesById.set(game.id, game);
+        if (weekDateSet.has(date)) gamesById.set(game.id, game);
+      });
     });
 
     const games = Array.from(gamesById.values()).sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    const seriesGames = Array.from(seriesGamesById.values()).sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
     return NextResponse.json(
       {
         games,
+        seriesGames,
         count: games.length,
+        seriesCount: seriesGames.length,
         week: weekDates,
+        seriesWindow: {
+          start: seriesDates[0],
+          end: seriesDates[seriesDates.length - 1],
+        },
         failedDates,
         updatedAt: new Date().toISOString(),
       },

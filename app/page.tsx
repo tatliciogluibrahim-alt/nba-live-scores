@@ -15,14 +15,18 @@ export default function Home() {
 
   // Hydrate from localStorage once on mount
   useEffect(() => {
-    const savedSport = localStorage.getItem(SPORT_KEY) as AppSport | null;
-    const savedCountry = localStorage.getItem(WC_COUNTRY_KEY);
+    const hydrationTimeout = setTimeout(() => {
+      const savedSport = localStorage.getItem(SPORT_KEY) as AppSport | null;
+      const savedCountry = localStorage.getItem(WC_COUNTRY_KEY);
 
-    if (savedSport && (savedSport === "nba" || savedSport === "world-cup")) {
-      setSport(savedSport);
-    }
-    if (savedCountry) setWcCountry(savedCountry);
-    setReady(true);
+      if (savedSport && (savedSport === "nba" || savedSport === "world-cup")) {
+        setSport(savedSport);
+      }
+      if (savedCountry) setWcCountry(savedCountry);
+      setReady(true);
+    }, 0);
+
+    return () => clearTimeout(hydrationTimeout);
   }, []);
 
   function selectSport(s: AppSport) {

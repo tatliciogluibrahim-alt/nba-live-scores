@@ -644,7 +644,6 @@ function ShareCardCanvas({ payload }: { payload: SharePayload }) {
   function renderTeamLogo(team: Team) {
     if (team.logo) {
       return (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={team.logo}
           alt=""
@@ -703,7 +702,6 @@ function ShareCardCanvas({ payload }: { payload: SharePayload }) {
               flexShrink: 0,
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/favicon.svg" alt="" style={{ width: 22, height: 22 }} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -1436,16 +1434,16 @@ function buildBracketSeries(allGames: Game[]): SeriesInfo[] {
   });
 }
 
-// ── Win dots: 7 dots (max games), 10px, 5px gap ─────────────────────────────
+// ── Win dots: 7 dots (max games), compact enough for side-by-side boards ─────
 function WinDots({ wins, dotColor }: { wins: number; dotColor: string }) {
   return (
-    <div className="flex shrink-0" style={{ gap: 5 }}>
+    <div className="flex shrink-0" style={{ gap: 3 }}>
       {Array.from({ length: 7 }).map((_, i) => (
         <div
           key={i}
           style={{
-            width: 10,
-            height: 10,
+            width: 8,
+            height: 8,
             borderRadius: "50%",
             backgroundColor: i < wins ? dotColor : "#d4cdc0",
             flexShrink: 0,
@@ -1513,7 +1511,7 @@ function SeriesCard({
   return (
     <>
     <div
-      className="overflow-hidden rounded-[1.35rem]"
+      className="min-w-0 overflow-hidden rounded-[1.35rem]"
       style={{
         border: isTier1
           ? "2px solid #e85d04"
@@ -1525,13 +1523,13 @@ function SeriesCard({
         {/* Left accent bar — 3px, tier-colored */}
         <div style={{ width: 3, flexShrink: 0, background: accentColor }} />
 
-        <div className="flex-1 px-3 py-3">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase text-[#a89880]">
+        <div className="min-w-0 flex-1 px-3 py-3">
+          <div className="mb-3 flex min-w-0 flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase leading-tight text-[#a89880]">
                 {seriesLabel}
               </p>
-              <p className="mt-0.5 text-[0.72rem] font-semibold text-[#8a7a66]">
+              <p className="mt-0.5 text-[0.72rem] font-semibold leading-tight text-[#8a7a66]">
                 {seriesRecord}
               </p>
             </div>
@@ -1593,28 +1591,24 @@ function SeriesCard({
             return (
               <div
                 key={team.abbreviation}
-                className={`flex items-center justify-between ${
+                className={`flex min-w-0 items-center justify-between gap-2 ${
                   idx === 1 ? "mt-2 border-t border-[#f0ece4] pt-2" : ""
                 }`}
                 style={{ opacity: isLoser ? 0.35 : 1 }}
               >
                 {/* Logo + name */}
-                <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                   <div
                     className="flex shrink-0 items-center justify-center rounded-full"
                     style={{
-                      width: 32,
-                      height: 32,
+                      width: 30,
+                      height: 30,
                       background: "#f8f5f0",
                       boxShadow: "0 0 0 1px #e8e0d4",
                     }}
                   >
                     {team.logo ? (
-                      <img
-                        src={team.logo}
-                        alt=""
-                        className="h-5 w-5 object-contain"
-                      />
+                      <img src={team.logo} alt="" className="h-5 w-5 object-contain" />
                     ) : (
                       <span className="text-[8px] font-black text-[#1a1208]">
                         {team.abbreviation}
@@ -1622,19 +1616,19 @@ function SeriesCard({
                     )}
                   </div>
 
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[0.9rem] font-black tracking-tight text-[#1a1208]">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+                      <span className="text-[0.88rem] font-black leading-none tracking-tight text-[#1a1208]">
                         {team.abbreviation}
                       </span>
                       {isMyTeamRow && (
-                        <span className="rounded-full bg-orange-100 px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-[#e85d04]">
+                        <span className="shrink-0 rounded-full bg-orange-100 px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-[#e85d04]">
                           MY TEAM
                         </span>
                       )}
                       {isSeriesOver && isWinner && (
                         <span
-                          className="rounded-full px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-white"
+                          className="shrink-0 rounded-full px-1.5 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-white"
                           style={{ background: "#2d7a3a" }}
                         >
                           WIN
@@ -1648,14 +1642,14 @@ function SeriesCard({
                 </div>
 
                 {/* Dots + win count */}
-                <div className="flex shrink-0 items-center gap-2.5 pl-2">
+                <div className="flex shrink-0 items-center gap-1.5 pl-1">
                   <WinDots wins={team.wins} dotColor={dotColor} />
                   <span
                     className="tabular-nums leading-none"
                     style={{
-                      width: 18,
+                      width: 16,
                       textAlign: "right",
-                      fontSize: "1.3rem",
+                      fontSize: "1.15rem",
                       fontWeight: 900,
                       color: isLoser ? "#c0b0a0" : "#1a1208",
                     }}
@@ -1669,7 +1663,7 @@ function SeriesCard({
 
           {/* Footer */}
           <div className="mt-2.5 flex flex-wrap items-center justify-between gap-1.5">
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
               {/* Live badge (non-game7) */}
               {series.status === "live" && !isTier1 && (
                 <span
@@ -1693,10 +1687,10 @@ function SeriesCard({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
               {/* Next game time (non-live, non-tier1 only) */}
               {series.nextGame && series.status !== "live" && !isTier1 && (
-                <span className="shrink-0 text-[0.68rem] font-semibold text-[#a89880]">
+                <span className="min-w-0 flex-1 truncate text-right text-[0.68rem] font-semibold text-[#a89880]">
                   Next: {formatGameDateTime(series.nextGame.date)}
                 </span>
               )}
@@ -1791,14 +1785,16 @@ function SeriesGameRow({ game, teamAbbr }: { game: Game; teamAbbr: string }) {
 
 function TeamView({
   games,
+  seriesGames,
   favoriteTeamAbbr,
   changedScoreKeys,
 }: {
   games: Game[];
+  seriesGames: Game[];
   favoriteTeamAbbr: string;
   changedScoreKeys: Set<string>;
 }) {
-  const allSeries = buildBracketSeries(games);
+  const allSeries = buildBracketSeries(seriesGames);
 
   // Find this team's data
   const teamGames = games.filter((g) => gameIncludesTeam(g, favoriteTeamAbbr));
@@ -1943,9 +1939,13 @@ function readSeriesMemory(): PersistedSeries[] {
 function writeSeriesMemory(series: PersistedSeries[]) {
   if (typeof window === "undefined") return;
   try {
+    const deduped = Array.from(
+      series.reduce((map, item) => map.set(item.key, item), new Map<string, PersistedSeries>()).values()
+    );
+
     window.localStorage.setItem(
       NBA_SERIES_MEMORY_KEY,
-      JSON.stringify({ updatedAt: new Date().toISOString(), series })
+      JSON.stringify({ updatedAt: new Date().toISOString(), series: deduped })
     );
   } catch {
     /* localStorage full or blocked — silent */
@@ -1985,7 +1985,16 @@ function mergeSeriesWithMemory(
   const extras = remembered
     .filter((p) => !liveKeys.has(p.key))
     .map(hydrateSeriesFromPersisted);
-  return [...live, ...extras];
+
+  return [...live, ...extras].sort((a, b) => {
+    const roundDifference = getRoundRank(a.round) - getRoundRank(b.round);
+    if (roundDifference !== 0) return roundDifference;
+
+    const conferenceDifference = a.conference.localeCompare(b.conference);
+    if (conferenceDifference !== 0) return conferenceDifference;
+
+    return getSeriesUrgencyRank(a) - getSeriesUrgencyRank(b);
+  });
 }
 
 function BracketEmptyState({
@@ -2163,13 +2172,13 @@ function BracketConferenceSection({
   const columns = getConferenceRoundColumns(series);
   if (!columns.length) return null;
 
-  // Dynamic grid: match column count up to 3 so we never leave a sparse
-  // gap on lg+ screens. 1 column → centered; 2 → two columns; 3 → three.
+  // Keep conference boards at two internal columns max. At xl+ the East and
+  // West boards sit side-by-side, and three internal columns make cards clip.
   const lgClass =
-    columns.length >= 3 ? "lg:grid-cols-3" : columns.length === 2 ? "lg:grid-cols-2" : "lg:grid-cols-1";
+    columns.length >= 2 ? "lg:grid-cols-2" : "lg:grid-cols-1";
 
   return (
-    <section className="overflow-hidden rounded-[1.6rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
+    <section className="min-w-0 overflow-hidden rounded-[1.6rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
       <div className="flex items-end justify-between gap-4 border-b border-[#ede8df] px-4 py-3 sm:px-5">
         <div>
           <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
@@ -2214,7 +2223,11 @@ function BracketView({
   const [remembered, setRemembered] = useState<PersistedSeries[]>([]);
 
   useEffect(() => {
-    setRemembered(readSeriesMemory());
+    const hydrationTimeout = setTimeout(() => {
+      setRemembered(readSeriesMemory());
+    }, 0);
+
+    return () => clearTimeout(hydrationTimeout);
   }, []);
 
   const liveSeries = useMemo(() => buildBracketSeries(games), [games]);
@@ -2231,15 +2244,24 @@ function BracketView({
     if (completedNow.length === 0) return;
 
     const existing = readSeriesMemory();
-    const keys = new Set(existing.map((p) => p.key));
-    const additions = completedNow
-      .filter((s) => !keys.has(s.key))
-      .map(persistedFromSeries);
-    if (additions.length === 0) return;
+    const byKey = new Map(existing.map((p) => [p.key, p]));
+    let changed = false;
 
-    const next = [...existing, ...additions];
+    completedNow.map(persistedFromSeries).forEach((item) => {
+      const previous = byKey.get(item.key);
+      if (JSON.stringify(previous) !== JSON.stringify(item)) changed = true;
+      byKey.set(item.key, item);
+    });
+
+    if (!changed) return;
+
+    const next = Array.from(byKey.values());
     writeSeriesMemory(next);
-    setRemembered(next);
+    const memoryUpdateTimeout = setTimeout(() => {
+      setRemembered(next);
+    }, 0);
+
+    return () => clearTimeout(memoryUpdateTimeout);
   }, [liveSeries]);
 
   const allSeries = useMemo(
@@ -2364,6 +2386,7 @@ function BracketView({
 
 export default function NBAApp({ onBack }: { onBack: () => void }) {
   const [games, setGames] = useState<Game[]>([]);
+  const [seriesGames, setSeriesGames] = useState<Game[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [activeTab, setActiveTab] = useState<"scores" | "bracket" | "team">("scores");
   const [activeFilter, setActiveFilter] = useState<GameFilter>("all");
@@ -2418,6 +2441,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
 
         const data = await response.json();
         const nextGames = (data.games || []) as Game[];
+        const nextSeriesGames = (data.seriesGames || data.games || []) as Game[];
 
         if (isMounted) {
           const nextScores = new Map<string, number>();
@@ -2444,6 +2468,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
 
           previousScoresRef.current = nextScores;
           setGames(nextGames);
+          setSeriesGames(nextSeriesGames);
           setLastUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : new Date());
 
           if (changedKeys.size > 0) {
@@ -2470,6 +2495,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
       } catch {
         if (isMounted && !requestController.signal.aborted) {
           setGames([]);
+          setSeriesGames([]);
         }
       } finally {
         if (isMounted) setHasLoadedOnce(true);
@@ -2691,9 +2717,9 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
           <>
             <div className="mb-5 sm:mb-8">
               <div className="rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1.5 shadow-sm sm:p-2">
-                <div className="flex items-center gap-1.5">
-                  {/* Scrollable pills — overflow is isolated here so the picker dropdown is never clipped */}
-                  <div className="flex flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex flex-wrap items-center gap-1.5 sm:flex-nowrap">
+                  {/* Pills wrap on small screens; desktop overflow stays isolated so the picker dropdown is never clipped. */}
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-nowrap sm:overflow-x-auto sm:[scrollbar-width:none] sm:[-ms-overflow-style:none] sm:[&::-webkit-scrollbar]:hidden">
                     <FilterPill
                       label="Live"
                       count={counts.live}
@@ -2746,7 +2772,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
             </p>
 
             {sections.length > 0 ? (
-              <div className="max-w-4xl mx-auto">
+              <div className="mx-auto max-w-5xl">
                 <div className="space-y-6 sm:space-y-8">
                   {sections.map((section) => (
                     <section key={`${section.title}-${section.eyebrow || ""}`}>
@@ -2790,6 +2816,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
         {activeTab === "team" && favoriteTeamAbbr && (
           <TeamView
             games={games}
+            seriesGames={seriesGames}
             favoriteTeamAbbr={favoriteTeamAbbr}
             changedScoreKeys={changedScoreKeys}
           />
@@ -2797,7 +2824,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
 
         {activeTab === "bracket" && (
           <BracketView
-            games={games}
+            games={seriesGames}
             favoriteTeamAbbr={favoriteTeamAbbr}
             onBackToScores={() => setActiveTab("scores")}
           />
