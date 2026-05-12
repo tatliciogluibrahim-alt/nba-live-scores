@@ -459,6 +459,26 @@ function GroupStandingsTable({
   );
 }
 
+// ── Pre-tournament Table note ──────────────────────────────────────────────────
+function PreTournamentTableNote({ accentColor }: { accentColor: string }) {
+  return (
+    <div
+      className="rounded-[1.1rem] border border-dashed bg-white/70 px-4 py-3"
+      style={{ borderColor: `${accentColor}55` }}
+    >
+      <p
+        className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.1em]"
+        style={{ color: safeTextColor(accentColor) }}
+      >
+        Pre-tournament table
+      </p>
+      <p className="mt-1 text-[0.74rem] font-medium leading-snug text-[#8a7a66]">
+        Every team starts on 0. Standings light up as matches finish on June 11.
+      </p>
+    </div>
+  );
+}
+
 // ── Full Standings View ────────────────────────────────────────────────────────
 function StandingsView({
   games, selectedCountry, accentColor,
@@ -720,8 +740,13 @@ function ScheduleView({
 
       {sections.length === 0 && (
         <div className="rounded-[1.2rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
-          <p className="text-[0.85rem] font-bold text-[#a89880]">
-            {!hasTournamentStarted ? "Schedule unlocks June 11." : "No matches found."}
+          <p className="font-[family-name:var(--font-display)] text-[1.05rem] font-black uppercase tracking-tight text-[#1a1208]">
+            {!hasTournamentStarted ? "Full fixture times coming soon" : "No matches found"}
+          </p>
+          <p className="mx-auto mt-1.5 max-w-sm text-[0.78rem] font-medium leading-snug text-[#8a7a66]">
+            {!hasTournamentStarted
+              ? "Group draw is set. Kickoff times are being finalized for June 11."
+              : "Try a different filter or check back as games come in."}
           </p>
         </div>
       )}
@@ -1338,7 +1363,7 @@ export default function WorldCupApp({
 
         {/* ── Pre-tournament ── */}
         {hasLoadedOnce && !hasTournamentStarted && (
-          <div className="mx-auto max-w-4xl space-y-4">
+          <div className="mx-auto max-w-4xl space-y-5">
 
             {/* Hero: countdown + country module */}
             <div className="space-y-3">
@@ -1364,23 +1389,21 @@ export default function WorldCupApp({
               )}
             </div>
 
-            {/* Toolbar preview: Groups active, Table + Schedule locked */}
+            {/* Unified working toolbar — tabs are explorable pre-tournament */}
             <div className="rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1.5 shadow-sm sm:p-2">
-              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
-                <div className="grid grid-cols-3 gap-0.5 rounded-full bg-[#d4cdc0]/50 p-0.5 sm:flex sm:shrink-0">
+              <div className="flex items-center gap-1.5">
+                <div className="flex shrink-0 gap-0.5 rounded-full bg-[#d4cdc0]/50 p-0.5">
                   {(["groups", "table", "schedule"] as WCViewMode[]).map((mode) => {
                     const labels: Record<WCViewMode, string> = { groups: "Groups", table: "Table", schedule: "Schedule" };
-                    const isActive = mode === "groups";
                     return (
                       <button
                         key={mode}
                         type="button"
-                        disabled={!isActive}
-                        title={!isActive ? "Unlocks June 11" : undefined}
-                        className={`rounded-full px-2 py-1.5 text-[0.6rem] font-extrabold uppercase leading-none transition ${
-                          isActive
+                        onClick={() => setViewMode(mode)}
+                        className={`rounded-full px-2.5 py-1 text-[0.6rem] font-extrabold uppercase leading-none transition active:scale-[0.97] ${
+                          viewMode === mode
                             ? "bg-white text-[#1a1208] shadow-sm"
-                            : "cursor-not-allowed opacity-55 text-[#a89880]"
+                            : "text-[#a89880] hover:text-[#1a1208]"
                         }`}
                       >
                         {labels[mode]}
@@ -1388,26 +1411,51 @@ export default function WorldCupApp({
                     );
                   })}
                 </div>
-                <span className="px-1 text-[0.58rem] font-semibold leading-snug text-[#a89880] sm:px-0">
-                  <span className="sm:hidden">🔒 Unlocks June 11</span>
-                  <span className="hidden sm:inline whitespace-nowrap">Table &amp; Schedule unlock June 11</span>
-                </span>
               </div>
             </div>
 
-            {/* Opening fixtures preview */}
-            {games.length > 0 && (
-              <div>
-                <p className="mb-2 px-1 text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
-                  Opening Fixtures
-                </p>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {games.slice(0, 6).map((g) => (
-                    <WCGameCard key={g.id} game={g} selectedCountry={selectedCountry} accentColor={accentColor} onWatch={setVenueGame} />
-                  ))}
+            {/* Tab content — all tabs work pre-tournament */}
+            <div className="space-y-6">
+              {viewMode === "groups" && games.length > 0 && (
+                <div>
+                  <p className="mb-2 px-1 text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+                    Opening Fixtures
+                  </p>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {games.slice(0, 6).map((g) => (
+                      <WCGameCard key={g.id} game={g} selectedCountry={selectedCountry} accentColor={accentColor} onWatch={setVenueGame} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {viewMode === "groups" && games.length === 0 && (
+                <div className="rounded-[1.2rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
+                  <p className="font-[family-name:var(--font-display)] text-[1.1rem] font-black uppercase tracking-tight text-[#1a1208]">
+                    Fixtures land soon
+                  </p>
+                  <p className="mt-1.5 text-[0.78rem] font-medium text-[#8a7a66]">
+                    Opening match details and the full group draw are loading in.
+                  </p>
+                </div>
+              )}
+
+              {viewMode === "table" && (
+                <PreTournamentTableNote accentColor={accentColor} />
+              )}
+              {viewMode === "table" && (
+                <StandingsView games={games} selectedCountry={selectedCountry} accentColor={accentColor} />
+              )}
+
+              {viewMode === "schedule" && (
+                <ScheduleView
+                  games={games}
+                  selectedCountry={selectedCountry}
+                  accentColor={accentColor}
+                  hasTournamentStarted={hasTournamentStarted}
+                />
+              )}
+            </div>
           </div>
         )}
 

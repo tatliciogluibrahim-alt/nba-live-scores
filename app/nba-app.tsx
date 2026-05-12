@@ -1902,6 +1902,92 @@ function TeamView({
 }
 
 // ── BracketView ───────────────────────────────────────────────────────────────
+
+// Persisted shape — minimal SeriesInfo we can rehydrate without Game arrays.
+// Stored under `no-noise-nba-series-memory-v1`, TTL 90 days. Keeps completed
+// series alive after they roll out of the ESPN scoreboard window so the Series
+// Board reflects history (e.g. NYK over PHI in Round 1).
+type PersistedSeries = {
+  key: string;
+  abbrA: string;
+  abbrB: string;
+  teamA: Team & { wins: number };
+  teamB: Team & { wins: number };
+  conference: string;
+  round: string;
+  summary: string;
+  isGame7: boolean;
+  source: "api" | "inferred";
+};
+
+const NBA_SERIES_MEMORY_KEY = "no-noise-nba-series-memory-v1";
+const NBA_SERIES_MEMORY_TTL_MS = 1000 * 60 * 60 * 24 * 90; // 90 days
+
+function readSeriesMemory(): PersistedSeries[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(NBA_SERIES_MEMORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as { updatedAt?: string; series?: PersistedSeries[] };
+    if (!parsed?.series) return [];
+    if (parsed.updatedAt) {
+      const age = Date.now() - new Date(parsed.updatedAt).getTime();
+      if (age > NBA_SERIES_MEMORY_TTL_MS) return [];
+    }
+    return Array.isArray(parsed.series) ? parsed.series : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSeriesMemory(series: PersistedSeries[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      NBA_SERIES_MEMORY_KEY,
+      JSON.stringify({ updatedAt: new Date().toISOString(), series })
+    );
+  } catch {
+    /* localStorage full or blocked — silent */
+  }
+}
+
+function persistedFromSeries(s: SeriesInfo): PersistedSeries {
+  return {
+    key: s.key,
+    abbrA: s.abbrA,
+    abbrB: s.abbrB,
+    teamA: s.teamA,
+    teamB: s.teamB,
+    conference: s.conference,
+    round: s.round,
+    summary: s.summary,
+    isGame7: s.isGame7,
+    source: s.source,
+  };
+}
+
+function hydrateSeriesFromPersisted(p: PersistedSeries): SeriesInfo {
+  return {
+    ...p,
+    status: "complete",
+    nextGame: undefined,
+    latestGame: undefined,
+    games: [],
+  };
+}
+
+function mergeSeriesWithMemory(
+  live: SeriesInfo[],
+  remembered: PersistedSeries[]
+): SeriesInfo[] {
+  const liveKeys = new Set(live.map((s) => s.key));
+  const extras = remembered
+    .filter((p) => !liveKeys.has(p.key))
+    .map(hydrateSeriesFromPersisted);
+  return [...live, ...extras];
+}
+
 function BracketEmptyState({
   onBackToScores,
 }: {
@@ -1909,11 +1995,14 @@ function BracketEmptyState({
 }) {
   return (
     <section className="mx-auto max-w-2xl rounded-[1.75rem] bg-[#ffffff] p-8 text-center text-[#1a1208] shadow-xl shadow-black/10 ring-1 ring-[#e8e0d4] sm:p-10">
-      <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase text-[#1a1208] sm:text-5xl">
-        Bracket loading soon
+      <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.14em] text-[#e85d04]">
+        NBA Playoffs
+      </p>
+      <p className="mt-2 font-[family-name:var(--font-display)] text-4xl font-black uppercase text-[#1a1208] sm:text-5xl">
+        Series Board
       </p>
       <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#8a7a66]">
-        Scores are live now. Series view appears when playoff matchups are available.
+        Series cards appear here as playoff games come in. Completed series stay pinned so you can follow the road to the Finals.
       </p>
       <button
         type="button"
@@ -2123,7 +2212,44 @@ function BracketView({
   favoriteTeamAbbr: string | null;
   onBackToScores: () => void;
 }) {
-  const allSeries = buildBracketSeries(games);
+  // Load any previously-seen completed series (e.g. an earlier round that has
+  // since rolled out of the ESPN scoreboard window) so the board reflects the
+  // real playoff path, not just whatever is in the live API window today.
+  const [remembered, setRemembered] = useState<PersistedSeries[]>([]);
+
+  useEffect(() => {
+    setRemembered(readSeriesMemory());
+  }, []);
+
+  const liveSeries = useMemo(() => buildBracketSeries(games), [games]);
+
+  // Persist any newly-completed series we now know about.
+  useEffect(() => {
+    const completedNow = liveSeries.filter(
+      (s) =>
+        s.status === "complete" &&
+        (s.teamA.wins === 4 || s.teamB.wins === 4) &&
+        s.teamA.abbreviation !== "TBD" &&
+        s.teamB.abbreviation !== "TBD"
+    );
+    if (completedNow.length === 0) return;
+
+    const existing = readSeriesMemory();
+    const keys = new Set(existing.map((p) => p.key));
+    const additions = completedNow
+      .filter((s) => !keys.has(s.key))
+      .map(persistedFromSeries);
+    if (additions.length === 0) return;
+
+    const next = [...existing, ...additions];
+    writeSeriesMemory(next);
+    setRemembered(next);
+  }, [liveSeries]);
+
+  const allSeries = useMemo(
+    () => mergeSeriesWithMemory(liveSeries, remembered),
+    [liveSeries, remembered]
+  );
 
   if (allSeries.length === 0) {
     return <BracketEmptyState onBackToScores={onBackToScores} />;
@@ -2153,7 +2279,7 @@ function BracketView({
             NBA Playoffs
           </p>
           <h2 className="mt-1 font-[family-name:var(--font-display)] text-4xl font-black uppercase text-[#1a1208] sm:text-5xl">
-            Playoff Bracket
+            Series Board
           </h2>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -2558,7 +2684,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
                 : "text-[#8a7a66]"
             }`}
           >
-            Bracket
+            Series
           </button>
         </div>
 

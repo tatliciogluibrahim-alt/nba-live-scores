@@ -2,6 +2,73 @@
 
 ---
 
+## Latest Update: Opus Frontend Design Pass — 2026-05-11
+
+### Files Changed
+
+- `app/world-cup-app.tsx`
+- `app/nba-app.tsx`
+
+### UX / Design Changes
+
+**World Cup — Unlocked tabs pre-tournament**
+
+- Removed the locked "Table & Schedule unlock June 11" toolbar pattern
+- Pre-tournament now renders the same working Groups / Table / Schedule tab toggle as the active tournament
+- Each tab has a real pre-tournament state:
+  - **Groups**: opening fixtures grid (existing behaviour) or "Fixtures land soon" card when API returns nothing
+  - **Table**: full 12-group standings with every team at 0-0-0-0 (`calcGroupStandings` already handles empty games), preceded by a soft dashed-border note: "Every team starts on 0. Standings light up as matches finish on June 11."
+  - **Schedule**: fixture rows if data exists; otherwise "Full fixture times coming soon" card with kind copy — no locked feel
+- New helper: `PreTournamentTableNote` — dashed-border, accent-tinted, lives only on the Table tab pre-tournament
+
+**NBA — Series Board with memory**
+
+- Renamed "Playoff Bracket" → **Series Board** (both the tab label and the in-page header)
+- New persistence layer: completed series are now saved to `localStorage` under `no-noise-nba-series-memory-v1` with a 90-day TTL
+  - When a series finishes (e.g. NYK 4 - PHI 2), it's persisted with team data, win counts, conference, round, and summary
+  - When `BracketView` mounts, those persisted series merge with the live API data so completed earlier rounds stay visible on the board even after they roll out of the ESPN scoreboard window
+- `BracketView` now uses `useMemo` + `useEffect` instead of computing series during render — safer for the new persistence flow
+- `BracketEmptyState` copy refreshed: editorial "NBA Playoffs / Series Board" stack and warmer body copy — no more "Bracket loading soon"
+
+### Feature Changes
+
+- **WC tabs explorable now**: users can browse Groups / Table / Schedule before June 11
+- **NBA Series Board persistence**: completed first-round series survive the API window — fixes the "NYK beat PHI but doesn't show up" bug as soon as that series has been seen at least once with a final summary
+
+### Data / Logic Changes
+
+- `app/nba-app.tsx`
+  - New types: `PersistedSeries`
+  - New helpers: `readSeriesMemory()`, `writeSeriesMemory()`, `persistedFromSeries()`, `hydrateSeriesFromPersisted()`, `mergeSeriesWithMemory()`
+  - `BracketView` adds `useState<PersistedSeries[]>` + two `useEffect`s (hydrate on mount, persist on completion)
+  - `localStorage` writes are guarded with `try/catch` and `typeof window` checks (SSR-safe)
+- `app/world-cup-app.tsx`
+  - Pre-tournament render no longer hard-codes `viewMode === "groups"` — it now reads `viewMode` state like the active-tournament branch
+  - `ScheduleView` empty-state branch updated for nicer pre-tournament copy (no longer says "Schedule unlocks June 11")
+
+### Known Risks (for Codex review)
+
+- The persistence layer only captures series after they've been seen in a `final` state with a `seriesSummary` or 4-0/4-1/4-2/4-3 win count. If a user opens the Bracket tab for the first time *after* a series has already rolled out of the API window, that series will remain missing until the next playoff round brings it back into context. Acceptable for now — first user to see Bracket post-series-end will pin it for future sessions.
+- TTL is 90 days. If the app is left untouched across multiple NBA seasons, stale data could appear. Mitigation: the version-suffixed key (`-v1`) lets us bump and invalidate cleanly.
+- `StandingsView` pre-tournament renders 12 groups × 4 teams of zeros. That's a lot of vertical scroll for a zero-state. If it feels heavy in practice, consider collapsing to "your group only" when a country is selected.
+
+### Manual QA Checklist
+
+- [ ] **WC pre-tournament (today)**: Open World Cup page. Groups / Table / Schedule tabs all tap-switch without disabled states
+- [ ] **WC Table pre-tournament**: shows dashed-border "Pre-tournament table" note + all 12 groups with zeros; selected country (if any) is subtly highlighted in its row
+- [ ] **WC Schedule pre-tournament**: shows fixtures grouped by group letter if API returns them, otherwise the "Full fixture times coming soon" card
+- [ ] **WC no-country state**: Countdown card still prompts "Pick your country." with the green Pick Country button
+- [ ] **WC selected-country state**: Country module still renders flag/name/group/opponents/change
+- [ ] **NBA Scores tab**: unchanged — Live / Next / Final / My Team filters still work
+- [ ] **NBA Series tab label**: now reads "Series" instead of "Bracket"
+- [ ] **NBA Series Board header**: reads "Series Board" with "NBA Playoffs" eyebrow + pills (no description sentence)
+- [ ] **NBA persistence**: After a series finishes (e.g. DET 4-2 CLE or similar), reload the page in a few minutes — the completed series stays on the Series Board even if ESPN drops the games from the live window
+- [ ] **NBA empty state**: clear localStorage `no-noise-nba-series-memory-v1` + visit Series tab during a non-playoff window — sees the new "Series Board / Series cards appear here as playoff games come in" empty state
+- [ ] **Build**: `npm run build` passes with no TypeScript errors
+- [ ] **No horizontal overflow** on iPhone SE (375px) for WC pre-tournament tabs
+
+---
+
 ## 2026-05-11 — Phase 3 UX/Design Polish
 
 ### Files Changed
