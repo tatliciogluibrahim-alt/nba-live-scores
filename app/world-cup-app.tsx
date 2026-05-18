@@ -955,16 +955,11 @@ function ScheduleView({
       })}
 
       {sections.length === 0 && (
-        <div className="rounded-[1.2rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
-          <p className="font-[family-name:var(--font-display)] text-[1.05rem] font-black uppercase tracking-tight text-[#1a1208]">
-            {!hasTournamentStarted ? "Full fixtures loading soon" : "No matches found"}
-          </p>
-          <p className="mx-auto mt-1.5 max-w-sm text-[0.78rem] font-medium leading-snug text-[#8a7a66]">
-            {!hasTournamentStarted
-              ? "Groups are available now. Match times will appear here once confirmed."
-              : "Try a different filter or check back as games come in."}
-          </p>
-        </div>
+        <ScheduleComingSoonCard
+          selectedCountry={selectedCountry}
+          accentColor={accentColor}
+          hasTournamentStarted={hasTournamentStarted}
+        />
       )}
     </div>
   );
@@ -1229,10 +1224,36 @@ function CountdownHero({
   );
 }
 
-function WorldCupWatchGuide({ accentColor }: { accentColor: string }) {
+function WorldCupWatchGuide({
+  accentColor,
+  selectedCountry,
+}: {
+  accentColor: string;
+  selectedCountry: string | null;
+}) {
+  const selectedGroup = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
+  const selectedLabel = selectedCountry && selectedGroup
+    ? `${flagEmoji(selectedCountry)} ${selectedCountry} · Group ${selectedGroup}`
+    : "World Cup 2026";
+  const accentText = safeTextColor(accentColor);
+  const watchPaths = [
+    {
+      label: "English",
+      primary: "FOX / FS1",
+      tv: "FOX · FS1",
+      stream: "FOX Sports App",
+    },
+    {
+      label: "Spanish",
+      primary: "Telemundo",
+      tv: "Telemundo",
+      stream: "Peacock",
+    },
+  ];
+
   return (
-    <div className="overflow-hidden rounded-[1.1rem] bg-white ring-1 ring-[#e8e0d4]">
-      <div className="flex items-center justify-between gap-3 border-b border-[#f0ece4] px-4 py-3">
+    <div className="overflow-hidden rounded-[1.15rem] bg-white ring-1 ring-[#e8e0d4]">
+      <div className="flex flex-col gap-3 border-b border-[#f0ece4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
             Where to Watch
@@ -1242,49 +1263,78 @@ function WorldCupWatchGuide({ accentColor }: { accentColor: string }) {
           </p>
         </div>
         <span
-          className="hidden rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em] text-white sm:inline-flex"
-          style={{ background: accentColor }}
+          className="inline-flex w-fit rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em]"
+          style={{
+            background: `${accentColor}16`,
+            color: accentText,
+            boxShadow: `inset 0 0 0 1px ${accentColor}26`,
+          }}
         >
-          World Cup
+          {selectedLabel}
         </span>
       </div>
       <div className="grid grid-cols-1 divide-y divide-[#f0ece4] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-        {[
-          { label: "English", value: "FOX / FS1", note: "FOX Sports App" },
-          { label: "Spanish", value: "Telemundo", note: "Peacock" },
-        ].map((item) => (
+        {watchPaths.map((item) => (
           <div key={item.label} className="px-4 py-3">
-            <div className="flex items-end justify-between gap-3">
+            <div className="mb-3 flex items-end justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
                   {item.label}
                 </p>
                 <p
                   className="mt-1 truncate font-[family-name:var(--font-display)] text-[1.05rem] font-black uppercase tracking-tight"
-                  style={{ color: safeTextColor(accentColor) }}
+                  style={{ color: accentText }}
                 >
-                  {item.value}
+                  {item.primary}
                 </p>
               </div>
-              <p className="shrink-0 text-[0.68rem] font-black text-[#8a7a66]">
-                {item.note}
+              <p className="shrink-0 text-[0.58rem] font-black uppercase tracking-wide text-[#c0b0a0]">
+                Live TV
               </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="min-w-0 rounded-[0.75rem] bg-[#fbf8f3] px-2.5 py-2 ring-1 ring-[#f0ece4]">
+                <p className="font-[family-name:var(--font-display)] text-[0.5rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+                  Channel
+                </p>
+                <p className="mt-0.5 truncate text-[0.64rem] font-black text-[#1a1208]">
+                  {item.tv}
+                </p>
+              </div>
+              <div className="min-w-0 rounded-[0.75rem] bg-[#fbf8f3] px-2.5 py-2 ring-1 ring-[#f0ece4]">
+                <p className="font-[family-name:var(--font-display)] text-[0.5rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+                  Stream
+                </p>
+                <p className="mt-0.5 truncate text-[0.64rem] font-black text-[#1a1208]">
+                  {item.stream}
+                </p>
+              </div>
             </div>
           </div>
         ))}
+      </div>
+      <div className="border-t border-[#f0ece4] bg-[#fbf8f3] px-4 py-2.5">
+        <p className="text-[0.62rem] font-bold text-[#8a7a66]">
+          Match-by-match channels appear once full fixtures are confirmed.
+        </p>
       </div>
     </div>
   );
 }
 
-function TournamentPulseNote({
+function WorldCupScoreboardPreview({
   selectedCountry,
   accentColor,
+  onPickCountry,
 }: {
   selectedCountry: string | null;
   accentColor: string;
+  onPickCountry: () => void;
 }) {
   const group = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
+  const accentText = safeTextColor(accentColor);
+  const darkAccent = accentColor === "#000000" ? "#e8e0d4" : accentColor;
+  const groupTeams = group ? (WC_GROUPS[group] ?? []) : [];
   const pulseItems = [
     {
       label: "Opening",
@@ -1303,19 +1353,153 @@ function TournamentPulseNote({
   ];
 
   return (
-    <div className="rounded-[1.15rem] bg-[#fbf8f3] px-4 py-3 ring-1 ring-[#e8e0d4]">
-      <div className="mb-2 flex items-center gap-3">
-        <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-          Tournament Pulse
-        </p>
-        <div className="flex-1 border-t border-[#e8e0d4]" />
-        <p className="shrink-0 text-[0.58rem] font-black uppercase tracking-wide" style={{ color: safeTextColor(accentColor) }}>
-          Fixtures soon
-        </p>
+    <div className="overflow-hidden rounded-[1.2rem] bg-white ring-1 ring-[#e8e0d4]">
+      <div className="bg-[#140f08] px-4 py-4 text-white">
+        <div className="mb-3 flex items-center gap-3">
+          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/55">
+            Scoreboard
+          </p>
+          <div className="flex-1 border-t border-white/15" />
+          <p className="shrink-0 text-[0.56rem] font-black uppercase tracking-wide" style={{ color: darkAccent }}>
+            Fixtures soon
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="font-[family-name:var(--font-display)] text-[1.45rem] font-black uppercase leading-none tracking-tight">
+              First whistle loading
+            </p>
+            <p className="mt-1 text-[0.72rem] font-semibold text-white/55">
+              June 11 · Mexico City
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:w-[18rem]">
+            <div className="rounded-[0.85rem] bg-white/8 px-3 py-2 ring-1 ring-white/10">
+              <p className="font-[family-name:var(--font-display)] text-[0.5rem] font-black uppercase tracking-[0.12em] text-white/45">
+                TV
+              </p>
+              <p className="mt-0.5 truncate text-[0.66rem] font-black">
+                FOX / FS1
+              </p>
+            </div>
+            <div className="rounded-[0.85rem] bg-white/8 px-3 py-2 ring-1 ring-white/10">
+              <p className="font-[family-name:var(--font-display)] text-[0.5rem] font-black uppercase tracking-[0.12em] text-white/45">
+                Stream
+              </p>
+              <p className="mt-0.5 truncate text-[0.66rem] font-black">
+                Peacock
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {pulseItems.map((item) => (
-          <div key={item.label} className="rounded-[0.85rem] bg-white px-3 py-2 ring-1 ring-[#f0ece4]">
+
+      {groupTeams.length > 0 && (
+        <div className="grid grid-cols-4 divide-x divide-[#f0ece4] border-b border-[#f0ece4]">
+          {groupTeams.map((team) => (
+            <div
+              key={team}
+              className="min-w-0 px-3 py-2.5"
+              style={team === selectedCountry ? { background: `${accentColor}0f` } : undefined}
+            >
+              <p className="flex min-w-0 items-center gap-1.5 text-[0.68rem] font-black uppercase text-[#1a1208]">
+                <span className="text-[0.9rem]">{flagEmoji(team)}</span>
+                <span className="truncate" style={team === selectedCountry ? { color: accentText } : undefined}>
+                  {team}
+                </span>
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-3 bg-[#fbf8f3] px-4 py-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {pulseItems.map((item) => (
+            <div key={item.label} className="rounded-[0.85rem] bg-white px-3 py-2 ring-1 ring-[#f0ece4]">
+              <p className="font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+                {item.label}
+              </p>
+              <p className="mt-1 truncate text-[0.72rem] font-black text-[#1a1208]">
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {!selectedCountry && (
+          <button
+            type="button"
+            onClick={onPickCountry}
+            className="inline-flex rounded-full px-3 py-1.5 text-[0.62rem] font-black uppercase tracking-wide text-white transition active:scale-95"
+            style={{ background: accentColor }}
+          >
+            Pick country
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ScheduleComingSoonCard({
+  selectedCountry,
+  accentColor,
+  hasTournamentStarted,
+}: {
+  selectedCountry: string | null;
+  accentColor: string;
+  hasTournamentStarted: boolean;
+}) {
+  const group = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
+  const accentText = safeTextColor(accentColor);
+  const headline = hasTournamentStarted ? "No matches found" : "Full fixtures loading soon";
+  const body = hasTournamentStarted
+    ? "Try a different filter or check back as games come in."
+    : "Groups are set. Match times are still being finalized.";
+  const detailItems = [
+    {
+      label: "Opening",
+      value: "June 11",
+    },
+    {
+      label: selectedCountry && group ? "Your Group" : "Draw",
+      value: selectedCountry && group ? `${selectedCountry} · Group ${group}` : "12 groups set",
+    },
+    {
+      label: "Watch",
+      value: WORLD_CUP_US_WATCH_FALLBACK,
+    },
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-[1.2rem] bg-white text-left ring-1 ring-[#e8e0d4]">
+      <div className="flex flex-col gap-3 border-b border-[#f0ece4] px-4 py-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+            Fixture Board
+          </p>
+          <p className="mt-1 font-[family-name:var(--font-display)] text-[1.3rem] font-black uppercase leading-none tracking-tight text-[#1a1208]">
+            {headline}
+          </p>
+          <p className="mt-2 max-w-md text-[0.78rem] font-semibold leading-snug text-[#8a7a66]">
+            {body}
+          </p>
+        </div>
+        <span
+          className="w-fit shrink-0 rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em]"
+          style={{
+            color: accentText,
+            background: `${accentColor}12`,
+            boxShadow: `inset 0 0 0 1px ${accentColor}2e`,
+          }}
+        >
+          {selectedCountry && group ? `${flagEmoji(selectedCountry)} Group ${group}` : "World Cup"}
+        </span>
+      </div>
+      <div className="grid grid-cols-1 gap-2 bg-[#fbf8f3] p-3 sm:grid-cols-3">
+        {detailItems.map((item) => (
+          <div key={item.label} className="min-w-0 rounded-[0.9rem] bg-white px-3 py-2.5 ring-1 ring-[#f0ece4]">
             <p className="font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
               {item.label}
             </p>
@@ -1854,7 +2038,10 @@ export default function WorldCupApp({
                 />
               )}
 
-              <WorldCupWatchGuide accentColor={accentColor} />
+              <WorldCupWatchGuide
+                accentColor={accentColor}
+                selectedCountry={selectedCountry}
+              />
             </div>
 
             {/* Unified working toolbar — tabs are explorable pre-tournament */}
@@ -1898,9 +2085,10 @@ export default function WorldCupApp({
               )}
 
               {viewMode === "groups" && games.length === 0 && (
-                <TournamentPulseNote
+                <WorldCupScoreboardPreview
                   selectedCountry={selectedCountry}
                   accentColor={accentColor}
+                  onPickCountry={() => setShowPicker(true)}
                 />
               )}
 
