@@ -3,7 +3,6 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { usePushNotifications } from "@/lib/usePushNotifications";
 
 type GameStatus = "live" | "upcoming" | "final";
 type GameFilter = "all" | "my-team" | GameStatus;
@@ -2636,9 +2635,6 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
 
   const previousScoresRef = useRef<Map<string, number>>(new Map());
   const scoreAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Request push notification permission once user picks a team
-  usePushNotifications(favoriteTeamAbbr);
 
   useEffect(() => {
     const storedFavoriteTeam =
