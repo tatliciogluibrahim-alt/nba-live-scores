@@ -154,6 +154,36 @@ function TeamLine({
   );
 }
 
+function GameUtilityRow({ game }: { game: Game }) {
+  const watchLabel = game.broadcasts.length > 0 ? game.broadcasts.join(" / ") : "";
+  const lineLabel = [game.line?.spread, game.line?.total]
+    .filter(Boolean)
+    .join(" · ");
+
+  if (!watchLabel && !lineLabel) return null;
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {watchLabel && (
+        <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full bg-[#f8f5f0] px-2.5 py-1 text-[0.66rem] font-bold text-[#8a7a66] ring-1 ring-[#e8e0d4]">
+          <span className="font-[family-name:var(--font-display)] text-[0.55rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+            Watch
+          </span>
+          <span className="truncate">{watchLabel}</span>
+        </span>
+      )}
+      {lineLabel && (
+        <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full bg-[#fffaf2] px-2.5 py-1 text-[0.66rem] font-bold text-[#8a7a66] ring-1 ring-[#e8e0d4]">
+          <span className="font-[family-name:var(--font-display)] text-[0.55rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+            Line
+          </span>
+          <span className="truncate">{lineLabel}</span>
+        </span>
+      )}
+    </div>
+  );
+}
+
 function PlayoffBand({ game }: { game: Game }) {
   const [shareOpen, setShareOpen] = useState(false);
   const finalSummary = getFinalSummary(game);
@@ -209,16 +239,34 @@ export function GameCard({
   game,
   favoriteTeamAbbr,
   changedScoreKeys,
+  onOpen,
 }: {
   game: Game;
   favoriteTeamAbbr: string | null;
   changedScoreKeys: Set<string>;
+  onOpen?: (game: Game) => void;
 }) {
   const isFavoriteGame = gameIncludesTeam(game, favoriteTeamAbbr);
+  const isInteractive = Boolean(onOpen);
 
   return (
     <article
-      className={`overflow-hidden rounded-[1.2rem] bg-[#ffffff] text-[#1a1208] shadow-xl shadow-black/15 ring-1 ring-[#e8e0d4] sm:rounded-[1.65rem] ${getCardAccentClasses(
+      role={isInteractive ? "button" : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      onClick={isInteractive ? () => onOpen?.(game) : undefined}
+      onKeyDown={
+        isInteractive
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpen?.(game);
+              }
+            }
+          : undefined
+      }
+      className={`overflow-hidden rounded-[1.2rem] bg-[#ffffff] text-left text-[#1a1208] shadow-xl shadow-black/15 ring-1 ring-[#e8e0d4] transition sm:rounded-[1.65rem] ${
+        isInteractive ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-300" : ""
+      } ${getCardAccentClasses(
         game.status
       )}`}
     >
@@ -274,6 +322,8 @@ export function GameCard({
             changedScoreKeys={changedScoreKeys}
           />
         </div>
+
+        <GameUtilityRow game={game} />
 
         <PlayoffBand game={game} />
       </div>

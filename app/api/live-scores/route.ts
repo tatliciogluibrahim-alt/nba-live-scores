@@ -17,6 +17,8 @@ type ESPNCompetitor = {
   homeAway?: "home" | "away";
   score?: string;
   team?: ESPNTeam;
+  statistics?: ESPNStatistic[];
+  leaders?: ESPNLeaderGroup[];
 };
 
 type ESPNStatus = {
@@ -34,11 +36,47 @@ type ESPNStatus = {
   };
 };
 
+type ESPNStatistic = {
+  name?: string;
+  label?: string;
+  abbreviation?: string;
+  displayValue?: string;
+};
+
+type ESPNLeaderGroup = {
+  name?: string;
+  displayName?: string;
+  shortDisplayName?: string;
+  abbreviation?: string;
+  leaders?: {
+    displayValue?: string;
+    athlete?: {
+      displayName?: string;
+      shortName?: string;
+    };
+  }[];
+};
+
+type ESPNBroadcast = {
+  names?: string[];
+  media?: {
+    shortName?: string;
+    name?: string;
+  };
+};
+
+type ESPNOdds = {
+  details?: string;
+  overUnder?: number;
+};
+
 type ESPNCompetition = {
   id?: string;
   date?: string;
   status?: ESPNStatus;
   competitors?: ESPNCompetitor[];
+  broadcasts?: ESPNBroadcast[];
+  odds?: ESPNOdds[];
   notes?: {
     type?: string;
     headline?: string;
@@ -84,6 +122,29 @@ type NormalizedGame = {
   seriesRound: string;      // "First Round" | "Second Round" | "Conf Finals" | "NBA Finals" | ""
   home: Team;
   away: Team;
+  broadcasts: string[];
+  line: GameLine | null;
+  leaders: GameLeader[];
+  teamComparison: TeamComparisonStat[];
+};
+
+type GameLine = {
+  spread?: string;
+  total?: string;
+};
+
+type GameLeader = {
+  label: string;
+  name: string;
+  team: string;
+  value: string;
+  detail?: string;
+};
+
+type TeamComparisonStat = {
+  label: string;
+  away: string;
+  home: string;
 };
 
 // Prefix strings to strip from playoff game context headlines
@@ -303,6 +364,94 @@ function normalizeTeam(competitor?: ESPNCompetitor): Team {
   };
 }
 
+function normalizeBroadcasts(competition: ESPNCompetition): string[] {
+  const names = (competition.broadcasts ?? []).flatMap((broadcast) => [
+    ...(broadcast.names ?? []),
+    broadcast.media?.shortName,
+    broadcast.media?.name,
+  ]);
+
+  return Array.from(
+    new Set(
+      names
+        .map((name) => name?.trim())
+        .filter((name): name is string => Boolean(name))
+    )
+  ).slice(0, 4);
+}
+
+function normalizeLine(competition: ESPNCompetition): GameLine | null {
+  const odds = competition.odds?.find(
+    (item) => item.details || typeof item.overUnder === "number"
+  );
+
+  if (!odds) return null;
+
+  const line = {
+    spread: odds.details?.trim(),
+    total:
+      typeof odds.overUnder === "number"
+        ? `O/U ${odds.overUnder.toFixed(odds.overUnder % 1 === 0 ? 0 : 1)}`
+        : undefined,
+  };
+
+  if (!line.spread && !line.total) return null;
+  return line;
+}
+
+const TEAM_STAT_GROUPS = [
+  { label: "PPG", names: ["avgPoints"] },
+  { label: "Opp PPG", names: ["avgPointsAgainst"] },
+  { label: "FG%", names: ["fieldGoalPct"] },
+  { label: "3P%", names: ["threePointFieldGoalPct", "threePointPct"] },
+  { label: "REB", names: ["avgRebounds"] },
+  { label: "AST", names: ["avgAssists"] },
+];
+
+function findStatValue(competitor: ESPNCompetitor | undefined, names: string[]) {
+  const stat = competitor?.statistics?.find((item) =>
+    names.includes(item.name ?? "")
+  );
+
+  return stat?.displayValue?.trim() ?? "";
+}
+
+function normalizeTeamComparison(
+  awayCompetitor: ESPNCompetitor | undefined,
+  homeCompetitor: ESPNCompetitor | undefined
+): TeamComparisonStat[] {
+  return TEAM_STAT_GROUPS.map((group) => ({
+    label: group.label,
+    away: findStatValue(awayCompetitor, group.names),
+    home: findStatValue(homeCompetitor, group.names),
+  })).filter((row) => row.away && row.home);
+}
+
+function normalizeLeaders(competitors: ESPNCompetitor[]): GameLeader[] {
+  return competitors.flatMap((competitor) => {
+    const teamAbbr = competitor.team?.abbreviation ?? "";
+    const interesting = new Set([
+      "pointsPerGame",
+      "reboundsPerGame",
+      "assistsPerGame",
+    ]);
+
+    return (competitor.leaders ?? [])
+      .filter((group) => interesting.has(group.name ?? ""))
+      .flatMap((group) =>
+        (group.leaders ?? []).slice(0, 1).map((leader) => ({
+          label: group.abbreviation ?? group.shortDisplayName ?? group.displayName ?? "",
+          name:
+            leader.athlete?.shortName ??
+            leader.athlete?.displayName ??
+            "Player",
+          team: teamAbbr,
+          value: leader.displayValue ?? "",
+        }))
+      );
+  }).filter((leader) => leader.label && leader.value).slice(0, 6);
+}
+
 function normalizeGame(event: ESPNEvent): NormalizedGame | null {
   const competition = event.competitions?.[0];
 
@@ -348,6 +497,10 @@ function normalizeGame(event: ESPNEvent): NormalizedGame | null {
     seriesRound,
     home,
     away,
+    broadcasts: normalizeBroadcasts(competition),
+    line: normalizeLine(competition),
+    leaders: normalizeLeaders(competitors),
+    teamComparison: normalizeTeamComparison(awayCompetitor, homeCompetitor),
   };
 }
 

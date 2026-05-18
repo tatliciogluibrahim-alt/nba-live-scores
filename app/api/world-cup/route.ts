@@ -65,6 +65,16 @@ type ESPNDetail = {
   ownGoal?: boolean;
 };
 
+type ESPNBroadcast = {
+  names?: string[];
+  station?: string;
+  media?: {
+    shortName?: string;
+    name?: string;
+    callLetters?: string;
+  };
+};
+
 type ESPNEvent = {
   id?: string;
   name?: string;
@@ -77,6 +87,7 @@ type ESPNEvent = {
     status?: ESPNStatus;
     competitors?: ESPNCompetitor[];
     details?: ESPNDetail[];
+    broadcasts?: ESPNBroadcast[];
     venue?: { fullName?: string; address?: { city?: string; country?: string } };
     notes?: { headline?: string }[];
   }[];
@@ -120,6 +131,8 @@ export type WCGame = {
   /** Penalty shootout scores (null if no penalties) */
   penaltyHome: number | null;
   penaltyAway: number | null;
+  broadcasts: string[];
+  watchLabel: string;
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -162,6 +175,32 @@ function normalizeTeam(competitor?: ESPNCompetitor): WCTeam {
     score: Number(competitor?.score ?? 0),
     logo: team?.logos?.[0]?.href ?? team?.logo ?? "",
   };
+}
+
+const WORLD_CUP_US_WATCH_FALLBACK = "FOX / FS1 · Telemundo / Peacock";
+
+function normalizeBroadcasts(broadcasts: ESPNBroadcast[] = []): string[] {
+  const names = broadcasts.flatMap((broadcast) => [
+    ...(broadcast.names ?? []),
+    broadcast.station,
+    broadcast.media?.shortName,
+    broadcast.media?.callLetters,
+    broadcast.media?.name,
+  ]);
+
+  return Array.from(
+    new Set(
+      names
+        .map((name) => name?.trim())
+        .filter((name): name is string => Boolean(name))
+    )
+  ).slice(0, 4);
+}
+
+function getWatchLabel(broadcasts: string[]) {
+  return broadcasts.length > 0
+    ? broadcasts.join(" / ")
+    : WORLD_CUP_US_WATCH_FALLBACK;
 }
 
 function normalizeEvents(
@@ -261,6 +300,7 @@ function normalizeEvent(event: ESPNEvent): WCGame | null {
     home.id,
     away.id
   );
+  const broadcasts = normalizeBroadcasts(competition.broadcasts);
 
   return {
     id: event.id ?? `${away.abbreviation}-${home.abbreviation}-${event.date}`,
@@ -275,6 +315,8 @@ function normalizeEvent(event: ESPNEvent): WCGame | null {
     events,
     penaltyHome,
     penaltyAway,
+    broadcasts,
+    watchLabel: getWatchLabel(broadcasts),
   };
 }
 

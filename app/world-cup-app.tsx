@@ -91,6 +91,40 @@ function safeTextColor(accent: string): string {
     : accent;
 }
 
+const WORLD_CUP_US_WATCH_FALLBACK = "FOX / FS1 · Telemundo / Peacock";
+
+function getWCWatchLabel(game: WCGame): string {
+  return game.watchLabel || game.broadcasts?.join(" / ") || WORLD_CUP_US_WATCH_FALLBACK;
+}
+
+function getWorldCupMomentStake(game: WCGame, selectedCountry: string | null): string {
+  const isSelectedCountryMatch = Boolean(
+    selectedCountry &&
+    (game.home.abbreviation === selectedCountry || game.away.abbreviation === selectedCountry)
+  );
+  const stage = game.stage.toLowerCase();
+  const isGroupMatch = Boolean(game.group);
+  const isOpeningMatch =
+    isGroupMatch &&
+    game.status === "upcoming" &&
+    game.group === "A" &&
+    (game.home.abbreviation === "MEX" || game.away.abbreviation === "MEX");
+
+  if (game.status === "live") return "Live now";
+  if (game.status === "final") {
+    if (isGroupMatch) return `Group ${game.group} final`;
+    if (stage.includes("final") && !stage.includes("semi")) return "Trophy decided";
+    return "Winner advanced";
+  }
+
+  if (isOpeningMatch) return "Opening match";
+  if (isSelectedCountryMatch && isGroupMatch) return `Your Group ${game.group} match`;
+  if (isGroupMatch) return `Group ${game.group} match`;
+  if (stage.includes("final") && !stage.includes("semi")) return "World Cup Final";
+  if (stage.includes("3rd") || stage.includes("third")) return "Third-place match";
+  return "Winner advances";
+}
+
 // ── NYC Watching Venues ────────────────────────────────────────────────────────
 type Venue = {
   name: string;
@@ -126,7 +160,7 @@ function generateICS(countryCode: string, game: WCGame): string {
       ? game.away.abbreviation
       : game.home.abbreviation;
   const summary = `⚽ ${countryCode} vs ${opponent} — FIFA World Cup 2026`;
-  const desc = `${game.stage} · Watch on FOX / Telemundo / Peacock\\nnonoisescores.app`;
+  const desc = `${game.stage} · Watch on ${getWCWatchLabel(game)}\\nnonoisescores.app`;
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -324,11 +358,28 @@ function WCGameCard({
 
   const isMyGame = selectedCountry &&
     (game.home.abbreviation === selectedCountry || game.away.abbreviation === selectedCountry);
-  const showWatchBtn = Boolean(onWatch) && (isMyGame || game.group === "");
+  const watchLabel = getWCWatchLabel(game);
+  const stakeLabel = getWorldCupMomentStake(game, selectedCountry);
+  const canOpen = Boolean(onWatch);
 
   return (
     <article
-      className="overflow-hidden rounded-[1.2rem] bg-white text-[#1a1208] shadow-lg shadow-black/8 ring-1 ring-[#e8e0d4]"
+      role={canOpen ? "button" : undefined}
+      tabIndex={canOpen ? 0 : undefined}
+      onClick={canOpen ? () => onWatch?.(game) : undefined}
+      onKeyDown={
+        canOpen
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onWatch?.(game);
+              }
+            }
+          : undefined
+      }
+      className={`overflow-hidden rounded-[1.2rem] bg-white text-left text-[#1a1208] shadow-lg shadow-black/8 ring-1 ring-[#e8e0d4] transition ${
+        canOpen ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#006847]/30" : ""
+      }`}
       style={{ borderTop: `3px solid ${topBorder}` }}
     >
       <div className="flex items-center justify-between gap-3 border-b border-[#f0ece4] px-3 py-2" style={{ background: isLive ? `${accentColor}08` : "#f8f5f0" }}>
@@ -351,32 +402,48 @@ function WCGameCard({
       </div>
 
       <div className="border-t border-[#f0ece4] px-3 py-1.5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            {hasPenalties && (
-              <span className="text-[0.65rem] font-bold text-[#a89880]">
-                Pens: {game.away.abbreviation} {game.penaltyAway} – {game.penaltyHome} {game.home.abbreviation}
+        <div className="flex items-end justify-between gap-2">
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+              <span
+                className="rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.1em] text-white"
+                style={{ background: isMyGame ? accentColor : "#1a1208" }}
+              >
+                {stakeLabel}
               </span>
-            )}
-            {game.venue && (
-              <span className="truncate text-[0.62rem] font-medium text-[#c0b0a0]">{game.venue}</span>
-            )}
-            {game.status === "upcoming" && (
-              <span className="text-[0.62rem] font-semibold text-[#a89880]">{countdown(game.date)}</span>
-            )}
+              <span className="min-w-0 truncate text-[0.62rem] font-bold text-[#8a7a66]">
+                Watch: {watchLabel}
+              </span>
+            </div>
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
+              {hasPenalties && (
+                <span className="text-[0.65rem] font-bold text-[#a89880]">
+                  Pens: {game.away.abbreviation} {game.penaltyAway} – {game.penaltyHome} {game.home.abbreviation}
+                </span>
+              )}
+              {game.venue && (
+                <span className="truncate text-[0.62rem] font-medium text-[#c0b0a0]">{game.venue}</span>
+              )}
+              {game.status === "upcoming" && (
+                <span className="text-[0.62rem] font-semibold text-[#a89880]">{countdown(game.date)}</span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {game.status === "upcoming" && (
               <span className="shrink-0 text-[0.62rem] font-semibold text-[#a89880]">{formatDateTime(game.date)}</span>
             )}
-            {showWatchBtn && (
+            {canOpen && (
               <button
                 type="button"
-                onClick={() => onWatch!(game)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onWatch?.(game);
+                }}
                 className="shrink-0 rounded-full px-2 py-0.5 text-[0.6rem] font-black uppercase tracking-wide text-white transition active:scale-95"
                 style={{ background: accentColor }}
               >
-                Watch 📍
+                Details
               </button>
             )}
           </div>
@@ -641,9 +708,10 @@ function StandingsView({
 type ScheduleFilter = "all" | "group" | "knockout" | "my-country";
 
 function ScheduleMatchRow({
-  game, selectedCountry, accentColor,
+  game, selectedCountry, accentColor, onOpen,
 }: {
   game: WCGame; selectedCountry: string | null; accentColor: string;
+  onOpen?: (game: WCGame) => void;
 }) {
   const isMyGame = Boolean(
     selectedCountry &&
@@ -661,87 +729,125 @@ function ScheduleMatchRow({
     : isFinal
       ? { background: "#f8f5f0" }
       : { background: "#ffffff" };
+  const watchLabel = getWCWatchLabel(game);
+  const stakeLabel = getWorldCupMomentStake(game, selectedCountry);
+  const canOpen = Boolean(onOpen);
 
   return (
     <div
-      className="flex items-center gap-2 rounded-[0.9rem] px-3 py-2.5 ring-1 ring-[#e8e0d4]"
+      role={canOpen ? "button" : undefined}
+      tabIndex={canOpen ? 0 : undefined}
+      onClick={canOpen ? () => onOpen?.(game) : undefined}
+      onKeyDown={
+        canOpen
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpen?.(game);
+              }
+            }
+          : undefined
+      }
+      className={`rounded-[0.9rem] px-3 py-2.5 ring-1 ring-[#e8e0d4] transition ${
+        canOpen ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#006847]/30" : ""
+      }`}
       style={rowStyle}
     >
-      <div className="w-[3.2rem] shrink-0">
-        {isFinal ? (
-          <p className="text-[0.62rem] font-black uppercase tracking-wide text-[#2d7a3a]">FT</p>
-        ) : isLive ? (
-          <div className="flex items-center gap-1">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: accentColor }} />
-            <span className="text-[0.6rem] font-black uppercase" style={{ color: accentColor }}>{game.statusText}</span>
-          </div>
-        ) : (
-          <>
-            <p className="text-[0.6rem] font-bold uppercase text-[#a89880]">
-              {new Date(game.date).toLocaleDateString([], { month: "short", day: "numeric" })}
-            </p>
-            <p className="text-[0.58rem] font-medium text-[#c0b0a0]">{formatTime(game.date)}</p>
-          </>
-        )}
-      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-[3.2rem] shrink-0">
+          {isFinal ? (
+            <p className="text-[0.62rem] font-black uppercase tracking-wide text-[#2d7a3a]">FT</p>
+          ) : isLive ? (
+            <div className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: accentColor }} />
+              <span className="text-[0.6rem] font-black uppercase" style={{ color: accentColor }}>{game.statusText}</span>
+            </div>
+          ) : (
+            <>
+              <p className="text-[0.6rem] font-bold uppercase text-[#a89880]">
+                {new Date(game.date).toLocaleDateString([], { month: "short", day: "numeric" })}
+              </p>
+              <p className="text-[0.58rem] font-medium text-[#c0b0a0]">{formatTime(game.date)}</p>
+            </>
+          )}
+        </div>
 
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
-        <span
-          className="truncate text-[0.8rem] font-black uppercase tracking-tight"
-          style={{
-            color: isMyGame && game.away.abbreviation === selectedCountry ? accentColor : "#1a1208",
-            opacity: isFinal && !awayWon ? 0.45 : 1,
-          }}
-        >
-          {game.away.abbreviation}
-        </span>
-        <span className="shrink-0 text-base leading-none">{flagEmoji(game.away.abbreviation)}</span>
-      </div>
-
-      <div className="w-16 shrink-0 text-center">
-        {isFinal ? (
-          <span className="text-[1rem] font-black tabular-nums text-[#1a1208]">
-            {game.away.score} – {game.home.score}
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+          <span
+            className="truncate text-[0.8rem] font-black uppercase tracking-tight"
+            style={{
+              color: isMyGame && game.away.abbreviation === selectedCountry ? accentColor : "#1a1208",
+              opacity: isFinal && !awayWon ? 0.45 : 1,
+            }}
+          >
+            {game.away.abbreviation}
           </span>
-        ) : isLive ? (
-          <span className="text-[0.85rem] font-black tabular-nums" style={{ color: accentColor }}>
-            {game.away.score} – {game.home.score}
-          </span>
-        ) : (
-          <span className="text-[0.7rem] font-bold text-[#c0b0a0]">
-            {isUpcoming ? countdown(game.date) : "vs"}
-          </span>
-        )}
-      </div>
+          <span className="shrink-0 text-base leading-none">{flagEmoji(game.away.abbreviation)}</span>
+        </div>
 
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <span className="shrink-0 text-base leading-none">{flagEmoji(game.home.abbreviation)}</span>
-        <span
-          className="truncate text-[0.8rem] font-black uppercase tracking-tight"
-          style={{
-            color: isMyGame && game.home.abbreviation === selectedCountry ? accentColor : "#1a1208",
-            opacity: isFinal && !homeWon ? 0.45 : 1,
-          }}
-        >
-          {game.home.abbreviation}
-        </span>
-      </div>
+        <div className="w-16 shrink-0 text-center">
+          {isFinal ? (
+            <span className="text-[1rem] font-black tabular-nums text-[#1a1208]">
+              {game.away.score} – {game.home.score}
+            </span>
+          ) : isLive ? (
+            <span className="text-[0.85rem] font-black tabular-nums" style={{ color: accentColor }}>
+              {game.away.score} – {game.home.score}
+            </span>
+          ) : (
+            <span className="text-[0.7rem] font-bold text-[#c0b0a0]">
+              {isUpcoming ? countdown(game.date) : "vs"}
+            </span>
+          )}
+        </div>
 
-      {isFinal && game.penaltyHome !== null && (
-        <div className="shrink-0 text-right">
-          <span className="text-[0.58rem] font-bold text-[#a89880]">
-            ({game.penaltyAway}–{game.penaltyHome})
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          <span className="shrink-0 text-base leading-none">{flagEmoji(game.home.abbreviation)}</span>
+          <span
+            className="truncate text-[0.8rem] font-black uppercase tracking-tight"
+            style={{
+              color: isMyGame && game.home.abbreviation === selectedCountry ? accentColor : "#1a1208",
+              opacity: isFinal && !homeWon ? 0.45 : 1,
+            }}
+          >
+            {game.home.abbreviation}
           </span>
         </div>
-      )}
+
+        {isFinal && game.penaltyHome !== null && (
+          <div className="shrink-0 text-right">
+            <span className="text-[0.58rem] font-bold text-[#a89880]">
+              ({game.penaltyAway}–{game.penaltyHome})
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-t border-[#f0ece4] pt-1.5">
+        <span
+          className="rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.1em] text-white"
+          style={{ background: isMyGame ? accentColor : "#1a1208" }}
+        >
+          {stakeLabel}
+        </span>
+        <span className="min-w-0 truncate text-[0.6rem] font-bold text-[#8a7a66]">
+          Watch: {watchLabel}
+        </span>
+        {canOpen && (
+          <span className="ml-auto shrink-0 text-[0.56rem] font-black uppercase tracking-wide" style={{ color: accentColor }}>
+            Details
+          </span>
+        )}
+      </div>
     </div>
   );
 }
 
 function ScheduleView({
-  games, selectedCountry, accentColor, hasTournamentStarted,
+  games, selectedCountry, accentColor, hasTournamentStarted, onMatchOpen,
 }: {
   games: WCGame[]; selectedCountry: string | null; accentColor: string; hasTournamentStarted: boolean;
+  onMatchOpen?: (game: WCGame) => void;
 }) {
   const [scheduleFilter, setScheduleFilter] = useState<ScheduleFilter>("all");
 
@@ -835,7 +941,13 @@ function ScheduleView({
             </div>
             <div className="space-y-1.5">
               {gs.map((g) => (
-                <ScheduleMatchRow key={g.id} game={g} selectedCountry={selectedCountry} accentColor={accentColor} />
+                <ScheduleMatchRow
+                  key={g.id}
+                  game={g}
+                  selectedCountry={selectedCountry}
+                  accentColor={accentColor}
+                  onOpen={onMatchOpen}
+                />
               ))}
             </div>
           </div>
@@ -860,12 +972,18 @@ function ScheduleView({
 
 // ── Venue Sheet ────────────────────────────────────────────────────────────────
 function VenueSheet({
-  game, accentColor, onClose,
+  game, selectedCountry, accentColor, onClose,
 }: {
-  game: WCGame; accentColor: string; onClose: () => void;
+  game: WCGame; selectedCountry: string | null; accentColor: string; onClose: () => void;
 }) {
   const matchLabel = `${game.away.abbreviation} vs ${game.home.abbreviation}`;
   const matchTime = formatDateTime(game.date);
+  const watchLabel = getWCWatchLabel(game);
+  const stakeLabel = getWorldCupMomentStake(game, selectedCountry);
+  const showScore = game.status !== "upcoming";
+  const moments = game.events.filter((event) =>
+    ["goal", "pen_goal", "own_goal", "red_card"].includes(event.type)
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
@@ -879,14 +997,88 @@ function VenueSheet({
         </div>
         <div className="px-5 pb-3 pt-1">
           <p className="font-[family-name:var(--font-display)] text-base font-black uppercase tracking-tight text-[#1a1208]">
-            Watch in NYC 📍
+            Match Intelligence
           </p>
           <p className="mt-0.5 text-[0.72rem] font-semibold text-[#a89880]">
             {matchLabel} · {matchTime}
           </p>
         </div>
         <div className="max-h-[60vh] overflow-y-auto px-4">
-          <div className="space-y-2 pb-2">
+          <div className="space-y-2 pb-4">
+            <div className="overflow-hidden rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]">
+              {([game.away, game.home] as WCTeam[]).map((team) => (
+                <div
+                  key={team.abbreviation}
+                  className="flex items-center justify-between gap-3 border-b border-[#f0ece4] px-4 py-2.5 last:border-b-0"
+                >
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="shrink-0 text-[1.55rem] leading-none">{flagEmoji(team.abbreviation)}</span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[0.86rem] font-black uppercase tracking-tight text-[#1a1208]">
+                        {team.abbreviation}
+                      </p>
+                      <p className="truncate text-[0.64rem] font-semibold text-[#a89880]">
+                        {COUNTRY_NAME[team.abbreviation] ?? team.name}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-[1.25rem] font-black tabular-nums text-[#1a1208]">
+                    {showScore ? team.score : "–"}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {[
+                { label: "Watch", value: watchLabel },
+                { label: "Stakes", value: stakeLabel },
+                { label: "Stage", value: game.stage || "World Cup" },
+                { label: "Venue", value: game.venue ?? "TBA" },
+              ].map((item) => (
+                <div key={item.label} className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
+                  <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 truncate text-[0.8rem] font-black text-[#1a1208]">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {moments.length > 0 && (
+              <div className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
+                <p className="mb-2 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+                  Match Moments
+                </p>
+                <div className="space-y-1.5">
+                  {moments.slice(0, 6).map((event, index) => {
+                    const eventTeam =
+                      event.teamId === game.home.id
+                        ? game.home.abbreviation
+                        : event.teamId === game.away.id
+                          ? game.away.abbreviation
+                          : "";
+
+                    return (
+                      <div key={`${event.minute}-${event.playerName}-${index}`} className="flex items-center justify-between gap-3">
+                        <span className="truncate text-[0.72rem] font-bold text-[#1a1208]">
+                          {event.playerName || COUNTRY_NAME[eventTeam] || eventTeam || "Moment"}
+                        </span>
+                        <span className="shrink-0 text-[0.62rem] font-black text-[#8a7a66]">
+                          {event.minute || "PK"} · {event.type.replace("_", " ")}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <p className="px-1 pt-1 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+              Watch in NYC
+            </p>
             {NYC_VENUES.map((v) => (
               <div key={v.name} className="flex items-start justify-between gap-3 rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
                 <div className="min-w-0">
@@ -987,6 +1179,37 @@ function CountdownHero({
       <span className="shrink-0 text-[0.58rem] font-medium text-[#c0b0a0]">
         June 11 · Mexico City
       </span>
+    </div>
+  );
+}
+
+function WorldCupWatchGuide({ accentColor }: { accentColor: string }) {
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {[
+        { label: "English", value: "FOX / FS1", note: "FOX Sports App" },
+        { label: "Spanish", value: "Telemundo", note: "Peacock" },
+      ].map((item) => (
+        <div
+          key={item.label}
+          className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]"
+        >
+          <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+            {item.label}
+          </p>
+          <div className="mt-1 flex items-end justify-between gap-3">
+            <p
+              className="truncate font-[family-name:var(--font-display)] text-[1.05rem] font-black uppercase tracking-tight"
+              style={{ color: safeTextColor(accentColor) }}
+            >
+              {item.value}
+            </p>
+            <p className="shrink-0 text-[0.68rem] font-black text-[#8a7a66]">
+              {item.note}
+            </p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1453,7 +1676,12 @@ export default function WorldCupApp({
 
         {/* ── Venue sheet overlay ── */}
         {venueGame && (
-          <VenueSheet game={venueGame} accentColor={accentColor} onClose={() => setVenueGame(null)} />
+          <VenueSheet
+            game={venueGame}
+            selectedCountry={selectedCountry}
+            accentColor={accentColor}
+            onClose={() => setVenueGame(null)}
+          />
         )}
 
         {/* ── Loading skeleton ── */}
@@ -1489,6 +1717,8 @@ export default function WorldCupApp({
                   accentColor={accentColor}
                 />
               )}
+
+              <WorldCupWatchGuide accentColor={accentColor} />
             </div>
 
             {/* Unified working toolbar — tabs are explorable pre-tournament */}
@@ -1559,6 +1789,7 @@ export default function WorldCupApp({
                   selectedCountry={selectedCountry}
                   accentColor={accentColor}
                   hasTournamentStarted={hasTournamentStarted}
+                  onMatchOpen={setVenueGame}
                 />
               )}
             </div>
@@ -1619,7 +1850,13 @@ export default function WorldCupApp({
               )}
 
               {viewMode === "schedule" && (
-                <ScheduleView games={games} selectedCountry={selectedCountry} accentColor={accentColor} hasTournamentStarted={hasTournamentStarted} />
+                <ScheduleView
+                  games={games}
+                  selectedCountry={selectedCountry}
+                  accentColor={accentColor}
+                  hasTournamentStarted={hasTournamentStarted}
+                  onMatchOpen={setVenueGame}
+                />
               )}
 
               {viewMode === "groups" && (

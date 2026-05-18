@@ -72,11 +72,13 @@ export function TeamView({
   seriesGames,
   favoriteTeamAbbr,
   changedScoreKeys,
+  onGameOpen,
 }: {
   games: Game[];
   seriesGames: Game[];
   favoriteTeamAbbr: string;
   changedScoreKeys: Set<string>;
+  onGameOpen?: (game: Game) => void;
 }) {
   const allSeries = buildBracketSeries(seriesGames);
   const teamGames = games.filter((game) => gameIncludesTeam(game, favoriteTeamAbbr));
@@ -135,6 +137,7 @@ export function TeamView({
             game={nextGame}
             favoriteTeamAbbr={favoriteTeamAbbr}
             changedScoreKeys={changedScoreKeys}
+            onOpen={onGameOpen}
           />
         </div>
       )}

@@ -13,6 +13,34 @@ export type FavoriteTeamOption = {
   abbreviation: string;
 };
 
+export type GameLine = {
+  spread?: string;
+  total?: string;
+};
+
+export type GameLeader = {
+  label: string;
+  name: string;
+  team: string;
+  value: string;
+  detail?: string;
+};
+
+export type TeamComparisonStat = {
+  label: string;
+  away: string;
+  home: string;
+};
+
+export type GameDetail = {
+  broadcasts: string[];
+  line: GameLine | null;
+  leaders: GameLeader[];
+  teamComparison: TeamComparisonStat[];
+  updatedAt?: string;
+  error?: string;
+};
+
 export type Game = {
   id: string;
   date: string;
@@ -25,6 +53,10 @@ export type Game = {
   seriesRound: string;
   home: Team;
   away: Team;
+  broadcasts: string[];
+  line: GameLine | null;
+  leaders: GameLeader[];
+  teamComparison: TeamComparisonStat[];
 };
 
 export type GameSection = {

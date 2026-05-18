@@ -16,6 +16,7 @@ import { triggerLightHaptic } from "./nba/lib/haptics";
 import { formatLastUpdated } from "./nba/lib/time";
 import { EmptyState } from "./nba/components/empty-state";
 import { GameCard } from "./nba/components/game-card";
+import { GameDetailDrawer } from "./nba/components/game-detail-drawer";
 import { FavoriteTeamPicker, FilterPill } from "./nba/components/score-controls";
 import { SectionHeader } from "./nba/components/section-header";
 import { SeriesBoard } from "./nba/components/series-board";
@@ -35,6 +36,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
   const [favoriteTeamAbbr, setFavoriteTeamAbbr] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const [changedScoreKeys, setChangedScoreKeys] = useState<Set<string>>(new Set());
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
   const previousScoresRef = useRef<Map<string, number>>(new Map());
   const scoreAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -391,6 +393,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
                             game={game}
                             favoriteTeamAbbr={favoriteTeamAbbr}
                             changedScoreKeys={changedScoreKeys}
+                            onOpen={setSelectedGame}
                           />
                         ))}
                       </div>
@@ -425,6 +428,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
             seriesGames={seriesGames}
             favoriteTeamAbbr={favoriteTeamAbbr}
             changedScoreKeys={changedScoreKeys}
+            onGameOpen={setSelectedGame}
           />
         )}
 
@@ -436,6 +440,8 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
           />
         )}
       </div>
+
+      <GameDetailDrawer game={selectedGame} onClose={() => setSelectedGame(null)} />
     </main>
   );
 }
