@@ -1329,129 +1329,157 @@ function TournamentPulseNote({
   );
 }
 
-// ── Country Module (selected-country card) ─────────────────────────────────────
-function CountryModule({
-  selectedCountry, accentColor, onChangeTap,
+// ── Country Hub (selected-country card) ───────────────────────────────────────
+function CountryHub({
+  selectedCountry, accentColor, nextGame, onChangeTap,
 }: {
-  selectedCountry: string; accentColor: string; onChangeTap: () => void;
+  selectedCountry: string; accentColor: string; nextGame: WCGame | null; onChangeTap: () => void;
 }) {
+  const [state, setState] = useState<"idle" | "done" | "skipped">("idle");
+  const [notifDenied, setNotifDenied] = useState(false);
+
   const name = COUNTRY_NAME[selectedCountry] ?? selectedCountry;
   const flag = flagEmoji(selectedCountry);
   const group = TEAM_GROUP[selectedCountry];
   const groupTeams = group ? (WC_GROUPS[group] ?? []) : [];
-  const opponents = groupTeams.filter((t) => t !== selectedCountry);
   const textColor = safeTextColor(accentColor);
+  const nextMatchText = nextGame ? formatDateTime(nextGame.date) : "Fixtures loading soon";
+
+  async function handleRemind() {
+    if (nextGame) {
+      const ics = generateICS(selectedCountry, nextGame);
+      downloadICS(ics, `wc2026-${selectedCountry.toLowerCase()}.ics`);
+    }
+    if ("Notification" in window && Notification.permission === "default") {
+      const perm = await Notification.requestPermission();
+      if (perm === "denied") setNotifDenied(true);
+    }
+    localStorage.setItem("no-noise-wc-notify", selectedCountry);
+    setState("done");
+  }
 
   return (
     <div
       className="overflow-hidden rounded-[1.2rem] bg-white ring-1 ring-[#e8e0d4]"
       style={{ borderTop: `3px solid ${accentColor}` }}
     >
-      <div className="flex items-center justify-between gap-3 p-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="shrink-0 text-[2.4rem] leading-none">{flag}</span>
-          <div className="min-w-0">
-            <p
-              className="font-[family-name:var(--font-display)] text-[1.2rem] font-black uppercase leading-tight tracking-tight"
-              style={{ color: textColor }}
-            >
-              {name}
-            </p>
-            {group && (
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span
-                  className="rounded-full px-2 py-0.5 text-[0.56rem] font-black uppercase tracking-wide text-white"
+      <div className="space-y-4 p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="shrink-0 text-[2.55rem] leading-none">{flag}</span>
+            <div className="min-w-0">
+              <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+                Your Country
+              </p>
+              <p
+                className="truncate font-[family-name:var(--font-display)] text-[1.35rem] font-black uppercase leading-tight tracking-tight"
+                style={{ color: textColor }}
+              >
+                {name}
+              </p>
+              {group && (
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[0.56rem] font-black uppercase tracking-wide text-white"
+                    style={{ background: accentColor }}
+                  >
+                    Group {group}
+                  </span>
+                  <span className="text-[0.62rem] font-bold text-[#a89880]">
+                    {groupTeams.length} teams
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onChangeTap}
+            className="shrink-0 rounded-full bg-[#f0ece4] px-3 py-1.5 text-[0.62rem] font-bold uppercase tracking-wide text-[#8a7a66] transition hover:text-[#1a1208] active:scale-95"
+          >
+            Change
+          </button>
+        </div>
+
+        {groupTeams.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {groupTeams.map((team) => {
+              const isSelected = team === selectedCountry;
+
+              return (
+                <div
+                  key={team}
+                  className={`min-w-0 rounded-[0.9rem] px-3 py-2 ring-1 ${
+                    isSelected ? "bg-white" : "bg-[#fbf8f3]"
+                  }`}
+                  style={{
+                    boxShadow: isSelected ? `inset 0 0 0 1px ${accentColor}` : undefined,
+                    borderColor: isSelected ? accentColor : undefined,
+                  }}
+                >
+                  <p className="flex min-w-0 items-center gap-1.5 text-[0.72rem] font-black uppercase text-[#1a1208]">
+                    <span className="text-[0.95rem]">{flagEmoji(team)}</span>
+                    <span className="truncate">{team}</span>
+                  </p>
+                  <p className="mt-0.5 truncate text-[0.58rem] font-bold text-[#a89880]">
+                    {COUNTRY_NAME[team] ?? team}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="rounded-[1rem] bg-[#fbf8f3] px-3 py-3 ring-1 ring-[#f0ece4]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="font-[family-name:var(--font-display)] text-[0.6rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+                Match Reminder
+              </p>
+              <p className="mt-1 text-[0.75rem] font-black text-[#1a1208]">
+                {flag} {nextGame ? `${name} next plays ${nextMatchText}` : `Save ${name} before fixtures land`}
+              </p>
+              <p className="mt-0.5 text-[0.62rem] font-semibold text-[#8a7a66]">
+                Calendar file plus browser notification when available
+              </p>
+            </div>
+            {state === "idle" ? (
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setState("skipped")}
+                  className="rounded-full bg-white px-3 py-1.5 text-[0.62rem] font-bold text-[#a89880] ring-1 ring-[#e8e0d4] transition hover:text-[#1a1208] active:scale-95"
+                >
+                  Skip
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemind}
+                  className="rounded-full px-3 py-1.5 text-[0.62rem] font-black text-white transition active:scale-95"
                   style={{ background: accentColor }}
                 >
-                  Group {group}
-                </span>
-                {opponents.map((t) => (
-                  <span key={t} className="flex items-center gap-0.5 text-[0.63rem] font-semibold text-[#a89880]">
-                    <span className="text-[0.9rem]">{flagEmoji(t)}</span>
-                    <span>{COUNTRY_NAME[t] ?? t}</span>
-                  </span>
-                ))}
+                  Remind Me
+                </button>
               </div>
+            ) : (
+              <p
+                className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[0.62rem] font-black uppercase tracking-wide ring-1 ring-[#e8e0d4]"
+                style={{ color: state === "done" ? textColor : "#a89880" }}
+              >
+                {state === "done" ? "Reminder saved" : "Skipped"}
+              </p>
             )}
           </div>
-        </div>
-        <button
-          type="button"
-          onClick={onChangeTap}
-          className="shrink-0 rounded-full bg-[#f0ece4] px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-wide text-[#8a7a66] transition active:scale-95"
-        >
-          Change
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── Calendar Reminder ──────────────────────────────────────────────────────────
-function CalendarReminder({
-  country, nextGame, accentColor,
-}: {
-  country: string; nextGame: WCGame | null; accentColor: string;
-}) {
-  const [state, setState] = useState<"idle" | "done" | "skipped">("idle");
-  const [notifDenied, setNotifDenied] = useState(false);
-
-  const name = COUNTRY_NAME[country] ?? country;
-  const flag = flagEmoji(country);
-
-  async function handleRemind() {
-    if (nextGame) {
-      const ics = generateICS(country, nextGame);
-      downloadICS(ics, `wc2026-${country.toLowerCase()}.ics`);
-    }
-    if ("Notification" in window && Notification.permission === "default") {
-      const perm = await Notification.requestPermission();
-      if (perm === "denied") setNotifDenied(true);
-    }
-    localStorage.setItem("no-noise-wc-notify", country);
-    setState("done");
-  }
-
-  if (state !== "idle") return null;
-
-  return (
-    <div
-      className="rounded-[1rem] px-4 py-3"
-      style={{ background: `${accentColor}12`, border: `1px solid ${accentColor}28` }}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[0.78rem] font-black text-[#1a1208]">
-            {flag} Get reminded when {name} plays
-          </p>
-          <p className="mt-0.5 text-[0.65rem] font-medium text-[#8a7a66]">
-            Save match dates and kickoff alerts
-            {nextGame ? ` · ${formatDateTime(nextGame.date)}` : ""}
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <button
-            type="button"
-            onClick={() => setState("skipped")}
-            className="rounded-full bg-white px-2.5 py-1 text-[0.62rem] font-bold text-[#a89880] ring-1 ring-[#e8e0d4] transition active:scale-95"
-          >
-            Skip
-          </button>
-          <button
-            type="button"
-            onClick={handleRemind}
-            className="rounded-full px-2.5 py-1 text-[0.62rem] font-black text-white transition active:scale-95"
-            style={{ background: accentColor }}
-          >
-            Remind Me
-          </button>
+          {notifDenied && (
+            <p
+              className="mt-2 text-[0.6rem] font-bold"
+              style={{ color: textColor }}
+            >
+              Notifications blocked - the calendar file still downloaded.
+            </p>
+          )}
         </div>
       </div>
-      {notifDenied && (
-        <p className="mt-1.5 text-[0.6rem] font-medium text-[#D00000]">
-          Notifications blocked — use the calendar file above
-        </p>
-      )}
     </div>
   );
 }
@@ -1810,7 +1838,7 @@ export default function WorldCupApp({
         {hasLoadedOnce && !hasTournamentStarted && (
           <div className="mx-auto max-w-4xl space-y-5">
 
-            {/* Hero: countdown + country module */}
+            {/* Hero: countdown + country hub */}
             <div className="space-y-3">
               <CountdownHero
                 hasCountry={Boolean(selectedCountry)}
@@ -1818,18 +1846,11 @@ export default function WorldCupApp({
               />
 
               {selectedCountry && (
-                <CountryModule
+                <CountryHub
                   selectedCountry={selectedCountry}
                   accentColor={accentColor}
-                  onChangeTap={() => setShowPicker(true)}
-                />
-              )}
-
-              {selectedCountry && (
-                <CalendarReminder
-                  country={selectedCountry}
                   nextGame={nextCountryGame}
-                  accentColor={accentColor}
+                  onChangeTap={() => setShowPicker(true)}
                 />
               )}
 
