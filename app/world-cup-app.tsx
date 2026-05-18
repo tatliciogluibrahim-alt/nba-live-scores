@@ -1069,15 +1069,39 @@ function ScheduleView({
 }
 
 // ── Venue Sheet ────────────────────────────────────────────────────────────────
-function MatchHeaderTeam({ team }: { team: WCTeam }) {
+function getMatchTeamLabel(team: WCTeam): string {
+  return COUNTRY_NAME[team.abbreviation] ?? team.name;
+}
+
+function MatchHeaderTeam({
+  team,
+  isSelected,
+  accentColor,
+}: {
+  team: WCTeam;
+  isSelected: boolean;
+  accentColor: string;
+}) {
+  const selectedRing = accentColor === "#000000" ? "rgba(255,255,255,0.45)" : accentColor;
+
   return (
-    <div className="min-w-0 rounded-[1rem] bg-white/10 px-3 py-3 ring-1 ring-white/10">
+    <div
+      className="min-w-0 rounded-[1rem] bg-white/10 px-3 py-3 ring-1 ring-white/10"
+      style={isSelected ? { background: "rgba(255,255,255,0.16)", boxShadow: `inset 0 0 0 1px ${selectedRing}` } : undefined}
+    >
       <span className="block text-[1.7rem] leading-none">{flagEmoji(team.abbreviation)}</span>
-      <p className="mt-2 truncate font-[family-name:var(--font-display)] text-[1.15rem] font-black uppercase leading-none">
-        {team.abbreviation}
-      </p>
+      <div className="mt-2 flex min-w-0 items-center gap-1.5">
+        <p className="truncate font-[family-name:var(--font-display)] text-[1.15rem] font-black uppercase leading-none">
+          {team.abbreviation}
+        </p>
+        {isSelected && (
+          <span className="shrink-0 rounded-full bg-white px-1.5 py-0.5 text-[0.48rem] font-black uppercase tracking-wide text-[#0f3b2a]">
+            Mine
+          </span>
+        )}
+      </div>
       <p className="mt-1 truncate text-[0.58rem] font-semibold text-white/55">
-        {COUNTRY_NAME[team.abbreviation] ?? team.name}
+        {getMatchTeamLabel(team)}
       </p>
     </div>
   );
@@ -1093,9 +1117,34 @@ function VenueSheet({
   const watchLabel = getWCWatchLabel(game);
   const stakeLabel = getWorldCupMomentStake(game, selectedCountry);
   const showScore = game.status !== "upcoming";
+  const selectedMatchCountry =
+    selectedCountry &&
+    (game.home.abbreviation === selectedCountry || game.away.abbreviation === selectedCountry)
+      ? selectedCountry
+      : null;
+  const stageLabel = game.group ? `Group ${game.group}` : game.stage || "World Cup";
+  const venueLabel = game.venue ?? "Venue TBA";
+  const statusLabel =
+    game.status === "live"
+      ? game.statusText || "Live now"
+      : game.status === "final"
+        ? game.statusText || "Final"
+        : countdown(game.date);
   const moments = game.events.filter((event) =>
     ["goal", "pen_goal", "own_goal", "red_card"].includes(event.type)
   );
+  const detailItems = [
+    { label: "Kickoff", value: matchTime },
+    { label: "Stage", value: stageLabel },
+    { label: "Venue", value: venueLabel },
+    { label: "Status", value: statusLabel },
+  ];
+
+  function handleSaveMatch() {
+    if (!selectedMatchCountry) return;
+    const ics = generateICS(selectedMatchCountry, game);
+    downloadICS(ics, `wc2026-${selectedMatchCountry.toLowerCase()}-${game.id}.ics`);
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
@@ -1135,32 +1184,101 @@ function VenueSheet({
           </div>
 
           <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <MatchHeaderTeam team={game.away} />
+            <MatchHeaderTeam
+              team={game.away}
+              isSelected={game.away.abbreviation === selectedMatchCountry}
+              accentColor={accentColor}
+            />
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[0.62rem] font-black uppercase tracking-wide text-[#0f3b2a] ring-1 ring-white/15">
               {showScore ? `${game.away.score}-${game.home.score}` : "vs"}
             </div>
-            <MatchHeaderTeam team={game.home} />
+            <MatchHeaderTeam
+              team={game.home}
+              isSelected={game.home.abbreviation === selectedMatchCountry}
+              accentColor={accentColor}
+            />
           </div>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto px-4 pt-4">
-          <div className="space-y-2 pb-4">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {[
-                { label: "Watch", value: watchLabel },
-                { label: "Stakes", value: stakeLabel },
-                { label: "Stage", value: game.stage || "World Cup" },
-                { label: "Venue", value: game.venue ?? "TBA" },
-              ].map((item) => (
-                <div key={item.label} className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
-                  <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
-                    {item.label}
+        <div className="max-h-[64vh] overflow-y-auto px-4 pt-4">
+          <div className="space-y-3 pb-4">
+            <div className="overflow-hidden rounded-[1.15rem] bg-white ring-1 ring-[#e8e0d4]">
+              <div className="flex flex-col gap-2 border-b border-[#f0ece4] bg-[#fbf8f3] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+                    Where to Watch
                   </p>
-                  <p className="mt-1 truncate text-[0.8rem] font-black text-[#1a1208]">
-                    {item.value}
+                  <p className="mt-1 text-[0.72rem] font-semibold text-[#8a7a66]">
+                    U.S. broadcast path for this match.
                   </p>
                 </div>
-              ))}
+                <span
+                  className="w-fit rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.12em]"
+                  style={{
+                    background: `${accentColor}12`,
+                    color: safeTextColor(accentColor),
+                    boxShadow: `inset 0 0 0 1px ${accentColor}2e`,
+                  }}
+                >
+                  {stakeLabel}
+                </span>
+              </div>
+
+              <div className="px-4 py-4">
+                <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+                  TV / Stream
+                </p>
+                <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="min-w-0 break-words text-[1rem] font-black leading-tight text-[#1a1208]">
+                    {watchLabel}
+                  </p>
+                  {selectedMatchCountry && game.status === "upcoming" && (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleSaveMatch();
+                      }}
+                      className="w-fit shrink-0 rounded-full px-3 py-1.5 text-[0.62rem] font-black uppercase tracking-wide text-white transition active:scale-95"
+                      style={{ background: accentColor }}
+                    >
+                      Save match
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 border-t border-[#f0ece4] bg-[#fbf8f3] p-2 sm:grid-cols-4">
+                {detailItems.map((item) => (
+                  <div key={item.label} className="min-w-0 rounded-[0.8rem] bg-white px-3 py-2.5 ring-1 ring-[#f0ece4]">
+                    <p className="font-[family-name:var(--font-display)] text-[0.52rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+                      {item.label}
+                    </p>
+                    <p className="mt-1 truncate text-[0.68rem] font-black text-[#1a1208]">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
+                <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+                  Match
+                </p>
+                <p className="mt-1 truncate text-[0.8rem] font-black text-[#1a1208]">
+                  {getMatchTeamLabel(game.away)} vs {getMatchTeamLabel(game.home)}
+                </p>
+              </div>
+              <div className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
+                <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+                  Stakes
+                </p>
+                <p className="mt-1 truncate text-[0.8rem] font-black text-[#1a1208]">
+                  {stakeLabel}
+                </p>
+              </div>
             </div>
 
             {moments.length > 0 && (
@@ -1192,9 +1310,15 @@ function VenueSheet({
               </div>
             )}
 
-            <p className="px-1 pt-1 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-              Watch in NYC
-            </p>
+            <div className="flex items-center gap-3 px-1 pt-1">
+              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+                Watch in NYC
+              </p>
+              <div className="flex-1 border-t border-[#e8e0d4]" />
+              <span className="text-[0.56rem] font-semibold uppercase tracking-wide text-[#c0b0a0]">
+                Nearby spots
+              </span>
+            </div>
             {NYC_VENUES.map((v) => (
               <div key={v.name} className="flex items-start justify-between gap-3 rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
                 <div className="min-w-0">
