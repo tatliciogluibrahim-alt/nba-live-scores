@@ -971,6 +971,20 @@ function ScheduleView({
 }
 
 // ── Venue Sheet ────────────────────────────────────────────────────────────────
+function MatchHeaderTeam({ team }: { team: WCTeam }) {
+  return (
+    <div className="min-w-0 rounded-[1rem] bg-white/10 px-3 py-3 ring-1 ring-white/10">
+      <span className="block text-[1.7rem] leading-none">{flagEmoji(team.abbreviation)}</span>
+      <p className="mt-2 truncate font-[family-name:var(--font-display)] text-[1.15rem] font-black uppercase leading-none">
+        {team.abbreviation}
+      </p>
+      <p className="mt-1 truncate text-[0.58rem] font-semibold text-white/55">
+        {COUNTRY_NAME[team.abbreviation] ?? team.name}
+      </p>
+    </div>
+  );
+}
+
 function VenueSheet({
   game, selectedCountry, accentColor, onClose,
 }: {
@@ -992,43 +1006,47 @@ function VenueSheet({
         className="relative w-full max-w-lg overflow-hidden rounded-t-[1.75rem] bg-[#f5f1ea] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-[#d4cdc0]" />
-        </div>
-        <div className="px-5 pb-3 pt-1">
-          <p className="font-[family-name:var(--font-display)] text-base font-black uppercase tracking-tight text-[#1a1208]">
-            Match Intelligence
-          </p>
-          <p className="mt-0.5 text-[0.72rem] font-semibold text-[#a89880]">
-            {matchLabel} · {matchTime}
-          </p>
-        </div>
-        <div className="max-h-[60vh] overflow-y-auto px-4">
-          <div className="space-y-2 pb-4">
-            <div className="overflow-hidden rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]">
-              {([game.away, game.home] as WCTeam[]).map((team) => (
-                <div
-                  key={team.abbreviation}
-                  className="flex items-center justify-between gap-3 border-b border-[#f0ece4] px-4 py-2.5 last:border-b-0"
-                >
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="shrink-0 text-[1.55rem] leading-none">{flagEmoji(team.abbreviation)}</span>
-                    <div className="min-w-0">
-                      <p className="truncate text-[0.86rem] font-black uppercase tracking-tight text-[#1a1208]">
-                        {team.abbreviation}
-                      </p>
-                      <p className="truncate text-[0.64rem] font-semibold text-[#a89880]">
-                        {COUNTRY_NAME[team.abbreviation] ?? team.name}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-[1.25rem] font-black tabular-nums text-[#1a1208]">
-                    {showScore ? team.score : "–"}
-                  </p>
-                </div>
-              ))}
-            </div>
+        <div className="bg-[#0f3b2a] px-5 pb-5 pt-3 text-white">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="h-1 w-10 rounded-full bg-white/25" />
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-lg leading-none text-white ring-1 ring-white/15 transition active:scale-95"
+              aria-label="Close match intelligence"
+            >
+              ×
+            </button>
+          </div>
 
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/55">
+                Match Intelligence
+              </p>
+              <p className="mt-1 truncate font-[family-name:var(--font-display)] text-[1.55rem] font-black uppercase leading-none tracking-tight">
+                {matchLabel}
+              </p>
+              <p className="mt-1 text-[0.72rem] font-semibold text-white/65">
+                {matchTime}
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-white px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.1em] text-[#0f3b2a]">
+              {stakeLabel}
+            </span>
+          </div>
+
+          <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <MatchHeaderTeam team={game.away} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[0.62rem] font-black uppercase tracking-wide text-[#0f3b2a] ring-1 ring-white/15">
+              {showScore ? `${game.away.score}-${game.home.score}` : "vs"}
+            </div>
+            <MatchHeaderTeam team={game.home} />
+          </div>
+        </div>
+
+        <div className="max-h-[60vh] overflow-y-auto px-4 pt-4">
+          <div className="space-y-2 pb-4">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {[
                 { label: "Watch", value: watchLabel },
@@ -1126,23 +1144,51 @@ function CountdownHero({
   if (!hasCountry) {
     return (
       <div className="overflow-hidden rounded-[1.35rem] bg-white ring-1 ring-[#e8e0d4]">
-        <div className="border-b border-[#f0ece4] px-4 py-3">
-          <div className="flex items-end justify-between gap-3">
-            <div className="flex items-baseline gap-2">
-              <span className="font-[family-name:var(--font-display)] text-[3.3rem] font-black leading-none tracking-tight text-[#1a1208]">
-                {days}
-              </span>
-              <span className="pb-1 text-[0.68rem] font-black uppercase tracking-[0.1em] text-[#a89880]">
-                days
-              </span>
+        <div className="bg-[#0f3b2a] px-4 py-3 text-white">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/55">
+                FIFA World Cup 2026
+              </p>
+              <p className="mt-1 font-[family-name:var(--font-display)] text-[2.55rem] font-black uppercase leading-none tracking-tight">
+                {days} days
+              </p>
             </div>
-            <span className="pb-1 text-right text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-[#c0b0a0]">
-              June 11 · Mexico City
-            </span>
+            <div className="shrink-0 text-right">
+              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/55">
+                Kickoff
+              </p>
+              <p className="mt-1 text-[0.76rem] font-black uppercase leading-tight text-white">
+                June 11
+              </p>
+              <p className="text-[0.62rem] font-semibold uppercase tracking-wide text-white/65">
+                Mexico City
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {[
+              { value: "48", label: "Teams" },
+              { value: "12", label: "Groups" },
+              { value: "104", label: "Matches" },
+            ].map((item) => (
+              <div key={item.label} className="rounded-[0.85rem] bg-white/10 px-3 py-2 ring-1 ring-white/10">
+                <p className="font-[family-name:var(--font-display)] text-[1.15rem] font-black leading-none">
+                  {item.value}
+                </p>
+                <p className="mt-1 text-[0.55rem] font-black uppercase tracking-[0.12em] text-white/55">
+                  {item.label}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="px-4 py-4">
+          <p className="mb-2 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#006847]">
+            Your tournament starts here
+          </p>
           <p className="font-[family-name:var(--font-display)] text-[2rem] font-black uppercase leading-none tracking-tight text-[#1a1208]">
             Pick your country.
           </p>
@@ -1185,31 +1231,100 @@ function CountdownHero({
 
 function WorldCupWatchGuide({ accentColor }: { accentColor: string }) {
   return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-      {[
-        { label: "English", value: "FOX / FS1", note: "FOX Sports App" },
-        { label: "Spanish", value: "Telemundo", note: "Peacock" },
-      ].map((item) => (
-        <div
-          key={item.label}
-          className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]"
-        >
-          <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
-            {item.label}
+    <div className="overflow-hidden rounded-[1.1rem] bg-white ring-1 ring-[#e8e0d4]">
+      <div className="flex items-center justify-between gap-3 border-b border-[#f0ece4] px-4 py-3">
+        <div>
+          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+            Where to Watch
           </p>
-          <div className="mt-1 flex items-end justify-between gap-3">
-            <p
-              className="truncate font-[family-name:var(--font-display)] text-[1.05rem] font-black uppercase tracking-tight"
-              style={{ color: safeTextColor(accentColor) }}
-            >
+          <p className="mt-0.5 text-[0.72rem] font-semibold text-[#8a7a66]">
+            U.S. broadcast paths, kept simple.
+          </p>
+        </div>
+        <span
+          className="hidden rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em] text-white sm:inline-flex"
+          style={{ background: accentColor }}
+        >
+          World Cup
+        </span>
+      </div>
+      <div className="grid grid-cols-1 divide-y divide-[#f0ece4] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+        {[
+          { label: "English", value: "FOX / FS1", note: "FOX Sports App" },
+          { label: "Spanish", value: "Telemundo", note: "Peacock" },
+        ].map((item) => (
+          <div key={item.label} className="px-4 py-3">
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+                  {item.label}
+                </p>
+                <p
+                  className="mt-1 truncate font-[family-name:var(--font-display)] text-[1.05rem] font-black uppercase tracking-tight"
+                  style={{ color: safeTextColor(accentColor) }}
+                >
+                  {item.value}
+                </p>
+              </div>
+              <p className="shrink-0 text-[0.68rem] font-black text-[#8a7a66]">
+                {item.note}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TournamentPulseNote({
+  selectedCountry,
+  accentColor,
+}: {
+  selectedCountry: string | null;
+  accentColor: string;
+}) {
+  const group = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
+  const pulseItems = [
+    {
+      label: "Opening",
+      value: "June 11 · Mexico City",
+    },
+    {
+      label: "Draw",
+      value: selectedCountry && group
+        ? `${selectedCountry} in Group ${group}`
+        : "Groups are set",
+    },
+    {
+      label: "Watch",
+      value: WORLD_CUP_US_WATCH_FALLBACK,
+    },
+  ];
+
+  return (
+    <div className="rounded-[1.15rem] bg-[#fbf8f3] px-4 py-3 ring-1 ring-[#e8e0d4]">
+      <div className="mb-2 flex items-center gap-3">
+        <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+          Tournament Pulse
+        </p>
+        <div className="flex-1 border-t border-[#e8e0d4]" />
+        <p className="shrink-0 text-[0.58rem] font-black uppercase tracking-wide" style={{ color: safeTextColor(accentColor) }}>
+          Fixtures soon
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {pulseItems.map((item) => (
+          <div key={item.label} className="rounded-[0.85rem] bg-white px-3 py-2 ring-1 ring-[#f0ece4]">
+            <p className="font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+              {item.label}
+            </p>
+            <p className="mt-1 truncate text-[0.72rem] font-black text-[#1a1208]">
               {item.value}
             </p>
-            <p className="shrink-0 text-[0.68rem] font-black text-[#8a7a66]">
-              {item.note}
-            </p>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -1762,14 +1877,10 @@ export default function WorldCupApp({
               )}
 
               {viewMode === "groups" && games.length === 0 && (
-                <div className="rounded-[1.2rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
-                  <p className="font-[family-name:var(--font-display)] text-[1.1rem] font-black uppercase tracking-tight text-[#1a1208]">
-                    Full fixtures loading soon
-                  </p>
-                  <p className="mt-1.5 text-[0.78rem] font-medium text-[#8a7a66]">
-                    Groups are available now. Match times will appear here once confirmed.
-                  </p>
-                </div>
+                <TournamentPulseNote
+                  selectedCountry={selectedCountry}
+                  accentColor={accentColor}
+                />
               )}
 
               {viewMode === "groups" && !selectedCountry && (
