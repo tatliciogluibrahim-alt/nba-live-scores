@@ -262,6 +262,155 @@ function getGameSubStatus(game: Game) {
   return "Upcoming";
 }
 
+type MomentStakeTone = "urgent" | "live" | "complete" | "calm" | "neutral";
+
+type MomentStake = {
+  label: string;
+  tone: MomentStakeTone;
+};
+
+function getGameNumberFromText(text: string) {
+  const match = text.match(/game\s+([1-7])/i);
+  return match ? Number(match[1]) : null;
+}
+
+function getSeriesRecordState(
+  teamA: Team & { wins?: number },
+  teamB: Team & { wins?: number },
+  winsA: number,
+  winsB: number
+) {
+  const high = Math.max(winsA, winsB);
+  const low = Math.min(winsA, winsB);
+  const leader = winsA > winsB ? teamA : winsB > winsA ? teamB : null;
+
+  return {
+    high,
+    low,
+    leader,
+    isTied: winsA === winsB && winsA > 0,
+    isComplete: high >= 4,
+  };
+}
+
+function getMomentStakeClasses(stake: MomentStake, surface: "light" | "dark") {
+  if (surface === "dark") {
+    if (stake.tone === "urgent") {
+      return "bg-orange-300 text-[#1a1208] ring-orange-200";
+    }
+    if (stake.tone === "live") {
+      return "bg-orange-100 text-orange-900 ring-orange-200";
+    }
+    if (stake.tone === "complete") {
+      return "bg-emerald-200 text-emerald-950 ring-emerald-100";
+    }
+
+    return "bg-white/10 text-white ring-white/20";
+  }
+
+  if (stake.tone === "urgent") {
+    return "bg-orange-100 text-orange-800 ring-orange-200";
+  }
+  if (stake.tone === "live") {
+    return "bg-orange-100 text-orange-800 ring-orange-200";
+  }
+  if (stake.tone === "complete") {
+    return "bg-emerald-100 text-emerald-800 ring-emerald-200";
+  }
+  if (stake.tone === "calm") {
+    return "bg-[#f0ece4] text-[#8a7a66] ring-[#d4cdc0]";
+  }
+
+  return "bg-white text-[#8a7a66] ring-[#e8e0d4]";
+}
+
+function MomentStakePill({
+  stake,
+  surface = "light",
+}: {
+  stake: MomentStake;
+  surface?: "light" | "dark";
+}) {
+  return (
+    <span
+      className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase leading-none ring-1 ${getMomentStakeClasses(
+        stake,
+        surface
+      )}`}
+    >
+      {stake.tone === "live" && (
+        <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-current" />
+      )}
+      <span className="truncate">{stake.label}</span>
+    </span>
+  );
+}
+
+function getGameMomentStake(game: Game): MomentStake | null {
+  const contextText = [game.gameContext, game.seriesSummary, game.seriesRound]
+    .filter(Boolean)
+    .join(" ");
+  const gameNumber = getGameNumberFromText(contextText);
+  const gameDate = new Date(game.date);
+  const isTonight = isSameScoreboardDay(gameDate, getScoreboardToday());
+
+  const parsedRecord = game.seriesSummary
+    ? parseSeriesWins(
+        game.seriesSummary,
+        game.away.abbreviation,
+        game.home.abbreviation
+      )
+    : { winsA: 0, winsB: 0 };
+
+  const record = getSeriesRecordState(
+    game.away,
+    game.home,
+    parsedRecord.winsA,
+    parsedRecord.winsB
+  );
+  const hasSeriesRecord = parsedRecord.winsA > 0 || parsedRecord.winsB > 0;
+  const hasPlayoffContext = Boolean(
+    game.gameContext || game.seriesSummary || game.seriesRound || game.seriesConference
+  );
+
+  if (record.isComplete) {
+    return { label: "Series clinched", tone: "complete" };
+  }
+
+  if (gameNumber === 7 || (hasSeriesRecord && record.high === 3 && record.low === 3)) {
+    if (game.status === "live") return { label: "Game 7 live", tone: "live" };
+    if (game.status === "upcoming" && isTonight) {
+      return { label: "Game 7 tonight", tone: "urgent" };
+    }
+    return { label: "Game 7", tone: "urgent" };
+  }
+
+  if (game.status !== "final" && record.leader && record.high === 3) {
+    return { label: `${record.leader.abbreviation} can clinch`, tone: "urgent" };
+  }
+
+  if (record.isTied && record.high >= 2) {
+    return { label: "Series tied", tone: "calm" };
+  }
+
+  if (record.leader && record.high === 3) {
+    return {
+      label: `${record.leader.abbreviation} leads ${record.high}-${record.low}`,
+      tone: "calm",
+    };
+  }
+
+  if (game.status === "live" && hasPlayoffContext) {
+    return { label: "Live now", tone: "live" };
+  }
+
+  if (game.status === "upcoming" && isTonight && hasPlayoffContext) {
+    return { label: "Starts tonight", tone: "neutral" };
+  }
+
+  return null;
+}
+
 function sortGamesForDisplay(gamesToSort: Game[], favoriteTeamAbbr: string | null) {
   const statusRank = {
     live: 0,
@@ -619,6 +768,9 @@ type SharePayload =
 
 function ShareCardCanvas({ payload }: { payload: SharePayload }) {
   const isGame = payload.kind === "game";
+  const stake = isGame
+    ? getGameMomentStake(payload.game)
+    : getSeriesMomentStake(payload.series);
 
   const teamA = isGame ? payload.game.away : payload.series.teamA;
   const teamB = isGame ? payload.game.home : payload.series.teamB;
@@ -714,9 +866,16 @@ function ShareCardCanvas({ payload }: { payload: SharePayload }) {
           </div>
         </div>
 
-        <p style={{ margin: 0, maxWidth: 220, textAlign: "right", fontSize: 12, fontWeight: 900, color: "#e85d04", textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1.3 }}>
-          {contextLine}
-        </p>
+        <div style={{ maxWidth: 220, textAlign: "right" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 900, color: "#e85d04", textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1.3 }}>
+            {contextLine}
+          </p>
+          {stake && (
+            <p style={{ margin: "7px 0 0", display: "inline-block", borderRadius: 999, background: "#fff0e8", padding: "5px 9px", fontSize: 9, fontWeight: 900, color: "#1a1208", textTransform: "uppercase", letterSpacing: "0.06em", lineHeight: 1 }}>
+              {stake.label}
+            </p>
+          )}
+        </div>
       </div>
 
       <div
@@ -908,14 +1067,21 @@ function ShareButton({ onClick }: { onClick: () => void }) {
 function PlayoffBand({ game }: { game: Game }) {
   const [shareOpen, setShareOpen] = useState(false);
   const finalSummary = getFinalSummary(game);
+  const stake = getGameMomentStake(game);
 
-  if (!game.gameContext && !game.seriesSummary && !finalSummary) return null;
+  if (!game.gameContext && !game.seriesSummary && !finalSummary && !stake) return null;
 
   return (
     <>
       <div className="mt-2.5 rounded-[1rem] bg-[#1a1208] px-3 py-2.5 text-white ring-1 ring-white/10">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
+            {stake && (
+              <div className="mb-1.5">
+                <MomentStakePill stake={stake} surface="dark" />
+              </div>
+            )}
+
             {game.status === "final" && finalSummary && (
               <p className="font-[family-name:var(--font-display)] text-xs font-black uppercase tracking-wide text-emerald-300">
                 {finalSummary}
@@ -1344,6 +1510,74 @@ function getSeriesStatusPillClasses(series: SeriesInfo) {
   return "bg-blue-100 text-blue-800 ring-blue-200";
 }
 
+function getSeriesMomentStake(series: SeriesInfo): MomentStake | null {
+  const record = getSeriesRecordState(
+    series.teamA,
+    series.teamB,
+    series.teamA.wins,
+    series.teamB.wins
+  );
+  const gameDate = series.nextGame ? new Date(series.nextGame.date) : null;
+  const isTonight = gameDate
+    ? isSameScoreboardDay(gameDate, getScoreboardToday())
+    : false;
+  const gameNumber = getGameNumberFromText(
+    [
+      getSeriesGameLabel(series),
+      series.nextGame?.gameContext,
+      series.latestGame?.gameContext,
+      series.summary,
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
+
+  if (record.isComplete) {
+    return { label: "Series clinched", tone: "complete" };
+  }
+
+  if (series.status === "live") {
+    if (series.isGame7 || gameNumber === 7 || (record.high === 3 && record.low === 3)) {
+      return { label: "Game 7 live", tone: "live" };
+    }
+
+    if (record.leader && record.high === 3) {
+      return { label: `${record.leader.abbreviation} can clinch`, tone: "urgent" };
+    }
+
+    return { label: "Live now", tone: "live" };
+  }
+
+  if (series.isGame7 || gameNumber === 7 || (record.high === 3 && record.low === 3)) {
+    if (series.nextGame?.status === "upcoming" && isTonight) {
+      return { label: "Game 7 tonight", tone: "urgent" };
+    }
+
+    return { label: "Game 7", tone: "urgent" };
+  }
+
+  if (series.nextGame && record.leader && record.high === 3) {
+    return { label: `${record.leader.abbreviation} can clinch`, tone: "urgent" };
+  }
+
+  if (record.isTied && record.high >= 2) {
+    return { label: "Series tied", tone: "calm" };
+  }
+
+  if (record.leader && record.high === 3) {
+    return {
+      label: `${record.leader.abbreviation} leads ${record.high}-${record.low}`,
+      tone: "calm",
+    };
+  }
+
+  if (series.nextGame?.status === "upcoming" && isTonight) {
+    return { label: "Starts tonight", tone: "neutral" };
+  }
+
+  return null;
+}
+
 function buildBracketSeries(allGames: Game[]): SeriesInfo[] {
   const playoffGames = allGames.filter(isBracketCandidateGame);
   if (!playoffGames.length) return [];
@@ -1507,6 +1741,7 @@ function SeriesCard({
     : getSeriesLabel(series);
   const seriesRecord = getSeriesRecord(series);
   const statusLabel = getSeriesStatusLabel(series);
+  const stake = getSeriesMomentStake(series);
 
   return (
     <>
@@ -1532,6 +1767,11 @@ function SeriesCard({
               <p className="mt-0.5 text-[0.72rem] font-semibold leading-tight text-[#8a7a66]">
                 {seriesRecord}
               </p>
+              {stake && (
+                <div className="mt-2">
+                  <MomentStakePill stake={stake} />
+                </div>
+              )}
             </div>
             <span
               className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[8px] font-black uppercase ring-1 ${getSeriesStatusPillClasses(
