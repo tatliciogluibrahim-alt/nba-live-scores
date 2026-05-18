@@ -91,6 +91,14 @@ function safeTextColor(accent: string): string {
     : accent;
 }
 
+function orderedGroupLetters(selectedCountry: string | null): string[] {
+  const letters = "ABCDEFGHIJKL".split("");
+  const selectedGroup = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
+
+  if (!selectedGroup) return letters;
+  return [selectedGroup, ...letters.filter((letter) => letter !== selectedGroup)];
+}
+
 const WORLD_CUP_US_WATCH_FALLBACK = "FOX / FS1 · Telemundo / Peacock";
 
 function getWCWatchLabel(game: WCGame): string {
@@ -568,50 +576,90 @@ function GroupStandingsTable({
   );
 }
 
-// ── Groups Preview (no-country pre-tournament) ─────────────────────────────────
-function GroupsPreview({ onPickCountry }: { onPickCountry: () => void }) {
-  // Show a tasteful preview of the first few groups so the no-country state
-  // doesn't feel empty. Pure preview — no implied status, no fake data.
-  const previewGroups = ["A", "B", "C", "D"];
+// ── Groups Preview (pre-tournament draw board) ────────────────────────────────
+function GroupsPreview({
+  selectedCountry,
+  accentColor,
+  onPickCountry,
+}: {
+  selectedCountry: string | null;
+  accentColor: string;
+  onPickCountry: () => void;
+}) {
+  const groupLetters = orderedGroupLetters(selectedCountry);
+  const selectedGroup = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
+  const accentText = safeTextColor(accentColor);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3 px-1">
-        <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-          Groups available now
-        </p>
-        <div className="flex-1 border-t border-[#e8e0d4]" />
-        <button
-          type="button"
-          onClick={onPickCountry}
-          className="shrink-0 text-[0.6rem] font-black uppercase tracking-wide text-[#006847] transition hover:text-[#1a1208]"
-        >
-          Pick country →
-        </button>
+    <div className="overflow-hidden rounded-[1.2rem] bg-white ring-1 ring-[#e8e0d4]">
+      <div className="flex flex-col gap-3 border-b border-[#f0ece4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+            Group Draw Board
+          </p>
+          <p className="mt-1 text-[0.76rem] font-semibold text-[#8a7a66]">
+            {selectedCountry && selectedGroup
+              ? `${flagEmoji(selectedCountry)} ${selectedCountry} starts in Group ${selectedGroup}.`
+              : "All 12 groups are set. Pick a country to bring yours forward."}
+          </p>
+        </div>
+        {!selectedCountry && (
+          <button
+            type="button"
+            onClick={onPickCountry}
+            className="w-fit shrink-0 rounded-full bg-[#006847] px-3 py-1.5 text-[0.62rem] font-black uppercase tracking-wide text-white transition active:scale-95"
+          >
+            Pick country
+          </button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {previewGroups.map((letter) => {
+      <div className="grid grid-cols-1 gap-2 bg-[#fbf8f3] p-3 sm:grid-cols-2 lg:grid-cols-3">
+        {groupLetters.map((letter) => {
           const teams = WC_GROUPS[letter] ?? [];
+          const isMyGroup = letter === selectedGroup;
+
           return (
             <div
               key={letter}
-              className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]"
+              className="overflow-hidden rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]"
+              style={isMyGroup ? { boxShadow: `inset 0 0 0 1px ${accentColor}` } : undefined}
             >
-              <div className="mb-1.5 flex items-baseline justify-between">
-                <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.12em] text-[#a89880]">
+              <div className="flex items-center justify-between gap-2 border-b border-[#f0ece4] px-3 py-2">
+                <p
+                  className="font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-[0.12em]"
+                  style={{ color: isMyGroup ? accentText : "#a89880" }}
+                >
                   Group {letter}
                 </p>
-                <span className="text-[0.55rem] font-semibold uppercase tracking-wide text-[#c0b0a0]">
-                  4 teams
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-x-2.5 gap-y-1">
-                {teams.map((t) => (
-                  <span key={t} className="flex items-center gap-1 text-[0.7rem] font-bold uppercase tracking-tight text-[#1a1208]">
-                    <span className="text-sm leading-none">{flagEmoji(t)}</span>
-                    {t}
+                {isMyGroup && selectedCountry ? (
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[0.52rem] font-black uppercase tracking-wide"
+                    style={{ background: `${accentColor}14`, color: accentText }}
+                  >
+                    Your group
                   </span>
+                ) : (
+                  <span className="text-[0.55rem] font-semibold uppercase tracking-wide text-[#c0b0a0]">
+                    4 teams
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 px-3 py-2.5">
+                {teams.map((t) => (
+                  <div
+                    key={t}
+                    className="flex min-w-0 items-center gap-1.5 rounded-[0.65rem] px-2 py-1.5"
+                    style={t === selectedCountry ? { background: `${accentColor}10` } : { background: "#fbf8f3" }}
+                  >
+                    <span className="shrink-0 text-[0.9rem] leading-none">{flagEmoji(t)}</span>
+                    <span
+                      className="truncate text-[0.64rem] font-black uppercase tracking-tight"
+                      style={{ color: t === selectedCountry ? accentText : "#1a1208" }}
+                    >
+                      {t}
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -619,29 +667,78 @@ function GroupsPreview({ onPickCountry }: { onPickCountry: () => void }) {
         })}
       </div>
 
-      <p className="px-1 text-[0.6rem] font-medium text-[#c0b0a0]">
-        Showing 4 of 12 groups. Pick your country to see yours up top.
-      </p>
+      <div className="border-t border-[#f0ece4] bg-white px-4 py-2.5">
+        <p className="text-[0.6rem] font-bold text-[#a89880]">
+          {selectedCountry && selectedGroup
+            ? `Group ${selectedGroup} appears first. All teams stay neutral until matches begin.`
+            : "48 teams · 12 groups · standings stay neutral until kickoff."}
+        </p>
+      </div>
     </div>
   );
 }
 
 // ── Pre-tournament Table note ──────────────────────────────────────────────────
-function PreTournamentTableNote({ accentColor }: { accentColor: string }) {
+function PreTournamentTableNote({
+  selectedCountry,
+  accentColor,
+}: {
+  selectedCountry: string | null;
+  accentColor: string;
+}) {
+  const selectedGroup = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
+  const accentText = safeTextColor(accentColor);
+  const noteItems = [
+    {
+      label: selectedCountry && selectedGroup ? "Your Group" : "Groups",
+      value: selectedCountry && selectedGroup ? `${selectedCountry} · Group ${selectedGroup}` : "12 groups",
+    },
+    {
+      label: "Standings",
+      value: "Everyone starts 0",
+    },
+    {
+      label: "Kickoff",
+      value: "June 11",
+    },
+  ];
+
   return (
-    <div
-      className="rounded-[1.1rem] border border-dashed bg-white/70 px-4 py-3"
-      style={{ borderColor: `${accentColor}55` }}
-    >
-      <p
-        className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.1em]"
-        style={{ color: safeTextColor(accentColor) }}
-      >
-        Pre-tournament table
-      </p>
-      <p className="mt-1 text-[0.74rem] font-medium leading-snug text-[#8a7a66]">
-        Every team starts on 0. Standings light up as matches finish on June 11.
-      </p>
+    <div className="overflow-hidden rounded-[1.15rem] bg-white ring-1 ring-[#e8e0d4]">
+      <div className="flex flex-col gap-3 border-b border-[#f0ece4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+            Table Control
+          </p>
+          <p className="mt-1 text-[0.76rem] font-semibold text-[#8a7a66]">
+            {selectedCountry && selectedGroup
+              ? `Your group is first below. No fake movement before kickoff.`
+              : "Every table starts clean. No fake movement before kickoff."}
+          </p>
+        </div>
+        <span
+          className="w-fit rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em]"
+          style={{
+            color: accentText,
+            background: `${accentColor}12`,
+            boxShadow: `inset 0 0 0 1px ${accentColor}2e`,
+          }}
+        >
+          Pre-tournament
+        </span>
+      </div>
+      <div className="grid grid-cols-1 gap-2 bg-[#fbf8f3] p-3 sm:grid-cols-3">
+        {noteItems.map((item) => (
+          <div key={item.label} className="min-w-0 rounded-[0.85rem] bg-white px-3 py-2 ring-1 ring-[#f0ece4]">
+            <p className="font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+              {item.label}
+            </p>
+            <p className="mt-1 truncate text-[0.72rem] font-black text-[#1a1208]">
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -652,7 +749,7 @@ function StandingsView({
 }: {
   games: WCGame[]; selectedCountry: string | null; accentColor: string; hasTournamentStarted: boolean;
 }) {
-  const groupLetters = "ABCDEFGHIJKL".split("");
+  const groupLetters = orderedGroupLetters(selectedCountry);
   const myGroup = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
 
   return (
@@ -660,7 +757,9 @@ function StandingsView({
       <p className="px-1 text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
         {hasTournamentStarted
           ? "Tap a team to see full stats · ✅ Advancing · 🟡 Possible · ❌ Eliminated"
-          : "Tap a team to see full stats · All teams start neutral until June 11"}
+          : selectedCountry && myGroup
+            ? `Group ${myGroup} appears first · All teams start neutral until June 11`
+            : "Tap a team to see full stats · All teams start neutral until June 11"}
       </p>
       {groupLetters.map((letter) => {
         const stats = calcGroupStandings(letter, games);
@@ -676,10 +775,14 @@ function StandingsView({
               </p>
               {isMyGroup && selectedCountry && (
                 <span
-                  className="rounded-full px-1.5 py-0.5 text-[0.55rem] font-black uppercase tracking-wide text-white"
-                  style={{ background: accentColor }}
+                  className="rounded-full px-1.5 py-0.5 text-[0.55rem] font-black uppercase tracking-wide"
+                  style={{
+                    color: safeTextColor(accentColor),
+                    background: `${accentColor}12`,
+                    boxShadow: `inset 0 0 0 1px ${accentColor}2e`,
+                  }}
                 >
-                  {flagEmoji(selectedCountry)} {selectedCountry}
+                  {flagEmoji(selectedCountry)} My Group
                 </span>
               )}
               <div className="flex-1 border-t border-[#e8e0d4]" />
@@ -2092,12 +2195,19 @@ export default function WorldCupApp({
                 />
               )}
 
-              {viewMode === "groups" && !selectedCountry && (
-                <GroupsPreview onPickCountry={() => setShowPicker(true)} />
+              {viewMode === "groups" && games.length === 0 && (
+                <GroupsPreview
+                  selectedCountry={selectedCountry}
+                  accentColor={accentColor}
+                  onPickCountry={() => setShowPicker(true)}
+                />
               )}
 
               {viewMode === "table" && (
-                <PreTournamentTableNote accentColor={accentColor} />
+                <PreTournamentTableNote
+                  selectedCountry={selectedCountry}
+                  accentColor={accentColor}
+                />
               )}
               {viewMode === "table" && (
                 <StandingsView games={games} selectedCountry={selectedCountry} accentColor={accentColor} hasTournamentStarted={hasTournamentStarted} />
