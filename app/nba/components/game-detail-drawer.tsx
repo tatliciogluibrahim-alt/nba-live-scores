@@ -491,6 +491,13 @@ export function GameDetailDrawer({
     detail: GameDetail | null;
   }>({ gameId: null, detail: null });
   const [tab, setTab] = useState<DetailTab>("moments");
+  const [tabGameId, setTabGameId] = useState<string | null>(null);
+  // Reset tab when a different game opens. React docs endorse setting state
+  // during render to track a derived value — beats a useEffect cascade.
+  if (game && game.id !== tabGameId) {
+    setTabGameId(game.id);
+    setTab("moments");
+  }
 
   useEffect(() => {
     if (!game) return;
@@ -538,11 +545,6 @@ export function GameDetailDrawer({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [game, onClose]);
-
-  // Reset tab when opening a different game.
-  useEffect(() => {
-    setTab("moments");
-  }, [game?.id]);
 
   const merged = useMemo(() => {
     if (!game) return null;
