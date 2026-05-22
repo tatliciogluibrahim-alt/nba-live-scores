@@ -2,6 +2,7 @@ export type GameStatus = "live" | "upcoming" | "final";
 export type GameFilter = "all" | "my-team" | GameStatus;
 
 export type Team = {
+  id?: string;
   name: string;
   abbreviation: string;
   score: number;
@@ -32,11 +33,55 @@ export type TeamComparisonStat = {
   home: string;
 };
 
+export type PeriodScores = {
+  away: number[];
+  home: number[];
+};
+
+export type PulseState = {
+  label: "CALM" | "HEATING UP" | "HIGH PULSE" | "FINAL WINDOW" | "CHAOS";
+  heat: number;
+};
+
+export type GamePlay = {
+  id: string;
+  t: string;
+  team: "away" | "home" | "neutral";
+  teamAbbreviation: string;
+  who: string;
+  kind: string;
+  pts: number;
+  delta: { away: number; home: number };
+  score: string;
+  text: string;
+  period: number;
+  wallclock?: string;
+};
+
+export type LiveGameState = {
+  id: string;
+  quarter: number;
+  remaining: number | null;
+  away: Team;
+  home: Team;
+  scoreAway: number;
+  scoreHome: number;
+  perQ: PeriodScores;
+  plays: GamePlay[];
+  momentum: number[];
+  lead: "away" | "home" | "TIED";
+  pulse: PulseState;
+};
+
 export type GameDetail = {
   broadcasts: string[];
   line: GameLine | null;
   leaders: GameLeader[];
   teamComparison: TeamComparisonStat[];
+  periodScores: PeriodScores;
+  plays: GamePlay[];
+  momentum: number[];
+  pulse: PulseState | null;
   updatedAt?: string;
   error?: string;
 };
@@ -46,6 +91,8 @@ export type Game = {
   date: string;
   status: GameStatus;
   statusText: string;
+  period: number;
+  remaining: number | null;
   matchup: string;
   gameContext: string;
   seriesSummary: string;
@@ -53,6 +100,7 @@ export type Game = {
   seriesRound: string;
   home: Team;
   away: Team;
+  periodScores: PeriodScores;
   broadcasts: string[];
   line: GameLine | null;
   leaders: GameLeader[];

@@ -14,11 +14,13 @@ type ESPNTeam = {
 };
 
 type ESPNCompetitor = {
+  id?: string;
   homeAway?: "home" | "away";
   score?: string;
   team?: ESPNTeam;
   statistics?: ESPNStatistic[];
   leaders?: ESPNLeaderGroup[];
+  linescores?: { value?: number; displayValue?: string }[];
 };
 
 type ESPNStatus = {
@@ -104,6 +106,7 @@ type ESPNScoreboardResponse = {
 };
 
 type Team = {
+  id?: string;
   name: string;
   abbreviation: string;
   score: number;
@@ -115,6 +118,8 @@ type NormalizedGame = {
   date: string;
   status: "live" | "upcoming" | "final";
   statusText: string;
+  period: number;
+  remaining: number | null;
   matchup: string;
   gameContext: string;
   seriesSummary: string;
@@ -122,6 +127,10 @@ type NormalizedGame = {
   seriesRound: string;      // "First Round" | "Second Round" | "Conf Finals" | "NBA Finals" | ""
   home: Team;
   away: Team;
+  periodScores: {
+    away: number[];
+    home: number[];
+  };
   broadcasts: string[];
   line: GameLine | null;
   leaders: GameLeader[];
@@ -357,11 +366,18 @@ function normalizeTeam(competitor?: ESPNCompetitor): Team {
   const team = competitor?.team;
 
   return {
+    id: team?.id ?? competitor?.id,
     name: team?.displayName ?? team?.shortDisplayName ?? "Team",
     abbreviation: team?.abbreviation ?? "TBD",
     score: Number(competitor?.score ?? 0),
     logo: team?.logos?.[0]?.href ?? team?.logo ?? "",
   };
+}
+
+function normalizeLineScores(competitor?: ESPNCompetitor): number[] {
+  return (competitor?.linescores ?? [])
+    .map((score) => Number(score.value ?? score.displayValue ?? 0))
+    .filter((score) => Number.isFinite(score));
 }
 
 function normalizeBroadcasts(competition: ESPNCompetition): string[] {
@@ -490,6 +506,11 @@ function normalizeGame(event: ESPNEvent): NormalizedGame | null {
     date: event.date ?? competition.date ?? new Date().toISOString(),
     status: gameStatus,
     statusText: formatStatusText(status, gameStatus),
+    period: status?.period ?? 0,
+    remaining:
+      gameStatus === "live" && typeof status?.clock === "number"
+        ? Math.max(0, Math.round(status.clock))
+        : null,
     matchup: `${away.abbreviation} @ ${home.abbreviation}`,
     gameContext,
     seriesSummary: normalizeSeriesSummary(competition.series?.summary),
@@ -497,6 +518,10 @@ function normalizeGame(event: ESPNEvent): NormalizedGame | null {
     seriesRound,
     home,
     away,
+    periodScores: {
+      away: normalizeLineScores(awayCompetitor),
+      home: normalizeLineScores(homeCompetitor),
+    },
     broadcasts: normalizeBroadcasts(competition),
     line: normalizeLine(competition),
     leaders: normalizeLeaders(competitors),

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { GamePlay } from "../../nba/types";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ type ESPNStat = {
 };
 
 type ESPNTeam = {
+  id?: string;
   abbreviation?: string;
   displayName?: string;
 };
@@ -19,6 +21,14 @@ type ESPNTeam = {
 type ESPNBoxscoreTeam = {
   team?: ESPNTeam;
   statistics?: ESPNStat[];
+};
+
+type ESPNHeaderCompetitor = {
+  id?: string;
+  homeAway?: "home" | "away";
+  score?: string;
+  team?: ESPNTeam;
+  linescores?: { value?: number; displayValue?: string }[];
 };
 
 type ESPNLeaderItem = {
@@ -63,8 +73,45 @@ type ESPNOdds = {
 };
 
 type ESPNCompetition = {
+  competitors?: ESPNHeaderCompetitor[];
+  status?: {
+    clock?: number;
+    displayClock?: string;
+    period?: number;
+    type?: {
+      state?: string;
+      completed?: boolean;
+      description?: string;
+      detail?: string;
+      shortDetail?: string;
+    };
+  };
   broadcasts?: ESPNBroadcast[];
   odds?: ESPNOdds[];
+};
+
+type ESPNPlay = {
+  id?: string;
+  text?: string;
+  shortDescription?: string;
+  awayScore?: number;
+  homeScore?: number;
+  scoreValue?: number;
+  scoringPlay?: boolean;
+  type?: {
+    text?: string;
+  };
+  period?: {
+    number?: number;
+    displayValue?: string;
+  };
+  clock?: {
+    displayValue?: string;
+  };
+  team?: {
+    id?: string;
+  };
+  wallclock?: string;
 };
 
 type ESPNSummaryResponse = {
@@ -77,6 +124,7 @@ type ESPNSummaryResponse = {
   header?: {
     competitions?: ESPNCompetition[];
   };
+  plays?: ESPNPlay[];
 };
 
 const TEAM_STAT_GROUPS = [
@@ -195,6 +243,130 @@ function normalizeLeaders(data: ESPNSummaryResponse) {
     .slice(0, 8);
 }
 
+function normalizePeriodScores(data: ESPNSummaryResponse) {
+  const competitors = data.header?.competitions?.[0]?.competitors ?? [];
+  const away = competitors.find((competitor) => competitor.homeAway === "away");
+  const home = competitors.find((competitor) => competitor.homeAway === "home");
+  const toScores = (competitor: ESPNHeaderCompetitor | undefined) =>
+    (competitor?.linescores ?? [])
+      .map((score) => Number(score.value ?? score.displayValue ?? 0))
+      .filter((score) => Number.isFinite(score));
+
+  return {
+    away: toScores(away),
+    home: toScores(home),
+  };
+}
+
+function classifyPlayKind(play: ESPNPlay) {
+  const raw = `${play.type?.text ?? ""} ${play.shortDescription ?? ""} ${play.text ?? ""}`.toLowerCase();
+
+  if (raw.includes("3pt") || raw.includes("three point")) return "3PT";
+  if (raw.includes("free throw")) return "FT";
+  if (raw.includes("dunk")) return "DUNK";
+  if (raw.includes("steal")) return "STEAL";
+  if (raw.includes("block")) return "BLOCK";
+  if (raw.includes("foul")) return "FOUL";
+  if (raw.includes("timeout")) return "TIMEOUT";
+  if (raw.includes("assist")) return "AST";
+  if (play.scoreValue && play.scoreValue > 0) return "2PT";
+
+  return play.type?.text ?? "PLAY";
+}
+
+function normalizePlays(data: ESPNSummaryResponse) {
+  const competitors = data.header?.competitions?.[0]?.competitors ?? [];
+  const away = competitors.find((competitor) => competitor.homeAway === "away");
+  const home = competitors.find((competitor) => competitor.homeAway === "home");
+  const awayId = away?.team?.id ?? away?.id;
+  const homeId = home?.team?.id ?? home?.id;
+  const awayAbbr = away?.team?.abbreviation ?? "AWAY";
+  const homeAbbr = home?.team?.abbreviation ?? "HOME";
+  let previousAway = 0;
+  let previousHome = 0;
+
+  return (data.plays ?? [])
+    .map((play) => {
+      const awayScore = Number(play.awayScore ?? previousAway);
+      const homeScore = Number(play.homeScore ?? previousHome);
+      const teamId = play.team?.id;
+      const side: GamePlay["team"] =
+        teamId && teamId === awayId
+          ? "away"
+          : teamId && teamId === homeId
+            ? "home"
+            : "neutral";
+      const normalized = {
+        id: play.id ?? `${play.period?.number ?? 0}-${play.clock?.displayValue ?? ""}-${play.text ?? ""}`,
+        t: play.clock?.displayValue ?? "",
+        team: side,
+        teamAbbreviation:
+          side === "away" ? awayAbbr : side === "home" ? homeAbbr : "NEUT",
+        who: play.shortDescription ?? play.type?.text ?? "Play",
+        kind: classifyPlayKind(play),
+        pts: Math.max(0, Number(play.scoreValue ?? 0)),
+        delta: {
+          away: awayScore - previousAway,
+          home: homeScore - previousHome,
+        },
+        score: `${awayAbbr} ${awayScore} · ${homeAbbr} ${homeScore}`,
+        text: play.text ?? play.shortDescription ?? "",
+        period: play.period?.number ?? 0,
+        wallclock: play.wallclock,
+      };
+
+      previousAway = awayScore;
+      previousHome = homeScore;
+      return normalized;
+    })
+    .filter((play) => play.text || play.kind)
+    .reverse()
+    .slice(0, 12);
+}
+
+function normalizeMomentum(plays: ReturnType<typeof normalizePlays>) {
+  let current = 0;
+  const chronological = [...plays].reverse();
+
+  return chronological
+    .map((play) => {
+      current = current * 0.85 + play.delta.home - play.delta.away;
+      return Number(current.toFixed(1));
+    })
+    .slice(-40);
+}
+
+function computePulse(data: ESPNSummaryResponse) {
+  const competition = data.header?.competitions?.[0];
+  const competitors = competition?.competitors ?? [];
+  const away = competitors.find((competitor) => competitor.homeAway === "away");
+  const home = competitors.find((competitor) => competitor.homeAway === "home");
+  const status = competition?.status;
+  const isLive = status?.type?.state === "in" && !status.type?.completed;
+
+  if (!isLive) return null;
+
+  const diff = Math.abs(Number(home?.score ?? 0) - Number(away?.score ?? 0));
+  const close = Math.max(0, 1 - diff / 15);
+  const late =
+    (status?.period ?? 0) >= 4 && typeof status?.clock === "number"
+      ? Math.max(0, 1 - status.clock / 180)
+      : 0;
+  const heat = Math.max(0, Math.min(1, close * 0.55 + late * 0.45));
+  const label =
+    heat > 0.85
+      ? "CHAOS"
+      : heat > 0.65
+        ? "FINAL WINDOW"
+        : heat > 0.45
+          ? "HIGH PULSE"
+          : heat > 0.2
+            ? "HEATING UP"
+            : "CALM";
+
+  return { label, heat };
+}
+
 export async function GET(request: NextRequest) {
   const event = request.nextUrl.searchParams.get("event");
 
@@ -205,6 +377,10 @@ export async function GET(request: NextRequest) {
         line: null,
         leaders: [],
         teamComparison: [],
+        periodScores: { away: [], home: [] },
+        plays: [],
+        momentum: [],
+        pulse: null,
         error: "Missing event id",
       },
       { status: 400 }
@@ -229,6 +405,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = (await response.json()) as ESPNSummaryResponse;
+    const plays = normalizePlays(data);
 
     return NextResponse.json(
       {
@@ -236,6 +413,10 @@ export async function GET(request: NextRequest) {
         line: normalizeLine(data),
         leaders: normalizeLeaders(data),
         teamComparison: normalizeTeamComparison(data),
+        periodScores: normalizePeriodScores(data),
+        plays,
+        momentum: normalizeMomentum(plays),
+        pulse: computePulse(data),
         updatedAt: new Date().toISOString(),
       },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
@@ -249,6 +430,10 @@ export async function GET(request: NextRequest) {
         line: null,
         leaders: [],
         teamComparison: [],
+        periodScores: { away: [], home: [] },
+        plays: [],
+        momentum: [],
+        pulse: null,
         error: "Unable to fetch game detail",
         updatedAt: new Date().toISOString(),
       },

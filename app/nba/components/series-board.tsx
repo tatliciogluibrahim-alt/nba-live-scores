@@ -228,15 +228,60 @@ function BracketConferenceSection({
 
 function MiniBracketMap({ series }: { series: SeriesInfo[] }) {
   const liveSeries = series.find((item) => item.status === "live");
-  const eastChamp =
-    series.find((item) => item.conference === "East" && item.round === "Conf Finals")
-      ?.teamA.abbreviation ?? "EAST";
-  const westChamp =
-    series.find((item) => item.conference === "West" && item.round === "Conf Finals")
-      ?.teamA.abbreviation ?? "WEST";
   const activeLabel = liveSeries
     ? `${liveSeries.teamA.abbreviation}/${liveSeries.teamB.abbreviation}`
     : "Map";
+  const rounds = ["First Round", "Second Round", "Conf Finals"] as const;
+  const winnerOf = (item: SeriesInfo) => {
+    if (item.teamA.wins === 4) return item.teamA.abbreviation;
+    if (item.teamB.wins === 4) return item.teamB.abbreviation;
+    if (item.teamA.wins > item.teamB.wins) return item.teamA.abbreviation;
+    if (item.teamB.wins > item.teamA.wins) return item.teamB.abbreviation;
+    return item.teamA.abbreviation;
+  };
+  const labelOf = (item: SeriesInfo) => {
+    if (item.status === "complete") return winnerOf(item);
+    if (item.status === "live") return `${item.teamA.abbreviation}/${item.teamB.abbreviation}`;
+    return `${item.teamA.abbreviation}-${item.teamB.abbreviation}`;
+  };
+  const hasSharedTeam = (source: SeriesInfo, target: SeriesInfo) => {
+    const sourceTeams = [source.teamA.abbreviation, source.teamB.abbreviation];
+    return sourceTeams.includes(target.teamA.abbreviation) || sourceTeams.includes(target.teamB.abbreviation);
+  };
+  const nodeRows = (conference: "East" | "West") => {
+    const byRound = rounds.map((round) =>
+      series
+        .filter((item) => item.conference === conference && item.round === round)
+        .sort((a, b) => a.key.localeCompare(b.key))
+    );
+
+    return byRound.flatMap((items, roundIndex) => {
+      const x = conference === "East" ? 28 + roundIndex * 62 : 312 - roundIndex * 62;
+      const count = Math.max(items.length, 1);
+
+      return items.map((item, index) => ({
+        item,
+        roundIndex,
+        x,
+        y: 28 + ((index + 0.5) * 78) / count,
+      }));
+    });
+  };
+  const nodes = [...nodeRows("East"), ...nodeRows("West")];
+  const connectors = nodes.flatMap((node) => {
+    const nextRound = nodes.filter(
+      (candidate) =>
+        candidate.item.conference === node.item.conference &&
+        candidate.roundIndex === node.roundIndex + 1
+    );
+    if (nextRound.length === 0) return [];
+
+    const matched =
+      nextRound.find((candidate) => hasSharedTeam(node.item, candidate.item)) ??
+      nextRound[Math.min(Math.floor(nodes.indexOf(node) / 2), nextRound.length - 1)];
+
+    return matched ? [{ from: node, to: matched }] : [];
+  });
 
   return (
     <section className="overflow-hidden rounded-[1.35rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
@@ -249,70 +294,49 @@ function MiniBracketMap({ series }: { series: SeriesInfo[] }) {
         </span>
       </div>
       <svg viewBox="0 0 340 132" className="h-[132px] w-full">
-        {[
-          ["M34 18H76V34H95", liveSeries],
-          ["M34 50H76V34H95", liveSeries],
-          ["M34 82H76V98H95", null],
-          ["M34 114H76V98H95", null],
-          ["M116 34H154V66H169", liveSeries],
-          ["M116 98H154V66H169", null],
-          ["M306 18H264V34H245", null],
-          ["M306 50H264V34H245", null],
-          ["M306 82H264V98H245", null],
-          ["M306 114H264V98H245", null],
-          ["M224 34H188V66H171", null],
-          ["M224 98H188V66H171", null],
-        ].map(([path, active], index) => (
-          <path
-            key={`${path}-${index}`}
-            d={path as string}
-            fill="none"
-            stroke={active ? "#e85d04" : "rgba(26,18,8,0.16)"}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={active ? 3 : 1.5}
-          />
-        ))}
-
-        {[
-          [22, 18, "NY"],
-          [22, 50, "CLE"],
-          [22, 82, "BOS"],
-          [22, 114, "ORL"],
-          [106, 34, "NY"],
-          [106, 98, "BOS"],
-          [170, 66, eastChamp],
-          [318, 18, "OKC"],
-          [318, 50, "DEN"],
-          [318, 82, "MIN"],
-          [318, 114, "LAL"],
-          [234, 34, "OKC"],
-          [234, 98, "MIN"],
-          [170, 104, westChamp],
-        ].map(([x, y, label]) => {
-          const active = label === "NY" || label === eastChamp;
+        {connectors.map((connector, index) => {
+          const isActive =
+            connector.from.item.status === "live" || connector.to.item.status === "live";
+          const midX = (connector.from.x + connector.to.x) / 2;
 
           return (
-            <g key={`${x}-${y}-${label}`}>
+          <path
+            key={`${connector.from.item.key}-${connector.to.item.key}-${index}`}
+            d={`M${connector.from.x} ${connector.from.y}H${midX}V${connector.to.y}H${connector.to.x}`}
+            fill="none"
+            stroke={isActive ? "#e85d04" : "rgba(26,18,8,0.16)"}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={isActive ? 3 : 1.5}
+          />
+          );
+        })}
+
+        {nodes.map(({ item, x, y }) => {
+          const active = item.status === "live";
+          const label = labelOf(item);
+
+          return (
+            <g key={`${item.key}-${item.round}-${x}-${y}`}>
               <rect
-                x={Number(x) - 16}
-                y={Number(y) - 11}
-                width="32"
+                x={x - 18}
+                y={y - 11}
+                width="36"
                 height="22"
                 rx="7"
                 fill={active ? "#fff0e8" : "#ffffff"}
                 stroke={active ? "#e85d04" : "#e8e0d4"}
               />
               <text
-                x={Number(x)}
-                y={Number(y) + 4}
+                x={x}
+                y={y + 4}
                 textAnchor="middle"
                 fontFamily="var(--font-display)"
                 fontSize="8"
                 fontWeight="900"
                 fill="#1a1208"
               >
-                {String(label).slice(0, 4)}
+                {label.slice(0, 5)}
               </text>
             </g>
           );

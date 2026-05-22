@@ -583,11 +583,9 @@ function GroupStandingsTable({
 function GroupsPreview({
   selectedCountry,
   accentColor,
-  onPickCountry,
 }: {
   selectedCountry: string | null;
   accentColor: string;
-  onPickCountry: () => void;
 }) {
   const groupLetters = orderedGroupLetters(selectedCountry);
   const selectedGroup = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
@@ -606,15 +604,6 @@ function GroupsPreview({
               : "All 12 groups are set. Pick a country to bring yours forward."}
           </p>
         </div>
-        {!selectedCountry && (
-          <button
-            type="button"
-            onClick={onPickCountry}
-            className="w-fit shrink-0 rounded-full bg-[#006847] px-3 py-1.5 text-[0.62rem] font-black uppercase tracking-wide text-white transition active:scale-95"
-          >
-            Pick country
-          </button>
-        )}
       </div>
 
       <div className="grid grid-cols-1 gap-2 bg-[#fbf8f3] p-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1555,11 +1544,9 @@ function WorldCupWatchGuide({
 function WorldCupScoreboardPreview({
   selectedCountry,
   accentColor,
-  onPickCountry,
 }: {
   selectedCountry: string | null;
   accentColor: string;
-  onPickCountry: () => void;
 }) {
   const group = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
   const accentText = safeTextColor(accentColor);
@@ -1656,17 +1643,6 @@ function WorldCupScoreboardPreview({
             </div>
           ))}
         </div>
-
-        {!selectedCountry && (
-          <button
-            type="button"
-            onClick={onPickCountry}
-            className="inline-flex rounded-full px-3 py-1.5 text-[0.62rem] font-black uppercase tracking-wide text-white transition active:scale-95"
-            style={{ background: accentColor }}
-          >
-            Pick country
-          </button>
-        )}
       </div>
     </div>
   );
@@ -2151,12 +2127,10 @@ function RoadToCup({
   selectedCountry,
   accentColor,
   games,
-  onPickCountry,
 }: {
   selectedCountry: string | null;
   accentColor: string;
   games: WCGame[];
-  onPickCountry: () => void;
 }) {
   const [mode, setMode] = useState<RoadMode>("path");
   const country = selectedCountry ?? "SWE";
@@ -2246,15 +2220,6 @@ function RoadToCup({
             Your Road<br />to the Cup.
           </h2>
         </div>
-        {!selectedCountry && (
-          <button
-            type="button"
-            onClick={onPickCountry}
-            className="shrink-0 rounded-full bg-[#1a1208] px-3 py-1.5 text-[0.62rem] font-black uppercase tracking-wide text-[#f5f1ea] transition active:scale-95"
-          >
-            Pick
-          </button>
-        )}
       </div>
 
       <div className="grid grid-cols-2 rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1">
@@ -2571,15 +2536,7 @@ export default function WorldCupApp({
               <span className="text-[0.7rem] font-black uppercase text-[#1a1208]">{selectedCountry}</span>
               <span className="text-[0.55rem] text-[#a89880]">▾</span>
             </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowPicker(true)}
-              className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-bold text-[#8a7a66] ring-1 ring-[#e8e0d4] transition hover:ring-[#a89880] active:scale-95"
-            >
-              Pick country
-            </button>
-          )}
+          ) : null}
         </header>
 
         {/* ── Country picker overlay ── */}
@@ -2688,7 +2645,6 @@ export default function WorldCupApp({
                 <WorldCupScoreboardPreview
                   selectedCountry={selectedCountry}
                   accentColor={accentColor}
-                  onPickCountry={() => setShowPicker(true)}
                 />
               )}
 
@@ -2696,7 +2652,6 @@ export default function WorldCupApp({
                 <GroupsPreview
                   selectedCountry={selectedCountry}
                   accentColor={accentColor}
-                  onPickCountry={() => setShowPicker(true)}
                 />
               )}
 
@@ -2725,7 +2680,6 @@ export default function WorldCupApp({
                   selectedCountry={selectedCountry}
                   accentColor={accentColor}
                   games={games}
-                  onPickCountry={() => setShowPicker(true)}
                 />
               )}
             </div>
@@ -2800,7 +2754,6 @@ export default function WorldCupApp({
                   selectedCountry={selectedCountry}
                   accentColor={accentColor}
                   games={games}
-                  onPickCountry={() => setShowPicker(true)}
                 />
               )}
 

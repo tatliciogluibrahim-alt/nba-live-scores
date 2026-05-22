@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Game, GameDetail } from "../types";
+import type { Game, GameDetail, GamePlay, PeriodScores, PulseState } from "../types";
 import { formatGameDateTime } from "../lib/time";
 import { getGameMomentStake } from "../lib/moment-intelligence";
 import { MomentStakePill } from "./moment-stake-pill";
 import {
-  getMomentumSeries,
   getPulseReason,
   getPulseState,
   MomentumSparkline,
@@ -33,11 +32,114 @@ function DetailValue({
   );
 }
 
-function ScoreHero({ game }: { game: Game }) {
+function PeriodScoreStrip({
+  periodScores,
+  game,
+}: {
+  periodScores: PeriodScores;
+  game: Game;
+}) {
+  const maxPeriods = Math.max(
+    periodScores.away.length,
+    periodScores.home.length,
+    game.period,
+    4
+  );
+
+  return (
+    <div className="grid grid-cols-4 gap-1.5 px-3 pb-3">
+      {Array.from({ length: Math.min(maxPeriods, 4) }).map((_, index) => {
+        const isCurrent = game.status === "live" && game.period === index + 1;
+
+        return (
+          <div
+            key={index}
+            className={`rounded-[0.7rem] px-2 py-2 text-center ring-1 ${
+              isCurrent
+                ? "bg-[#1a1208] text-[#f5f1ea] ring-[#1a1208]"
+                : "bg-[#fbf8f3] text-[#8a7a66] ring-[#f0ece4]"
+            }`}
+          >
+            <p className="font-[family-name:var(--font-display)] text-[0.52rem] font-black uppercase tracking-[0.12em]">
+              Q{index + 1}
+            </p>
+            <p className="mt-0.5 text-[0.72rem] font-black tabular-nums">
+              {periodScores.away[index] ?? "-"}-{periodScores.home[index] ?? "-"}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PlayFeed({ plays }: { plays: GamePlay[] }) {
+  if (plays.length === 0) return null;
+
+  const latest = plays[0];
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-[1rem] bg-[#fff7ef] px-3 py-2.5 ring-1 ring-orange-100">
+        <div className="flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-[0.72rem] font-black text-[#1a1208]">
+            <span className="font-[family-name:var(--font-display)] text-[0.56rem] uppercase tracking-[0.14em] text-[#a89880]">
+              Last play · {latest.t}
+            </span>{" "}
+            {latest.teamAbbreviation} · {latest.text}
+          </p>
+          <span className="shrink-0 font-[family-name:var(--font-display)] text-[0.72rem] font-black text-[#e85d04]">
+            {latest.pts > 0 ? `+${latest.pts}` : "0"}
+          </span>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]">
+        <div className="border-b border-[#f0ece4] px-3 py-2">
+          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+            Play Feed
+          </p>
+        </div>
+        <div className="divide-y divide-[#f0ece4]">
+          {plays.slice(0, 6).map((play) => (
+            <div
+              key={play.id}
+              className="grid grid-cols-[2.4rem_2.7rem_1fr_auto] items-center gap-2 px-3 py-2.5"
+            >
+              <span className="text-[0.62rem] font-black tabular-nums text-[#a89880]">
+                {play.t}
+              </span>
+              <span className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.12em] text-[#e85d04]">
+                {play.teamAbbreviation}
+              </span>
+              <span className="min-w-0 truncate text-[0.72rem] font-bold text-[#1a1208]">
+                {play.text || play.kind}
+              </span>
+              <span className="text-[0.68rem] font-black tabular-nums text-[#8a7a66]">
+                {play.pts > 0 ? `+${play.pts}` : "0"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScoreHero({
+  game,
+  periodScores,
+  momentum,
+  pulseOverride,
+}: {
+  game: Game;
+  periodScores: PeriodScores;
+  momentum: number[];
+  pulseOverride: PulseState | null;
+}) {
   const showScore = game.status !== "upcoming";
-  const pulse = getPulseState(game);
+  const pulse = pulseOverride ?? getPulseState(game);
   const isLive = game.status === "live";
-  const momentum = getMomentumSeries(game, 40);
 
   return (
     <div className="overflow-hidden rounded-[1.35rem] bg-white shadow-xl shadow-black/10 ring-1 ring-[#e8e0d4]">
@@ -90,6 +192,7 @@ function ScoreHero({ game }: { game: Game }) {
           </div>
         );
       })}
+      <PeriodScoreStrip periodScores={periodScores} game={game} />
       {isLive && (
         <div className="space-y-3 px-3 py-3">
           <TensionBar pulse={pulse} />
@@ -102,7 +205,7 @@ function ScoreHero({ game }: { game: Game }) {
                 {getPulseReason(game)}
               </p>
             </div>
-            <MomentumSparkline data={momentum} height={58} />
+            <MomentumSparkline data={momentum.length ? momentum : [0]} height={58} />
             <div className="mt-1 flex justify-between text-[0.58rem] font-black uppercase tracking-wide text-[#c0b0a0]">
               <span>{game.home.abbreviation} run</span>
               <span>{game.away.abbreviation} run</span>
@@ -149,6 +252,10 @@ export function GameDetailDrawer({
               line: null,
               leaders: [],
               teamComparison: [],
+              periodScores: { away: [], home: [] },
+              plays: [],
+              momentum: [],
+              pulse: null,
               error: "Unable to fetch game detail",
             },
           });
@@ -190,8 +297,16 @@ export function GameDetailDrawer({
       detail?.leaders && detail.leaders.length > 0
         ? detail.leaders
         : game.leaders;
+    const periodScores =
+      detail?.periodScores &&
+      (detail.periodScores.away.length > 0 || detail.periodScores.home.length > 0)
+        ? detail.periodScores
+        : game.periodScores;
+    const plays = detail?.plays ?? [];
+    const momentum = detail?.momentum ?? [];
+    const pulse = detail?.pulse ?? null;
 
-    return { broadcasts, line, teamComparison, leaders };
+    return { broadcasts, line, teamComparison, leaders, periodScores, plays, momentum, pulse };
   }, [detailState, game]);
 
   if (!game || !merged) return null;
@@ -242,9 +357,16 @@ export function GameDetailDrawer({
         </div>
 
         <div className="max-h-[calc(88svh-7rem)] space-y-4 overflow-y-auto px-4 py-4">
-          <ScoreHero game={game} />
+          <ScoreHero
+            game={game}
+            periodScores={merged.periodScores}
+            momentum={merged.momentum}
+            pulseOverride={merged.pulse}
+          />
 
           {stake && <MomentStakePill stake={stake} />}
+
+          <PlayFeed plays={merged.plays} />
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <DetailValue label="Watch" value={watchLabel} />
