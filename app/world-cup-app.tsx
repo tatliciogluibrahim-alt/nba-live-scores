@@ -1950,21 +1950,26 @@ function GroupSection({
 // ── Your Road to the Cup ──────────────────────────────────────────────────────
 type RoadMode = "path" | "bracket";
 
-function ProbabilityRing({
-  value,
-  accentColor,
-}: {
-  value: number;
-  accentColor: string;
-}) {
+// Stage scenarios are qualitative — DESIGN.md forbids fake percentages.
+type ScenarioKind = "likely" | "possible" | "longshot";
+
+function ScenarioBadge({ kind }: { kind: ScenarioKind }) {
+  const meta = {
+    likely: { label: "Most likely", color: "var(--ink)", dotInk: true },
+    possible: { label: "Possible", color: "var(--mute-1)", dotInk: false },
+    longshot: { label: "Long shot", color: "var(--mute-1)", dotInk: false },
+  }[kind];
   return (
     <span
-      className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-[0.66rem] font-black tabular-nums text-[#1a1208]"
-      style={{
-        background: `radial-gradient(circle at center, #ffffff 0 54%, transparent 55%), conic-gradient(${accentColor} ${value * 360}deg, rgba(212,205,192,0.52) 0deg)`,
-      }}
+      className="inline-flex items-center gap-1.5 text-[11px] font-semibold"
+      style={{ color: meta.color }}
     >
-      {Math.round(value * 100)}%
+      <span
+        aria-hidden
+        className="h-1 w-1 rounded-full"
+        style={{ background: meta.dotInk ? "var(--ink)" : "var(--mute-2)" }}
+      />
+      {meta.label}
     </span>
   );
 }
@@ -1983,8 +1988,8 @@ function RoadStageCard({
     venue: string;
     opponent?: string;
     reason?: string;
-    probability?: number;
-    alternates?: [string, number][];
+    scenario?: ScenarioKind;
+    alternates?: string[];
   };
   selectedCountry: string;
   accentColor: string;
@@ -1994,42 +1999,72 @@ function RoadStageCard({
   const accentText = safeTextColor(accentColor);
 
   return (
-    <div className="relative grid grid-cols-[2.35rem_1fr] gap-3">
+    <div className="relative grid grid-cols-[2rem_1fr] gap-3">
       <div
-        className="relative z-10 grid h-9 w-9 place-items-center rounded-full border-2 border-[#f5f1ea] font-[family-name:var(--font-display)] text-[0.72rem] font-black text-white"
-        style={{ background: index === 0 ? accentColor : "#1a1208" }}
+        className="relative z-10 grid h-7 w-7 place-items-center self-start rounded-full text-[12px] font-bold"
+        style={{
+          background: isCurrent ? accentColor : "var(--paper)",
+          color: isCurrent ? "#ffffff" : "var(--mute-1)",
+          border: `1.5px solid ${isCurrent ? accentColor : "var(--mute-2)"}`,
+          marginTop: 10,
+        }}
       >
         {index + 1}
       </div>
-      <article className="overflow-hidden rounded-[1.2rem] bg-white ring-1 ring-[#e8e0d4]">
-        <div className="flex items-start justify-between gap-3 border-b border-[#f0ece4] bg-[#fbf8f3] px-3 py-3">
-          <div className="min-w-0">
-            <p
-              className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-[0.12em]"
-              style={{ color: isCurrent ? accentText : "#1a1208" }}
-            >
-              {stage.label}
-            </p>
-            <p className="mt-1 text-[0.62rem] font-bold text-[#a89880]">
-              {stage.when} · {stage.venue}
-            </p>
-          </div>
-          <span
-            className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[0.52rem] font-black uppercase tracking-[0.12em] ${
-              isCurrent ? "no-noise-live-fade text-white" : "text-[#2e5bd7]"
-            }`}
-            style={{
-              background: isCurrent ? accentColor : "#dce4f8",
-              boxShadow: isCurrent ? undefined : "inset 0 0 0 1px rgba(46,91,215,0.18)",
-            }}
-          >
-            {isCurrent ? "Current" : "Projected"}
-          </span>
-        </div>
 
+      <article
+        className="overflow-hidden rounded-[14px]"
+        style={{
+          background: "var(--paper)",
+          border: "1px solid var(--line)",
+          borderLeft: isCurrent ? `2px solid ${accentColor}` : "1px solid var(--line)",
+        }}
+      >
         <div className="px-3 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.08em]"
+                style={{ color: "var(--mute-1)" }}
+              >
+                {stage.label}
+              </p>
+              <p
+                className="mt-1 text-[15px] font-bold leading-tight"
+                style={{ color: "var(--ink)" }}
+              >
+                {isCurrent
+                  ? "Group stage live"
+                  : stage.opponent
+                    ? COUNTRY_NAME[stage.opponent] ?? stage.opponent
+                    : ""}
+              </p>
+              <p
+                className="mt-1 text-[11px] font-medium tabular-nums"
+                style={{ color: "var(--mute-1)" }}
+              >
+                {stage.when} · {stage.venue}
+              </p>
+            </div>
+            {isCurrent ? (
+              <span
+                className="no-noise-live-fade inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-semibold"
+                style={{ background: `${accentColor}1f`, color: accentText }}
+              >
+                <span
+                  aria-hidden
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ background: accentColor }}
+                />
+                Now
+              </span>
+            ) : (
+              stage.scenario && <ScenarioBadge kind={stage.scenario} />
+            )}
+          </div>
+
           {isCurrent ? (
-            <div className="space-y-2">
+            <div className="mt-2.5 space-y-1.5">
               {(currentFixtures.length > 0
                 ? currentFixtures.slice(0, 3)
                 : (WC_GROUPS[TEAM_GROUP[selectedCountry]] ?? [])
@@ -2067,55 +2102,82 @@ function RoadStageCard({
                   game.away.abbreviation === selectedCountry
                     ? game.home.abbreviation
                     : game.away.abbreviation;
-
                 return (
                   <div
                     key={game.id}
-                    className="flex items-center justify-between gap-3 rounded-[0.85rem] bg-[#fbf8f3] px-3 py-2 ring-1 ring-[#f0ece4]"
+                    className="flex items-center gap-2 rounded-lg px-2.5 py-1.5"
+                    style={{ background: "var(--cream-2)" }}
                   >
-                    <span className="min-w-0 truncate text-[0.74rem] font-black text-[#1a1208]">
-                      {flagEmoji(selectedCountry)} {selectedCountry} vs {flagEmoji(opponent)} {opponent}
+                    <span className="text-[14px] leading-none">{flagEmoji(selectedCountry)}</span>
+                    <span className="text-[12px] font-bold" style={{ color: "var(--ink)" }}>
+                      {selectedCountry}
                     </span>
-                    <span className="shrink-0 text-[0.58rem] font-bold uppercase tracking-wide text-[#a89880]">
+                    <span className="text-[10px] font-semibold" style={{ color: "var(--mute-1)" }}>
+                      vs
+                    </span>
+                    <span className="text-[14px] leading-none">{flagEmoji(opponent)}</span>
+                    <span className="text-[12px] font-bold" style={{ color: "var(--ink)" }}>
+                      {opponent}
+                    </span>
+                    <span className="flex-1" />
+                    <span
+                      className="text-[11px] font-semibold tabular-nums"
+                      style={{ color: "var(--mute-1)" }}
+                    >
                       {formatDateTime(game.date)}
                     </span>
                   </div>
                 );
               })}
-              <div
-                className="rounded-[0.85rem] px-3 py-2 text-[0.72rem] font-black"
-                style={{ background: `${accentColor}12`, color: accentText }}
-              >
+              <p className="px-1 pt-1 text-[11px]" style={{ color: "var(--mute-1)" }}>
                 Needs 4+ points to control the path.
-              </div>
+              </p>
             </div>
           ) : stage.opponent ? (
             <>
-              <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-                <span className="text-[1.65rem] leading-none">
-                  {flagEmoji(stage.opponent)}
-                </span>
+              <div
+                className="mt-2.5 flex items-center gap-3 rounded-[10px] px-2.5 py-2"
+                style={{ background: "var(--cream-2)" }}
+              >
+                <div
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-md"
+                  style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
+                >
+                  <span className="text-[18px] leading-none">{flagEmoji(stage.opponent)}</span>
+                </div>
                 <div className="min-w-0">
-                  <p className="truncate text-[0.88rem] font-black text-[#1a1208]">
-                    {COUNTRY_NAME[stage.opponent] ?? stage.opponent}
+                  <p className="truncate text-[13px] font-bold" style={{ color: "var(--ink)" }}>
+                    {stage.opponent} · {COUNTRY_NAME[stage.opponent] ?? stage.opponent}
                   </p>
-                  <p className="mt-0.5 truncate text-[0.64rem] font-semibold text-[#8a7a66]">
+                  <p className="mt-0.5 truncate text-[11px]" style={{ color: "var(--mute-1)" }}>
                     {stage.reason}
                   </p>
                 </div>
-                <ProbabilityRing value={stage.probability ?? 0.3} accentColor={accentColor} />
               </div>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {(stage.alternates ?? []).map(([code, pct]) => (
-                  <span
-                    key={`${stage.label}-${code}`}
-                    className="rounded-full px-2 py-1 text-[0.58rem] font-black uppercase tracking-wide"
-                    style={{ background: `${accentColor}12`, color: accentText }}
-                  >
-                    {flagEmoji(code)} {pct}%
-                  </span>
-                ))}
-              </div>
+
+              {stage.alternates && stage.alternates.length > 0 && (
+                <div className="mt-2.5">
+                  <p className="mb-1 text-[11px] font-semibold" style={{ color: "var(--mute-1)" }}>
+                    Or
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {stage.alternates.map((code) => (
+                      <span
+                        key={`${stage.label}-${code}`}
+                        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                        style={{
+                          background: "var(--cream)",
+                          border: "1px solid var(--line)",
+                          color: "var(--ink)",
+                        }}
+                      >
+                        <span className="text-[12px] leading-none">{flagEmoji(code)}</span>
+                        {code}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : null}
         </div>
