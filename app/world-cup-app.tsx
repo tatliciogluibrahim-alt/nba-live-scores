@@ -40,6 +40,7 @@ export const COUNTRY_COLOR_MAP: Record<string, string> = {
   ARG: "#74ACDF", AUT: "#ED2939", ALG: "#006233", JOR: "#007A3D",
   COL: "#FCD116", POR: "#006600", UZB: "#1EB53A", COD: "#007FFF",
   ENG: "#CF091F", CRO: "#FF0000", PAN: "#005293", GHA: "#006B3F",
+  ITA: "#008C45", DEN: "#C8102E",
 };
 
 // ── Country display names ──────────────────────────────────────────────────────
@@ -56,6 +57,7 @@ const COUNTRY_NAME: Record<string, string> = {
   ARG: "Argentina", AUT: "Austria", ALG: "Algeria", JOR: "Jordan",
   COL: "Colombia", POR: "Portugal", UZB: "Uzbekistan", COD: "Congo DR",
   ENG: "England", CRO: "Croatia", PAN: "Panama", GHA: "Ghana",
+  ITA: "Italy", DEN: "Denmark",
 };
 
 // ESPN 3-letter → ISO 2-letter for flag emoji
@@ -72,6 +74,7 @@ const TO_ISO2: Record<string, string> = {
   ARG: "AR", AUT: "AT", ALG: "DZ", JOR: "JO",
   COL: "CO", POR: "PT", UZB: "UZ", COD: "CD",
   ENG: "GB", CRO: "HR", PAN: "PA", GHA: "GH",
+  ITA: "IT", DEN: "DK",
 };
 
 function flagEmoji(code: string): string {
@@ -397,7 +400,7 @@ function WCGameCard({
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          {isLive && <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: accentColor }} />}
+          {isLive && <span className="no-noise-live-fade h-1.5 w-1.5 rounded-full" style={{ background: accentColor }} />}
           <span className="text-[0.65rem] font-black uppercase tracking-wide" style={{ color: statusColor }}>
             {isLive ? `Live · ${game.statusText}` : game.status === "final" ? game.statusText : formatTime(game.date)}
           </span>
@@ -862,7 +865,7 @@ function ScheduleMatchRow({
             <p className="text-[0.62rem] font-black uppercase tracking-wide text-[#2d7a3a]">FT</p>
           ) : isLive ? (
             <div className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: accentColor }} />
+              <span className="no-noise-live-fade h-1.5 w-1.5 rounded-full" style={{ background: accentColor }} />
               <span className="text-[0.6rem] font-black uppercase" style={{ color: accentColor }}>{game.statusText}</span>
             </div>
           ) : (
@@ -1967,6 +1970,376 @@ function GroupSection({
   );
 }
 
+// ── Your Road to the Cup ──────────────────────────────────────────────────────
+type RoadMode = "path" | "bracket";
+
+function ProbabilityRing({
+  value,
+  accentColor,
+}: {
+  value: number;
+  accentColor: string;
+}) {
+  return (
+    <span
+      className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-[0.66rem] font-black tabular-nums text-[#1a1208]"
+      style={{
+        background: `radial-gradient(circle at center, #ffffff 0 54%, transparent 55%), conic-gradient(${accentColor} ${value * 360}deg, rgba(212,205,192,0.52) 0deg)`,
+      }}
+    >
+      {Math.round(value * 100)}%
+    </span>
+  );
+}
+
+function RoadStageCard({
+  index,
+  stage,
+  selectedCountry,
+  accentColor,
+  currentFixtures,
+}: {
+  index: number;
+  stage: {
+    label: string;
+    when: string;
+    venue: string;
+    opponent?: string;
+    reason?: string;
+    probability?: number;
+    alternates?: [string, number][];
+  };
+  selectedCountry: string;
+  accentColor: string;
+  currentFixtures: WCGame[];
+}) {
+  const isCurrent = index === 0;
+  const accentText = safeTextColor(accentColor);
+
+  return (
+    <div className="relative grid grid-cols-[2.35rem_1fr] gap-3">
+      <div
+        className="relative z-10 grid h-9 w-9 place-items-center rounded-full border-2 border-[#f5f1ea] font-[family-name:var(--font-display)] text-[0.72rem] font-black text-white"
+        style={{ background: index === 0 ? accentColor : "#1a1208" }}
+      >
+        {index + 1}
+      </div>
+      <article className="overflow-hidden rounded-[1.2rem] bg-white ring-1 ring-[#e8e0d4]">
+        <div className="flex items-start justify-between gap-3 border-b border-[#f0ece4] bg-[#fbf8f3] px-3 py-3">
+          <div className="min-w-0">
+            <p
+              className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-[0.12em]"
+              style={{ color: isCurrent ? accentText : "#1a1208" }}
+            >
+              {stage.label}
+            </p>
+            <p className="mt-1 text-[0.62rem] font-bold text-[#a89880]">
+              {stage.when} · {stage.venue}
+            </p>
+          </div>
+          <span
+            className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[0.52rem] font-black uppercase tracking-[0.12em] ${
+              isCurrent ? "no-noise-live-fade text-white" : "text-[#2e5bd7]"
+            }`}
+            style={{
+              background: isCurrent ? accentColor : "#dce4f8",
+              boxShadow: isCurrent ? undefined : "inset 0 0 0 1px rgba(46,91,215,0.18)",
+            }}
+          >
+            {isCurrent ? "Current" : "Projected"}
+          </span>
+        </div>
+
+        <div className="px-3 py-3">
+          {isCurrent ? (
+            <div className="space-y-2">
+              {(currentFixtures.length > 0
+                ? currentFixtures.slice(0, 3)
+                : (WC_GROUPS[TEAM_GROUP[selectedCountry]] ?? [])
+                    .filter((code) => code !== selectedCountry)
+                    .map((code) => ({
+                      id: code,
+                      status: "upcoming",
+                      statusText: "Fixtures soon",
+                      stage: `Group ${TEAM_GROUP[selectedCountry] ?? ""}`,
+                      group: TEAM_GROUP[selectedCountry] ?? "",
+                      away: {
+                        id: selectedCountry,
+                        name: COUNTRY_NAME[selectedCountry] ?? selectedCountry,
+                        abbreviation: selectedCountry,
+                        score: 0,
+                        logo: "",
+                      },
+                      home: {
+                        id: code,
+                        name: COUNTRY_NAME[code] ?? code,
+                        abbreviation: code,
+                        score: 0,
+                        logo: "",
+                      },
+                      date: WC_KICKOFF.toISOString(),
+                      venue: "Group venue TBA",
+                      events: [],
+                      penaltyHome: null,
+                      penaltyAway: null,
+                      broadcasts: [],
+                      watchLabel: WORLD_CUP_US_WATCH_FALLBACK,
+                    } as WCGame))
+              ).map((game) => {
+                const opponent =
+                  game.away.abbreviation === selectedCountry
+                    ? game.home.abbreviation
+                    : game.away.abbreviation;
+
+                return (
+                  <div
+                    key={game.id}
+                    className="flex items-center justify-between gap-3 rounded-[0.85rem] bg-[#fbf8f3] px-3 py-2 ring-1 ring-[#f0ece4]"
+                  >
+                    <span className="min-w-0 truncate text-[0.74rem] font-black text-[#1a1208]">
+                      {flagEmoji(selectedCountry)} {selectedCountry} vs {flagEmoji(opponent)} {opponent}
+                    </span>
+                    <span className="shrink-0 text-[0.58rem] font-bold uppercase tracking-wide text-[#a89880]">
+                      {formatDateTime(game.date)}
+                    </span>
+                  </div>
+                );
+              })}
+              <div
+                className="rounded-[0.85rem] px-3 py-2 text-[0.72rem] font-black"
+                style={{ background: `${accentColor}12`, color: accentText }}
+              >
+                Needs 4+ points to control the path.
+              </div>
+            </div>
+          ) : stage.opponent ? (
+            <>
+              <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
+                <span className="text-[1.65rem] leading-none">
+                  {flagEmoji(stage.opponent)}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-[0.88rem] font-black text-[#1a1208]">
+                    {COUNTRY_NAME[stage.opponent] ?? stage.opponent}
+                  </p>
+                  <p className="mt-0.5 truncate text-[0.64rem] font-semibold text-[#8a7a66]">
+                    {stage.reason}
+                  </p>
+                </div>
+                <ProbabilityRing value={stage.probability ?? 0.3} accentColor={accentColor} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {(stage.alternates ?? []).map(([code, pct]) => (
+                  <span
+                    key={`${stage.label}-${code}`}
+                    className="rounded-full px-2 py-1 text-[0.58rem] font-black uppercase tracking-wide"
+                    style={{ background: `${accentColor}12`, color: accentText }}
+                  >
+                    {flagEmoji(code)} {pct}%
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </div>
+      </article>
+    </div>
+  );
+}
+
+function RoadToCup({
+  selectedCountry,
+  accentColor,
+  games,
+  onPickCountry,
+}: {
+  selectedCountry: string | null;
+  accentColor: string;
+  games: WCGame[];
+  onPickCountry: () => void;
+}) {
+  const [mode, setMode] = useState<RoadMode>("path");
+  const country = selectedCountry ?? "SWE";
+  const group = TEAM_GROUP[country] ?? "F";
+  const currentFixtures = games
+    .filter(
+      (game) =>
+        game.group === group &&
+        (game.away.abbreviation === country || game.home.abbreviation === country)
+    )
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const accentText = safeTextColor(accentColor);
+  const stages = [
+    {
+      label: `Group ${group}`,
+      when: "June 13-24",
+      venue: "Group play",
+    },
+    {
+      label: "Round of 32",
+      when: "June 28",
+      venue: "Dallas",
+      opponent: "CZE",
+      reason: "Most likely second-place crossover",
+      probability: 0.42,
+      alternates: [["KOR", 24], ["RSA", 18], ["CAN", 16]] as [string, number][],
+    },
+    {
+      label: "Round of 16",
+      when: "July 3",
+      venue: "Atlanta",
+      opponent: "BRA",
+      reason: "Top seed on projected line",
+      probability: 0.36,
+      alternates: [["SCO", 22], ["HAI", 16], ["MAR", 14]] as [string, number][],
+    },
+    {
+      label: "Quarterfinal",
+      when: "July 9",
+      venue: "Los Angeles",
+      opponent: "ESP",
+      reason: "Favorite from the lower pod",
+      probability: 0.31,
+      alternates: [["URU", 21], ["NOR", 18], ["FRA", 13]] as [string, number][],
+    },
+    {
+      label: "Semifinal",
+      when: "July 14",
+      venue: "Dallas",
+      opponent: "ARG",
+      reason: "Highest title-path collision",
+      probability: 0.27,
+      alternates: [["ENG", 22], ["POR", 19], ["ITA", 12]] as [string, number][],
+    },
+    {
+      label: "Final",
+      when: "July 19",
+      venue: "New York",
+      opponent: "FRA",
+      reason: "Top projected finalist",
+      probability: 0.24,
+      alternates: [["COL", 18], ["CRO", 15], ["DEN", 13]] as [string, number][],
+    },
+  ];
+  const bracketMatches: [string, string, string][] = [
+    [country, "CZE", "R32 · Dallas"],
+    ["NED", "KOR", "R32 · Houston"],
+    ["BRA", "SCO", "R32 · Miami"],
+    ["ESP", "URU", "R32 · Los Angeles"],
+    ["ARG", "SEN", "R32 · Seattle"],
+    ["FRA", "COL", "R32 · New York"],
+    ["ENG", "ITA", "R32 · Toronto"],
+    ["POR", "CRO", "R32 · Vancouver"],
+  ];
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-start justify-between gap-3 px-1">
+        <div className="min-w-0">
+          <p
+            className="font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-[0.14em]"
+            style={{ color: accentText }}
+          >
+            {flagEmoji(country)} {country}
+          </p>
+          <h2 className="mt-1 font-[family-name:var(--font-display)] text-5xl font-black uppercase leading-none tracking-tight text-[#1a1208]">
+            Your Road<br />to the Cup.
+          </h2>
+        </div>
+        {!selectedCountry && (
+          <button
+            type="button"
+            onClick={onPickCountry}
+            className="shrink-0 rounded-full bg-[#1a1208] px-3 py-1.5 text-[0.62rem] font-black uppercase tracking-wide text-[#f5f1ea] transition active:scale-95"
+          >
+            Pick
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1">
+        {(["path", "bracket"] as RoadMode[]).map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => setMode(item)}
+            className={`rounded-[0.85rem] px-3 py-2 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.12em] transition active:scale-[0.98] ${
+              mode === item ? "bg-[#1a1208] text-[#f5f1ea]" : "text-[#8a7a66]"
+            }`}
+          >
+            {item === "path" ? "Path" : "Full bracket"}
+          </button>
+        ))}
+      </div>
+
+      {mode === "path" ? (
+        <div className="relative space-y-3">
+          <div
+            className="absolute bottom-6 left-[1.08rem] top-4 w-[3px] rounded-full"
+            style={{
+              background:
+                "linear-gradient(180deg, #2e5bd7 0%, #1e6b3c 55%, #e85d04 100%)",
+            }}
+          />
+          {stages.map((stage, index) => (
+            <RoadStageCard
+              key={stage.label}
+              index={index}
+              stage={stage}
+              selectedCountry={country}
+              accentColor={accentColor}
+              currentFixtures={currentFixtures}
+            />
+          ))}
+          <p className="pt-2 text-center font-[family-name:var(--font-display)] text-xl font-black uppercase tracking-tight text-[#1a1208]">
+            → The Trophy
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+            {["R32", "R16", "QF", "SF", "F"].map((round, index) => (
+              <span
+                key={round}
+                className="shrink-0 rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.12em]"
+                style={{
+                  background: index === 0 ? "#dce4f8" : "#e8e2d8",
+                  color: index === 0 ? "#2e5bd7" : "#8a7a66",
+                }}
+              >
+                {round}
+              </span>
+            ))}
+          </div>
+          {bracketMatches.map(([a, b, meta]) => {
+            const isMine = a === country || b === country;
+
+            return (
+              <article
+                key={`${a}-${b}`}
+                className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[1rem] bg-white px-3 py-3 ring-1 ring-[#e8e0d4]"
+                style={isMine ? { boxShadow: `inset 0 0 0 2px ${accentColor}` } : undefined}
+              >
+                <div className="space-y-1">
+                  <p className="text-[0.78rem] font-black text-[#1a1208]">
+                    {flagEmoji(a)} {a}
+                  </p>
+                  <p className="text-[0.78rem] font-black text-[#1a1208]">
+                    {flagEmoji(b)} {b}
+                  </p>
+                </div>
+                <span className="text-right text-[0.58rem] font-bold uppercase tracking-wide text-[#a89880]">
+                  {meta}
+                </span>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ── Country Picker ─────────────────────────────────────────────────────────────
 function CountryPicker({ onSelect }: { onSelect: (code: string) => void }) {
   const [query, setQuery] = useState("");
@@ -2033,7 +2406,7 @@ function CountryPicker({ onSelect }: { onSelect: (code: string) => void }) {
 }
 
 // ── WorldCupApp ────────────────────────────────────────────────────────────────
-type WCViewMode = "groups" | "table" | "schedule";
+type WCViewMode = "groups" | "table" | "schedule" | "road";
 
 const WC_COUNTRY_KEY = "no-noise-wc-country";
 
@@ -2275,8 +2648,8 @@ export default function WorldCupApp({
             <div className="rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1.5 shadow-sm sm:p-2">
               <div className="flex items-center gap-1.5">
                 <div className="flex shrink-0 gap-0.5 rounded-full bg-[#d4cdc0]/50 p-0.5">
-                  {(["groups", "table", "schedule"] as WCViewMode[]).map((mode) => {
-                    const labels: Record<WCViewMode, string> = { groups: "Groups", table: "Table", schedule: "Schedule" };
+                  {(["groups", "table", "schedule", "road"] as WCViewMode[]).map((mode) => {
+                    const labels: Record<WCViewMode, string> = { groups: "Groups", table: "Table", schedule: "Schedule", road: "Road" };
                     return (
                       <button
                         key={mode}
@@ -2346,6 +2719,15 @@ export default function WorldCupApp({
                   onMatchOpen={setVenueGame}
                 />
               )}
+
+              {viewMode === "road" && (
+                <RoadToCup
+                  selectedCountry={selectedCountry}
+                  accentColor={accentColor}
+                  games={games}
+                  onPickCountry={() => setShowPicker(true)}
+                />
+              )}
             </div>
           </div>
         )}
@@ -2358,8 +2740,8 @@ export default function WorldCupApp({
               <div className="rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1.5 shadow-sm sm:p-2">
                 <div className="flex items-center gap-1.5">
                   <div className="flex shrink-0 gap-0.5 rounded-full bg-[#d4cdc0]/50 p-0.5">
-                    {(["groups", "table", "schedule"] as WCViewMode[]).map((mode) => {
-                      const labels: Record<WCViewMode, string> = { groups: "Groups", table: "Table", schedule: "Schedule" };
+                    {(["groups", "table", "schedule", "road"] as WCViewMode[]).map((mode) => {
+                      const labels: Record<WCViewMode, string> = { groups: "Groups", table: "Table", schedule: "Schedule", road: "Road" };
                       return (
                         <button
                           key={mode}
@@ -2373,7 +2755,7 @@ export default function WorldCupApp({
                     })}
                   </div>
 
-                  {viewMode !== "table" && viewMode !== "schedule" && (
+                  {viewMode === "groups" && (
                     <>
                       <div className="h-4 w-px bg-[#d4cdc0]" />
                       <div className="flex flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
@@ -2410,6 +2792,15 @@ export default function WorldCupApp({
                   accentColor={accentColor}
                   hasTournamentStarted={hasTournamentStarted}
                   onMatchOpen={setVenueGame}
+                />
+              )}
+
+              {viewMode === "road" && (
+                <RoadToCup
+                  selectedCountry={selectedCountry}
+                  accentColor={accentColor}
+                  games={games}
+                  onPickCountry={() => setShowPicker(true)}
                 />
               )}
 

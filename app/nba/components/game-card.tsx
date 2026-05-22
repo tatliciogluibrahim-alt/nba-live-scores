@@ -15,6 +15,13 @@ import {
 } from "../lib/time";
 import { getGameMomentStake } from "../lib/moment-intelligence";
 import { MomentStakePill } from "./moment-stake-pill";
+import {
+  getMomentumSeries,
+  getPulseReason,
+  getPulseState,
+  MomentumSparkline,
+  TensionBar,
+} from "./pulse-primitives";
 import { ShareButton, ShareModal } from "./share-card";
 import { TeamLogo } from "./team-logo";
 
@@ -248,6 +255,9 @@ export function GameCard({
 }) {
   const isFavoriteGame = gameIncludesTeam(game, favoriteTeamAbbr);
   const isInteractive = Boolean(onOpen);
+  const pulse = getPulseState(game);
+  const showPulse = game.status === "live";
+  const momentum = getMomentumSeries(game, 22);
 
   return (
     <article
@@ -278,7 +288,7 @@ export function GameCard({
             )}`}
           >
             {game.status === "live" && (
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-600" />
+              <span className="no-noise-live-fade h-1.5 w-1.5 rounded-full bg-orange-600" />
             )}
             {getStatusLabel(game.status)}
           </div>
@@ -302,7 +312,7 @@ export function GameCard({
           </p>
 
           <p className="mt-1 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-[0.14em] text-[#a89880]">
-            {game.matchup}
+            {showPulse ? pulse.label : game.matchup}
           </p>
         </div>
       </div>
@@ -322,6 +332,23 @@ export function GameCard({
             changedScoreKeys={changedScoreKeys}
           />
         </div>
+
+        {showPulse && (
+          <div className="mt-2.5 rounded-[1rem] bg-[#fff7ef] px-3 py-2.5 ring-1 ring-orange-100">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="min-w-0 truncate text-[0.72rem] font-black text-[#1a1208]">
+                {getPulseReason(game)}
+              </p>
+              <p className="shrink-0 font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.14em] text-[#e85d04]">
+                {pulse.label}
+              </p>
+            </div>
+            <TensionBar pulse={pulse} compact />
+            <div className="mt-2">
+              <MomentumSparkline data={momentum} height={30} />
+            </div>
+          </div>
+        )}
 
         <GameUtilityRow game={game} />
 

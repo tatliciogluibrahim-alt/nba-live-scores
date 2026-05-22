@@ -46,7 +46,7 @@ export function MomentStakePill({
       )}`}
     >
       {stake.tone === "live" && (
-        <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-current" />
+        <span className="no-noise-live-fade h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
       )}
       <span className="truncate">{stake.label}</span>
     </span>

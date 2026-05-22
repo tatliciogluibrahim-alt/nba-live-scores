@@ -5,6 +5,13 @@ import type { Game, GameDetail } from "../types";
 import { formatGameDateTime } from "../lib/time";
 import { getGameMomentStake } from "../lib/moment-intelligence";
 import { MomentStakePill } from "./moment-stake-pill";
+import {
+  getMomentumSeries,
+  getPulseReason,
+  getPulseState,
+  MomentumSparkline,
+  TensionBar,
+} from "./pulse-primitives";
 import { TeamLogo } from "./team-logo";
 
 function DetailValue({
@@ -26,22 +33,50 @@ function DetailValue({
   );
 }
 
-function TeamSummary({ game }: { game: Game }) {
+function ScoreHero({ game }: { game: Game }) {
   const showScore = game.status !== "upcoming";
+  const pulse = getPulseState(game);
+  const isLive = game.status === "live";
+  const momentum = getMomentumSeries(game, 40);
 
   return (
-    <div className="overflow-hidden rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]">
+    <div className="overflow-hidden rounded-[1.35rem] bg-white shadow-xl shadow-black/10 ring-1 ring-[#e8e0d4]">
+      <div className="h-[3px] bg-[#e85d04]" />
+      <div className="flex items-start justify-between gap-3 border-b border-[#f0ece4] bg-[#fbf8f3] px-3 py-3">
+        <div className="flex items-start gap-2">
+          {isLive && (
+            <span className="no-noise-live-fade rounded-full bg-[#e85d04] px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em] text-white">
+              Live
+            </span>
+          )}
+          <div>
+            <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+              {game.gameContext || "NBA Playoffs"}
+            </p>
+            <p className="mt-0.5 text-[0.72rem] font-bold text-[#8a7a66]">
+              {game.status === "live" ? game.statusText : formatGameDateTime(game.date)}
+            </p>
+          </div>
+        </div>
+        <p className="max-w-[6rem] text-right font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase leading-tight tracking-[0.14em] text-[#e85d04]">
+          {isLive ? pulse.label : game.status}
+        </p>
+      </div>
       {(["away", "home"] as const).map((side) => {
         const team = game[side];
+        const other = side === "away" ? game.home : game.away;
+        const muted = showScore && team.score < other.score;
         return (
           <div
             key={side}
-            className="flex items-center justify-between gap-3 border-b border-[#f0ece4] px-3 py-2.5 last:border-b-0"
+            className={`flex items-center justify-between gap-3 border-b border-[#f0ece4] px-3 py-3 last:border-b-0 ${
+              muted ? "opacity-55" : ""
+            }`}
           >
             <div className="flex min-w-0 items-center gap-2.5">
               <TeamLogo team={team} />
               <div className="min-w-0">
-                <p className="truncate text-[0.9rem] font-black text-[#1a1208]">
+                <p className="truncate text-[1.05rem] font-black text-[#1a1208]">
                   {team.abbreviation}
                 </p>
                 <p className="truncate text-[0.68rem] font-semibold text-[#a89880]">
@@ -49,12 +84,32 @@ function TeamSummary({ game }: { game: Game }) {
                 </p>
               </div>
             </div>
-            <p className="text-[1.35rem] font-black tabular-nums text-[#1a1208]">
+            <p className="text-[2.5rem] font-black tabular-nums leading-none tracking-tight text-[#1a1208]">
               {showScore ? team.score : "–"}
             </p>
           </div>
         );
       })}
+      {isLive && (
+        <div className="space-y-3 px-3 py-3">
+          <TensionBar pulse={pulse} />
+          <div className="rounded-[1rem] bg-[#fbf8f3] px-3 py-3 ring-1 ring-[#f0ece4]">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+                Score momentum
+              </p>
+              <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#e85d04]">
+                {getPulseReason(game)}
+              </p>
+            </div>
+            <MomentumSparkline data={momentum} height={58} />
+            <div className="mt-1 flex justify-between text-[0.58rem] font-black uppercase tracking-wide text-[#c0b0a0]">
+              <span>{game.home.abbreviation} run</span>
+              <span>{game.away.abbreviation} run</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -187,7 +242,7 @@ export function GameDetailDrawer({
         </div>
 
         <div className="max-h-[calc(88svh-7rem)] space-y-4 overflow-y-auto px-4 py-4">
-          <TeamSummary game={game} />
+          <ScoreHero game={game} />
 
           {stake && <MomentStakePill stake={stake} />}
 

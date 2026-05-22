@@ -53,3 +53,24 @@ a {
   background: #ff6a00;
   color: #ffffff;
 }
+
+@keyframes no-noise-live-fade {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.no-noise-live-fade {
+  animation: no-noise-live-fade 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .no-noise-live-fade {
+    animation: none !important;
+  }
+}

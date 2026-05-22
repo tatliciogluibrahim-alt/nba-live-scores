@@ -17,6 +17,11 @@ import { formatLastUpdated } from "./nba/lib/time";
 import { EmptyState } from "./nba/components/empty-state";
 import { GameCard } from "./nba/components/game-card";
 import { GameDetailDrawer } from "./nba/components/game-detail-drawer";
+import {
+  getPulseReason,
+  getPulseState,
+  PulseRing,
+} from "./nba/components/pulse-primitives";
 import { FavoriteTeamPicker, FilterPill } from "./nba/components/score-controls";
 import { SectionHeader } from "./nba/components/section-header";
 import { SeriesBoard } from "./nba/components/series-board";
@@ -26,6 +31,63 @@ type NbaTab = "scores" | "bracket" | "team";
 
 const FAVORITE_TEAM_STORAGE_KEY = "no-noise-favorite-team";
 const OLD_FOLLOWED_TEAM_STORAGE_KEY = "no-noise-followed-team";
+
+function TonightPulseHero({
+  game,
+  onOpen,
+}: {
+  game: Game | null;
+  onOpen: (game: Game) => void;
+}) {
+  if (!game) return null;
+
+  const pulse = getPulseState(game);
+  const isLive = game.status === "live";
+  const statusLabel = isLive
+    ? pulse.label
+    : game.status === "upcoming"
+      ? "NEXT UP"
+      : "FINAL";
+  const scoreLine =
+    game.status === "upcoming"
+      ? game.statusText
+      : `${game.away.abbreviation} ${game.away.score} · ${game.home.abbreviation} ${game.home.score}`;
+  const contextLine = isLive
+    ? getPulseReason(game)
+    : `${game.matchup} · ${game.gameContext || game.seriesSummary || "NBA Playoffs"}`;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(game)}
+      className="mb-4 grid w-full grid-cols-[1fr_auto] items-center gap-4 overflow-hidden rounded-[1.25rem] bg-[#1a1208] px-4 py-4 text-left text-[#f5f1ea] shadow-xl shadow-black/15 ring-1 ring-black/10 transition active:scale-[0.99] sm:mb-6 sm:rounded-[1.65rem] sm:px-5 sm:py-5"
+    >
+      <div className="min-w-0">
+        <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#f5f1ea]/55">
+          Tonight · Pulse
+        </p>
+        <p className="mt-2 truncate font-[family-name:var(--font-display)] text-[2.35rem] font-black uppercase leading-none tracking-tight sm:text-5xl">
+          {statusLabel}
+        </p>
+        <p className="mt-2 truncate text-[0.82rem] font-semibold text-[#f5f1ea]/70">
+          {contextLine}
+        </p>
+        <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2">
+          <span className="rounded-full bg-white/10 px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.12em] text-white/80 ring-1 ring-white/10">
+            {scoreLine}
+          </span>
+          {isLive && (
+            <span className="no-noise-live-fade rounded-full bg-[#e85d04] px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.12em] text-white">
+              Live
+            </span>
+          )}
+        </div>
+      </div>
+
+      <PulseRing pulse={isLive ? pulse : { label: "CALM", heat: 0.18 }} />
+    </button>
+  );
+}
 
 export default function NBAApp({ onBack }: { onBack: () => void }) {
   const [games, setGames] = useState<Game[]>([]);
@@ -218,43 +280,58 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
     });
   }, [games, favoriteTeamAbbr, lastUpdatedAt]);
 
+  const pulseGame = useMemo(() => {
+    const displayGames = sortGamesForDisplay(games, favoriteTeamAbbr);
+
+    return (
+      displayGames.find((game) => game.status === "live") ??
+      nextUpcomingGame ??
+      displayGames[0] ??
+      null
+    );
+  }, [games, favoriteTeamAbbr, nextUpcomingGame]);
+
   return (
     <main className="min-h-[100svh] bg-[#f5f1ea] px-4 pb-[calc(env(safe-area-inset-bottom)+5rem)] pt-[calc(env(safe-area-inset-top)+0.65rem)] text-[#1a1208] sm:px-6 md:pb-36 md:pt-[calc(env(safe-area-inset-top)+2rem)]">
       <style jsx global>{`
-        @keyframes no-noise-live-card {
+        @keyframes no-noise-live-fade {
           0%,
           100% {
-            box-shadow: 0 18px 35px rgba(0, 0, 0, 0.15);
+            opacity: 1;
           }
           50% {
-            box-shadow: 0 18px 35px rgba(0, 0, 0, 0.15),
-              0 -2px 18px rgba(249, 115, 22, 0.22);
+            opacity: 0.55;
           }
         }
 
         @keyframes no-noise-score-pop {
           0% {
-            transform: scale(1);
+            transform: translateY(0) scale(1);
           }
-          35% {
-            transform: scale(1.13);
+          20% {
+            transform: translateY(-2px) scale(1.04);
             color: #f97316;
           }
           100% {
-            transform: scale(1);
+            transform: translateY(0) scale(1);
           }
         }
 
         .no-noise-live-card {
-          animation: no-noise-live-card 2.4s ease-in-out infinite;
+          box-shadow: inset 0 0 0 2px rgba(232, 93, 4, 0.72),
+            0 18px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .no-noise-live-fade {
+          animation: no-noise-live-fade 1.8s ease-in-out infinite;
         }
 
         .no-noise-score-pop {
-          animation: no-noise-score-pop 0.8s ease-out;
+          animation: no-noise-score-pop 0.6s ease-out;
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .no-noise-live-card,
+          .no-noise-live-fade,
           .no-noise-score-pop {
             animation: none !important;
           }
@@ -325,6 +402,8 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
 
         {activeTab === "scores" && (
           <>
+            <TonightPulseHero game={pulseGame} onOpen={setSelectedGame} />
+
             <div className="mb-5 sm:mb-8">
               <div className="rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1.5 shadow-sm sm:p-2">
                 <div className="flex flex-wrap items-center gap-1.5 sm:flex-nowrap">

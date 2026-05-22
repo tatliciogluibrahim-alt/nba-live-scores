@@ -15,6 +15,8 @@ import {
 } from "../lib/series-memory";
 import { SeriesCard } from "./series-card";
 
+type SeriesBoardTab = "east" | "west" | "finals";
+
 function BracketEmptyState({
   onBackToScores,
 }: {
@@ -224,6 +226,102 @@ function BracketConferenceSection({
   );
 }
 
+function MiniBracketMap({ series }: { series: SeriesInfo[] }) {
+  const liveSeries = series.find((item) => item.status === "live");
+  const eastChamp =
+    series.find((item) => item.conference === "East" && item.round === "Conf Finals")
+      ?.teamA.abbreviation ?? "EAST";
+  const westChamp =
+    series.find((item) => item.conference === "West" && item.round === "Conf Finals")
+      ?.teamA.abbreviation ?? "WEST";
+  const activeLabel = liveSeries
+    ? `${liveSeries.teamA.abbreviation}/${liveSeries.teamB.abbreviation}`
+    : "Map";
+
+  return (
+    <section className="overflow-hidden rounded-[1.35rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
+      <div className="flex items-center justify-between gap-3 border-b border-[#ede8df] px-4 py-3">
+        <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#a89880]">
+          Playoff Map
+        </p>
+        <span className="rounded-full bg-white px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em] text-[#e85d04] ring-1 ring-[#f0d7c7]">
+          {activeLabel}
+        </span>
+      </div>
+      <svg viewBox="0 0 340 132" className="h-[132px] w-full">
+        {[
+          ["M34 18H76V34H95", liveSeries],
+          ["M34 50H76V34H95", liveSeries],
+          ["M34 82H76V98H95", null],
+          ["M34 114H76V98H95", null],
+          ["M116 34H154V66H169", liveSeries],
+          ["M116 98H154V66H169", null],
+          ["M306 18H264V34H245", null],
+          ["M306 50H264V34H245", null],
+          ["M306 82H264V98H245", null],
+          ["M306 114H264V98H245", null],
+          ["M224 34H188V66H171", null],
+          ["M224 98H188V66H171", null],
+        ].map(([path, active], index) => (
+          <path
+            key={`${path}-${index}`}
+            d={path as string}
+            fill="none"
+            stroke={active ? "#e85d04" : "rgba(26,18,8,0.16)"}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={active ? 3 : 1.5}
+          />
+        ))}
+
+        {[
+          [22, 18, "NY"],
+          [22, 50, "CLE"],
+          [22, 82, "BOS"],
+          [22, 114, "ORL"],
+          [106, 34, "NY"],
+          [106, 98, "BOS"],
+          [170, 66, eastChamp],
+          [318, 18, "OKC"],
+          [318, 50, "DEN"],
+          [318, 82, "MIN"],
+          [318, 114, "LAL"],
+          [234, 34, "OKC"],
+          [234, 98, "MIN"],
+          [170, 104, westChamp],
+        ].map(([x, y, label]) => {
+          const active = label === "NY" || label === eastChamp;
+
+          return (
+            <g key={`${x}-${y}-${label}`}>
+              <rect
+                x={Number(x) - 16}
+                y={Number(y) - 11}
+                width="32"
+                height="22"
+                rx="7"
+                fill={active ? "#fff0e8" : "#ffffff"}
+                stroke={active ? "#e85d04" : "#e8e0d4"}
+              />
+              <text
+                x={Number(x)}
+                y={Number(y) + 4}
+                textAnchor="middle"
+                fontFamily="var(--font-display)"
+                fontSize="8"
+                fontWeight="900"
+                fill="#1a1208"
+              >
+                {String(label).slice(0, 4)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </section>
+  );
+}
+
 export function SeriesBoard({
   games,
   favoriteTeamAbbr,
@@ -234,6 +332,7 @@ export function SeriesBoard({
   onBackToScores: () => void;
 }) {
   const [remembered, setRemembered] = useState<PersistedSeries[]>([]);
+  const [activeBoard, setActiveBoard] = useState<SeriesBoardTab>("east");
 
   useEffect(() => {
     const hydrationTimeout = setTimeout(() => {
@@ -302,14 +401,14 @@ export function SeriesBoard({
   const upcomingCount = allSeries.filter((series) => series.status === "upcoming").length;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-5 sm:space-y-6">
       <header className="flex flex-col gap-4 px-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase text-[#e85d04]">
             NBA Playoffs
           </p>
-          <h2 className="mt-1 font-[family-name:var(--font-display)] text-4xl font-black uppercase text-[#1a1208] sm:text-5xl">
-            Series Board
+          <h2 className="mt-1 font-[family-name:var(--font-display)] text-5xl font-black uppercase leading-none text-[#1a1208] sm:text-6xl">
+            Series Board.
           </h2>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -325,19 +424,40 @@ export function SeriesBoard({
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <MiniBracketMap series={allSeries} />
+
+      <div className="grid grid-cols-3 rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1">
+        {(["east", "west", "finals"] as SeriesBoardTab[]).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveBoard(tab)}
+            className={`rounded-[0.85rem] px-3 py-2 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.12em] transition active:scale-[0.98] ${
+              activeBoard === tab
+                ? "bg-[#1a1208] text-[#f5f1ea]"
+                : "text-[#8a7a66]"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {activeBoard === "east" && (
         <BracketConferenceSection
           conference="East"
           series={eastSeries}
           favoriteTeamAbbr={favoriteTeamAbbr}
         />
+      )}
 
+      {activeBoard === "west" && (
         <BracketConferenceSection
           conference="West"
           series={westSeries}
           favoriteTeamAbbr={favoriteTeamAbbr}
         />
-      </div>
+      )}
 
       {unknownSeries.length > 0 && (
         <section className="overflow-hidden rounded-[1.6rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
@@ -361,7 +481,7 @@ export function SeriesBoard({
         </section>
       )}
 
-      {(finals.length > 0 || hasConferenceSeries) && (
+      {activeBoard === "finals" && (finals.length > 0 || hasConferenceSeries) && (
         <section className="overflow-hidden rounded-[1.6rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
           <div className="border-b border-[#ede8df] px-4 py-3 text-center sm:px-5">
             <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#e85d04]">

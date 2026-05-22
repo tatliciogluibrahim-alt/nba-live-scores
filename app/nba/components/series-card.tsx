@@ -137,7 +137,7 @@ export function SeriesCard({
                 )}`}
               >
                 {statusLabel === "Live" && (
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-600" />
+                  <span className="no-noise-live-fade h-1.5 w-1.5 rounded-full bg-orange-600" />
                 )}
                 {statusLabel}
               </span>
@@ -169,7 +169,7 @@ export function SeriesCard({
                 {series.status === "live" && (
                   <span className="flex items-center gap-1 text-[0.72rem] font-bold text-[#e85d04]">
                     <span
-                      className="h-1.5 w-1.5 animate-pulse rounded-full"
+                      className="no-noise-live-fade h-1.5 w-1.5 rounded-full"
                       style={{ background: "#e85d04" }}
                     />
                     {series.nextGame?.statusText ?? "Live"}
@@ -263,7 +263,7 @@ export function SeriesCard({
                     style={{ background: "#fff0e8", color: "#e85d04" }}
                   >
                     <span
-                      className="h-1.5 w-1.5 animate-pulse rounded-full"
+                      className="no-noise-live-fade h-1.5 w-1.5 rounded-full"
                       style={{ background: "#e85d04" }}
                     />
                     {series.nextGame?.statusText ?? "Live"}
