@@ -1,4 +1,4 @@
-import type { Game, SeriesInfo, Team } from "../types";
+import type { Game, GamePlay, SeriesInfo, Team } from "../types";
 import {
   getScoreboardToday,
   isSameScoreboardDay,
@@ -102,6 +102,88 @@ export function getGameMomentStake(game: Game): MomentStake | null {
   }
 
   return null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Key moments — curated from the raw play feed by impact.
+// Used by the live game detail "Moments" tab. Plays come in
+// newest-first from /api/nba-game-detail. We return at most
+// `limit` curated entries, newest-first.
+// ─────────────────────────────────────────────────────────────
+
+function parseClockSeconds(clock: string | undefined): number {
+  if (!clock) return Infinity;
+  const match = clock.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return Infinity;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function isLatePeriod(play: GamePlay): boolean {
+  return (play.period ?? 0) >= 4;
+}
+
+function isLateClock(play: GamePlay): boolean {
+  return parseClockSeconds(play.t) <= 120;
+}
+
+export function isKeyMoment(play: GamePlay): boolean {
+  // 3-pointers always count
+  if (play.kind === "3PT" && play.pts === 3) return true;
+  // Late-game defense
+  if ((play.kind === "BLOCK" || play.kind === "STEAL") && isLatePeriod(play)) return true;
+  // Late-game scoring (any made shot in the final 2 minutes of Q4+)
+  if (play.pts > 0 && isLatePeriod(play) && isLateClock(play)) return true;
+  // Dunks in the late game
+  if (play.kind === "DUNK" && isLatePeriod(play)) return true;
+  return false;
+}
+
+export function getKeyMoments(plays: GamePlay[], limit = 8): GamePlay[] {
+  return plays.filter(isKeyMoment).slice(0, limit);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Play-language humanizers — DESIGN.md forbids "NEUT" and raw
+// kind codes ("3PT", "BLOCK") in the UI.
+// ─────────────────────────────────────────────────────────────
+
+export function humanizeNeutral(kind: string): string {
+  switch (kind) {
+    case "TIMEOUT":
+      return "Timeout";
+    case "FOUL":
+      return "Foul";
+    case "END_PERIOD":
+    case "END":
+      return "End of period";
+    default:
+      return "Whistle";
+  }
+}
+
+export function humanizePlayKind(kind: string): string {
+  switch (kind) {
+    case "3PT":
+      return "Made 3";
+    case "2PT":
+      return "Made shot";
+    case "FT":
+      return "Free throw";
+    case "DUNK":
+      return "Dunk";
+    case "STEAL":
+      return "Steal";
+    case "BLOCK":
+      return "Block";
+    case "AST":
+      return "Assist";
+    case "FOUL":
+      return "Foul";
+    case "TIMEOUT":
+      return "Timeout";
+    default:
+      return kind;
+  }
 }
 
 export function getSeriesMomentStake(series: SeriesInfo): MomentStake | null {

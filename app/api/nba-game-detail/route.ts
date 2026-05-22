@@ -146,22 +146,36 @@ function cleanNames(names: Array<string | undefined>): string[] {
   );
 }
 
+// DESIGN.md: never render raw broadcast IDs. A broadcast carries multiple
+// fields (names, station call-letters, media.shortName/name, numeric IDs).
+// Pick the friendliest single label per broadcast and drop ID-shaped strings.
+function pickFriendlyBroadcastLabel(broadcast: ESPNBroadcast): string | undefined {
+  const candidates = [
+    broadcast.names?.[0],
+    broadcast.media?.shortName,
+    broadcast.media?.name,
+    broadcast.station,
+    broadcast.media?.callLetters,
+  ];
+
+  for (const candidate of candidates) {
+    const value = candidate?.trim();
+    if (!value) continue;
+    // Skip numeric-only IDs and overly-long strings (likely garbage).
+    if (/^\d+$/.test(value)) continue;
+    if (value.length > 24) continue;
+    return value;
+  }
+  return undefined;
+}
+
 function normalizeBroadcasts(data: ESPNSummaryResponse): string[] {
   const headerBroadcasts = data.header?.competitions?.flatMap(
     (competition) => competition.broadcasts ?? []
   ) ?? [];
-
   const broadcasts = [...headerBroadcasts, ...(data.broadcasts ?? [])];
 
-  return cleanNames(
-    broadcasts.flatMap((broadcast) => [
-      ...(broadcast.names ?? []),
-      broadcast.station,
-      broadcast.media?.shortName,
-      broadcast.media?.callLetters,
-      broadcast.media?.name,
-    ])
-  ).slice(0, 4);
+  return cleanNames(broadcasts.map(pickFriendlyBroadcastLabel)).slice(0, 2);
 }
 
 function normalizeLine(data: ESPNSummaryResponse) {
@@ -300,8 +314,10 @@ function normalizePlays(data: ESPNSummaryResponse) {
         id: play.id ?? `${play.period?.number ?? 0}-${play.clock?.displayValue ?? ""}-${play.text ?? ""}`,
         t: play.clock?.displayValue ?? "",
         team: side,
+        // Neutral plays carry an empty team string — render layer humanizes
+        // them ("Timeout", "Foul", "End of Q4"). DESIGN.md forbids "NEUT".
         teamAbbreviation:
-          side === "away" ? awayAbbr : side === "home" ? homeAbbr : "NEUT",
+          side === "away" ? awayAbbr : side === "home" ? homeAbbr : "",
         who: play.shortDescription ?? play.type?.text ?? "Play",
         kind: classifyPlayKind(play),
         pts: Math.max(0, Number(play.scoreValue ?? 0)),
