@@ -1,38 +1,85 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Game, GameDetail, GamePlay, PeriodScores, PulseState } from "../types";
+import type {
+  Game,
+  GameDetail,
+  GamePlay,
+  PeriodScores,
+  PulseState,
+} from "../types";
 import { formatGameDateTime } from "../lib/time";
-import { getGameMomentStake } from "../lib/moment-intelligence";
-import { MomentStakePill } from "./moment-stake-pill";
 import {
-  getPulseReason,
-  getPulseState,
-  MomentumSparkline,
-  TensionBar,
-} from "./pulse-primitives";
+  getGameMomentStake,
+  getKeyMoments,
+  humanizeNeutral,
+  humanizePlayKind,
+} from "../lib/moment-intelligence";
+import { getPulseReason, getPulseState, MomentumSparkline } from "./pulse-primitives";
 import { TeamLogo } from "./team-logo";
+import {
+  AppCard,
+  Eyebrow,
+  KeyMoment,
+  Segmented,
+  StatusPill,
+  Tension,
+  Watch,
+  type StatusTone,
+} from "../../shared/atoms";
 
-function DetailValue({
-  label,
-  value,
+type DetailTab = "moments" | "playbyplay" | "compare";
+
+function statusToTone(status: Game["status"]): StatusTone {
+  if (status === "live") return "live";
+  if (status === "upcoming") return "upcoming";
+  return "final";
+}
+
+function statusToAccent(status: Game["status"]): string | undefined {
+  if (status === "live") return "var(--nba)";
+  if (status === "upcoming") return "var(--up)";
+  return undefined;
+}
+
+// Hero row — bigger score than the standard TeamRow. Lives inline because
+// this is the only surface that earns the 44px score.
+function HeroTeamRow({
+  team,
+  leading,
 }: {
-  label: string;
-  value: string;
+  team: Game["home"] | Game["away"];
+  leading: boolean;
 }) {
   return (
-    <div className="rounded-[0.95rem] bg-white px-3 py-2 ring-1 ring-[#e8e0d4]">
-      <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
-        {label}
-      </p>
-      <p className="mt-1 truncate text-[0.82rem] font-black text-[#1a1208]">
-        {value}
-      </p>
+    <div className="flex items-center gap-3 py-1">
+      <TeamLogo team={team} />
+      <div className="min-w-0 flex-1">
+        <div className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>
+          {team.abbreviation}
+        </div>
+        <div className="truncate text-[11px]" style={{ color: "var(--mute-1)" }}>
+          {team.name}
+        </div>
+      </div>
+      <div
+        className="tabular-nums"
+        style={{
+          fontSize: 44,
+          fontWeight: 700,
+          lineHeight: 1,
+          letterSpacing: "-0.02em",
+          color: leading ? "var(--ink)" : "var(--mute-1)",
+          opacity: leading ? 1 : 0.6,
+        }}
+      >
+        {team.score}
+      </div>
     </div>
   );
 }
 
-function PeriodScoreStrip({
+function PeriodStrip({
   periodScores,
   game,
 }: {
@@ -45,83 +92,29 @@ function PeriodScoreStrip({
     game.period,
     4
   );
+  const periodsToShow = Math.min(maxPeriods, 4);
 
   return (
-    <div className="grid grid-cols-4 gap-1.5 px-3 pb-3">
-      {Array.from({ length: Math.min(maxPeriods, 4) }).map((_, index) => {
+    <div className="mt-3 flex gap-1.5">
+      {Array.from({ length: periodsToShow }).map((_, index) => {
         const isCurrent = game.status === "live" && game.period === index + 1;
-
         return (
           <div
             key={index}
-            className={`rounded-[0.7rem] px-2 py-2 text-center ring-1 ${
-              isCurrent
-                ? "bg-[#1a1208] text-[#f5f1ea] ring-[#1a1208]"
-                : "bg-[#fbf8f3] text-[#8a7a66] ring-[#f0ece4]"
-            }`}
+            className="flex-1 rounded-lg py-1.5 text-center"
+            style={{
+              background: isCurrent ? "var(--ink)" : "transparent",
+              color: isCurrent ? "var(--cream)" : "var(--mute-1)",
+              border: `1px solid ${isCurrent ? "var(--ink)" : "var(--line)"}`,
+            }}
           >
-            <p className="font-[family-name:var(--font-display)] text-[0.52rem] font-black uppercase tracking-[0.12em]">
-              Q{index + 1}
-            </p>
-            <p className="mt-0.5 text-[0.72rem] font-black tabular-nums">
-              {periodScores.away[index] ?? "-"}-{periodScores.home[index] ?? "-"}
-            </p>
+            <div className="text-[10px] font-semibold opacity-70">Q{index + 1}</div>
+            <div className="mt-0.5 text-[12px] font-bold tabular-nums">
+              {periodScores.away[index] ?? "-"}–{periodScores.home[index] ?? "-"}
+            </div>
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function PlayFeed({ plays }: { plays: GamePlay[] }) {
-  if (plays.length === 0) return null;
-
-  const latest = plays[0];
-
-  return (
-    <div className="space-y-3">
-      <div className="rounded-[1rem] bg-[#fff7ef] px-3 py-2.5 ring-1 ring-orange-100">
-        <div className="flex items-center justify-between gap-3">
-          <p className="min-w-0 truncate text-[0.72rem] font-black text-[#1a1208]">
-            <span className="font-[family-name:var(--font-display)] text-[0.56rem] uppercase tracking-[0.14em] text-[#a89880]">
-              Last play · {latest.t}
-            </span>{" "}
-            {latest.teamAbbreviation} · {latest.text}
-          </p>
-          <span className="shrink-0 font-[family-name:var(--font-display)] text-[0.72rem] font-black text-[#e85d04]">
-            {latest.pts > 0 ? `+${latest.pts}` : "0"}
-          </span>
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]">
-        <div className="border-b border-[#f0ece4] px-3 py-2">
-          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-            Play Feed
-          </p>
-        </div>
-        <div className="divide-y divide-[#f0ece4]">
-          {plays.slice(0, 6).map((play) => (
-            <div
-              key={play.id}
-              className="grid grid-cols-[2.4rem_2.7rem_1fr_auto] items-center gap-2 px-3 py-2.5"
-            >
-              <span className="text-[0.62rem] font-black tabular-nums text-[#a89880]">
-                {play.t}
-              </span>
-              <span className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.12em] text-[#e85d04]">
-                {play.teamAbbreviation}
-              </span>
-              <span className="min-w-0 truncate text-[0.72rem] font-bold text-[#1a1208]">
-                {play.text || play.kind}
-              </span>
-              <span className="text-[0.68rem] font-black tabular-nums text-[#8a7a66]">
-                {play.pts > 0 ? `+${play.pts}` : "0"}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -129,91 +122,360 @@ function PlayFeed({ plays }: { plays: GamePlay[] }) {
 function ScoreHero({
   game,
   periodScores,
-  momentum,
   pulseOverride,
 }: {
   game: Game;
   periodScores: PeriodScores;
-  momentum: number[];
   pulseOverride: PulseState | null;
 }) {
-  const showScore = game.status !== "upcoming";
   const pulse = pulseOverride ?? getPulseState(game);
   const isLive = game.status === "live";
+  const awayLeading = game.away.score > game.home.score;
+  const homeLeading = game.home.score > game.away.score;
 
   return (
-    <div className="overflow-hidden rounded-[1.35rem] bg-white shadow-xl shadow-black/10 ring-1 ring-[#e8e0d4]">
-      <div className="h-[3px] bg-[#e85d04]" />
-      <div className="flex items-start justify-between gap-3 border-b border-[#f0ece4] bg-[#fbf8f3] px-3 py-3">
-        <div className="flex items-start gap-2">
-          {isLive && (
-            <span className="no-noise-live-fade rounded-full bg-[#e85d04] px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em] text-white">
-              Live
+    <AppCard accent={statusToAccent(game.status)} padded={false}>
+      <div className="px-3.5 py-3.5">
+        <div className="mb-2.5 flex items-center justify-between gap-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>
+              {game.gameContext || game.matchup}
             </span>
-          )}
-          <div>
-            <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-              {game.gameContext || "NBA Playoffs"}
-            </p>
-            <p className="mt-0.5 text-[0.72rem] font-bold text-[#8a7a66]">
-              {game.status === "live" ? game.statusText : formatGameDateTime(game.date)}
-            </p>
+            {isLive && (
+              <span
+                className="text-[11px] font-semibold"
+                style={{ color: "var(--mute-1)" }}
+              >
+                Q{game.period} · {game.statusText}
+              </span>
+            )}
           </div>
+          <StatusPill tone={statusToTone(game.status)} breathe={isLive}>
+            {isLive ? "Live" : game.status === "final" ? "Final" : "Upcoming"}
+          </StatusPill>
         </div>
-        <p className="max-w-[6rem] text-right font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase leading-tight tracking-[0.14em] text-[#e85d04]">
-          {isLive ? pulse.label : game.status}
-        </p>
+
+        <HeroTeamRow team={game.away} leading={awayLeading} />
+        <HeroTeamRow team={game.home} leading={homeLeading} />
+
+        <PeriodStrip periodScores={periodScores} game={game} />
+
+        {isLive && (
+          <div className="mt-3">
+            <Tension heat={pulse.heat} label={getPulseReason(game)} />
+          </div>
+        )}
       </div>
-      {(["away", "home"] as const).map((side) => {
-        const team = game[side];
-        const other = side === "away" ? game.home : game.away;
-        const muted = showScore && team.score < other.score;
-        return (
+    </AppCard>
+  );
+}
+
+function MomentsPanel({
+  plays,
+  game,
+}: {
+  plays: GamePlay[];
+  game: Game;
+}) {
+  const moments = useMemo(() => getKeyMoments(plays, 8), [plays]);
+
+  if (moments.length === 0) {
+    return (
+      <div
+        className="rounded-[14px] px-3.5 py-4 text-center text-[12px]"
+        style={{
+          background: "var(--paper)",
+          border: "1px solid var(--line)",
+          color: "var(--mute-1)",
+        }}
+      >
+        Key moments appear here as the game develops.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <AppCard padded={false}>
+        <div className="px-3.5">
+          {moments.map((play, index) => {
+            const tint =
+              play.team === "away"
+                ? "var(--nba)"
+                : play.team === "home"
+                  ? "var(--ink)"
+                  : "var(--mute-2)";
+            const sideLabel =
+              play.team === "neutral"
+                ? humanizeNeutral(play.kind)
+                : `${play.teamAbbreviation || (play.team === "away" ? game.away.abbreviation : game.home.abbreviation)} · ${humanizePlayKind(play.kind)}`;
+            const text = play.text && play.text.length > 0 ? play.text : sideLabel;
+            const impact =
+              play.pts > 0
+                ? `+${play.pts}`
+                : play.kind === "BLOCK" || play.kind === "STEAL"
+                  ? "swing"
+                  : undefined;
+            return (
+              <KeyMoment
+                key={play.id}
+                time={`Q${play.period} ${play.t}`}
+                tint={tint}
+                text={text}
+                impact={impact}
+                last={index === moments.length - 1}
+              />
+            );
+          })}
+        </div>
+      </AppCard>
+      <div
+        className="mt-2 px-1 text-[11px]"
+        style={{ color: "var(--mute-1)" }}
+      >
+        Curated by impact · {moments.length} of {plays.length} plays
+      </div>
+    </>
+  );
+}
+
+function PlayByPlayPanel({
+  plays,
+  game,
+}: {
+  plays: GamePlay[];
+  game: Game;
+}) {
+  if (plays.length === 0) {
+    return (
+      <div
+        className="rounded-[14px] px-3.5 py-4 text-center text-[12px]"
+        style={{
+          background: "var(--paper)",
+          border: "1px solid var(--line)",
+          color: "var(--mute-1)",
+        }}
+      >
+        Play-by-play loads once the game tips off.
+      </div>
+    );
+  }
+
+  return (
+    <AppCard padded={false}>
+      <div className="px-3.5">
+        {plays.slice(0, 12).map((play, index) => {
+          const isLast = index === Math.min(plays.length, 12) - 1;
+          const tint =
+            play.team === "away"
+              ? "var(--nba)"
+              : play.team === "home"
+                ? "var(--ink)"
+                : "transparent";
+          const text =
+            play.team === "neutral"
+              ? humanizeNeutral(play.kind)
+              : play.text && play.text.length > 0
+                ? play.text
+                : `${play.teamAbbreviation || (play.team === "away" ? game.away.abbreviation : game.home.abbreviation)} · ${humanizePlayKind(play.kind)}`;
+          return (
+            <div
+              key={play.id}
+              className="flex items-center gap-2.5 py-2.5"
+              style={{ borderBottom: isLast ? "none" : "1px solid var(--line)" }}
+            >
+              <span
+                className="w-12 text-[11px] font-semibold tabular-nums"
+                style={{ color: "var(--mute-1)" }}
+              >
+                {play.t || `Q${play.period}`}
+              </span>
+              <span
+                aria-hidden
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{
+                  background: tint,
+                  opacity: play.team === "neutral" ? 0.3 : 1,
+                }}
+              />
+              <span
+                className="flex-1 text-[13px] font-medium leading-snug"
+                style={{ color: "var(--ink)" }}
+              >
+                {text}
+              </span>
+              {play.pts > 0 && (
+                <span
+                  className="text-[12px] font-bold tabular-nums"
+                  style={{ color: "var(--ink)" }}
+                >
+                  +{play.pts}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </AppCard>
+  );
+}
+
+function CompareRow({
+  label,
+  away,
+  home,
+}: {
+  label: string;
+  away: string;
+  home: string;
+}) {
+  const num = (value: string) => Number.parseFloat(value.replace(/[^\d.-]/g, "")) || 0;
+  const awayNum = num(away);
+  const homeNum = num(home);
+  const max = Math.max(awayNum, homeNum, 1);
+  const awayPct = (awayNum / max) * 100;
+  const homePct = (homeNum / max) * 100;
+  const awayWin = awayNum > homeNum;
+  const homeWin = homeNum > awayNum;
+
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-[12px] font-bold tabular-nums">
+        <span style={{ color: awayWin ? "var(--ink)" : "var(--mute-1)" }}>{away}</span>
+        <span className="text-[11px] font-semibold" style={{ color: "var(--mute-1)" }}>
+          {label}
+        </span>
+        <span style={{ color: homeWin ? "var(--ink)" : "var(--mute-1)" }}>{home}</span>
+      </div>
+      <div className="flex gap-1" style={{ height: 4 }}>
+        <div
+          className="flex flex-1 justify-end overflow-hidden rounded-full"
+          style={{ background: "var(--cream-2)" }}
+        >
           <div
-            key={side}
-            className={`flex items-center justify-between gap-3 border-b border-[#f0ece4] px-3 py-3 last:border-b-0 ${
-              muted ? "opacity-55" : ""
-            }`}
+            style={{
+              width: `${awayPct}%`,
+              background: "var(--ink)",
+              opacity: awayWin ? 1 : 0.55,
+            }}
+          />
+        </div>
+        <div
+          className="flex-1 overflow-hidden rounded-full"
+          style={{ background: "var(--cream-2)" }}
+        >
+          <div
+            style={{
+              width: `${homePct}%`,
+              background: "var(--ink)",
+              opacity: homeWin ? 1 : 0.55,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ComparePanel({
+  game,
+  detail,
+  isLoading,
+}: {
+  game: Game;
+  detail: {
+    teamComparison: GameDetail["teamComparison"];
+    momentum: number[];
+  };
+  isLoading: boolean;
+}) {
+  const hasMomentum = detail.momentum && detail.momentum.length > 0;
+  return (
+    <>
+      <AppCard>
+        <div className="mb-2.5 flex items-center justify-between">
+          <span className="text-[12px] font-bold" style={{ color: "var(--ink)" }}>
+            {game.away.abbreviation}
+          </span>
+          <Eyebrow>Team stats</Eyebrow>
+          <span className="text-[12px] font-bold" style={{ color: "var(--ink)" }}>
+            {game.home.abbreviation}
+          </span>
+        </div>
+        {detail.teamComparison.length > 0 ? (
+          <div className="flex flex-col gap-2.5">
+            {detail.teamComparison.map((row) => (
+              <CompareRow key={row.label} {...row} />
+            ))}
+          </div>
+        ) : (
+          <p
+            className="py-3 text-center text-[12px]"
+            style={{ color: "var(--mute-1)" }}
           >
-            <div className="flex min-w-0 items-center gap-2.5">
-              <TeamLogo team={team} />
-              <div className="min-w-0">
-                <p className="truncate text-[1.05rem] font-black text-[#1a1208]">
-                  {team.abbreviation}
-                </p>
-                <p className="truncate text-[0.68rem] font-semibold text-[#a89880]">
-                  {team.name}
-                </p>
-              </div>
+            {isLoading ? "Loading stats…" : "Stats unavailable"}
+          </p>
+        )}
+      </AppCard>
+
+      {game.status === "live" && hasMomentum && (
+        <div className="mt-2">
+          <AppCard>
+            <div className="mb-2 flex items-center justify-between">
+              <Eyebrow>Score momentum</Eyebrow>
+              <span
+                className="text-[11px] font-semibold"
+                style={{ color: "var(--mute-1)" }}
+              >
+                {game.away.abbreviation} run · {game.home.abbreviation} run
+              </span>
             </div>
-            <p className="text-[2.5rem] font-black tabular-nums leading-none tracking-tight text-[#1a1208]">
-              {showScore ? team.score : "–"}
-            </p>
-          </div>
-        );
-      })}
-      <PeriodScoreStrip periodScores={periodScores} game={game} />
-      {isLive && (
-        <div className="space-y-3 px-3 py-3">
-          <TensionBar pulse={pulse} />
-          <div className="rounded-[1rem] bg-[#fbf8f3] px-3 py-3 ring-1 ring-[#f0ece4]">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-                Score momentum
-              </p>
-              <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#e85d04]">
-                {getPulseReason(game)}
-              </p>
-            </div>
-            <MomentumSparkline data={momentum.length ? momentum : [0]} height={58} />
-            <div className="mt-1 flex justify-between text-[0.58rem] font-black uppercase tracking-wide text-[#c0b0a0]">
-              <span>{game.home.abbreviation} run</span>
-              <span>{game.away.abbreviation} run</span>
-            </div>
-          </div>
+            <MomentumSparkline data={detail.momentum} height={58} />
+          </AppCard>
         </div>
       )}
-    </div>
+    </>
+  );
+}
+
+function LeadersList({ leaders }: { leaders: GameDetail["leaders"] }) {
+  if (leaders.length === 0) return null;
+  return (
+    <AppCard padded={false}>
+      <div className="px-3.5 py-1">
+        {leaders.slice(0, 4).map((leader, index, arr) => (
+          <div
+            key={`${leader.team}-${leader.label}-${leader.name}`}
+            className="flex items-center justify-between gap-3 py-2.5"
+            style={{
+              borderBottom:
+                index === arr.length - 1 ? "none" : "1px solid var(--line)",
+            }}
+          >
+            <div className="min-w-0">
+              <p
+                className="truncate text-[13px] font-bold"
+                style={{ color: "var(--ink)" }}
+              >
+                {leader.name}
+              </p>
+              <p
+                className="text-[11px] font-semibold"
+                style={{ color: "var(--mute-1)" }}
+              >
+                {leader.team} · {leader.label}
+              </p>
+            </div>
+            <p
+              className="shrink-0 text-[14px] font-bold tabular-nums"
+              style={{ color: "var(--ink)" }}
+            >
+              {leader.value}
+            </p>
+          </div>
+        ))}
+      </div>
+    </AppCard>
   );
 }
 
@@ -228,6 +490,14 @@ export function GameDetailDrawer({
     gameId: string | null;
     detail: GameDetail | null;
   }>({ gameId: null, detail: null });
+  const [tab, setTab] = useState<DetailTab>("moments");
+  const [tabGameId, setTabGameId] = useState<string | null>(null);
+  // Reset tab when a different game opens. React docs endorse setting state
+  // during render to track a derived value — beats a useEffect cascade.
+  if (game && game.id !== tabGameId) {
+    setTabGameId(game.id);
+    setTab("moments");
+  }
 
   useEffect(() => {
     if (!game) return;
@@ -264,39 +534,31 @@ export function GameDetailDrawer({
     }
 
     fetchDetail();
-
     return () => controller.abort();
   }, [game]);
 
   useEffect(() => {
     if (!game) return;
-
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
     }
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [game, onClose]);
 
   const merged = useMemo(() => {
     if (!game) return null;
-
-    const detail =
-      detailState.gameId === game.id ? detailState.detail : null;
+    const detail = detailState.gameId === game.id ? detailState.detail : null;
     const broadcasts =
       detail?.broadcasts && detail.broadcasts.length > 0
         ? detail.broadcasts
         : game.broadcasts;
-    const line = detail?.line ?? game.line;
     const teamComparison =
       detail?.teamComparison && detail.teamComparison.length > 0
         ? detail.teamComparison
         : game.teamComparison;
     const leaders =
-      detail?.leaders && detail.leaders.length > 0
-        ? detail.leaders
-        : game.leaders;
+      detail?.leaders && detail.leaders.length > 0 ? detail.leaders : game.leaders;
     const periodScores =
       detail?.periodScores &&
       (detail.periodScores.away.length > 0 || detail.periodScores.home.length > 0)
@@ -305,19 +567,15 @@ export function GameDetailDrawer({
     const plays = detail?.plays ?? [];
     const momentum = detail?.momentum ?? [];
     const pulse = detail?.pulse ?? null;
-
-    return { broadcasts, line, teamComparison, leaders, periodScores, plays, momentum, pulse };
+    return { broadcasts, teamComparison, leaders, periodScores, plays, momentum, pulse };
   }, [detailState, game]);
 
   if (!game || !merged) return null;
 
   const isLoading = detailState.gameId !== game.id;
   const stake = getGameMomentStake(game);
-  const watchLabel =
-    merged.broadcasts.length > 0 ? merged.broadcasts.join(" / ") : "TV TBA";
-  const lineLabel = [merged.line?.spread, merged.line?.total]
-    .filter(Boolean)
-    .join(" · ");
+  const watchChannel = merged.broadcasts[0];
+  const watchStream = merged.broadcasts[1];
 
   return (
     <div
@@ -325,30 +583,48 @@ export function GameDetailDrawer({
       onClick={onClose}
     >
       <section
-        className="max-h-[88svh] w-full max-w-xl overflow-hidden rounded-t-[1.75rem] bg-[#f5f1ea] pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-2xl sm:rounded-[1.75rem] sm:pb-5"
+        className="max-h-[88svh] w-full max-w-xl overflow-hidden rounded-t-[24px] pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:rounded-[24px] sm:pb-5"
+        style={{ background: "var(--cream)" }}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex justify-center pb-1 pt-3">
-          <div className="h-1 w-10 rounded-full bg-[#d4cdc0]" />
+          <div
+            className="h-1 w-10 rounded-full"
+            style={{ background: "var(--mute-2)" }}
+          />
         </div>
 
-        <div className="border-b border-[#e8e0d4] px-4 pb-3 pt-1">
+        <div
+          className="px-4 pb-3 pt-1"
+          style={{ borderBottom: "1px solid var(--line)" }}
+        >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
-                Game Detail
-              </p>
-              <p className="mt-1 truncate font-[family-name:var(--font-display)] text-[1.45rem] font-black uppercase leading-none tracking-tight text-[#1a1208]">
+              <Eyebrow>Game detail</Eyebrow>
+              <p
+                className="mt-1 truncate text-[18px] font-bold"
+                style={{ color: "var(--ink)" }}
+              >
                 {game.matchup}
               </p>
-              <p className="mt-1 text-[0.76rem] font-bold text-[#a89880]">
-                {game.status === "live" ? game.statusText : formatGameDateTime(game.date)}
+              <p
+                className="mt-0.5 text-[12px] font-semibold"
+                style={{ color: "var(--mute-1)" }}
+              >
+                {game.status === "live"
+                  ? game.statusText
+                  : formatGameDateTime(game.date)}
               </p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#8a7a66] ring-1 ring-[#e8e0d4] transition active:scale-95"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[18px] transition active:scale-95"
+              style={{
+                background: "var(--paper)",
+                color: "var(--mute-1)",
+                border: "1px solid var(--line)",
+              }}
               aria-label="Close game detail"
             >
               ×
@@ -356,88 +632,68 @@ export function GameDetailDrawer({
           </div>
         </div>
 
-        <div className="max-h-[calc(88svh-7rem)] space-y-4 overflow-y-auto px-4 py-4">
+        <div className="max-h-[calc(88svh-7rem)] space-y-4 overflow-y-auto px-3.5 py-4">
           <ScoreHero
             game={game}
             periodScores={merged.periodScores}
-            momentum={merged.momentum}
             pulseOverride={merged.pulse}
           />
 
-          {stake && <MomentStakePill stake={stake} />}
-
-          <PlayFeed plays={merged.plays} />
-
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <DetailValue label="Watch" value={watchLabel} />
-            <DetailValue label="Line" value={lineLabel || "Unavailable"} />
-          </div>
-
-          <div className="rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]">
-            <div className="border-b border-[#f0ece4] px-3 py-2">
-              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-                Team Comparison
-              </p>
+          {stake && (
+            <div className="flex flex-wrap gap-2">
+              <StatusPill
+                tone={
+                  stake.tone === "live"
+                    ? "live"
+                    : stake.tone === "urgent"
+                      ? "live"
+                      : stake.tone === "complete"
+                        ? "final"
+                        : "current"
+                }
+                breathe={stake.tone === "live"}
+                dot={stake.tone !== "calm" && stake.tone !== "neutral"}
+              >
+                {stake.label}
+              </StatusPill>
             </div>
-            {merged.teamComparison.length > 0 ? (
-              <div className="divide-y divide-[#f0ece4]">
-                {merged.teamComparison.map((row) => (
-                  <div
-                    key={row.label}
-                    className="grid grid-cols-[1fr_4.5rem_1fr] items-center gap-2 px-3 py-2"
-                  >
-                    <p className="truncate text-[0.78rem] font-black tabular-nums text-[#1a1208]">
-                      {row.away}
-                    </p>
-                    <p className="text-center font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
-                      {row.label}
-                    </p>
-                    <p className="truncate text-right text-[0.78rem] font-black tabular-nums text-[#1a1208]">
-                      {row.home}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="px-3 py-4 text-[0.76rem] font-semibold text-[#a89880]">
-                {isLoading ? "Loading stats..." : "Stats unavailable"}
-              </p>
-            )}
+          )}
+
+          <Segmented<DetailTab>
+            tabs={[
+              { value: "moments", label: "Moments" },
+              { value: "playbyplay", label: "Play by play" },
+              { value: "compare", label: "Compare" },
+            ]}
+            value={tab}
+            onChange={setTab}
+          />
+
+          {tab === "moments" && <MomentsPanel plays={merged.plays} game={game} />}
+          {tab === "playbyplay" && (
+            <PlayByPlayPanel plays={merged.plays} game={game} />
+          )}
+          {tab === "compare" && (
+            <ComparePanel
+              game={game}
+              detail={{
+                teamComparison: merged.teamComparison,
+                momentum: merged.momentum,
+              }}
+              isLoading={isLoading}
+            />
+          )}
+
+          <div>
+            <Eyebrow style={{ display: "block", marginBottom: 6, paddingLeft: 4 }}>
+              Player leaders
+            </Eyebrow>
+            <LeadersList leaders={merged.leaders} />
           </div>
 
-          <div className="rounded-[1rem] bg-white ring-1 ring-[#e8e0d4]">
-            <div className="border-b border-[#f0ece4] px-3 py-2">
-              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-                Player Leaders
-              </p>
-            </div>
-            {merged.leaders.length > 0 ? (
-              <div className="divide-y divide-[#f0ece4]">
-                {merged.leaders.map((leader) => (
-                  <div
-                    key={`${leader.team}-${leader.label}-${leader.name}`}
-                    className="flex items-center justify-between gap-3 px-3 py-2.5"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-[0.8rem] font-black text-[#1a1208]">
-                        {leader.name}
-                      </p>
-                      <p className="text-[0.62rem] font-bold uppercase tracking-wide text-[#a89880]">
-                        {leader.team} · {leader.label}
-                      </p>
-                    </div>
-                    <p className="shrink-0 text-right text-[0.86rem] font-black tabular-nums text-[#1a1208]">
-                      {leader.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="px-3 py-4 text-[0.76rem] font-semibold text-[#a89880]">
-                {isLoading ? "Loading leaders..." : "Player stats unavailable"}
-              </p>
-            )}
-          </div>
+          {watchChannel && (
+            <Watch channel={watchChannel} stream={watchStream} />
+          )}
         </div>
       </section>
     </div>

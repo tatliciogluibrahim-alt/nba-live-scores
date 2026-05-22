@@ -380,20 +380,28 @@ function normalizeLineScores(competitor?: ESPNCompetitor): number[] {
     .filter((score) => Number.isFinite(score));
 }
 
+// DESIGN.md: never render raw broadcast IDs. Pick one friendly label per
+// broadcast and reject numeric-only / overly-long strings.
 function normalizeBroadcasts(competition: ESPNCompetition): string[] {
-  const names = (competition.broadcasts ?? []).flatMap((broadcast) => [
-    ...(broadcast.names ?? []),
-    broadcast.media?.shortName,
-    broadcast.media?.name,
-  ]);
+  const labels = (competition.broadcasts ?? [])
+    .map((broadcast) => {
+      const candidates = [
+        broadcast.names?.[0],
+        broadcast.media?.shortName,
+        broadcast.media?.name,
+      ];
+      for (const candidate of candidates) {
+        const value = candidate?.trim();
+        if (!value) continue;
+        if (/^\d+$/.test(value)) continue;
+        if (value.length > 24) continue;
+        return value;
+      }
+      return undefined;
+    })
+    .filter((label): label is string => Boolean(label));
 
-  return Array.from(
-    new Set(
-      names
-        .map((name) => name?.trim())
-        .filter((name): name is string => Boolean(name))
-    )
-  ).slice(0, 4);
+  return Array.from(new Set(labels)).slice(0, 2);
 }
 
 function normalizeLine(competition: ESPNCompetition): GameLine | null {
