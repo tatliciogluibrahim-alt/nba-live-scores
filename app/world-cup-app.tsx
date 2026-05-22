@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { WCGame, WCMatchEvent, WCTeam } from "./api/world-cup/route";
+import { Segmented } from "./shared/atoms";
 
 // ── Verified 2026 World Cup groups (12 groups of 4, 48 teams) ─────────────────
 export const WC_GROUPS: Record<string, string[]> = {
@@ -2143,7 +2144,16 @@ function RoadToCup({
     )
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const accentText = safeTextColor(accentColor);
-  const stages = [
+  // Stage scenarios are qualitative — no fake percentages per DESIGN.md.
+  const stages: Array<{
+    label: string;
+    when: string;
+    venue: string;
+    opponent?: string;
+    reason?: string;
+    scenario?: ScenarioKind;
+    alternates?: string[];
+  }> = [
     {
       label: `Group ${group}`,
       when: "June 13-24",
@@ -2155,8 +2165,8 @@ function RoadToCup({
       venue: "Dallas",
       opponent: "CZE",
       reason: "Most likely second-place crossover",
-      probability: 0.42,
-      alternates: [["KOR", 24], ["RSA", 18], ["CAN", 16]] as [string, number][],
+      scenario: "likely",
+      alternates: ["KOR", "RSA", "CAN"],
     },
     {
       label: "Round of 16",
@@ -2164,8 +2174,8 @@ function RoadToCup({
       venue: "Atlanta",
       opponent: "BRA",
       reason: "Top seed on projected line",
-      probability: 0.36,
-      alternates: [["SCO", 22], ["HAI", 16], ["MAR", 14]] as [string, number][],
+      scenario: "likely",
+      alternates: ["SCO", "HAI", "MAR"],
     },
     {
       label: "Quarterfinal",
@@ -2173,8 +2183,8 @@ function RoadToCup({
       venue: "Los Angeles",
       opponent: "ESP",
       reason: "Favorite from the lower pod",
-      probability: 0.31,
-      alternates: [["URU", 21], ["NOR", 18], ["FRA", 13]] as [string, number][],
+      scenario: "possible",
+      alternates: ["URU", "NOR", "FRA"],
     },
     {
       label: "Semifinal",
@@ -2182,8 +2192,8 @@ function RoadToCup({
       venue: "Dallas",
       opponent: "ARG",
       reason: "Highest title-path collision",
-      probability: 0.27,
-      alternates: [["ENG", 22], ["POR", 19], ["ITA", 12]] as [string, number][],
+      scenario: "possible",
+      alternates: ["ENG", "POR", "ITA"],
     },
     {
       label: "Final",
@@ -2191,8 +2201,8 @@ function RoadToCup({
       venue: "New York",
       opponent: "FRA",
       reason: "Top projected finalist",
-      probability: 0.24,
-      alternates: [["COL", 18], ["CRO", 15], ["DEN", 13]] as [string, number][],
+      scenario: "longshot",
+      alternates: ["COL", "CRO", "DEN"],
     },
   ];
   const bracketMatches: [string, string, string][] = [
@@ -2211,31 +2221,34 @@ function RoadToCup({
       <div className="flex items-start justify-between gap-3 px-1">
         <div className="min-w-0">
           <p
-            className="font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-[0.14em]"
+            className="text-[11px] font-semibold uppercase tracking-[0.12em]"
             style={{ color: accentText }}
           >
             {flagEmoji(country)} {country}
           </p>
-          <h2 className="mt-1 font-[family-name:var(--font-display)] text-5xl font-black uppercase leading-none tracking-tight text-[#1a1208]">
+          <h2
+            className="mt-1 font-[family-name:var(--font-display)] text-5xl uppercase leading-none tracking-tight"
+            style={{ color: "var(--ink)" }}
+          >
             Your Road<br />to the Cup.
           </h2>
+          <p
+            className="mt-2 text-[13px] font-medium"
+            style={{ color: "var(--mute-1)" }}
+          >
+            A scenario preview · updates as group results come in.
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1">
-        {(["path", "bracket"] as RoadMode[]).map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => setMode(item)}
-            className={`rounded-[0.85rem] px-3 py-2 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.12em] transition active:scale-[0.98] ${
-              mode === item ? "bg-[#1a1208] text-[#f5f1ea]" : "text-[#8a7a66]"
-            }`}
-          >
-            {item === "path" ? "Path" : "Full bracket"}
-          </button>
-        ))}
-      </div>
+      <Segmented<RoadMode>
+        tabs={[
+          { value: "path", label: "Path" },
+          { value: "bracket", label: "Full bracket" },
+        ]}
+        value={mode}
+        onChange={setMode}
+      />
 
       {mode === "path" ? (
         <div className="relative space-y-3">
