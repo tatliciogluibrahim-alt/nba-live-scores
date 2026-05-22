@@ -3,7 +3,11 @@
 import { useState } from "react";
 import type { FavoriteTeamOption } from "../types";
 import { triggerLightHaptic } from "../lib/haptics";
+import { FilterChip } from "../../shared/atoms";
 
+// FilterPill is a thin wrapper over the shared FilterChip so the rest of
+// nba-app keeps calling FilterPill. See DESIGN.md — ink-on-cream when active,
+// outlined when resting. Optional leading dot for the Live filter.
 export function FilterPill({
   label,
   compactLabel,
@@ -11,6 +15,7 @@ export function FilterPill({
   active,
   disabled = false,
   onClick,
+  dot,
 }: {
   label: string;
   compactLabel?: string;
@@ -18,35 +23,20 @@ export function FilterPill({
   active: boolean;
   disabled?: boolean;
   onClick: () => void;
+  dot?: string;
 }) {
   return (
-    <button
-      type="button"
+    <FilterChip
+      label={compactLabel ?? label}
+      count={count}
+      active={active}
+      disabled={disabled}
+      dot={dot}
       onClick={() => {
         triggerLightHaptic();
         onClick();
       }}
-      disabled={disabled}
-      className={`flex h-7 w-auto shrink-0 min-w-0 overflow-visible items-center justify-center rounded-full px-2 text-[0.66rem] font-extrabold uppercase leading-none tracking-[0.01em] transition active:scale-[0.98] sm:h-8 sm:px-3 sm:text-[0.76rem] ${
-        active
-          ? "bg-orange-500 text-white shadow-md shadow-orange-500/25"
-          : "bg-[#e8e2d8] text-[#8a7a66] ring-1 ring-[#d4cdc0] hover:bg-[#ddd7cc]"
-      } ${disabled ? "pointer-events-none opacity-20" : ""}`}
-    >
-      <span className="flex items-center justify-center gap-1">
-        <span className="whitespace-nowrap">{compactLabel ?? label}</span>
-
-        {typeof count === "number" && (
-          <span
-            className={`rounded-full px-1 py-0.5 text-[0.62rem] leading-none ${
-              active ? "bg-white/20 text-white/90" : "bg-[#1a1208]/8 text-[#8a7a66]"
-            }`}
-          >
-            {count}
-          </span>
-        )}
-      </span>
-    </button>
+    />
   );
 }
 

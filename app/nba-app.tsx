@@ -10,6 +10,7 @@ import {
   getAvailableTeams,
   getNextFavoriteGame,
   getNextUpcomingGame,
+  getWinningSide,
   sortGamesForDisplay,
 } from "./nba/lib/games";
 import { triggerLightHaptic } from "./nba/lib/haptics";
@@ -20,18 +21,29 @@ import { GameDetailDrawer } from "./nba/components/game-detail-drawer";
 import {
   getPulseReason,
   getPulseState,
-  PulseRing,
 } from "./nba/components/pulse-primitives";
 import { FavoriteTeamPicker, FilterPill } from "./nba/components/score-controls";
 import { SectionHeader } from "./nba/components/section-header";
 import { SeriesBoard } from "./nba/components/series-board";
 import { TeamView } from "./nba/components/team-view";
+import { TeamLogo } from "./nba/components/team-logo";
+import {
+  AppCard,
+  Segmented,
+  StatusPill,
+  TeamRow,
+  Tension,
+  type StatusTone,
+} from "./shared/atoms";
 
 type NbaTab = "scores" | "bracket" | "team";
 
 const FAVORITE_TEAM_STORAGE_KEY = "no-noise-favorite-team";
 const OLD_FOLLOWED_TEAM_STORAGE_KEY = "no-noise-followed-team";
 
+// Calm "tonight" hero. Replaces the previous gradient pulse-band + conic
+// ring. One AppCard, status pill, two team rows, and a thin Tension meter
+// only when live. DESIGN.md — drama only when earned.
 function TonightPulseHero({
   game,
   onOpen,
@@ -41,50 +53,92 @@ function TonightPulseHero({
 }) {
   if (!game) return null;
 
-  const pulse = getPulseState(game);
   const isLive = game.status === "live";
+  const pulse = getPulseState(game);
+  const winningSide = getWinningSide(game);
+  const showScore = game.status !== "upcoming";
+
+  const tone: StatusTone =
+    game.status === "live" ? "live" : game.status === "upcoming" ? "upcoming" : "final";
+  const accent =
+    game.status === "live"
+      ? "var(--nba)"
+      : game.status === "upcoming"
+        ? "var(--up)"
+        : undefined;
+
   const statusLabel = isLive
-    ? pulse.label
+    ? `Live · ${game.statusText}`
     : game.status === "upcoming"
-      ? "NEXT UP"
-      : "FINAL";
-  const scoreLine =
-    game.status === "upcoming"
       ? game.statusText
-      : `${game.away.abbreviation} ${game.away.score} · ${game.home.abbreviation} ${game.home.score}`;
-  const contextLine = isLive
+      : "Final";
+
+  const caption = isLive
     ? getPulseReason(game)
-    : `${game.matchup} · ${game.gameContext || game.seriesSummary || "NBA Playoffs"}`;
+    : game.gameContext || game.seriesSummary || "NBA Playoffs";
 
   return (
     <button
       type="button"
       onClick={() => onOpen(game)}
-      className="mb-4 grid w-full grid-cols-[1fr_auto] items-center gap-4 overflow-hidden rounded-[1.25rem] bg-[#1a1208] px-4 py-4 text-left text-[#f5f1ea] shadow-xl shadow-black/15 ring-1 ring-black/10 transition active:scale-[0.99] sm:mb-6 sm:rounded-[1.65rem] sm:px-5 sm:py-5"
+      className="mb-4 block w-full text-left transition active:scale-[0.99] sm:mb-6"
     >
-      <div className="min-w-0">
-        <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#f5f1ea]/55">
-          Tonight · Pulse
-        </p>
-        <p className="mt-2 truncate font-[family-name:var(--font-display)] text-[2.35rem] font-black uppercase leading-none tracking-tight sm:text-5xl">
-          {statusLabel}
-        </p>
-        <p className="mt-2 truncate text-[0.82rem] font-semibold text-[#f5f1ea]/70">
-          {contextLine}
-        </p>
-        <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2">
-          <span className="rounded-full bg-white/10 px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.12em] text-white/80 ring-1 ring-white/10">
-            {scoreLine}
-          </span>
-          {isLive && (
-            <span className="no-noise-live-fade rounded-full bg-[#e85d04] px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.12em] text-white">
-              Live
-            </span>
+      <AppCard accent={accent} padded={false}>
+        <div className="px-3.5 py-3.5">
+          <div className="mb-2.5 flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <StatusPill tone={tone} breathe={isLive}>
+                {statusLabel}
+              </StatusPill>
+              <span
+                className="truncate text-[11px] font-semibold"
+                style={{ color: "var(--mute-1)" }}
+              >
+                {game.matchup}
+              </span>
+            </div>
+          </div>
+
+          <TeamRow
+            logo={<TeamLogo team={game.away} />}
+            code={game.away.abbreviation}
+            name={game.away.name}
+            score={showScore ? game.away.score : undefined}
+            leading={winningSide === "away"}
+            won={game.status === "final" && winningSide === "away"}
+          />
+          <TeamRow
+            logo={<TeamLogo team={game.home} />}
+            code={game.home.abbreviation}
+            name={game.home.name}
+            score={showScore ? game.home.score : undefined}
+            leading={winningSide === "home"}
+            won={game.status === "final" && winningSide === "home"}
+          />
+
+          {isLive ? (
+            <div
+              className="mt-2.5 rounded-[10px] px-2.5 py-2"
+              style={{ background: "var(--cream-2)" }}
+            >
+              <Tension heat={pulse.heat} label="Tension" />
+              <div
+                className="mt-1.5 text-[12px] font-medium"
+                style={{ color: "var(--ink)" }}
+              >
+                {caption}
+              </div>
+            </div>
+          ) : (
+            <div
+              className="mt-2 text-[12px] font-medium"
+              style={{ color: "var(--mute-1)" }}
+            >
+              {caption}
+            </div>
           )}
         </div>
-      </div>
-
-      <PulseRing pulse={isLive ? pulse : { label: "CALM", heat: 0.18 }} />
+      </AppCard>
     </button>
   );
 }
@@ -362,42 +416,18 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
           </div>
         </header>
 
-        <div className="mb-3 flex gap-2 px-1">
-          <button
-            type="button"
-            onClick={() => setActiveTab("scores")}
-            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition ${
-              activeTab === "scores"
-                ? "bg-[#1a1208] text-[#f5f1ea]"
-                : "text-[#8a7a66]"
-            }`}
-          >
-            Scores
-          </button>
-          {favoriteTeamAbbr && (
-            <button
-              type="button"
-              onClick={() => setActiveTab("team")}
-              className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition ${
-                activeTab === "team"
-                  ? "bg-[#1a1208] text-[#f5f1ea]"
-                  : "text-[#8a7a66]"
-              }`}
-            >
-              {favoriteTeamAbbr}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setActiveTab("bracket")}
-            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition ${
-              activeTab === "bracket"
-                ? "bg-[#1a1208] text-[#f5f1ea]"
-                : "text-[#8a7a66]"
-            }`}
-          >
-            Series
-          </button>
+        <div className="mb-3 px-1">
+          <Segmented<NbaTab>
+            tabs={[
+              { value: "scores", label: "Scores" },
+              ...(favoriteTeamAbbr
+                ? [{ value: "team" as const, label: favoriteTeamAbbr }]
+                : []),
+              { value: "bracket", label: "Series" },
+            ]}
+            value={activeTab}
+            onChange={setActiveTab}
+          />
         </div>
 
         {activeTab === "scores" && (
@@ -411,6 +441,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
                     <FilterPill
                       label="Live"
                       count={counts.live}
+                      dot="var(--critical)"
                       active={activeFilter === "live"}
                       disabled={counts.live === 0 && activeFilter !== "live"}
                       onClick={() => setActiveFilter(activeFilter === "live" ? "all" : "live")}
@@ -454,7 +485,10 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
               </div>
             </div>
 
-            <p className="mb-4 px-1 font-[family-name:var(--font-display)] text-[9px] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+            <p
+              className="mb-4 px-1 text-[11px] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: "var(--mute-2)" }}
+            >
               {formatLastUpdated(lastUpdatedAt)}
             </p>
 

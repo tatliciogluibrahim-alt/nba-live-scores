@@ -287,6 +287,7 @@ export function TeamRow({
   won = false,
   badge,
   compact = false,
+  scoreAnimated = false,
 }: {
   logo: ReactNode;
   code: string;
@@ -296,6 +297,7 @@ export function TeamRow({
   won?: boolean;
   badge?: ReactNode;
   compact?: boolean;
+  scoreAnimated?: boolean;
 }) {
   const isStrong = leading || won;
   const showScore = score !== undefined && score !== null && score !== "";
@@ -310,14 +312,14 @@ export function TeamRow({
           {badge}
         </div>
         {name && !compact && (
-          <div className="text-[11px]" style={{ color: "var(--mute-1)" }}>
+          <div className="truncate text-[11px]" style={{ color: "var(--mute-1)" }}>
             {name}
           </div>
         )}
       </div>
       {showScore && (
         <div
-          className="tabular-nums"
+          className={`tabular-nums ${scoreAnimated ? "no-noise-score-pop" : ""}`}
           style={{
             fontSize: compact ? 18 : 24,
             fontWeight: 700,
