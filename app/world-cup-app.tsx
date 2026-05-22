@@ -2331,24 +2331,51 @@ function RoadToCup({
               currentFixtures={currentFixtures}
             />
           ))}
-          <p className="pt-2 text-center font-[family-name:var(--font-display)] text-xl font-black uppercase tracking-tight text-[#1a1208]">
-            → The Trophy
+          <p
+            className="pt-2 pl-12 text-[13px] font-bold"
+            style={{ color: accentText }}
+          >
+            → The trophy
           </p>
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
-            {["R32", "R16", "QF", "SF", "F"].map((round, index) => (
-              <span
-                key={round}
-                className="shrink-0 rounded-full px-3 py-1 font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.12em]"
-                style={{
-                  background: index === 0 ? "#dce4f8" : "#e8e2d8",
-                  color: index === 0 ? "#2e5bd7" : "#8a7a66",
-                }}
-              >
-                {round}
-              </span>
+          <div className="flex items-center justify-between gap-2 px-1">
+            {[
+              { label: "R32", date: "Jun 28", active: true },
+              { label: "R16", date: "Jul 3" },
+              { label: "QF", date: "Jul 9" },
+              { label: "SF", date: "Jul 14" },
+              { label: "F", date: "Jul 19" },
+            ].map((round, index, arr) => (
+              <div key={round.label} className="flex items-center gap-2">
+                <div className="text-center">
+                  <div
+                    className="text-[12px] font-bold"
+                    style={{ color: round.active ? "var(--ink)" : "var(--mute-1)" }}
+                  >
+                    {round.label}
+                  </div>
+                  <div
+                    className="mt-0.5 text-[10px] font-medium tabular-nums"
+                    style={{ color: "var(--mute-1)" }}
+                  >
+                    {round.date}
+                  </div>
+                </div>
+                {index < arr.length - 1 && (
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--mute-2)"
+                    strokeWidth="2"
+                  >
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
+                )}
+              </div>
             ))}
           </div>
           {bracketMatches.map(([a, b, meta]) => {
@@ -2357,18 +2384,24 @@ function RoadToCup({
             return (
               <article
                 key={`${a}-${b}`}
-                className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[1rem] bg-white px-3 py-3 ring-1 ring-[#e8e0d4]"
-                style={isMine ? { boxShadow: `inset 0 0 0 2px ${accentColor}` } : undefined}
+                className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[14px] px-3 py-2.5"
+                style={{
+                  background: isMine ? `${accentColor}0f` : "var(--paper)",
+                  border: `1px solid ${isMine ? accentColor : "var(--line)"}`,
+                }}
               >
-                <div className="space-y-1">
-                  <p className="text-[0.78rem] font-black text-[#1a1208]">
+                <div className="space-y-0.5">
+                  <p className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>
                     {flagEmoji(a)} {a}
                   </p>
-                  <p className="text-[0.78rem] font-black text-[#1a1208]">
+                  <p className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>
                     {flagEmoji(b)} {b}
                   </p>
                 </div>
-                <span className="text-right text-[0.58rem] font-bold uppercase tracking-wide text-[#a89880]">
+                <span
+                  className="text-right text-[11px] font-medium tabular-nums"
+                  style={{ color: "var(--mute-1)" }}
+                >
                   {meta}
                 </span>
               </article>
