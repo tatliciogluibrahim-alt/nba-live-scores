@@ -1361,21 +1361,21 @@ function CountdownHero({
         <div className="bg-[#0f3b2a] px-4 py-3 text-white">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/55">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">
                 FIFA World Cup 2026
               </p>
-              <p className="mt-1 font-[family-name:var(--font-display)] text-[2.55rem] font-black uppercase leading-none tracking-tight">
+              <p className="mt-1 font-[family-name:var(--font-display)] text-[2.55rem] uppercase leading-none tracking-tight">
                 {days} days
               </p>
             </div>
             <div className="shrink-0 text-right">
-              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/55">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">
                 Kickoff
               </p>
-              <p className="mt-1 text-[0.76rem] font-black uppercase leading-tight text-white">
+              <p className="mt-1 text-[13px] font-bold leading-tight text-white">
                 June 11
               </p>
-              <p className="text-[0.62rem] font-semibold uppercase tracking-wide text-white/65">
+              <p className="text-[11px] font-medium text-white/70">
                 Mexico City
               </p>
             </div>
@@ -1387,11 +1387,15 @@ function CountdownHero({
               { value: "12", label: "Groups" },
               { value: "104", label: "Matches" },
             ].map((item) => (
-              <div key={item.label} className="rounded-[0.85rem] bg-white/10 px-3 py-2 ring-1 ring-white/10">
-                <p className="font-[family-name:var(--font-display)] text-[1.15rem] font-black leading-none">
+              <div
+                key={item.label}
+                className="rounded-[10px] px-3 py-2"
+                style={{ background: "rgba(255,255,255,0.10)" }}
+              >
+                <p className="text-[20px] font-bold leading-none tabular-nums">
                   {item.value}
                 </p>
-                <p className="mt-1 text-[0.55rem] font-black uppercase tracking-[0.12em] text-white/55">
+                <p className="mt-1 text-[11px] font-medium text-white/70">
                   {item.label}
                 </p>
               </div>
@@ -1400,23 +1404,36 @@ function CountdownHero({
         </div>
 
         <div className="px-4 py-4">
-          <p className="mb-2 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#006847]">
+          <p
+            className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
+            style={{ color: "var(--wc)" }}
+          >
             Your tournament starts here
           </p>
-          <p className="font-[family-name:var(--font-display)] text-[2rem] font-black uppercase leading-none tracking-tight text-[#1a1208]">
+          <p
+            className="font-[family-name:var(--font-display)] text-[2rem] uppercase leading-none tracking-tight"
+            style={{ color: "var(--ink)" }}
+          >
             Pick your country.
           </p>
-          <p className="mt-2 text-[0.92rem] font-black text-[#006847]">
+          <p
+            className="mt-2 text-[14px] font-semibold"
+            style={{ color: "var(--wc)" }}
+          >
             Follow the tournament without the noise.
           </p>
-          <p className="mt-2 text-[0.82rem] font-medium leading-5 text-[#8a7a66]">
+          <p
+            className="mt-2 text-[13px] font-medium leading-5"
+            style={{ color: "var(--mute-1)" }}
+          >
             Choose a country to see group context, match reminders, and team-colored updates.
           </p>
 
           <button
             type="button"
             onClick={onPickCountry}
-            className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[#006847] px-4 py-3 text-[0.78rem] font-black uppercase tracking-wide text-white shadow-lg shadow-[#006847]/15 transition active:scale-[0.98] sm:w-auto"
+            className="mt-4 inline-flex w-full items-center justify-center rounded-[10px] px-4 py-3 text-[13px] font-semibold text-white transition active:scale-[0.98] sm:w-auto"
+            style={{ background: "var(--wc)" }}
           >
             Pick country
           </button>
@@ -1428,15 +1445,24 @@ function CountdownHero({
   return (
     <div className="flex items-center gap-3 px-0.5">
       <div className="flex items-baseline gap-2">
-        <span className="font-[family-name:var(--font-display)] text-[2.4rem] font-black leading-none tracking-tight text-[#1a1208]">
+        <span
+          className="font-[family-name:var(--font-display)] text-[2.4rem] leading-none tracking-tight"
+          style={{ color: "var(--ink)" }}
+        >
           {days}
         </span>
-        <span className="pb-0.5 text-[0.7rem] font-black uppercase tracking-[0.08em] text-[#a89880]">
+        <span
+          className="pb-0.5 text-[11px] font-semibold uppercase tracking-[0.08em]"
+          style={{ color: "var(--mute-1)" }}
+        >
           days until kickoff
         </span>
       </div>
-      <div className="flex-1 border-t border-[#e8e0d4]" />
-      <span className="shrink-0 text-[0.58rem] font-medium text-[#c0b0a0]">
+      <div className="flex-1" style={{ borderTop: "1px solid var(--line)" }} />
+      <span
+        className="shrink-0 text-[11px] font-medium"
+        style={{ color: "var(--mute-2)" }}
+      >
         June 11 · Mexico City
       </span>
     </div>
@@ -1456,84 +1482,95 @@ function WorldCupWatchGuide({
     : "World Cup 2026";
   const accentText = safeTextColor(accentColor);
   const watchPaths = [
-    {
-      label: "English",
-      primary: "FOX / FS1",
-      tv: "FOX · FS1",
-      stream: "FOX Sports App",
-    },
-    {
-      label: "Spanish",
-      primary: "Telemundo",
-      tv: "Telemundo",
-      stream: "Peacock",
-    },
+    { lang: "English", channel: "FOX / FS1", stream: "FOX Sports App" },
+    { lang: "Spanish", channel: "Telemundo", stream: "Peacock" },
   ];
 
   return (
-    <div className="overflow-hidden rounded-[1.15rem] bg-white ring-1 ring-[#e8e0d4]">
-      <div className="flex flex-col gap-3 border-b border-[#f0ece4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <div
+      className="overflow-hidden rounded-[14px]"
+      style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
+    >
+      <div
+        className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+        style={{ borderBottom: "1px solid var(--line)" }}
+      >
         <div>
-          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
-            Where to Watch
+          <p
+            className="text-[11px] font-semibold uppercase tracking-[0.12em]"
+            style={{ color: "var(--mute-1)" }}
+          >
+            Where to watch · U.S.
           </p>
-          <p className="mt-0.5 text-[0.72rem] font-semibold text-[#8a7a66]">
-            U.S. broadcast paths, kept simple.
+          <p
+            className="mt-0.5 text-[12px] font-medium"
+            style={{ color: "var(--mute-1)" }}
+          >
+            Broadcast paths, channel only.
           </p>
         </div>
         <span
-          className="inline-flex w-fit rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em]"
+          className="inline-flex w-fit rounded-md px-2 py-0.5 text-[11px] font-semibold"
           style={{
-            background: `${accentColor}16`,
+            background: `${accentColor}1f`,
             color: accentText,
-            boxShadow: `inset 0 0 0 1px ${accentColor}26`,
           }}
         >
           {selectedLabel}
         </span>
       </div>
-      <div className="grid grid-cols-1 divide-y divide-[#f0ece4] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-        {watchPaths.map((item) => (
-          <div key={item.label} className="px-4 py-3">
-            <div className="mb-3 flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
-                  {item.label}
-                </p>
-                <p
-                  className="mt-1 truncate font-[family-name:var(--font-display)] text-[1.05rem] font-black uppercase tracking-tight"
-                  style={{ color: accentText }}
-                >
-                  {item.primary}
-                </p>
-              </div>
-              <p className="shrink-0 text-[0.58rem] font-black uppercase tracking-wide text-[#c0b0a0]">
-                Live TV
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="min-w-0 rounded-[0.75rem] bg-[#fbf8f3] px-2.5 py-2 ring-1 ring-[#f0ece4]">
-                <p className="font-[family-name:var(--font-display)] text-[0.5rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
-                  Channel
-                </p>
-                <p className="mt-0.5 truncate text-[0.64rem] font-black text-[#1a1208]">
-                  {item.tv}
-                </p>
-              </div>
-              <div className="min-w-0 rounded-[0.75rem] bg-[#fbf8f3] px-2.5 py-2 ring-1 ring-[#f0ece4]">
-                <p className="font-[family-name:var(--font-display)] text-[0.5rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
-                  Stream
-                </p>
-                <p className="mt-0.5 truncate text-[0.64rem] font-black text-[#1a1208]">
-                  {item.stream}
-                </p>
-              </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2">
+        {watchPaths.map((item, index) => (
+          <div
+            key={item.lang}
+            className="px-4 py-3"
+            style={{
+              borderRight:
+                index === 0
+                  ? "1px solid var(--line)"
+                  : undefined,
+              borderTop:
+                index === 1
+                  ? "1px solid var(--line)"
+                  : undefined,
+            }}
+          >
+            <p
+              className="text-[11px] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: "var(--mute-1)" }}
+            >
+              {item.lang}
+            </p>
+            <p
+              className="mt-1 text-[15px] font-bold"
+              style={{ color: "var(--ink)" }}
+            >
+              {item.channel}
+            </p>
+            <div
+              className="mt-2 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold"
+              style={{ background: "var(--cream-2)", color: "var(--ink)" }}
+            >
+              <span
+                aria-hidden
+                className="h-1 w-1 rounded-full"
+                style={{ background: "var(--wc)" }}
+              />
+              {item.stream}
             </div>
           </div>
         ))}
       </div>
-      <div className="border-t border-[#f0ece4] bg-[#fbf8f3] px-4 py-2.5">
-        <p className="text-[0.62rem] font-bold text-[#8a7a66]">
+
+      <div
+        className="px-4 py-2.5"
+        style={{
+          background: "var(--cream-2)",
+          borderTop: "1px solid var(--line)",
+        }}
+      >
+        <p className="text-[11px] font-medium" style={{ color: "var(--mute-1)" }}>
           Match-by-match channels appear once full fixtures are confirmed.
         </p>
       </div>
@@ -1725,7 +1762,7 @@ function CountryHub({
 }: {
   selectedCountry: string; accentColor: string; nextGame: WCGame | null; onChangeTap: () => void;
 }) {
-  const [state, setState] = useState<"idle" | "done" | "skipped">("idle");
+  const [state, setState] = useState<"idle" | "done">("idle");
   const [notifDenied, setNotifDenied] = useState(false);
 
   const name = COUNTRY_NAME[selectedCountry] ?? selectedCountry;
@@ -1758,11 +1795,14 @@ function CountryHub({
           <div className="flex min-w-0 items-center gap-3">
             <span className="shrink-0 text-[2.55rem] leading-none">{flag}</span>
             <div className="min-w-0">
-              <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
-                Your Country
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.12em]"
+                style={{ color: "var(--mute-1)" }}
+              >
+                Your country
               </p>
               <p
-                className="truncate font-[family-name:var(--font-display)] text-[1.35rem] font-black uppercase leading-tight tracking-tight"
+                className="truncate text-[22px] font-bold leading-tight"
                 style={{ color: textColor }}
               >
                 {name}
@@ -1770,12 +1810,15 @@ function CountryHub({
               {group && (
                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
                   <span
-                    className="rounded-full px-2 py-0.5 text-[0.56rem] font-black uppercase tracking-wide text-white"
+                    className="rounded-md px-2 py-0.5 text-[11px] font-semibold text-white"
                     style={{ background: accentColor }}
                   >
                     Group {group}
                   </span>
-                  <span className="text-[0.62rem] font-bold text-[#a89880]">
+                  <span
+                    className="text-[11px] font-semibold"
+                    style={{ color: "var(--mute-1)" }}
+                  >
                     {groupTeams.length} teams
                   </span>
                 </div>
@@ -1820,52 +1863,59 @@ function CountryHub({
           </div>
         )}
 
-        <div className="rounded-[1rem] bg-[#fbf8f3] px-3 py-3 ring-1 ring-[#f0ece4]">
+        <div
+          className="rounded-[10px] px-3 py-3"
+          style={{ background: "var(--cream-2)" }}
+        >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="font-[family-name:var(--font-display)] text-[0.6rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-                Match Reminder
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.12em]"
+                style={{ color: "var(--mute-1)" }}
+              >
+                Match reminder
               </p>
-              <p className="mt-1 text-[0.75rem] font-black text-[#1a1208]">
+              <p
+                className="mt-1 text-[13px] font-bold"
+                style={{ color: "var(--ink)" }}
+              >
                 {flag} {nextGame ? `${name} next plays ${nextMatchText}` : `Save ${name} before fixtures land`}
               </p>
-              <p className="mt-0.5 text-[0.62rem] font-semibold text-[#8a7a66]">
-                Calendar file plus browser notification when available
+              <p
+                className="mt-0.5 text-[11px] font-medium"
+                style={{ color: "var(--mute-1)" }}
+              >
+                Calendar + browser notification when available
               </p>
             </div>
             {state === "idle" ? (
-              <div className="flex shrink-0 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setState("skipped")}
-                  className="rounded-full bg-white px-3 py-1.5 text-[0.62rem] font-bold text-[#a89880] ring-1 ring-[#e8e0d4] transition hover:text-[#1a1208] active:scale-95"
-                >
-                  Skip
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRemind}
-                  className="rounded-full px-3 py-1.5 text-[0.62rem] font-black text-white transition active:scale-95"
-                  style={{ background: accentColor }}
-                >
-                  Remind Me
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleRemind}
+                className="inline-flex shrink-0 items-center justify-center rounded-[10px] px-3.5 py-2.5 text-[13px] font-semibold text-white transition active:scale-[0.98]"
+                style={{ background: "var(--ink)" }}
+              >
+                Remind me
+              </button>
             ) : (
               <p
-                className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[0.62rem] font-black uppercase tracking-wide ring-1 ring-[#e8e0d4]"
-                style={{ color: state === "done" ? textColor : "#a89880" }}
+                className="shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold uppercase tracking-wide"
+                style={{
+                  background: "var(--paper)",
+                  color: textColor,
+                  border: "1px solid var(--line)",
+                }}
               >
-                {state === "done" ? "Reminder saved" : "Skipped"}
+                Reminder saved
               </p>
             )}
           </div>
           {notifDenied && (
             <p
-              className="mt-2 text-[0.6rem] font-bold"
+              className="mt-2 text-[11px] font-semibold"
               style={{ color: textColor }}
             >
-              Notifications blocked - the calendar file still downloaded.
+              Notifications blocked — the calendar file still downloaded.
             </p>
           )}
         </div>
