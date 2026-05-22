@@ -14,6 +14,13 @@ import {
   writeSeriesMemory,
 } from "../lib/series-memory";
 import { SeriesCard } from "./series-card";
+import {
+  AppCard,
+  Button,
+  Eyebrow,
+  Segmented,
+  StatusPill,
+} from "../../shared/atoms";
 
 type SeriesBoardTab = "east" | "west" | "finals";
 
@@ -23,23 +30,30 @@ function BracketEmptyState({
   onBackToScores: () => void;
 }) {
   return (
-    <section className="mx-auto max-w-2xl rounded-[1.75rem] bg-[#ffffff] p-8 text-center text-[#1a1208] shadow-xl shadow-black/10 ring-1 ring-[#e8e0d4] sm:p-10">
-      <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.14em] text-[#e85d04]">
-        NBA Playoffs
-      </p>
-      <p className="mt-2 font-[family-name:var(--font-display)] text-4xl font-black uppercase text-[#1a1208] sm:text-5xl">
-        Series Board
-      </p>
-      <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#8a7a66]">
-        Series cards appear here as playoff games come in. Completed series stay pinned so you can follow the road to the Finals.
-      </p>
-      <button
-        type="button"
-        onClick={onBackToScores}
-        className="mt-6 rounded-full bg-[#1a1208] px-5 py-2.5 font-[family-name:var(--font-display)] text-xs font-black uppercase text-[#f5f1ea] transition hover:bg-[#2a1e10] active:scale-95"
-      >
-        Back to Scores
-      </button>
+    <section className="mx-auto max-w-2xl">
+      <AppCard>
+        <div className="px-6 py-8 text-center">
+          <Eyebrow color="var(--nba)">NBA Playoffs</Eyebrow>
+          <p
+            className="mt-2 font-[family-name:var(--font-display)] text-4xl uppercase tracking-tight sm:text-5xl"
+            style={{ color: "var(--ink)" }}
+          >
+            Series Board
+          </p>
+          <p
+            className="mx-auto mt-3 max-w-md text-[13px] leading-6"
+            style={{ color: "var(--mute-1)" }}
+          >
+            Series cards appear here as playoff games come in. Completed
+            series stay pinned so you can follow the road to the Finals.
+          </p>
+          <div className="mt-5 flex justify-center">
+            <Button variant="primary" onClick={onBackToScores}>
+              Back to scores
+            </Button>
+          </div>
+        </div>
+      </AppCard>
     </section>
   );
 }
@@ -52,33 +66,22 @@ function LockedSeriesCard({
   body: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-[1.35rem] border border-[#e8e0d4] bg-[#fbf8f3]">
-      <div className="flex">
-        <div className="w-[3px] shrink-0 bg-[#e8e0d4]" />
-        <div className="flex-1 px-3 py-3.5">
-          <div className="mb-2.5 flex items-start justify-between gap-3">
-            <div>
-              <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase tracking-[0.1em] text-[#a89880]">
-                {label}
-              </p>
-              <p className="mt-1 text-[0.7rem] font-medium leading-snug text-[#8a7a66]">
-                {body}
-              </p>
-            </div>
-            <span className="rounded-full bg-white/70 px-2 py-0.5 font-[family-name:var(--font-display)] text-[8px] font-black uppercase tracking-wide text-[#a89880] ring-1 ring-[#e0d8d0]">
-              Next
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 rounded-full bg-white/60 px-3 py-2 ring-1 ring-[#ede8e0]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#d4cdc0]" />
-            <span className="text-[0.66rem] font-semibold uppercase tracking-wide text-[#a89880]">
-              Awaiting winners
-            </span>
-          </div>
+    <AppCard>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Eyebrow>{label}</Eyebrow>
+          <p
+            className="mt-1 text-[12px] leading-snug"
+            style={{ color: "var(--mute-1)" }}
+          >
+            {body}
+          </p>
         </div>
+        <StatusPill tone="final" dot={false}>
+          Awaiting winners
+        </StatusPill>
       </div>
-    </div>
+    </AppCard>
   );
 }
 
@@ -98,10 +101,11 @@ function BracketRoundColumn({
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between gap-3 px-0.5">
-        <p className="font-[family-name:var(--font-display)] text-[0.66rem] font-black uppercase text-[#a89880]">
-          {title}
-        </p>
-        <span className="text-[0.62rem] font-bold uppercase text-[#c0b0a0]">
+        <Eyebrow>{title}</Eyebrow>
+        <span
+          className="text-[11px] font-semibold"
+          style={{ color: "var(--mute-2)" }}
+        >
           {series.length ? `${series.length} series` : "Locked"}
         </span>
       </div>
@@ -130,7 +134,8 @@ function getConferenceRoundColumns(series: SeriesInfo[]) {
   const firstRound = byRound("First Round");
   const semifinals = byRound("Second Round");
   const confFinals = byRound("Conf Finals");
-  const hasAnySeries = firstRound.length > 0 || semifinals.length > 0 || confFinals.length > 0;
+  const hasAnySeries =
+    firstRound.length > 0 || semifinals.length > 0 || confFinals.length > 0;
 
   const columns: {
     key: string;
@@ -140,19 +145,11 @@ function getConferenceRoundColumns(series: SeriesInfo[]) {
   }[] = [];
 
   if (firstRound.length > 0) {
-    columns.push({
-      key: "first",
-      title: "First Round",
-      series: firstRound,
-    });
+    columns.push({ key: "first", title: "First Round", series: firstRound });
   }
 
   if (semifinals.length > 0) {
-    columns.push({
-      key: "semis",
-      title: "Semifinals",
-      series: semifinals,
-    });
+    columns.push({ key: "semis", title: "Semifinals", series: semifinals });
   } else if (firstRound.length > 0) {
     columns.push({
       key: "semis-locked",
@@ -163,11 +160,7 @@ function getConferenceRoundColumns(series: SeriesInfo[]) {
   }
 
   if (confFinals.length > 0) {
-    columns.push({
-      key: "finals",
-      title: "Conference Finals",
-      series: confFinals,
-    });
+    columns.push({ key: "finals", title: "Conference Finals", series: confFinals });
   } else if (hasAnySeries) {
     columns.push({
       key: "finals-locked",
@@ -191,27 +184,37 @@ function BracketConferenceSection({
 }) {
   const columns = getConferenceRoundColumns(series);
   if (!columns.length) return null;
-
-  const lgClass =
-    columns.length >= 2 ? "lg:grid-cols-2" : "lg:grid-cols-1";
+  const lgClass = columns.length >= 2 ? "lg:grid-cols-2" : "lg:grid-cols-1";
 
   return (
-    <section className="min-w-0 overflow-hidden rounded-[1.6rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
-      <div className="flex items-end justify-between gap-4 border-b border-[#ede8df] px-4 py-3 sm:px-5">
+    <section
+      className="overflow-hidden rounded-[16px]"
+      style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
+    >
+      <div
+        className="flex items-end justify-between gap-4 px-4 py-3 sm:px-5"
+        style={{ borderBottom: "1px solid var(--line)" }}
+      >
         <div>
-          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-            {conference}ern Conference
-          </p>
-          <p className="mt-0.5 font-[family-name:var(--font-display)] text-2xl font-black uppercase text-[#1a1208] sm:text-3xl">
-            {conference} Board
+          <Eyebrow>{conference}ern Conference</Eyebrow>
+          <p
+            className="mt-0.5 text-[20px] font-bold"
+            style={{ color: "var(--ink)" }}
+          >
+            {conference} board
           </p>
         </div>
-        <span className="rounded-full bg-white px-3 py-1 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-wide text-[#8a7a66] ring-1 ring-[#e8e0d4]">
+        <span
+          className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+          style={{
+            background: "var(--cream-2)",
+            color: "var(--mute-1)",
+          }}
+        >
           {series.length} active
         </span>
       </div>
-
-      <div className={`grid grid-cols-1 gap-4 p-4 sm:p-5 ${lgClass}`}>
+      <div className={`grid grid-cols-1 gap-3 p-4 sm:p-5 ${lgClass}`}>
         {columns.map((column) => (
           <BracketRoundColumn
             key={column.key}
@@ -226,12 +229,15 @@ function BracketConferenceSection({
   );
 }
 
+// Compact, useful playoff map. Replaces the previous tall container with a
+// tiny bracket. Live series highlighted in NBA orange; future slots dashed.
 function MiniBracketMap({ series }: { series: SeriesInfo[] }) {
   const liveSeries = series.find((item) => item.status === "live");
   const activeLabel = liveSeries
-    ? `${liveSeries.teamA.abbreviation}/${liveSeries.teamB.abbreviation}`
+    ? `${liveSeries.teamA.abbreviation} vs ${liveSeries.teamB.abbreviation}`
     : "Map";
   const rounds = ["First Round", "Second Round", "Conf Finals"] as const;
+
   const winnerOf = (item: SeriesInfo) => {
     if (item.teamA.wins === 4) return item.teamA.abbreviation;
     if (item.teamB.wins === 4) return item.teamB.abbreviation;
@@ -241,29 +247,34 @@ function MiniBracketMap({ series }: { series: SeriesInfo[] }) {
   };
   const labelOf = (item: SeriesInfo) => {
     if (item.status === "complete") return winnerOf(item);
-    if (item.status === "live") return `${item.teamA.abbreviation}/${item.teamB.abbreviation}`;
+    if (item.status === "live")
+      return `${item.teamA.abbreviation}/${item.teamB.abbreviation}`;
     return `${item.teamA.abbreviation}-${item.teamB.abbreviation}`;
   };
   const hasSharedTeam = (source: SeriesInfo, target: SeriesInfo) => {
     const sourceTeams = [source.teamA.abbreviation, source.teamB.abbreviation];
-    return sourceTeams.includes(target.teamA.abbreviation) || sourceTeams.includes(target.teamB.abbreviation);
+    return (
+      sourceTeams.includes(target.teamA.abbreviation) ||
+      sourceTeams.includes(target.teamB.abbreviation)
+    );
   };
   const nodeRows = (conference: "East" | "West") => {
     const byRound = rounds.map((round) =>
       series
-        .filter((item) => item.conference === conference && item.round === round)
+        .filter(
+          (item) => item.conference === conference && item.round === round
+        )
         .sort((a, b) => a.key.localeCompare(b.key))
     );
 
     return byRound.flatMap((items, roundIndex) => {
       const x = conference === "East" ? 28 + roundIndex * 62 : 312 - roundIndex * 62;
       const count = Math.max(items.length, 1);
-
       return items.map((item, index) => ({
         item,
         roundIndex,
         x,
-        y: 28 + ((index + 0.5) * 78) / count,
+        y: 22 + ((index + 0.5) * 84) / count,
       }));
     });
   };
@@ -275,74 +286,80 @@ function MiniBracketMap({ series }: { series: SeriesInfo[] }) {
         candidate.roundIndex === node.roundIndex + 1
     );
     if (nextRound.length === 0) return [];
-
     const matched =
       nextRound.find((candidate) => hasSharedTeam(node.item, candidate.item)) ??
       nextRound[Math.min(Math.floor(nodes.indexOf(node) / 2), nextRound.length - 1)];
-
     return matched ? [{ from: node, to: matched }] : [];
   });
 
   return (
-    <section className="overflow-hidden rounded-[1.35rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
-      <div className="flex items-center justify-between gap-3 border-b border-[#ede8df] px-4 py-3">
-        <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#a89880]">
-          Playoff Map
-        </p>
-        <span className="rounded-full bg-white px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em] text-[#e85d04] ring-1 ring-[#f0d7c7]">
-          {activeLabel}
+    <AppCard padded={false}>
+      <div
+        className="flex items-center justify-between gap-3 px-3.5 py-2.5"
+        style={{ borderBottom: "1px solid var(--line)" }}
+      >
+        <span className="text-[12px] font-bold" style={{ color: "var(--ink)" }}>
+          Playoff map
         </span>
+        {liveSeries ? (
+          <StatusPill tone="live" breathe>
+            Live · {activeLabel}
+          </StatusPill>
+        ) : (
+          <Eyebrow>Map</Eyebrow>
+        )}
       </div>
-      <svg viewBox="0 0 340 132" className="h-[132px] w-full">
-        {connectors.map((connector, index) => {
-          const isActive =
-            connector.from.item.status === "live" || connector.to.item.status === "live";
-          const midX = (connector.from.x + connector.to.x) / 2;
-
-          return (
-          <path
-            key={`${connector.from.item.key}-${connector.to.item.key}-${index}`}
-            d={`M${connector.from.x} ${connector.from.y}H${midX}V${connector.to.y}H${connector.to.x}`}
-            fill="none"
-            stroke={isActive ? "#e85d04" : "rgba(26,18,8,0.16)"}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={isActive ? 3 : 1.5}
-          />
-          );
-        })}
-
-        {nodes.map(({ item, x, y }) => {
-          const active = item.status === "live";
-          const label = labelOf(item);
-
-          return (
-            <g key={`${item.key}-${item.round}-${x}-${y}`}>
-              <rect
-                x={x - 18}
-                y={y - 11}
-                width="36"
-                height="22"
-                rx="7"
-                fill={active ? "#fff0e8" : "#ffffff"}
-                stroke={active ? "#e85d04" : "#e8e0d4"}
+      <div className="px-3 pb-3 pt-2">
+        <svg viewBox="0 0 340 128" className="h-[128px] w-full">
+          {connectors.map((connector, index) => {
+            const isActive =
+              connector.from.item.status === "live" ||
+              connector.to.item.status === "live";
+            const midX = (connector.from.x + connector.to.x) / 2;
+            return (
+              <path
+                key={`${connector.from.item.key}-${connector.to.item.key}-${index}`}
+                d={`M${connector.from.x} ${connector.from.y}H${midX}V${connector.to.y}H${connector.to.x}`}
+                fill="none"
+                stroke={isActive ? "var(--nba)" : "var(--mute-2)"}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={isActive ? 1.8 : 1}
+                opacity={isActive ? 1 : 0.7}
               />
-              <text
-                x={x}
-                y={y + 4}
-                textAnchor="middle"
-                fontFamily="var(--font-display)"
-                fontSize="8"
-                fontWeight="900"
-                fill="#1a1208"
-              >
-                {label.slice(0, 5)}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-    </section>
+            );
+          })}
+          {nodes.map(({ item, x, y }) => {
+            const active = item.status === "live";
+            const label = labelOf(item).slice(0, 6);
+            return (
+              <g key={`${item.key}-${item.round}-${x}-${y}`}>
+                <rect
+                  x={x - 16}
+                  y={y - 8}
+                  width="32"
+                  height="16"
+                  rx="4"
+                  fill={active ? "var(--nba)" : "var(--cream-2)"}
+                  stroke="transparent"
+                />
+                <text
+                  x={x}
+                  y={y + 3.5}
+                  textAnchor="middle"
+                  fontFamily="var(--font-body), Inter, sans-serif"
+                  fontSize="9"
+                  fontWeight="700"
+                  fill={active ? "#ffffff" : "var(--ink)"}
+                >
+                  {label}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    </AppCard>
   );
 }
 
@@ -362,7 +379,6 @@ export function SeriesBoard({
     const hydrationTimeout = setTimeout(() => {
       setRemembered(readSeriesMemory());
     }, 0);
-
     return () => clearTimeout(hydrationTimeout);
   }, []);
 
@@ -395,7 +411,6 @@ export function SeriesBoard({
     const memoryUpdateTimeout = setTimeout(() => {
       setRemembered(next);
     }, 0);
-
     return () => clearTimeout(memoryUpdateTimeout);
   }, [liveSeries]);
 
@@ -411,7 +426,8 @@ export function SeriesBoard({
   const eastSeries = allSeries.filter((series) => series.conference === "East");
   const westSeries = allSeries.filter((series) => series.conference === "West");
   const finals = allSeries.filter(
-    (series) => series.round === "NBA Finals" || series.conference === "Finals"
+    (series) =>
+      series.round === "NBA Finals" || series.conference === "Finals"
   );
   const unknownSeries = allSeries.filter(
     (series) =>
@@ -425,47 +441,49 @@ export function SeriesBoard({
   const upcomingCount = allSeries.filter((series) => series.status === "upcoming").length;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5 sm:space-y-6">
-      <header className="flex flex-col gap-4 px-1 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mx-auto max-w-7xl space-y-4 sm:space-y-5">
+      <header className="flex flex-col gap-3 px-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="font-[family-name:var(--font-display)] text-[0.7rem] font-black uppercase text-[#e85d04]">
-            NBA Playoffs
-          </p>
-          <h2 className="mt-1 font-[family-name:var(--font-display)] text-5xl font-black uppercase leading-none text-[#1a1208] sm:text-6xl">
+          <Eyebrow color="var(--nba)">NBA Playoffs</Eyebrow>
+          <h2
+            className="mt-1 font-[family-name:var(--font-display)] text-5xl uppercase leading-none tracking-tight sm:text-6xl"
+            style={{ color: "var(--ink)" }}
+          >
             Series Board.
           </h2>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-[#1a1208] px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase text-[#f5f1ea]">
-            {allSeries.length} series
+        <div
+          className="flex items-center gap-3 text-[12px] font-semibold"
+          style={{ color: "var(--mute-1)" }}
+        >
+          <span>
+            <strong style={{ color: "var(--ink)" }}>{allSeries.length}</strong> series
           </span>
-          <span className="rounded-full bg-orange-100 px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase text-orange-800 ring-1 ring-orange-200">
-            {liveCount} live
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: "var(--critical)" }}
+            />
+            <strong style={{ color: "var(--ink)" }}>{liveCount}</strong> live
           </span>
-          <span className="rounded-full bg-blue-100 px-3 py-1.5 font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase text-blue-800 ring-1 ring-blue-200">
-            {upcomingCount} upcoming
+          <span>
+            <strong style={{ color: "var(--ink)" }}>{upcomingCount}</strong> upcoming
           </span>
         </div>
       </header>
 
       <MiniBracketMap series={allSeries} />
 
-      <div className="grid grid-cols-3 rounded-[1.15rem] border border-[#d4cdc0] bg-[#ede8df] p-1">
-        {(["east", "west", "finals"] as SeriesBoardTab[]).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveBoard(tab)}
-            className={`rounded-[0.85rem] px-3 py-2 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.12em] transition active:scale-[0.98] ${
-              activeBoard === tab
-                ? "bg-[#1a1208] text-[#f5f1ea]"
-                : "text-[#8a7a66]"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      <Segmented<SeriesBoardTab>
+        tabs={[
+          { value: "east", label: "East" },
+          { value: "west", label: "West" },
+          { value: "finals", label: "Finals" },
+        ]}
+        value={activeBoard}
+        onChange={setActiveBoard}
+      />
 
       {activeBoard === "east" && (
         <BracketConferenceSection
@@ -484,16 +502,23 @@ export function SeriesBoard({
       )}
 
       {unknownSeries.length > 0 && (
-        <section className="overflow-hidden rounded-[1.6rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
-          <div className="border-b border-[#ede8df] px-4 py-3 sm:px-5">
-            <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
-              Additional Series
-            </p>
-            <p className="mt-0.5 font-[family-name:var(--font-display)] text-2xl font-black uppercase text-[#1a1208] sm:text-3xl">
-              Series View
+        <section
+          className="overflow-hidden rounded-[16px]"
+          style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
+        >
+          <div
+            className="px-4 py-3 sm:px-5"
+            style={{ borderBottom: "1px solid var(--line)" }}
+          >
+            <Eyebrow>Additional series</Eyebrow>
+            <p
+              className="mt-0.5 text-[20px] font-bold"
+              style={{ color: "var(--ink)" }}
+            >
+              Series view
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 p-4 sm:p-5 md:grid-cols-2 xl:grid-cols-3">
             {unknownSeries.map((series) => (
               <SeriesCard
                 key={series.key}
@@ -506,17 +531,24 @@ export function SeriesBoard({
       )}
 
       {activeBoard === "finals" && (finals.length > 0 || hasConferenceSeries) && (
-        <section className="overflow-hidden rounded-[1.6rem] bg-[#fbf8f3] ring-1 ring-[#e8e0d4]">
-          <div className="border-b border-[#ede8df] px-4 py-3 text-center sm:px-5">
-            <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#e85d04]">
-              The Finals
-            </p>
-            <p className="mt-0.5 font-[family-name:var(--font-display)] text-2xl font-black uppercase text-[#1a1208] sm:text-3xl">
+        <section
+          className="overflow-hidden rounded-[16px]"
+          style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
+        >
+          <div
+            className="px-4 py-3 text-center sm:px-5"
+            style={{ borderBottom: "1px solid var(--line)" }}
+          >
+            <Eyebrow color="var(--nba)">The Finals</Eyebrow>
+            <p
+              className="mt-0.5 font-[family-name:var(--font-display)] text-[22px] uppercase tracking-tight sm:text-2xl"
+              style={{ color: "var(--ink)" }}
+            >
               NBA Finals
             </p>
           </div>
           <div className="p-4 sm:p-5">
-            <div className="mx-auto grid max-w-md grid-cols-1 gap-4">
+            <div className="mx-auto grid max-w-md grid-cols-1 gap-3">
               {finals.length > 0 ? (
                 finals.map((series) => (
                   <SeriesCard
