@@ -4,8 +4,9 @@ import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { StatusPill } from "../atoms/StatusPill";
 import { Spoiler } from "../spoiler/Spoiler";
+import { safeText } from "../spoiler/safe-text";
 import { WatchLine } from "../watch/WatchLine";
-import { usePinned } from "../providers";
+import { usePinned, useNoSpoilers } from "../providers";
 import type { PinnedItem, StalePin } from "./watching-data";
 
 // One pinned game. Score is wrapped in <Spoiler> so No-Spoilers behavior is
@@ -14,8 +15,10 @@ import type { PinnedItem, StalePin } from "./watching-data";
 
 export function PinnedCard({ item }: { item: PinnedItem }) {
   const { unpinGame } = usePinned();
+  const noSpoilers = useNoSpoilers();
 
   const isUpcoming = item.status === "upcoming";
+  const detailToShow = safeText(item.detailLine, noSpoilers);
 
   return (
     <article
@@ -45,13 +48,15 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
           </StatusPill>
         </div>
 
-        {/* Detail line — clock, kickoff time, or series summary */}
-        {item.detailLine ? (
+        {/* Detail line — clock, kickoff time, or non-spoilery series text.
+            Under No-Spoilers we drop anything containing winner/leader
+            language so finals don't leak series state. */}
+        {detailToShow ? (
           <p
             className="mt-1 text-[12px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            {item.detailLine}
+            {detailToShow}
           </p>
         ) : null}
 

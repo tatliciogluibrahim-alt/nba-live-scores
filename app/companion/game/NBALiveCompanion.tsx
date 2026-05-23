@@ -1,0 +1,217 @@
+"use client";
+
+import { Display } from "../atoms/Display";
+import { Eyebrow } from "../atoms/Eyebrow";
+import { StatusPill, type StatusTone } from "../atoms/StatusPill";
+import { HeroMoment } from "../moments/HeroMoment";
+import { Spoiler } from "../spoiler/Spoiler";
+import { isSpoilery } from "../spoiler/safe-text";
+import { WatchLine } from "../watch/WatchLine";
+import { useNoSpoilers } from "../providers";
+import type { Game } from "../../nba/types";
+import { PinControls } from "./PinControls";
+import { deriveHero, deriveSeriesContext } from "./nba-moments";
+import { MomentsStack } from "./MomentsStack";
+import { useNBADetail } from "./use-nba-detail";
+
+// NBA Live Companion — the deepened /game/[id] for NBA games. Moments-first,
+// score body-level, watch info canonical, series context light + redacted
+// under No-Spoilers.
+
+export function NBALiveCompanion({
+  game,
+  pinned,
+  onPin,
+  onUnpin,
+}: {
+  game: Game;
+  pinned: boolean;
+  onPin: () => void;
+  onUnpin: () => void;
+}) {
+  const noSpoilers = useNoSpoilers();
+  const isLive = game.status === "live";
+  const isUpcoming = game.status === "upcoming";
+  const subject = game.matchup || `${game.away.abbreviation} vs ${game.home.abbreviation}`;
+
+  const { detail, hydrated } = useNBADetail(game.id, isLive);
+
+  const statusTone: StatusTone = isLive ? "live" : isUpcoming ? "upcoming" : "final";
+  const statusLabel = isLive && game.statusText
+    ? game.statusText.toUpperCase()
+    : statusTone.toUpperCase();
+
+  const hero = deriveHero(game, noSpoilers);
+  const series = deriveSeriesContext(game);
+
+  // Pull broadcasts from the detail endpoint when present; fall back to
+  // whatever the scoreboard list already gave us. One WatchLine per screen.
+  const channel =
+    (detail?.broadcasts && detail.broadcasts[0]) || game.broadcasts[0] || null;
+
+  // Spoilery series text — only render outside No-Spoilers mode. When safe
+  // (No-Spoilers off) we render in calm body type, never bold/oversized.
+  const spoileryLine = !noSpoilers && isSpoilery(series.spoileryLine)
+    ? series.spoileryLine
+    : "";
+
+  return (
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+      {/* ── Header context row ──────────────────────────────────────────── */}
+      <div className="flex items-center justify-between gap-3">
+        <Eyebrow>
+          {series.safeLine ? `NBA · ${series.safeLine}` : "NBA"}
+        </Eyebrow>
+        <StatusPill tone={statusTone} breathe={statusTone === "live"}>
+          {statusLabel}
+        </StatusPill>
+      </div>
+
+      <Display as="h1" size="lg" className="mt-2">
+        {game.away.abbreviation} · {game.home.abbreviation}
+      </Display>
+
+      <p
+        className="mt-1 text-[13px]"
+        style={{ color: "var(--mute-1)", fontWeight: 500 }}
+      >
+        {game.away.name} vs {game.home.name}
+      </p>
+
+      {/* ── Score (body-level, Spoiler-wrapped, never display type) ─────── */}
+      {!isUpcoming ? (
+        <p
+          className="mt-3 text-[28px] leading-none"
+          style={{
+            color: "var(--ink)",
+            fontFamily: "var(--font-mono)",
+            fontVariantNumeric: "tabular-nums",
+            fontWeight: 700,
+            letterSpacing: "-0.005em",
+          }}
+        >
+          <Spoiler ariaSubject={subject}>
+            {game.away.score} – {game.home.score}
+          </Spoiler>
+        </p>
+      ) : null}
+
+      {/* ── Upcoming tipoff time ────────────────────────────────────────── */}
+      {isUpcoming ? (
+        <p
+          className="mt-2 text-[14px]"
+          style={{ color: "var(--ink)", fontWeight: 600 }}
+        >
+          {new Date(game.date).toLocaleString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          })}
+        </p>
+      ) : null}
+
+      {/* ── Hero moment band (one earned moment) ────────────────────────── */}
+      <div className="mt-4">
+        <HeroMoment
+          eyebrow={hero.eyebrow}
+          headline={hero.headline}
+          accent="var(--nba)"
+          live={hero.live}
+        />
+      </div>
+
+      {/* ── Watch (single canonical line) ───────────────────────────────── */}
+      {channel ? (
+        <div className="mt-4">
+          <WatchLine channel={channel} ariaSubject={subject} />
+        </div>
+      ) : null}
+
+      {/* ── Moments stack (key moments by default) ──────────────────────── */}
+      <div className="mt-5">
+        {hydrated ? (
+          detail && detail.plays.length > 0 ? (
+            <MomentsStack plays={detail.plays} />
+          ) : isUpcoming ? null : (
+            <DetailFallback subject={subject} />
+          )
+        ) : (
+          <MomentsSkeleton />
+        )}
+      </div>
+
+      {/* ── Series context (redacted under No-Spoilers) ─────────────────── */}
+      {spoileryLine ? (
+        <p
+          className="mt-4 text-[12px]"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          {spoileryLine}
+        </p>
+      ) : noSpoilers && series.spoileryLine ? (
+        <p
+          className="mt-4 text-[11px] uppercase"
+          style={{
+            color: "var(--mute-2)",
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.1em",
+            fontWeight: 600,
+          }}
+        >
+          Series context hidden
+        </p>
+      ) : null}
+
+      {/* ── Pin / Watching ──────────────────────────────────────────────── */}
+      <PinControls
+        pinned={pinned}
+        onPin={onPin}
+        onUnpin={onUnpin}
+        subject={subject}
+        className="mt-5"
+      />
+    </main>
+  );
+}
+
+// ── Calm fallbacks ──────────────────────────────────────────────────────
+
+function MomentsSkeleton() {
+  return (
+    <div className="space-y-2" aria-busy aria-live="polite">
+      <div className="mb-2 flex items-center gap-3">
+        <Eyebrow>Key moments</Eyebrow>
+        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
+      </div>
+      <div
+        className="h-[88px] rounded-[14px]"
+        style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
+      />
+      <span className="sr-only">Loading key moments</span>
+    </div>
+  );
+}
+
+function DetailFallback({ subject }: { subject: string }) {
+  return (
+    <section>
+      <div className="mb-2 flex items-center gap-3">
+        <Eyebrow>Key moments</Eyebrow>
+        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
+      </div>
+      <p
+        className="rounded-[14px] border px-4 py-3 text-[13px]"
+        style={{
+          background: "var(--paper)",
+          borderColor: "var(--line)",
+          color: "var(--mute-1)",
+          fontWeight: 500,
+        }}
+      >
+        Moments load once the game has plays in the feed. {subject} is queued — we&apos;ll surface the big swings as they happen.
+      </p>
+    </section>
+  );
+}
