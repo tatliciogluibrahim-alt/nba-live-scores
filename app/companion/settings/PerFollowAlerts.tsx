@@ -3,68 +3,13 @@
 import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PresetRow } from "../following/PresetRow";
-import {
-  countryDisplayName,
-  getCountry,
-} from "../following/data/countries";
-import {
-  getTeam,
-  teamDisplayName,
-} from "../following/data/teams";
-import { getTournament } from "../following/data/tournaments";
+import { resolveFollowIdentity } from "../follow/identity";
 import { useFollows } from "../providers";
 import type { AlertPreset, Follow } from "../state/types";
 
 // One row per follow with the canonical PresetRow inline. Identity
 // (kind eyebrow + name + chip) renders above the radio so the user
 // can see what they're configuring at a glance.
-
-type Identity = {
-  kindLabel: string;
-  name: string;
-  chip: string;
-  accent: string;
-};
-
-function resolveIdentity(follow: Follow): Identity {
-  switch (follow.kind) {
-    case "team": {
-      const team = getTeam(follow.id);
-      return {
-        kindLabel: "Team · NBA",
-        name: teamDisplayName(follow.id),
-        chip: follow.id,
-        accent: team ? "var(--nba)" : "var(--ink)",
-      };
-    }
-    case "country": {
-      const country = getCountry(follow.id);
-      return {
-        kindLabel: "Country · World Cup",
-        name: countryDisplayName(follow.id),
-        chip: country?.flag ?? follow.id,
-        accent: "var(--wc)",
-      };
-    }
-    case "series": {
-      return {
-        kindLabel: "Series · NBA Playoffs",
-        name: follow.id.replace("-", " vs "),
-        chip: follow.id.replace("-", "·"),
-        accent: "var(--nba)",
-      };
-    }
-    case "tournament": {
-      const t = getTournament(follow.id);
-      return {
-        kindLabel: "Tournament",
-        name: t?.name ?? follow.id,
-        chip: t?.name.slice(0, 3).toUpperCase() ?? "CUP",
-        accent: t?.accent ?? "var(--ink)",
-      };
-    }
-  }
-}
 
 export function PerFollowAlerts() {
   const { follows, setFollowPreset, hydrated } = useFollows();
@@ -127,7 +72,7 @@ export function PerFollowAlerts() {
       </div>
       <ul className="space-y-3">
         {follows.map((follow) => {
-          const identity = resolveIdentity(follow);
+          const identity = resolveFollowIdentity(follow);
           return (
             <li
               key={`${follow.kind}-${follow.id}`}

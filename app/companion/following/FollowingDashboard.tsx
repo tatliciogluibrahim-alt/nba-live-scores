@@ -3,11 +3,9 @@
 import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
+import { resolveFollowIdentity } from "../follow/identity";
 import { useFollows } from "../providers";
 import { FollowCard, type FollowCardData } from "./FollowCard";
-import { teamDisplayName, getTeam } from "./data/teams";
-import { countryDisplayName, getCountry } from "./data/countries";
-import { getTournament } from "./data/tournaments";
 
 // Following dashboard — vertical list of follow cards in the order they
 // were added. Footer has a "Follow more" link back to the choice set.
@@ -16,51 +14,15 @@ export function FollowingDashboard() {
   const { follows } = useFollows();
 
   const cards: FollowCardData[] = follows.map((f) => {
-    switch (f.kind) {
-      case "team": {
-        const team = getTeam(f.id);
-        return {
-          follow: f,
-          kindLabel: "Team · NBA",
-          identityMark: f.id,
-          name: teamDisplayName(f.id),
-          detail: team ? `${team.conference}ern Conference` : undefined,
-          accent: "var(--nba)",
-        };
-      }
-      case "country": {
-        const country = getCountry(f.id);
-        return {
-          follow: f,
-          kindLabel: "Country · World Cup",
-          identityMark: country?.flag ?? f.id,
-          name: countryDisplayName(f.id),
-          detail: country ? `Group ${country.group}` : undefined,
-          accent: "var(--wc)",
-        };
-      }
-      case "series": {
-        return {
-          follow: f,
-          kindLabel: "Series · NBA Playoffs",
-          identityMark: f.id.replace("-", " · "),
-          name: `${f.id.replace("-", " vs ")}`,
-          detail: "Get told when it's a clinch night",
-          accent: "var(--nba)",
-        };
-      }
-      case "tournament": {
-        const tournament = getTournament(f.id);
-        return {
-          follow: f,
-          kindLabel: "Tournament",
-          identityMark: tournament?.name.slice(0, 3).toUpperCase() ?? "CUP",
-          name: tournament?.name ?? f.id,
-          detail: tournament?.detail,
-          accent: tournament?.accent ?? "var(--ink)",
-        };
-      }
-    }
+    const identity = resolveFollowIdentity(f);
+    return {
+      follow: f,
+      kindLabel: identity.kindLabel,
+      identityMark: identity.chip,
+      name: identity.name,
+      detail: identity.detail,
+      accent: identity.accent,
+    };
   });
 
   return (
