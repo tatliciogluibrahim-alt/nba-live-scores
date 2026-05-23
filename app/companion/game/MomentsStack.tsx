@@ -10,6 +10,7 @@ import {
 import { Eyebrow } from "../atoms/Eyebrow";
 import { MomentRow } from "../moments/MomentRow";
 import { useNoSpoilers } from "../providers";
+import { HIDDEN_CAPTIONS } from "../spoiler/safe-text";
 
 // Key moments stack. Under No-Spoilers the entire stack is collapsed
 // behind an explicit "Tap to reveal key moments" button — play texts
@@ -84,7 +85,7 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
             className="text-[13px]"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
-            Moments hidden by No-Spoilers
+            {HIDDEN_CAPTIONS.moments}
           </p>
           <p
             className="mt-0.5 text-[12px]"

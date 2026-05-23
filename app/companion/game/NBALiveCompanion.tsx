@@ -5,7 +5,7 @@ import { Eyebrow } from "../atoms/Eyebrow";
 import { StatusPill, type StatusTone } from "../atoms/StatusPill";
 import { HeroMoment } from "../moments/HeroMoment";
 import { Spoiler } from "../spoiler/Spoiler";
-import { isSpoilery } from "../spoiler/safe-text";
+import { HIDDEN_CAPTIONS, isSpoilery } from "../spoiler/safe-text";
 import { WatchLine } from "../watch/WatchLine";
 import { useNoSpoilers } from "../providers";
 import type { Game } from "../../nba/types";
@@ -51,7 +51,10 @@ export function NBALiveCompanion({
 
   // Spoilery series text — only render outside No-Spoilers mode. When safe
   // (No-Spoilers off) we render in calm body type, never bold/oversized.
-  const spoileryLine = !noSpoilers && isSpoilery(series.spoileryLine)
+  // Under No-Spoilers we show a "Series context hidden." caption — but only
+  // if there was actually spoilery content to hide, never as a phantom label.
+  const hasSpoilerySeriesText = isSpoilery(series.spoileryLine);
+  const spoileryLine = !noSpoilers && hasSpoilerySeriesText
     ? series.spoileryLine
     : "";
 
@@ -150,7 +153,7 @@ export function NBALiveCompanion({
         >
           {spoileryLine}
         </p>
-      ) : noSpoilers && series.spoileryLine ? (
+      ) : noSpoilers && hasSpoilerySeriesText ? (
         <p
           className="mt-4 text-[11px] uppercase"
           style={{
@@ -160,7 +163,7 @@ export function NBALiveCompanion({
             fontWeight: 600,
           }}
         >
-          Series context hidden
+          {HIDDEN_CAPTIONS.series}
         </p>
       ) : null}
 

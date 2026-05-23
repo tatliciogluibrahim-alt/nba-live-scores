@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { StatusPill, type StatusTone } from "../atoms/StatusPill";
-import { isSpoilery } from "../spoiler/safe-text";
+import { HIDDEN_CAPTIONS, isSpoilery } from "../spoiler/safe-text";
 import { useNoSpoilers } from "../providers";
 import { useSeriesData } from "./use-series-data";
 import { SevenDotStrip } from "./SevenDotStrip";
@@ -39,7 +39,10 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
   const statusTone = STATUS_TONE[payload.statusLabel] ?? "current";
 
   // Series state line — the spoilery summary like "DET leads series 2-1".
-  const showSpoilerySummary = !noSpoilers && isSpoilery(payload.spoilerySummary);
+  // Caption only fires when there's actual spoilery content; never a
+  // phantom "context hidden" label for empty / non-spoilery summaries.
+  const hasSpoilerySummary = isSpoilery(payload.spoilerySummary);
+  const showSpoilerySummary = !noSpoilers && hasSpoilerySummary;
   const showSpoileryStake =
     !noSpoilers && payload.spoileryStakeLine && payload.spoileryStakeLine !== payload.spoilerySummary;
 
@@ -76,7 +79,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
         >
           {payload.spoilerySummary}
         </p>
-      ) : noSpoilers && payload.spoilerySummary ? (
+      ) : noSpoilers && hasSpoilerySummary ? (
         <p
           className="mt-3 text-[11px] uppercase"
           style={{
@@ -86,7 +89,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
             fontWeight: 600,
           }}
         >
-          Series context hidden
+          {HIDDEN_CAPTIONS.series}
         </p>
       ) : null}
 

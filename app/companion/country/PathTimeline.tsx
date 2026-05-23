@@ -1,6 +1,7 @@
 "use client";
 
 import { Eyebrow } from "../atoms/Eyebrow";
+import { HIDDEN_CAPTIONS } from "../spoiler/safe-text";
 import { useNoSpoilers } from "../providers";
 import type { PathStage } from "./country-data";
 
@@ -104,9 +105,7 @@ export function PathTimeline({
                   className="mt-1 text-[12px]"
                   style={{ color: "var(--mute-1)", fontWeight: 500 }}
                 >
-                  {hideReachedState
-                    ? "Path context hidden by No-Spoilers mode."
-                    : stage.detail}
+                  {hideReachedState ? HIDDEN_CAPTIONS.path : stage.detail}
                 </p>
               </div>
             </li>
