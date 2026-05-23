@@ -1,6 +1,6 @@
 import { BrandBar } from "../companion/frame/BrandBar";
 import { CompanionFrame } from "../companion/frame/CompanionFrame";
-import { Placeholder } from "../companion/frame/Placeholder";
+import { FollowingClient } from "../companion/following/FollowingClient";
 
 export const metadata = {
   title: "Following — No Noise Scores",
@@ -10,12 +10,9 @@ export default function FollowingPage() {
   return (
     <CompanionFrame>
       <BrandBar />
-      <Placeholder
-        eyebrow="Following"
-        title="Tell us who you follow."
-        body="Team · Country · Series · Tournament. We surface only their games. Everything else stays quiet."
-        stage="Stage 1 shell · picker sheets + dashboard land in Stage 4."
-      />
+      <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+        <FollowingClient />
+      </main>
     </CompanionFrame>
   );
 }

@@ -66,7 +66,12 @@ export type YouFollowItem = {
   href: string;
 };
 
+/** Tag every Today item with the source league so consumers can branch
+ *  without sniffing optional fields like `stage`. */
+export type TodaySource = "nba" | "wc";
+
 export type UpNextItem = {
+  source: TodaySource;
   id: string;
   eyebrow: string;           // "NBA · Tonight" | "World Cup · Sat"
   headline: string;          // "Knicks vs Cavaliers"
@@ -77,6 +82,7 @@ export type UpNextItem = {
 };
 
 export type QuietWrapItem = {
+  source: TodaySource;
   id: string;
   eyebrow: string;           // "Yesterday"
   matchup: string;           // "Thunder · Spurs"
@@ -361,6 +367,32 @@ function buildYouFollow(
 
 // ── Up next ───────────────────────────────────────────────────────────
 
+function nbaToUpNext(g: NBAGame): UpNextItem {
+  return {
+    source: "nba",
+    id: g.id,
+    eyebrow: `NBA · ${formatGameDay(g.date)}`,
+    headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
+    detail: `${formatGameTime(g.date)}${g.gameContext ? " · " + g.gameContext : ""}`,
+    watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
+    href: `/game/${g.id}`,
+    spoilerSubject: g.matchup,
+  };
+}
+
+function wcToUpNext(g: WCGameLite): UpNextItem {
+  return {
+    source: "wc",
+    id: g.id,
+    eyebrow: `World Cup · ${formatGameDay(g.date)}`,
+    headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
+    detail: `${formatGameTime(g.date)}${g.stage ? " · " + g.stage : ""}`,
+    watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
+    href: `/country/${g.away.abbreviation}`,
+    spoilerSubject: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
+  };
+}
+
 function buildUpNext(
   nba: NBAGame[],
   wc: WCGameLite[],
@@ -381,45 +413,24 @@ function buildUpNext(
     .filter((g) => g.status === "upcoming")
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  // Personal-first ordering, then everyone else's "up next" feed.
-  const personalNBA = nbaUpcoming.filter((g) =>
-    [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr))
-  );
-  const personalWC = wcUpcoming.filter((g) =>
-    [...followedCountries].some((code) => gameIncludesCountry(g, code))
-  );
+  // Personal-first ordering, then everyone else's up-next feed. Items are
+  // tagged with `source` at construction so the UI never has to guess.
+  const personalNBA = nbaUpcoming
+    .filter((g) => [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr)))
+    .map(nbaToUpNext);
+  const personalWC = wcUpcoming
+    .filter((g) => [...followedCountries].some((code) => gameIncludesCountry(g, code)))
+    .map(wcToUpNext);
 
-  const everyoneNBA = nbaUpcoming.filter((g) => !personalNBA.includes(g));
-  const everyoneWC = wcUpcoming.filter((g) => !personalWC.includes(g));
+  const personalIds = new Set([...personalNBA, ...personalWC].map((i) => i.id));
+  const everyoneNBA = nbaUpcoming
+    .map(nbaToUpNext)
+    .filter((i) => !personalIds.has(i.id));
+  const everyoneWC = wcUpcoming
+    .map(wcToUpNext)
+    .filter((i) => !personalIds.has(i.id));
 
-  const ordered = [...personalNBA, ...personalWC, ...everyoneNBA, ...everyoneWC]
-    .slice(0, 5);
-
-  return ordered.map<UpNextItem>((g) => {
-    const isWC = "stage" in g && typeof (g as WCGameLite).stage === "string";
-    if (isWC) {
-      const wg = g as WCGameLite;
-      return {
-        id: wg.id,
-        eyebrow: `World Cup · ${formatGameDay(wg.date)}`,
-        headline: `${wg.away.abbreviation} vs ${wg.home.abbreviation}`,
-        detail: `${formatGameTime(wg.date)}${wg.stage ? " · " + wg.stage : ""}`,
-        watch: wg.broadcasts[0] ? { channel: wg.broadcasts[0] } : undefined,
-        href: `/country/${wg.away.abbreviation}`,
-        spoilerSubject: `${wg.away.abbreviation} vs ${wg.home.abbreviation}`,
-      };
-    }
-    const ng = g as NBAGame;
-    return {
-      id: ng.id,
-      eyebrow: `NBA · ${formatGameDay(ng.date)}`,
-      headline: `${ng.away.abbreviation} vs ${ng.home.abbreviation}`,
-      detail: `${formatGameTime(ng.date)}${ng.gameContext ? " · " + ng.gameContext : ""}`,
-      watch: ng.broadcasts[0] ? { channel: ng.broadcasts[0] } : undefined,
-      href: `/game/${ng.id}`,
-      spoilerSubject: ng.matchup,
-    };
-  });
+  return [...personalNBA, ...personalWC, ...everyoneNBA, ...everyoneWC].slice(0, 5);
 }
 
 // ── Quiet wrap ────────────────────────────────────────────────────────
@@ -459,6 +470,7 @@ function buildQuietWrap(
     const isSeriesClinch = /WINS\s+SERIES/i.test(g.seriesSummary);
 
     return {
+      source: "nba",
       id: g.id,
       eyebrow: formatGameDay(g.date) === "Tonight" ? "Earlier" : "Yesterday",
       matchup,

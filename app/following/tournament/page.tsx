@@ -1,0 +1,18 @@
+import { CompanionFrame } from "../../companion/frame/CompanionFrame";
+import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { TournamentPicker } from "../../companion/following/picker/TournamentPicker";
+
+export const metadata = {
+  title: "Follow a tournament — No Noise Scores",
+};
+
+export default function FollowTournamentPage() {
+  return (
+    <CompanionFrame>
+      <CrumbBar backHref="/following" backLabel="Following" title="Tournament" />
+      <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+        <TournamentPicker />
+      </main>
+    </CompanionFrame>
+  );
+}
