@@ -1,78 +1,20 @@
-"use client";
+import { BrandBar } from "./companion/frame/BrandBar";
+import { CompanionFrame } from "./companion/frame/CompanionFrame";
+import { Placeholder } from "./companion/frame/Placeholder";
 
-import { useEffect, useState } from "react";
-import LandingPage, { type AppSport } from "./landing-page";
-import NBAApp from "./nba-app";
-import WorldCupApp from "./world-cup-app";
+// Today — the canonical home. Stage 1: shell only. Stage 3 will wire
+// "Worth checking now / You follow / Up next / Quiet wrap / Reminder" rows.
 
-const SPORT_KEY = "no-noise-sport";
-const WC_COUNTRY_KEY = "no-noise-wc-country";
-
-export default function Home() {
-  const [sport, setSport] = useState<AppSport>("none");
-  const [wcCountry, setWcCountry] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-
-  // Hydrate from localStorage once on mount
-  useEffect(() => {
-    const hydrationTimeout = setTimeout(() => {
-      const savedSport = localStorage.getItem(SPORT_KEY) as AppSport | null;
-      const savedCountry = localStorage.getItem(WC_COUNTRY_KEY);
-
-      if (savedSport && (savedSport === "nba" || savedSport === "world-cup")) {
-        setSport(savedSport);
-      }
-      if (savedCountry) setWcCountry(savedCountry);
-      setReady(true);
-    }, 0);
-
-    return () => clearTimeout(hydrationTimeout);
-  }, []);
-
-  function selectSport(s: AppSport) {
-    setSport(s);
-    if (s !== "none") {
-      localStorage.setItem(SPORT_KEY, s);
-    } else {
-      localStorage.removeItem(SPORT_KEY);
-    }
-  }
-
-  function goBack() {
-    // Clear WC country so the next WC entry shows the pre-launch banner
-    // with the "Pick your country" header button, not the picker overlay.
-    setWcCountry(null);
-    localStorage.removeItem(WC_COUNTRY_KEY);
-    selectSport("none");
-  }
-
-  function handleSelectCountry(code: string | null) {
-    setWcCountry(code);
-    if (code) {
-      localStorage.setItem(WC_COUNTRY_KEY, code);
-    } else {
-      localStorage.removeItem(WC_COUNTRY_KEY);
-    }
-  }
-
-  // Prevent flash of wrong screen before localStorage is read
-  if (!ready) {
-    return <main className="min-h-[100svh] bg-[#f5f1ea]" />;
-  }
-
-  if (sport === "nba") {
-    return <NBAApp onBack={goBack} />;
-  }
-
-  if (sport === "world-cup") {
-    return (
-      <WorldCupApp
-        onBack={goBack}
-        selectedCountry={wcCountry}
-        onSelectCountry={handleSelectCountry}
+export default function TodayPage() {
+  return (
+    <CompanionFrame>
+      <BrandBar />
+      <Placeholder
+        eyebrow="Today"
+        title="Quiet evening."
+        body="What matters now lives here. Worth checking now, your follows, up next, and the quiet wrap — coming online next."
+        stage="Stage 1 shell · real content lands in Stage 3."
       />
-    );
-  }
-
-  return <LandingPage onSelectSport={selectSport} />;
+    </CompanionFrame>
+  );
 }

@@ -1,18 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Inter } from "next/font/google";
+import { Archivo_Black, Inter, JetBrains_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
+import { CompanionProviders } from "./companion/providers";
 import "./globals.css";
 
+// Functional UI body type
 const bodyFont = Inter({
   variable: "--font-body",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const displayFont = Anton({
+// Editorial display — used once per screen, only when the moment earns it
+const displayFont = Archivo_Black({
   variable: "--font-display",
   subsets: ["latin"],
   weight: "400",
+});
+
+// Eyebrows + tabular numerals only
+const monoFont = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -56,7 +67,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   minimumScale: 1,
   viewportFit: "cover",
-  themeColor: "#f5f1ea",
+  themeColor: "#f1ead8",
   colorScheme: "light",
 };
 
@@ -67,8 +78,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${bodyFont.variable} ${displayFont.variable}`}>
-        {children}
+      <body
+        className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable}`}
+      >
+        <CompanionProviders>{children}</CompanionProviders>
         <Analytics />
         <SpeedInsights />
       </body>
