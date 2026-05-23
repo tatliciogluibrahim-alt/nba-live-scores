@@ -107,6 +107,27 @@ export function FollowingDashboard() {
             Team · Country · Series · Tournament
           </span>
         </Link>
+
+        <Link
+          href="/settings"
+          className="mt-2 flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
+          style={{
+            background: "transparent",
+            borderColor: "var(--mute-2)",
+            color: "var(--ink)",
+          }}
+          aria-label="Open Watch + Alerts — global No-Spoilers, reminders, quiet hours"
+        >
+          <span className="text-[13px]" style={{ fontWeight: 600 }}>
+            Watch + Alerts
+          </span>
+          <span
+            className="text-[11px]"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            No-Spoilers · Reminders · Quiet hours
+          </span>
+        </Link>
       </div>
     </section>
   );
