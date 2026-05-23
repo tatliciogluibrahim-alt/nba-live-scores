@@ -10,7 +10,6 @@ import {
 } from "../lib/games";
 import { formatCountdown } from "../lib/time";
 import { getGameMomentStake } from "../lib/moment-intelligence";
-import { MomentStakePill } from "./moment-stake-pill";
 import { getPulseReason } from "./pulse-primitives";
 import { ShareButton, ShareModal } from "./share-card";
 import { TeamLogo } from "./team-logo";
@@ -77,7 +76,19 @@ function PlayoffBand({ game }: { game: Game }) {
         <div className="min-w-0 flex-1">
           {stake && (
             <div className="mb-1.5">
-              <MomentStakePill stake={stake} />
+              <StatusPill
+                tone={
+                  stake.tone === "live" || stake.tone === "urgent"
+                    ? "live"
+                    : stake.tone === "complete"
+                      ? "final"
+                      : "current"
+                }
+                breathe={stake.tone === "live"}
+                dot={stake.tone === "live" || stake.tone === "urgent"}
+              >
+                {stake.label}
+              </StatusPill>
             </div>
           )}
           {game.status === "final" && finalSummary && (

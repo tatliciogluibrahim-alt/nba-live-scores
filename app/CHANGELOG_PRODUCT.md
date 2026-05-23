@@ -2,6 +2,113 @@
 
 ---
 
+## Cohesion Pass — 2026-05-22
+
+A system-wide refactor to make every screen feel like one product. See
+`DESIGN.md` at the repo root for the principles, tokens, type allowlist,
+and component allowlist enforced by this pass.
+
+### What changed
+
+**Tokens (app/globals.css)**
+- Promoted inline color values to CSS variables: `--cream`, `--cream-2`,
+  `--paper`, `--ink`, `--mute-1`, `--mute-2`, `--line`.
+- Sport accents centralized: `--nba`, `--wc`, `--up`, `--critical`.
+- New status tones: `live`, `upcoming`, `final`, `current` — four tones
+  back every chip across the product.
+
+**Shared atoms (app/shared/atoms.tsx)**
+- One of each: `StatusPill`, `Segmented`, `FilterChip`, `AppCard`,
+  `Button`, `TeamRow`, `KeyMoment`, `Tension`, `Watch`, `Scenario`,
+  `Eyebrow`. Every surface restyled onto this chassis.
+
+**API hygiene**
+- `/api/nba-game-detail` no longer leaks `"NEUT"` — neutral plays carry
+  an empty teamAbbreviation; render layer humanizes via
+  `humanizeNeutral()` ("Timeout", "Foul", "End of period", "Whistle").
+- Both `/api/nba-game-detail` and `/api/live-scores` strip raw broadcast
+  IDs and overly-long strings; capped at 2 friendly labels per game.
+- `moment-intelligence.ts` adds `getKeyMoments(plays)` — curated by
+  impact (3PT, late-game blocks/steals/dunks, last-2:00 made shots).
+
+**NBA Today (`nba-app.tsx`, `game-card.tsx`)**
+- `TonightPulseHero` drops the gradient pulse band and the conic
+  `PulseRing` (deleted). Calm AppCard chassis + Tension meter.
+- Scores/[Team]/Series tab bar collapses into one `Segmented` control.
+- Game cards rebuilt on `AppCard`: 2px left status accent instead of
+  the 3px top color strip; sparkline removed from cards (moved to the
+  drawer's Compare tab); the "Line · Unavailable" pill is gone.
+- `FilterPill` is now a thin wrapper over the shared `FilterChip` —
+  ink-on-cream when active, optional leading dot (Live uses critical).
+
+**NBA Live Game Detail (`game-detail-drawer.tsx`)**
+- Full rewrite. `Moments / Play by play / Compare` segmented tabs.
+- Moments tab uses `getKeyMoments()` and the shared `KeyMoment` atom.
+- Play-by-play humanizes "NEUT" plays and renders kind codes in
+  sentence form ("Made 3", "Block", "Timeout").
+- Compare tab carries team stats + momentum sparkline (sparkline now
+  lives only here).
+- "Line" row removed entirely. Watch info uses the shared `Watch` atom.
+
+**NBA Series Board (`series-board.tsx`, `series-card.tsx`)**
+- Conference tabs collapse into one `Segmented`.
+- `MiniBracketMap` restyled: compact node chips, status-driven colors,
+  dashed connectors for projected paths.
+- `SeriesCard` rebuilt on `AppCard` chassis. Tier-1 orange 2px border
+  treatment is gone; status accent is the only signal.
+
+**World Cup Hub (`world-cup-app.tsx`)**
+- `CountdownHero` and `CountryHub` rebuilt against tokens. The {days}
+  countdown number is the one allowed editorial moment per screen.
+- Reminder bar simplified to one primary "Remind me" Button — the Skip
+  button is gone (calendar still downloads when the user does nothing).
+- `WorldCupWatchGuide` rebuilt: channel + streamer only, no IDs.
+
+**World Cup Bracket / Your Road**
+- `ProbabilityRing` deleted. The fake `42% / 36% / 22%` rings are
+  replaced by the qualitative `Scenario` chip
+  (`Most likely / Possible / Long shot`).
+- `RoadStageCard` rebuilt on `AppCard` chassis.
+- Path / Full bracket toggle uses the shared `Segmented`.
+
+**Typography lockdown**
+- Anton (display) is allowed on: Pick Your Country, First Whistle
+  Loading, Series Board, NBA Finals, World Cup 2026 number, Your Road,
+  Today home title, countdown number. Every other display use across
+  the app moved to Inter. ~50% reduction in all-caps surface area.
+
+**Deletions**
+- `app/nba/components/moment-stake-pill.tsx` — folded into `StatusPill`.
+- `PulseRing` from `pulse-primitives.tsx` — replaced by the calm
+  `Tension` atom.
+- `ProbabilityRing` and `[code, pct][]` alternates in `RoadStageCard`.
+- The card "top color strip" pattern from every NBA card.
+- All betting / spread / over-under / "Line unavailable" copy.
+
+### Build
+
+`npm run build` passes. tsc + eslint clean.
+
+### Manual QA Checklist
+
+- [ ] **Tokens**: page background reads as cream; cards as paper; no
+  legacy `#1a1208` / `#f5f1ea` literals leaked through.
+- [ ] **NBA Today**: hero shows status pill + Tension meter (live)
+  or just caption (upcoming/final). No conic ring. No gradient band.
+- [ ] **NBA Live drawer**: opens with Moments tab. Toggling to Play by
+  play shows humanized text — "Timeout" not "NEUT · TIMEOUT".
+- [ ] **NBA Series Board**: East/West/Finals tabs are the same shape
+  as Path/Full bracket and as the drawer's Moments/PBP/Compare.
+- [ ] **WC Hub**: countdown number stays big. Reminder bar has one
+  button. Where-to-Watch shows "FOX / FS1" + stream — no IDs.
+- [ ] **WC Your Road**: no percentages anywhere. Each stage shows a
+  scenario chip ("Most likely" / "Possible" / "Long shot").
+- [ ] **Share card**: PNG export still reads cleanly; footer is
+  "nonoisescores.app · @nonoisescores".
+- [ ] **`npm run build`**: passes.
+
+---
+
 ## Latest Update: Opus Frontend Design Pass — 2026-05-11
 
 ### Polish Pass 2 (same day)

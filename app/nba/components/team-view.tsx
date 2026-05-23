@@ -117,7 +117,7 @@ export function TeamView({
           </div>
         ) : null}
         <div>
-          <p className="font-[family-name:var(--font-display)] text-2xl font-black uppercase tracking-tight text-[#1a1208]">
+          <p className="text-[22px] font-bold text-[#1a1208]">
             {teamData?.name ?? favoriteTeamAbbr}
           </p>
           {teamSeries.length > 0 && (
@@ -167,7 +167,7 @@ export function TeamView({
 
       {teamSeries.length === 0 && teamGames.length === 0 && (
         <div className="rounded-[1.75rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
-          <p className="font-[family-name:var(--font-display)] text-2xl font-black uppercase tracking-tight text-[#1a1208]">
+          <p className="text-[22px] font-bold text-[#1a1208]">
             No games this week
           </p>
         </div>

@@ -3,25 +3,9 @@
 import type { PulseState } from "../types";
 export { getMomentumSeries, getPulseReason, getPulseState } from "../lib/live-state";
 
-export function PulseRing({ pulse }: { pulse: PulseState }) {
-  const percent = Math.round(pulse.heat * 100);
-
-  return (
-    <div
-      className="grid h-14 w-14 shrink-0 place-items-center rounded-full"
-      style={{
-        background: `radial-gradient(circle at center, #1a1208 0 48%, transparent 49%), conic-gradient(#e85d04 ${
-          pulse.heat * 360
-        }deg, rgba(255,255,255,0.18) 0deg)`,
-      }}
-      aria-label={`Pulse heat ${percent}%`}
-    >
-      <span className="text-[0.62rem] font-black tabular-nums text-[#f5f1ea]">
-        {percent}
-      </span>
-    </div>
-  );
-}
+// PulseRing was deleted in the cohesion pass — the calm Tension atom in
+// app/shared/atoms.tsx replaces it. Keep TensionBar for legacy game-card
+// callers; the new game-card uses the shared atom directly.
 
 export function TensionBar({
   pulse,
@@ -35,10 +19,10 @@ export function TensionBar({
   return (
     <div className={compact ? "mt-2 space-y-1" : "space-y-1.5"}>
       <div className="flex items-center justify-between gap-3">
-        <p className="font-[family-name:var(--font-display)] text-[0.55rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#c0b0a0]">
           Tension
         </p>
-        <p className="font-[family-name:var(--font-display)] text-[0.55rem] font-black uppercase tracking-[0.14em] text-[#e85d04]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#e85d04]">
           {Math.round(pulse.heat * 100)}%
         </p>
       </div>

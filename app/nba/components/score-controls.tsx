@@ -87,7 +87,7 @@ export function FavoriteTeamPicker({
               onChange(null);
               setIsOpen(false);
             }}
-            className={`flex w-full items-center justify-between px-3 py-2 text-left font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide transition hover:bg-[#f0ece4] ${
+            className={`flex w-full items-center justify-between px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-[0.08em] transition hover:bg-[#f0ece4] ${
               !favoriteTeamAbbr ? "text-orange-600" : "text-[#a89880]"
             }`}
           >
@@ -110,7 +110,7 @@ export function FavoriteTeamPicker({
                     : "text-[#1a1208]"
                 }`}
               >
-                <span className="font-[family-name:var(--font-display)] text-[0.72rem] font-black uppercase tracking-wide">
+                <span className="text-[12px] font-semibold uppercase tracking-[0.08em]">
                   {team.abbreviation}
                 </span>
                 <span className="truncate text-xs font-semibold normal-case tracking-normal text-[#a89880]">

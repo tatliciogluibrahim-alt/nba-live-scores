@@ -3,6 +3,36 @@ import {
   formatEmptyStateFavoriteGame,
   formatEmptyStateNextGame,
 } from "../lib/games";
+import { AppCard } from "../../shared/atoms";
+
+function EmptyShell({
+  heading,
+  body,
+}: {
+  heading: string;
+  body: string;
+}) {
+  return (
+    <section>
+      <AppCard>
+        <div className="px-6 py-8 text-center">
+          <p
+            className="text-[22px] font-bold leading-tight"
+            style={{ color: "var(--ink)" }}
+          >
+            {heading}
+          </p>
+          <p
+            className="mt-2 text-[13px] leading-6"
+            style={{ color: "var(--mute-1)" }}
+          >
+            {body}
+          </p>
+        </div>
+      </AppCard>
+    </section>
+  );
+}
 
 export function EmptyState({
   activeFilter,
@@ -17,45 +47,31 @@ export function EmptyState({
 }) {
   if (activeFilter === "live") {
     return (
-      <section className="rounded-[1.75rem] bg-[#ffffff] p-8 text-center text-[#1a1208] shadow-xl shadow-black/20 ring-1 ring-[#e8e0d4]">
-        <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-          No live games right now
-        </p>
-
-        <p className="mt-2 text-sm leading-6 text-[#a89880]">
-          {nextGame
+      <EmptyShell
+        heading="No live games right now"
+        body={
+          nextGame
             ? `Next tipoff: ${formatEmptyStateNextGame(nextGame)}`
-            : "Check back soon for live scores."}
-        </p>
-      </section>
+            : "Check back soon for live scores."
+        }
+      />
     );
   }
 
   if (activeFilter === "my-team") {
     return (
-      <section className="rounded-[1.75rem] bg-[#ffffff] p-8 text-center text-[#1a1208] shadow-xl shadow-black/20 ring-1 ring-[#e8e0d4]">
-        <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-          {favoriteTeamAbbr ? `No ${favoriteTeamAbbr} games this week` : "No team selected"}
-        </p>
-
-        <p className="mt-2 text-sm leading-6 text-[#a89880]">
-          {nextFavoriteGame
+      <EmptyShell
+        heading={
+          favoriteTeamAbbr ? `No ${favoriteTeamAbbr} games this week` : "No team selected"
+        }
+        body={
+          nextFavoriteGame
             ? `Next game: ${formatEmptyStateFavoriteGame(nextFavoriteGame)}`
-            : "Try picking a different team."}
-        </p>
-      </section>
+            : "Try picking a different team."
+        }
+      />
     );
   }
 
-  return (
-    <section className="rounded-[1.75rem] bg-[#ffffff] p-8 text-center text-[#1a1208] shadow-xl shadow-black/20 ring-1 ring-[#e8e0d4]">
-      <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-        No games found
-      </p>
-
-      <p className="mt-2 text-sm leading-6 text-[#a89880]">
-        Try a different filter.
-      </p>
-    </section>
-  );
+  return <EmptyShell heading="No games found" body="Try a different filter." />;
 }

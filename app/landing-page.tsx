@@ -102,7 +102,7 @@ export default function LandingPage({
         {/* Wordmark */}
         <header className="mb-10 flex items-center gap-2">
           <img src="/favicon.svg" alt="" className="h-5 w-5" />
-          <span className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-tight text-[#1a1208]">
+          <span className="text-sm font-semibold uppercase tracking-tight text-[#1a1208]">
             No Noise Scores
           </span>
         </header>

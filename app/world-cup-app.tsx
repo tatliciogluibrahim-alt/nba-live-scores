@@ -418,7 +418,7 @@ function WCGameCard({
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">
               <span
-                className="rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.1em] text-white"
+                className="rounded-full px-2 py-0.5 text-[0.56rem] font-semibold uppercase tracking-[0.1em] text-white"
                 style={{ background: isMyGame ? accentColor : "#1a1208" }}
               >
                 {stakeLabel}
@@ -596,7 +596,7 @@ function GroupsPreview({
     <div className="overflow-hidden rounded-[1.2rem] bg-white ring-1 ring-[#e8e0d4]">
       <div className="flex flex-col gap-3 border-b border-[#f0ece4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#c0b0a0]">
             Group Draw Board
           </p>
           <p className="mt-1 text-[0.76rem] font-semibold text-[#8a7a66]">
@@ -620,7 +620,7 @@ function GroupsPreview({
             >
               <div className="flex items-center justify-between gap-2 border-b border-[#f0ece4] px-3 py-2">
                 <p
-                  className="font-[family-name:var(--font-display)] text-[0.68rem] font-black uppercase tracking-[0.12em]"
+                  className="text-[0.68rem] font-semibold uppercase tracking-[0.12em]"
                   style={{ color: isMyGroup ? accentText : "#a89880" }}
                 >
                   Group {letter}
@@ -700,7 +700,7 @@ function PreTournamentTableNote({
     <div className="overflow-hidden rounded-[1.15rem] bg-white ring-1 ring-[#e8e0d4]">
       <div className="flex flex-col gap-3 border-b border-[#f0ece4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#c0b0a0]">
             Table Control
           </p>
           <p className="mt-1 text-[0.76rem] font-semibold text-[#8a7a66]">
@@ -710,7 +710,7 @@ function PreTournamentTableNote({
           </p>
         </div>
         <span
-          className="w-fit rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em]"
+          className="w-fit rounded-full px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.12em]"
           style={{
             color: accentText,
             background: `${accentColor}12`,
@@ -723,7 +723,7 @@ function PreTournamentTableNote({
       <div className="grid grid-cols-1 gap-2 bg-[#fbf8f3] p-3 sm:grid-cols-3">
         {noteItems.map((item) => (
           <div key={item.label} className="min-w-0 rounded-[0.85rem] bg-white px-3 py-2 ring-1 ring-[#f0ece4]">
-            <p className="font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+            <p className="text-[0.54rem] font-semibold uppercase tracking-[0.12em] text-[#c0b0a0]">
               {item.label}
             </p>
             <p className="mt-1 truncate text-[0.72rem] font-black text-[#1a1208]">
@@ -761,7 +761,7 @@ function StandingsView({
           <div key={letter}>
             <div className="mb-2 flex items-center gap-3">
               <p
-                className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.12em]"
+                className="text-[0.65rem] font-semibold uppercase tracking-[0.12em]"
                 style={{ color: isMyGroup ? accentColor : "#a89880" }}
               >
                 Group {letter}
@@ -921,7 +921,7 @@ function ScheduleMatchRow({
 
       <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-t border-[#f0ece4] pt-1.5">
         <span
-          className="rounded-full px-2 py-0.5 font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.1em] text-white"
+          className="rounded-full px-2 py-0.5 text-[0.54rem] font-semibold uppercase tracking-[0.1em] text-white"
           style={{ background: isMyGame ? accentColor : "#1a1208" }}
         >
           {stakeLabel}
@@ -1022,7 +1022,7 @@ function ScheduleView({
           <div key={label}>
             <div className="mb-2 flex items-center gap-3">
               <p
-                className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.12em]"
+                className="text-[0.65rem] font-semibold uppercase tracking-[0.12em]"
                 style={{ color: isMyGroup ? accentColor : "#a89880" }}
               >
                 {label}
@@ -1084,7 +1084,7 @@ function MatchHeaderTeam({
     >
       <span className="block text-[1.7rem] leading-none">{flagEmoji(team.abbreviation)}</span>
       <div className="mt-2 flex min-w-0 items-center gap-1.5">
-        <p className="truncate font-[family-name:var(--font-display)] text-[1.15rem] font-black uppercase leading-none">
+        <p className="truncate text-[1.15rem] font-semibold uppercase leading-none">
           {team.abbreviation}
         </p>
         {isSelected && (
@@ -1161,17 +1161,17 @@ function VenueSheet({
 
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/55">
+              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-white/55">
                 Match Intelligence
               </p>
-              <p className="mt-1 truncate font-[family-name:var(--font-display)] text-[1.55rem] font-black uppercase leading-none tracking-tight">
+              <p className="mt-1 truncate text-[1.55rem] font-semibold uppercase leading-none tracking-tight">
                 {matchLabel}
               </p>
               <p className="mt-1 text-[0.72rem] font-semibold text-white/65">
                 {matchTime}
               </p>
             </div>
-            <span className="shrink-0 rounded-full bg-white px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.1em] text-[#0f3b2a]">
+            <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.1em] text-[#0f3b2a]">
               {stakeLabel}
             </span>
           </div>
@@ -1198,7 +1198,7 @@ function VenueSheet({
             <div className="overflow-hidden rounded-[1.15rem] bg-white ring-1 ring-[#e8e0d4]">
               <div className="flex flex-col gap-2 border-b border-[#f0ece4] bg-[#fbf8f3] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+                  <p className="text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-[#c0b0a0]">
                     Where to Watch
                   </p>
                   <p className="mt-1 text-[0.72rem] font-semibold text-[#8a7a66]">
@@ -1206,7 +1206,7 @@ function VenueSheet({
                   </p>
                 </div>
                 <span
-                  className="w-fit rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.12em]"
+                  className="w-fit rounded-full px-2.5 py-1 text-[0.54rem] font-semibold uppercase tracking-[0.12em]"
                   style={{
                     background: `${accentColor}12`,
                     color: safeTextColor(accentColor),
@@ -1218,7 +1218,7 @@ function VenueSheet({
               </div>
 
               <div className="px-4 py-4">
-                <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+                <p className="text-[0.56rem] font-semibold uppercase tracking-[0.14em] text-[#c0b0a0]">
                   TV / Stream
                 </p>
                 <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1244,7 +1244,7 @@ function VenueSheet({
               <div className="grid grid-cols-2 gap-2 border-t border-[#f0ece4] bg-[#fbf8f3] p-2 sm:grid-cols-4">
                 {detailItems.map((item) => (
                   <div key={item.label} className="min-w-0 rounded-[0.8rem] bg-white px-3 py-2.5 ring-1 ring-[#f0ece4]">
-                    <p className="font-[family-name:var(--font-display)] text-[0.52rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+                    <p className="text-[0.52rem] font-semibold uppercase tracking-[0.12em] text-[#c0b0a0]">
                       {item.label}
                     </p>
                     <p className="mt-1 truncate text-[0.68rem] font-black text-[#1a1208]">
@@ -1257,7 +1257,7 @@ function VenueSheet({
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
-                <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+                <p className="text-[0.56rem] font-semibold uppercase tracking-[0.14em] text-[#c0b0a0]">
                   Match
                 </p>
                 <p className="mt-1 truncate text-[0.8rem] font-black text-[#1a1208]">
@@ -1265,7 +1265,7 @@ function VenueSheet({
                 </p>
               </div>
               <div className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
-                <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+                <p className="text-[0.56rem] font-semibold uppercase tracking-[0.14em] text-[#c0b0a0]">
                   Stakes
                 </p>
                 <p className="mt-1 truncate text-[0.8rem] font-black text-[#1a1208]">
@@ -1276,7 +1276,7 @@ function VenueSheet({
 
             {moments.length > 0 && (
               <div className="rounded-[1rem] bg-white px-4 py-3 ring-1 ring-[#e8e0d4]">
-                <p className="mb-2 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+                <p className="mb-2 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[#a89880]">
                   Match Moments
                 </p>
                 <div className="space-y-1.5">
@@ -1304,7 +1304,7 @@ function VenueSheet({
             )}
 
             <div className="flex items-center gap-3 px-1 pt-1">
-              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[#a89880]">
                 Watch in NYC
               </p>
               <div className="flex-1 border-t border-[#e8e0d4]" />
@@ -1362,15 +1362,15 @@ function CountdownHero({
         <div className="bg-[#0f3b2a] px-4 py-3 text-white">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/55">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">
                 FIFA World Cup 2026
               </p>
-              <p className="mt-1 font-[family-name:var(--font-display)] text-[2.55rem] font-black uppercase leading-none tracking-tight">
+              <p className="mt-1 font-[family-name:var(--font-display)] text-[2.55rem] uppercase leading-none tracking-tight">
                 {days} days
               </p>
             </div>
             <div className="shrink-0 text-right">
-              <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/55">
+              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-white/55">
                 Kickoff
               </p>
               <p className="mt-1 text-[0.76rem] font-black uppercase leading-tight text-white">
@@ -1389,7 +1389,7 @@ function CountdownHero({
               { value: "104", label: "Matches" },
             ].map((item) => (
               <div key={item.label} className="rounded-[0.85rem] bg-white/10 px-3 py-2 ring-1 ring-white/10">
-                <p className="font-[family-name:var(--font-display)] text-[1.15rem] font-black leading-none">
+                <p className="text-[1.15rem] font-semibold leading-none">
                   {item.value}
                 </p>
                 <p className="mt-1 text-[0.55rem] font-black uppercase tracking-[0.12em] text-white/55">
@@ -1401,7 +1401,7 @@ function CountdownHero({
         </div>
 
         <div className="px-4 py-4">
-          <p className="mb-2 font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#006847]">
+          <p className="mb-2 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#006847]">
             Your tournament starts here
           </p>
           <p className="font-[family-name:var(--font-display)] text-[2rem] font-black uppercase leading-none tracking-tight text-[#1a1208]">
@@ -1475,7 +1475,7 @@ function WorldCupWatchGuide({
     <div className="overflow-hidden rounded-[1.15rem] bg-white ring-1 ring-[#e8e0d4]">
       <div className="flex flex-col gap-3 border-b border-[#f0ece4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#c0b0a0]">
             Where to Watch
           </p>
           <p className="mt-0.5 text-[0.72rem] font-semibold text-[#8a7a66]">
@@ -1483,7 +1483,7 @@ function WorldCupWatchGuide({
           </p>
         </div>
         <span
-          className="inline-flex w-fit rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em]"
+          className="inline-flex w-fit rounded-full px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.12em]"
           style={{
             background: `${accentColor}16`,
             color: accentText,
@@ -1498,11 +1498,11 @@ function WorldCupWatchGuide({
           <div key={item.label} className="px-4 py-3">
             <div className="mb-3 flex items-end justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+                <p className="text-[0.56rem] font-semibold uppercase tracking-[0.14em] text-[#c0b0a0]">
                   {item.label}
                 </p>
                 <p
-                  className="mt-1 truncate font-[family-name:var(--font-display)] text-[1.05rem] font-black uppercase tracking-tight"
+                  className="mt-1 truncate text-[1.05rem] font-semibold uppercase tracking-tight"
                   style={{ color: accentText }}
                 >
                   {item.primary}
@@ -1514,7 +1514,7 @@ function WorldCupWatchGuide({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="min-w-0 rounded-[0.75rem] bg-[#fbf8f3] px-2.5 py-2 ring-1 ring-[#f0ece4]">
-                <p className="font-[family-name:var(--font-display)] text-[0.5rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+                <p className="text-[0.5rem] font-semibold uppercase tracking-[0.12em] text-[#c0b0a0]">
                   Channel
                 </p>
                 <p className="mt-0.5 truncate text-[0.64rem] font-black text-[#1a1208]">
@@ -1522,7 +1522,7 @@ function WorldCupWatchGuide({
                 </p>
               </div>
               <div className="min-w-0 rounded-[0.75rem] bg-[#fbf8f3] px-2.5 py-2 ring-1 ring-[#f0ece4]">
-                <p className="font-[family-name:var(--font-display)] text-[0.5rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+                <p className="text-[0.5rem] font-semibold uppercase tracking-[0.12em] text-[#c0b0a0]">
                   Stream
                 </p>
                 <p className="mt-0.5 truncate text-[0.64rem] font-black text-[#1a1208]">
@@ -1574,7 +1574,7 @@ function WorldCupScoreboardPreview({
     <div className="overflow-hidden rounded-[1.2rem] bg-white ring-1 ring-[#e8e0d4]">
       <div className="bg-[#140f08] px-4 py-4 text-white">
         <div className="mb-3 flex items-center gap-3">
-          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-white/55">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-white/55">
             Scoreboard
           </p>
           <div className="flex-1 border-t border-white/15" />
@@ -1593,7 +1593,7 @@ function WorldCupScoreboardPreview({
           </div>
           <div className="grid grid-cols-2 gap-2 sm:w-[18rem]">
             <div className="rounded-[0.85rem] bg-white/8 px-3 py-2 ring-1 ring-white/10">
-              <p className="font-[family-name:var(--font-display)] text-[0.5rem] font-black uppercase tracking-[0.12em] text-white/45">
+              <p className="text-[0.5rem] font-semibold uppercase tracking-[0.12em] text-white/45">
                 TV
               </p>
               <p className="mt-0.5 truncate text-[0.66rem] font-black">
@@ -1601,7 +1601,7 @@ function WorldCupScoreboardPreview({
               </p>
             </div>
             <div className="rounded-[0.85rem] bg-white/8 px-3 py-2 ring-1 ring-white/10">
-              <p className="font-[family-name:var(--font-display)] text-[0.5rem] font-black uppercase tracking-[0.12em] text-white/45">
+              <p className="text-[0.5rem] font-semibold uppercase tracking-[0.12em] text-white/45">
                 Stream
               </p>
               <p className="mt-0.5 truncate text-[0.66rem] font-black">
@@ -1635,7 +1635,7 @@ function WorldCupScoreboardPreview({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {pulseItems.map((item) => (
             <div key={item.label} className="rounded-[0.85rem] bg-white px-3 py-2 ring-1 ring-[#f0ece4]">
-              <p className="font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+              <p className="text-[0.54rem] font-semibold uppercase tracking-[0.12em] text-[#c0b0a0]">
                 {item.label}
               </p>
               <p className="mt-1 truncate text-[0.72rem] font-black text-[#1a1208]">
@@ -1683,10 +1683,10 @@ function ScheduleComingSoonCard({
     <div className="overflow-hidden rounded-[1.2rem] bg-white text-left ring-1 ring-[#e8e0d4]">
       <div className="flex flex-col gap-3 border-b border-[#f0ece4] px-4 py-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <p className="font-[family-name:var(--font-display)] text-[0.62rem] font-black uppercase tracking-[0.16em] text-[#c0b0a0]">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#c0b0a0]">
             Fixture Board
           </p>
-          <p className="mt-1 font-[family-name:var(--font-display)] text-[1.3rem] font-black uppercase leading-none tracking-tight text-[#1a1208]">
+          <p className="mt-1 text-[1.3rem] font-semibold uppercase leading-none tracking-tight text-[#1a1208]">
             {headline}
           </p>
           <p className="mt-2 max-w-md text-[0.78rem] font-semibold leading-snug text-[#8a7a66]">
@@ -1694,7 +1694,7 @@ function ScheduleComingSoonCard({
           </p>
         </div>
         <span
-          className="w-fit shrink-0 rounded-full px-2.5 py-1 font-[family-name:var(--font-display)] text-[0.56rem] font-black uppercase tracking-[0.12em]"
+          className="w-fit shrink-0 rounded-full px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.12em]"
           style={{
             color: accentText,
             background: `${accentColor}12`,
@@ -1707,7 +1707,7 @@ function ScheduleComingSoonCard({
       <div className="grid grid-cols-1 gap-2 bg-[#fbf8f3] p-3 sm:grid-cols-3">
         {detailItems.map((item) => (
           <div key={item.label} className="min-w-0 rounded-[0.9rem] bg-white px-3 py-2.5 ring-1 ring-[#f0ece4]">
-            <p className="font-[family-name:var(--font-display)] text-[0.54rem] font-black uppercase tracking-[0.12em] text-[#c0b0a0]">
+            <p className="text-[0.54rem] font-semibold uppercase tracking-[0.12em] text-[#c0b0a0]">
               {item.label}
             </p>
             <p className="mt-1 truncate text-[0.72rem] font-black text-[#1a1208]">
@@ -1759,11 +1759,11 @@ function CountryHub({
           <div className="flex min-w-0 items-center gap-3">
             <span className="shrink-0 text-[2.55rem] leading-none">{flag}</span>
             <div className="min-w-0">
-              <p className="font-[family-name:var(--font-display)] text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#c0b0a0]">
+              <p className="text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[#c0b0a0]">
                 Your Country
               </p>
               <p
-                className="truncate font-[family-name:var(--font-display)] text-[1.35rem] font-black uppercase leading-tight tracking-tight"
+                className="truncate text-[1.35rem] font-semibold uppercase leading-tight tracking-tight"
                 style={{ color: textColor }}
               >
                 {name}
@@ -1824,7 +1824,7 @@ function CountryHub({
         <div className="rounded-[1rem] bg-[#fbf8f3] px-3 py-3 ring-1 ring-[#f0ece4]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="font-[family-name:var(--font-display)] text-[0.6rem] font-black uppercase tracking-[0.14em] text-[#a89880]">
+              <p className="text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-[#a89880]">
                 Match Reminder
               </p>
               <p className="mt-1 text-[0.75rem] font-black text-[#1a1208]">
@@ -1920,7 +1920,7 @@ function GroupSection({
     <div>
       <div className="mb-2 flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <p className="font-[family-name:var(--font-display)] text-[0.65rem] font-black uppercase tracking-[0.12em]" style={{ color: isMyGroup ? accentColor : "#a89880" }}>
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.12em]" style={{ color: isMyGroup ? accentColor : "#a89880" }}>
             Group {groupLabel}
           </p>
           {isMyGroup && selectedCountry && (
@@ -2625,7 +2625,7 @@ export default function WorldCupApp({
             <div className="flex items-center gap-1.5">
               <img src="/favicon.svg" alt="" className="h-5 w-5" />
               <span
-                className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-tight"
+                className="text-sm font-semibold uppercase tracking-tight"
                 style={{ color: safeTextColor(accentColor) === "#1a1208" ? accentColor === "#000000" ? "#1a1208" : accentColor : accentColor }}
               >
                 World Cup 2026
@@ -2679,7 +2679,7 @@ export default function WorldCupApp({
         {/* ── Loading skeleton ── */}
         {!hasLoadedOnce && (
           <div className="rounded-[1.75rem] bg-white p-10 text-center ring-1 ring-[#e8e0d4]">
-            <p className="font-[family-name:var(--font-display)] text-3xl font-black uppercase tracking-tight text-[#1a1208]">Loading…</p>
+            <p className="text-[22px] font-bold text-[#1a1208]">Loading…</p>
           </div>
         )}
 
@@ -2904,12 +2904,12 @@ export default function WorldCupApp({
                     <div className="rounded-[1.75rem] bg-white p-8 text-center ring-1 ring-[#e8e0d4]">
                       {activeFilter === "my-country" && !selectedCountry ? (
                         <>
-                          <p className="font-[family-name:var(--font-display)] text-xl font-black uppercase tracking-tight text-[#1a1208]">No country selected</p>
+                          <p className="text-xl font-semibold uppercase tracking-tight text-[#1a1208]">No country selected</p>
                           <p className="mt-2 text-[0.82rem] text-[#a89880]">Pick a country to personalize this page.</p>
                         </>
                       ) : (
                         <>
-                          <p className="font-[family-name:var(--font-display)] text-xl font-black uppercase tracking-tight text-[#1a1208]">No matches</p>
+                          <p className="text-xl font-semibold uppercase tracking-tight text-[#1a1208]">No matches</p>
                           <p className="mt-2 text-[0.82rem] text-[#a89880]">Try a different filter.</p>
                         </>
                       )}

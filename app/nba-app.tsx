@@ -409,7 +409,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
             <span className="text-[#d4cdc0]">·</span>
             <div className="flex items-center gap-1.5">
               <img src="/favicon.svg" alt="No Noise Scores logo" className="h-5 w-5" />
-              <span className="font-[family-name:var(--font-display)] text-sm font-black uppercase tracking-tight text-[#1a1208]">
+              <span className="text-sm font-semibold uppercase tracking-tight text-[#1a1208]">
                 NBA
               </span>
             </div>
@@ -515,9 +515,9 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
                 </div>
               </div>
             ) : !hasLoadedOnce ? (
-              <section className="rounded-[1.75rem] bg-[#ffffff] p-8 text-center text-[#1a1208] shadow-sm ring-1 ring-[#e8e0d4]">
-                <p className="font-[family-name:var(--font-display)] text-4xl font-black uppercase tracking-tight">
-                  Loading scores...
+              <section className="rounded-[14px] bg-[#fbf8f3] p-8 text-center text-[#1a1208] ring-1 ring-[#e8e0d4]">
+                <p className="text-[22px] font-bold">
+                  Loading scores…
                 </p>
 
                 <p className="mt-2 text-sm leading-6 text-[#a89880]">
