@@ -154,7 +154,7 @@ export function NBALiveCompanion({
           className="mt-4 rounded-[14px] border px-3 py-2.5"
           style={{ background: "var(--paper)", borderColor: "var(--line)" }}
         >
-          <Eyebrow>Series</Eyebrow>
+          <Eyebrow>Series context</Eyebrow>
           {spoileryLine ? (
             <p
               className="mt-1 text-[13px] leading-snug"

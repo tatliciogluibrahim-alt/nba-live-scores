@@ -1,7 +1,13 @@
 import type { ReactNode } from "react";
+import { BrandMark } from "./BrandMark";
 
 // Top-of-page brand strip. Trailing slot for icon buttons (bell, plus, etc).
 // Used on Today / Following / Watching root screens.
+//
+// Stage 14E swapped the "nn" lettermark for the experimental BrandMark
+// (scoreboard-row + status-pip motif). Reversible — revert by swapping
+// <BrandMark /> back to the inline lettermark span if the symbol doesn't
+// land in user testing.
 
 export function BrandBar({ trailing }: { trailing?: ReactNode }) {
   return (
@@ -10,18 +16,7 @@ export function BrandBar({ trailing }: { trailing?: ReactNode }) {
       style={{ background: "var(--cream)" }}
     >
       <div className="flex items-center gap-2">
-        <span
-          aria-hidden
-          className="grid h-6 w-6 place-items-center rounded-md text-[10px]"
-          style={{
-            background: "var(--ink)",
-            color: "var(--cream)",
-            fontFamily: "var(--font-display)",
-            letterSpacing: "0.02em",
-          }}
-        >
-          nn
-        </span>
+        <BrandMark size={22} />
         <span
           className="text-[13px]"
           style={{ color: "var(--ink)", fontWeight: 700 }}
