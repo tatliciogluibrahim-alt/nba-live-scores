@@ -139,6 +139,7 @@ export function NBALiveCompanion({
         <HeroMoment
           eyebrow={hero.eyebrow}
           headline={hero.headline}
+          context={hero.context}
           accent="var(--nba)"
           live={hero.live}
           surface={isLive ? "var(--nba-soft)" : undefined}

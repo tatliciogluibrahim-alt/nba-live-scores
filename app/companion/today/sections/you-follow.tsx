@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { StatusPill } from "../../atoms/StatusPill";
 import { SectionHeader } from "./section-header";
 import type { YouFollowItem } from "../today-data";
 
@@ -51,79 +50,48 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
     );
   }
 
+  // Quiet inline text line — no pills, no dots. Items are separated by a
+  // muted mid-dot. Live items surface in --nba so they read as urgent
+  // without needing a badge. Upcoming items use --ink. Finals + quiet go
+  // muted. The whole row wraps naturally at narrow widths; no overflow.
   return (
     <section>
       <SectionHeader label="You follow" />
-      <ul
-        className="-mx-1 flex gap-2 overflow-x-auto px-1"
-        style={{ scrollbarWidth: "none" }}
+      <p
+        className="text-[12px] leading-relaxed"
+        style={{ fontWeight: 500, color: "var(--mute-1)" }}
       >
-        {items.map((item) => {
-          // Pill surface and border respond to game state so the eye can
-          // instantly rank urgency across the follow row:
-          //   live     → live status tint + matching border
-          //   upcoming → upcoming status tint + matching border
-          //   others   → neutral paper (game is done or off-schedule)
-          const pillBg =
+        {items.map((item, i) => {
+          const color =
             item.tone === "live"
-              ? "var(--status-live-bg)"
+              ? "var(--nba)"
               : item.tone === "upcoming"
-                ? "var(--status-upcoming-bg)"
-                : "var(--paper)";
-          const pillBorder =
-            item.tone === "live"
-              ? `1px solid var(--status-live-dot)`
-              : item.tone === "upcoming"
-                ? `1px solid var(--status-upcoming-dot)`
-                : "1px solid var(--line)";
-
-          // Chip background matches the sport brand rather than a flat cream.
-          const chipBg =
-            item.kind === "team"
-              ? "var(--nba-soft)"
-              : item.kind === "country"
-                ? "var(--wc-soft)"
-                : "var(--cream-2)";
-
+                ? "var(--ink)"
+                : "var(--mute-1)";
           return (
-            <li key={`${item.kind}-${item.id}`} className="shrink-0">
+            <span key={`${item.kind}-${item.id}`}>
               <Link
                 href={item.href}
                 aria-label={`${item.label} · ${item.statusLabel}`}
-                className="flex min-h-[44px] items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3 transition active:scale-[0.97]"
-                style={{ background: pillBg, border: pillBorder }}
+                className="no-noise-reveal-focus transition-opacity active:opacity-60"
+                style={{ color, fontWeight: item.tone === "live" ? 600 : 500 }}
               >
-                {/* Identity mark */}
+                {item.chip}
+                <span style={{ color: "var(--mute-2)" }}>{" · "}</span>
+                {item.statusLabel}
+              </Link>
+              {i < items.length - 1 ? (
                 <span
                   aria-hidden
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full"
-                  style={{
-                    background: chipBg,
-                    fontFamily: "var(--font-mono)",
-                    fontSize: item.chip.length > 3 ? 9 : 11,
-                    fontWeight: 700,
-                    letterSpacing: "0.02em",
-                    color: item.kind === "team"
-                      ? "var(--nba)"
-                      : item.kind === "country"
-                        ? "var(--wc)"
-                        : "var(--ink)",
-                    lineHeight: 1,
-                  }}
+                  style={{ color: "var(--mute-2)", padding: "0 0.35em" }}
                 >
-                  {item.chip}
+                  ·
                 </span>
-                <StatusPill
-                  tone={item.tone}
-                  breathe={item.tone === "live"}
-                >
-                  {item.statusLabel}
-                </StatusPill>
-              </Link>
-            </li>
+              ) : null}
+            </span>
           );
         })}
-      </ul>
+      </p>
     </section>
   );
 }

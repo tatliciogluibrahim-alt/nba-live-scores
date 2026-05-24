@@ -44,9 +44,9 @@
   --status-live-bg:     rgba(201, 54, 43, 0.10);
   --status-live-fg:     #a82a21;
   --status-live-dot:    #c9362b;
-  --status-upcoming-bg: rgba(46, 91, 215, 0.10);
-  --status-upcoming-fg: #2849ac;
-  --status-upcoming-dot:#2e5bd7;
+  --status-upcoming-bg: rgba(107, 97, 71, 0.10);
+  --status-upcoming-fg: #6b6147;
+  --status-upcoming-dot:#9a9080;
   --status-final-bg:    rgba(107, 97, 71, 0.14);
   --status-final-fg:    #5c5340;
   --status-current-bg:  rgba(30, 107, 60, 0.12);

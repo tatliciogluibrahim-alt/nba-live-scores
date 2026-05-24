@@ -59,18 +59,64 @@ export function humanizePlayLabel(kind: string): string {
 export function deriveHero(
   game: Game,
   noSpoilers: boolean
-): { eyebrow: string; headline: string; live: boolean } {
+): { eyebrow: string; headline: string; context?: string; live: boolean } {
   const isLive = game.status === "live";
   const isFinal = game.status === "final";
   const period = Math.max(0, game.period ?? 0);
   const statusText = (game.statusText ?? "").toUpperCase();
 
   if (game.status === "upcoming") {
-    return {
-      eyebrow: "Tips off",
-      headline: "Game is upcoming.",
-      live: false,
-    };
+    const gameNumber = getGameNumberFromText(
+      [game.gameContext, game.seriesSummary, game.seriesRound]
+        .filter(Boolean)
+        .join(" ")
+    );
+
+    // Format tipoff time — "tonight at 7:30 PM" when same local date,
+    // "Sat, Jun 7 at 7:30 PM" otherwise.
+    let tipoff = "";
+    try {
+      const d = new Date(game.date);
+      const todayStr = new Date().toDateString();
+      const gameStr = d.toDateString();
+      const timeStr = d.toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+      tipoff = gameStr === todayStr ? `tonight at ${timeStr}` : d.toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    } catch {
+      tipoff = "tonight";
+    }
+
+    // Headline — prefer "Game N tips off [time]." when we have a game
+    // number (playoff series); fall back to generic for regular-season games.
+    const headline = gameNumber
+      ? `Game ${gameNumber} tips off ${tipoff}.`
+      : `Tips off ${tipoff}.`;
+
+    // Context — series status (spoilery under No-Spoilers) + broadcast.
+    // "OKC LEADS SERIES 2-1" → "OKC leads series 2-1". Under No-Spoilers
+    // we omit the series line so we don't leak who's up.
+    const broadcast = game.broadcasts[0] ?? null;
+    const rawSeries = game.seriesSummary ?? "";
+    const seriesLine = rawSeries
+      ? rawSeries.charAt(0).toUpperCase() + rawSeries.slice(1).toLowerCase()
+      : "";
+
+    let context: string | undefined;
+    if (!noSpoilers && seriesLine) {
+      context = broadcast ? `${seriesLine} · ${broadcast}` : seriesLine;
+    } else if (broadcast) {
+      context = broadcast;
+    }
+
+    return { eyebrow: "Preview", headline, context, live: false };
   }
 
   if (isFinal) {
