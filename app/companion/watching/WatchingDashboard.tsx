@@ -3,6 +3,7 @@
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PinnedCard, StalePinCard } from "./PinnedCard";
+import { LiveRoom } from "./LiveRoom";
 import type { PinnedItem, WatchingPayload } from "./watching-data";
 
 // List of pinned games. Live first, then upcoming, then final. Stale pins
@@ -39,8 +40,15 @@ function buildWatchingSummary(items: PinnedItem[]): string {
 }
 
 export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
-  const { items, stalePins } = payload;
-  const hasLivePin = items.some((i) => i.status === "live");
+  const { items, stalePins, liveCount } = payload;
+  const hasLivePin = liveCount > 0;
+  // Live Room mode: ≥2 pins live. The dock takes the top of the screen
+  // and the regular roster below shows the non-live pins so the user
+  // can still see what's queued / wrapped.
+  const liveRoomMode = liveCount >= 2;
+  const restItems = liveRoomMode
+    ? items.filter((i) => i.status !== "live")
+    : items;
 
   return (
     <section>
@@ -64,13 +72,26 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
         <span>{buildWatchingSummary(items)}</span>
       </p>
 
-      <ul className="space-y-2">
-        {items.map((item) => (
-          <li key={item.id}>
-            <PinnedCard item={item} />
-          </li>
-        ))}
-      </ul>
+      {/* ── Live Room dock (Stage 15E) — only when ≥2 live pins ─────── */}
+      {liveRoomMode ? <LiveRoom payload={payload} /> : null}
+
+      {restItems.length > 0 ? (
+        <>
+          {liveRoomMode ? (
+            <div className="mb-2 flex items-center gap-3">
+              <Eyebrow>Also pinned</Eyebrow>
+              <div className="h-px flex-1" style={{ background: "var(--line)" }} />
+            </div>
+          ) : null}
+          <ul className="space-y-2">
+            {restItems.map((item) => (
+              <li key={item.id}>
+                <PinnedCard item={item} />
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
 
       {stalePins.length > 0 ? (
         <div className="mt-5">

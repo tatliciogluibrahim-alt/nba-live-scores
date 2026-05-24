@@ -111,6 +111,13 @@ export type TodayPayload = {
   reminder: ReminderRow | null;
   /** When true, the parent renders the "Calm is a feature" card at the bottom. */
   isQuietDay: boolean;
+  /** True when every game on today's slate has finished — no live, no
+   *  upcoming, ≥1 final. The Quiet Recap full-screen moment uses this
+   *  signal (Stage 15F) to render its end-of-night acknowledgement. */
+  slateComplete: boolean;
+  /** Headline count for the recap copy. Always finals.length when
+   *  slateComplete is true; 0 otherwise. */
+  finalsCount: number;
 };
 
 // ── Pure helpers ──────────────────────────────────────────────────────
@@ -567,6 +574,21 @@ export function buildTodayPayload({
   const hasUpcoming = upNext.length > 0;
   const hasFinals = quietWrap.length > 0;
   const isQuietDay = !hasLive && !hasUpcoming && !hasFinals;
+  // Slate complete: nothing live, nothing upcoming, but at least one
+  // final happened. This is the "end-of-night" condition for the Quiet
+  // Recap moment — distinct from `isQuietDay` (which means nothing
+  // happened at all today).
+  const slateComplete = !hasLive && !hasUpcoming && hasFinals;
+  const finalsCount = slateComplete ? quietWrap.length : 0;
 
-  return { hero, youFollow, upNext, quietWrap, reminder, isQuietDay };
+  return {
+    hero,
+    youFollow,
+    upNext,
+    quietWrap,
+    reminder,
+    isQuietDay,
+    slateComplete,
+    finalsCount,
+  };
 }

@@ -12,7 +12,12 @@ import {
 const LIVE_INTERVAL_MS = 10_000;
 const IDLE_INTERVAL_MS = 30_000;
 
-const EMPTY: WatchingPayload = { items: [], stalePins: [] };
+const EMPTY: WatchingPayload = {
+  items: [],
+  stalePins: [],
+  liveCount: 0,
+  closestLive: null,
+};
 
 async function fetchNBA(): Promise<NBAGame[]> {
   try {

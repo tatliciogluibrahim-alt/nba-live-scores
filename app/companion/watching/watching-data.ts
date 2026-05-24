@@ -45,6 +45,14 @@ export type WatchingPayload = {
   items: PinnedItem[];
   /** Pins whose game we couldn't find in either feed. Kept for unpin. */
   stalePins: StalePin[];
+  /** Number of pinned games currently live. Live Room renders when ≥2. */
+  liveCount: number;
+  /** The single closest live game by score margin — the "switch to one-
+   *  possession game" suggestion when the Live Room is on. Null when no
+   *  live pin or when more than one game is equally close. NBA-only for
+   *  now; WC games are tagged but we don't compute "closest" for them
+   *  in this stage. */
+  closestLive: { id: string; margin: number } | null;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -206,5 +214,40 @@ export function buildWatchingPayload({
     s === "live" ? 0 : s === "upcoming" ? 1 : 2;
   items.sort((a, b) => tierRank(a.status) - tierRank(b.status));
 
-  return { items, stalePins };
+  // ── Live Room derivations (Stage 15E) ───────────────────────────────
+  const liveItems = items.filter((i) => i.status === "live");
+  const liveCount = liveItems.length;
+  const closestLive = pickClosestLive(liveItems, nbaById);
+
+  return { items, stalePins, liveCount, closestLive };
+}
+
+/** From the live pinned games, find the one with the tightest score
+ *  margin. Returns null when nothing qualifies (no live, or a tie). The
+ *  "tie" case intentionally returns null — we don't surface a chip when
+ *  there's no single answer.
+ *
+ *  WC games are tagged with `source: "wc"` but we don't compute
+ *  "closest" for them today; the soccer score-margin question is shaped
+ *  differently (a 1-goal lead is not the same as a 3-point NBA lead).
+ *  Keep this NBA-only until the WC live feed proves out. */
+function pickClosestLive(
+  liveItems: PinnedItem[],
+  nbaById: Map<string, NBAGame>
+): { id: string; margin: number } | null {
+  const candidates: Array<{ id: string; margin: number }> = [];
+  for (const item of liveItems) {
+    if (item.source !== "nba") continue;
+    const g = nbaById.get(item.id);
+    if (!g) continue;
+    const margin = Math.abs(g.away.score - g.home.score);
+    candidates.push({ id: item.id, margin });
+  }
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => a.margin - b.margin);
+  // If the top two are tied on margin, no single "switch" suggestion.
+  if (candidates.length > 1 && candidates[0].margin === candidates[1].margin) {
+    return null;
+  }
+  return candidates[0];
 }

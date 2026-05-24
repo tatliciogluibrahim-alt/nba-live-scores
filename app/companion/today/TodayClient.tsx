@@ -4,6 +4,8 @@ import { Display } from "../atoms/Display";
 import { useFollows, useNoSpoilers, usePinned, useUserPrefs } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveDailyBrief } from "./daily-brief";
+import { BriefCard } from "./BriefCard";
+import { QuietRecap } from "./QuietRecap";
 import { WorthCheckingNow } from "./sections/worth-checking-now";
 import { YouFollow } from "./sections/you-follow";
 import { UpNext } from "./sections/up-next";
@@ -26,10 +28,12 @@ export function TodayClient() {
   const { follows } = useFollows();
   const { pinned } = usePinned();
 
-  // Daily Brief — one calm sentence summarizing today's app state.
-  // Under No-Spoilers, priority-1 returns the "Scores hidden..." line,
-  // so the inline toggle + brief together replace the old standalone banner.
-  const briefText = hydrated
+  // Daily Brief — one calm sentence summarizing today's app state, plus
+  // an optional CTA so the Brief can route the user to the single most
+  // relevant surface. Under No-Spoilers, priority-1 returns the "Scores
+  // hidden..." line with no CTA, so the inline toggle + brief together
+  // replace the old standalone banner.
+  const brief = hydrated
     ? deriveDailyBrief({ noSpoilers, follows, pinned, payload })
     : null;
 
@@ -66,15 +70,13 @@ export function TodayClient() {
         <NoSpoilersInlineToggle />
       </header>
 
-      {/* Daily Brief — single calm sentence under the header */}
-      {briefText ? (
-        <p
-          className="mb-4 text-[14px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          {briefText}
-        </p>
-      ) : null}
+      {/* Quiet Recap — end-of-night moment when the slate is fully wrapped.
+          Renders above the Brief because it's the one card that earns
+          interrupting the normal Today layout. Once-per-night. */}
+      {hydrated ? <QuietRecap payload={payload} /> : null}
+
+      {/* Daily Brief — calm sentence + optional routing CTA */}
+      {brief ? <BriefCard brief={brief} /> : null}
 
       {/* Loading shell — keep the page shape, fill with calm placeholder */}
       {!hydrated ? <LoadingShell /> : null}

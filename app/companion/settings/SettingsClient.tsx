@@ -5,6 +5,7 @@ import { ReminderSelector } from "./ReminderSelector";
 import { QuietHoursSelector } from "./QuietHoursSelector";
 import { PerFollowAlerts } from "./PerFollowAlerts";
 import { WatchGuidanceBlock } from "./WatchGuidanceBlock";
+import { NotificationPreview } from "./NotificationPreview";
 
 // Watch + Alerts — single calm settings-style screen.
 //
@@ -27,6 +28,7 @@ export function SettingsClient() {
       </p>
 
       <div className="space-y-5">
+        <NotificationPreview />
         <ReminderSelector />
         <QuietHoursSelector />
         <PerFollowAlerts />

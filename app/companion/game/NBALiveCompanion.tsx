@@ -2,9 +2,8 @@
 
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
-import { StatusPill, type StatusTone } from "../atoms/StatusPill";
+import { ScoreModule } from "../atoms/ScoreModule";
 import { HeroMoment } from "../moments/HeroMoment";
-import { Spoiler } from "../spoiler/Spoiler";
 import { HIDDEN_CAPTIONS, isSpoilery } from "../spoiler/safe-text";
 import { WatchLine } from "../watch/WatchLine";
 import { useNoSpoilers } from "../providers";
@@ -36,10 +35,22 @@ export function NBALiveCompanion({
 
   const { detail, hydrated } = useNBADetail(game.id, isLive);
 
-  const statusTone: StatusTone = isLive ? "live" : isUpcoming ? "upcoming" : "final";
+  const status = isLive ? "live" : isUpcoming ? "upcoming" : "final";
   const statusLabel = isLive && game.statusText
     ? game.statusText.toUpperCase()
-    : statusTone.toUpperCase();
+    : status.toUpperCase();
+
+  const contextLine = isUpcoming
+    ? new Date(game.date).toLocaleString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : isLive
+      ? game.statusText
+      : "Final";
 
   const hero = deriveHero(game, noSpoilers);
   const series = deriveSeriesContext(game);
@@ -60,20 +71,10 @@ export function NBALiveCompanion({
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
-      {/* ── Header context row ──────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-3">
-        <Eyebrow>
-          {series.safeLine ? `NBA · ${series.safeLine}` : "NBA"}
-        </Eyebrow>
-        <StatusPill tone={statusTone} breathe={statusTone === "live"}>
-          {statusLabel}
-        </StatusPill>
-      </div>
-
-      <Display as="h1" size="lg" className="mt-2">
+      {/* ── Page H1 — only display-type instance on the screen ─────────── */}
+      <Display as="h1" size="lg">
         {game.away.abbreviation} · {game.home.abbreviation}
       </Display>
-
       <p
         className="mt-1 text-[13px]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
@@ -81,39 +82,24 @@ export function NBALiveCompanion({
         {game.away.name} vs {game.home.name}
       </p>
 
-      {/* ── Score (body-level, Spoiler-wrapped, never display type) ─────── */}
-      {!isUpcoming ? (
-        <p
-          className="mt-3 text-[28px] leading-none"
-          style={{
-            color: "var(--ink)",
-            fontFamily: "var(--font-mono)",
-            fontVariantNumeric: "tabular-nums",
-            fontWeight: 700,
-            letterSpacing: "-0.005em",
-          }}
-        >
-          <Spoiler ariaSubject={subject}>
-            {game.away.score} – {game.home.score}
-          </Spoiler>
-        </p>
-      ) : null}
-
-      {/* ── Upcoming tipoff time ────────────────────────────────────────── */}
-      {isUpcoming ? (
-        <p
-          className="mt-2 text-[14px]"
-          style={{ color: "var(--ink)", fontWeight: 600 }}
-        >
-          {new Date(game.date).toLocaleString(undefined, {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          })}
-        </p>
-      ) : null}
+      {/* ── Scoreboard module — Stadium Panel primitive ─────────────────── */}
+      <div
+        className="mt-4 rounded-[14px] border px-4 py-4"
+        style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+      >
+        <ScoreModule
+          eyebrow={series.safeLine ? `NBA · ${series.safeLine}` : "NBA"}
+          away={{ code: game.away.abbreviation, name: game.away.name }}
+          home={{ code: game.home.abbreviation, name: game.home.name }}
+          awayScore={isUpcoming ? null : game.away.score}
+          homeScore={isUpcoming ? null : game.home.score}
+          status={status}
+          statusLabel={statusLabel}
+          contextLine={contextLine}
+          spoilerSubject={subject}
+          size="lg"
+        />
+      </div>
 
       {/* ── Hero moment band (one earned moment) ────────────────────────── */}
       <div className="mt-4">

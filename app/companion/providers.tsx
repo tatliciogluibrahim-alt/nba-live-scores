@@ -61,6 +61,9 @@ type PrefsCtx = {
   setNoSpoilers: (value: boolean) => void;
   setRemindBeforeMinutes: (minutes: number) => void;
   setQuietHours: (range: { start: string; end: string } | undefined) => void;
+  /** Records the YYYY-MM-DD the user dismissed the Quiet Recap card, so
+   *  the recap won't re-render on subsequent opens that day. */
+  markQuietRecapSeen: (yyyymmdd: string) => void;
   hydrated: boolean;
 };
 
@@ -195,6 +198,14 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     []
   );
 
+  const markQuietRecapSeen = useCallback((yyyymmdd: string) => {
+    setPrefs((prev) => {
+      const next: UserPrefs = { ...prev, quietRecapSeenDate: yyyymmdd };
+      writeJSON(STORAGE_KEYS.prefs, next);
+      return next;
+    });
+  }, []);
+
   // ── Memoize context values to avoid downstream re-renders ──────────
   const followsValue = useMemo<FollowsCtx>(
     () => ({
@@ -225,9 +236,17 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       setNoSpoilers,
       setRemindBeforeMinutes,
       setQuietHours,
+      markQuietRecapSeen,
       hydrated,
     }),
-    [prefs, setNoSpoilers, setRemindBeforeMinutes, setQuietHours, hydrated]
+    [
+      prefs,
+      setNoSpoilers,
+      setRemindBeforeMinutes,
+      setQuietHours,
+      markQuietRecapSeen,
+      hydrated,
+    ]
   );
 
   return (

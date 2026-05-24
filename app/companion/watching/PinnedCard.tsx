@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
-import { StatusPill } from "../atoms/StatusPill";
-import { Spoiler } from "../spoiler/Spoiler";
+import { ScoreModule } from "../atoms/ScoreModule";
 import { safeText } from "../spoiler/safe-text";
 import { WatchLine } from "../watch/WatchLine";
 import { usePinned, useNoSpoilers } from "../providers";
@@ -20,6 +19,11 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
   const isUpcoming = item.status === "upcoming";
   const detailToShow = safeText(item.detailLine, noSpoilers);
 
+  // Parse the adapter's `scoreLine` ("75 – 87") into numbers so the
+  // ScoreModule can render them through its tabular-nums layer. Falls
+  // back gracefully if the adapter ever changes shape.
+  const [awayScore, homeScore] = parseScoreLine(item.scoreLine);
+
   return (
     <article
       className="rounded-[14px] border"
@@ -29,53 +33,18 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
       }}
     >
       <div className="px-3 py-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <Eyebrow>{item.contextEyebrow}</Eyebrow>
-            <p
-              className="mt-1 truncate text-[15px] leading-snug"
-              style={{
-                color: "var(--ink)",
-                fontWeight: 700,
-                letterSpacing: "-0.005em",
-              }}
-            >
-              {item.matchup}
-            </p>
-          </div>
-          <StatusPill tone={item.statusTone} breathe={item.statusTone === "live"}>
-            {item.statusLabel}
-          </StatusPill>
-        </div>
-
-        {/* Detail line — clock, kickoff time, or non-spoilery series text.
-            Under No-Spoilers we drop anything containing winner/leader
-            language so finals don't leak series state. */}
-        {detailToShow ? (
-          <p
-            className="mt-1 text-[12px]"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-            {detailToShow}
-          </p>
-        ) : null}
-
-        {/* Score row — hidden by Spoiler primitive when No-Spoilers is on.
-            Upcoming games have no score, so nothing to redact. */}
-        {item.scoreLine ? (
-          <p
-            className="mt-2 text-[24px] leading-none"
-            style={{
-              color: "var(--ink)",
-              fontFamily: "var(--font-mono)",
-              fontVariantNumeric: "tabular-nums",
-              fontWeight: 700,
-              letterSpacing: "-0.005em",
-            }}
-          >
-            <Spoiler ariaSubject={item.spoilerSubject}>{item.scoreLine}</Spoiler>
-          </p>
-        ) : null}
+        <ScoreModule
+          eyebrow={item.contextEyebrow}
+          away={{ code: item.awayCode, name: item.awayName }}
+          home={{ code: item.homeCode, name: item.homeName }}
+          awayScore={awayScore}
+          homeScore={homeScore}
+          status={item.status}
+          statusLabel={item.statusLabel}
+          contextLine={detailToShow || undefined}
+          spoilerSubject={item.spoilerSubject}
+          size="md"
+        />
 
         {item.watch ? (
           <div className="mt-3">
@@ -117,6 +86,16 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
       </div>
     </article>
   );
+}
+
+// Parse a "75 – 87" string into [75, 87]. Tolerant: an en-dash, hyphen,
+// or em-dash all parse. Returns [null, null] for upcoming pins (no score
+// yet) or unexpected shapes.
+function parseScoreLine(line: string | null): [number | null, number | null] {
+  if (!line) return [null, null];
+  const m = line.match(/(\d+)\s*[–\-—]\s*(\d+)/);
+  if (!m) return [null, null];
+  return [Number(m[1]), Number(m[2])];
 }
 
 // Stale pin — game we couldn't resolve from either feed. Keep the unpin

@@ -25,6 +25,11 @@ export type UserPrefs = {
   quietHours?: { start: string; end: string };
   /** Default 30. */
   remindBeforeMinutes: number;
+  /** YYYY-MM-DD of the last day the user dismissed the Quiet Recap card.
+   *  Added in Stage 15F so the once-per-night recap doesn't render on
+   *  repeat opens. Stored as a date string (not timestamp) to keep the
+   *  comparison day-local without timezone math at read time. */
+  quietRecapSeenDate?: string;
 };
 
 // ── Defaults ──────────────────────────────────────────────────────────
