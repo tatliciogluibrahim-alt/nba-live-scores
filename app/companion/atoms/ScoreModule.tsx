@@ -66,6 +66,10 @@ export type ScoreModuleProps = {
    *  cards explicitly granted accent in the design contract. */
   accent?: string;
 
+  /** Hide the "CODE · CODE" matchup row. Use on surfaces where the page
+   *  H1 already carries the matchup (game detail) — avoids the dupe. */
+  hideMatchup?: boolean;
+
   /** Optional sub-row rendered below the contextLine — used for inline
    *  Watch info or any other secondary detail. Caller controls spacing. */
   footer?: ReactNode;
@@ -98,6 +102,7 @@ export function ScoreModule({
   spoilerSubject,
   size = "md",
   accent,
+  hideMatchup = false,
   footer,
   className,
   style,
@@ -128,19 +133,23 @@ export function ScoreModule({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           {eyebrow ? (
-            <div className="mb-1">{typeof eyebrow === "string" ? <EyebrowText>{eyebrow}</EyebrowText> : eyebrow}</div>
+            <div className={hideMatchup ? undefined : "mb-1"}>
+              {typeof eyebrow === "string" ? <EyebrowText>{eyebrow}</EyebrowText> : eyebrow}
+            </div>
           ) : null}
-          <p
-            className="truncate leading-snug"
-            style={{
-              color: "var(--ink)",
-              fontSize: spec.matchupFontSize,
-              fontWeight: spec.matchupWeight,
-              letterSpacing: "-0.005em",
-            }}
-          >
-            {away.code} · {home.code}
-          </p>
+          {hideMatchup ? null : (
+            <p
+              className="truncate leading-snug"
+              style={{
+                color: "var(--ink)",
+                fontSize: spec.matchupFontSize,
+                fontWeight: spec.matchupWeight,
+                letterSpacing: "-0.005em",
+              }}
+            >
+              {away.code} · {home.code}
+            </p>
+          )}
         </div>
         <StatusPill tone={tone} breathe={tone === "live"}>
           {label}

@@ -98,6 +98,7 @@ export function NBALiveCompanion({
           contextLine={contextLine}
           spoilerSubject={subject}
           size="lg"
+          hideMatchup
         />
       </div>
 

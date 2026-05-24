@@ -55,7 +55,10 @@ export function HeroMoment({
         </span>
       </div>
 
-      <Display size="md" as="h2" className="mt-2">
+      {/* HeroMoment lives inside a card. Display `sm` keeps editorial weight
+          without competing with the page H1 above it. Reach for `md` only
+          on dedicated standalone heroes (no longer used in this codebase). */}
+      <Display size="sm" as="h2" className="mt-2">
         {headline}
       </Display>
 
