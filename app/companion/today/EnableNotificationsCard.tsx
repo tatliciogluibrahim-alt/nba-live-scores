@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUserPrefs } from "../providers";
+import { usePushSubscription } from "../push/use-push-subscription";
 
 // Enable Notifications card — Stage A push pass.
 //
@@ -23,6 +24,7 @@ import { useUserPrefs } from "../providers";
 
 export function EnableNotificationsCard() {
   const { prefs, dismissNotifPrompt, hydrated } = useUserPrefs();
+  const { subscribe } = usePushSubscription();
   const [permission, setPermission] = useState<NotificationPermission | "unsupported" | null>(
     null
   );
@@ -60,6 +62,17 @@ export function EnableNotificationsCard() {
       setPermission(result);
 
       if (result === "granted") {
+        // Stage B: as soon as permission lands, create the Web Push
+        // subscription and persist it server-side. Without this step,
+        // the user has granted permission but can't receive push from
+        // our backend — only in-app local notifications would work.
+        // Failure here is non-fatal; local notifications still work.
+        try {
+          await subscribe();
+        } catch {
+          /* push subscription failed — local notifications still fire */
+        }
+
         // Fire a welcome notification through the SW. iOS PWAs *will not*
         // surface `new Notification(...)` from a page — only the SW path
         // works. We also wait for `serviceWorker.ready` so registration

@@ -9,7 +9,8 @@
     "lint": "eslint",
     "cap:sync": "cap sync",
     "ios:sync": "cap sync ios",
-    "ios:open": "cap open ios"
+    "ios:open": "cap open ios",
+    "vapid:gen": "node scripts/generate-vapid-keys.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.3.1",
@@ -20,7 +21,8 @@
     "html-to-image": "^1.11.13",
     "next": "16.2.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.3.1",
@@ -28,6 +30,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",

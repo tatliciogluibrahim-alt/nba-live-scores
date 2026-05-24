@@ -7,6 +7,7 @@ import { QuietHoursSelector } from "./QuietHoursSelector";
 import { PerFollowAlerts } from "./PerFollowAlerts";
 import { WatchGuidanceBlock } from "./WatchGuidanceBlock";
 import { NotificationPreview } from "./NotificationPreview";
+import { PushSubscriptionPanel } from "./PushSubscriptionPanel";
 
 // Watch + Alerts — single calm settings-style screen.
 //
@@ -30,6 +31,7 @@ export function SettingsClient() {
 
       <div className="space-y-5">
         <NoSpoilersToggle />
+        <PushSubscriptionPanel />
         <NotificationPreview />
         <ReminderSelector />
         <QuietHoursSelector />
