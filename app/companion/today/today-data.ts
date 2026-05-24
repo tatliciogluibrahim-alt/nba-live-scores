@@ -454,18 +454,14 @@ function buildQuietWrap(
   const everyone = finals.filter((g) => !personal.includes(g));
 
   return [...personal, ...everyone].slice(0, 3).map<QuietWrapItem>((g) => {
-    const winner =
-      g.home.score > g.away.score
-        ? g.home
-        : g.away.score > g.home.score
-          ? g.away
-          : null;
-
     const matchup = `${g.away.abbreviation} · ${g.home.abbreviation}`;
     const scoreLine = `${g.away.score} – ${g.home.score}`;
-    const context = winner
-      ? `${winner.name} took it.`
-      : g.seriesSummary || undefined;
+
+    // Calm prose only — the score already carries the result. Avoid
+    // winner-revealing verbs ("took it", "beat", "won", "advanced",
+    // "clinched", "leads") even when No-Spoilers is off. The single
+    // word "Final." is the calmest acknowledgement that the game ended.
+    const context = "Final.";
 
     const isSeriesClinch = /WINS\s+SERIES/i.test(g.seriesSummary);
 

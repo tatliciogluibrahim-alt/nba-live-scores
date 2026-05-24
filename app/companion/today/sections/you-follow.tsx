@@ -15,7 +15,7 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
         <SectionHeader label="You follow" />
         <Link
           href="/following"
-          className="block rounded-[14px] border px-4 py-3 transition active:scale-[0.99]"
+          className="flex items-center gap-3 rounded-[14px] border px-4 py-3 transition active:scale-[0.99]"
           style={{
             background: "var(--paper)",
             borderColor: "var(--line)",
@@ -23,15 +23,29 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
           }}
           aria-label="Set up who you follow"
         >
-          <p className="text-[13px]" style={{ fontWeight: 700 }}>
-            Tell us who you follow.
-          </p>
-          <p
-            className="mt-0.5 text-[12px]"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px]" style={{ fontWeight: 700 }}>
+              Tell us who you follow.
+            </p>
+            <p
+              className="mt-0.5 text-[12px]"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              Team · Country · Series · Tournament — we&apos;ll only surface theirs.
+            </p>
+          </div>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--mute-1)"
+            strokeWidth="2.4"
+            aria-hidden
+            className="shrink-0"
           >
-            Team · Country · Series · Tournament — we&apos;ll only surface theirs.
-          </p>
+            <path d="M9 6l6 6-6 6" />
+          </svg>
         </Link>
       </section>
     );

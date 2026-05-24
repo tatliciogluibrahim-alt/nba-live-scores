@@ -18,6 +18,11 @@ export function CompanionFrame({
       style={{
         background: "var(--cream)",
         color: "var(--ink)",
+        // Reserve the iOS status-bar / Dynamic Island region so titles and
+        // CrumbBars never clip. `viewport-fit=cover` (set in layout.tsx)
+        // lets content extend behind the status bar by default — this
+        // padding pushes our content back out.
+        paddingTop: "env(safe-area-inset-top)",
         paddingBottom: hideTabBar
           ? "max(env(safe-area-inset-bottom), 16px)"
           : "calc(env(safe-area-inset-bottom) + 84px)",

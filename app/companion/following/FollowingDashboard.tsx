@@ -50,7 +50,7 @@ export function FollowingDashboard() {
       <div className="mt-5">
         <Eyebrow>Add</Eyebrow>
         <Link
-          href="/following/team"
+          href="/following/add"
           className="mt-2 flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
           style={{
             background: "transparent",

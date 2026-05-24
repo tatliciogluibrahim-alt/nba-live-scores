@@ -57,31 +57,31 @@ export function FollowChoice({
   );
 }
 
-// Canonical Following choice set. Used on the empty state AND the
-// "Follow more" sheet, so the four nouns are defined once.
+// Canonical Following choice set. Used on the empty Following state
+// AND the /following/add screen, so the four nouns are defined once.
 export const FOLLOW_CHOICES = [
   {
     eyebrow: "Team",
-    title: "A team",
+    title: "Follow a team",
     detail: "NBA · 30 teams",
     href: "/following/team",
   },
   {
     eyebrow: "Country",
-    title: "A country",
-    detail: "World Cup · 48 nations · group + path included",
+    title: "Follow a World Cup country",
+    detail: "48 nations · group + path included",
     href: "/following/country",
   },
   {
     eyebrow: "Series",
-    title: "A playoff series",
-    detail: "Get told when it's a clinch night",
+    title: "Follow a playoff series",
+    detail: "Alerts for game starts, close games, and finals",
     href: "/following/series",
   },
   {
     eyebrow: "Tournament",
-    title: "A tournament",
-    detail: "World Cup · NBA Playoffs · follow the whole bracket",
+    title: "Follow a tournament",
+    detail: "World Cup · NBA Playoffs",
     href: "/following/tournament",
   },
 ];
