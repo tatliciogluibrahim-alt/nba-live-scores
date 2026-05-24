@@ -1,6 +1,7 @@
 "use client";
 
 import { Display } from "../atoms/Display";
+import { NoSpoilersToggle } from "./NoSpoilersToggle";
 import { ReminderSelector } from "./ReminderSelector";
 import { QuietHoursSelector } from "./QuietHoursSelector";
 import { PerFollowAlerts } from "./PerFollowAlerts";
@@ -9,10 +10,10 @@ import { NotificationPreview } from "./NotificationPreview";
 
 // Watch + Alerts — single calm settings-style screen.
 //
-// Stage 14G: removed the No-Spoilers section. The inline chip on the
-// Today header is now the canonical control for that mode; duplicating
-// it here read as a setting that lived in two places. State persists
-// via useUserPrefs() either way.
+// No-Spoilers lives here now. It is a preference you set once, not a
+// decision the app should ask you to make every time Today opens.
+// The Today header shows a passive ambient dot when the mode is on —
+// it does not offer a toggle.
 
 export function SettingsClient() {
   return (
@@ -24,10 +25,11 @@ export function SettingsClient() {
         className="mb-5 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Reminders, quiet hours, and per-follow alert presets.
+        Scores, reminders, quiet hours, and per-follow alert presets.
       </p>
 
       <div className="space-y-5">
+        <NoSpoilersToggle />
         <NotificationPreview />
         <ReminderSelector />
         <QuietHoursSelector />

@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { Display } from "../atoms/Display";
-import { useFollows, useNoSpoilers, usePinned, useUserPrefs } from "../providers";
+import { useFollows, useNoSpoilers, usePinned } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveDailyBrief } from "./daily-brief";
 import { BriefCard } from "./BriefCard";
@@ -15,12 +16,12 @@ import { CalmCard } from "./sections/calm-card";
 
 // Today composition. One screen, three states layered on the same shape:
 //   1. North Star — live hero + follows + up next + finals + reminder
-//   2. No-Spoilers — same shape, score-hidden cards; inline toggle on header
+//   2. No-Spoilers — same shape, score-hidden cards; passive dot in header
 //   3. Quiet day — no live → no hero, "Calm is a feature" payoff card
 //
-// Header is condensed in Stage 14E: "Today" + time + inline No-Spoilers
-// toggle live on one row. The large banner is replaced by the inline
-// chip + Daily Brief sentence — same contract, less chrome.
+// No-Spoilers is configured once in Watch + Alerts (Settings), not toggled
+// per-visit. When active, a small muted dot in the Today header confirms
+// the mode without demanding interaction. The old inline chip is gone.
 
 export function TodayClient() {
   const { payload, hydrated, updatedAt } = useTodayData();
@@ -39,7 +40,7 @@ export function TodayClient() {
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
-      {/* ── Header: "Today" + time + inline No-Spoilers toggle ──────── */}
+      {/* ── Header: "Today" + time + passive No-Spoilers indicator ─── */}
       <header className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-baseline gap-2">
           <Display as="h1" size="md">
@@ -67,7 +68,11 @@ export function TodayClient() {
           ) : null}
         </div>
 
-        <NoSpoilersInlineToggle />
+        {/* Ambient No-Spoilers indicator — only shown when active.
+            Passive status display, not a toggle. The app shouldn't
+            ask the user to make a scores decision every time they
+            open Today. Configure it once in Watch + Alerts. */}
+        <NoSpoilersAmbientDot />
       </header>
 
       {/* Quiet Recap — end-of-night moment when the slate is fully wrapped.
@@ -103,51 +108,42 @@ export function TodayClient() {
   );
 }
 
-// ── Inline No-Spoilers toggle ──────────────────────────────────────────
-// Compact chip on the Today header. Stage 14F-4 swaps the system-flavored
-// "NO-SPOILERS · ON/OFF" copy for action-based labels — "Show scores" when
-// the mode is on (the tap reveals), "Hide scores" when it's off (the tap
-// hides). A small dot keeps state legible at a glance without shouting.
-// role="switch" + aria-checked still carries the state to screen readers.
+// ── Ambient No-Spoilers indicator ─────────────────────────────────────
+// Passive status dot. Only renders when No-Spoilers is on — its absence
+// is the signal that scores are visible, so there's nothing to show when
+// the mode is off. Tapping takes you to Watch + Alerts to change it.
+// Deliberately low visual weight: muted color, small type, no border,
+// no filled background. The app should not prompt a scores decision
+// every time Today opens.
 
-function NoSpoilersInlineToggle() {
-  const { prefs, setNoSpoilers, hydrated } = useUserPrefs();
-  const on = prefs.noSpoilers;
-
-  const label = on ? "Show scores" : "Hide scores";
-  const a11y = on
-    ? "Show scores by turning No-Spoilers off"
-    : "Hide scores by turning No-Spoilers on";
+function NoSpoilersAmbientDot() {
+  const noSpoilers = useNoSpoilers();
+  if (!noSpoilers) return null;
 
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={a11y}
-      disabled={!hydrated}
-      onClick={() => setNoSpoilers(!on)}
-      className="no-noise-reveal-focus inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 transition active:scale-[0.97]"
-      style={{
-        background: on ? "var(--ink)" : "transparent",
-        color: on ? "var(--cream)" : "var(--ink)",
-        border: `1px solid ${on ? "var(--ink)" : "var(--line)"}`,
-        fontSize: 12,
-        fontWeight: 600,
-        letterSpacing: "-0.005em",
-        minHeight: 28,
-        opacity: hydrated ? 1 : 0.5,
-      }}
+    <Link
+      href="/settings"
+      aria-label="Scores hidden — open Watch + Alerts to change"
+      className="no-noise-reveal-focus inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1"
+      style={{ color: "var(--mute-1)" }}
     >
       <span
         aria-hidden
-        className="h-1.5 w-1.5 rounded-full"
-        style={{
-          background: on ? "var(--cream)" : "var(--mute-2)",
-        }}
+        className="h-1.5 w-1.5 shrink-0 rounded-full"
+        style={{ background: "var(--mute-2)" }}
       />
-      {label}
-    </button>
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+        }}
+      >
+        Scores hidden
+      </span>
+    </Link>
   );
 }
 
