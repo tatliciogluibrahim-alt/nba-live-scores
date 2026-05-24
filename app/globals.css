@@ -29,6 +29,12 @@
   --critical:   #c9362b;
   --pos:        #1e6b3c;
 
+  /* --live: exclusive to "right now" pips on brand surfaces (logo dot,
+     Watching live-pulse, etc.). Per the Stadium Panel pack: don't use
+     this color anywhere else in the product. Sport accents (--nba, --wc)
+     stay separate so basketball / football cards retain their identity. */
+  --live:       #b85a2a;
+
   /* Fonts (set by next/font in layout.tsx — these are fallback names) */
   --font-display:  "Archivo Black", system-ui, sans-serif;
   --font-body:     "Inter", system-ui, sans-serif;

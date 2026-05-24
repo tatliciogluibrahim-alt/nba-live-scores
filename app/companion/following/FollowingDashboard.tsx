@@ -103,7 +103,7 @@ export function FollowingDashboard() {
             borderColor: "var(--mute-2)",
             color: "var(--ink)",
           }}
-          aria-label="Open Watch + Alerts — global No-Spoilers, reminders, quiet hours"
+          aria-label="Open Watch + Alerts — reminders, quiet hours, per-follow alerts"
         >
           <span className="text-[13px]" style={{ fontWeight: 600 }}>
             Watch + Alerts
@@ -112,7 +112,7 @@ export function FollowingDashboard() {
             className="text-[11px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            No-Spoilers · Reminders · Quiet hours
+            Reminders · Quiet hours · Alerts
           </span>
         </Link>
       </div>

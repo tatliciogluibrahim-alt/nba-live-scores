@@ -58,7 +58,7 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
           <span
             aria-hidden
             className="no-noise-live-fade inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{ background: "var(--nba)" }}
+            style={{ background: "var(--live)" }}
           />
         ) : null}
         <span>{buildWatchingSummary(items)}</span>

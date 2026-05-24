@@ -193,23 +193,65 @@ const ShareCardCanvas = forwardRef<HTMLDivElement, ShareCardProps>(
           fontFamily: "Inter, system-ui, sans-serif",
         }}
       >
-        {/* Header — brand mark + wordmark */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <svg width="32" height="32" viewBox="0 0 24 24">
-            <rect width="24" height="24" rx="7" fill="#1a1612" />
-            <rect x="5" y="8" width="11" height="2.5" rx="1.25" fill="#f1ead8" />
+        {/* Header — Stadium Panel mark + wordmark.
+            Uses the full broadcast-scorebug glyph (top module + three
+            hollow stat tiles) because the share card is 720×720 and has
+            room for the canonical mark. Inline SVG so html-to-image
+            captures cleanly. Hex values inline (no CSS vars) so the
+            export renders consistently. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <svg width="40" height="40" viewBox="0 0 100 100">
             <rect
-              x="5"
-              y="13.5"
-              width="8"
-              height="2.5"
-              rx="1.25"
-              fill="#f1ead8"
-              opacity="0.6"
+              x="14"
+              y="20"
+              width="72"
+              height="28"
+              rx="5.5"
+              fill="#1a1612"
             />
-            <circle cx="18.5" cy="9" r="2" fill="#e55b2a" />
+            <circle cx="78" cy="26" r="2.8" fill="#b85a2a" />
+            <rect
+              x="14"
+              y="56"
+              width="20"
+              height="22"
+              rx="4"
+              stroke="#1a1612"
+              strokeWidth="2.4"
+              fill="none"
+              opacity="0.3"
+            />
+            <rect
+              x="40"
+              y="56"
+              width="20"
+              height="22"
+              rx="4"
+              stroke="#1a1612"
+              strokeWidth="2.4"
+              fill="none"
+              opacity="0.3"
+            />
+            <rect
+              x="66"
+              y="56"
+              width="20"
+              height="22"
+              rx="4"
+              stroke="#1a1612"
+              strokeWidth="2.4"
+              fill="none"
+              opacity="0.3"
+            />
           </svg>
-          <span style={{ fontSize: 18, fontWeight: 700, color: "#1a1612" }}>
+          <span
+            style={{
+              fontSize: 22,
+              fontWeight: 900,
+              letterSpacing: "-0.028em",
+              color: "#1a1612",
+            }}
+          >
             No Noise Scores
           </span>
         </div>

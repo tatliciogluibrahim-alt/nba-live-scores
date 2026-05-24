@@ -1,9 +1,11 @@
-// Brand mark — v2 (Stage 14F).
+// Brand mark — Stadium Panel (favicon variant inside an ink chip).
 //
-// Two stacked score rows + a small NBA-accent pip. Scaled up from 22→24px
-// with thicker rows and a slightly more prominent pip so the symbol reads
-// at small sizes. Calm, sports-coded without being a lettermark or mascot.
-// Inline SVG; reversible by reverting BrandBar to a text-only chip.
+// At header sizes (24–32px), we render the simplified favicon glyph
+// (single scoreboard module + live-state pip). The full broadcast-scorebug
+// mark with three hollow stat tiles below is reserved for larger contexts
+// — app icon, splash, og-image, share card.
+//
+// Designed to scale to favicon resolution without collapsing to noise.
 
 export function BrandMark({ size = 24 }: { size?: number }) {
   return (
@@ -14,33 +16,17 @@ export function BrandMark({ size = 24 }: { size?: number }) {
       aria-hidden
       role="img"
     >
-      {/* Ink chip background */}
-      <rect width="24" height="24" rx="7" fill="var(--ink)" />
+      {/* Ink rounded square — matches the app icon container so the
+          mark reads consistently across the header chip and the
+          home-screen icon. */}
+      <rect width="24" height="24" rx="5.5" fill="var(--ink)" />
 
-      {/* Two horizontal score rows — abstracted scoreboard lines.
-          Row 1 is longer + brighter; row 2 is shorter + dimmer so they
-          read like two team-scores stacked, not just lines. */}
-      <rect
-        x="5"
-        y="8"
-        width="11"
-        height="2.5"
-        rx="1.25"
-        fill="var(--cream)"
-      />
-      <rect
-        x="5"
-        y="13.5"
-        width="8"
-        height="2.5"
-        rx="1.25"
-        fill="var(--cream)"
-        opacity="0.6"
-      />
+      {/* Scoreboard module — wider, cream-on-ink horizontal pill */}
+      <rect x="3.5" y="8" width="17" height="8" rx="1.8" fill="var(--cream)" />
 
-      {/* Status pip — NBA accent dot in the upper-right. Bumped to r=2
-          for legibility at favicon scale. */}
-      <circle cx="18.5" cy="9" r="2" fill="var(--nba)" />
+      {/* Live-state pip — upper-right of the module, --live token
+          (rust orange, exclusive to "right now" signals). */}
+      <circle cx="18.5" cy="10" r="1.2" fill="var(--live)" />
     </svg>
   );
 }
