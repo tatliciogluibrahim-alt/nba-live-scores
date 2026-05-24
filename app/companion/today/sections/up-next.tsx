@@ -16,7 +16,12 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
     <section>
       <SectionHeader label="Up next" />
       <ul className="space-y-2">
-        {items.map((item) => (
+        {items.map((item) => {
+          // Subtle 2px sport-accent left rail signals which league each
+          // row belongs to without competing with the hero's 3px accent.
+          const accent =
+            item.source === "nba" ? "var(--nba)" : "var(--wc)";
+          return (
           <li key={item.id}>
             <Link
               href={item.href}
@@ -29,6 +34,7 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
               style={{
                 background: "var(--paper)",
                 borderColor: "var(--line)",
+                borderLeft: `2px solid ${accent}`,
               }}
             >
               <div className="flex items-baseline gap-2">
@@ -64,7 +70,8 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
               ) : null}
             </Link>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </section>
   );

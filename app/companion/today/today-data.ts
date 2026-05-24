@@ -472,15 +472,31 @@ function buildQuietWrap(
     follows.filter((f) => f.kind === "team").map((f) => f.id)
   );
 
-  // Followed-first, then a couple of others, but cap at 3 rows.
+  // Followed-first ordering.
   const personal = finals.filter((g) =>
     [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr))
   );
   const everyone = finals.filter((g) => !personal.includes(g));
 
-  return [...personal, ...everyone].slice(0, 3).map<QuietWrapItem>((g) => {
+  // When the user has no follows, cap at 1 "discovery" row so Quiet Wrap
+  // doesn't ESPN-dump three random finals on a fresh user.
+  const cap = followedTeams.size === 0 ? 1 : 3;
+
+  return [...personal, ...everyone].slice(0, cap).map<QuietWrapItem>((g) => {
     const matchup = `${g.away.abbreviation} · ${g.home.abbreviation}`;
     const scoreLine = `${g.away.score} – ${g.home.score}`;
+
+    // Pull "Game N" out of the API gameContext when present. Lets two
+    // finals of the same series (e.g. NY · CLE Game 3 and NY · CLE Game 4)
+    // visually disambiguate in the wrap list.
+    const gameNumberMatch = g.gameContext?.match(/Game\s+(\d)/i);
+    const gameNumberLabel = gameNumberMatch ? `Game ${gameNumberMatch[1]}` : null;
+
+    const dayLabel =
+      formatGameDay(g.date) === "Tonight" ? "Earlier" : "Yesterday";
+    const eyebrow = gameNumberLabel
+      ? `${dayLabel} · ${gameNumberLabel}`
+      : dayLabel;
 
     // Calm prose only — the score already carries the result. Avoid
     // winner-revealing verbs ("took it", "beat", "won", "advanced",
@@ -493,7 +509,7 @@ function buildQuietWrap(
     return {
       source: "nba",
       id: g.id,
-      eyebrow: formatGameDay(g.date) === "Tonight" ? "Earlier" : "Yesterday",
+      eyebrow,
       matchup,
       scoreLine,
       context,

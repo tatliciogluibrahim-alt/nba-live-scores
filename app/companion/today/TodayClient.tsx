@@ -157,16 +157,24 @@ function LoadingShell() {
   return (
     <div className="space-y-3" aria-live="polite" aria-busy>
       <div
-        className="h-[120px] rounded-[14px]"
+        className="no-noise-pulse h-[120px] rounded-[14px]"
         style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
       />
       <div
-        className="h-[48px] rounded-[14px]"
-        style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
+        className="no-noise-pulse h-[48px] rounded-[14px]"
+        style={{
+          background: "var(--paper)",
+          border: "1px solid var(--line)",
+          animationDelay: "0.15s",
+        }}
       />
       <div
-        className="h-[68px] rounded-[14px]"
-        style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
+        className="no-noise-pulse h-[68px] rounded-[14px]"
+        style={{
+          background: "var(--paper)",
+          border: "1px solid var(--line)",
+          animationDelay: "0.3s",
+        }}
       />
       <span className="sr-only">Loading Today</span>
     </div>

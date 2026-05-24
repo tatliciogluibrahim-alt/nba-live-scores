@@ -85,12 +85,14 @@ export function deriveDailyBrief({
   const wcDays = daysUntilKickoff(now);
 
   // 5 ─ No follows yet. If WC is close, pitch the country pick; otherwise
-  //     onboard to Following.
+  //     onboard to Following. Empty-state copy sells the *benefit*
+  //     ("unlock alerts and the path to the final") rather than just
+  //     asking for input.
   if (follows.length === 0) {
     if (wcDays !== null && wcDays <= 60) {
-      return `World Cup starts in ${wcDays} day${wcDays === 1 ? "" : "s"}. Pick a country to make it personal.`;
+      return `World Cup starts in ${wcDays} day${wcDays === 1 ? "" : "s"}. Pick a country to unlock kickoff alerts and the path to the final.`;
     }
-    return "Tell us who you follow. We'll keep the rest quiet.";
+    return "Pick a team or country to unlock kickoff alerts and the moments that matter.";
   }
 
   // 6 ─ Has follows, nothing live/today, day is quiet.

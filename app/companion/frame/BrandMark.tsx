@@ -1,37 +1,46 @@
-// Experimental brand mark (Stage 14E).
+// Brand mark — v2 (Stage 14F).
 //
-// Two stacked score rows + a small live pip — abstract scoreboard motif.
-// Calm, sports-coded without being a lettermark, mascot, ball, or flame.
-// Inline SVG; easy to revert by re-rendering the old "nn" text in BrandBar.
-//
-// Sized to fit the existing 22–24px brand chip slot.
+// Two stacked score rows + a small NBA-accent pip. Scaled up from 22→24px
+// with thicker rows and a slightly more prominent pip so the symbol reads
+// at small sizes. Calm, sports-coded without being a lettermark or mascot.
+// Inline SVG; reversible by reverting BrandBar to a text-only chip.
 
-export function BrandMark({ size = 22 }: { size?: number }) {
+export function BrandMark({ size = 24 }: { size?: number }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 22 22"
+      viewBox="0 0 24 24"
       aria-hidden
       role="img"
     >
       {/* Ink chip background */}
-      <rect width="22" height="22" rx="6" fill="var(--ink)" />
+      <rect width="24" height="24" rx="7" fill="var(--ink)" />
 
-      {/* Two horizontal score rows — abstracted scoreboard lines */}
-      <rect x="4" y="7" width="11" height="2" rx="1" fill="var(--cream)" />
+      {/* Two horizontal score rows — abstracted scoreboard lines.
+          Row 1 is longer + brighter; row 2 is shorter + dimmer so they
+          read like two team-scores stacked, not just lines. */}
       <rect
-        x="4"
-        y="12"
-        width="8"
-        height="2"
-        rx="1"
+        x="5"
+        y="8"
+        width="11"
+        height="2.5"
+        rx="1.25"
         fill="var(--cream)"
-        opacity="0.7"
+      />
+      <rect
+        x="5"
+        y="13.5"
+        width="8"
+        height="2.5"
+        rx="1.25"
+        fill="var(--cream)"
+        opacity="0.6"
       />
 
-      {/* Status pip — NBA accent dot in the upper-right */}
-      <circle cx="17" cy="8" r="1.5" fill="var(--nba)" />
+      {/* Status pip — NBA accent dot in the upper-right. Bumped to r=2
+          for legibility at favicon scale. */}
+      <circle cx="18.5" cy="9" r="2" fill="var(--nba)" />
     </svg>
   );
 }

@@ -40,6 +40,7 @@ function buildWatchingSummary(items: PinnedItem[]): string {
 
 export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
   const { items, stalePins } = payload;
+  const hasLivePin = items.some((i) => i.status === "live");
 
   return (
     <section>
@@ -47,10 +48,20 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
         Watching.
       </Display>
       <p
-        className="mb-4 text-[14px] leading-snug"
+        className="mb-4 flex items-center gap-2 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        {buildWatchingSummary(items)}
+        {/* Live pulse — pulsing accent dot when at least one pin is live.
+            Sits inline with the summary line so the screen visibly
+            "breathes" during a live game without adding new chrome. */}
+        {hasLivePin ? (
+          <span
+            aria-hidden
+            className="no-noise-live-fade inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+            style={{ background: "var(--nba)" }}
+          />
+        ) : null}
+        <span>{buildWatchingSummary(items)}</span>
       </p>
 
       <ul className="space-y-2">

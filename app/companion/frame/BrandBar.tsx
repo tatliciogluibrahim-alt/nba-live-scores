@@ -12,11 +12,20 @@ import { BrandMark } from "./BrandMark";
 export function BrandBar({ trailing }: { trailing?: ReactNode }) {
   return (
     <header
-      className="flex items-center justify-between px-4 pb-2 pt-4"
-      style={{ background: "var(--cream)" }}
+      className="sticky top-0 z-30 flex items-center justify-between px-4 pb-2"
+      style={{
+        // Safe-area-top moved from CompanionFrame to here so the sticky
+        // header pins below the iOS status bar / Dynamic Island. Backdrop
+        // blur masks content that scrolls underneath — the standard
+        // iOS pattern for translucent headers.
+        paddingTop: "max(env(safe-area-inset-top), 12px)",
+        background: "rgba(241, 234, 216, 0.85)",
+        backdropFilter: "blur(14px) saturate(140%)",
+        WebkitBackdropFilter: "blur(14px) saturate(140%)",
+      }}
     >
       <div className="flex items-center gap-2">
-        <BrandMark size={22} />
+        <BrandMark size={24} />
         <span
           className="text-[13px]"
           style={{ color: "var(--ink)", fontWeight: 700 }}

@@ -20,8 +20,16 @@ export function CrumbBar({
 }) {
   return (
     <div
-      className="flex items-center justify-between gap-3 px-4 pb-2 pt-4"
-      style={{ background: "var(--cream)" }}
+      className="sticky top-0 z-30 flex items-center justify-between gap-3 px-4 pb-2"
+      style={{
+        // Safe-area-top moved from CompanionFrame to here so the sticky
+        // header pins below the iOS status bar / Dynamic Island. Backdrop
+        // blur masks content that scrolls underneath.
+        paddingTop: "max(env(safe-area-inset-top), 12px)",
+        background: "rgba(241, 234, 216, 0.85)",
+        backdropFilter: "blur(14px) saturate(140%)",
+        WebkitBackdropFilter: "blur(14px) saturate(140%)",
+      }}
     >
       <Link
         href={backHref}

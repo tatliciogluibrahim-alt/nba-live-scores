@@ -127,3 +127,26 @@ a {
   outline-offset: 2px;
   border-radius: 6px;
 }
+
+/* Loading-shell pulse — subtle opacity breath on skeleton rectangles so
+   slow-network states feel alive rather than broken. Respects
+   prefers-reduced-motion. */
+@keyframes no-noise-pulse {
+  0%, 100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.no-noise-pulse {
+  animation: no-noise-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .no-noise-pulse {
+    animation: none !important;
+    opacity: 0.8;
+  }
+}

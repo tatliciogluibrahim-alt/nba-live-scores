@@ -46,7 +46,9 @@ export function NoSpoilersToggle() {
                 fontWeight: 500,
               }}
             >
-              Scores hidden · push previews redacted · schedule and watch info stay visible.
+              {on
+                ? "Scores hidden. Schedules and watch info stay visible."
+                : "Turn on to hide scores. Schedules and watch info stay visible."}
             </p>
           </div>
 
