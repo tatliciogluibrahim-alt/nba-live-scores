@@ -56,18 +56,28 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
           </div>
         ) : null}
 
-        <ScoreModule
-          eyebrow={item.contextEyebrow}
-          away={{ code: item.awayCode, name: item.awayName }}
-          home={{ code: item.homeCode, name: item.homeName }}
-          awayScore={awayScore}
-          homeScore={homeScore}
-          status={item.status}
-          statusLabel={item.statusLabel}
-          contextLine={detailToShow || undefined}
-          spoilerSubject={item.spoilerSubject}
-          size="md"
-        />
+        {/* Named view transition — when you tap this card and navigate to
+            /game/[id], the scoreboard block morphs to the detail page's
+            scoreboard rather than cross-fading. Game ID in the name keeps
+            multiple pinned cards on the same screen from conflicting. */}
+        <div
+          style={
+            { viewTransitionName: `score-${item.id}` } as React.CSSProperties
+          }
+        >
+          <ScoreModule
+            eyebrow={item.contextEyebrow}
+            away={{ code: item.awayCode, name: item.awayName }}
+            home={{ code: item.homeCode, name: item.homeName }}
+            awayScore={awayScore}
+            homeScore={homeScore}
+            status={item.status}
+            statusLabel={item.statusLabel}
+            contextLine={detailToShow || undefined}
+            spoilerSubject={item.spoilerSubject}
+            size="md"
+          />
+        </div>
 
         {item.watch ? (
           <div className="mt-3">

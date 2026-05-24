@@ -1,4 +1,6 @@
-import type { CSSProperties, ReactNode } from "react";
+"use client";
+
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { StatusPill, type StatusTone } from "./StatusPill";
 import { Spoiler } from "../spoiler/Spoiler";
 
@@ -116,6 +118,24 @@ export function ScoreModule({
     typeof awayScore === "number" &&
     typeof homeScore === "number";
 
+  // Flash the score line when a live score changes. Track the combined
+  // score key; fire on change, not on mount, and not when scores are
+  // absent or the game isn't live.
+  const scoreKey = hasScores ? `${awayScore}-${homeScore}` : null;
+  const prevScoreKeyRef = useRef<string | null>(null);
+  const [flashing, setFlashing] = useState(false);
+  useEffect(() => {
+    if (
+      status === "live" &&
+      scoreKey !== null &&
+      prevScoreKeyRef.current !== null &&
+      prevScoreKeyRef.current !== scoreKey
+    ) {
+      setFlashing(true);
+    }
+    prevScoreKeyRef.current = scoreKey;
+  }, [scoreKey, status]);
+
   return (
     <div
       className={className}
@@ -156,10 +176,12 @@ export function ScoreModule({
         </StatusPill>
       </div>
 
-      {/* Score row — mono, tabular, Spoiler-wrapped. */}
+      {/* Score row — mono, tabular, Spoiler-wrapped. Flashes briefly when
+          a live score update arrives so the change is never silent. */}
       {hasScores ? (
         <p
-          className={`${spec.rowGapClass} leading-none`}
+          className={`${spec.rowGapClass} leading-none${flashing ? " no-noise-score-flash" : ""}`}
+          onAnimationEnd={() => setFlashing(false)}
           style={{
             color: "var(--ink)",
             fontFamily: "var(--font-mono)",

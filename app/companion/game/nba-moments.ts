@@ -10,6 +10,7 @@
 
 import type { Game } from "../../nba/types";
 import { getGameNumberFromText } from "../../nba/lib/moment-intelligence";
+import type { SeriesDot, SeriesDotState } from "../series/series-data";
 
 // ── Play label humanizer ──────────────────────────────────────────────
 // The legacy `humanizePlayKind` (in nba/lib/moment-intelligence.ts) returns
@@ -149,6 +150,67 @@ export function deriveSeriesContext(game: Game): SeriesContext {
   const spoileryLine = game.seriesSummary || "";
 
   return { safeLine, spoileryLine };
+}
+
+// ── Series dots ───────────────────────────────────────────────────────
+// Derive a 7-dot series strip from the current game's API fields alone.
+// No historical feed needed — we infer from seriesSummary + gameContext.
+//
+// Rules:
+//   • Games before the current game number → "played"
+//   • Current game → "live" | "next" | "played" based on game.status
+//   • Games after current: (4 - maxWins - 1) guaranteed → "scheduled";
+//     the remainder → "if-necessary"
+//   • If the series is over (maxWins ≥ 4) remaining slots → "tbd"
+//
+// Returns [] when we can't determine the game number (non-series games).
+
+export function deriveSeriesDots(game: Game): SeriesDot[] {
+  const gameNumber = getGameNumberFromText(
+    [game.gameContext, game.seriesSummary, game.seriesRound]
+      .filter(Boolean)
+      .join(" ")
+  );
+  if (!gameNumber) return [];
+
+  // Parse "2-1" from e.g. "OKC LEADS SERIES 2-1" or "SERIES TIED 2-2".
+  const scoreMatch = game.seriesSummary?.match(/(\d+)-(\d+)/);
+  const winsA = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+  const winsB = scoreMatch ? parseInt(scoreMatch[2], 10) : 0;
+  const maxWins = Math.max(winsA, winsB);
+  const seriesOver = maxWins >= 4;
+
+  // Minimum games still guaranteed after the current one.
+  const guaranteedAfterCurrent = seriesOver
+    ? 0
+    : Math.max(0, 4 - maxWins - 1);
+
+  return Array.from({ length: 7 }, (_, i): SeriesDot => {
+    const n = i + 1;
+
+    let state: SeriesDotState;
+    if (seriesOver) {
+      state = n <= winsA + winsB ? "played" : "tbd";
+    } else if (n < gameNumber) {
+      state = "played";
+    } else if (n === gameNumber) {
+      state =
+        game.status === "live"
+          ? "live"
+          : game.status === "upcoming"
+            ? "next"
+            : "played";
+    } else {
+      const offset = n - gameNumber;
+      state = offset <= guaranteedAfterCurrent ? "scheduled" : "if-necessary";
+    }
+
+    return {
+      number: n,
+      state,
+      gameId: n === gameNumber ? game.id : undefined,
+    };
+  });
 }
 
 function normalizeRoundName(round: string): string {

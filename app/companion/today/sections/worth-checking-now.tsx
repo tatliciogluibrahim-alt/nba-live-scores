@@ -60,6 +60,15 @@ export function WorthCheckingNow({ hero }: { hero: TodayHero }) {
     );
   }
 
+  // Live games earn a warm card surface — makes the live state visually
+  // distinct from upcoming or final. Upcoming/final stay var(--paper).
+  const liveSurface =
+    hero.live
+      ? hero.accent === "var(--wc)"
+        ? "var(--wc-soft)"
+        : "var(--nba-soft)"
+      : undefined;
+
   return (
     <section>
       <SectionHeader label="Worth checking now" />
@@ -74,6 +83,7 @@ export function WorthCheckingNow({ hero }: { hero: TodayHero }) {
           context={hero.context}
           accent={hero.accent}
           live={hero.live}
+          surface={liveSurface}
           footer={
             hero.watch ? (
               <WatchLine

@@ -43,6 +43,9 @@ async function fetchDetail(eventId: string): Promise<NBADetail | null> {
 export function useNBADetail(eventId: string | null, isLive: boolean) {
   const [detail, setDetail] = useState<NBADetail | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  // Unix ms timestamp of the last successful fetch — drives the freshness
+  // indicator on the live game detail. null until the first fetch lands.
+  const [lastFetched, setLastFetched] = useState<number | null>(null);
 
   useEffect(() => {
     if (!eventId) {
@@ -60,6 +63,7 @@ export function useNBADetail(eventId: string | null, isLive: boolean) {
       if (!mounted.current) return;
       setDetail(next);
       setHydrated(true);
+      if (next !== null) setLastFetched(Date.now());
     }
 
     load();
@@ -79,5 +83,5 @@ export function useNBADetail(eventId: string | null, isLive: boolean) {
     };
   }, [eventId, isLive]);
 
-  return { detail, hydrated };
+  return { detail, hydrated, lastFetched };
 }

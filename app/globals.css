@@ -134,6 +134,25 @@ a {
   border-radius: 6px;
 }
 
+/* Score flash — single-cycle highlight fired on the score line when a
+   live score updates. Brief opacity dip into the sport accent then back.
+   Draws the eye to the change without screaming. One iteration only. */
+@keyframes no-noise-score-flash {
+  0%   { opacity: 1; }
+  25%  { opacity: 0.25; color: var(--nba); }
+  100% { opacity: 1; }
+}
+
+.no-noise-score-flash {
+  animation: no-noise-score-flash 0.45s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .no-noise-score-flash {
+    animation: none !important;
+  }
+}
+
 /* Loading-shell pulse — subtle opacity breath on skeleton rectangles so
    slow-network states feel alive rather than broken. Respects
    prefers-reduced-motion. */

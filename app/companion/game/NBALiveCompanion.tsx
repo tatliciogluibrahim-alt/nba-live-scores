@@ -1,15 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { ScoreModule } from "../atoms/ScoreModule";
 import { HeroMoment } from "../moments/HeroMoment";
+import { SevenDotStrip } from "../series/SevenDotStrip";
 import { HIDDEN_CAPTIONS, isSpoilery } from "../spoiler/safe-text";
 import { WatchLine } from "../watch/WatchLine";
 import { useNoSpoilers } from "../providers";
 import type { Game } from "../../nba/types";
 import { PinControls } from "./PinControls";
-import { deriveHero, deriveSeriesContext } from "./nba-moments";
+import { deriveHero, deriveSeriesContext, deriveSeriesDots } from "./nba-moments";
 import { MomentsStack } from "./MomentsStack";
 import { useNBADetail } from "./use-nba-detail";
 
@@ -33,7 +35,7 @@ export function NBALiveCompanion({
   const isUpcoming = game.status === "upcoming";
   const subject = game.matchup || `${game.away.abbreviation} vs ${game.home.abbreviation}`;
 
-  const { detail, hydrated } = useNBADetail(game.id, isLive);
+  const { detail, hydrated, lastFetched } = useNBADetail(game.id, isLive);
 
   const status = isLive ? "live" : isUpcoming ? "upcoming" : "final";
   const statusLabel = isLive && game.statusText
@@ -54,6 +56,7 @@ export function NBALiveCompanion({
 
   const hero = deriveHero(game, noSpoilers);
   const series = deriveSeriesContext(game);
+  const seriesDots = deriveSeriesDots(game);
 
   // Pull broadcasts from the detail endpoint when present; fall back to
   // whatever the scoreboard list already gave us. One WatchLine per screen.
@@ -83,9 +86,16 @@ export function NBALiveCompanion({
       </p>
 
       {/* ── Scoreboard module — Stadium Panel primitive ─────────────────── */}
+      {/* Named view transition: when navigating from a pinned card in
+          Watching, this block morphs from the card rather than cross-fading.
+          iOS 18 / Chrome 111+ only — older browsers get a normal cut. */}
       <div
         className="mt-4 rounded-[14px] border px-4 py-4"
-        style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+        style={{
+          background: "var(--paper)",
+          borderColor: "var(--line)",
+          ...({ viewTransitionName: `score-${game.id}` } as React.CSSProperties),
+        }}
       >
         <ScoreModule
           eyebrow={series.safeLine ? `NBA · ${series.safeLine}` : "NBA"}
@@ -102,13 +112,36 @@ export function NBALiveCompanion({
         />
       </div>
 
+      {/* ── Series dots + freshness — fill the dead zone below scoreboard ─ */}
+      {seriesDots.length > 0 ? (
+        <div
+          className="mt-3 flex items-center justify-between gap-4 px-1"
+        >
+          <SevenDotStrip dots={seriesDots} />
+          {/* Freshness indicator — only when live and data has loaded. */}
+          {isLive && lastFetched ? (
+            <FreshnessIndicator lastFetched={lastFetched} />
+          ) : null}
+        </div>
+      ) : (
+        // No series context (regular-season game) — still show freshness
+        isLive && lastFetched ? (
+          <div className="mt-2 px-1">
+            <FreshnessIndicator lastFetched={lastFetched} />
+          </div>
+        ) : null
+      )}
+
       {/* ── Hero moment band (one earned moment) ────────────────────────── */}
+      {/* Live games get a warm card surface — physically warmer than
+          upcoming/final so the live state has a distinct visual feel. */}
       <div className="mt-4">
         <HeroMoment
           eyebrow={hero.eyebrow}
           headline={hero.headline}
           accent="var(--nba)"
           live={hero.live}
+          surface={isLive ? "var(--nba-soft)" : undefined}
         />
       </div>
 
@@ -169,6 +202,43 @@ export function NBALiveCompanion({
         className="mt-5"
       />
     </main>
+  );
+}
+
+// ── Freshness indicator ─────────────────────────────────────────────────
+// Tiny mono readout confirming the live feed is alive. Ticks every second.
+// Appears only when the game is live and at least one fetch has landed.
+// Sits inline with the series dots so it fills the scoreboard dead-zone
+// without adding a new visual tier.
+
+function FreshnessIndicator({ lastFetched }: { lastFetched: number }) {
+  const [secondsAgo, setSecondsAgo] = useState(() =>
+    Math.round((Date.now() - lastFetched) / 1000)
+  );
+
+  useEffect(() => {
+    const tick = () =>
+      setSecondsAgo(Math.round((Date.now() - lastFetched) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lastFetched]);
+
+  return (
+    <span
+      aria-label={`Feed checked ${secondsAgo} seconds ago`}
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: "0.1em",
+        color: "var(--mute-2)",
+        textTransform: "uppercase" as const,
+        whiteSpace: "nowrap" as const,
+      }}
+    >
+      {secondsAgo}s ago
+    </span>
   );
 }
 

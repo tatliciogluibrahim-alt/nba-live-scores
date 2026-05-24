@@ -12,6 +12,7 @@ export function HeroMoment({
   context,
   accent = "var(--nba)",
   live = false,
+  surface,
   footer,
 }: {
   eyebrow: string;
@@ -21,6 +22,9 @@ export function HeroMoment({
   accent?: string;
   /** Adds a pulsing dot to the eyebrow row. */
   live?: boolean;
+  /** Optional card surface override. Pass var(--nba-soft) when the game
+   *  is live so the card feels warmer than an upcoming/final card. */
+  surface?: string;
   /** Optional slot below context (e.g. WatchLine). */
   footer?: ReactNode;
 }) {
@@ -28,7 +32,7 @@ export function HeroMoment({
     <article
       className="rounded-[14px] border px-4 py-4 sm:px-5 sm:py-5"
       style={{
-        background: "var(--paper)",
+        background: surface ?? "var(--paper)",
         borderColor: "var(--line)",
         borderLeft: `3px solid ${accent}`,
       }}
