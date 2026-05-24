@@ -6,6 +6,7 @@ import { useFollows, useNoSpoilers, usePinned } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveDailyBrief } from "./daily-brief";
 import { BriefCard } from "./BriefCard";
+import { EnableNotificationsCard } from "./EnableNotificationsCard";
 import { QuietRecap } from "./QuietRecap";
 import { WorthCheckingNow } from "./sections/worth-checking-now";
 import { YouFollow } from "./sections/you-follow";
@@ -82,6 +83,12 @@ export function TodayClient() {
 
       {/* Daily Brief — calm sentence + optional routing CTA */}
       {brief ? <BriefCard brief={brief} /> : null}
+
+      {/* Enable Notifications — Stage A push pass. Renders below the
+          Brief so a fresh-install user sees it without it competing
+          with the Brief itself. Internally bails if permission is
+          already decided or the user dismissed. */}
+      <EnableNotificationsCard />
 
       {/* Loading shell — keep the page shape, fill with calm placeholder */}
       {!hydrated ? <LoadingShell /> : null}

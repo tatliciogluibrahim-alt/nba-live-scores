@@ -30,6 +30,11 @@ export type UserPrefs = {
    *  repeat opens. Stored as a date string (not timestamp) to keep the
    *  comparison day-local without timezone math at read time. */
   quietRecapSeenDate?: string;
+  /** True once the user has either enabled notifications or dismissed
+   *  the Today card asking them to. Persisting this is what prevents
+   *  the card from re-rendering every session for users who have
+   *  decided "not now" — we never re-prompt automatically. */
+  notifPromptDismissed?: boolean;
 };
 
 // ── Defaults ──────────────────────────────────────────────────────────

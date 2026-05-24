@@ -64,6 +64,10 @@ type PrefsCtx = {
   /** Records the YYYY-MM-DD the user dismissed the Quiet Recap card, so
    *  the recap won't re-render on subsequent opens that day. */
   markQuietRecapSeen: (yyyymmdd: string) => void;
+  /** One-way flag. Set when the user either enables notifications or
+   *  taps "Not now" on the Today prompt card. Once set, the prompt card
+   *  never re-appears for that browser/install. */
+  dismissNotifPrompt: () => void;
   hydrated: boolean;
 };
 
@@ -103,6 +107,18 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     setPinned(readJSON<PinnedGame[]>(STORAGE_KEYS.pinned, []));
     setPrefs(readJSON<UserPrefs>(STORAGE_KEYS.prefs, DEFAULT_PREFS));
     setHydrated(true);
+
+    // Register the service worker. iOS PWAs require this for
+    // `registration.showNotification()` to work; without it, even granted
+    // permission produces zero visible notifications on iPhone. Registration
+    // is idempotent — calling it on every session is a no-op after the
+    // first install. Failures are silently swallowed because there's
+    // nothing the user can do about them.
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        /* SW registration failed — degrade silently. */
+      });
+    }
   }, []);
 
   // ── Follows actions ────────────────────────────────────────────────
@@ -206,6 +222,15 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const dismissNotifPrompt = useCallback(() => {
+    setPrefs((prev) => {
+      if (prev.notifPromptDismissed) return prev;
+      const next: UserPrefs = { ...prev, notifPromptDismissed: true };
+      writeJSON(STORAGE_KEYS.prefs, next);
+      return next;
+    });
+  }, []);
+
   // ── Memoize context values to avoid downstream re-renders ──────────
   const followsValue = useMemo<FollowsCtx>(
     () => ({
@@ -237,6 +262,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       setRemindBeforeMinutes,
       setQuietHours,
       markQuietRecapSeen,
+      dismissNotifPrompt,
       hydrated,
     }),
     [
@@ -245,6 +271,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       setRemindBeforeMinutes,
       setQuietHours,
       markQuietRecapSeen,
+      dismissNotifPrompt,
       hydrated,
     ]
   );

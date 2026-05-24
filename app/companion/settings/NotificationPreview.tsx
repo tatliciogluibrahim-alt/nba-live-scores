@@ -217,7 +217,30 @@ function TestPushButton({ preview }: { preview: PreviewExample }) {
         setStatus("asked");
       }
       if (window.Notification.permission === "granted") {
-        new window.Notification(preview.title, { body: preview.body });
+        // Route through the service worker. `new Notification(...)` from
+        // a page silently fails on iOS PWAs — only `registration.show
+        // Notification()` actually surfaces a notification on iPhone. We
+        // fall back to the page-level constructor on environments where
+        // the SW isn't available (older Android Chrome, dev with SW off).
+        let delivered = false;
+        if ("serviceWorker" in navigator) {
+          try {
+            const reg = await navigator.serviceWorker.ready;
+            await reg.showNotification(preview.title, {
+              body: preview.body,
+              icon: "/app-icon-192.png",
+              badge: "/app-icon-192.png",
+              tag: "test-push",
+              data: { url: "/" },
+            });
+            delivered = true;
+          } catch {
+            // fall through to fallback
+          }
+        }
+        if (!delivered) {
+          new window.Notification(preview.title, { body: preview.body });
+        }
         setStatus("sent");
         // Reset back to idle after a moment so users can re-test.
         window.setTimeout(() => setStatus("idle"), 1800);
