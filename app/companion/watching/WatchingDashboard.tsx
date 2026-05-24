@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PinnedCard, StalePinCard } from "./PinnedCard";
@@ -91,6 +92,32 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
             ))}
           </ul>
         </>
+      ) : null}
+
+      {/* Dashed prompt — nudges the user toward pinning more games when the
+          list is thin (1–2 pins). At 3+ pins the user clearly knows what
+          they're doing; the prompt would just add visual weight. */}
+      {items.length > 0 && items.length < 3 ? (
+        <Link
+          href="/following"
+          className="mt-3 flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
+          style={{
+            background: "transparent",
+            borderColor: "var(--mute-2)",
+            color: "var(--ink)",
+          }}
+          aria-label="Pin more games — go to Following"
+        >
+          <span className="text-[13px]" style={{ fontWeight: 600 }}>
+            Pin more games
+          </span>
+          <span
+            className="text-[11px]"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            From Following
+          </span>
+        </Link>
       ) : null}
 
       {stalePins.length > 0 ? (

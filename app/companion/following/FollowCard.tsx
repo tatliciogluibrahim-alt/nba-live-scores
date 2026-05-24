@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
-import { PRESETS, type AlertPreset, type Follow } from "../state/types";
+import { DEFAULT_ALERT_PRESET, PRESETS, type AlertPreset, type Follow } from "../state/types";
 import { useFollows } from "../providers";
 import { PresetRow } from "./PresetRow";
 
@@ -93,17 +93,22 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           ) : null}
         </div>
 
-        <span
-          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase"
-          style={{
-            background: "var(--cream-2)",
-            color: "var(--ink)",
-            fontWeight: 700,
-            letterSpacing: "0.06em",
-          }}
-        >
-          {presetMeta.label}
-        </span>
+        {/* Only surface the preset tag when the user has intentionally
+            changed away from the default — "Companion" on every card
+            communicates nothing since it's the out-of-box state. */}
+        {follow.alertPreset !== DEFAULT_ALERT_PRESET ? (
+          <span
+            className="shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase"
+            style={{
+              background: "var(--cream-2)",
+              color: "var(--ink)",
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+            }}
+          >
+            {presetMeta.label}
+          </span>
+        ) : null}
       </button>
 
       {expanded ? (

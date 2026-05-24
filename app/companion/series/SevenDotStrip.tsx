@@ -158,6 +158,10 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
               }`}
               style={dotStyle(display, isSelected)}
             >
+              {/* Played dots show the winning team's first initial so the
+                  reader knows who took each game without needing a score.
+                  Suppressed under No-Spoilers (same gate as scoreLine).
+                  Falls back to the game number when winnerCode is absent. */}
               <span
                 className="text-[9px]"
                 style={{
@@ -170,7 +174,9 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
                       : "var(--mute-1)",
                 }}
               >
-                {dot.number}
+                {display === "played" && !noSpoilers && dot.winnerCode
+                  ? dot.winnerCode[0].toUpperCase()
+                  : dot.number}
               </span>
             </span>
           );

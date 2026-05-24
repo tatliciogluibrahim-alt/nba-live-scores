@@ -251,10 +251,22 @@ export function deriveSeriesDots(game: Game): SeriesDot[] {
       state = offset <= guaranteedAfterCurrent ? "scheduled" : "if-necessary";
     }
 
+    // Populate winnerCode only for the current game when it's final and
+    // scores are unambiguous. Past games in this path have no score data.
+    const winnerCode =
+      n === gameNumber &&
+      game.status === "final" &&
+      game.away.score !== game.home.score
+        ? game.away.score > game.home.score
+          ? game.away.abbreviation
+          : game.home.abbreviation
+        : undefined;
+
     return {
       number: n,
       state,
       gameId: n === gameNumber ? game.id : undefined,
+      winnerCode,
     };
   });
 }

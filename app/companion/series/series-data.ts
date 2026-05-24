@@ -28,6 +28,9 @@ export type SeriesDot = {
   awayCode?: string;
   homeCode?: string;
   scoreLine?: string;       // "112 – 108" — spoilery, view layer gates
+  /** Abbreviation of the team that won this game. Populated only for final
+   *  games where away/home scores are known. Spoilery — view layer gates. */
+  winnerCode?: string;
   /** When true, this game settled the series. View layer redacts under NS. */
   isClincher?: boolean;
 };
@@ -124,6 +127,15 @@ function buildDots(series: SeriesInfo): SeriesDot[] {
     const clinchMatch = g.seriesSummary?.match(/(\w+)\s+WINS?\s+SERIES\s+(\d+)-(\d+)/i);
     const isClincher = Boolean(clinchMatch);
 
+    // Winner is derivable for final games: whichever team scored more.
+    // Spoilery — treated the same as scoreLine in the view layer.
+    const winnerCode =
+      isFinal && g.away.score !== g.home.score
+        ? g.away.score > g.home.score
+          ? g.away.abbreviation
+          : g.home.abbreviation
+        : undefined;
+
     dots.set(n, {
       number: n,
       state: isLive ? "live" : isFinal ? "played" : "scheduled",
@@ -132,6 +144,7 @@ function buildDots(series: SeriesInfo): SeriesDot[] {
       awayCode: g.away.abbreviation,
       homeCode: g.home.abbreviation,
       scoreLine: isFinal || isLive ? `${g.away.score} – ${g.home.score}` : undefined,
+      winnerCode,
       isClincher: isFinal ? isClincher : false,
     });
   });
