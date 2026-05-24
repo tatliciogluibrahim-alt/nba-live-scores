@@ -146,25 +146,31 @@ export function NBALiveCompanion({
       </div>
 
       {/* ── Series context (redacted under No-Spoilers) ─────────────────── */}
-      {spoileryLine ? (
-        <p
-          className="mt-4 text-[12px]"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+      {/* Wrapped in a compact card with a Series eyebrow so the line reads
+          as a deliberate section, not a floating status string. Under
+          No-Spoilers the body swaps to the canonical hidden caption. */}
+      {spoileryLine || (noSpoilers && hasSpoilerySeriesText) ? (
+        <div
+          className="mt-4 rounded-[14px] border px-3 py-2.5"
+          style={{ background: "var(--paper)", borderColor: "var(--line)" }}
         >
-          {spoileryLine}
-        </p>
-      ) : noSpoilers && hasSpoilerySeriesText ? (
-        <p
-          className="mt-4 text-[11px] uppercase"
-          style={{
-            color: "var(--mute-2)",
-            fontFamily: "var(--font-mono)",
-            letterSpacing: "0.1em",
-            fontWeight: 600,
-          }}
-        >
-          {HIDDEN_CAPTIONS.series}
-        </p>
+          <Eyebrow>Series</Eyebrow>
+          {spoileryLine ? (
+            <p
+              className="mt-1 text-[13px] leading-snug"
+              style={{ color: "var(--ink)", fontWeight: 600 }}
+            >
+              {spoileryLine}
+            </p>
+          ) : (
+            <p
+              className="mt-1 text-[12px]"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              {HIDDEN_CAPTIONS.series}
+            </p>
+          )}
+        </div>
       ) : null}
 
       {/* ── Pin / Watching ──────────────────────────────────────────────── */}
