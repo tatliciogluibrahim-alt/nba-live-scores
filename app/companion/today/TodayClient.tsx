@@ -102,20 +102,27 @@ export function TodayClient() {
 }
 
 // ── Inline No-Spoilers toggle ──────────────────────────────────────────
-// Compact chip that lives on the Today header. Real `role="switch"` so
-// screen readers announce the on/off state. Sits next to the title so
-// the mode is always discoverable without a standalone banner.
+// Compact chip on the Today header. Stage 14F-4 swaps the system-flavored
+// "NO-SPOILERS · ON/OFF" copy for action-based labels — "Show scores" when
+// the mode is on (the tap reveals), "Hide scores" when it's off (the tap
+// hides). A small dot keeps state legible at a glance without shouting.
+// role="switch" + aria-checked still carries the state to screen readers.
 
 function NoSpoilersInlineToggle() {
   const { prefs, setNoSpoilers, hydrated } = useUserPrefs();
   const on = prefs.noSpoilers;
+
+  const label = on ? "Show scores" : "Hide scores";
+  const a11y = on
+    ? "Show scores by turning No-Spoilers off"
+    : "Hide scores by turning No-Spoilers on";
 
   return (
     <button
       type="button"
       role="switch"
       aria-checked={on}
-      aria-label={on ? "Turn No-Spoilers off" : "Turn No-Spoilers on"}
+      aria-label={a11y}
       disabled={!hydrated}
       onClick={() => setNoSpoilers(!on)}
       className="no-noise-reveal-focus inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 transition active:scale-[0.97]"
@@ -123,11 +130,9 @@ function NoSpoilersInlineToggle() {
         background: on ? "var(--ink)" : "transparent",
         color: on ? "var(--cream)" : "var(--ink)",
         border: `1px solid ${on ? "var(--ink)" : "var(--line)"}`,
-        fontFamily: "var(--font-mono)",
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
+        fontSize: 12,
+        fontWeight: 600,
+        letterSpacing: "-0.005em",
         minHeight: 28,
         opacity: hydrated ? 1 : 0.5,
       }}
@@ -139,16 +144,7 @@ function NoSpoilersInlineToggle() {
           background: on ? "var(--cream)" : "var(--mute-2)",
         }}
       />
-      No-Spoilers
-      <span
-        aria-hidden
-        style={{
-          color: on ? "var(--cream)" : "var(--mute-1)",
-          opacity: on ? 0.75 : 0.7,
-        }}
-      >
-        · {on ? "On" : "Off"}
-      </span>
+      {label}
     </button>
   );
 }
