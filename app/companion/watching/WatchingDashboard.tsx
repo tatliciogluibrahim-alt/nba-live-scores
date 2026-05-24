@@ -3,15 +3,43 @@
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PinnedCard, StalePinCard } from "./PinnedCard";
-import type { WatchingPayload } from "./watching-data";
+import type { PinnedItem, WatchingPayload } from "./watching-data";
 
 // List of pinned games. Live first, then upcoming, then final. Stale pins
 // (games we can't resolve from the feed) appear at the bottom with their
 // own unpin action so the list never feels broken.
 
+/** State-aware summary sentence under the "Watching." display.
+ *  Live > upcoming > final priority — never reveals winners or margins,
+ *  just timing-of-tracking copy. Safe under No-Spoilers. */
+function buildWatchingSummary(items: PinnedItem[]): string {
+  if (items.length === 0) return "One game pinned for live tracking.";
+
+  const live = items.filter((i) => i.status === "live").length;
+  const upcoming = items.filter((i) => i.status === "upcoming").length;
+  const final = items.filter((i) => i.status === "final").length;
+
+  if (live > 0) {
+    return live === 1
+      ? "Live room. Tracking key moments."
+      : `Live room. ${live} games tracking right now.`;
+  }
+  if (upcoming > 0 && final === 0) {
+    return upcoming === 1
+      ? "Pinned for later. We'll surface key moments at tipoff."
+      : `${upcoming} games pinned for later. We'll surface key moments at tipoff.`;
+  }
+  if (final > 0 && upcoming === 0) {
+    return final === 1
+      ? "Wrapped. Key moments stay here."
+      : "All wrapped. Key moments stay here.";
+  }
+  // Mixed upcoming + final, no live
+  return `${upcoming} coming up · ${final} wrapped.`;
+}
+
 export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
   const { items, stalePins } = payload;
-  const total = items.length + stalePins.length;
 
   return (
     <section>
@@ -22,9 +50,7 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
         className="mb-4 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        {total === 1
-          ? "One game pinned for live tracking."
-          : `${total} games pinned for live tracking.`}
+        {buildWatchingSummary(items)}
       </p>
 
       <ul className="space-y-2">

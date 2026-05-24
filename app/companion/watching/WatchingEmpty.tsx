@@ -14,7 +14,7 @@ export function WatchingEmpty() {
         className="mb-5 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Pin a game to track it here. Watching is for live tracking — not TV.
+        Pin a game to track it here. Watching is for live game tracking, not where to watch.
       </p>
 
       <div className="space-y-2">
