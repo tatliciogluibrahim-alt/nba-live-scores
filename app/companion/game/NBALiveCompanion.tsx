@@ -89,10 +89,14 @@ export function NBALiveCompanion({
       {/* Named view transition: when navigating from a pinned card in
           Watching, this block morphs from the card rather than cross-fading.
           iOS 18 / Chrome 111+ only — older browsers get a normal cut. */}
+      {/* Live games get a warm --nba-soft chassis so the scoreboard module
+          itself reads as "in progress" at surface level — the StatusPill
+          and score-flash do the per-update work, the tint sets the room
+          temperature. Upcoming and final keep the calm paper surface. */}
       <div
         className="mt-4 rounded-[14px] border px-4 py-4"
         style={{
-          background: "var(--paper)",
+          background: isLive ? "var(--nba-soft)" : "var(--paper)",
           borderColor: "var(--line)",
           ...({ viewTransitionName: `score-${game.id}` } as React.CSSProperties),
         }}

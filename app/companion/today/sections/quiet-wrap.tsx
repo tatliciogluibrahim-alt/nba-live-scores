@@ -46,9 +46,10 @@ export function QuietWrap({ items }: { items: QuietWrapItem[] }) {
 }
 
 function QuietRowRevealed({ item }: { item: QuietWrapItem }) {
-  // Left border carries sport identity — same system as UpNext, but
-  // muted at 2px since finals are informational, not urgent.
-  const accentColor = item.source === "wc" ? "var(--wc)" : "var(--nba)";
+  // Quiet Wrap = yesterday's finals = *reference*, not action. We
+  // deliberately strip the sport accent rail (which Up Next uses for
+  // active games) and mute the matchup heading + score line so these
+  // rows read calmly under Up Next without competing for attention.
   return (
     <Link
       href={item.href}
@@ -57,7 +58,6 @@ function QuietRowRevealed({ item }: { item: QuietWrapItem }) {
       style={{
         background: "var(--paper)",
         borderColor: "var(--line)",
-        borderLeft: `2px solid ${accentColor}`,
       }}
     >
       <div className="flex items-baseline justify-between gap-3">
@@ -66,8 +66,8 @@ function QuietRowRevealed({ item }: { item: QuietWrapItem }) {
           <p
             className="mt-1 truncate text-[14px] leading-snug"
             style={{
-              color: "var(--ink)",
-              fontWeight: 700,
+              color: "var(--mute-1)",
+              fontWeight: 600,
               letterSpacing: "-0.005em",
             }}
           >
@@ -75,11 +75,11 @@ function QuietRowRevealed({ item }: { item: QuietWrapItem }) {
           </p>
         </div>
         <span
-          className="tabular-nums shrink-0 text-[15px]"
+          className="tabular-nums shrink-0 text-[14px]"
           style={{
-            color: "var(--ink)",
+            color: "var(--mute-1)",
             fontFamily: "var(--font-mono)",
-            fontWeight: 700,
+            fontWeight: 600,
             fontVariantNumeric: "tabular-nums",
           }}
         >

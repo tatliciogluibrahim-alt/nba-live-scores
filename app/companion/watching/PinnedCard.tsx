@@ -24,11 +24,17 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
   // back gracefully if the adapter ever changes shape.
   const [awayScore, homeScore] = parseScoreLine(item.scoreLine);
 
+  // Live pins get the same warm --nba-soft (or --wc-soft for WC) tint as
+  // the game-detail scoreboard so the Watching surface visibly "breathes"
+  // when one of your pins is in progress. Upcoming/final keep paper.
+  const isLive = item.status === "live";
+  const liveTint = item.source === "wc" ? "var(--wc-soft)" : "var(--nba-soft)";
+
   return (
     <article
       className="rounded-[14px] border"
       style={{
-        background: "var(--paper)",
+        background: isLive ? liveTint : "var(--paper)",
         borderColor: "var(--line)",
       }}
     >

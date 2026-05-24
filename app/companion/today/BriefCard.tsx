@@ -15,12 +15,23 @@ import type { DailyBrief } from "./daily-brief";
 // card degrades to a styled sentence. No empty pill, no ghost button.
 
 export function BriefCard({ brief }: { brief: DailyBrief }) {
+  // When the Brief has a CTA, it's *actionable* — it knows the one thing
+  // for the user to do right now. We mark that with a thin sport-coded
+  // left rail so the eye can distinguish "do this" briefs from "calm
+  // acknowledgement" briefs (No-Spoilers state, quiet days). Color is
+  // chosen by the CTA destination: WC accent when the route is a country
+  // page, NBA otherwise. Calm states get no rail and keep the paper card.
+  const hasCta = Boolean(brief.cta);
+  const isWcRoute = brief.cta?.href.startsWith("/country") ?? false;
+  const railColor = isWcRoute ? "var(--wc)" : "var(--nba)";
+
   return (
     <article
       className="mb-4 rounded-[14px] border px-4 py-3"
       style={{
         background: "var(--paper)",
         borderColor: "var(--line)",
+        borderLeft: hasCta ? `3px solid ${railColor}` : `1px solid var(--line)`,
       }}
     >
       <p
