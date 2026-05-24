@@ -63,17 +63,31 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
             <Link
               href={item.href}
               aria-label={`${item.label} · ${item.statusLabel}`}
-              className="flex min-h-[44px] items-center gap-2 rounded-full px-3 py-1.5 transition active:scale-[0.97]"
+              className="flex min-h-[44px] items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3 transition active:scale-[0.97]"
               style={{
                 background: "var(--paper)",
                 border: "1px solid var(--line)",
               }}
             >
+              {/* Identity mark — matches the chip in Following tab */}
               <span
-                className="text-[12px] uppercase tracking-[0.04em]"
-                style={{ color: "var(--ink)", fontWeight: 800 }}
+                aria-hidden
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full"
+                style={{
+                  background: "var(--cream-2)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: item.chip.length > 3 ? 9 : 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.02em",
+                  color: item.kind === "team"
+                    ? "var(--nba)"
+                    : item.kind === "country"
+                      ? "var(--wc)"
+                      : "var(--ink)",
+                  lineHeight: 1,
+                }}
               >
-                {item.label}
+                {item.chip}
               </span>
               <StatusPill
                 tone={item.tone}

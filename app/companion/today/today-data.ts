@@ -3,6 +3,8 @@
 // Keep all "what to surface" logic here so the screen file stays a layout.
 
 import type { Follow, PinnedGame } from "../state/types";
+import { getCountry } from "../following/data/countries";
+import { getTournament } from "../following/data/tournaments";
 
 // ── Minimal shapes lifted from /api/live-scores + /api/world-cup ─────
 // We intentionally keep these decoupled from the legacy route types so
@@ -63,6 +65,9 @@ export type YouFollowItem = {
   kind: Follow["kind"];
   id: string;
   label: string;
+  /** Short identity mark — same chip text as the Following tab card.
+   *  Team: "NYK" · Country: "🇺🇸" · Series: "NYK · CLE" · Tournament: "CUP" */
+  chip: string;
   statusLabel: string;       // "Live" | "Tonight" | "Sat" | "Out" | "Quiet"
   tone: "live" | "upcoming" | "final" | "current";
   href: string;
@@ -302,6 +307,7 @@ function buildYouFollow(
             kind: "team",
             id: f.id,
             label: f.id,
+            chip: f.id,
             statusLabel:
               g.status === "live"
                 ? "Live"
@@ -321,18 +327,22 @@ function buildYouFollow(
           kind: "team",
           id: f.id,
           label: f.id,
+          chip: f.id,
           statusLabel: "Quiet",
           tone: "final",
           href: `/series/${f.id}`,
         };
       }
       if (f.kind === "country") {
+        const countryData = getCountry(f.id);
+        const countryChip = countryData?.flag ?? f.id;
         const g = wc.find((x) => gameIncludesCountry(x, f.id));
         if (g) {
           return {
             kind: "country",
             id: f.id,
             label: f.id,
+            chip: countryChip,
             statusLabel:
               g.status === "live"
                 ? "Live"
@@ -353,26 +363,31 @@ function buildYouFollow(
           kind: "country",
           id: f.id,
           label: f.id,
+          chip: countryChip,
           statusLabel: days > 0 ? `${days}d` : "Quiet",
           tone: "current",
           href: `/country/${f.id}`,
         };
       }
       if (f.kind === "series") {
+        const [a, b] = f.id.split("-");
         return {
           kind: "series",
           id: f.id,
           label: f.id,
+          chip: b ? `${a}·${b}` : f.id,
           statusLabel: "Series",
           tone: "current",
           href: `/series/${f.id}`,
         };
       }
       if (f.kind === "tournament") {
+        const tournament = getTournament(f.id);
         return {
           kind: "tournament",
           id: f.id,
           label: f.id,
+          chip: tournament?.name.slice(0, 3).toUpperCase() ?? "CUP",
           statusLabel: "Cup",
           tone: "current",
           href: "/following",

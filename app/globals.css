@@ -158,17 +158,33 @@ a {
 }
 
 /* Cross-document view transitions — iOS Safari 18+, Chrome 111+ get a
-   smooth 180ms cross-fade on route navigation. Older browsers fall back
-   to instant cuts (current behavior). Progressive enhancement only;
-   no JS, no polyfill, no dependency. */
+   smooth cross-fade on route navigation. Older browsers fall back to
+   instant cuts. Progressive enhancement only — no JS, no polyfill.
+   NOTE: animation-name must be set explicitly here. Overriding only
+   duration/timing keeps the browser default animation-name, which can
+   include a scale transform on some engines and causes the zoom-freeze
+   bug observed in iOS Simulator. Defining the full animation forces a
+   pure opacity fade with no scale. */
+@keyframes no-noise-vt-out {
+  to { opacity: 0; }
+}
+
+@keyframes no-noise-vt-in {
+  from { opacity: 0; }
+}
+
 @view-transition {
   navigation: auto;
 }
 
-::view-transition-old(root),
+::view-transition-old(root) {
+  animation: no-noise-vt-out 100ms ease forwards;
+  mix-blend-mode: normal;
+}
+
 ::view-transition-new(root) {
-  animation-duration: 180ms;
-  animation-timing-function: ease;
+  animation: no-noise-vt-in 160ms ease forwards;
+  mix-blend-mode: normal;
 }
 
 @media (prefers-reduced-motion: reduce) {

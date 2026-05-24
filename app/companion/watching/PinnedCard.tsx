@@ -33,6 +33,29 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
       }}
     >
       <div className="px-3 py-3">
+        {/* Team identity marks — same chip style as Following tab, two
+            across for the matchup. Gives the eye an anchor before the
+            score module below. Only rendered for NBA games (source=nba)
+            which have readable abbreviation marks; WC games use flags
+            elsewhere and the contextEyebrow already carries "World Cup". */}
+        {item.source === "nba" ? (
+          <div className="mb-3 flex items-center gap-2">
+            <TeamChip code={item.awayCode} />
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 500,
+                color: "var(--mute-2)",
+                letterSpacing: "0.06em",
+              }}
+            >
+              vs
+            </span>
+            <TeamChip code={item.homeCode} />
+          </div>
+        ) : null}
+
         <ScoreModule
           eyebrow={item.contextEyebrow}
           away={{ code: item.awayCode, name: item.awayName }}
@@ -96,6 +119,30 @@ function parseScoreLine(line: string | null): [number | null, number | null] {
   const m = line.match(/(\d+)\s*[–\-—]\s*(\d+)/);
   if (!m) return [null, null];
   return [Number(m[1]), Number(m[2])];
+}
+
+// ── Team identity chip ────────────────────────────────────────────────
+// Small round chip carrying the team abbreviation. Mirrors the mark used
+// on the Following tab's FollowCard so the same team looks the same
+// across every surface.
+
+function TeamChip({ code }: { code: string }) {
+  return (
+    <span
+      aria-hidden
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px]"
+      style={{
+        background: "var(--cream-2)",
+        fontFamily: "var(--font-mono)",
+        fontSize: code.length > 3 ? 10 : 12,
+        fontWeight: 700,
+        letterSpacing: "0.02em",
+        color: "var(--nba)",
+      }}
+    >
+      {code}
+    </span>
+  );
 }
 
 // Stale pin — game we couldn't resolve from either feed. Keep the unpin
