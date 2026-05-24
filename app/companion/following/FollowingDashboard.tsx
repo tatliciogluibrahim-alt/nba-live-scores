@@ -5,7 +5,34 @@ import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { resolveFollowIdentity } from "../follow/identity";
 import { useFollows } from "../providers";
+import type { Follow } from "../state/types";
 import { FollowCard, type FollowCardData } from "./FollowCard";
+
+/** Compact "2 teams · 1 country · 1 tournament" summary built from the
+ *  raw follow kinds. Skips zero buckets and pluralises gracefully.
+ *  Returns "" when there are no follows so the caller's sentence stays
+ *  grammatical. */
+function buildFollowSummary(follows: Follow[]): string {
+  if (follows.length === 0) return "";
+
+  const counts = {
+    team: 0,
+    country: 0,
+    series: 0,
+    tournament: 0,
+  };
+  for (const f of follows) counts[f.kind]++;
+
+  const parts: string[] = [];
+  if (counts.team) parts.push(`${counts.team} ${counts.team === 1 ? "team" : "teams"}`);
+  if (counts.country)
+    parts.push(`${counts.country} ${counts.country === 1 ? "country" : "countries"}`);
+  if (counts.series) parts.push(`${counts.series} series`);
+  if (counts.tournament)
+    parts.push(`${counts.tournament} ${counts.tournament === 1 ? "tournament" : "tournaments"}`);
+
+  return parts.length > 0 ? `${parts.join(" · ")}.` : "";
+}
 
 // Following dashboard — vertical list of follow cards in the order they
 // were added. Footer has a "Follow more" link back to the choice set.
@@ -34,9 +61,7 @@ export function FollowingDashboard() {
         className="mb-4 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        {follows.length === 1
-          ? "One follow. We'll keep it calm."
-          : `${follows.length} follows. We'll keep them calm.`}
+        Your sports circle. {buildFollowSummary(follows)}
       </p>
 
       <ul className="space-y-2">

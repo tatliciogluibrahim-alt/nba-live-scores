@@ -45,7 +45,7 @@ export function resolveFollowIdentity(follow: Follow): FollowIdentity {
       return {
         kindLabel: "Country · World Cup",
         name: countryDisplayName(follow.id),
-        detail: country ? `Group ${country.group}` : undefined,
+        detail: country ? `Group ${country.group} · World Cup` : undefined,
         chip: country?.flag ?? follow.id,
         accent: "var(--wc)",
       };
@@ -54,7 +54,7 @@ export function resolveFollowIdentity(follow: Follow): FollowIdentity {
       return {
         kindLabel: "Series · NBA Playoffs",
         name: follow.id.replace("-", " vs "),
-        detail: "Get told when it's a clinch night",
+        detail: "Best-of-7 series",
         chip: follow.id.replace("-", " · "),
         accent: "var(--nba)",
       };
