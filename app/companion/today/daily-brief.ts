@@ -10,10 +10,28 @@ import type { TodayPayload } from "./today-data";
 
 const WC_KICKOFF = new Date("2026-06-11T19:00:00Z");
 
+// Hours and days remaining until kickoff. `daysUntilKickoff` rounds up;
+// `hoursUntilKickoff` is used inside the final-24-hour window so we can
+// switch from "tomorrow" to "tonight" copy as the moment approaches.
 function daysUntilKickoff(now = new Date()): number | null {
   const ms = WC_KICKOFF.getTime() - now.getTime();
   if (ms <= 0) return null;
   return Math.ceil(ms / 86_400_000);
+}
+
+function hoursUntilKickoff(now = new Date()): number | null {
+  const ms = WC_KICKOFF.getTime() - now.getTime();
+  if (ms <= 0) return null;
+  return Math.ceil(ms / 3_600_000);
+}
+
+/** True when WC is currently underway (any live or final WC fixture in
+ *  the payload's up-next / quiet-wrap pipeline). The Today payload
+ *  already filters by source, so we trust its booleans. */
+function tournamentIsLive(payload: TodayPayload): boolean {
+  return payload.youFollow.some(
+    (f) => f.kind === "country" && f.tone === "live"
+  );
 }
 
 export type DailyBriefInputs = {
@@ -25,16 +43,14 @@ export type DailyBriefInputs = {
 };
 
 /** Priority order, top-down:
- *   1. No-Spoilers on  → mode summary
- *   2. Pinned games    → tracking summary
- *   3. Followed game live / today  → personal radar
- *   4. Followed WC country  → tournament-personal
- *   5. No follows       → onboarding nudge (WC countdown if close)
- *   6. Quiet day        → calm acknowledgement
- *   7. Has follows, nothing immediate  → calm "we're set" line
- *
- *  Returns null only when there's truly nothing to say (we always have
- *  one of the above buckets in practice, but the contract allows null).
+ *   1. No-Spoilers on            → mode summary
+ *   2. Pinned games              → tracking summary
+ *   3. Followed game live / today → personal radar
+ *   4. Tournament intensifies     → countdown copy in the final week
+ *   5. Followed WC country (calm) → tournament-personal far-from-kickoff
+ *   6. No follows                 → onboarding nudge (WC countdown if close)
+ *   7. Quiet day                  → calm acknowledgement
+ *   8. Has follows, nothing imm.  → calm "we're set" line
  */
 export function deriveDailyBrief({
   noSpoilers,
@@ -43,20 +59,18 @@ export function deriveDailyBrief({
   payload,
   now = new Date(),
 }: DailyBriefInputs): string | null {
-  // 1 ─ No-Spoilers mode is the highest-priority state. Its sentence
-  //     mirrors the banner so users see one consistent contract.
+  // 1 ─ No-Spoilers mode is the highest-priority state.
   if (noSpoilers) {
     return "Scores hidden. Schedules stay visible.";
   }
 
-  // 2 ─ Pinned games. Singular vs plural; no live/upcoming split per spec.
+  // 2 ─ Pinned games.
   if (pinned.length > 0) {
     if (pinned.length === 1) return "One game pinned for live tracking.";
     return `${pinned.length} games pinned for live tracking.`;
   }
 
-  // 3 ─ Followed games today. Lean on the youFollow status the payload
-  //     already computed so we don't rebuild the date math here.
+  // 3 ─ Followed games live / today.
   const followedLive = payload.youFollow.filter((f) => f.tone === "live");
   if (followedLive.length > 0) {
     return followedLive.length === 1
@@ -73,8 +87,46 @@ export function deriveDailyBrief({
       : `${followedToday.length} games on your radar tonight.`;
   }
 
-  // 4 ─ Followed World Cup country (specific country + group).
   const followedCountry = follows.find((f) => f.kind === "country");
+  const wcDays = daysUntilKickoff(now);
+  const wcHours = hoursUntilKickoff(now);
+
+  // 4 ─ Tournament intensifies in the final week. Three distinct
+  // states tighten the copy as kickoff approaches. Followed-country
+  // users get country-flavored copy; everyone else gets the generic
+  // "tournament starts" build-up.
+  if (wcDays !== null && wcDays <= 7) {
+    const country = followedCountry ? getCountry(followedCountry.id) : null;
+
+    if (wcHours !== null && wcHours <= 6) {
+      // Within 6 hours: "starts today"
+      return country
+        ? `World Cup starts today. ${country.name} kicks off the tournament soon.`
+        : "World Cup starts today.";
+    }
+
+    if (wcDays <= 1) {
+      // Day-of / within 24 hours
+      return country
+        ? `World Cup starts tomorrow. ${country.name}'s opener is set.`
+        : "World Cup starts tomorrow.";
+    }
+
+    // 2–7 days out
+    return country
+      ? `${wcDays} days to first whistle. ${country.name} opens in Group ${country.group}.`
+      : `World Cup starts in ${wcDays} days. Pick a country to make it personal.`;
+  }
+
+  // Tournament is underway — country has a live or final fixture.
+  if (tournamentIsLive(payload) && followedCountry) {
+    const country = getCountry(followedCountry.id);
+    if (country) {
+      return `${country.name} is live in the tournament now.`;
+    }
+  }
+
+  // 5 ─ Followed WC country (far-from-kickoff calm state).
   if (followedCountry) {
     const country = getCountry(followedCountry.id);
     if (country) {
@@ -82,12 +134,7 @@ export function deriveDailyBrief({
     }
   }
 
-  const wcDays = daysUntilKickoff(now);
-
-  // 5 ─ No follows yet. If WC is close, pitch the country pick; otherwise
-  //     onboard to Following. Empty-state copy sells the *benefit*
-  //     ("unlock alerts and the path to the final") rather than just
-  //     asking for input.
+  // 6 ─ No follows yet.
   if (follows.length === 0) {
     if (wcDays !== null && wcDays <= 60) {
       return `World Cup starts in ${wcDays} day${wcDays === 1 ? "" : "s"}. Pick a country to unlock kickoff alerts and the path to the final.`;
@@ -95,11 +142,11 @@ export function deriveDailyBrief({
     return "Pick a team or country to unlock kickoff alerts and the moments that matter.";
   }
 
-  // 6 ─ Has follows, nothing live/today, day is quiet.
+  // 7 ─ Has follows, nothing live/today, day is quiet.
   if (payload.isQuietDay) {
     return "Quiet day. Nothing from your follows needs attention.";
   }
 
-  // 7 ─ Has follows, has something coming up later, no specific bucket.
+  // 8 ─ Default.
   return "Your follows are set. We'll surface only what matters.";
 }

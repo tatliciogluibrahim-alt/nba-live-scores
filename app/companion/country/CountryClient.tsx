@@ -9,6 +9,7 @@ import { CountryPresetSection } from "./CountryPresetSection";
 import { NextMatchBlock } from "./NextMatchBlock";
 import { GroupStrip } from "./GroupStrip";
 import { PathTimeline } from "./PathTimeline";
+import { TournamentCountdown } from "./TournamentCountdown";
 
 // Single-screen World Cup Country Dashboard. Composition only.
 
@@ -28,6 +29,9 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
       <CountryHeader country={country} />
+
+      {/* ── Tournament countdown — only renders in the final 7 days ──── */}
+      <TournamentCountdown country={country} />
 
       {/* ── Next match block (top priority when one exists) ──────────── */}
       {nextMatch ? (

@@ -156,3 +156,24 @@ a {
     opacity: 0.8;
   }
 }
+
+/* Cross-document view transitions — iOS Safari 18+, Chrome 111+ get a
+   smooth 180ms cross-fade on route navigation. Older browsers fall back
+   to instant cuts (current behavior). Progressive enhancement only;
+   no JS, no polyfill, no dependency. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
