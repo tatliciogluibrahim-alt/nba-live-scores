@@ -47,20 +47,18 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
             fontWeight: 500,
           }}
         >
-          No moments tagged yet. The big swings will appear here as they happen.
+          Key moments will appear here as the game develops.
         </p>
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="mt-2 text-[11px] uppercase"
+          className="mt-3 inline-flex min-h-[32px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
           style={{
             color: "var(--mute-1)",
-            fontFamily: "var(--font-mono)",
-            letterSpacing: "0.1em",
-            fontWeight: 600,
+            fontWeight: 500,
           }}
         >
-          See every play →
+          View every play
         </button>
       </section>
     );
@@ -168,30 +166,26 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="mt-2 text-[11px] uppercase"
+          className="mt-3 inline-flex min-h-[32px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
           style={{
             color: "var(--mute-1)",
-            fontFamily: "var(--font-mono)",
-            letterSpacing: "0.1em",
-            fontWeight: 600,
+            fontWeight: 500,
           }}
         >
-          See every play →
+          View every play
         </button>
       ) : null}
       {showAll ? (
         <button
           type="button"
           onClick={() => setShowAll(false)}
-          className="mt-2 text-[11px] uppercase"
+          className="mt-3 inline-flex min-h-[32px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
           style={{
             color: "var(--mute-1)",
-            fontFamily: "var(--font-mono)",
-            letterSpacing: "0.1em",
-            fontWeight: 600,
+            fontWeight: 500,
           }}
         >
-          ← Back to key moments
+          Back to key moments
         </button>
       ) : null}
     </section>
