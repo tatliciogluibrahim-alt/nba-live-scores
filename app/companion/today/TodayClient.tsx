@@ -3,8 +3,9 @@
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { NoSpoilersBanner } from "../spoiler/NoSpoilersBanner";
-import { useNoSpoilers } from "../providers";
+import { useFollows, useNoSpoilers, usePinned } from "../providers";
 import { useTodayData } from "./use-today-data";
+import { deriveDailyBrief } from "./daily-brief";
 import { WorthCheckingNow } from "./sections/worth-checking-now";
 import { YouFollow } from "./sections/you-follow";
 import { UpNext } from "./sections/up-next";
@@ -23,6 +24,14 @@ import { CalmCard } from "./sections/calm-card";
 export function TodayClient() {
   const { payload, hydrated, updatedAt } = useTodayData();
   const noSpoilers = useNoSpoilers();
+  const { follows } = useFollows();
+  const { pinned } = usePinned();
+
+  // Daily Brief — one calm sentence summarizing today's app state.
+  // Pure derivation; safe under No-Spoilers (handled inside the helper).
+  const briefText = hydrated
+    ? deriveDailyBrief({ noSpoilers, follows, pinned, payload })
+    : null;
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
@@ -39,9 +48,19 @@ export function TodayClient() {
         ) : null}
       </div>
 
-      <Display as="h1" size="lg" className="mb-3">
+      <Display as="h1" size="lg" className="mb-2">
         Today.
       </Display>
+
+      {/* Daily Brief — calm, one-sentence summary under the title */}
+      {briefText ? (
+        <p
+          className="mb-4 text-[14px] leading-snug"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          {briefText}
+        </p>
+      ) : null}
 
       {/* No-Spoilers banner sits above the rest when the mode is on */}
       {noSpoilers ? (
