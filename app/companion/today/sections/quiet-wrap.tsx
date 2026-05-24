@@ -46,12 +46,19 @@ export function QuietWrap({ items }: { items: QuietWrapItem[] }) {
 }
 
 function QuietRowRevealed({ item }: { item: QuietWrapItem }) {
+  // Left border carries sport identity — same system as UpNext, but
+  // muted at 2px since finals are informational, not urgent.
+  const accentColor = item.source === "wc" ? "var(--wc)" : "var(--nba)";
   return (
     <Link
       href={item.href}
       aria-label={`${item.matchup} final — ${item.scoreLine}`}
       className="block rounded-[14px] border px-3 py-3 transition active:scale-[0.99]"
-      style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+      style={{
+        background: "var(--paper)",
+        borderColor: "var(--line)",
+        borderLeft: `2px solid ${accentColor}`,
+      }}
     >
       <div className="flex items-baseline justify-between gap-3">
         <div className="min-w-0">

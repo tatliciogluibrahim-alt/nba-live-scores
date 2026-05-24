@@ -82,6 +82,10 @@ export type UpNextItem = {
   id: string;
   /** True when this game is in the user's pinned list. */
   pinned: boolean;
+  /** True when at least one team/country in this game belongs to the user's
+   *  follows. Personal games get a stronger visual treatment so the eye
+   *  can instantly tell "mine" from the generic feed filler. */
+  personal: boolean;
   eyebrow: string;           // "NBA · Tonight" | "World Cup · Sat"
   headline: string;          // "Knicks vs Cavaliers"
   detail: string;            // "8:00 PM · MSG"
@@ -400,11 +404,12 @@ function buildYouFollow(
 
 // ── Up next ───────────────────────────────────────────────────────────
 
-function nbaToUpNext(g: NBAGame, pinned: boolean): UpNextItem {
+function nbaToUpNext(g: NBAGame, pinned: boolean, personal: boolean): UpNextItem {
   return {
     source: "nba",
     id: g.id,
     pinned,
+    personal,
     eyebrow: `NBA · ${formatGameDay(g.date)}`,
     headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     detail: `${formatGameTime(g.date)}${g.gameContext ? " · " + g.gameContext : ""}`,
@@ -414,11 +419,12 @@ function nbaToUpNext(g: NBAGame, pinned: boolean): UpNextItem {
   };
 }
 
-function wcToUpNext(g: WCGameLite, pinned: boolean): UpNextItem {
+function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): UpNextItem {
   return {
     source: "wc",
     id: g.id,
     pinned,
+    personal,
     eyebrow: `World Cup · ${formatGameDay(g.date)}`,
     headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     detail: `${formatGameTime(g.date)}${g.stage ? " · " + g.stage : ""}`,
@@ -455,17 +461,17 @@ function buildUpNext(
   // to guess.
   const personalNBA = nbaUpcoming
     .filter((g) => [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr)))
-    .map((g) => nbaToUpNext(g, pinnedIds.has(g.id)));
+    .map((g) => nbaToUpNext(g, pinnedIds.has(g.id), true));
   const personalWC = wcUpcoming
     .filter((g) => [...followedCountries].some((code) => gameIncludesCountry(g, code)))
-    .map((g) => wcToUpNext(g, pinnedIds.has(g.id)));
+    .map((g) => wcToUpNext(g, pinnedIds.has(g.id), true));
 
   const personalIds = new Set([...personalNBA, ...personalWC].map((i) => i.id));
   const everyoneNBA = nbaUpcoming
-    .map((g) => nbaToUpNext(g, pinnedIds.has(g.id)))
+    .map((g) => nbaToUpNext(g, pinnedIds.has(g.id), false))
     .filter((i) => !personalIds.has(i.id));
   const everyoneWC = wcUpcoming
-    .map((g) => wcToUpNext(g, pinnedIds.has(g.id)))
+    .map((g) => wcToUpNext(g, pinnedIds.has(g.id), false))
     .filter((i) => !personalIds.has(i.id));
 
   // Pinned games beat unpinned within the merged list — explicit user

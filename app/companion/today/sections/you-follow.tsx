@@ -58,46 +58,71 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
         className="-mx-1 flex gap-2 overflow-x-auto px-1"
         style={{ scrollbarWidth: "none" }}
       >
-        {items.map((item) => (
-          <li key={`${item.kind}-${item.id}`} className="shrink-0">
-            <Link
-              href={item.href}
-              aria-label={`${item.label} · ${item.statusLabel}`}
-              className="flex min-h-[44px] items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3 transition active:scale-[0.97]"
-              style={{
-                background: "var(--paper)",
-                border: "1px solid var(--line)",
-              }}
-            >
-              {/* Identity mark — matches the chip in Following tab */}
-              <span
-                aria-hidden
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-full"
-                style={{
-                  background: "var(--cream-2)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: item.chip.length > 3 ? 9 : 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.02em",
-                  color: item.kind === "team"
-                    ? "var(--nba)"
-                    : item.kind === "country"
-                      ? "var(--wc)"
-                      : "var(--ink)",
-                  lineHeight: 1,
-                }}
+        {items.map((item) => {
+          // Pill surface and border respond to game state so the eye can
+          // instantly rank urgency across the follow row:
+          //   live     → live status tint + matching border
+          //   upcoming → upcoming status tint + matching border
+          //   others   → neutral paper (game is done or off-schedule)
+          const pillBg =
+            item.tone === "live"
+              ? "var(--status-live-bg)"
+              : item.tone === "upcoming"
+                ? "var(--status-upcoming-bg)"
+                : "var(--paper)";
+          const pillBorder =
+            item.tone === "live"
+              ? `1px solid var(--status-live-dot)`
+              : item.tone === "upcoming"
+                ? `1px solid var(--status-upcoming-dot)`
+                : "1px solid var(--line)";
+
+          // Chip background matches the sport brand rather than a flat cream.
+          const chipBg =
+            item.kind === "team"
+              ? "var(--nba-soft)"
+              : item.kind === "country"
+                ? "var(--wc-soft)"
+                : "var(--cream-2)";
+
+          return (
+            <li key={`${item.kind}-${item.id}`} className="shrink-0">
+              <Link
+                href={item.href}
+                aria-label={`${item.label} · ${item.statusLabel}`}
+                className="flex min-h-[44px] items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3 transition active:scale-[0.97]"
+                style={{ background: pillBg, border: pillBorder }}
               >
-                {item.chip}
-              </span>
-              <StatusPill
-                tone={item.tone}
-                breathe={item.tone === "live"}
-              >
-                {item.statusLabel}
-              </StatusPill>
-            </Link>
-          </li>
-        ))}
+                {/* Identity mark */}
+                <span
+                  aria-hidden
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full"
+                  style={{
+                    background: chipBg,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: item.chip.length > 3 ? 9 : 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.02em",
+                    color: item.kind === "team"
+                      ? "var(--nba)"
+                      : item.kind === "country"
+                        ? "var(--wc)"
+                        : "var(--ink)",
+                    lineHeight: 1,
+                  }}
+                >
+                  {item.chip}
+                </span>
+                <StatusPill
+                  tone={item.tone}
+                  breathe={item.tone === "live"}
+                >
+                  {item.statusLabel}
+                </StatusPill>
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

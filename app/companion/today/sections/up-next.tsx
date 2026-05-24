@@ -17,10 +17,15 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
       <SectionHeader label="Up next" />
       <ul className="space-y-2">
         {items.map((item) => {
-          // Subtle 2px sport-accent left rail signals which league each
-          // row belongs to without competing with the hero's 3px accent.
-          const accent =
+          const accentColor =
             item.source === "nba" ? "var(--nba)" : "var(--wc)";
+          // Personal games (followed team/country) get a 3px border + soft
+          // sport-tinted surface so the eye immediately finds "mine" without
+          // scanning the headline. Generic feed games stay at 2px / paper.
+          const borderWidth = item.personal ? 3 : 2;
+          const cardBg = item.personal
+            ? item.source === "nba" ? "var(--nba-soft)" : "var(--wc-soft)"
+            : "var(--paper)";
           return (
           <li key={item.id}>
             <Link
@@ -32,9 +37,9 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
               }
               className="block rounded-[14px] border px-3 py-3 transition active:scale-[0.99]"
               style={{
-                background: "var(--paper)",
+                background: cardBg,
                 borderColor: "var(--line)",
-                borderLeft: `2px solid ${accent}`,
+                borderLeft: `${borderWidth}px solid ${accentColor}`,
               }}
             >
               <div className="flex items-baseline gap-2">

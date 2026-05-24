@@ -52,7 +52,15 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           aria-hidden
           className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px]"
           style={{
-            background: "var(--cream-2)",
+            // Sport-tinted background: makes the chip read as a badge,
+            // not a grey placeholder. Derived from the follow kind so
+            // NBA teams get the orange tint and WC countries the green.
+            background:
+              follow.kind === "team" || follow.kind === "series"
+                ? "var(--nba-soft)"
+                : follow.kind === "country"
+                  ? "var(--wc-soft)"
+                  : "var(--cream-2)",
             color: accent ?? "var(--ink)",
             fontFamily: "var(--font-mono)",
             fontSize: identityMark.length > 4 ? 11 : 14,
