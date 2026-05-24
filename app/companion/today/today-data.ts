@@ -2,7 +2,7 @@
 // already ship. Output: a single TodayPayload tuned for the Today composition.
 // Keep all "what to surface" logic here so the screen file stays a layout.
 
-import type { Follow } from "../state/types";
+import type { Follow, PinnedGame } from "../state/types";
 
 // ── Minimal shapes lifted from /api/live-scores + /api/world-cup ─────
 // We intentionally keep these decoupled from the legacy route types so
@@ -48,6 +48,8 @@ export type TodayHero = {
   context?: string;
   live: boolean;
   accent: "var(--nba)" | "var(--wc)";
+  /** True when this hero is being surfaced because the user pinned the game. */
+  pinned?: boolean;
   /** Where tapping the hero goes (Stage 1 placeholder routes for now). */
   href: string;
   /** When set, the No-Spoilers variant uses this matchup string. */
@@ -73,6 +75,8 @@ export type TodaySource = "nba" | "wc";
 export type UpNextItem = {
   source: TodaySource;
   id: string;
+  /** True when this game is in the user's pinned list. */
+  pinned: boolean;
   eyebrow: string;           // "NBA · Tonight" | "World Cup · Sat"
   headline: string;          // "Knicks vs Cavaliers"
   detail: string;            // "8:00 PM · MSG"
@@ -173,36 +177,43 @@ function scoreClosenessRank(g: NBAGame): number {
 function pickHero(
   nba: NBAGame[],
   wc: WCGameLite[],
-  follows: Follow[]
+  follows: Follow[],
+  pinned: PinnedGame[]
 ): TodayHero | null {
   const followedTeams = new Set(
     follows.filter((f) => f.kind === "team").map((f) => f.id)
   );
+  const pinnedIds = new Set(pinned.map((p) => p.gameId));
 
   const liveGames = nba.filter((g) => g.status === "live");
   const live = [...liveGames].sort(
     (a, b) => scoreClosenessRank(a) - scoreClosenessRank(b)
   );
 
-  const followedLive = live.find(
-    (g) =>
-      gameIncludesTeam(g, [...followedTeams][0] ?? "") ||
-      [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr))
+  // Priority order for the hero spot:
+  //   1. A pinned live game — the strongest "I care about this" signal.
+  //   2. A followed-team live game.
+  //   3. Any live game (closest score first).
+  const pinnedLive = live.find((g) => pinnedIds.has(g.id));
+  const followedLive = live.find((g) =>
+    [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr))
   );
-
-  const heroLive = followedLive ?? live[0];
+  const heroLive = pinnedLive ?? followedLive ?? live[0];
 
   if (heroLive) {
+    const isPinned = pinnedIds.has(heroLive.id);
+    const baseEyebrow = heroLive.gameContext || "NBA · Live";
     const watch = heroLive.broadcasts[0]
       ? { channel: heroLive.broadcasts[0] }
       : undefined;
     return {
       kind: "nba-live",
-      eyebrow: heroLive.gameContext || "NBA · Live",
+      eyebrow: isPinned ? `Pinned · ${baseEyebrow}` : baseEyebrow,
       headline: deriveLiveHeadline(heroLive),
       context: heroLive.seriesSummary || undefined,
       live: true,
       accent: "var(--nba)",
+      pinned: isPinned,
       href: `/game/${heroLive.id}`,
       spoilerMatchup: heroLive.matchup,
       spoilerKind: "live",
@@ -367,10 +378,11 @@ function buildYouFollow(
 
 // ── Up next ───────────────────────────────────────────────────────────
 
-function nbaToUpNext(g: NBAGame): UpNextItem {
+function nbaToUpNext(g: NBAGame, pinned: boolean): UpNextItem {
   return {
     source: "nba",
     id: g.id,
+    pinned,
     eyebrow: `NBA · ${formatGameDay(g.date)}`,
     headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     detail: `${formatGameTime(g.date)}${g.gameContext ? " · " + g.gameContext : ""}`,
@@ -380,10 +392,11 @@ function nbaToUpNext(g: NBAGame): UpNextItem {
   };
 }
 
-function wcToUpNext(g: WCGameLite): UpNextItem {
+function wcToUpNext(g: WCGameLite, pinned: boolean): UpNextItem {
   return {
     source: "wc",
     id: g.id,
+    pinned,
     eyebrow: `World Cup · ${formatGameDay(g.date)}`,
     headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     detail: `${formatGameTime(g.date)}${g.stage ? " · " + g.stage : ""}`,
@@ -396,7 +409,8 @@ function wcToUpNext(g: WCGameLite): UpNextItem {
 function buildUpNext(
   nba: NBAGame[],
   wc: WCGameLite[],
-  follows: Follow[]
+  follows: Follow[],
+  pinned: PinnedGame[]
 ): UpNextItem[] {
   const followedTeams = new Set(
     follows.filter((f) => f.kind === "team").map((f) => f.id)
@@ -404,6 +418,7 @@ function buildUpNext(
   const followedCountries = new Set(
     follows.filter((f) => f.kind === "country").map((f) => f.id)
   );
+  const pinnedIds = new Set(pinned.map((p) => p.gameId));
 
   const nbaUpcoming = nba
     .filter((g) => g.status === "upcoming")
@@ -414,23 +429,33 @@ function buildUpNext(
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   // Personal-first ordering, then everyone else's up-next feed. Items are
-  // tagged with `source` at construction so the UI never has to guess.
+  // tagged with `source` and `pinned` at construction so the UI never has
+  // to guess.
   const personalNBA = nbaUpcoming
     .filter((g) => [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr)))
-    .map(nbaToUpNext);
+    .map((g) => nbaToUpNext(g, pinnedIds.has(g.id)));
   const personalWC = wcUpcoming
     .filter((g) => [...followedCountries].some((code) => gameIncludesCountry(g, code)))
-    .map(wcToUpNext);
+    .map((g) => wcToUpNext(g, pinnedIds.has(g.id)));
 
   const personalIds = new Set([...personalNBA, ...personalWC].map((i) => i.id));
   const everyoneNBA = nbaUpcoming
-    .map(nbaToUpNext)
+    .map((g) => nbaToUpNext(g, pinnedIds.has(g.id)))
     .filter((i) => !personalIds.has(i.id));
   const everyoneWC = wcUpcoming
-    .map(wcToUpNext)
+    .map((g) => wcToUpNext(g, pinnedIds.has(g.id)))
     .filter((i) => !personalIds.has(i.id));
 
-  return [...personalNBA, ...personalWC, ...everyoneNBA, ...everyoneWC].slice(0, 5);
+  // Pinned games beat unpinned within the merged list — explicit user
+  // intent ranks above follow-derived order. Stable sort preserves the
+  // personal-first ordering within each tier.
+  const merged = [...personalNBA, ...personalWC, ...everyoneNBA, ...everyoneWC];
+  merged.sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    return 0;
+  });
+
+  return merged.slice(0, 5);
 }
 
 // ── Quiet wrap ────────────────────────────────────────────────────────
@@ -507,16 +532,18 @@ export function buildTodayPayload({
   nba,
   wc,
   follows,
+  pinned,
   now = new Date(),
 }: {
   nba: NBAGame[];
   wc: WCGameLite[];
   follows: Follow[];
+  pinned: PinnedGame[];
   now?: Date;
 }): TodayPayload {
-  const hero = pickHero(nba, wc, follows);
+  const hero = pickHero(nba, wc, follows, pinned);
   const youFollow = buildYouFollow(nba, wc, follows, now);
-  const upNext = buildUpNext(nba, wc, follows);
+  const upNext = buildUpNext(nba, wc, follows, pinned);
   const quietWrap = buildQuietWrap(nba, follows);
   const reminder = buildReminder(follows, now);
 

@@ -94,7 +94,6 @@ function formatGameDay(date: string, now = new Date()): string {
 function nbaToPinned(g: NBAGame, pinnedAt: number): PinnedItem {
   const { tone, label } = statusToToneAndLabel(g.status);
   const isFinal = g.status === "final";
-  const isLive = g.status === "live";
   const isUpcoming = g.status === "upcoming";
 
   let detailLine = g.statusText || "";
@@ -113,7 +112,10 @@ function nbaToPinned(g: NBAGame, pinnedAt: number): PinnedItem {
     matchup: `${g.away.abbreviation} · ${g.home.abbreviation}`,
     contextEyebrow: g.gameContext ? `NBA · ${g.gameContext}` : "NBA",
     status: g.status,
-    statusLabel: isLive && g.statusText ? g.statusText.toUpperCase() : label,
+    // Keep the status pill as a calm identity badge ("LIVE" / "UPCOMING" /
+    // "FINAL") — the clock+period lives in detailLine so the two slots
+    // answer different questions and don't visually duplicate.
+    statusLabel: label,
     statusTone: tone,
     scoreLine: isUpcoming ? null : `${g.away.score} – ${g.home.score}`,
     detailLine,
@@ -131,7 +133,6 @@ function nbaToPinned(g: NBAGame, pinnedAt: number): PinnedItem {
 function wcToPinned(g: WCGameLite, pinnedAt: number): PinnedItem {
   const { tone, label } = statusToToneAndLabel(g.status);
   const isUpcoming = g.status === "upcoming";
-  const isLive = g.status === "live";
 
   let detailLine = g.statusText || "";
   if (isUpcoming) {
@@ -146,7 +147,7 @@ function wcToPinned(g: WCGameLite, pinnedAt: number): PinnedItem {
     matchup: `${g.away.abbreviation} · ${g.home.abbreviation}`,
     contextEyebrow: g.stage ? `World Cup · ${g.stage}` : "World Cup",
     status: g.status,
-    statusLabel: isLive && g.statusText ? g.statusText.toUpperCase() : label,
+    statusLabel: label,
     statusTone: tone,
     scoreLine: isUpcoming ? null : `${g.away.score} – ${g.home.score}`,
     detailLine,

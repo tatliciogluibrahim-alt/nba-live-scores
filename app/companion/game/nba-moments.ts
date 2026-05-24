@@ -11,6 +11,48 @@
 import type { Game } from "../../nba/types";
 import { getGameNumberFromText } from "../../nba/lib/moment-intelligence";
 
+// ── Play label humanizer ──────────────────────────────────────────────
+// The legacy `humanizePlayKind` (in nba/lib/moment-intelligence.ts) returns
+// the raw `kind` verbatim for anything it doesn't recognize — which lets
+// ESPN strings like "OUT OF BOUNDS - BAD PASS TURNOVER" or
+// "DEFENSIVE REBOUND" leak into the UI. This companion-side wrapper adds
+// a substring fallback so the Every-Play view stays calm.
+
+export function humanizePlayLabel(kind: string): string {
+  switch (kind) {
+    case "3PT": return "Made 3";
+    case "2PT": return "Made shot";
+    case "FT": return "Free throw";
+    case "DUNK": return "Dunk";
+    case "STEAL": return "Steal";
+    case "BLOCK": return "Block";
+    case "AST": return "Assist";
+    case "FOUL": return "Foul";
+    case "TIMEOUT": return "Timeout";
+    case "PLAY": return "Play";
+  }
+
+  const lower = kind.toLowerCase();
+  if (lower.includes("rebound")) return "Rebound";
+  if (lower.includes("turnover")) return "Turnover";
+  if (lower.includes("foul")) return "Foul";
+  if (lower.includes("violation")) return "Violation";
+  if (lower.includes("substitution") || lower.includes("substitute"))
+    return "Substitution";
+  if (lower.includes("jump ball")) return "Jump ball";
+  if (lower.includes("end of period") || lower.includes("end period"))
+    return "End of period";
+  if (lower.includes("ejection")) return "Ejection";
+  if (lower.includes("timeout")) return "Timeout";
+  if (lower.includes("free throw")) return "Free throw";
+
+  // Final fallback — title-case the first word so we never leak the raw
+  // uppercase ESPN classification.
+  const firstWord = kind.split(/[\s-]/)[0]?.toLowerCase();
+  if (!firstWord) return "Play";
+  return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+}
+
 // ── Hero headline ─────────────────────────────────────────────────────
 
 export function deriveHero(

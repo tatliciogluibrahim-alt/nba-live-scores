@@ -5,8 +5,8 @@ import type { GamePlay } from "../../nba/types";
 import {
   getKeyMoments,
   humanizeNeutral,
-  humanizePlayKind,
 } from "../../nba/lib/moment-intelligence";
+import { humanizePlayLabel } from "./nba-moments";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { MomentRow } from "../moments/MomentRow";
 import { useNoSpoilers } from "../providers";
@@ -125,24 +125,35 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
         {visiblePlays.map((play, idx) => {
           const labelKind = play.team === "neutral"
             ? humanizeNeutral(play.kind)
-            : humanizePlayKind(play.kind);
+            : humanizePlayLabel(play.kind);
           const periodLabel = `Q${play.period}`;
-          const clock = play.t ? `${periodLabel} · ${play.t}` : periodLabel;
           const owner = play.team === "neutral" ? "" : play.teamAbbreviation;
           const statement = play.who && owner
             ? `${owner} · ${play.who}`
             : (play.who || labelKind);
 
-          // The play's running score is the spoiler — show it as the
-          // calm context line. Under No-Spoilers we've already gated above.
-          const context = play.text && play.text !== play.who
-            ? play.score
-            : play.score;
+          // Dedup adjacent clock and score so rapid-fire neutral plays
+          // (timeout → turnover → rebound at the same clock) don't read
+          // like an ESPN log. Eyebrow drops the clock when it matches
+          // the previous row; context line drops the score when nothing
+          // changed.
+          const prev = idx > 0 ? visiblePlays[idx - 1] : null;
+          const sameClock =
+            prev !== null && prev.period === play.period && prev.t === play.t;
+          const sameScore = prev !== null && prev.score === play.score;
+
+          const eyebrow = sameClock
+            ? labelKind
+            : play.t
+              ? `${periodLabel} · ${play.t} · ${labelKind}`
+              : `${periodLabel} · ${labelKind}`;
+
+          const context = sameScore ? undefined : play.score;
 
           return (
             <MomentRow
               key={play.id || `${play.period}-${play.t}-${idx}`}
-              eyebrow={`${clock} · ${labelKind}`}
+              eyebrow={eyebrow}
               statement={statement}
               context={context}
               isLast={idx === visiblePlays.length - 1}

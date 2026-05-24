@@ -20,14 +20,23 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
           <li key={item.id}>
             <Link
               href={item.href}
-              aria-label={`${item.headline} · ${item.detail}`}
+              aria-label={
+                item.pinned
+                  ? `Pinned · ${item.headline} · ${item.detail}`
+                  : `${item.headline} · ${item.detail}`
+              }
               className="block rounded-[14px] border px-3 py-3 transition active:scale-[0.99]"
               style={{
                 background: "var(--paper)",
                 borderColor: "var(--line)",
               }}
             >
-              <Eyebrow>{item.eyebrow}</Eyebrow>
+              <div className="flex items-baseline gap-2">
+                {item.pinned ? (
+                  <Eyebrow color="var(--ink)">Pinned</Eyebrow>
+                ) : null}
+                <Eyebrow>{item.eyebrow}</Eyebrow>
+              </div>
               <p
                 className="mt-1 text-[14px] leading-snug"
                 style={{

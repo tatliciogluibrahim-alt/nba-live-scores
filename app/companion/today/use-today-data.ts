@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useFollows } from "../providers";
+import { useFollows, usePinned } from "../providers";
 import {
   buildTodayPayload,
   type NBAGame,
@@ -51,6 +51,7 @@ async function fetchWC(): Promise<WCGameLite[]> {
 
 export function useTodayData() {
   const { follows, hydrated: followsHydrated } = useFollows();
+  const { pinned, hydrated: pinnedHydrated } = usePinned();
   const [data, setData] = useState<FetchedData>({
     nba: [],
     wc: [],
@@ -95,13 +96,26 @@ export function useTodayData() {
   }, []);
 
   const payload = useMemo<TodayPayload>(() => {
-    if (!hasLoadedOnce || !followsHydrated) return EMPTY;
-    return buildTodayPayload({ nba: data.nba, wc: data.wc, follows });
-  }, [hasLoadedOnce, followsHydrated, data.nba, data.wc, follows]);
+    if (!hasLoadedOnce || !followsHydrated || !pinnedHydrated) return EMPTY;
+    return buildTodayPayload({
+      nba: data.nba,
+      wc: data.wc,
+      follows,
+      pinned,
+    });
+  }, [
+    hasLoadedOnce,
+    followsHydrated,
+    pinnedHydrated,
+    data.nba,
+    data.wc,
+    follows,
+    pinned,
+  ]);
 
   return {
     payload,
-    hydrated: hasLoadedOnce && followsHydrated,
+    hydrated: hasLoadedOnce && followsHydrated && pinnedHydrated,
     updatedAt: data.updatedAt,
   };
 }
