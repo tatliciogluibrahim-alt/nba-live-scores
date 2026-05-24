@@ -97,7 +97,7 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
             type="button"
             onClick={() => setRevealed(true)}
             aria-label="Reveal key moments, hidden by No-Spoilers mode"
-            className="mt-2 inline-flex min-h-[40px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="no-noise-reveal-focus mt-2 inline-flex min-h-[40px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--ink)",

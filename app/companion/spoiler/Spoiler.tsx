@@ -42,7 +42,7 @@ export function Spoiler({
         setRevealed(true);
       }}
       aria-label={label}
-      className="tabular-nums"
+      className="no-noise-reveal-focus tabular-nums"
       style={{
         display: "inline",
         padding: 0,

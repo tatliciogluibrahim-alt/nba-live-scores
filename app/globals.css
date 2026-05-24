@@ -117,3 +117,13 @@ a {
     animation: none !important;
   }
 }
+
+/* Focus ring for No-Spoilers reveal controls. The Spoiler primitive is a
+   blurred button — the browser default ring can sit beneath the blur or
+   be hard to see. This class gives keyboard users a clear, calm outline
+   that uses the existing ink token. */
+.no-noise-reveal-focus:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 6px;
+}

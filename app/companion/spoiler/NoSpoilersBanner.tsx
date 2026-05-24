@@ -37,7 +37,7 @@ export function NoSpoilersBanner({ className }: { className?: string }) {
           className="mt-0.5 text-[12px] leading-snug"
           style={{ color: "var(--cream)", fontWeight: 500 }}
         >
-          Scores hidden · push previews redacted · schedule still visible
+          Scores hidden. Schedules stay visible.
         </p>
       </div>
       <span
