@@ -84,18 +84,39 @@ export function deriveDailyBrief({
     return { text: "Scores hidden. Schedules stay visible." };
   }
 
-  // 2 ─ Pinned games.
+  // 2 ─ Pinned games. Don't announce a pinned game when the same game
+  // is already visible directly below as the first Up Next card — that
+  // duplication is the noise this branch is here to avoid. When the
+  // pinned game IS hidden, prefer the live variant if the hero is the
+  // pinned live game; otherwise show the calm "pinned for later" copy.
   if (pinned.length > 0) {
-    if (pinned.length === 1) {
+    const firstUpNextPinned = payload.upNext[0]?.pinned === true;
+    if (!firstUpNextPinned) {
+      // pickHero already prefers a pinned live game over any other live
+      // game, so `hero.pinned === true && hero.live === true` is the
+      // single signal that at least one pinned game is currently live.
+      const pinnedIsLive =
+        payload.hero?.pinned === true && payload.hero?.live === true;
+      if (pinnedIsLive) {
+        return {
+          text:
+            pinned.length === 1
+              ? "One pinned game is live."
+              : `${pinned.length} pinned games — one is live.`,
+          cta: { label: "Open Watching", href: "/watching" },
+        };
+      }
       return {
-        text: "One game pinned for live tracking.",
+        text:
+          pinned.length === 1
+            ? "One game pinned for later."
+            : `${pinned.length} games pinned for later.`,
         cta: { label: "Open Watching", href: "/watching" },
       };
     }
-    return {
-      text: `${pinned.length} games pinned for live tracking.`,
-      cta: { label: "Open Live Room", href: "/watching" },
-    };
+    // Pinned game is the first Up Next card — fall through so a
+    // lower-priority Brief (live follow, tournament countdown, etc.)
+    // can fill the slot instead of repeating the user back to themselves.
   }
 
   // 3 ─ Followed games live / today.
