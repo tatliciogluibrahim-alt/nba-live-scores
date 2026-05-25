@@ -53,6 +53,13 @@ function originFromHeader(value: string | null): string | null {
 function deploymentOrigins(req: Request): Set<string> {
   const current = new URL(req.url);
   const origins = new Set<string>([current.origin]);
+  const devHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+  if (devHosts.has(current.hostname)) {
+    const port = current.port ? `:${current.port}` : "";
+    origins.add(`${current.protocol}//localhost${port}`);
+    origins.add(`${current.protocol}//127.0.0.1${port}`);
+    origins.add(`${current.protocol}//[::1]${port}`);
+  }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   if (siteUrl) {
