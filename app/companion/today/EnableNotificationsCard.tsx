@@ -231,5 +231,5 @@ function tierWelcomeBody(tier: AlertPreset, follows: number): string {
   }
   if (tier === "quiet") return "Tipoffs and finals only.";
   if (tier === "companion") return "Tipoffs, end of quarters, finals.";
-  return "Tipoffs, quarters, finals, and Q4 close games.";
+  return "Tipoffs, quarters, finals, plus Q4 close games and comebacks.";
 }

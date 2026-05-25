@@ -22,7 +22,7 @@ export function CountryPicker() {
   return (
     <PickerScreen
       title="Follow a country."
-      subtitle="Group context, opponents, and a calm path to the final."
+      subtitle="Group context, opponents, the path to the final."
       options={options}
       isFollowing={(id) => isFollowing("country", id)}
       onSelect={(opt) => {

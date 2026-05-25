@@ -27,6 +27,7 @@ import { NextResponse } from "next/server";
 import { detectEvents, type FreshGameState, type PushEvent } from "../../../lib/push/event-detector";
 import { dispatchEvents } from "../../../lib/push/dispatcher";
 import { readCachedState, writeCachedState } from "../../../lib/push/state-cache";
+import { incrCounter } from "../../../lib/push/ops-metrics";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -122,17 +123,25 @@ export async function GET(req: Request) {
   let processed = 0;
   let stateErrors = 0;
 
+  // Bump the scan counter once per successful upstream fetch. The
+  // dashboard divides by this to compute "events per scan" etc.
+  await incrCounter("cron.scans");
+
   for (const game of games) {
     try {
       const fresh = toFresh(game);
       const prev = await readCachedState(fresh.gameId);
       const { events, nextState } = detectEvents(prev, fresh);
-      if (events.length > 0) allEvents.push(...events);
+      if (events.length > 0) {
+        allEvents.push(...events);
+        await incrCounter("events.detected", events.length);
+      }
       await writeCachedState(nextState);
       processed += 1;
     } catch (err) {
       stateErrors += 1;
       console.error("scan-nba state error", { gameId: game.id, err });
+      await incrCounter("cron.scan.error");
     }
   }
 

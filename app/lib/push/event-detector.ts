@@ -24,6 +24,7 @@ export type EventType =
   | "eoq-2"
   | "eoq-3"
   | "close-game"
+  | "comeback"
   | "final";
 
 export type PushEvent = {
@@ -59,6 +60,19 @@ export type FreshGameState = {
 const CLOSE_GAME_PERIOD = 4;
 const CLOSE_GAME_MARGIN = 5;
 const CLOSE_GAME_MAX_SECONDS = 5 * 60; // last 5 minutes of Q4
+
+// Comeback heuristic (Phase 2.2):
+//   A game qualifies as a comeback when one team led by at least
+//   COMEBACK_MIN_LEAD points at some point earlier in the game, and the
+//   current margin has shrunk to COMEBACK_NOW_MARGIN or less while the
+//   game is live in Q3 or Q4. Fires once per game.
+//
+// 15 / 5 was picked as a balance — strict enough that a normal Q4 run
+// doesn't false-positive, loose enough that real comebacks register.
+// Tune with real game data once friends-test produces enough volume.
+const COMEBACK_MIN_LEAD = 15;
+const COMEBACK_NOW_MARGIN = 5;
+const COMEBACK_MIN_PERIOD = 3;
 
 /** Status ranks for monotonic state — once a game has gone forward
  *  along this axis, we treat any backward regression as a feed glitch
@@ -148,6 +162,23 @@ export function detectEvents(
     nextCloseGameFired = true;
   }
 
+  // Comeback window: live game in Q3+, max-lead-seen was ≥ 15, current
+  // margin is ≤ 5, hasn't fired yet for this game. Doesn't need a
+  // seconds-remaining check — the criterion is the margin shift, which
+  // is independent of clock state.
+  const comebackFired = prev?.comebackFired ?? false;
+  let nextComebackFired = comebackFired;
+  if (
+    next.status === "live" &&
+    next.period >= COMEBACK_MIN_PERIOD &&
+    maxLead >= COMEBACK_MIN_LEAD &&
+    currentMargin <= COMEBACK_NOW_MARGIN &&
+    !comebackFired
+  ) {
+    events.push({ ...baseInfo, type: "comeback" });
+    nextComebackFired = true;
+  }
+
   const nextState: CachedGameState = {
     gameId: next.gameId,
     status: next.status,
@@ -158,6 +189,7 @@ export function detectEvents(
     homeScore: next.homeScore,
     maxLead,
     closeGameFired: nextCloseGameFired,
+    comebackFired: nextComebackFired,
     updatedAt: Date.now(),
   };
 

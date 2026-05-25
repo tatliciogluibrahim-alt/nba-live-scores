@@ -40,6 +40,11 @@ export type UserPrefs = {
    *  the card from re-rendering every session for users who have
    *  decided "not now" — we never re-prompt automatically. */
   notifPromptDismissed?: boolean;
+  /** True when the user has dismissed the first-run onboarding strip
+   *  on Today. The strip also auto-retires when all three onboarding
+   *  steps are complete (follow + pin + notify), so most users will
+   *  never need to explicitly dismiss. */
+  firstRunDismissed?: boolean;
 };
 
 // ── Defaults ──────────────────────────────────────────────────────────
@@ -66,5 +71,5 @@ export const PRESETS: Record<
 > = {
   quiet: { label: "Quiet", detail: "Tipoff and final only" },
   companion: { label: "Companion", detail: "Tipoff, end of each quarter, final" },
-  all: { label: "All moments", detail: "Above + Q4 close games" },
+  all: { label: "All moments", detail: "Above + Q4 close games and comebacks" },
 };

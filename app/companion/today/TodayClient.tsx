@@ -8,6 +8,7 @@ import { useTodayData } from "./use-today-data";
 import { deriveDailyBrief } from "./daily-brief";
 import { BriefCard } from "./BriefCard";
 import { EnableNotificationsCard } from "./EnableNotificationsCard";
+import { FirstRunStrip } from "./FirstRunStrip";
 import { QuietRecap } from "./QuietRecap";
 import { WorthCheckingNow } from "./sections/worth-checking-now";
 import { YouFollow } from "./sections/you-follow";
@@ -77,6 +78,11 @@ export function TodayClient() {
             open Today. Configure it once in Watch + Alerts. */}
         <NoSpoilersAmbientDot />
       </header>
+
+      {/* First-run onboarding — the 3-card checklist that shows
+          until the user has followed, pinned, and made a notification
+          decision. Auto-retires when all three are done. */}
+      {hydrated ? <FirstRunStrip /> : null}
 
       {/* Quiet Recap — end-of-night moment when the slate is fully wrapped.
           Renders above the Brief because it's the one card that earns

@@ -145,6 +145,9 @@ export function normalizeStoredPrefs(value: unknown): UserPrefs {
   if (typeof value.notifPromptDismissed === "boolean") {
     next.notifPromptDismissed = value.notifPromptDismissed;
   }
+  if (typeof value.firstRunDismissed === "boolean") {
+    next.firstRunDismissed = value.firstRunDismissed;
+  }
 
   return next;
 }

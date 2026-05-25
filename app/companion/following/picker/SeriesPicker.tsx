@@ -91,7 +91,7 @@ export function SeriesPicker() {
   return (
     <PickerScreen
       title="Follow a series."
-      subtitle="Clinch nights, Game 7s, and the calm in between."
+      subtitle="Clinch nights and Game 7s."
       options={options}
       isFollowing={(id) => isFollowing("series", id)}
       onSelect={(opt) => {

@@ -15,26 +15,22 @@ import type { PinnedItem, WatchingPayload } from "./watching-data";
  *  Live > upcoming > final priority — never reveals winners or margins,
  *  just timing-of-tracking copy. Safe under No-Spoilers. */
 function buildWatchingSummary(items: PinnedItem[]): string {
-  if (items.length === 0) return "One game pinned for live tracking.";
+  if (items.length === 0) return "One game pinned.";
 
   const live = items.filter((i) => i.status === "live").length;
   const upcoming = items.filter((i) => i.status === "upcoming").length;
   const final = items.filter((i) => i.status === "final").length;
 
   if (live > 0) {
-    return live === 1
-      ? "Live room. Tracking key moments."
-      : `Live room. ${live} games tracking right now.`;
+    return live === 1 ? "Live now." : `${live} games live.`;
   }
   if (upcoming > 0 && final === 0) {
     return upcoming === 1
-      ? "Pinned for later. We'll surface key moments at tipoff."
-      : `${upcoming} games pinned for later. We'll surface key moments at tipoff.`;
+      ? "Pinned for later."
+      : `${upcoming} games pinned for later.`;
   }
   if (final > 0 && upcoming === 0) {
-    return final === 1
-      ? "Wrapped. Key moments stay here."
-      : "All wrapped. Key moments stay here.";
+    return final === 1 ? "Wrapped." : "All wrapped.";
   }
   // Mixed upcoming + final, no live
   return `${upcoming} coming up · ${final} wrapped.`;

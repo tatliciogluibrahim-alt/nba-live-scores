@@ -20,7 +20,7 @@ export function TournamentPicker() {
   return (
     <PickerScreen
       title="Follow a tournament."
-      subtitle="Follow the whole bracket — clinches, finals, and the road there."
+      subtitle="The whole bracket. Every round, every clinch."
       options={options}
       isFollowing={(id) => isFollowing("tournament", id)}
       onSelect={(opt) => {

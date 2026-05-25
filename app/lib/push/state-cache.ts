@@ -20,11 +20,14 @@ export type CachedGameState = {
   awayScore: number;
   homeScore: number;
   /** Max lead seen so far in the game (absolute). Used by close-game
-   *  detection later. Persisted across cron ticks. */
+   *  and comeback detection. Persisted across cron ticks. */
   maxLead: number;
   /** Whether we've already fired a close-game push for this game.
    *  Once true, never fires again for this game. */
   closeGameFired: boolean;
+  /** Whether we've already fired a comeback push for this game.
+   *  Once true, never fires again for this game. */
+  comebackFired: boolean;
   updatedAt: number;
 };
 

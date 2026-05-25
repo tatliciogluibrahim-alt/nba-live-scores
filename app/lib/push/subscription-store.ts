@@ -34,10 +34,37 @@ export type StoredSubscription = {
 
 const SUBSCRIPTION_INDEX_KEY = "nns:push:subscriptions:v1";
 const SUBSCRIPTION_KEY_PREFIX = "nns:push:subscription:v1:";
+// Reverse index: for each followed team abbr, a set of endpoint URLs
+// that follow it. Lets the dispatcher fanout selectively instead of
+// iterating every subscription on every event. (Phase 2.4)
+const TEAM_INDEX_KEY_PREFIX = "nns:push:by-team:v1:";
 
 function subscriptionKey(endpoint: string): string {
   const hash = createHash("sha256").update(endpoint).digest("hex");
   return `${SUBSCRIPTION_KEY_PREFIX}${hash}`;
+}
+
+function teamIndexKey(teamCode: string): string {
+  return `${TEAM_INDEX_KEY_PREFIX}${teamCode.toUpperCase()}`;
+}
+
+/** Diff old vs new follows, return added/removed team codes. Used to
+ *  surgically update the reverse index instead of rebuilding it. */
+function teamFollowDiff(
+  oldFollows: ReadonlyArray<SyncedFollow>,
+  newFollows: ReadonlyArray<SyncedFollow>
+): { added: string[]; removed: string[] } {
+  const oldTeams = new Set(
+    oldFollows.filter((f) => f.kind === "team").map((f) => f.id.toUpperCase())
+  );
+  const newTeams = new Set(
+    newFollows.filter((f) => f.kind === "team").map((f) => f.id.toUpperCase())
+  );
+  const added: string[] = [];
+  const removed: string[] = [];
+  for (const t of newTeams) if (!oldTeams.has(t)) added.push(t);
+  for (const t of oldTeams) if (!newTeams.has(t)) removed.push(t);
+  return { added, removed };
 }
 
 /** Defensive normalizer for rows pulled from KV. Old Stage B rows may
@@ -99,20 +126,71 @@ export async function upsertSubscription(
         lastSeenAt: now,
       };
 
-  await Promise.all([
+  // Reverse-index maintenance: diff old vs new team follows and apply
+  // surgical adds/removes. Skipped if this upsert didn't carry a sync
+  // payload (e.g. dispatcher post-delivery refresh) since `follows`
+  // hasn't changed.
+  const indexOps: Promise<unknown>[] = [
     kv.set(key, next),
     kv.sadd(SUBSCRIPTION_INDEX_KEY, sub.endpoint),
-  ]);
+  ];
+  if (sync) {
+    const { added, removed } = teamFollowDiff(
+      existing?.follows ?? [],
+      follows
+    );
+    for (const team of added) {
+      indexOps.push(kv.sadd(teamIndexKey(team), sub.endpoint));
+    }
+    for (const team of removed) {
+      indexOps.push(kv.srem(teamIndexKey(team), sub.endpoint));
+    }
+  }
+  await Promise.all(indexOps);
 
   return next;
 }
 
 export async function removeSubscription(endpoint: string): Promise<boolean> {
+  // We don't know which team indexes to clean without first loading
+  // the row — do that, then clean up everything in one pass.
+  const raw = await kv.get<Partial<StoredSubscription>>(subscriptionKey(endpoint));
+  const existing = normalizeStored(endpoint, raw);
+  const teamCleanup: Promise<unknown>[] = [];
+  if (existing) {
+    for (const f of existing.follows) {
+      if (f.kind === "team") {
+        teamCleanup.push(kv.srem(teamIndexKey(f.id), endpoint));
+      }
+    }
+  }
   const [deleted] = await Promise.all([
     kv.del(subscriptionKey(endpoint)),
     kv.srem(SUBSCRIPTION_INDEX_KEY, endpoint),
+    ...teamCleanup,
   ]);
   return deleted > 0;
+}
+
+/** Pull only the subscriptions that follow the given team codes.
+ *  Phase 2.4: the dispatcher uses this instead of listSubscriptions()
+ *  so fanout cost is O(interested subs) not O(all subs). */
+export async function listSubscriptionsByTeams(
+  teamCodes: string[]
+): Promise<StoredSubscription[]> {
+  if (teamCodes.length === 0) return [];
+  // Union the per-team endpoint sets, then load each subscription once.
+  const endpointSets = await Promise.all(
+    teamCodes.map((t) => kv.smembers<string[]>(teamIndexKey(t)))
+  );
+  const endpointSet = new Set<string>();
+  for (const set of endpointSets) {
+    for (const e of set) endpointSet.add(e);
+  }
+  const endpoints = Array.from(endpointSet);
+  if (endpoints.length === 0) return [];
+  const rows = await Promise.all(endpoints.map((e) => getSubscription(e)));
+  return rows.filter((r): r is StoredSubscription => Boolean(r));
 }
 
 export async function getSubscription(

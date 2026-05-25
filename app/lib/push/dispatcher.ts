@@ -20,12 +20,13 @@ import {
 import { presetMatchesEvent } from "./preset-matcher";
 import { claimDelivery } from "./dedupe";
 import {
-  listSubscriptions,
+  listSubscriptionsByTeams,
   removeSubscription,
   upsertSubscription,
   type StoredSubscription,
 } from "./subscription-store";
 import type { PushEvent } from "./event-detector";
+import { incrCounter } from "./ops-metrics";
 
 type DeliveryResult = {
   endpoint: string;
@@ -40,7 +41,16 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
 }> {
   if (events.length === 0) return { deliveries: [], pruned: 0 };
 
-  const subs = await listSubscriptions();
+  // Phase 2.4 reverse-index: pull only the subscriptions that follow
+  // any team mentioned in this batch of events. The per-event filter
+  // below still runs (preset matching, no-spoilers gating), but the
+  // candidate set is now O(interested subs) instead of O(all subs).
+  const teamCodes = new Set<string>();
+  for (const ev of events) {
+    teamCodes.add(ev.awayCode);
+    teamCodes.add(ev.homeCode);
+  }
+  const subs = await listSubscriptionsByTeams(Array.from(teamCodes));
   if (subs.length === 0) return { deliveries: [], pruned: 0 };
 
   const deliveries: DeliveryResult[] = [];
@@ -59,6 +69,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           delivered: false,
           reason: "deduped",
         });
+        await incrCounter("dispatch.deduped");
         continue;
       }
 
@@ -72,6 +83,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           delivered: false,
           reason: err instanceof Error ? err.message : "payload-too-large",
         });
+        await incrCounter("dispatch.payload-too-large");
         continue;
       }
 
@@ -89,6 +101,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           keys: sub.keys,
         });
         deliveries.push({ endpoint: sub.endpoint, delivered: true });
+        await incrCounter("dispatch.delivered");
       } catch (err) {
         const statusCode = (err as { statusCode?: number })?.statusCode;
         if (statusCode === 404 || statusCode === 410) {
@@ -99,12 +112,14 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
             delivered: false,
             reason: "gone",
           });
+          await incrCounter("dispatch.gone");
         } else {
           deliveries.push({
             endpoint: sub.endpoint,
             delivered: false,
             reason: `push-failed-${statusCode ?? "?"}`,
           });
+          await incrCounter("dispatch.failed");
         }
       }
     }
@@ -117,7 +132,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
  *  suppressed for subscriptions where noSpoilers is true, even if the
  *  user picked the "All moments" tier — they opted into both, both
  *  should be respected. (Codex QA #1.) */
-const SPOILERY_EVENTS = new Set<PushEvent["type"]>(["close-game"]);
+const SPOILERY_EVENTS = new Set<PushEvent["type"]>(["close-game", "comeback"]);
 
 function subscriptionWantsEvent(
   sub: StoredSubscription,
@@ -196,6 +211,16 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
         body: `${scoreLine(event)} · one possession`,
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:close`,
+      };
+    case "comeback":
+      // Like close-game: suppressed for noSpoilers users. Body leans
+      // into the drama because the "All moments" tier is explicitly
+      // asking for it.
+      return {
+        title: `Comeback · ${matchup}`,
+        body: `${scoreLine(event)} · lead erased`,
+        url: `/game/${event.gameId}`,
+        tag: `${event.gameId}:comeback`,
       };
     case "final":
       return {

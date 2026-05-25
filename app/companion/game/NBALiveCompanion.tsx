@@ -281,7 +281,7 @@ function DetailFallback({ subject }: { subject: string }) {
           fontWeight: 500,
         }}
       >
-        Moments load once the game has plays in the feed. {subject} is queued — we&apos;ll surface the big swings as they happen.
+        Moments load once the game starts. {subject} is queued.
       </p>
     </section>
   );

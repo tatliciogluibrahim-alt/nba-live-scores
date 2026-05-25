@@ -19,7 +19,7 @@ export function CalmCard() {
         className="mx-auto mt-2 max-w-[22ch] text-[13px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Nothing demanding your attention right now. We&apos;ll surface it when it matters.
+        Nothing demanding your attention right now.
       </p>
     </section>
   );

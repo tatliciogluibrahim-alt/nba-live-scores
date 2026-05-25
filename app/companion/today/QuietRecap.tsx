@@ -40,8 +40,8 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
         : `Tonight: ${finalsCount} finals.`;
 
   const sub = noSpoilers
-    ? "Schedules stay visible. Tap to choose what to see."
-    : "Calm wrap. No alerts after this — see what you missed when you're ready.";
+    ? "Schedules stay visible. Tap when you're ready."
+    : "No more alerts tonight. Tap to see the wrap.";
 
   return (
     <section

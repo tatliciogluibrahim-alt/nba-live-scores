@@ -24,6 +24,7 @@ const MATRIX: Record<EventType, ReadonlySet<AlertPreset>> = {
   "eoq-2": new Set<AlertPreset>(["companion", "all"]),
   "eoq-3": new Set<AlertPreset>(["companion", "all"]),
   "close-game": new Set<AlertPreset>(["all"]),
+  comeback: new Set<AlertPreset>(["all"]),
   final: new Set<AlertPreset>(["quiet", "companion", "all"]),
 };
 

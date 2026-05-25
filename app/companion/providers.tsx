@@ -79,6 +79,8 @@ type PrefsCtx = {
    *  taps "Not now" on the Today prompt card. Once set, the prompt card
    *  never re-appears for that browser/install. */
   dismissNotifPrompt: () => void;
+  /** Dismiss the first-run onboarding strip on Today. */
+  dismissFirstRun: () => void;
   hydrated: boolean;
 };
 
@@ -288,6 +290,15 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const dismissFirstRun = useCallback(() => {
+    setPrefs((prev) => {
+      if (prev.firstRunDismissed) return prev;
+      const next: UserPrefs = { ...prev, firstRunDismissed: true };
+      writeJSON(STORAGE_KEYS.prefs, next);
+      return next;
+    });
+  }, []);
+
   // ── Memoize context values to avoid downstream re-renders ──────────
   const followsValue = useMemo<FollowsCtx>(
     () => ({
@@ -321,6 +332,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       markQuietRecapSeen,
       setAlertPreset,
       dismissNotifPrompt,
+      dismissFirstRun,
       hydrated,
     }),
     [
@@ -331,6 +343,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       markQuietRecapSeen,
       setAlertPreset,
       dismissNotifPrompt,
+      dismissFirstRun,
       hydrated,
     ]
   );
