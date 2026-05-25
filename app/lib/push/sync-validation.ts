@@ -1,6 +1,6 @@
-// Validation for the follows/preset sync payload sent alongside a
-// subscription. Stage C: the dispatcher needs to know which teams a
-// device cares about and at which tier, so it can fanout selectively.
+// Validation for the alert sync payload sent alongside a subscription.
+// Stage 17: the dispatcher cares only about alert-enabled follows and
+// each follow owns its own tier.
 
 import type { AlertPreset, FollowKind } from "../../companion/state/types";
 
@@ -9,9 +9,12 @@ export type SyncedFollow = {
   id: string;
 };
 
+export type SyncedAlert = SyncedFollow & {
+  tier: AlertPreset;
+};
+
 export type ValidSyncPayload = {
-  follows: SyncedFollow[];
-  alertPreset: AlertPreset;
+  alerts: SyncedAlert[];
   /** No-Spoilers mode flag. Gates closeness-leaking events at the
    *  dispatcher (close-game, comeback) — see Codex QA #1. */
   noSpoilers: boolean;
@@ -29,18 +32,21 @@ const VALID_PRESETS: ReadonlySet<AlertPreset> = new Set([
   "all",
 ]);
 
-const MAX_FOLLOWS = 64;
+const MAX_ALERTS = 64;
 const MAX_ID_LENGTH = 80;
 
 export function validateSyncPayload(input: unknown): ValidSyncPayload {
-  // Empty / missing → treat as "nothing to alert about, default tier."
+  // Empty / missing → treat as "nothing to alert about."
   // This keeps the subscribe endpoint backwards-compatible with clients
   // that POST only a subscription (no follows / preset yet).
   if (!input || typeof input !== "object") {
-    return { follows: [], alertPreset: "companion", noSpoilers: false };
+    return { alerts: [], noSpoilers: false };
   }
 
   const raw = input as {
+    alerts?: unknown;
+    // Legacy Stage C payload. Converted into per-follow alerts below so
+    // old clients don't break while installed PWAs roll forward.
     follows?: unknown;
     alertPreset?: unknown;
     noSpoilers?: unknown;
@@ -52,21 +58,29 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
       ? (raw.alertPreset as AlertPreset)
       : "companion";
 
-  const followsArray = Array.isArray(raw.follows) ? raw.follows : [];
-  const follows: SyncedFollow[] = [];
-  for (const entry of followsArray.slice(0, MAX_FOLLOWS)) {
+  const rawAlerts = Array.isArray(raw.alerts)
+    ? raw.alerts
+    : Array.isArray(raw.follows)
+      ? raw.follows
+      : [];
+  const alerts: SyncedAlert[] = [];
+  for (const entry of rawAlerts.slice(0, MAX_ALERTS)) {
     if (!entry || typeof entry !== "object") continue;
-    const f = entry as { kind?: unknown; id?: unknown };
+    const f = entry as { kind?: unknown; id?: unknown; tier?: unknown };
     if (typeof f.kind !== "string" || !VALID_KINDS.has(f.kind as FollowKind)) {
       continue;
     }
     if (typeof f.id !== "string" || f.id.length === 0 || f.id.length > MAX_ID_LENGTH) {
       continue;
     }
-    follows.push({ kind: f.kind as FollowKind, id: f.id });
+    const tier: AlertPreset =
+      typeof f.tier === "string" && VALID_PRESETS.has(f.tier as AlertPreset)
+        ? (f.tier as AlertPreset)
+        : alertPreset;
+    alerts.push({ kind: f.kind as FollowKind, id: f.id, tier });
   }
 
   const noSpoilers = raw.noSpoilers === true;
 
-  return { follows, alertPreset, noSpoilers };
+  return { alerts, noSpoilers };
 }

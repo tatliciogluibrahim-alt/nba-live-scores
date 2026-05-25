@@ -3,7 +3,7 @@
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PresetRow } from "../following/PresetRow";
 import { useFollows } from "../providers";
-import { DEFAULT_ALERT_PRESET, type AlertPreset } from "../state/types";
+import type { AlertPreset } from "../state/types";
 
 // Country follow + preset block. Mirrors SeriesPresetSection in structure
 // but uses country-specific copy. Stage 11 cleanup could factor a shared
@@ -16,7 +16,13 @@ export function CountryPresetSection({
   countryCode: string;
   countryName: string;
 }) {
-  const { follows, addFollow, removeFollow, setFollowPreset } = useFollows();
+  const {
+    follows,
+    addFollow,
+    removeFollow,
+    setFollowAlertEnabled,
+    setFollowAlertTier,
+  } = useFollows();
 
   const existing = follows.find(
     (f) => f.kind === "country" && f.id === countryCode
@@ -24,13 +30,13 @@ export function CountryPresetSection({
   const isFollowed = Boolean(existing);
 
   function handleFollow() {
-    addFollow("country", countryCode, DEFAULT_ALERT_PRESET);
+    addFollow("country", countryCode);
   }
   function handleUnfollow() {
     removeFollow("country", countryCode);
   }
   function handlePreset(next: AlertPreset) {
-    setFollowPreset("country", countryCode, next);
+    setFollowAlertTier("country", countryCode, next);
   }
 
   return (
@@ -45,11 +51,30 @@ export function CountryPresetSection({
           className="rounded-[14px] border px-3 py-3"
           style={{ background: "var(--paper)", borderColor: "var(--line)" }}
         >
-          <PresetRow
-            value={existing.alertPreset}
-            onChange={handlePreset}
-            subjectLabel={countryName}
-          />
+          <button
+            type="button"
+            onClick={() => setFollowAlertEnabled("country", countryCode, !existing.alertEnabled)}
+            aria-label={`${existing.alertEnabled ? "Disable" : "Enable"} alerts for ${countryName}`}
+            className="mb-2 inline-flex min-h-[44px] w-full items-center justify-between rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
+            style={{
+              background: existing.alertEnabled ? "var(--cream-2)" : "transparent",
+              borderColor: existing.alertEnabled ? "var(--ink)" : "var(--line)",
+            }}
+          >
+            <span className="text-[13px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
+              {existing.alertEnabled ? "Getting alerts" : "Alerts off"}
+            </span>
+            <span className="text-[11px]" style={{ color: "var(--mute-1)", fontWeight: 600 }}>
+              {existing.alertEnabled ? "Tap to disable" : "Tap to enable"}
+            </span>
+          </button>
+          {existing.alertEnabled ? (
+            <PresetRow
+              value={existing.alertTier}
+              onChange={handlePreset}
+              subjectLabel={countryName}
+            />
+          ) : null}
           <button
             type="button"
             onClick={handleUnfollow}
@@ -79,7 +104,7 @@ export function CountryPresetSection({
             className="mt-1 text-[12px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            Default is Companion — start · close game · final. Change later.
+            New follows use your default alert level. Change it later.
           </p>
           <button
             type="button"

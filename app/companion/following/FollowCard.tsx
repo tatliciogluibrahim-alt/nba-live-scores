@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
-import { DEFAULT_ALERT_PRESET, PRESETS, type AlertPreset, type Follow } from "../state/types";
+import { PRESETS, type AlertPreset, type Follow } from "../state/types";
 import { useFollows } from "../providers";
 import { PresetRow } from "./PresetRow";
 
@@ -19,14 +19,26 @@ export type FollowCardData = {
 };
 
 export function FollowCard({ data }: { data: FollowCardData }) {
-  const { setFollowPreset, removeFollow } = useFollows();
+  const {
+    alertSlotCount,
+    alertSlotCap,
+    setFollowAlertEnabled,
+    setFollowAlertTier,
+    removeFollow,
+  } = useFollows();
   const [expanded, setExpanded] = useState(false);
 
   const { follow, kindLabel, identityMark, name, detail, accent } = data;
-  const presetMeta = PRESETS[follow.alertPreset];
+  const presetMeta = PRESETS[follow.alertTier];
+  const slotsFull = alertSlotCount >= alertSlotCap;
+  const canEnable = follow.alertEnabled || !slotsFull;
 
   function handlePreset(next: AlertPreset) {
-    setFollowPreset(follow.kind, follow.id, next);
+    setFollowAlertTier(follow.kind, follow.id, next);
+  }
+
+  function handleAlertToggle() {
+    setFollowAlertEnabled(follow.kind, follow.id, !follow.alertEnabled);
   }
 
   function handleRemove() {
@@ -93,22 +105,18 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           ) : null}
         </div>
 
-        {/* Only surface the preset tag when the user has intentionally
-            changed away from the default — "Companion" on every card
-            communicates nothing since it's the out-of-box state. */}
-        {follow.alertPreset !== DEFAULT_ALERT_PRESET ? (
-          <span
-            className="shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase"
-            style={{
-              background: "var(--cream-2)",
-              color: "var(--ink)",
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-            }}
-          >
-            {presetMeta.label}
-          </span>
-        ) : null}
+        <span
+          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase"
+          style={{
+            background: follow.alertEnabled ? "var(--cream-2)" : "transparent",
+            color: follow.alertEnabled ? "var(--ink)" : "var(--mute-1)",
+            border: `1px solid ${follow.alertEnabled ? "var(--line)" : "var(--mute-2)"}`,
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+          }}
+        >
+          {follow.alertEnabled ? presetMeta.label : "Alerts off"}
+        </span>
       </button>
 
       {expanded ? (
@@ -118,12 +126,48 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           style={{ borderColor: "var(--line)" }}
         >
           <Eyebrow>Alerts</Eyebrow>
+          <button
+            type="button"
+            onClick={handleAlertToggle}
+            disabled={!canEnable}
+            aria-label={`${follow.alertEnabled ? "Disable" : "Enable"} alerts for ${name}`}
+            className="mt-2 inline-flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
+            style={{
+              background: follow.alertEnabled ? "var(--cream-2)" : "transparent",
+              borderColor: follow.alertEnabled ? "var(--ink)" : "var(--line)",
+              opacity: canEnable ? 1 : 0.72,
+            }}
+          >
+            <span
+              className="text-[13px]"
+              style={{ color: "var(--ink)", fontWeight: 700 }}
+            >
+              {follow.alertEnabled ? "Getting alerts" : "Alerts off"}
+            </span>
+            <span
+              className="text-[11px]"
+              style={{ color: "var(--mute-1)", fontWeight: 600 }}
+            >
+              {follow.alertEnabled ? "Tap to disable" : canEnable ? "Tap to enable" : "Full"}
+            </span>
+          </button>
+          {!canEnable ? (
+            <p
+              className="mt-2 text-[12px] leading-snug"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              Notification follows are full ({alertSlotCount} of {alertSlotCap}).
+              Disable one to enable this.
+            </p>
+          ) : null}
           <div className="mt-2">
-            <PresetRow
-              value={follow.alertPreset}
-              onChange={handlePreset}
-              subjectLabel={name}
-            />
+            {follow.alertEnabled ? (
+              <PresetRow
+                value={follow.alertTier}
+                onChange={handlePreset}
+                subjectLabel={name}
+              />
+            ) : null}
           </div>
 
           <button

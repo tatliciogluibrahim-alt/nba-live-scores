@@ -65,7 +65,7 @@ export function resolveFollowIdentity(follow: Follow): FollowIdentity {
         kindLabel: "Tournament",
         name: tournament?.name ?? follow.id,
         detail: tournament?.detail,
-        chip: tournament?.name.slice(0, 3).toUpperCase() ?? "CUP",
+        chip: tournament?.chip ?? "CUP",
         accent: tournament?.accent ?? "var(--ink)",
       };
     }

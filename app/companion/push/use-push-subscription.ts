@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { AlertPreset, Follow } from "../state/types";
+import type { AlertPreset, FollowKind } from "../state/types";
 
 // Push subscription hook — encapsulates the full Web Push subscription
 // lifecycle for a device: read existing subscription on mount, subscribe
@@ -23,6 +23,12 @@ const LEGACY_LS_KEY = "nns.push.subscription.v1";
 type StoredSub = {
   endpoint: string;
   keys: { p256dh: string; auth: string };
+};
+
+type AlertSyncItem = {
+  kind: FollowKind;
+  id: string;
+  tier: AlertPreset;
 };
 
 export type PushSubscriptionStatus =
@@ -89,22 +95,20 @@ export function usePushSubscription(): {
   status: PushSubscriptionStatus;
   /** Create a new push subscription. Caller must have already secured
    *  Notification permission — otherwise pushManager.subscribe rejects.
-   *  Pass the current follows + global alert tier + noSpoilers flag so
-   *  the server knows who to fan out which events to and which
+   *  Pass the current alert-enabled follows + noSpoilers flag so the
+   *  server knows who to fan out which events to and which
    *  closeness-leaking events to suppress. */
   subscribe: (sync?: {
-    follows: Follow[];
-    alertPreset: AlertPreset;
+    alerts: AlertSyncItem[];
     noSpoilers: boolean;
   }) => Promise<StoredSub | null>;
   /** Tear down the subscription on this device, both server and browser. */
   unsubscribe: () => Promise<void>;
-  /** Push the current follows + tier + noSpoilers to the server without
+  /** Push the current per-follow alerts + noSpoilers to the server without
    *  re-creating the subscription. Called whenever any of those change
    *  while already subscribed. No-op if not subscribed yet. */
   syncFollows: (sync: {
-    follows: Follow[];
-    alertPreset: AlertPreset;
+    alerts: AlertSyncItem[];
     noSpoilers: boolean;
   }) => Promise<void>;
   /** Fire a test push via the server. Optional delay lets the caller
@@ -173,7 +177,7 @@ export function usePushSubscription(): {
   }, []);
 
   const subscribe = useCallback(async (
-    sync?: { follows: Follow[]; alertPreset: AlertPreset; noSpoilers: boolean }
+    sync?: { alerts: AlertSyncItem[]; noSpoilers: boolean }
   ): Promise<StoredSub | null> => {
     if (typeof window === "undefined") return null;
     const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -201,8 +205,7 @@ export function usePushSubscription(): {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             subscription: stored,
-            follows: sync?.follows.map((f) => ({ kind: f.kind, id: f.id })) ?? [],
-            alertPreset: sync?.alertPreset ?? "companion",
+            alerts: sync?.alerts ?? [],
             noSpoilers: sync?.noSpoilers ?? false,
           }),
         });
@@ -257,8 +260,7 @@ export function usePushSubscription(): {
 
   const syncFollows = useCallback(
     async (sync: {
-      follows: Follow[];
-      alertPreset: AlertPreset;
+      alerts: AlertSyncItem[];
       noSpoilers: boolean;
     }): Promise<void> => {
       const local = readLocal();
@@ -269,8 +271,7 @@ export function usePushSubscription(): {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             subscription: local,
-            follows: sync.follows.map((f) => ({ kind: f.kind, id: f.id })),
-            alertPreset: sync.alertPreset,
+            alerts: sync.alerts,
             noSpoilers: sync.noSpoilers,
           }),
         });

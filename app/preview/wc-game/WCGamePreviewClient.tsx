@@ -18,8 +18,14 @@ const MOCK_LIVE: WCGameLite = {
   statusText: "62'",
   stage: "Group D",
   group: "D",
-  home: { name: "Brazil", abbreviation: "BRA", score: 1 },
-  away: { name: "Türkiye", abbreviation: "TUR", score: 2 },
+  home: { id: "BRA", name: "Brazil", abbreviation: "BRA", score: 1 },
+  away: { id: "TUR", name: "Türkiye", abbreviation: "TUR", score: 2 },
+  events: [
+    { minute: "18", type: "goal", playerName: "A. Güler", assistName: "H. Çalhanoğlu", teamId: "TUR" },
+    { minute: "51", type: "goal", playerName: "Rodrygo", assistName: "Vini Jr.", teamId: "BRA" },
+    { minute: "55", type: "red_card", playerName: "Marquinhos", teamId: "BRA" },
+    { minute: "60", type: "goal", playerName: "B. Yılmaz", assistName: "K. Aktürkoğlu", teamId: "TUR" },
+  ],
   broadcasts: ["FOX"],
   watchLabel: "FOX",
 };
@@ -31,8 +37,14 @@ const MOCK_FINAL: WCGameLite = {
   statusText: "FT",
   stage: "Group D",
   group: "D",
-  home: { name: "Brazil", abbreviation: "BRA", score: 1 },
-  away: { name: "Türkiye", abbreviation: "TUR", score: 2 },
+  home: { id: "BRA", name: "Brazil", abbreviation: "BRA", score: 1 },
+  away: { id: "TUR", name: "Türkiye", abbreviation: "TUR", score: 2 },
+  events: [
+    { minute: "18", type: "goal", playerName: "A. Güler", assistName: "H. Çalhanoğlu", teamId: "TUR" },
+    { minute: "51", type: "goal", playerName: "Rodrygo", assistName: "Vini Jr.", teamId: "BRA" },
+    { minute: "55", type: "red_card", playerName: "Marquinhos", teamId: "BRA" },
+    { minute: "60", type: "goal", playerName: "B. Yılmaz", assistName: "K. Aktürkoğlu", teamId: "TUR" },
+  ],
   broadcasts: ["FOX"],
   watchLabel: "FOX",
 };
@@ -44,22 +56,18 @@ const MOCK_UPCOMING: WCGameLite = {
   statusText: "Kicks off 6h",
   stage: "Group D",
   group: "D",
-  home: { name: "Brazil", abbreviation: "BRA", score: 0 },
-  away: { name: "Türkiye", abbreviation: "TUR", score: 0 },
+  home: { id: "BRA", name: "Brazil", abbreviation: "BRA", score: 0 },
+  away: { id: "TUR", name: "Türkiye", abbreviation: "TUR", score: 0 },
   broadcasts: ["FOX"],
   watchLabel: "FOX",
 };
 
 const HIGHLIGHTS_LIVE: WCHighlight[] = [
-  { eyebrow: "Match character", body: "End-to-end second half." },
-  { eyebrow: "Top scorer", body: "A. Güler (TUR) · 1 goal" },
   { eyebrow: "Possession", body: "TUR 54% · BRA 46%" },
 ];
 
 const HIGHLIGHTS_FINAL: WCHighlight[] = [
-  { eyebrow: "Match character", body: "One-goal margin late." },
-  { eyebrow: "Top scorer", body: "A. Güler (TUR) · 1 goal" },
-  { eyebrow: "Top playmaker", body: "Rodrygo (BRA) · 1 assist" },
+  { eyebrow: "Possession", body: "TUR 54% · BRA 46%" },
 ];
 
 export function WCGamePreviewClient() {

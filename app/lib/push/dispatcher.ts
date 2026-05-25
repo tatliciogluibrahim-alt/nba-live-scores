@@ -1,11 +1,10 @@
 // Push dispatcher — turns events into actual sendNotification calls.
 //
 // For each event:
-//   1. Pull every stored subscription (Stage C v1 — no reverse index;
-//      iterate all subs and filter in memory. Fine while N < ~500.).
-//   2. Filter to subscriptions whose `follows` includes either team
-//      mentioned in the event.
-//   3. Further filter by preset (preset-matcher).
+//   1. Pull candidate subscriptions from the per-team reverse index.
+//   2. Filter to subscriptions whose alert-enabled follows include either
+//      team mentioned in the event.
+//   3. Further filter by that follow's tier (preset-matcher).
 //   4. For each survivor, claim a dedupe slot. Skip if already fired.
 //   5. Build the payload and call web-push.sendNotification.
 //   6. On 404/410 from the push service, drop the subscription from
@@ -138,24 +137,21 @@ function subscriptionWantsEvent(
   sub: StoredSubscription,
   event: PushEvent
 ): boolean {
-  // Defensive: old Stage B rows can be missing follows/alertPreset
-  // entirely. The store normalizer fills them in now (Codex QA #2),
-  // but belt-and-suspenders.
-  const preset = sub.alertPreset ?? "companion";
-  const follows = Array.isArray(sub.follows) ? sub.follows : [];
-
-  if (!presetMatchesEvent(preset, event.type)) return false;
-
   // No-Spoilers gate. The user explicitly opted into hiding closeness
   // across the entire app — push notifications must honor that too.
   if (sub.noSpoilers && SPOILERY_EVENTS.has(event.type)) return false;
 
-  // The user is "interested" if any of their team-kind follows matches
-  // either side of the matchup. Country / series / tournament follows
-  // don't drive NBA push fanout (yet — those exist for WC and future).
-  return follows.some(
+  const alerts = Array.isArray(sub.alerts) ? sub.alerts : [];
+
+  // The user is "interested" if any alert-enabled team follow matches
+  // either side of the matchup and that specific follow's tier includes
+  // the event type. Country / series / tournament alerts are kept in the
+  // schema for WC/future fanout but don't drive NBA team events yet.
+  return alerts.some(
     (f) =>
-      f.kind === "team" && (f.id === event.awayCode || f.id === event.homeCode)
+      f.kind === "team" &&
+      (f.id === event.awayCode || f.id === event.homeCode) &&
+      presetMatchesEvent(f.tier, event.type)
   );
 }
 

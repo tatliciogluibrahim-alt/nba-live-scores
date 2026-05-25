@@ -109,10 +109,10 @@ export function PushSubscriptionPanel() {
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {status.state === "subscribed"
-          ? "This device is subscribed. Pushes from our server will arrive here even when the app is closed."
+          ? "This device receives pushes, even when the app is closed."
           : status.state === "error"
             ? status.message
-            : "Not subscribed. Enable to receive moment-of pings."}
+            : "Push is off on this device."}
       </p>
 
       <div className="flex flex-col gap-2">

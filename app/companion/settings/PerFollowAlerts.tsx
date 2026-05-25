@@ -12,13 +12,20 @@ import type { AlertPreset, Follow } from "../state/types";
 // can see what they're configuring at a glance.
 
 export function PerFollowAlerts() {
-  const { follows, setFollowPreset, hydrated } = useFollows();
+  const {
+    follows,
+    alertSlotCount,
+    alertSlotCap,
+    setFollowAlertEnabled,
+    setFollowAlertTier,
+    hydrated,
+  } = useFollows();
 
   if (!hydrated) {
     return (
       <section aria-busy aria-live="polite">
         <div className="mb-2 flex items-center gap-3">
-          <Eyebrow>Per-follow alerts</Eyebrow>
+          <Eyebrow>Notification follows</Eyebrow>
           <div className="h-px flex-1" style={{ background: "var(--line)" }} />
         </div>
         <div
@@ -34,7 +41,7 @@ export function PerFollowAlerts() {
     return (
       <section>
         <div className="mb-2 flex items-center gap-3">
-          <Eyebrow>Per-follow alerts</Eyebrow>
+          <Eyebrow>Notification follows</Eyebrow>
           <div className="h-px flex-1" style={{ background: "var(--line)" }} />
         </div>
         <Link
@@ -53,7 +60,7 @@ export function PerFollowAlerts() {
             className="mt-1 text-[12px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            Pick a team, country, series, or tournament. Alert presets land here.
+            Pick a team, country, series, or tournament. Alert controls land here.
           </p>
         </Link>
       </section>
@@ -61,18 +68,30 @@ export function PerFollowAlerts() {
   }
 
   function handlePreset(follow: Follow, next: AlertPreset) {
-    setFollowPreset(follow.kind, follow.id, next);
+    setFollowAlertTier(follow.kind, follow.id, next);
+  }
+
+  function handleToggle(follow: Follow) {
+    setFollowAlertEnabled(follow.kind, follow.id, !follow.alertEnabled);
   }
 
   return (
     <section>
       <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>Per-follow alerts</Eyebrow>
+        <Eyebrow>Notification follows</Eyebrow>
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />
       </div>
+      <p
+        className="mb-3 text-[12px] leading-snug"
+        style={{ color: "var(--mute-1)", fontWeight: 500 }}
+      >
+        {alertSlotCount} of {alertSlotCap} follows getting alerts. Visual follows are unlimited.
+      </p>
       <ul className="space-y-3">
         {follows.map((follow) => {
           const identity = resolveFollowIdentity(follow);
+          const slotsFull = alertSlotCount >= alertSlotCap;
+          const canEnable = follow.alertEnabled || !slotsFull;
           return (
             <li
               key={`${follow.kind}-${follow.id}`}
@@ -110,11 +129,47 @@ export function PerFollowAlerts() {
                 </div>
               </div>
               <div className="px-3 py-3">
-                <PresetRow
-                  value={follow.alertPreset}
-                  onChange={(next) => handlePreset(follow, next)}
-                  subjectLabel={identity.name}
-                />
+                <button
+                  type="button"
+                  onClick={() => handleToggle(follow)}
+                  disabled={!canEnable}
+                  aria-label={`${follow.alertEnabled ? "Disable" : "Enable"} alerts for ${identity.name}`}
+                  className="mb-2 inline-flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
+                  style={{
+                    background: follow.alertEnabled ? "var(--cream-2)" : "transparent",
+                    borderColor: follow.alertEnabled ? "var(--ink)" : "var(--line)",
+                    opacity: canEnable ? 1 : 0.72,
+                  }}
+                >
+                  <span
+                    className="text-[13px]"
+                    style={{ color: "var(--ink)", fontWeight: 700 }}
+                  >
+                    {follow.alertEnabled ? "Getting alerts" : "Alerts off"}
+                  </span>
+                  <span
+                    className="text-[11px]"
+                    style={{ color: "var(--mute-1)", fontWeight: 600 }}
+                  >
+                    {follow.alertEnabled ? "Tap to disable" : canEnable ? "Tap to enable" : "Full"}
+                  </span>
+                </button>
+                {!canEnable ? (
+                  <p
+                    className="mb-2 text-[12px] leading-snug"
+                    style={{ color: "var(--mute-1)", fontWeight: 500 }}
+                  >
+                    Notification follows are full ({alertSlotCount} of {alertSlotCap}).
+                    Disable one to enable this.
+                  </p>
+                ) : null}
+                {follow.alertEnabled ? (
+                  <PresetRow
+                    value={follow.alertTier}
+                    onChange={(next) => handlePreset(follow, next)}
+                    subjectLabel={identity.name}
+                  />
+                ) : null}
               </div>
             </li>
           );

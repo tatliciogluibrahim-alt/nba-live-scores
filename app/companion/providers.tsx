@@ -10,8 +10,8 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import {
-  DEFAULT_ALERT_PRESET,
   DEFAULT_PREFS,
+  MAX_FREE_ALERT_SLOTS,
   type AlertPreset,
   type Follow,
   type FollowKind,
@@ -31,10 +31,13 @@ import { PushSyncEffect } from "./push/PushSyncEffect";
 // ─── Follows ──────────────────────────────────────────────────────────
 type FollowsCtx = {
   follows: Follow[];
+  alertSlotCount: number;
+  alertSlotCap: number;
   isFollowing: (kind: FollowKind, id: string) => boolean;
   addFollow: (kind: FollowKind, id: string, preset?: AlertPreset) => void;
   removeFollow: (kind: FollowKind, id: string) => void;
-  setFollowPreset: (kind: FollowKind, id: string, preset: AlertPreset) => void;
+  setFollowAlertEnabled: (kind: FollowKind, id: string, enabled: boolean) => void;
+  setFollowAlertTier: (kind: FollowKind, id: string, preset: AlertPreset) => void;
   hydrated: boolean;
 };
 
@@ -72,9 +75,9 @@ type PrefsCtx = {
   /** Records the YYYY-MM-DD the user dismissed the Quiet Recap card, so
    *  the recap won't re-render on subsequent opens that day. */
   markQuietRecapSeen: (yyyymmdd: string) => void;
-  /** Set the global notification tier (Stage C). The dispatcher uses
-   *  this value when deciding which events to fan out to this device. */
-  setAlertPreset: (preset: AlertPreset) => void;
+  /** Default tier for newly-added follows. Existing follows keep their
+   *  own per-follow alert levels. */
+  setDefaultAlertTier: (preset: AlertPreset) => void;
   /** One-way flag. Set when the user either enables notifications or
    *  taps "Not now" on the Today prompt card. Once set, the prompt card
    *  never re-appears for that browser/install. */
@@ -178,16 +181,32 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     [follows]
   );
 
+  const alertSlotCount = useMemo(
+    () => follows.filter((f) => f.alertEnabled).length,
+    [follows]
+  );
+
   const addFollow = useCallback(
-    (kind: FollowKind, id: string, preset: AlertPreset = DEFAULT_ALERT_PRESET) => {
+    (kind: FollowKind, id: string, preset?: AlertPreset) => {
       setFollows((prev) => {
         if (prev.some((f) => f.kind === kind && f.id === id)) return prev;
-        const next = [...prev, { kind, id, alertPreset: preset }];
+        const enabledCount = prev.filter((f) => f.alertEnabled).length;
+        const tier = preset ?? prefs.defaultAlertTier;
+        const next = [
+          ...prev,
+          {
+            kind,
+            id,
+            alertEnabled: enabledCount < MAX_FREE_ALERT_SLOTS,
+            alertTier: tier,
+            followedAt: Date.now(),
+          },
+        ];
         writeJSON(STORAGE_KEYS.follows, next);
         return next;
       });
     },
-    []
+    [prefs.defaultAlertTier]
   );
 
   const removeFollow = useCallback((kind: FollowKind, id: string) => {
@@ -198,11 +217,30 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const setFollowPreset = useCallback(
+  const setFollowAlertEnabled = useCallback(
+    (kind: FollowKind, id: string, enabled: boolean) => {
+      setFollows((prev) => {
+        const current = prev.find((f) => f.kind === kind && f.id === id);
+        if (!current) return prev;
+        if (current.alertEnabled === enabled) return prev;
+        if (enabled && prev.filter((f) => f.alertEnabled).length >= MAX_FREE_ALERT_SLOTS) {
+          return prev;
+        }
+        const next = prev.map((f) =>
+          f.kind === kind && f.id === id ? { ...f, alertEnabled: enabled } : f
+        );
+        writeJSON(STORAGE_KEYS.follows, next);
+        return next;
+      });
+    },
+    []
+  );
+
+  const setFollowAlertTier = useCallback(
     (kind: FollowKind, id: string, preset: AlertPreset) => {
       setFollows((prev) => {
         const next = prev.map((f) =>
-          f.kind === kind && f.id === id ? { ...f, alertPreset: preset } : f
+          f.kind === kind && f.id === id ? { ...f, alertTier: preset } : f
         );
         writeJSON(STORAGE_KEYS.follows, next);
         return next;
@@ -272,10 +310,10 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const setAlertPreset = useCallback((preset: AlertPreset) => {
+  const setDefaultAlertTier = useCallback((preset: AlertPreset) => {
     setPrefs((prev) => {
-      if (prev.alertPreset === preset) return prev;
-      const next: UserPrefs = { ...prev, alertPreset: preset };
+      if (prev.defaultAlertTier === preset) return prev;
+      const next: UserPrefs = { ...prev, defaultAlertTier: preset };
       writeJSON(STORAGE_KEYS.prefs, next);
       return next;
     });
@@ -303,13 +341,25 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
   const followsValue = useMemo<FollowsCtx>(
     () => ({
       follows,
+      alertSlotCount,
+      alertSlotCap: MAX_FREE_ALERT_SLOTS,
       isFollowing,
       addFollow,
       removeFollow,
-      setFollowPreset,
+      setFollowAlertEnabled,
+      setFollowAlertTier,
       hydrated,
     }),
-    [follows, isFollowing, addFollow, removeFollow, setFollowPreset, hydrated]
+    [
+      follows,
+      alertSlotCount,
+      isFollowing,
+      addFollow,
+      removeFollow,
+      setFollowAlertEnabled,
+      setFollowAlertTier,
+      hydrated,
+    ]
   );
 
   const pinnedValue = useMemo<PinnedCtx>(
@@ -330,7 +380,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       setRemindBeforeMinutes,
       setQuietHours,
       markQuietRecapSeen,
-      setAlertPreset,
+      setDefaultAlertTier,
       dismissNotifPrompt,
       dismissFirstRun,
       hydrated,
@@ -341,7 +391,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       setRemindBeforeMinutes,
       setQuietHours,
       markQuietRecapSeen,
-      setAlertPreset,
+      setDefaultAlertTier,
       dismissNotifPrompt,
       dismissFirstRun,
       hydrated,
@@ -353,7 +403,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       <PinnedContext.Provider value={pinnedValue}>
         <PrefsContext.Provider value={prefsValue}>
           {/* Stage C: keeps the server-side subscription in sync with
-              follows/tier changes while the app is open. Renders nothing. */}
+              per-follow alert changes while the app is open. Renders nothing. */}
           <PushSyncEffect />
           {children}
         </PrefsContext.Provider>

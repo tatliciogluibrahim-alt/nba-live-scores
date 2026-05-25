@@ -8,7 +8,7 @@
 import { createHash } from "node:crypto";
 import { kv } from "@vercel/kv";
 import type { ValidPushSubscription } from "./subscription-validation";
-import type { SyncedFollow, ValidSyncPayload } from "./sync-validation";
+import type { SyncedAlert, SyncedFollow, ValidSyncPayload } from "./sync-validation";
 import type { AlertPreset } from "../../companion/state/types";
 
 export type StoredSubscription = {
@@ -16,11 +16,13 @@ export type StoredSubscription = {
   endpoint: string;
   /** ECDH/auth keys for the encrypted payload. */
   keys: { p256dh: string; auth: string };
-  /** Follows snapshot — what teams/series/countries this device cares
-   *  about. Updated whenever the client re-syncs. */
-  follows: SyncedFollow[];
-  /** Global notification tier — quiet/companion/all. */
-  alertPreset: AlertPreset;
+  /** Alert-enabled follows snapshot. Visible-only follows are intentionally
+   *  omitted so backend fanout cost tracks the slot model directly. */
+  alerts: SyncedAlert[];
+  /** @deprecated Stage C shape. Kept optional for KV row normalization. */
+  follows?: SyncedFollow[];
+  /** @deprecated Stage C shape. Kept optional for KV row normalization. */
+  alertPreset?: AlertPreset;
   /** No-Spoilers mode flag from prefs. When true, the dispatcher
    *  suppresses any event whose copy leaks closeness (close-game,
    *  comeback) so the user's No-Spoilers contract holds even on the
@@ -34,8 +36,8 @@ export type StoredSubscription = {
 
 const SUBSCRIPTION_INDEX_KEY = "nns:push:subscriptions:v1";
 const SUBSCRIPTION_KEY_PREFIX = "nns:push:subscription:v1:";
-// Reverse index: for each followed team abbr, a set of endpoint URLs
-// that follow it. Lets the dispatcher fanout selectively instead of
+// Reverse index: for each alert-enabled team abbr, a set of endpoint URLs
+// that want pings for it. Lets the dispatcher fanout selectively instead of
 // iterating every subscription on every event. (Phase 2.4)
 const TEAM_INDEX_KEY_PREFIX = "nns:push:by-team:v1:";
 
@@ -48,17 +50,17 @@ function teamIndexKey(teamCode: string): string {
   return `${TEAM_INDEX_KEY_PREFIX}${teamCode.toUpperCase()}`;
 }
 
-/** Diff old vs new follows, return added/removed team codes. Used to
+/** Diff old vs new alerts, return added/removed team codes. Used to
  *  surgically update the reverse index instead of rebuilding it. */
 function teamFollowDiff(
-  oldFollows: ReadonlyArray<SyncedFollow>,
-  newFollows: ReadonlyArray<SyncedFollow>
+  oldAlerts: ReadonlyArray<SyncedAlert>,
+  newAlerts: ReadonlyArray<SyncedAlert>
 ): { added: string[]; removed: string[] } {
   const oldTeams = new Set(
-    oldFollows.filter((f) => f.kind === "team").map((f) => f.id.toUpperCase())
+    oldAlerts.filter((f) => f.kind === "team").map((f) => f.id.toUpperCase())
   );
   const newTeams = new Set(
-    newFollows.filter((f) => f.kind === "team").map((f) => f.id.toUpperCase())
+    newAlerts.filter((f) => f.kind === "team").map((f) => f.id.toUpperCase())
   );
   const added: string[] = [];
   const removed: string[] = [];
@@ -76,11 +78,18 @@ function normalizeStored(
   row: Partial<StoredSubscription> | null | undefined
 ): StoredSubscription | null {
   if (!row || !row.keys?.p256dh || !row.keys?.auth) return null;
+  const legacyPreset = (row.alertPreset as AlertPreset | undefined) ?? "companion";
+  const alerts = Array.isArray(row.alerts)
+    ? row.alerts
+    : Array.isArray(row.follows)
+      ? row.follows.map((f) => ({ ...f, tier: legacyPreset }))
+      : [];
   return {
     endpoint: row.endpoint ?? endpoint,
     keys: { p256dh: row.keys.p256dh, auth: row.keys.auth },
-    follows: Array.isArray(row.follows) ? row.follows : [],
-    alertPreset: (row.alertPreset as AlertPreset | undefined) ?? "companion",
+    alerts,
+    follows: Array.isArray(row.follows) ? row.follows : undefined,
+    alertPreset: row.alertPreset,
     noSpoilers: typeof row.noSpoilers === "boolean" ? row.noSpoilers : false,
     createdAt: typeof row.createdAt === "number" ? row.createdAt : Date.now(),
     lastSeenAt: typeof row.lastSeenAt === "number" ? row.lastSeenAt : Date.now(),
@@ -102,8 +111,7 @@ export async function upsertSubscription(
   // If the caller supplied a sync payload (subscribe / sync calls), use
   // it. Otherwise preserve whatever was there (test endpoint, dispatcher
   // refresh after delivery, etc).
-  const follows = sync ? sync.follows : existing?.follows ?? [];
-  const alertPreset = sync ? sync.alertPreset : existing?.alertPreset ?? "companion";
+  const alerts = sync ? sync.alerts : existing?.alerts ?? [];
   const noSpoilers = sync
     ? sync.noSpoilers
     : existing?.noSpoilers ?? false;
@@ -111,24 +119,22 @@ export async function upsertSubscription(
     ? {
         ...existing,
         keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
-        follows,
-        alertPreset,
+        alerts,
         noSpoilers,
         lastSeenAt: now,
       }
     : {
         endpoint: sub.endpoint,
         keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
-        follows,
-        alertPreset,
+        alerts,
         noSpoilers,
         createdAt: now,
         lastSeenAt: now,
       };
 
-  // Reverse-index maintenance: diff old vs new team follows and apply
+  // Reverse-index maintenance: diff old vs new team alerts and apply
   // surgical adds/removes. Skipped if this upsert didn't carry a sync
-  // payload (e.g. dispatcher post-delivery refresh) since `follows`
+  // payload (e.g. dispatcher post-delivery refresh) since `alerts`
   // hasn't changed.
   const indexOps: Promise<unknown>[] = [
     kv.set(key, next),
@@ -136,8 +142,8 @@ export async function upsertSubscription(
   ];
   if (sync) {
     const { added, removed } = teamFollowDiff(
-      existing?.follows ?? [],
-      follows
+      existing?.alerts ?? [],
+      alerts
     );
     for (const team of added) {
       indexOps.push(kv.sadd(teamIndexKey(team), sub.endpoint));
@@ -158,7 +164,7 @@ export async function removeSubscription(endpoint: string): Promise<boolean> {
   const existing = normalizeStored(endpoint, raw);
   const teamCleanup: Promise<unknown>[] = [];
   if (existing) {
-    for (const f of existing.follows) {
+    for (const f of existing.alerts) {
       if (f.kind === "team") {
         teamCleanup.push(kv.srem(teamIndexKey(f.id), endpoint));
       }
@@ -172,7 +178,7 @@ export async function removeSubscription(endpoint: string): Promise<boolean> {
   return deleted > 0;
 }
 
-/** Pull only the subscriptions that follow the given team codes.
+/** Pull only the subscriptions that have alerts for the given team codes.
  *  Phase 2.4: the dispatcher uses this instead of listSubscriptions()
  *  so fanout cost is O(interested subs) not O(all subs). */
 export async function listSubscriptionsByTeams(

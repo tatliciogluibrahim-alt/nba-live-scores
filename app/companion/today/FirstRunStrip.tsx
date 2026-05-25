@@ -90,7 +90,7 @@ export function FirstRunStrip() {
         <Step
           index={3}
           done={notifDone}
-          title="Choose your alert level"
+          title="Pick what gets alerts"
           pendingDetail=""
           doneDetail="Choice saved."
           href="/settings"
@@ -223,10 +223,9 @@ function PinStep({ done, pinned }: { done: boolean; pinned: number }) {
           Open any game from Today or Following, tap{" "}
           <span style={{ color: "var(--ink)", fontWeight: 600 }}>Pin to Watching</span>
           . That game appears on your Watching tab during play. Pinning does not turn on
-          notifications. That&apos;s what Follow does.
+          alerts. That&apos;s set on each follow.
         </p>
       ) : null}
     </li>
   );
 }
-

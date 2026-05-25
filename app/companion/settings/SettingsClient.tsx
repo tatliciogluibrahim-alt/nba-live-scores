@@ -7,7 +7,6 @@ import { ReminderSelector } from "./ReminderSelector";
 import { QuietHoursSelector } from "./QuietHoursSelector";
 import { PerFollowAlerts } from "./PerFollowAlerts";
 import { WatchGuidanceBlock } from "./WatchGuidanceBlock";
-import { AlertTierSelector } from "./AlertTierSelector";
 import { NotificationPreview } from "./NotificationPreview";
 import { PushSubscriptionPanel } from "./PushSubscriptionPanel";
 
@@ -48,11 +47,10 @@ export function SettingsClient() {
       <div className="space-y-5">
         <NoSpoilersToggle />
         <PushSubscriptionPanel />
-        <AlertTierSelector />
+        <PerFollowAlerts />
         <NotificationPreview />
         <ReminderSelector />
         <QuietHoursSelector />
-        <PerFollowAlerts />
         <WatchGuidanceBlock />
       </div>
     </main>

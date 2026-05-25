@@ -5,9 +5,9 @@ import { useFollows, useUserPrefs } from "../providers";
 import { usePushSubscription } from "./use-push-subscription";
 
 // PushSyncEffect — invisible component, mounted globally in the root
-// providers. Watches follows + alertPreset and re-POSTs them to the
-// server whenever they change, so the dispatcher's notion of "what
-// this device wants" stays current without the user touching Settings.
+// providers. Watches per-follow alert settings and re-POSTs them to
+// the server whenever they change, so the dispatcher's notion of "what
+// this device wants" stays current.
 //
 // Runs only when:
 //   • the page has hydrated
@@ -28,20 +28,21 @@ export function PushSyncEffect() {
     if (!followsHydrated || !prefsHydrated) return;
     if (status.state !== "subscribed") return;
 
+    const alerts = follows
+      .filter((f) => f.alertEnabled)
+      .map((f) => ({ kind: f.kind, id: f.id, tier: f.alertTier }));
     const hash =
-      `${prefs.alertPreset}|${prefs.noSpoilers ? "1" : "0"}|` +
-      follows.map((f) => `${f.kind}:${f.id}`).sort().join(",");
+      `${prefs.noSpoilers ? "1" : "0"}|` +
+      alerts.map((f) => `${f.kind}:${f.id}:${f.tier}`).sort().join(",");
     if (lastHashRef.current === hash) return;
     lastHashRef.current = hash;
 
     void syncFollows({
-      follows,
-      alertPreset: prefs.alertPreset ?? "companion",
+      alerts,
       noSpoilers: prefs.noSpoilers,
     });
   }, [
     follows,
-    prefs.alertPreset,
     prefs.noSpoilers,
     status.state,
     followsHydrated,

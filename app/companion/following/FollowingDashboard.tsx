@@ -38,7 +38,7 @@ function buildFollowSummary(follows: Follow[]): string {
 // were added. Footer has a "Follow more" link back to the choice set.
 
 export function FollowingDashboard() {
-  const { follows } = useFollows();
+  const { follows, alertSlotCount, alertSlotCap } = useFollows();
 
   const cards: FollowCardData[] = follows.map((f) => {
     const identity = resolveFollowIdentity(f);
@@ -62,6 +62,12 @@ export function FollowingDashboard() {
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Your sports circle. {buildFollowSummary(follows)}
+      </p>
+      <p
+        className="mb-3 text-[12px] leading-snug"
+        style={{ color: "var(--mute-1)", fontWeight: 500 }}
+      >
+        {alertSlotCount} of {alertSlotCap} follows getting alerts.
       </p>
 
       <ul className="space-y-2">

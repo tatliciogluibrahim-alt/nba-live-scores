@@ -104,6 +104,7 @@ export type WCMatchEvent = {
   minute: string;
   type: "goal" | "pen_goal" | "own_goal" | "red_card" | "yellow_card";
   playerName: string;
+  assistName?: string;
   teamId: string;
 };
 
@@ -224,6 +225,9 @@ function normalizeEvents(
       d.athletesInvolved?.[0]?.shortName ??
       d.athletesInvolved?.[0]?.displayName ??
       "";
+    const assistName =
+      d.athletesInvolved?.[1]?.shortName ??
+      d.athletesInvolved?.[1]?.displayName;
 
     // Penalty shootout goals tracked separately
     // ESPN marks these with penaltyKick=true AND the period being 5 (PKs phase)
@@ -242,7 +246,7 @@ function normalizeEvents(
         : d.penaltyKick
           ? "pen_goal"
           : "goal";
-      events.push({ minute, type, playerName, teamId });
+      events.push({ minute, type, playerName, assistName, teamId });
 
       // Track penalty shootout separately if no clock (indicates PK phase)
       if (d.penaltyKick && !minute) {

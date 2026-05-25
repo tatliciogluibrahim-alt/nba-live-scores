@@ -33,10 +33,21 @@ export type WCGameLite = {
   statusText: string;
   stage: string;
   group: string;
-  home: { name: string; abbreviation: string; score: number };
-  away: { name: string; abbreviation: string; score: number };
+  home: { id?: string; name: string; abbreviation: string; score: number };
+  away: { id?: string; name: string; abbreviation: string; score: number };
+  events?: WCMatchEventLite[];
+  penaltyHome?: number | null;
+  penaltyAway?: number | null;
   broadcasts: string[];
   watchLabel: string;
+};
+
+export type WCMatchEventLite = {
+  minute: string;
+  type: "goal" | "pen_goal" | "own_goal" | "red_card" | "yellow_card";
+  playerName: string;
+  assistName?: string;
+  teamId: string;
 };
 
 // ── Today payload shape ───────────────────────────────────────────────

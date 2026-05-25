@@ -9,6 +9,7 @@ import type { Game, SeriesInfo, Team } from "../../nba/types";
 import { buildBracketSeries } from "../../nba/lib/series";
 import { getGameNumberFromText } from "../../nba/lib/moment-intelligence";
 import { deriveSeriesContext } from "../game/nba-moments";
+import { deriveSeriesDots } from "./series-derive";
 
 // ── Series dot — one slot in the 7-game strip ─────────────────────────
 
@@ -108,82 +109,6 @@ function deriveGameNumber(g: Game, index: number): number {
   return fromContext ?? index + 1;
 }
 
-function buildDots(series: SeriesInfo): SeriesDot[] {
-  const games = [...series.games].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-
-  const dots = new Map<number, SeriesDot>();
-
-  // First pass: place known games into their slot by parsed game number.
-  games.forEach((g, idx) => {
-    const n = deriveGameNumber(g, idx);
-    if (n < 1 || n > 7) return;
-    const isFinal = g.status === "final";
-    const isLive = g.status === "live";
-
-    // Did this game settle the series? Only knowable when the API has a
-    // "WINS SERIES" summary that points at one team. View redacts under NS.
-    const clinchMatch = g.seriesSummary?.match(/(\w+)\s+WINS?\s+SERIES\s+(\d+)-(\d+)/i);
-    const isClincher = Boolean(clinchMatch);
-
-    // Winner is derivable for final games: whichever team scored more.
-    // Spoilery — treated the same as scoreLine in the view layer.
-    const winnerCode =
-      isFinal && g.away.score !== g.home.score
-        ? g.away.score > g.home.score
-          ? g.away.abbreviation
-          : g.home.abbreviation
-        : undefined;
-
-    dots.set(n, {
-      number: n,
-      state: isLive ? "live" : isFinal ? "played" : "scheduled",
-      gameId: g.id,
-      date: g.date,
-      awayCode: g.away.abbreviation,
-      homeCode: g.home.abbreviation,
-      scoreLine: isFinal || isLive ? `${g.away.score} – ${g.home.score}` : undefined,
-      winnerCode,
-      isClincher: isFinal ? isClincher : false,
-    });
-  });
-
-  // Pick the soonest upcoming dot to mark "next".
-  const upcomingSorted = Array.from(dots.values())
-    .filter((d) => d.state === "scheduled")
-    .sort((a, b) => (new Date(a.date ?? 0).getTime()) - (new Date(b.date ?? 0).getTime()));
-  if (upcomingSorted[0]) {
-    const next = upcomingSorted[0];
-    dots.set(next.number, { ...next, state: "next" });
-  }
-
-  // Second pass: fill 1..7 with placeholders.
-  const result: SeriesDot[] = [];
-  const isComplete = series.teamA.wins === 4 || series.teamB.wins === 4;
-  const totalPlayed = series.teamA.wins + series.teamB.wins;
-
-  for (let i = 1; i <= 7; i++) {
-    if (dots.has(i)) {
-      result.push(dots.get(i)!);
-      continue;
-    }
-    // No game in slot — decide between "if-necessary" and "tbd".
-    // Once a series clinches, remaining games are "if-necessary".
-    // Inside an active series, games beyond (winsA+winsB+1) are also
-    // "if-necessary" because they may not be played.
-    const ifNecessary = isComplete
-      ? i > totalPlayed
-      : i > totalPlayed + 1;
-    result.push({
-      number: i,
-      state: ifNecessary ? "if-necessary" : "tbd",
-    });
-  }
-
-  return result;
-}
-
 function buildSafeStake(series: SeriesInfo, nextGameNumber: number | null): string {
   // Safe phrasing only — never references leader, margin, or clinch.
   if (series.status === "live") {
@@ -253,7 +178,7 @@ export function buildSeriesPayload(
     ? `NBA · ${safeContext.safeLine}`
     : "NBA · Playoff series";
 
-  const dots = buildDots(series);
+  const dots = deriveSeriesDots({ seriesContext: series });
 
   const nextDot = dots.find((d) => d.state === "next" || d.state === "live");
   const nextGameNumber = nextDot?.number ?? null;

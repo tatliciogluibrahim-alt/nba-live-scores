@@ -22,6 +22,8 @@ export async function POST(req: Request) {
 
   let body: {
     subscription?: PushSubscriptionJSON;
+    alerts?: unknown;
+    // Legacy Stage C fields; validateSyncPayload handles conversion.
     follows?: unknown;
     alertPreset?: unknown;
     noSpoilers?: unknown;
@@ -44,6 +46,7 @@ export async function POST(req: Request) {
   // dispatcher can fanout selectively. Body may not include these for
   // old clients — the validator returns a safe default.
   const sync = validateSyncPayload({
+    alerts: body?.alerts,
     follows: body?.follows,
     alertPreset: body?.alertPreset,
     noSpoilers: body?.noSpoilers,

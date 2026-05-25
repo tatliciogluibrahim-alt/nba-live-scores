@@ -19,14 +19,14 @@ export function AboutClient() {
       <div className="space-y-5">
         <Section
           eyebrow="Follow"
-          headline="Drives your notifications."
-          body="Teams, countries, series, tournaments. Game events for what you follow get pushed to your phone. Set up follows on the Following tab."
+          headline="Builds your sports circle."
+          body="Teams, countries, series, tournaments. Follows show up on Today and Following. Alerts are set on each follow."
         />
 
         <Section
           eyebrow="Pin"
           headline="Tracks games during play."
-          body="Pin a game to keep it on your Watching tab. Pinning does not subscribe you to notifications. Follows do that."
+          body="Pin a game to keep it on your Watching tab. Pinning does not send alerts."
         />
 
         <Section
@@ -38,7 +38,7 @@ export function AboutClient() {
         <Section
           eyebrow="Tiers"
           headline="How loud you want it."
-          body="Three levels. Quiet: game start and final. Companion: plus the period breaks (default). All moments: plus close finishes and comebacks. One tier, every sport. Change anytime in Watch + Alerts."
+          body="Three levels per follow. Quiet: start and final. Companion: plus key breaks. All moments: plus close finishes. Three follows can receive alerts at once."
         />
       </div>
 

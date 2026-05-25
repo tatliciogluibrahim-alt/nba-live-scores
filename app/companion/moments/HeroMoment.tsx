@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
-import { Display } from "../atoms/Display";
 
 // The single editorial moment on a screen. Accented left border, optional
-// live pulse dot, display-type headline + optional context line.
+// live pulse dot, strong body-sans headline + optional context line.
 // Per design contract: only HeroMoment / NextMatchBlock / North Star hero
 // card may use the accent left border. Use it sparingly.
 
@@ -65,12 +64,12 @@ export function HeroMoment({
         </span>
       </div>
 
-      {/* HeroMoment lives inside a card. Display `sm` keeps editorial weight
-          without competing with the page H1 above it. Reach for `md` only
-          on dedicated standalone heroes (no longer used in this codebase). */}
-      <Display size="sm" as="h2" className="mt-2">
+      <h2
+        className="mt-2 text-[19px] leading-tight"
+        style={{ color: "var(--ink)", fontWeight: 800 }}
+      >
         {headline}
-      </Display>
+      </h2>
 
       {context ? (
         <p

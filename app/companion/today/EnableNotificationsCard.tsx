@@ -19,15 +19,13 @@ import { PRESETS } from "../state/types";
 // itself only fires when the user *taps the button* — that user gesture
 // is what makes the permission request legitimate to iOS and Chrome.
 //
-// Stage C addition: the user picks a tier (Quiet / Companion / All)
-// before tapping enable. The picked tier persists to prefs.alertPreset
-// and is sent up with the subscription so the dispatcher knows what to
-// fanout to this device.
+// Stage 17: the user picks the default tier for newly-added follows
+// before tapping enable. Existing follows keep their per-follow tiers.
 
 const TIER_ORDER: AlertPreset[] = ["quiet", "companion", "all"];
 
 export function EnableNotificationsCard() {
-  const { prefs, dismissNotifPrompt, setAlertPreset, hydrated } = useUserPrefs();
+  const { prefs, dismissNotifPrompt, setDefaultAlertTier, hydrated } = useUserPrefs();
   const { follows } = useFollows();
   const { subscribe } = usePushSubscription();
   const [permission, setPermission] = useState<NotificationPermission | "unsupported" | null>(
@@ -35,9 +33,9 @@ export function EnableNotificationsCard() {
   );
   const [busy, setBusy] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
-  // Local tier state mirrors prefs so the user can preview their choice
-  // before committing via "Turn on." Defaults to companion.
-  const [tier, setTier] = useState<AlertPreset>(prefs.alertPreset ?? "companion");
+  // Local tier state mirrors prefs so the user can preview the default
+  // for future follows before committing via "Turn on."
+  const [tier, setTier] = useState<AlertPreset>(prefs.defaultAlertTier ?? "companion");
 
   // Re-sync the local tier whenever the persisted preference changes
   // (e.g. user opened Settings, changed it, came back to Today). The
@@ -45,11 +43,11 @@ export function EnableNotificationsCard() {
   // pattern for syncing local UI state with an external store the
   // useState initializer can't reach (prefs hydrate after mount).
   useEffect(() => {
-    if (prefs.alertPreset) {
+    if (prefs.defaultAlertTier) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTier(prefs.alertPreset);
+      setTier(prefs.defaultAlertTier);
     }
-  }, [prefs.alertPreset]);
+  }, [prefs.defaultAlertTier]);
 
   // Read current permission state once on mount.
   useEffect(() => {
@@ -61,6 +59,8 @@ export function EnableNotificationsCard() {
     }
     setPermission(window.Notification.permission);
   }, []);
+
+  const alertFollows = follows.filter((f) => f.alertEnabled);
 
   // Bail conditions — silent (no UI flash).
   if (!hydrated) return null;
@@ -76,18 +76,17 @@ export function EnableNotificationsCard() {
       // Persist tier choice BEFORE the prompt so it sticks even if the
       // user denies — they can re-try from Settings later with the same
       // tier intent.
-      setAlertPreset(tier);
+      setDefaultAlertTier(tier);
 
       const result = await window.Notification.requestPermission();
       setPermission(result);
 
       if (result === "granted") {
-        // Create the Web Push subscription with follows + tier so the
-        // dispatcher can fanout immediately on the next game state change.
+        // Create the Web Push subscription with enabled per-follow alerts
+        // so the dispatcher can fanout immediately on the next change.
         try {
           await subscribe({
-            follows,
-            alertPreset: tier,
+            alerts: alertFollows.map((f) => ({ kind: f.kind, id: f.id, tier: f.alertTier })),
             noSpoilers: prefs.noSpoilers,
           });
         } catch {
@@ -98,7 +97,7 @@ export function EnableNotificationsCard() {
         try {
           const reg = await navigator.serviceWorker.ready;
           await reg.showNotification("Notifications on.", {
-            body: tierWelcomeBody(tier, follows.length),
+            body: tierWelcomeBody(tier, alertFollows.length),
             icon: "/app-icon-192.png",
             badge: "/app-icon-192.png",
             tag: "welcome",
@@ -109,9 +108,9 @@ export function EnableNotificationsCard() {
         }
 
         setConfirmation(
-          follows.length === 0
-            ? "Notifications on. Follow teams to get pings."
-            : `Notifications on for ${follows.length} ${follows.length === 1 ? "follow" : "follows"}.`
+          alertFollows.length === 0
+            ? "Device pushes on. Pick follows to alert."
+            : `Device pushes on for ${alertFollows.length} alert ${alertFollows.length === 1 ? "follow" : "follows"}.`
         );
         window.setTimeout(() => {
           dismissNotifPrompt();
@@ -148,8 +147,8 @@ export function EnableNotificationsCard() {
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               {follows.length === 0
-                ? "For the teams you follow. Pick a tier below."
-                : `For your ${follows.length} ${follows.length === 1 ? "follow" : "follows"}. Pick a tier below.`}
+                ? "Pick the default alert level for new follows."
+                : "Device push plus your enabled alert follows."}
             </p>
           ) : null}
         </div>
@@ -157,9 +156,9 @@ export function EnableNotificationsCard() {
 
       {!confirmation ? (
         <>
-          {/* Tier picker — three pills. The detail line under the row
+          {/* Default tier picker — three pills. The detail line under the row
               changes as the selection changes so the user knows what
-              the tier means before they commit. */}
+              future alert follows will use by default. */}
           <div className="mt-3 flex items-center gap-1.5" role="radiogroup" aria-label="Notification tier">
             {TIER_ORDER.map((p) => {
               const active = tier === p;
@@ -227,9 +226,9 @@ export function EnableNotificationsCard() {
 
 function tierWelcomeBody(tier: AlertPreset, follows: number): string {
   if (follows === 0) {
-    return "Follow a team to start getting pings.";
+    return "Enable alerts on a follow to start getting pings.";
   }
   if (tier === "quiet") return "Game starts and finals only.";
   if (tier === "companion") return "Starts, period breaks, finals.";
-  return "Starts, period breaks, finals, plus close finishes and comebacks.";
+  return "Starts, period breaks, finals, plus close finishes.";
 }

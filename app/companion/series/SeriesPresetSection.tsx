@@ -3,7 +3,7 @@
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PresetRow } from "../following/PresetRow";
 import { useFollows } from "../providers";
-import { DEFAULT_ALERT_PRESET, type AlertPreset } from "../state/types";
+import type { AlertPreset } from "../state/types";
 
 // Alert preset block for the series. If the user already follows this
 // series, surface the preset radio. If not, show a Follow button that
@@ -16,7 +16,13 @@ export function SeriesPresetSection({
   seriesKey: string;
   subjectLabel: string;
 }) {
-  const { follows, addFollow, removeFollow, setFollowPreset } = useFollows();
+  const {
+    follows,
+    addFollow,
+    removeFollow,
+    setFollowAlertEnabled,
+    setFollowAlertTier,
+  } = useFollows();
 
   const existing = follows.find(
     (f) => f.kind === "series" && f.id === seriesKey
@@ -24,7 +30,7 @@ export function SeriesPresetSection({
   const isFollowed = Boolean(existing);
 
   function handleFollow() {
-    addFollow("series", seriesKey, DEFAULT_ALERT_PRESET);
+    addFollow("series", seriesKey);
   }
 
   function handleUnfollow() {
@@ -32,7 +38,7 @@ export function SeriesPresetSection({
   }
 
   function handlePreset(next: AlertPreset) {
-    setFollowPreset("series", seriesKey, next);
+    setFollowAlertTier("series", seriesKey, next);
   }
 
   return (
@@ -50,11 +56,30 @@ export function SeriesPresetSection({
             borderColor: "var(--line)",
           }}
         >
-          <PresetRow
-            value={existing.alertPreset}
-            onChange={handlePreset}
-            subjectLabel={subjectLabel}
-          />
+          <button
+            type="button"
+            onClick={() => setFollowAlertEnabled("series", seriesKey, !existing.alertEnabled)}
+            aria-label={`${existing.alertEnabled ? "Disable" : "Enable"} alerts for ${subjectLabel}`}
+            className="mb-2 inline-flex min-h-[44px] w-full items-center justify-between rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
+            style={{
+              background: existing.alertEnabled ? "var(--cream-2)" : "transparent",
+              borderColor: existing.alertEnabled ? "var(--ink)" : "var(--line)",
+            }}
+          >
+            <span className="text-[13px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
+              {existing.alertEnabled ? "Getting alerts" : "Alerts off"}
+            </span>
+            <span className="text-[11px]" style={{ color: "var(--mute-1)", fontWeight: 600 }}>
+              {existing.alertEnabled ? "Tap to disable" : "Tap to enable"}
+            </span>
+          </button>
+          {existing.alertEnabled ? (
+            <PresetRow
+              value={existing.alertTier}
+              onChange={handlePreset}
+              subjectLabel={subjectLabel}
+            />
+          ) : null}
           <button
             type="button"
             onClick={handleUnfollow}
@@ -87,7 +112,7 @@ export function SeriesPresetSection({
             className="mt-1 text-[12px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            Default is Companion. Start · close game · final. Change later.
+            New follows use your default alert level. Change it later.
           </p>
           <button
             type="button"

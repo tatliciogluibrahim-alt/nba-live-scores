@@ -11,7 +11,18 @@ export type Follow = {
   /** Stable identifier: team abbr ("NYK"), country code ("BIH"),
    *  series key ("NYK-PHI"), or tournament slug ("nba-playoffs-2025"). */
   id: string;
-  alertPreset: AlertPreset;
+  /** Whether this follow contributes pushes. Capped per plan
+   *  (MAX_FREE_ALERT_SLOTS). Visible-only follows still surface on
+   *  Today + Following — only the push fanout is gated. */
+  alertEnabled: boolean;
+  /** Tier when alertEnabled === true. Ignored otherwise. */
+  alertTier: AlertPreset;
+  /** Stable creation timestamp. Used to deterministically pick which
+   *  follows get the alert slots after a migration (oldest-first). */
+  followedAt: number;
+  /** @deprecated Pre-v2 field. Storage normalizer migrates this into
+   *  alertTier and removes it. */
+  alertPreset?: AlertPreset;
 };
 
 export type PinnedGame = {
@@ -21,13 +32,18 @@ export type PinnedGame = {
 
 export type UserPrefs = {
   noSpoilers: boolean;
-  /** Global notification tier — applies to every team the user follows.
-   *  Per-follow presets on `Follow` remain in the schema for a future
-   *  "override per team" power-user mode but are not consulted by the
-   *  Stage C dispatcher; the global tier is the source of truth. */
-  alertPreset: AlertPreset;
+  /** Default tier applied to newly-created follows. Replaces the old
+   *  pre-v2 global `alertPreset` which used to apply to ALL follows.
+   *  Now: each Follow owns its own alertTier and alertEnabled. */
+  defaultAlertTier: AlertPreset;
+  /** @deprecated Pre-v2 field. Migrator copies this into
+   *  `defaultAlertTier` and removes it. */
+  alertPreset?: AlertPreset;
   /** Optional. Quiet hours suppress pushes between start/end (24h, "HH:MM"). */
   quietHours?: { start: string; end: string };
+  /** Internal allowance model. There is no paid flow yet; this simply
+   *  makes the notification-slot cap explicit and migration-friendly. */
+  plan: "free";
   /** Default 30. */
   remindBeforeMinutes: number;
   /** YYYY-MM-DD of the last day the user dismissed the Quiet Recap card.
@@ -50,23 +66,29 @@ export type UserPrefs = {
 // ── Defaults ──────────────────────────────────────────────────────────
 export const DEFAULT_PREFS: UserPrefs = {
   noSpoilers: false,
-  alertPreset: "companion",
+  defaultAlertTier: "companion",
+  plan: "free",
   remindBeforeMinutes: 30,
 };
 
 export const DEFAULT_ALERT_PRESET: AlertPreset = "companion";
 
+/** Max simultaneously alert-enabled follows on free plan. Visible
+ *  follows are unlimited; this only caps push fanout. Set to 3 because
+ *  "two" felt too tight and "unlimited" doesn't control cost. */
+export const MAX_FREE_ALERT_SLOTS = 3;
+
 // ── Copy contract for presets (HANDOFF.md §5) ─────────────────────────
-// Three tiers, escalating in volume. The same global tier applies to
-// every team/country/series the user follows — including across sports
-// (NBA + WC). Copy is deliberately sport-neutral. The push body itself
+// Three tiers, escalating in volume. Each follow owns its own alert level.
+// prefs.defaultAlertTier only seeds newly-added follows. Copy is deliberately
+// sport-neutral. The push body itself
 // mints sport-specific titles in the dispatcher ("Tipoff" / "Kickoff"
 // / "End of Q3" / "Halftime") based on the game's source league.
 export const PRESETS: Record<
   AlertPreset,
   { label: string; detail: string }
 > = {
-  quiet: { label: "Quiet", detail: "Game start and final only" },
-  companion: { label: "Companion", detail: "Start, end of each period, final" },
-  all: { label: "All moments", detail: "Above + close finishes and comebacks" },
+  quiet: { label: "Quiet", detail: "Start and final only" },
+  companion: { label: "Companion", detail: "Start, key breaks, final" },
+  all: { label: "All moments", detail: "Above + close finishes" },
 };

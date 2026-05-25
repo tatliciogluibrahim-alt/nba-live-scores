@@ -5,36 +5,40 @@ import { useFollows, useUserPrefs } from "../providers";
 import { usePushSubscription } from "../push/use-push-subscription";
 import { PRESETS, type AlertPreset } from "../state/types";
 
-// Global notification tier selector — the surface where the user
-// controls what level of alerts they get across all teams they follow.
+// Default notification tier selector — currently not mounted in Settings,
+// but kept available for small surfaces that want to set the default used
+// by newly-added follows.
 //
-// Changing the tier here writes to prefs AND immediately re-syncs with
-// the server so the dispatcher uses the new tier on the next event.
-// Per-follow overrides live in PerFollowAlerts (advanced) — most users
-// will set this once and never touch it again.
+// Existing follows keep their own alertTier; changing this only affects
+// future follows.
 
 const TIER_ORDER: AlertPreset[] = ["quiet", "companion", "all"];
 
 export function AlertTierSelector() {
-  const { prefs, setAlertPreset, hydrated } = useUserPrefs();
+  const { prefs, setDefaultAlertTier, hydrated } = useUserPrefs();
   const { follows } = useFollows();
   const { syncFollows } = usePushSubscription();
 
   if (!hydrated) return null;
-  const active = prefs.alertPreset ?? "companion";
+  const active = prefs.defaultAlertTier ?? "companion";
 
   function onPick(next: AlertPreset) {
     if (next === active) return;
-    setAlertPreset(next);
-    // Best-effort server sync. If the user isn't subscribed, this is a
-    // no-op inside the hook.
-    void syncFollows({ follows, alertPreset: next, noSpoilers: prefs.noSpoilers });
+    setDefaultAlertTier(next);
+    // Best-effort server sync in case another part of the app mounted this
+    // while a subscription exists. Existing follows keep their own tier.
+    void syncFollows({
+      alerts: follows
+        .filter((f) => f.alertEnabled)
+        .map((f) => ({ kind: f.kind, id: f.id, tier: f.alertTier })),
+      noSpoilers: prefs.noSpoilers,
+    });
   }
 
   return (
     <section>
       <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>Alert tier</Eyebrow>
+        <Eyebrow>Default alert level</Eyebrow>
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />
       </div>
 
@@ -42,7 +46,7 @@ export function AlertTierSelector() {
         className="mb-3 text-[12px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Applies to every team you follow.
+        Applies to new follows.
       </p>
 
       <div className="flex flex-col gap-2">

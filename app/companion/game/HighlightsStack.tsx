@@ -8,13 +8,13 @@ import type { Game, GameLeader, TeamComparisonStat } from "../../nba/types";
 // Game Highlights — up to 3 distilled lines about a game.
 //
 // Slots, in priority order:
-//   1. Story / narrative — comeback, OT, Q4 surge, blowout, close finish.
-//      Skipped under No-Spoilers (the narrative IS the spoiler).
-//   2. Top performer — top scorer + a secondary stat if the same player
-//      also led the game in assists or rebounds.
-//   3. Team-level stat — rebound dominance, hot/cold three-point shooting,
+//   1. Top scorer — points first, because it scales across every game.
+//   2. Team-level stat — rebound dominance, hot/cold three-point shooting,
 //      assist disparity. Picks the most-extreme available signal.
-//   4. (Overflow) Series context — if seriesSummary tells us this game
+//   3. Secondary leader — assists or rebounds when notable.
+//   4. Story / narrative — comeback, OT, Q4 surge, blowout, close finish.
+//      Skipped under No-Spoilers (the narrative IS the spoiler).
+//   5. (Overflow) Series context — if seriesSummary tells us this game
 //      clinched or shifted the series.
 //
 // We render up to 3 of these. Missing data is fine — the section
@@ -29,6 +29,7 @@ import type { Game, GameLeader, TeamComparisonStat } from "../../nba/types";
 type Highlight = {
   eyebrow: string;
   body: string;
+  subjectName?: string;
   /** When true, the body is wrapped in <Spoiler> under No-Spoilers. */
   spoilery?: boolean;
 };
@@ -104,21 +105,21 @@ export function HighlightsStack({ game }: { game: Game }) {
 function deriveHighlights(game: Game, noSpoilers: boolean): Highlight[] {
   const out: Highlight[] = [];
 
-  // 1. Story / narrative — only when we're not hiding spoilers.
-  if (!noSpoilers) {
+  const performer = deriveTopPerformer(game);
+  if (performer) out.push(performer);
+
+  const teamStat = deriveTeamStat(game);
+  if (teamStat) out.push(teamStat);
+
+  const secondary = deriveSecondaryLeader(game, performer?.subjectName);
+  if (secondary) out.push(secondary);
+
+  if (!noSpoilers && out.length < 3) {
     const story = deriveStory(game);
     if (story) out.push(story);
   }
 
-  // 2. Top performer
-  const performer = deriveTopPerformer(game);
-  if (performer) out.push(performer);
-
-  // 3. Team-level stat
-  const teamStat = deriveTeamStat(game);
-  if (teamStat) out.push(teamStat);
-
-  // 4. Overflow: series context (only if we have fewer than 3 highlights
+  // Overflow: series context (only if we have fewer than 3 highlights
   //    already, otherwise the rendering caps at 3 anyway).
   if (out.length < 3) {
     const series = deriveSeriesContext(game);
@@ -250,7 +251,39 @@ function deriveTopPerformer(game: Game): Highlight | null {
   if (astValue >= 6) body += `, ${astValue} AST`;
   else if (rebValue >= 8) body += `, ${rebValue} REB`;
 
-  return { eyebrow: "Top performer", body, spoilery: true };
+  return { eyebrow: "Top scorer", body, subjectName: pts.name, spoilery: true };
+}
+
+function deriveSecondaryLeader(
+  game: Game,
+  excludeName?: string
+): Highlight | null {
+  const ast = pickLeader(game.leaders, /assist/i);
+  const reb = pickLeader(game.leaders, /rebound/i);
+  const astValue = ast ? leaderValueAsNumber(ast) : 0;
+  const rebValue = reb ? leaderValueAsNumber(reb) : 0;
+
+  if (ast && ast.name !== excludeName && astValue >= 6 && astValue >= rebValue) {
+    const team = ast.team ? ` (${ast.team})` : "";
+    return {
+      eyebrow: "Playmaker",
+      body: `${ast.name}${team} · ${astValue} AST`,
+      subjectName: ast.name,
+      spoilery: true,
+    };
+  }
+
+  if (reb && reb.name !== excludeName && rebValue >= 8) {
+    const team = reb.team ? ` (${reb.team})` : "";
+    return {
+      eyebrow: "On the glass",
+      body: `${reb.name}${team} · ${rebValue} REB`,
+      subjectName: reb.name,
+      spoilery: true,
+    };
+  }
+
+  return null;
 }
 
 // ── Team-level stat ────────────────────────────────────────────────────

@@ -8,6 +8,7 @@
 import {
   DEFAULT_ALERT_PRESET,
   DEFAULT_PREFS,
+  MAX_FREE_ALERT_SLOTS,
   type AlertPreset,
   type Follow,
   type FollowKind,
@@ -76,7 +77,7 @@ function isLocalDate(value: unknown): value is string {
 export function normalizeStoredFollows(value: unknown): Follow[] {
   if (!Array.isArray(value)) return [];
 
-  return value.flatMap((item): Follow[] => {
+  const normalized = value.flatMap((item, index): Follow[] => {
     if (!isObject(item)) return [];
     const kind = item.kind;
     const id = item.id;
@@ -85,12 +86,37 @@ export function normalizeStoredFollows(value: unknown): Follow[] {
     }
     if (typeof id !== "string" || id.trim().length === 0) return [];
 
-    const preset = ALERT_PRESETS.has(item.alertPreset as AlertPreset)
+    const tier = ALERT_PRESETS.has(item.alertTier as AlertPreset)
+      ? (item.alertTier as AlertPreset)
+      : ALERT_PRESETS.has(item.alertPreset as AlertPreset)
       ? (item.alertPreset as AlertPreset)
       : DEFAULT_ALERT_PRESET;
 
-    return [{ kind: kind as FollowKind, id: id.trim(), alertPreset: preset }];
+    const followedAt =
+      typeof item.followedAt === "number" && Number.isFinite(item.followedAt)
+        ? item.followedAt
+        : index;
+
+    return [{
+      kind: kind as FollowKind,
+      id: id.trim(),
+      alertEnabled: typeof item.alertEnabled === "boolean" ? item.alertEnabled : true,
+      alertTier: tier,
+      followedAt,
+    }];
   });
+
+  // Migration guard: legacy follows all had implicit alerts. Keep the
+  // oldest three enabled, turn the rest into visible-only follows.
+  let enabled = 0;
+  return normalized
+    .sort((a, b) => a.followedAt - b.followedAt)
+    .map((follow) => {
+      if (!follow.alertEnabled) return follow;
+      enabled += 1;
+      if (enabled <= MAX_FREE_ALERT_SLOTS) return follow;
+      return { ...follow, alertEnabled: false };
+    });
 }
 
 export function normalizeStoredPinned(value: unknown): PinnedGame[] {
@@ -120,14 +146,15 @@ export function normalizeStoredPrefs(value: unknown): UserPrefs {
       typeof value.noSpoilers === "boolean"
         ? value.noSpoilers
         : DEFAULT_PREFS.noSpoilers,
-    // Stage C: the global notification tier. Without this branch the
-    // user's tier was silently reset to "companion" on every reload —
-    // infuriating UX, real bug (Codex QA finding #3).
-    alertPreset:
-      typeof value.alertPreset === "string" &&
-      ALERT_PRESETS.has(value.alertPreset as AlertPreset)
-        ? (value.alertPreset as AlertPreset)
-        : DEFAULT_PREFS.alertPreset,
+    defaultAlertTier:
+      typeof value.defaultAlertTier === "string" &&
+      ALERT_PRESETS.has(value.defaultAlertTier as AlertPreset)
+        ? (value.defaultAlertTier as AlertPreset)
+        : typeof value.alertPreset === "string" &&
+            ALERT_PRESETS.has(value.alertPreset as AlertPreset)
+          ? (value.alertPreset as AlertPreset)
+          : DEFAULT_PREFS.defaultAlertTier,
+    plan: "free",
     remindBeforeMinutes:
       typeof value.remindBeforeMinutes === "number" &&
       Number.isFinite(value.remindBeforeMinutes)

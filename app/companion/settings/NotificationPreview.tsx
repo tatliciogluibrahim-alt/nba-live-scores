@@ -61,7 +61,7 @@ export function NotificationPreview() {
         className="mb-3 text-[13px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Three tiers. No alert ever leads with the score.
+        Three alert levels. No-Spoilers users never get scores on the lock screen.
       </p>
 
       <div className="space-y-3">
