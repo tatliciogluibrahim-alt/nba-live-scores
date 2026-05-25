@@ -43,10 +43,15 @@ type LiveScoresResponse = {
 };
 
 function resolveBaseUrl(req: Request): string {
-  // Inside a Vercel deployment, VERCEL_URL is the bare host (no scheme).
-  // Locally / on custom domains, we fall back to the request's origin.
-  const vercel = process.env.VERCEL_URL;
-  if (vercel) return `https://${vercel}`;
+  // Always use the incoming request's origin. When GitHub Actions (or
+  // curl) hits us at https://nonoisescores.app/api/cron/scan-nba, the
+  // request origin is the public alias, so the internal fetch back to
+  // /api/live-scores stays on the public alias too.
+  //
+  // Avoid `process.env.VERCEL_URL` — that resolves to the deployment-
+  // specific URL (nba-live-scores-xyz123.vercel.app) which is gated by
+  // Vercel Deployment Protection and returns 401 on server-to-server
+  // fetches even though the production alias is publicly accessible.
   return new URL(req.url).origin;
 }
 
