@@ -1,30 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo_Black, Inter, JetBrains_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { CompanionProviders } from "./companion/providers";
 import "./globals.css";
-
-// Functional UI body type. 900 is required by the Stadium Panel wordmark.
-const bodyFont = Inter({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-});
-
-// Editorial display — used once per screen, only when the moment earns it
-const displayFont = Archivo_Black({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: "400",
-});
-
-// Eyebrows + tabular numerals only
-const monoFont = JetBrains_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "No Noise Scores",
@@ -135,9 +113,7 @@ export default function RootLayout({
           media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
         />
       </head>
-      <body
-        className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable}`}
-      >
+      <body>
         <CompanionProviders>{children}</CompanionProviders>
         <Analytics />
         <SpeedInsights />
