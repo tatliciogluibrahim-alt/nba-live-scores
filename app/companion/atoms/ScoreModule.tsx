@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { StatusPill, type StatusTone } from "./StatusPill";
 import { Spoiler } from "../spoiler/Spoiler";
+import { useNoSpoilers } from "../providers";
 
 // ScoreModule — the canonical scoreboard primitive. One component, three
 // sizes, used by every surface that needs to render a game state:
@@ -109,6 +110,7 @@ export function ScoreModule({
   className,
   style,
 }: ScoreModuleProps) {
+  const noSpoilers = useNoSpoilers();
   const spec = SIZE[size];
   const tone = STATUS_TONE[status];
   const label = statusLabel ?? STATUS_FALLBACK_LABEL[status];
@@ -180,6 +182,8 @@ export function ScoreModule({
           a live score update arrives so the change is never silent. */}
       {hasScores ? (
         <p
+          aria-live={status === "live" && !noSpoilers ? "polite" : undefined}
+          aria-atomic={status === "live" && !noSpoilers ? true : undefined}
           className={`${spec.rowGapClass} leading-none${flashing ? " no-noise-score-flash" : ""}`}
           onAnimationEnd={() => setFlashing(false)}
           style={{

@@ -1,29 +1,13 @@
-// Push subscription store — Stage B placeholder.
+// Durable Push subscription store.
 //
-// ┌──────────────────────────────────────────────────────────────────┐
-// │  THIS IS AN IN-MEMORY MODULE-LEVEL STORE.                        │
-// │                                                                  │
-// │  It works for:                                                   │
-// │    • Local dev (one Next.js process)                             │
-// │    • Single-instance deployments that never restart              │
-// │                                                                  │
-// │  It DOES NOT work for:                                           │
-// │    • Vercel serverless (each invocation gets a fresh module)     │
-// │    • Multi-region / multi-instance production                    │
-// │    • Anything that needs to survive a deploy                     │
-// │                                                                  │
-// │  Production replacement: swap the body of these functions to     │
-// │  read/write Vercel KV / Upstash / Postgres / DynamoDB / etc.     │
-// │  The function signatures are intentionally narrow so the swap    │
-// │  is a one-file edit.                                             │
-// └──────────────────────────────────────────────────────────────────┘
-//
-// The frontend ALSO persists its own subscription in localStorage and
-// re-POSTs it on every reload, so even with the server's store wiped,
-// active users self-restore on their next open. This is the only reason
-// the in-memory store is acceptable as a temporary stop-gap.
+// Backed by Vercel KV / Upstash Redis so subscriptions survive serverless
+// cold starts, deploys, and multi-region execution. The exported helper
+// names intentionally match the Stage B in-memory store; callers only need
+// to await the now-durable operations.
 
-import type { PushSubscriptionJSON } from "../push/web-push-types";
+import { createHash } from "node:crypto";
+import { kv } from "@vercel/kv";
+import type { ValidPushSubscription } from "./subscription-validation";
 
 export type StoredSubscription = {
   /** Push service endpoint URL — the unique identifier. */
@@ -36,40 +20,65 @@ export type StoredSubscription = {
   lastSeenAt: number;
 };
 
-// Module-scope map. Survives across requests on a single Node process.
-// Keyed by endpoint URL because that's globally unique.
-const store = new Map<string, StoredSubscription>();
+const SUBSCRIPTION_INDEX_KEY = "nns:push:subscriptions:v1";
+const SUBSCRIPTION_KEY_PREFIX = "nns:push:subscription:v1:";
 
-export function upsertSubscription(sub: PushSubscriptionJSON): StoredSubscription {
+function subscriptionKey(endpoint: string): string {
+  const hash = createHash("sha256").update(endpoint).digest("hex");
+  return `${SUBSCRIPTION_KEY_PREFIX}${hash}`;
+}
+
+export async function upsertSubscription(
+  sub: ValidPushSubscription
+): Promise<StoredSubscription> {
   if (!sub.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) {
-    throw new Error("Invalid subscription — missing endpoint or keys.");
+    throw new Error("Invalid subscription: missing endpoint or keys.");
   }
-  const existing = store.get(sub.endpoint);
+
+  const key = subscriptionKey(sub.endpoint);
+  const existing = await kv.get<StoredSubscription>(key);
   const now = Date.now();
   const next: StoredSubscription = existing
-    ? { ...existing, lastSeenAt: now }
+    ? {
+        ...existing,
+        keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
+        lastSeenAt: now,
+      }
     : {
         endpoint: sub.endpoint,
         keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
         createdAt: now,
         lastSeenAt: now,
       };
-  store.set(sub.endpoint, next);
+
+  await Promise.all([
+    kv.set(key, next),
+    kv.sadd(SUBSCRIPTION_INDEX_KEY, sub.endpoint),
+  ]);
+
   return next;
 }
 
-export function removeSubscription(endpoint: string): boolean {
-  return store.delete(endpoint);
+export async function removeSubscription(endpoint: string): Promise<boolean> {
+  const [deleted] = await Promise.all([
+    kv.del(subscriptionKey(endpoint)),
+    kv.srem(SUBSCRIPTION_INDEX_KEY, endpoint),
+  ]);
+  return deleted > 0;
 }
 
-export function getSubscription(endpoint: string): StoredSubscription | undefined {
-  return store.get(endpoint);
+export async function getSubscription(
+  endpoint: string
+): Promise<StoredSubscription | undefined> {
+  return (await kv.get<StoredSubscription>(subscriptionKey(endpoint))) ?? undefined;
 }
 
-export function listSubscriptions(): StoredSubscription[] {
-  return Array.from(store.values());
+export async function listSubscriptions(): Promise<StoredSubscription[]> {
+  const endpoints = await kv.smembers<string[]>(SUBSCRIPTION_INDEX_KEY);
+  const rows = await Promise.all(endpoints.map((endpoint) => getSubscription(endpoint)));
+  return rows.filter((row): row is StoredSubscription => Boolean(row));
 }
 
-export function subscriptionCount(): number {
-  return store.size;
+export async function subscriptionCount(): Promise<number> {
+  return kv.scard(SUBSCRIPTION_INDEX_KEY);
 }

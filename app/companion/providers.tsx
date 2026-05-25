@@ -18,7 +18,14 @@ import {
   type PinnedGame,
   type UserPrefs,
 } from "./state/types";
-import { STORAGE_KEYS, readJSON, writeJSON } from "./state/storage";
+import {
+  STORAGE_KEYS,
+  normalizeStoredFollows,
+  normalizeStoredPinned,
+  normalizeStoredPrefs,
+  readJSON,
+  writeJSON,
+} from "./state/storage";
 
 // ─── Follows ──────────────────────────────────────────────────────────
 type FollowsCtx = {
@@ -102,10 +109,23 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
   // SSR hydration matching. We render with defaults on the server, then
   // upgrade once on the client.
   useEffect(() => {
+    const storedFollows = normalizeStoredFollows(
+      readJSON<unknown>(STORAGE_KEYS.follows, [])
+    );
+    const storedPinned = normalizeStoredPinned(
+      readJSON<unknown>(STORAGE_KEYS.pinned, [])
+    );
+    const storedPrefs = normalizeStoredPrefs(
+      readJSON<unknown>(STORAGE_KEYS.prefs, DEFAULT_PREFS)
+    );
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFollows(readJSON<Follow[]>(STORAGE_KEYS.follows, []));
-    setPinned(readJSON<PinnedGame[]>(STORAGE_KEYS.pinned, []));
-    setPrefs(readJSON<UserPrefs>(STORAGE_KEYS.prefs, DEFAULT_PREFS));
+    setFollows(storedFollows);
+    setPinned(storedPinned);
+    setPrefs(storedPrefs);
+    writeJSON(STORAGE_KEYS.follows, storedFollows);
+    writeJSON(STORAGE_KEYS.pinned, storedPinned);
+    writeJSON(STORAGE_KEYS.prefs, storedPrefs);
     setHydrated(true);
 
     // Register the service worker. iOS PWAs require this for
@@ -119,6 +139,30 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
         /* SW registration failed — degrade silently. */
       });
     }
+
+    function readStorageEventValue(raw: string | null): unknown {
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function handleStorage(e: StorageEvent) {
+      if (e.key === STORAGE_KEYS.follows) {
+        setFollows(normalizeStoredFollows(readStorageEventValue(e.newValue)));
+      }
+      if (e.key === STORAGE_KEYS.pinned) {
+        setPinned(normalizeStoredPinned(readStorageEventValue(e.newValue)));
+      }
+      if (e.key === STORAGE_KEYS.prefs) {
+        setPrefs(normalizeStoredPrefs(readStorageEventValue(e.newValue)));
+      }
+    }
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   // ── Follows actions ────────────────────────────────────────────────

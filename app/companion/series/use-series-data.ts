@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Game } from "../../nba/types";
 import { buildSeriesPayload, type SeriesPayload } from "./series-data";
 
@@ -11,6 +11,10 @@ type ApiResponse = {
   games?: Game[];
   seriesGames?: Game[];
 };
+
+function pageIsVisible(): boolean {
+  return typeof document === "undefined" || document.visibilityState === "visible";
+}
 
 async function fetchGames(): Promise<Game[]> {
   try {
@@ -30,6 +34,7 @@ async function fetchGames(): Promise<Game[]> {
 
 export function useSeriesData(seriesKey: string) {
   const [games, setGames] = useState<Game[]>([]);
+  const gamesRef = useRef<Game[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -38,30 +43,43 @@ export function useSeriesData(seriesKey: string) {
     async function load() {
       const next = await fetchGames();
       if (!mounted.current) return;
+      gamesRef.current = next;
       setGames(next);
       setHydrated(true);
     }
 
-    load();
+    if (pageIsVisible()) load();
 
-    let interval: ReturnType<typeof setInterval>;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     function schedule() {
+      clearTimeout(timeout);
       const hasLive =
-        mounted.current && games.some((g) => g.status === "live");
+        mounted.current && gamesRef.current.some((g) => g.status === "live");
       const ms = hasLive ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
-      interval = setInterval(() => {
-        load();
-        clearInterval(interval);
+      timeout = setTimeout(async () => {
+        if (pageIsVisible()) await load();
         schedule();
       }, ms);
     }
     schedule();
 
+    function handleVisibilityChange() {
+      if (pageIsVisible()) {
+        load();
+        schedule();
+      }
+    }
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+
     return () => {
       mounted.current = false;
-      clearInterval(interval);
+      clearTimeout(timeout);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const payload = useMemo<SeriesPayload | null>(() => {

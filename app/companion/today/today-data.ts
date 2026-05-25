@@ -272,7 +272,7 @@ function pickHero(
       context: "Mexico City · Group A · Tournament starts June 11.",
       live: false,
       accent: "var(--wc)",
-      href: "/legacy/world-cup",
+      href: "/following/country",
     };
   }
 

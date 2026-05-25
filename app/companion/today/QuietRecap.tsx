@@ -87,7 +87,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
           <Link
             href="/watching"
             aria-label="See tonight's wrap"
-            className="inline-flex min-h-[40px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--cream)",
               color: "var(--ink)",
@@ -100,7 +100,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
             type="button"
             onClick={() => markQuietRecapSeen(today)}
             aria-label="Dismiss recap"
-            className="inline-flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--cream)",

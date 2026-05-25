@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFollows, usePinned } from "../providers";
 import {
   buildTodayPayload,
@@ -28,6 +28,10 @@ const LIVE_INTERVAL_MS = 10_000;
 const IDLE_INTERVAL_MS = 30_000;
 
 type FetchedData = { nba: NBAGame[]; wc: WCGameLite[]; updatedAt: Date | null };
+
+function pageIsVisible(): boolean {
+  return typeof document === "undefined" || document.visibilityState === "visible";
+}
 
 async function fetchNBA(): Promise<NBAGame[]> {
   try {
@@ -59,6 +63,7 @@ export function useTodayData() {
     wc: [],
     updatedAt: null,
   });
+  const dataRef = useRef<FetchedData>(data);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   useEffect(() => {
@@ -67,34 +72,47 @@ export function useTodayData() {
     async function load() {
       const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
       if (!mounted.current) return;
-      setData({ nba, wc, updatedAt: new Date() });
+      const next = { nba, wc, updatedAt: new Date() };
+      dataRef.current = next;
+      setData(next);
       setHasLoadedOnce(true);
     }
 
-    load();
+    if (pageIsVisible()) load();
 
-    let interval: ReturnType<typeof setInterval>;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     function schedule() {
+      clearTimeout(timeout);
+      const current = dataRef.current;
       const hasLive =
         mounted.current &&
-        (data.nba.some((g) => g.status === "live") ||
-          data.wc.some((g) => g.status === "live"));
+        (current.nba.some((g) => g.status === "live") ||
+          current.wc.some((g) => g.status === "live"));
       const ms = hasLive ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
-      interval = setInterval(() => {
-        load();
-        clearInterval(interval);
+      timeout = setTimeout(async () => {
+        if (pageIsVisible()) await load();
         schedule();
       }, ms);
     }
     schedule();
 
+    function handleVisibilityChange() {
+      if (pageIsVisible()) {
+        load();
+        schedule();
+      }
+    }
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+
     return () => {
       mounted.current = false;
-      clearInterval(interval);
+      clearTimeout(timeout);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
     };
-    // We deliberately do not include `data` here — that would reset the
-    // interval on every poll. The schedule re-reads `data` each tick.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const payload = useMemo<TodayPayload>(() => {

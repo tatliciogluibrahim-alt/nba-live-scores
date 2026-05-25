@@ -51,7 +51,7 @@ export function WatchLine({
       </svg>
 
       <span
-        className="flex-1 text-[13px]"
+        className="min-w-0 flex-1 truncate text-[13px]"
         style={{ color: "var(--ink)", fontWeight: 600 }}
       >
         {label}
@@ -63,7 +63,7 @@ export function WatchLine({
           onClick={onRemind}
           aria-label={remindLabel}
           aria-pressed={reminded}
-          className="inline-flex min-h-[28px] items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition active:scale-[0.97]"
+          className="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition active:scale-[0.97]"
           style={
             reminded
               ? {

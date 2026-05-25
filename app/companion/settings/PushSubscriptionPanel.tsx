@@ -123,7 +123,7 @@ export function PushSubscriptionPanel() {
               onClick={() => handleTest(0)}
               disabled={working !== null}
               aria-label="Send a test push right now"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "var(--ink)",
                 color: "var(--cream)",
@@ -138,7 +138,7 @@ export function PushSubscriptionPanel() {
               onClick={() => handleTest(10_000)}
               disabled={working !== null}
               aria-label="Send a test push in 10 seconds so you can close the app first"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "transparent",
                 color: "var(--ink)",
@@ -155,7 +155,7 @@ export function PushSubscriptionPanel() {
               onClick={handleUnsubscribe}
               disabled={working !== null}
               aria-label="Unsubscribe this device from push"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "transparent",
                 color: "var(--mute-1)",
@@ -171,7 +171,7 @@ export function PushSubscriptionPanel() {
             onClick={handleSubscribe}
             disabled={working !== null}
             aria-label="Subscribe this device to push"
-            className="inline-flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",

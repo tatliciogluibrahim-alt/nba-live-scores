@@ -99,7 +99,7 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
           <Link
             href={item.href}
             aria-label={`Open ${item.spoilerSubject} detail`}
-            className="inline-flex min-h-[40px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",
@@ -112,7 +112,7 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
             type="button"
             onClick={() => unpinGame(item.id)}
             aria-label={`Unpin ${item.spoilerSubject}`}
-            className="inline-flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--ink)",
@@ -194,7 +194,7 @@ export function StalePinCard({ pin }: { pin: StalePin }) {
           type="button"
           onClick={() => unpinGame(pin.id)}
           aria-label="Unpin"
-          className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "transparent",
             color: "var(--ink)",

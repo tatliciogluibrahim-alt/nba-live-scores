@@ -24,6 +24,7 @@ import type { PinnedItem, WatchingPayload } from "./watching-data";
 // winning.
 
 export function LiveRoom({ payload }: { payload: WatchingPayload }) {
+  const noSpoilers = useNoSpoilers();
   const liveItems = payload.items.filter((i) => i.status === "live");
   if (liveItems.length < 2) return null;
 
@@ -58,7 +59,7 @@ export function LiveRoom({ payload }: { payload: WatchingPayload }) {
         ))}
       </ul>
 
-      {payload.closestLive ? (
+      {!noSpoilers && payload.closestLive ? (
         <ClosestChip
           targetId={payload.closestLive.id}
           margin={payload.closestLive.margin}
@@ -131,7 +132,7 @@ function ClosestChip({
       <Link
         href={`/game/${targetId}`}
         aria-label={label}
-        className="inline-flex min-h-[36px] items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+        className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
         style={{
           background: "var(--ink)",
           color: "var(--cream)",

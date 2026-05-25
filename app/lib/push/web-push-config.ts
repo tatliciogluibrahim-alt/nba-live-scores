@@ -9,6 +9,17 @@ import webpush from "web-push";
 
 let configured = false;
 
+export const MAX_PUSH_PAYLOAD_BYTES = 4096;
+
+function isValidVapidSubject(subject: string): boolean {
+  try {
+    const url = new URL(subject);
+    return url.protocol === "mailto:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function getWebPush() {
   if (!configured) {
     const publicKey = process.env.VAPID_PUBLIC_KEY;
@@ -19,6 +30,10 @@ export function getWebPush() {
       throw new Error(
         "Web Push not configured. Set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT in env. See scripts/generate-vapid-keys.mjs."
       );
+    }
+
+    if (!isValidVapidSubject(subject)) {
+      throw new Error("VAPID_SUBJECT must be a mailto: or https: URL.");
     }
 
     webpush.setVapidDetails(subject, publicKey, privateKey);
@@ -38,3 +53,14 @@ export type PushPayload = {
    *  ones in the system tray. Useful for "score update" style pings. */
   tag?: string;
 };
+
+export function encodePushPayload(payload: PushPayload): string {
+  const encoded = JSON.stringify(payload);
+  const bytes = Buffer.byteLength(encoded, "utf8");
+  if (bytes > MAX_PUSH_PAYLOAD_BYTES) {
+    throw new Error(
+      `Push payload is ${bytes} bytes; iOS Web Push payloads must stay under ${MAX_PUSH_PAYLOAD_BYTES} bytes.`
+    );
+  }
+  return encoded;
+}

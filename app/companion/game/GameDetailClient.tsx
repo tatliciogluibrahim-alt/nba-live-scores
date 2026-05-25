@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { usePinned } from "../providers";
@@ -43,9 +43,14 @@ async function fetchGames(): Promise<{ nba: NBAGame[]; wc: WCGameLite[] }> {
 const LIVE_INTERVAL_MS = 10_000;
 const IDLE_INTERVAL_MS = 30_000;
 
+function pageIsVisible(): boolean {
+  return typeof document === "undefined" || document.visibilityState === "visible";
+}
+
 export function GameDetailClient({ gameId }: { gameId: string }) {
   const { isPinned, pinGame, unpinGame } = usePinned();
   const [resolved, setResolved] = useState<Resolved | null>(null);
+  const resolvedRef = useRef<Resolved | null>(null);
 
   useEffect(() => {
     const mounted = { current: true };
@@ -61,44 +66,63 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
         // home, status, statusText, period, matchup, gameContext,
         // seriesSummary, seriesConference, seriesRound, broadcasts) is
         // present. Cast through unknown to make the boundary explicit.
-        setResolved({ source: "nba", game: nbaGame as unknown as Game });
+        const next = { source: "nba", game: nbaGame as unknown as Game } as const;
+        resolvedRef.current = next;
+        setResolved(next);
         return;
       }
       const wcGame = wc.find((g) => g.id === gameId);
       if (wcGame) {
-        setResolved({ source: "wc", game: wcGame });
+        const next = { source: "wc", game: wcGame } as const;
+        resolvedRef.current = next;
+        setResolved(next);
         return;
       }
-      setResolved({ source: null, game: null });
+      const next = { source: null, game: null } as const;
+      resolvedRef.current = next;
+      setResolved(next);
     }
 
-    resolve();
+    if (pageIsVisible()) resolve();
 
     // Re-resolve on a beat so a game that just appeared in the feed shows
     // up without a manual refresh. We don't have status here yet, so use
     // the conservative idle cadence; the variant's own hook escalates to
     // live cadence once it lands.
-    let interval: ReturnType<typeof setInterval>;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     function schedule() {
+      clearTimeout(timeout);
+      const current = resolvedRef.current;
       const live =
-        resolved !== null &&
-        resolved.source !== null &&
-        resolved.game !== null &&
-        "status" in resolved.game &&
-        resolved.game.status === "live";
-      interval = setInterval(() => {
-        resolve();
-        clearInterval(interval);
+        current !== null &&
+        current.source !== null &&
+        current.game !== null &&
+        "status" in current.game &&
+        current.game.status === "live";
+      timeout = setTimeout(async () => {
+        if (pageIsVisible()) await resolve();
         schedule();
       }, live ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS);
     }
     schedule();
 
+    function handleVisibilityChange() {
+      if (pageIsVisible()) {
+        resolve();
+        schedule();
+      }
+    }
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+
     return () => {
       mounted.current = false;
-      clearInterval(interval);
+      clearTimeout(timeout);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
   const pinned = isPinned(gameId);

@@ -16,6 +16,10 @@ export type NBADetail = {
 const LIVE_INTERVAL_MS = 10_000;
 const IDLE_INTERVAL_MS = 30_000;
 
+function pageIsVisible(): boolean {
+  return typeof document === "undefined" || document.visibilityState === "visible";
+}
+
 type FullResponse = {
   broadcasts?: string[];
   plays?: GamePlay[];
@@ -66,20 +70,29 @@ export function useNBADetail(eventId: string | null, isLive: boolean) {
       if (next !== null) setLastFetched(Date.now());
     }
 
-    load();
+    if (pageIsVisible()) load();
 
-    // Poll only while live. Final games are stable.
+    // Poll only while the page is visible. Final games are stable, but
+    // upcoming games get a slower refresh so status flips without reload.
     let interval: ReturnType<typeof setInterval> | null = null;
-    if (isLive) {
-      interval = setInterval(load, LIVE_INTERVAL_MS);
-    } else {
-      // Single refresh after a longer beat for upcoming games (status flips).
-      interval = setInterval(load, IDLE_INTERVAL_MS);
+    const intervalMs = isLive ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
+    interval = setInterval(() => {
+      if (pageIsVisible()) load();
+    }, intervalMs);
+
+    function handleVisibilityChange() {
+      if (pageIsVisible()) load();
+    }
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
     }
 
     return () => {
       mounted.current = false;
       if (interval) clearInterval(interval);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
     };
   }, [eventId, isLive]);
 

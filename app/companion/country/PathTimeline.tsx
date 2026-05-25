@@ -47,6 +47,7 @@ export function PathTimeline({
           // progress" without leaking; later "reached" stages imply
           // advancement. Hide those under No-Spoilers.
           const hideReachedState = noSpoilers && reached && stage.key !== "group";
+          const displayReached = reached && !hideReachedState;
 
           const stateLabel = hideReachedState
             ? "Hidden"
@@ -67,9 +68,9 @@ export function PathTimeline({
                 aria-hidden
                 className="grid h-6 w-6 shrink-0 place-items-center rounded-full"
                 style={{
-                  background: reached ? "var(--wc)" : "transparent",
-                  border: reached ? "none" : "1.5px solid var(--mute-2)",
-                  color: reached ? "var(--cream)" : "var(--mute-1)",
+                  background: displayReached ? "var(--wc)" : "transparent",
+                  border: displayReached ? "none" : "1.5px solid var(--mute-2)",
+                  color: displayReached ? "var(--cream)" : "var(--mute-1)",
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
                   fontWeight: 700,

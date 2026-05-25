@@ -139,7 +139,7 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
 
   return (
     <div>
-      <ul className="flex items-center gap-2" aria-label="Series schedule">
+      <ul className="grid grid-cols-7 gap-1" aria-label="Series schedule">
         {dots.map((dot) => {
           const display = normalizeForSpoilers(dot.state, noSpoilers);
           const isPlayed = display === "played";
@@ -196,7 +196,7 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
                   onClick={() =>
                     setSelected((prev) => (prev === dot.number ? null : dot.number))
                   }
-                  className="no-noise-reveal-focus block transition active:scale-[0.95]"
+                  className="no-noise-reveal-focus grid h-11 w-11 place-items-center transition active:scale-[0.95]"
                 >
                   {dotNode}
                 </button>
@@ -212,12 +212,12 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
                 <Link
                   href={`/game/${dot.gameId}`}
                   aria-label={aria}
-                  className="block transition active:scale-[0.95]"
+                  className="grid h-11 w-11 place-items-center transition active:scale-[0.95]"
                 >
                   {dotNode}
                 </Link>
               ) : (
-                <span aria-label={aria} role="img">
+                <span aria-label={aria} role="img" className="grid h-11 w-11 place-items-center">
                   {dotNode}
                 </span>
               )}
@@ -267,7 +267,7 @@ function PlayedGameDetail({
           type="button"
           onClick={onClose}
           aria-label="Close game details"
-          className="no-noise-reveal-focus text-[11px] underline underline-offset-4 decoration-dotted"
+          className="no-noise-reveal-focus inline-flex min-h-[44px] items-center text-[11px] underline underline-offset-4 decoration-dotted"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Close
@@ -295,7 +295,7 @@ function PlayedGameDetail({
         <Link
           href={`/game/${dot.gameId}`}
           aria-label={`Open Game ${dot.number}`}
-          className="mt-3 inline-flex min-h-[32px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
+          className="mt-3 inline-flex min-h-[44px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Open game

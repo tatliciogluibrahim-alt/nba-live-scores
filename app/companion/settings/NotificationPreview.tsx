@@ -267,7 +267,7 @@ function TestPushButton({ preview }: { preview: PreviewExample }) {
       onClick={onClick}
       disabled={disabled}
       aria-label="Send a test version of this notification"
-      className="shrink-0 inline-flex min-h-[32px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold transition active:scale-[0.97]"
+      className="shrink-0 inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold transition active:scale-[0.97]"
       style={{
         background: "transparent",
         color: disabled ? "var(--mute-2)" : "var(--ink)",

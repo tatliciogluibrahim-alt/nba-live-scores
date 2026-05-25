@@ -44,7 +44,7 @@ export function BriefCard({ brief }: { brief: DailyBrief }) {
         <Link
           href={brief.cta.href}
           aria-label={brief.cta.label}
-          className="mt-2.5 inline-flex min-h-[36px] items-center justify-center rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+          className="mt-2.5 inline-flex min-h-[44px] items-center justify-center rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
           style={{
             background: "var(--ink)",
             color: "var(--cream)",

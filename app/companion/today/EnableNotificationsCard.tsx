@@ -146,7 +146,7 @@ export function EnableNotificationsCard() {
             onClick={onEnable}
             disabled={busy}
             aria-label="Turn on notifications"
-            className="inline-flex min-h-[36px] flex-1 items-center justify-center rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",
@@ -160,7 +160,7 @@ export function EnableNotificationsCard() {
             type="button"
             onClick={() => dismissNotifPrompt()}
             aria-label="Dismiss notification prompt"
-            className="inline-flex min-h-[36px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
             style={{
               background: "transparent",
               color: "var(--mute-1)",

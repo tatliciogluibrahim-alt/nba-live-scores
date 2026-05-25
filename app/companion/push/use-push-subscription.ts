@@ -16,7 +16,8 @@ import { useCallback, useEffect, useState } from "react";
 // "send test push" button works after a reload even if the in-memory
 // server store has been wiped.
 
-const LS_KEY = "nns.push.subscription.v1";
+const LS_KEY = "no-noise:push-subscription:v1";
+const LEGACY_LS_KEY = "nns.push.subscription.v1";
 
 type StoredSub = {
   endpoint: string;
@@ -34,10 +35,16 @@ export type PushSubscriptionStatus =
 function readLocal(): StoredSub | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(LS_KEY);
+    const raw =
+      window.localStorage.getItem(LS_KEY) ??
+      window.localStorage.getItem(LEGACY_LS_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredSub;
     if (!parsed?.endpoint || !parsed?.keys?.p256dh || !parsed?.keys?.auth) return null;
+    if (!window.localStorage.getItem(LS_KEY)) {
+      window.localStorage.setItem(LS_KEY, JSON.stringify(parsed));
+      window.localStorage.removeItem(LEGACY_LS_KEY);
+    }
     return parsed;
   } catch {
     return null;
@@ -49,6 +56,7 @@ function writeLocal(sub: StoredSub | null) {
   try {
     if (sub) window.localStorage.setItem(LS_KEY, JSON.stringify(sub));
     else window.localStorage.removeItem(LS_KEY);
+    window.localStorage.removeItem(LEGACY_LS_KEY);
   } catch {
     // Quota or private-mode — non-fatal, we just lose the convenience.
   }

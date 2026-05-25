@@ -90,7 +90,7 @@ export function NoSpoilerGameCard({
         type="button"
         onClick={() => setInternalRevealed(true)}
         aria-label={aria}
-        className="no-noise-reveal-focus mt-2 inline-flex min-h-[40px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+        className="no-noise-reveal-focus mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
         style={{
           background: "transparent",
           color: "var(--ink)",

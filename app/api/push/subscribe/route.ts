@@ -5,12 +5,20 @@
 
 import { NextResponse } from "next/server";
 import { upsertSubscription } from "../../../lib/push/subscription-store";
+import { rejectCrossOrigin, rejectRateLimited } from "../../../lib/push/request-guards";
+import { validatePushSubscription } from "../../../lib/push/subscription-validation";
 import type { PushSubscriptionJSON } from "../../../lib/push/web-push-types";
 
 export const runtime = "nodejs"; // web-push needs node crypto
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  const originRejection = rejectCrossOrigin(req);
+  if (originRejection) return originRejection;
+
+  const rateLimitRejection = await rejectRateLimited(req, "subscribe");
+  if (rateLimitRejection) return rateLimitRejection;
+
   let body: { subscription?: PushSubscriptionJSON };
   try {
     body = await req.json();
@@ -18,16 +26,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const sub = body?.subscription;
-  if (!sub || !sub.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) {
+  const validation = validatePushSubscription(body?.subscription);
+  if (!validation.ok) {
     return NextResponse.json(
-      { error: "Subscription missing endpoint or keys." },
+      { error: validation.error },
       { status: 400 }
     );
   }
 
   try {
-    const stored = upsertSubscription(sub);
+    const stored = await upsertSubscription(validation.subscription);
     return NextResponse.json({
       ok: true,
       endpoint: stored.endpoint,

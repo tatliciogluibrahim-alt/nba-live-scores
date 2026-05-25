@@ -10,13 +10,16 @@
     "cap:sync": "cap sync",
     "ios:sync": "cap sync ios",
     "ios:open": "cap open ios",
-    "vapid:gen": "node scripts/generate-vapid-keys.mjs"
+    "vapid:gen": "node scripts/generate-vapid-keys.mjs",
+    "icons:maskable": "node scripts/generate-maskable-icons.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.3.1",
     "@capacitor/ios": "^8.3.1",
     "@capacitor/push-notifications": "^8.0.3",
+    "@upstash/ratelimit": "^2.0.8",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/kv": "^3.0.0",
     "@vercel/speed-insights": "^2.0.0",
     "html-to-image": "^1.11.13",
     "next": "16.2.4",
@@ -33,6 +36,7 @@
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

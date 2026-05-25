@@ -12,7 +12,18 @@
 // No offline caching here. We're not shipping an offline shell yet;
 // adding a `fetch` handler that doesn't cache would only add latency.
 // Re-revisit when offline becomes a real requirement.
+//
+// Update policy: this worker activates immediately. That keeps first-run
+// iOS PWA notifications reliable after install, but it also means a new
+// deploy can claim an already-open session. If/when an offline shell lands,
+// add an in-app "new version available" refresh affordance before removing
+// skipWaiting()/clients.claim().
+//
+// Push policy: every push event below renders a visible notification.
+// Silent/background-sync pushes are intentionally unsupported until there
+// is a specific product flow for them.
 
+const SW_VERSION = '1.0.0';
 const APP_ICON = '/app-icon-192.png';
 
 self.addEventListener('install', () => {
@@ -80,7 +91,7 @@ self.addEventListener('push', (event) => {
       icon: APP_ICON,
       badge: APP_ICON,
       tag: payload.tag,
-      data: { url: payload.url || '/' },
+      data: { url: payload.url || '/', swVersion: SW_VERSION },
     })
   );
 });

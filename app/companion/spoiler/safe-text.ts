@@ -42,6 +42,7 @@ const PATTERNS: RegExp[] = [
 
   // ── Advancement / knockout progression (World Cup + NBA Finals) ─
   /\badvanc(e|ed|es|ing)\b/i,
+  /\bwinner\b/i,
   /eliminated/i,
   /knocked\s+out/i,
   /through\s+to/i,

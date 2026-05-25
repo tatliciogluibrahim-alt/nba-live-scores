@@ -49,10 +49,10 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
         >
           Key moments will appear here as the game develops.
         </p>
-        <button
-          type="button"
-          onClick={() => setShowAll(true)}
-          className="mt-3 inline-flex min-h-[32px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+          className="mt-3 inline-flex min-h-[44px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
           style={{
             color: "var(--mute-1)",
             fontWeight: 500,
@@ -95,7 +95,7 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
             type="button"
             onClick={() => setRevealed(true)}
             aria-label="Reveal key moments, hidden by No-Spoilers mode"
-            className="no-noise-reveal-focus mt-2 inline-flex min-h-[40px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="no-noise-reveal-focus mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--ink)",
@@ -166,7 +166,7 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="mt-3 inline-flex min-h-[32px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
+          className="mt-3 inline-flex min-h-[44px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
           style={{
             color: "var(--mute-1)",
             fontWeight: 500,
@@ -179,7 +179,7 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
         <button
           type="button"
           onClick={() => setShowAll(false)}
-          className="mt-3 inline-flex min-h-[32px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
+          className="mt-3 inline-flex min-h-[44px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
           style={{
             color: "var(--mute-1)",
             fontWeight: 500,
