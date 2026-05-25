@@ -391,7 +391,7 @@ function buildYouFollow(
           kind: "tournament",
           id: f.id,
           label: f.id,
-          chip: tournament?.name.slice(0, 3).toUpperCase() ?? "CUP",
+          chip: tournament?.chip ?? "CUP",
           statusLabel: "Cup",
           tone: "current",
           href: "/following",

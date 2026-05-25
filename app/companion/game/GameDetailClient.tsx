@@ -86,6 +86,35 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
         setResolved(next);
         return;
       }
+
+      // Live feed didn't have this game. Try the persisted final
+      // snapshot before giving up — finals drop off /api/live-scores
+      // a few hours after the game ends but live on in KV for ~60 days.
+      try {
+        const snapRes = await fetch(`/api/game-snapshot/${encodeURIComponent(gameId)}`, {
+          cache: "no-store",
+        });
+        if (snapRes.ok) {
+          const snapJson = (await snapRes.json()) as {
+            ok: boolean;
+            found: boolean;
+            game?: Game;
+          };
+          if (snapJson.found && snapJson.game) {
+            const next = {
+              source: "nba",
+              game: snapJson.game,
+              allNBAGames: nba as unknown as Game[],
+            } as const;
+            resolvedRef.current = next;
+            setResolved(next);
+            return;
+          }
+        }
+      } catch {
+        /* snapshot fetch failed — fall through to NotFound */
+      }
+
       const next = { source: null, game: null } as const;
       resolvedRef.current = next;
       setResolved(next);
@@ -196,28 +225,33 @@ function NotFound({
   pinned: boolean;
   onUnpin: () => void;
 }) {
+  const isDev = process.env.NODE_ENV !== "production";
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
       <Eyebrow>Game</Eyebrow>
       <Display as="h1" size="lg" className="mt-2">
-        Not in the live feed.
+        Game snapshot unavailable.
       </Display>
       <p
         className="mt-2 text-[13px]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        This game isn&apos;t in the current scoreboard. Try Today or Watching.
+        This game isn&apos;t in the current scoreboard, and we don&apos;t have a saved snapshot for it.
       </p>
-      <p
-        className="mt-3 text-[11px]"
-        style={{
-          fontFamily: "var(--font-mono)",
-          color: "var(--mute-2)",
-          letterSpacing: "0.06em",
-        }}
-      >
-        ID · {gameId}
-      </p>
+
+      {/* Raw ID only shown in dev. Production users never see internals. */}
+      {isDev ? (
+        <p
+          className="mt-3 text-[11px]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            color: "var(--mute-2)",
+            letterSpacing: "0.06em",
+          }}
+        >
+          ID · {gameId}
+        </p>
+      ) : null}
 
       <div className="mt-4 flex items-center gap-2">
         {pinned ? (

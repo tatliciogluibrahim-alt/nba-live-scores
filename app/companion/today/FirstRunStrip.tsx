@@ -81,7 +81,7 @@ export function FirstRunStrip() {
         <Step
           index={1}
           done={followDone}
-          title="Follow your teams"
+          title="Follow what you care about"
           pendingDetail=""
           doneDetail={`Following ${follows.length} ${follows.length === 1 ? "thing" : "things"}.`}
           href="/following"
@@ -90,7 +90,7 @@ export function FirstRunStrip() {
         <Step
           index={3}
           done={notifDone}
-          title="Turn on notifications"
+          title="Choose your alert level"
           pendingDetail=""
           doneDetail="Choice saved."
           href="/settings"
@@ -202,7 +202,7 @@ function PinStep({ done, pinned }: { done: boolean; pinned: number }) {
               fontWeight: done ? 500 : 700,
             }}
           >
-            Pin a game during play
+            Pin games to track them
           </p>
           {done ? (
             <p

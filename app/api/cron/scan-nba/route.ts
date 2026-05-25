@@ -28,6 +28,8 @@ import { detectEvents, type FreshGameState, type PushEvent } from "../../../lib/
 import { dispatchEvents } from "../../../lib/push/dispatcher";
 import { readCachedState, writeCachedState } from "../../../lib/push/state-cache";
 import { incrCounter } from "../../../lib/push/ops-metrics";
+import { saveGameSnapshot } from "../../../lib/snapshots/game-snapshot";
+import type { Game } from "../../../nba/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -137,6 +139,12 @@ export async function GET(req: Request) {
         await incrCounter("events.detected", events.length);
       }
       await writeCachedState(nextState);
+      // Final games get snapshotted so /game/[id] can resolve them
+      // even after they drop off the live feed (which happens a few
+      // hours after the game ends). Snapshots persist 60 days.
+      if (fresh.status === "final") {
+        await saveGameSnapshot(game as unknown as Game);
+      }
       processed += 1;
     } catch (err) {
       stateErrors += 1;

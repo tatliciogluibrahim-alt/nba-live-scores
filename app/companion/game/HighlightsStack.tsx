@@ -3,32 +3,33 @@
 import { Eyebrow } from "../atoms/Eyebrow";
 import { Spoiler } from "../spoiler/Spoiler";
 import { useNoSpoilers } from "../providers";
-import type { Game, GameLeader } from "../../nba/types";
+import type { Game, GameLeader, TeamComparisonStat } from "../../nba/types";
 
-// Highlights — three high-signal lines about a game. Replaces the old
-// play-by-play "Key moments" list, which felt like reading a transcript
-// rather than learning what happened.
+// Game Highlights — up to 3 distilled lines about a game.
 //
-// What we render:
-//   1. Game character  — derived from margin + status. Tells you the
-//                        shape of the game in one phrase.
-//   2. Top scorer      — the player with the highest points value
-//                        across both teams (from the API's `leaders`).
-//   3. Other top stat  — top assist or rebound, whichever leader the
-//                        feed surfaces. Picks the more notable one.
+// Slots, in priority order:
+//   1. Story / narrative — comeback, OT, Q4 surge, blowout, close finish.
+//      Skipped under No-Spoilers (the narrative IS the spoiler).
+//   2. Top performer — top scorer + a secondary stat if the same player
+//      also led the game in assists or rebounds.
+//   3. Team-level stat — rebound dominance, hot/cold three-point shooting,
+//      assist disparity. Picks the most-extreme available signal.
+//   4. (Overflow) Series context — if seriesSummary tells us this game
+//      clinched or shifted the series.
 //
-// No-Spoilers gating:
-//   • Game character leaks closeness/blowout — suppressed entirely.
-//   • Player stats are technically inferable as winner-leaning, so the
-//     value (e.g. "31 PTS") is wrapped in <Spoiler>. The player's name
-//     and team are shown — fans want to know who's playing well even
-//     when they don't want the score yet.
+// We render up to 3 of these. Missing data is fine — the section
+// simply shows fewer cards. We never pad with bland filler.
+//
+// No-Spoilers:
+//   • Story is suppressed (closeness / margin / who-pulled-away signals).
+//   • Player + team stat values are Spoiler-wrapped (numeric stat could
+//     leak the winner). Eyebrow + player name stay visible because fans
+//     want to know who played well without seeing the score.
 
 type Highlight = {
   eyebrow: string;
   body: string;
-  /** When true, the body should be wrapped in <Spoiler> under
-   *  No-Spoilers (numeric stat that could leak winner). */
+  /** When true, the body is wrapped in <Spoiler> under No-Spoilers. */
   spoilery?: boolean;
 };
 
@@ -40,7 +41,6 @@ export function HighlightsStack({ game }: { game: Game }) {
   if (!isFinal && !isLive) return null;
 
   const highlights = deriveHighlights(game, noSpoilers);
-  if (highlights.length === 0) return null;
 
   return (
     <section>
@@ -49,133 +49,371 @@ export function HighlightsStack({ game }: { game: Game }) {
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />
       </div>
 
-      <ul className="space-y-2">
-        {highlights.map((h, i) => (
-          <li
-            key={i}
-            className="rounded-[14px] border px-3 py-3"
-            style={{
-              background: "var(--paper)",
-              borderColor: "var(--line)",
-            }}
-          >
-            <Eyebrow>{h.eyebrow}</Eyebrow>
-            <p
-              className="mt-1 text-[14px] leading-snug"
+      {highlights.length === 0 ? (
+        <p
+          className="rounded-[14px] border px-4 py-3 text-[13px]"
+          style={{
+            background: "var(--paper)",
+            borderColor: "var(--line)",
+            color: "var(--mute-1)",
+            fontWeight: 500,
+          }}
+        >
+          {isLive
+            ? "Highlights will update as the game develops."
+            : "No highlights available for this game."}
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {highlights.map((h, i) => (
+            <li
+              key={i}
+              className="rounded-[14px] border px-3 py-3"
               style={{
-                color: "var(--ink)",
-                fontWeight: 700,
-                letterSpacing: "-0.005em",
+                background: "var(--paper)",
+                borderColor: "var(--line)",
               }}
             >
-              {h.spoilery && noSpoilers ? (
-                <Spoiler ariaSubject={`${game.away.abbreviation} vs ${game.home.abbreviation}`}>
-                  {h.body}
-                </Spoiler>
-              ) : (
-                h.body
-              )}
-            </p>
-          </li>
-        ))}
-      </ul>
+              <Eyebrow>{h.eyebrow}</Eyebrow>
+              <p
+                className="mt-1 text-[14px] leading-snug"
+                style={{
+                  color: "var(--ink)",
+                  fontWeight: 700,
+                  letterSpacing: "-0.005em",
+                }}
+              >
+                {h.spoilery && noSpoilers ? (
+                  <Spoiler ariaSubject={`${game.away.abbreviation} vs ${game.home.abbreviation}`}>
+                    {h.body}
+                  </Spoiler>
+                ) : (
+                  h.body
+                )}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
 
+// ── Derivation ─────────────────────────────────────────────────────────
+
 function deriveHighlights(game: Game, noSpoilers: boolean): Highlight[] {
   const out: Highlight[] = [];
 
-  // 1. Game character — directly leaks closeness, so we drop it under
-  //    No-Spoilers entirely (rather than blur it, which would still
-  //    let "Highlights" mention closeness in aria text).
+  // 1. Story / narrative — only when we're not hiding spoilers.
   if (!noSpoilers) {
-    const character = deriveCharacter(game);
-    if (character) out.push({ eyebrow: "Game character", body: character });
+    const story = deriveStory(game);
+    if (story) out.push(story);
   }
 
-  // 2. Top scorer
-  const scorer = pickPointsLeader(game.leaders);
-  if (scorer) {
-    out.push({
-      eyebrow: "Top scorer",
-      body: formatLeader(scorer),
-      spoilery: true,
-    });
+  // 2. Top performer
+  const performer = deriveTopPerformer(game);
+  if (performer) out.push(performer);
+
+  // 3. Team-level stat
+  const teamStat = deriveTeamStat(game);
+  if (teamStat) out.push(teamStat);
+
+  // 4. Overflow: series context (only if we have fewer than 3 highlights
+  //    already, otherwise the rendering caps at 3 anyway).
+  if (out.length < 3) {
+    const series = deriveSeriesContext(game);
+    if (series) out.push(series);
   }
 
-  // 3. Secondary stat — prefer assists if both teams have a real assist
-  //    leader, otherwise rebounds. ESPN sometimes gives only one or the
-  //    other for a given matchup.
-  const secondary = pickAssistsLeader(game.leaders) ?? pickReboundsLeader(game.leaders);
-  if (secondary) {
-    const label = /assist/i.test(secondary.label) ? "Top assist" : "Top rebound";
-    out.push({
-      eyebrow: label,
-      body: formatLeader(secondary),
-      spoilery: true,
-    });
-  }
-
-  return out;
+  return out.slice(0, 3);
 }
 
-function deriveCharacter(game: Game): string | null {
-  const margin = Math.abs(game.away.score - game.home.score);
+// ── Story ──────────────────────────────────────────────────────────────
+
+function deriveStory(game: Game): Highlight | null {
   if (game.status === "live") {
-    if (game.period >= 4 && margin <= 5) return "One-possession game in Q4.";
-    if (game.period >= 4) return "Q4 underway.";
-    if (game.period === 0 || game.period == null) return "Game underway.";
-    return `Q${game.period} underway.`;
+    if (game.period >= 4) return { eyebrow: "Game state", body: "Q4 underway." };
+    if (game.period === 0 || game.period == null) {
+      return { eyebrow: "Game state", body: "Game underway." };
+    }
+    return { eyebrow: "Game state", body: `Q${game.period} underway.` };
   }
-  // final
-  if (margin <= 3) return "One-possession finish.";
-  if (margin <= 6) return "Close all night.";
-  if (margin <= 12) return "Steady win.";
-  if (margin <= 20) return `${margin}-point win.`;
-  return "Blowout.";
+
+  // For finals, pick the most interesting available story.
+  const ot = detectOvertime(game);
+  if (ot) return ot;
+
+  const comeback = detectComeback(game);
+  if (comeback) return comeback;
+
+  const q4 = detectQ4Surge(game);
+  if (q4) return q4;
+
+  const margin = Math.abs(game.away.score - game.home.score);
+  if (margin === 0) return { eyebrow: "Story", body: "Tied at the buzzer." };
+  if (margin <= 3) return { eyebrow: "Story", body: "One-possession finish." };
+  if (margin <= 6) return { eyebrow: "Story", body: "Close all night." };
+  if (margin >= 20) return { eyebrow: "Story", body: `${margin}-point blowout.` };
+  return { eyebrow: "Story", body: `Decided by ${margin}.` };
 }
+
+function detectOvertime(game: Game): Highlight | null {
+  const len = game.periodScores?.away?.length ?? 0;
+  if (len <= 4) return null;
+  const otCount = len - 4;
+  const label = otCount === 1 ? "Overtime." : `${otCount} overtimes.`;
+  return { eyebrow: "Story", body: label };
+}
+
+function detectComeback(game: Game): Highlight | null {
+  const a = game.periodScores?.away;
+  const h = game.periodScores?.home;
+  if (!a || !h || a.length < 2) return null;
+
+  let aRun = 0;
+  let hRun = 0;
+  let maxAwayLead = 0;
+  let maxHomeLead = 0;
+  for (let i = 0; i < a.length; i++) {
+    aRun += a[i] ?? 0;
+    hRun += h[i] ?? 0;
+    maxAwayLead = Math.max(maxAwayLead, aRun - hRun);
+    maxHomeLead = Math.max(maxHomeLead, hRun - aRun);
+  }
+
+  const awayWon = game.away.score > game.home.score;
+  const homeWon = game.home.score > game.away.score;
+
+  if (awayWon && maxHomeLead >= 15) {
+    return {
+      eyebrow: "Story",
+      body: `${game.away.abbreviation} erased a ${maxHomeLead}-point deficit.`,
+    };
+  }
+  if (homeWon && maxAwayLead >= 15) {
+    return {
+      eyebrow: "Story",
+      body: `${game.home.abbreviation} erased a ${maxAwayLead}-point deficit.`,
+    };
+  }
+  return null;
+}
+
+function detectQ4Surge(game: Game): Highlight | null {
+  const a = game.periodScores?.away;
+  const h = game.periodScores?.home;
+  if (!a || !h || a.length < 4) return null;
+  const aQ4 = a[3] ?? 0;
+  const hQ4 = h[3] ?? 0;
+  const q4Margin = aQ4 - hQ4;
+  const awayWon = game.away.score > game.home.score;
+  const homeWon = game.home.score > game.away.score;
+
+  // "Pulled away" only reads right if the team that took Q4 also won.
+  // Q4 margin of 8+ feels meaningful without false-positiving normal runs.
+  if (q4Margin >= 8 && awayWon) {
+    return {
+      eyebrow: "Story",
+      body: `${game.away.abbreviation} pulled away in Q4.`,
+    };
+  }
+  if (q4Margin <= -8 && homeWon) {
+    return {
+      eyebrow: "Story",
+      body: `${game.home.abbreviation} pulled away in Q4.`,
+    };
+  }
+  return null;
+}
+
+// ── Top performer ──────────────────────────────────────────────────────
+
+function deriveTopPerformer(game: Game): Highlight | null {
+  const pts = pickLeader(game.leaders, /point/i);
+  if (!pts) return null;
+
+  const ptsValue = leaderValueAsNumber(pts);
+  if (ptsValue <= 0 || !isFinite(ptsValue)) return null;
+
+  // Try to add a second stat from the SAME player if they also led
+  // assists or rebounds and the secondary stat is "notable" enough to
+  // mention. Avoids "X had 31 PTS, 2 AST" which adds noise.
+  const samePlayer = game.leaders.filter((l) => l.name === pts.name);
+  const ast = samePlayer.find((l) => /assist/i.test(l.label));
+  const reb = samePlayer.find((l) => /rebound/i.test(l.label));
+  const astValue = ast ? leaderValueAsNumber(ast) : 0;
+  const rebValue = reb ? leaderValueAsNumber(reb) : 0;
+
+  const team = pts.team ? ` (${pts.team})` : "";
+  let body = `${pts.name}${team} · ${ptsValue} PTS`;
+  // "Notable" thresholds for a secondary stat to be worth showing.
+  if (astValue >= 6) body += `, ${astValue} AST`;
+  else if (rebValue >= 8) body += `, ${rebValue} REB`;
+
+  return { eyebrow: "Top performer", body, spoilery: true };
+}
+
+// ── Team-level stat ────────────────────────────────────────────────────
+
+function deriveTeamStat(game: Game): Highlight | null {
+  const comp = game.teamComparison ?? [];
+  if (comp.length === 0) return null;
+
+  // Try each candidate; return the FIRST one that produces a meaningful
+  // body. Ordering reflects narrative interest: rebound dominance >
+  // shooting outliers > assist disparity.
+  return (
+    rebDominanceHighlight(game, comp) ||
+    threePointOutlierHighlight(game, comp) ||
+    assistDisparityHighlight(game, comp)
+  );
+}
+
+function findStat(
+  comp: TeamComparisonStat[],
+  pattern: RegExp
+): TeamComparisonStat | undefined {
+  return comp.find((s) => pattern.test(s.label));
+}
+
+function parseStat(s: TeamComparisonStat): { a: number; h: number } | null {
+  const a = parseFloat(s.away);
+  const h = parseFloat(s.home);
+  if (!isFinite(a) || !isFinite(h)) return null;
+  return { a, h };
+}
+
+function rebDominanceHighlight(
+  game: Game,
+  comp: TeamComparisonStat[]
+): Highlight | null {
+  const stat = findStat(comp, /^REB$|rebound/i);
+  if (!stat) return null;
+  const parsed = parseStat(stat);
+  if (!parsed) return null;
+  const margin = Math.abs(parsed.a - parsed.h);
+  if (margin < 8) return null;
+  const winnerCode = parsed.a > parsed.h ? game.away.abbreviation : game.home.abbreviation;
+  const max = Math.max(parsed.a, parsed.h);
+  const min = Math.min(parsed.a, parsed.h);
+  return {
+    eyebrow: "On the glass",
+    body: `${winnerCode} won the boards, ${max}–${min}.`,
+    spoilery: true,
+  };
+}
+
+function threePointOutlierHighlight(
+  game: Game,
+  comp: TeamComparisonStat[]
+): Highlight | null {
+  const stat = findStat(comp, /3P%|three/i);
+  if (!stat) return null;
+  const parsed = parseStat(stat);
+  if (!parsed) return null;
+  // Pick whichever team is at the extreme.
+  const hot = parsed.a >= 45 || parsed.h >= 45;
+  const cold = parsed.a <= 25 || parsed.h <= 25;
+  if (!hot && !cold) return null;
+
+  if (parsed.a >= 45 && parsed.a >= parsed.h) {
+    return {
+      eyebrow: "From deep",
+      body: `${game.away.abbreviation} hot from three (${formatPercent(parsed.a)}).`,
+      spoilery: true,
+    };
+  }
+  if (parsed.h >= 45) {
+    return {
+      eyebrow: "From deep",
+      body: `${game.home.abbreviation} hot from three (${formatPercent(parsed.h)}).`,
+      spoilery: true,
+    };
+  }
+  if (parsed.a <= 25 && parsed.a <= parsed.h) {
+    return {
+      eyebrow: "From deep",
+      body: `${game.away.abbreviation} cold from three (${formatPercent(parsed.a)}).`,
+      spoilery: true,
+    };
+  }
+  if (parsed.h <= 25) {
+    return {
+      eyebrow: "From deep",
+      body: `${game.home.abbreviation} cold from three (${formatPercent(parsed.h)}).`,
+      spoilery: true,
+    };
+  }
+  return null;
+}
+
+function assistDisparityHighlight(
+  game: Game,
+  comp: TeamComparisonStat[]
+): Highlight | null {
+  const stat = findStat(comp, /^AST$|assist/i);
+  if (!stat) return null;
+  const parsed = parseStat(stat);
+  if (!parsed) return null;
+  const margin = Math.abs(parsed.a - parsed.h);
+  if (margin < 7) return null;
+  const winnerCode = parsed.a > parsed.h ? game.away.abbreviation : game.home.abbreviation;
+  const max = Math.max(parsed.a, parsed.h);
+  return {
+    eyebrow: "Ball movement",
+    body: `${winnerCode} ran the offense, ${max} assists.`,
+    spoilery: true,
+  };
+}
+
+// ── Series context ─────────────────────────────────────────────────────
+
+function deriveSeriesContext(game: Game): Highlight | null {
+  if (!game.seriesSummary) return null;
+  const m = game.seriesSummary.match(/(\w+)\s+(LEADS|WINS?)\s+SERIES\s+(\d+)-(\d+)/i);
+  if (!m) return null;
+  const [, team, action, winStr, lossStr] = m;
+  const win = winStr;
+  const loss = lossStr;
+  if (/WINS?/i.test(action)) {
+    return {
+      eyebrow: "Series",
+      body: `${team} wins the series ${win}–${loss}.`,
+      spoilery: true,
+    };
+  }
+  if (win === loss) {
+    return {
+      eyebrow: "Series",
+      body: `Series tied ${win}–${loss}.`,
+      spoilery: true,
+    };
+  }
+  return {
+    eyebrow: "Series",
+    body: `${team} leads the series ${win}–${loss}.`,
+    spoilery: true,
+  };
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────
 
 function leaderValueAsNumber(l: GameLeader): number {
-  // values look like "31", "12.5", or "8 (3 OREB)". Pull the first
-  // numeric span. NaN means we sort it to the bottom.
   const m = l.value.match(/(\d+(?:\.\d+)?)/);
   return m ? parseFloat(m[1]) : Number.NEGATIVE_INFINITY;
 }
 
-function pickPointsLeader(leaders: GameLeader[]): GameLeader | undefined {
-  const candidates = leaders.filter((l) => /point/i.test(l.label));
+function pickLeader(
+  leaders: GameLeader[],
+  pattern: RegExp
+): GameLeader | undefined {
+  const candidates = leaders.filter((l) => pattern.test(l.label));
   if (candidates.length === 0) return undefined;
   return candidates.sort((a, b) => leaderValueAsNumber(b) - leaderValueAsNumber(a))[0];
 }
 
-function pickAssistsLeader(leaders: GameLeader[]): GameLeader | undefined {
-  const candidates = leaders.filter((l) => /assist/i.test(l.label));
-  if (candidates.length === 0) return undefined;
-  return candidates.sort((a, b) => leaderValueAsNumber(b) - leaderValueAsNumber(a))[0];
-}
-
-function pickReboundsLeader(leaders: GameLeader[]): GameLeader | undefined {
-  const candidates = leaders.filter((l) => /rebound/i.test(l.label));
-  if (candidates.length === 0) return undefined;
-  return candidates.sort((a, b) => leaderValueAsNumber(b) - leaderValueAsNumber(a))[0];
-}
-
-function formatLeader(l: GameLeader): string {
-  // "SGA · 31 PTS" — name (or short name from leader), middle dot,
-  // value with a label suffix when the label is short enough.
-  const suffix = shortLabel(l.label);
-  const value = suffix ? `${l.value} ${suffix}` : l.value;
-  const team = l.team ? ` (${l.team})` : "";
-  return `${l.name}${team} · ${value}`;
-}
-
-function shortLabel(label: string): string {
-  // ESPN labels vary: "Points", "PPG", "Rebounds", "REB", "Assists",
-  // "AST". Normalize to a tight 3-letter suffix when the value alone
-  // wouldn't read clearly.
-  if (/^point/i.test(label) || /PPG/i.test(label)) return "PTS";
-  if (/^rebound/i.test(label) || /^REB/i.test(label)) return "REB";
-  if (/^assist/i.test(label) || /^AST/i.test(label)) return "AST";
-  return "";
+function formatPercent(n: number): string {
+  // ESPN sometimes already includes %, sometimes returns just the number.
+  // Always output a clean integer percentage.
+  return `${Math.round(n)}%`;
 }
