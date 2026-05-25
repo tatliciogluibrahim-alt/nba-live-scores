@@ -62,7 +62,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
         continue;
       }
 
-      const payload = buildPayload(event);
+      const payload = buildPayload(event, sub.noSpoilers);
       let encoded: string;
       try {
         encoded = encodePushPayload(payload);
@@ -144,12 +144,23 @@ function subscriptionWantsEvent(
   );
 }
 
-function buildPayload(event: PushEvent): PushPayload {
+/** Format the score line for push bodies. Matches the canonical
+ *  Stadium Panel format used in the SevenDotStrip detail card and the
+ *  series-data adapter: "AWAY awayScore – homeScore HOME". */
+function scoreLine(event: PushEvent): string {
+  return `${event.awayCode} ${event.awayScore} – ${event.homeScore} ${event.homeCode}`;
+}
+
+function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
   const matchup = `${event.awayCode} vs ${event.homeCode}`;
-  // Copy contract: never lead with the score. The body says what
-  // happened in human terms; the user taps in for numbers.
+  // For No-Spoilers users the body must never contain a score, a
+  // winner, or a closeness signal. They get a calm "something
+  // happened, tap to check" body. The dispatcher already suppresses
+  // close-game entirely for them, so that branch is non-NoSpoilers
+  // only by the time we reach buildPayload.
   switch (event.type) {
     case "tipoff":
+      // At tipoff the score is 0-0; nothing useful to include either way.
       return {
         title: `Tipoff · ${matchup}`,
         body: "Game's underway. Tap to follow along.",
@@ -159,35 +170,37 @@ function buildPayload(event: PushEvent): PushPayload {
     case "eoq-1":
       return {
         title: `End of Q1 · ${matchup}`,
-        body: "Quarter wrapped. Tap to check in.",
+        body: noSpoilers ? "Quarter wrapped. Tap to check in." : scoreLine(event),
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:eoq`,
       };
     case "eoq-2":
       return {
         title: `Halftime · ${matchup}`,
-        body: "Half done. Tap to check in.",
+        body: noSpoilers ? "Half done. Tap to check in." : scoreLine(event),
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:eoq`,
       };
     case "eoq-3":
       return {
         title: `End of Q3 · ${matchup}`,
-        body: "One quarter left.",
+        body: noSpoilers ? "One quarter left." : scoreLine(event),
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:eoq`,
       };
     case "close-game":
+      // close-game is suppressed entirely for noSpoilers (see
+      // subscriptionWantsEvent), so we can assume scores are wanted here.
       return {
         title: `Q4 · ${matchup}`,
-        body: "One-possession game in the final minutes.",
+        body: `${scoreLine(event)} · one possession`,
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:close`,
       };
     case "final":
       return {
         title: `Final · ${matchup}`,
-        body: "Game's done. Tap when you're ready.",
+        body: noSpoilers ? "Game's done. Tap when you're ready." : scoreLine(event),
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:final`,
       };

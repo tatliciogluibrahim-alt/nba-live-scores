@@ -33,6 +33,12 @@ export type PushEvent = {
    *  users follow either side. */
   awayCode: string;
   homeCode: string;
+  /** Live scores at the moment the event fires. The dispatcher includes
+   *  them in the push body for non-No-Spoilers users so the lock screen
+   *  ping is actually useful ("OKC 78 – 82 SA") instead of just calm
+   *  decoration ("Quarter wrapped"). */
+  awayScore: number;
+  homeScore: number;
 };
 
 export type FreshGameState = {
@@ -83,6 +89,8 @@ export function detectEvents(
     gameId: stableNext.gameId,
     awayCode: stableNext.awayCode,
     homeCode: stableNext.homeCode,
+    awayScore: stableNext.awayScore,
+    homeScore: stableNext.homeScore,
   };
   const events: PushEvent[] = [];
 
