@@ -593,14 +593,20 @@ export function buildTodayPayload({
 
   const hasLive = nba.some((g) => g.status === "live") || wc.some((g) => g.status === "live");
   const hasUpcoming = upNext.length > 0;
+  // Quiet Wrap intentionally shows both today's "Earlier" finals AND
+  // yesterday's finals for context, but the Quiet Recap moment is
+  // strictly about *tonight's* slate. Count only games that finished
+  // today (local time), via formatGameDay's "Tonight" branch.
+  const tonightFinals = nba.filter(
+    (g) => g.status === "final" && formatGameDay(g.date, now) === "Tonight"
+  );
+  const hasTonightFinals = tonightFinals.length > 0;
   const hasFinals = quietWrap.length > 0;
   const isQuietDay = !hasLive && !hasUpcoming && !hasFinals;
   // Slate complete: nothing live, nothing upcoming, but at least one
-  // final happened. This is the "end-of-night" condition for the Quiet
-  // Recap moment — distinct from `isQuietDay` (which means nothing
-  // happened at all today).
-  const slateComplete = !hasLive && !hasUpcoming && hasFinals;
-  const finalsCount = slateComplete ? quietWrap.length : 0;
+  // game finished tonight. Yesterday's finals don't trigger the recap.
+  const slateComplete = !hasLive && !hasUpcoming && hasTonightFinals;
+  const finalsCount = slateComplete ? tonightFinals.length : 0;
 
   return {
     hero,

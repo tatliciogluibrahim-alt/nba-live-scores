@@ -229,7 +229,7 @@ function tierWelcomeBody(tier: AlertPreset, follows: number): string {
   if (follows === 0) {
     return "Follow a team to start getting pings.";
   }
-  if (tier === "quiet") return "Tipoffs and finals only.";
-  if (tier === "companion") return "Tipoffs, end of quarters, finals.";
-  return "Tipoffs, quarters, finals, plus Q4 close games and comebacks.";
+  if (tier === "quiet") return "Game starts and finals only.";
+  if (tier === "companion") return "Starts, period breaks, finals.";
+  return "Starts, period breaks, finals, plus close finishes and comebacks.";
 }

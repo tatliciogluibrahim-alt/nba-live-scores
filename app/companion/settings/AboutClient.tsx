@@ -43,7 +43,7 @@ export function AboutClient() {
         <Section
           eyebrow="Tiers"
           headline="How loud you want it."
-          body="Three levels: Quiet (tipoff and final only), Companion (plus end of each quarter — default), or All moments (plus Q4 close games). Pick once when you turn notifications on. Change anytime in Watch + Alerts."
+          body="Three levels: Quiet (game start and final only), Companion (plus the period breaks — default), or All moments (plus close finishes and comebacks). The same tier applies across every sport. Pick once when you turn notifications on. Change anytime in Watch + Alerts."
         />
       </div>
 

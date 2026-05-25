@@ -158,16 +158,22 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
               }`}
               style={dotStyle(display, isSelected)}
             >
-              {/* Played dots show the winning team's first initial so the
-                  reader knows who took each game without needing a score.
-                  Suppressed under No-Spoilers (same gate as scoreLine).
-                  Falls back to the game number when winnerCode is absent. */}
+              {/* Played dots show the winning team's abbreviation (up to
+                  the first 2 letters — "SA", "NY", "OK") so the reader
+                  knows who took each game at a glance. A single letter
+                  was ambiguous (S could be Spurs/Sixers/Suns). Two
+                  letters disambiguate. Three-letter abbrs (OKC, MIL,
+                  PHX) get truncated to 2 so the type stays legible at
+                  the dot size. Suppressed under No-Spoilers — same
+                  gate as scoreLine. Falls back to the game number when
+                  winnerCode is absent. */}
               <span
-                className="text-[9px]"
                 style={{
                   fontFamily: "var(--font-mono)",
+                  fontSize: 9,
                   fontWeight: 700,
-                  letterSpacing: "0.02em",
+                  letterSpacing: 0,
+                  lineHeight: 1,
                   color:
                     display === "played" || display === "live"
                       ? "var(--cream)"
@@ -175,7 +181,7 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
                 }}
               >
                 {display === "played" && !noSpoilers && dot.winnerCode
-                  ? dot.winnerCode[0].toUpperCase()
+                  ? dot.winnerCode.slice(0, 2).toUpperCase()
                   : dot.number}
               </span>
             </span>

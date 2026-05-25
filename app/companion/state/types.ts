@@ -57,19 +57,16 @@ export const DEFAULT_PREFS: UserPrefs = {
 export const DEFAULT_ALERT_PRESET: AlertPreset = "companion";
 
 // ── Copy contract for presets (HANDOFF.md §5) ─────────────────────────
-// Three tiers, escalating in volume. Match the user-facing mental model:
-// quiet     → bookends only (tipoff + final)
-// companion → bookends + end-of-quarter pulses
-// all       → companion + late-game drama (Q4 close games + comebacks)
-//
-// The trigger logic that turns these into actual pushes lives server-side
-// (Stage C — game-state watcher + cron). Until that ships, the preset
-// purely controls what the user *believes* they'll receive.
+// Three tiers, escalating in volume. The same global tier applies to
+// every team/country/series the user follows — including across sports
+// (NBA + WC). Copy is deliberately sport-neutral. The push body itself
+// mints sport-specific titles in the dispatcher ("Tipoff" / "Kickoff"
+// / "End of Q3" / "Halftime") based on the game's source league.
 export const PRESETS: Record<
   AlertPreset,
   { label: string; detail: string }
 > = {
-  quiet: { label: "Quiet", detail: "Tipoff and final only" },
-  companion: { label: "Companion", detail: "Tipoff, end of each quarter, final" },
-  all: { label: "All moments", detail: "Above + Q4 close games and comebacks" },
+  quiet: { label: "Quiet", detail: "Game start and final only" },
+  companion: { label: "Companion", detail: "Start, end of each period, final" },
+  all: { label: "All moments", detail: "Above + close finishes and comebacks" },
 };
