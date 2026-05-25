@@ -1,13 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PRESETS, type AlertPreset, type Follow } from "../state/types";
 import { useFollows } from "../providers";
 import { PresetRow } from "./PresetRow";
 
-// Single follow row on the Following dashboard. Collapsed by default to keep
-// the dashboard scannable. Tap the body to expand → preset radio + remove.
+// Single follow row on the Following dashboard. Body navigates to the
+// object's detail page (where one exists); the alert pill on the right
+// is a dedicated control that opens the alert/unfollow panel. Team and
+// tournament don't have detail pages yet — those rows leave the body
+// non-interactive so taps don't dead-end on a broken URL.
 
 export type FollowCardData = {
   follow: Follow;
@@ -17,6 +21,20 @@ export type FollowCardData = {
   detail?: string;            // optional second line ("Plays tonight · 8:00 PM")
   accent?: string;            // optional accent for the identity chip
 };
+
+// Detail route resolver. Returns null for kinds that don't have a detail
+// page yet — those rows render as static (no nav) and document the gap.
+function detailHrefFor(follow: Follow): string | null {
+  switch (follow.kind) {
+    case "country":
+      return `/country/${follow.id}`;
+    case "series":
+      return `/series/${follow.id}`;
+    case "team":
+    case "tournament":
+      return null;
+  }
+}
 
 export function FollowCard({ data }: { data: FollowCardData }) {
   const {
@@ -32,6 +50,7 @@ export function FollowCard({ data }: { data: FollowCardData }) {
   const presetMeta = PRESETS[follow.alertTier];
   const slotsFull = alertSlotCount >= alertSlotCap;
   const canEnable = follow.alertEnabled || !slotsFull;
+  const detailHref = detailHrefFor(follow);
 
   function handlePreset(next: AlertPreset) {
     setFollowAlertTier(follow.kind, follow.id, next);
@@ -45,6 +64,52 @@ export function FollowCard({ data }: { data: FollowCardData }) {
     removeFollow(follow.kind, follow.id);
   }
 
+  const identityChip = (
+    <span
+      aria-hidden
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px]"
+      style={{
+        background:
+          follow.kind === "team" || follow.kind === "series"
+            ? "var(--nba-soft)"
+            : follow.kind === "country"
+              ? "var(--wc-soft)"
+              : "var(--cream-2)",
+        color: accent ?? "var(--ink)",
+        fontFamily: "var(--font-mono)",
+        fontSize: identityMark.length > 4 ? 11 : 14,
+        fontWeight: 700,
+        letterSpacing: "0.02em",
+      }}
+    >
+      {identityMark}
+    </span>
+  );
+
+  const identityText = (
+    <div className="min-w-0 flex-1">
+      <Eyebrow>{kindLabel}</Eyebrow>
+      <p
+        className="mt-1 truncate text-[14px] leading-snug"
+        style={{
+          color: "var(--ink)",
+          fontWeight: 700,
+          letterSpacing: "-0.005em",
+        }}
+      >
+        {name}
+      </p>
+      {detail ? (
+        <p
+          className="mt-0.5 truncate text-[12px]"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          {detail}
+        </p>
+      ) : null}
+    </div>
+  );
+
   return (
     <article
       className="rounded-[14px] border"
@@ -53,60 +118,30 @@ export function FollowCard({ data }: { data: FollowCardData }) {
         borderColor: "var(--line)",
       }}
     >
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-        aria-controls={`follow-${follow.kind}-${follow.id}-body`}
-        className="flex w-full items-center gap-3 px-3 py-3 text-left transition active:scale-[0.995]"
-      >
-        <span
-          aria-hidden
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px]"
-          style={{
-            // Sport-tinted background: makes the chip read as a badge,
-            // not a grey placeholder. Derived from the follow kind so
-            // NBA teams get the orange tint and WC countries the green.
-            background:
-              follow.kind === "team" || follow.kind === "series"
-                ? "var(--nba-soft)"
-                : follow.kind === "country"
-                  ? "var(--wc-soft)"
-                  : "var(--cream-2)",
-            color: accent ?? "var(--ink)",
-            fontFamily: "var(--font-mono)",
-            fontSize: identityMark.length > 4 ? 11 : 14,
-            fontWeight: 700,
-            letterSpacing: "0.02em",
-          }}
-        >
-          {identityMark}
-        </span>
-
-        <div className="min-w-0 flex-1">
-          <Eyebrow>{kindLabel}</Eyebrow>
-          <p
-            className="mt-1 truncate text-[14px] leading-snug"
-            style={{
-              color: "var(--ink)",
-              fontWeight: 700,
-              letterSpacing: "-0.005em",
-            }}
+      <div className="flex w-full items-center gap-3 px-3 py-3">
+        {detailHref ? (
+          <Link
+            href={detailHref}
+            aria-label={`Open ${name} detail`}
+            className="flex min-w-0 flex-1 items-center gap-3 text-left transition active:scale-[0.995]"
           >
-            {name}
-          </p>
-          {detail ? (
-            <p
-              className="mt-0.5 truncate text-[12px]"
-              style={{ color: "var(--mute-1)", fontWeight: 500 }}
-            >
-              {detail}
-            </p>
-          ) : null}
-        </div>
+            {identityChip}
+            {identityText}
+          </Link>
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
+            {identityChip}
+            {identityText}
+          </div>
+        )}
 
-        <span
-          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase"
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          aria-controls={`follow-${follow.kind}-${follow.id}-body`}
+          aria-label={`${expanded ? "Hide" : "Show"} alert settings for ${name}`}
+          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase transition active:scale-[0.95]"
           style={{
             background: follow.alertEnabled ? "var(--cream-2)" : "transparent",
             color: follow.alertEnabled ? "var(--ink)" : "var(--mute-1)",
@@ -116,8 +151,8 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           }}
         >
           {follow.alertEnabled ? presetMeta.label : "Alerts off"}
-        </span>
-      </button>
+        </button>
+      </div>
 
       {expanded ? (
         <div

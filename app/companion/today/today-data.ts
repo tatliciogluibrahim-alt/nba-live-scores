@@ -338,6 +338,9 @@ function buildYouFollow(
             href: `/game/${g.id}`,
           };
         }
+        // No standalone team detail route yet — fall back to /following
+        // so the chip stays useful (user can manage the follow from there)
+        // instead of dead-ending on an invalid /series/<teamAbbr> URL.
         return {
           kind: "team",
           id: f.id,
@@ -345,7 +348,7 @@ function buildYouFollow(
           chip: f.id,
           statusLabel: "Quiet",
           tone: "final",
-          href: `/series/${f.id}`,
+          href: "/following",
         };
       }
       if (f.kind === "country") {
