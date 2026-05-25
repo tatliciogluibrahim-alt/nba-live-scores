@@ -87,7 +87,7 @@ export function SeriesPresetSection({
             className="mt-1 text-[12px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            Default is Companion — start · close game · final. Change later.
+            Default is Companion. Start · close game · final. Change later.
           </p>
           <button
             type="button"

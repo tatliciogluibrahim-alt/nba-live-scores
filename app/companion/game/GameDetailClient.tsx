@@ -17,7 +17,7 @@ import { WCGameDetail } from "./WCGameDetail";
 // Falls back to a calm NotFound screen if the id doesn't resolve.
 
 type Resolved =
-  | { source: "nba"; game: Game }
+  | { source: "nba"; game: Game; allNBAGames: Game[] }
   | { source: "wc"; game: WCGameLite }
   | { source: null; game: null };
 
@@ -66,7 +66,15 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
         // home, status, statusText, period, matchup, gameContext,
         // seriesSummary, seriesConference, seriesRound, broadcasts) is
         // present. Cast through unknown to make the boundary explicit.
-        const next = { source: "nba", game: nbaGame as unknown as Game } as const;
+        //
+        // We also pass the full NBA games list down so deriveSeriesDots
+        // can populate winner abbreviations for past games in the strip
+        // (otherwise only the current game's dot shows the winner).
+        const next = {
+          source: "nba",
+          game: nbaGame as unknown as Game,
+          allNBAGames: nba as unknown as Game[],
+        } as const;
         resolvedRef.current = next;
         setResolved(next);
         return;
@@ -135,6 +143,7 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
     return (
       <NBALiveCompanion
         game={resolved.game}
+        allNBAGames={resolved.allNBAGames}
         pinned={pinned}
         onPin={onPin}
         onUnpin={onUnpin}

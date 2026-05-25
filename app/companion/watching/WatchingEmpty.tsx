@@ -14,7 +14,7 @@ export function WatchingEmpty() {
         className="mb-5 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Pin a game to track its key moments here. Notifications come from teams you Follow — pinning a game does not subscribe you to it.
+        Pin a game to track its key moments here. Notifications come from teams you Follow. Pinning a game does not subscribe you to it.
       </p>
 
       <div className="space-y-2">

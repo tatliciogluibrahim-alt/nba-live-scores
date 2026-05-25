@@ -30,7 +30,7 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
               className="mt-0.5 text-[12px]"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Team · Country · Series · Tournament — we&apos;ll only surface theirs.
+              Team · Country · Series · Tournament. We&apos;ll only surface theirs.
             </p>
           </div>
           <svg

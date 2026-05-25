@@ -53,7 +53,7 @@ export function PerFollowAlerts() {
             className="mt-1 text-[12px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            Pick a team, country, series, or tournament — alert presets land here.
+            Pick a team, country, series, or tournament. Alert presets land here.
           </p>
         </Link>
       </section>

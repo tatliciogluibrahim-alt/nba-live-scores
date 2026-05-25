@@ -20,30 +20,31 @@ export function AboutClient() {
       >
         Three mechanics. Pin a game, follow a team, choose what wakes you up.
       </p>
+      {/* (em-dashes intentionally avoided across this page; they read AI) */}
 
       <div className="space-y-5">
         <Section
           eyebrow="Follow"
           headline="Drives your notifications."
-          body="Teams, countries, series, tournaments. Game events for the things you follow — tipoffs, end of quarters, finals — show up as pushes on your phone. Set up follows on the Following tab."
+          body="Teams, countries, series, tournaments. Game events for the things you follow show up as pushes on your phone. Tipoffs, end of quarters, finals. Set up follows on the Following tab."
         />
 
         <Section
           eyebrow="Pin"
           headline="Tracks games during play."
-          body="Pin a game to keep it on your Watching tab during the action. Pinning does not subscribe you to notifications — only follows do. Use it for tracking key moments, not for alerts."
+          body="Pin a game to keep it on your Watching tab during the action. Pinning does not subscribe you to notifications. Only follows do. Use it for tracking key moments, not for alerts."
         />
 
         <Section
           eyebrow="No-Spoilers"
           headline="Hides scores across every surface."
-          body="When on, scores and series outcomes are blurred until you tap to reveal them. Notifications stay calm — no score in the body, no closeness signals. Toggle it in Watch + Alerts."
+          body="When on, scores and series outcomes are blurred until you tap to reveal them. Notifications stay calm. No score in the body, no closeness signals. Toggle it in Watch + Alerts."
         />
 
         <Section
           eyebrow="Tiers"
           headline="How loud you want it."
-          body="Three levels: Quiet (game start and final only), Companion (plus the period breaks — default), or All moments (plus close finishes and comebacks). The same tier applies across every sport. Pick once when you turn notifications on. Change anytime in Watch + Alerts."
+          body="Three levels: Quiet (game start and final only), Companion (plus the period breaks, the default), or All moments (plus close finishes and comebacks). The same tier applies across every sport. Pick once when you turn notifications on. Change anytime in Watch + Alerts."
         />
       </div>
 
@@ -51,7 +52,7 @@ export function AboutClient() {
         className="mt-8 text-[12px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        That&apos;s the whole product. No feed, no badges, no fantasy. If you ever feel like the app is shouting at you, something is wrong — tell us.
+        That&apos;s the whole product. No feed, no badges, no fantasy. If the app ever feels like it&apos;s shouting at you, something is wrong. Tell us.
       </p>
 
       <Link

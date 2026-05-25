@@ -21,11 +21,17 @@ import { useNBADetail } from "./use-nba-detail";
 
 export function NBALiveCompanion({
   game,
+  allNBAGames = [],
   pinned,
   onPin,
   onUnpin,
 }: {
   game: Game;
+  /** Full NBA games list (from /api/live-scores). Used to enrich the
+   *  series dot strip with winner abbreviations for past games in the
+   *  same matchup, not just the current one. Optional — falls back to
+   *  the current-game-only behavior when missing. */
+  allNBAGames?: Game[];
   pinned: boolean;
   onPin: () => void;
   onUnpin: () => void;
@@ -56,7 +62,7 @@ export function NBALiveCompanion({
 
   const hero = deriveHero(game, noSpoilers);
   const series = deriveSeriesContext(game);
-  const seriesDots = deriveSeriesDots(game);
+  const seriesDots = deriveSeriesDots(game, allNBAGames);
 
   // Pull broadcasts from the detail endpoint when present; fall back to
   // whatever the scoreboard list already gave us. One WatchLine per screen.

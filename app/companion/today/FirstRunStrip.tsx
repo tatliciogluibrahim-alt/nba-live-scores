@@ -23,8 +23,13 @@ type StepProps = {
   index: number;
   done: boolean;
   title: string;
-  pendingDetail: string;
+  /** Sub-line shown ONLY when the step is done — factual confirmation
+   *  like "Following 2 things." Pending state stays title-only. */
   doneDetail: string;
+  /** Kept on the type for the caller's clarity even though it isn't
+   *  rendered today. If we ever bring back pending subtext, the call
+   *  sites still pass it. */
+  pendingDetail?: string;
   href?: string;
   onAction?: () => void;
 };
@@ -77,7 +82,7 @@ export function FirstRunStrip() {
           index={1}
           done={followDone}
           title="Follow your teams"
-          pendingDetail="Drives your notifications. Tap to set up."
+          pendingDetail=""
           doneDetail={`Following ${follows.length} ${follows.length === 1 ? "thing" : "things"}.`}
           href="/following"
         />
@@ -86,8 +91,8 @@ export function FirstRunStrip() {
           index={3}
           done={notifDone}
           title="Turn on notifications"
-          pendingDetail="Quiet pings for the moments that matter."
-          doneDetail="Choice saved. Change anytime in Settings."
+          pendingDetail=""
+          doneDetail="Choice saved."
           href="/settings"
         />
       </ol>
@@ -95,7 +100,7 @@ export function FirstRunStrip() {
   );
 }
 
-function Step({ index, done, title, pendingDetail, doneDetail, href, onAction }: StepProps) {
+function Step({ index, done, title, doneDetail, href, onAction }: StepProps) {
   const inner = (
     <>
       <span
@@ -122,12 +127,18 @@ function Step({ index, done, title, pendingDetail, doneDetail, href, onAction }:
         >
           {title}
         </p>
-        <p
-          className="mt-0.5 text-[11px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          {done ? doneDetail : pendingDetail}
-        </p>
+        {/* Pending state intentionally hides the sub line — the title
+            ("Follow your teams" / "Turn on notifications") is already
+            clear. Marketing-y subtext felt like noise. Done state still
+            renders the factual status confirmation. */}
+        {done && doneDetail ? (
+          <p
+            className="mt-0.5 text-[11px] leading-snug"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            {doneDetail}
+          </p>
+        ) : null}
       </div>
     </>
   );
@@ -193,14 +204,14 @@ function PinStep({ done, pinned }: { done: boolean; pinned: number }) {
           >
             Pin a game during play
           </p>
-          <p
-            className="mt-0.5 text-[11px] leading-snug"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-            {done
-              ? `${pinned} ${pinned === 1 ? "game" : "games"} pinned.`
-              : "Tracks key moments on Watching. Tap to learn how."}
-          </p>
+          {done ? (
+            <p
+              className="mt-0.5 text-[11px] leading-snug"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              {pinned} {pinned === 1 ? "game" : "games"} pinned.
+            </p>
+          ) : null}
         </div>
       </button>
 
@@ -212,7 +223,7 @@ function PinStep({ done, pinned }: { done: boolean; pinned: number }) {
           Open any game from Today or Following, tap{" "}
           <span style={{ color: "var(--ink)", fontWeight: 600 }}>Pin to Watching</span>
           . That game appears on your Watching tab during play. Pinning does not turn on
-          notifications — that&apos;s what Follow does.
+          notifications. That&apos;s what Follow does.
         </p>
       ) : null}
     </li>

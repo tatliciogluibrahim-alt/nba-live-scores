@@ -211,13 +211,38 @@ export function deriveSeriesContext(game: Game): SeriesContext {
 //
 // Returns [] when we can't determine the game number (non-series games).
 
-export function deriveSeriesDots(game: Game): SeriesDot[] {
+export function deriveSeriesDots(
+  game: Game,
+  allGames: ReadonlyArray<Game> = []
+): SeriesDot[] {
   const gameNumber = getGameNumberFromText(
     [game.gameContext, game.seriesSummary, game.seriesRound]
       .filter(Boolean)
       .join(" ")
   );
   if (!gameNumber) return [];
+
+  // Build a map of game-number → winner abbreviation by scanning all
+  // other NBA games that involve both of *this* matchup's teams. This
+  // lets the dot strip show winner letters for past games (not just
+  // the current one). Only final games with non-tied scores count.
+  const awayCode = game.away.abbreviation;
+  const homeCode = game.home.abbreviation;
+  const winnersByGameNumber = new Map<number, string>();
+  for (const g of allGames) {
+    if (g.status !== "final") continue;
+    const teams = [g.away.abbreviation, g.home.abbreviation];
+    if (!teams.includes(awayCode) || !teams.includes(homeCode)) continue;
+    if (g.away.score === g.home.score) continue;
+    const gn = getGameNumberFromText(
+      [g.gameContext, g.seriesSummary, g.seriesRound].filter(Boolean).join(" ")
+    );
+    if (!gn) continue;
+    winnersByGameNumber.set(
+      gn,
+      g.away.score > g.home.score ? g.away.abbreviation : g.home.abbreviation
+    );
+  }
 
   // Parse "2-1" from e.g. "OKC LEADS SERIES 2-1" or "SERIES TIED 2-2".
   const scoreMatch = game.seriesSummary?.match(/(\d+)-(\d+)/);
@@ -251,16 +276,26 @@ export function deriveSeriesDots(game: Game): SeriesDot[] {
       state = offset <= guaranteedAfterCurrent ? "scheduled" : "if-necessary";
     }
 
-    // Populate winnerCode only for the current game when it's final and
-    // scores are unambiguous. Past games in this path have no score data.
-    const winnerCode =
+    // Winner abbreviation per dot:
+    //   • For the current game number, use the live `game` object's
+    //     scores (the freshest data even mid-final-update).
+    //   • For other played positions, read from the map we built above
+    //     by scanning the full NBA games list for prior games in this
+    //     matchup. Missing entries leave winnerCode undefined and the
+    //     dot falls back to the game number.
+    let winnerCode: string | undefined;
+    if (
       n === gameNumber &&
       game.status === "final" &&
       game.away.score !== game.home.score
-        ? game.away.score > game.home.score
+    ) {
+      winnerCode =
+        game.away.score > game.home.score
           ? game.away.abbreviation
-          : game.home.abbreviation
-        : undefined;
+          : game.home.abbreviation;
+    } else if (state === "played") {
+      winnerCode = winnersByGameNumber.get(n);
+    }
 
     return {
       number: n,

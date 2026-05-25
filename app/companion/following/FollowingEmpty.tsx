@@ -14,7 +14,7 @@ export function FollowingEmpty() {
         className="mb-4 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        These drive your notifications. We&apos;ll surface only their games — everything else stays quiet.
+        These drive your notifications. Only their games surface here. Everything else stays quiet.
       </p>
 
       <div className="space-y-2">
