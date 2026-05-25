@@ -12,7 +12,7 @@ import { useNoSpoilers } from "../providers";
 import type { Game } from "../../nba/types";
 import { PinControls } from "./PinControls";
 import { deriveHero, deriveSeriesContext, deriveSeriesDots } from "./nba-moments";
-import { MomentsStack } from "./MomentsStack";
+import { HighlightsStack } from "./HighlightsStack";
 import { useNBADetail } from "./use-nba-detail";
 
 // NBA Live Companion — the deepened /game/[id] for NBA games. Moments-first,
@@ -41,7 +41,7 @@ export function NBALiveCompanion({
   const isUpcoming = game.status === "upcoming";
   const subject = game.matchup || `${game.away.abbreviation} vs ${game.home.abbreviation}`;
 
-  const { detail, hydrated, lastFetched } = useNBADetail(game.id, isLive);
+  const { detail, lastFetched } = useNBADetail(game.id, isLive);
 
   const status = isLive ? "live" : isUpcoming ? "upcoming" : "final";
   const statusLabel = isLive && game.statusText
@@ -166,18 +166,16 @@ export function NBALiveCompanion({
         </div>
       ) : null}
 
-      {/* ── Moments stack (key moments by default) ──────────────────────── */}
-      <div className="mt-5">
-        {hydrated ? (
-          detail && detail.plays.length > 0 ? (
-            <MomentsStack plays={detail.plays} />
-          ) : isUpcoming ? null : (
-            <DetailFallback subject={subject} />
-          )
-        ) : (
-          <MomentsSkeleton />
-        )}
-      </div>
+      {/* ── Highlights (3 distilled lines, not a play-by-play) ───────────── */}
+      {/* The old MomentsStack listed every notable play. A list of plays
+          is a transcript, not insight. HighlightsStack distills the
+          game into 3 signal-dense cards: game character, top scorer,
+          and one more notable stat. */}
+      {isUpcoming ? null : (
+        <div className="mt-5">
+          <HighlightsStack game={game} />
+        </div>
+      )}
 
       {/* ── Series context (redacted under No-Spoilers) ─────────────────── */}
       {/* Wrapped in a compact card with a Series eyebrow so the line reads
@@ -256,42 +254,6 @@ function FreshnessIndicator({ lastFetched }: { lastFetched: number }) {
   );
 }
 
-// ── Calm fallbacks ──────────────────────────────────────────────────────
-
-function MomentsSkeleton() {
-  return (
-    <div className="space-y-2" aria-busy aria-live="polite">
-      <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>Key moments</Eyebrow>
-        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-      </div>
-      <div
-        className="h-[88px] rounded-[14px]"
-        style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
-      />
-      <span className="sr-only">Loading key moments</span>
-    </div>
-  );
-}
-
-function DetailFallback({ subject }: { subject: string }) {
-  return (
-    <section>
-      <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>Key moments</Eyebrow>
-        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-      </div>
-      <p
-        className="rounded-[14px] border px-4 py-3 text-[13px]"
-        style={{
-          background: "var(--paper)",
-          borderColor: "var(--line)",
-          color: "var(--mute-1)",
-          fontWeight: 500,
-        }}
-      >
-        Moments load once the game starts. {subject} is queued.
-      </p>
-    </section>
-  );
-}
+// MomentsSkeleton / DetailFallback removed — HighlightsStack handles its
+// own empty state now. Old MomentsStack play-by-play view is no longer
+// rendered (Phase 2 feedback: a list of plays is a transcript, not insight).

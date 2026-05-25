@@ -40,6 +40,7 @@ Both point at polish + trust before surface area expansion. NFL is exciting; add
 |---|---|---|---|
 | **Phase 1** | Polish + first-run clarity + pull-to-refresh | 1–2 weeks | [`roadmap/phase-1-polish.md`](./roadmap/phase-1-polish.md) |
 | **Phase 2** | Reliability + operational visibility | 1–2 weeks | [`roadmap/phase-2-reliability.md`](./roadmap/phase-2-reliability.md) |
+| **Phase 2.6** | Tournament overview pages | 3–5 days | [`roadmap/phase-2.6-tournament-overview.md`](./roadmap/phase-2.6-tournament-overview.md) |
 | **Phase 3** | NFL (the second sport) | 2–3 weeks | [`roadmap/phase-3-nfl.md`](./roadmap/phase-3-nfl.md) |
 
 ## Beyond Phase 3 (intentionally vague)

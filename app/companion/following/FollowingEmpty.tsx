@@ -1,8 +1,11 @@
+import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { FOLLOW_CHOICES, FollowChoice } from "./FollowChoice";
 
-// Following — empty / onboarding. One editorial headline + four nouns.
-// No grid of every team in the league. Discovery happens in the picker.
+// Following — empty / onboarding. One editorial headline + four nouns +
+// a persistent Watch + Alerts link. That last bit is critical: a fresh
+// install with zero follows still needs a path to turn on notifications,
+// quiet hours, No-Spoilers, etc.
 
 export function FollowingEmpty() {
   return (
@@ -28,6 +31,30 @@ export function FollowingEmpty() {
           />
         ))}
       </div>
+
+      {/* Watch + Alerts shortcut. Always reachable from Following, even
+          before the user has anything to follow — that's where push gets
+          enabled. */}
+      <Link
+        href="/settings"
+        className="mt-5 flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
+        style={{
+          background: "transparent",
+          borderColor: "var(--mute-2)",
+          color: "var(--ink)",
+        }}
+        aria-label="Open Watch + Alerts"
+      >
+        <span className="text-[13px]" style={{ fontWeight: 600 }}>
+          Watch + Alerts
+        </span>
+        <span
+          className="text-[11px]"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          Notifications · No-Spoilers · Quiet hours
+        </span>
+      </Link>
     </section>
   );
 }
