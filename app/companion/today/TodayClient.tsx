@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Display } from "../atoms/Display";
+import { PullToRefresh } from "../atoms/PullToRefresh";
 import { useFollows, useNoSpoilers, usePinned } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveDailyBrief } from "./daily-brief";
@@ -25,7 +26,7 @@ import { CalmCard } from "./sections/calm-card";
 // the mode without demanding interaction. The old inline chip is gone.
 
 export function TodayClient() {
-  const { payload, hydrated, updatedAt } = useTodayData();
+  const { payload, hydrated, updatedAt, refetch } = useTodayData();
   const noSpoilers = useNoSpoilers();
   const { follows } = useFollows();
   const { pinned } = usePinned();
@@ -40,6 +41,7 @@ export function TodayClient() {
     : null;
 
   return (
+    <PullToRefresh onRefresh={refetch}>
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
       {/* ── Header: "Today" + time + passive No-Spoilers indicator ─── */}
       <header className="mb-3 flex items-center justify-between gap-3">
@@ -112,6 +114,7 @@ export function TodayClient() {
         </div>
       ) : null}
     </main>
+    </PullToRefresh>
   );
 }
 

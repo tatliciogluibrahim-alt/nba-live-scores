@@ -176,6 +176,23 @@ a {
   }
 }
 
+/* Pull-to-refresh spinner — rotates an ink-topped arc during a refresh.
+   Used by PullToRefresh once the threshold is met and onRefresh is
+   in-flight. Stops as soon as we leave the refreshing phase. */
+@keyframes no-noise-spin {
+  to { transform: rotate(360deg); }
+}
+
+.no-noise-spin {
+  animation: no-noise-spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .no-noise-spin {
+    animation: none !important;
+  }
+}
+
 /* Cross-document view transitions — iOS Safari 18+, Chrome 111+ get a
    smooth cross-fade on route navigation. Older browsers fall back to
    instant cuts. Progressive enhancement only — no JS, no polyfill.

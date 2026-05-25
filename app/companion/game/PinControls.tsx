@@ -22,8 +22,13 @@ export function PinControls({
   // present as a secondary navigation option but never competes with the
   // primary action label. "Watching" alone read as a state; the explicit
   // verb "Go to" makes it unambiguously a navigation prompt.
+  //
+  // The mute-1 clarifier below the buttons solves the recurring "I
+  // pinned the game expecting notifications" confusion: pinning is a
+  // bookmark, follows drive alerts. Two different mechanics.
   return (
-    <div className={`flex items-center gap-2 ${className ?? ""}`}>
+    <div className={className}>
+    <div className="flex items-center gap-2">
       {pinned ? (
         // Pinned state: primary action is to unpin (outline so the
         // destructive-ish intent reads lighter than a filled button).
@@ -86,6 +91,20 @@ export function PinControls({
       >
         Go to Watching
       </Link>
+    </div>
+    <p
+      className="mt-2 text-[11px] leading-snug"
+      style={{ color: "var(--mute-1)", fontWeight: 500 }}
+    >
+      Pin = bookmark for moment tracking. Notifications come from teams you{" "}
+      <Link
+        href="/following"
+        style={{ color: "var(--ink)", textDecoration: "underline", textUnderlineOffset: 3 }}
+      >
+        follow
+      </Link>
+      .
+    </p>
     </div>
   );
 }

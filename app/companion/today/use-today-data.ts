@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFollows, usePinned } from "../providers";
 import {
   buildTodayPayload,
@@ -133,9 +133,21 @@ export function useTodayData() {
     pinned,
   ]);
 
+  // Manual refetch — wired to PullToRefresh. Runs in parallel with the
+  // polling timer; the last write wins, which is fine because both
+  // produce the same shape.
+  const refetch = useCallback(async () => {
+    const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
+    const next: FetchedData = { nba, wc, updatedAt: new Date() };
+    dataRef.current = next;
+    setData(next);
+    setHasLoadedOnce(true);
+  }, []);
+
   return {
     payload,
     hydrated: hasLoadedOnce && followsHydrated && pinnedHydrated,
     updatedAt: data.updatedAt,
+    refetch,
   };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { PullToRefresh } from "../atoms/PullToRefresh";
 import { usePinned } from "../providers";
 import { useWatchingData } from "./use-watching-data";
 import { WatchingDashboard } from "./WatchingDashboard";
@@ -11,7 +12,7 @@ import { WatchingEmpty } from "./WatchingEmpty";
 
 export function WatchingClient() {
   const { pinned, hydrated: pinnedHydrated } = usePinned();
-  const { payload, hydrated: dataHydrated } = useWatchingData();
+  const { payload, hydrated: dataHydrated, refetch } = useWatchingData();
 
   if (!pinnedHydrated) {
     return <div className="min-h-[200px]" aria-busy aria-live="polite" />;
@@ -38,5 +39,9 @@ export function WatchingClient() {
     );
   }
 
-  return <WatchingDashboard payload={payload} />;
+  return (
+    <PullToRefresh onRefresh={refetch}>
+      <WatchingDashboard payload={payload} />
+    </PullToRefresh>
+  );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePinned } from "../providers";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 import {
@@ -107,9 +107,20 @@ export function useWatchingData() {
     return buildWatchingPayload({ nba: data.nba, wc: data.wc, pinned });
   }, [hasLoadedOnce, pinnedHydrated, data.nba, data.wc, pinned]);
 
+  // Manual refetch — wired to PullToRefresh. Runs alongside the polling
+  // timer; identical fetch path, last write wins.
+  const refetch = useCallback(async () => {
+    const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
+    const next: Fetched = { nba, wc, updatedAt: new Date() };
+    dataRef.current = next;
+    setData(next);
+    setHasLoadedOnce(true);
+  }, []);
+
   return {
     payload,
     hydrated: hasLoadedOnce && pinnedHydrated,
     updatedAt: data.updatedAt,
+    refetch,
   };
 }
