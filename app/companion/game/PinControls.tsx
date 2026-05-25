@@ -18,14 +18,8 @@ export function PinControls({
   subject: string;
   className?: string;
 }) {
-  // One clear action per state — pin XOR unpin. "Go to Watching" is always
-  // present as a secondary navigation option but never competes with the
-  // primary action label. "Watching" alone read as a state; the explicit
-  // verb "Go to" makes it unambiguously a navigation prompt.
-  //
-  // The mute-1 clarifier below the buttons solves the recurring "I
-  // pinned the game expecting notifications" confusion: pinning is a
-  // bookmark, follows drive alerts. Two different mechanics.
+  // Pin controls keep the core model separate: pinning bookmarks this game,
+  // while follows drive alerts.
   return (
     <div className={className}>
     <div className="flex items-center gap-2">
@@ -59,8 +53,6 @@ export function PinControls({
           Unpin
         </button>
       ) : (
-        // Unpinned state: primary action is clearly "Pin to Watching".
-        // Filled ink so it reads as the dominant CTA on the page.
         <button
           type="button"
           onClick={onPin}
@@ -76,32 +68,31 @@ export function PinControls({
           Pin to Watching
         </button>
       )}
-      {/* "Go to Watching" — unambiguous verb, same outline weight whether
-          pinned or not. When pinned, sits alongside Unpin as the navigation
-          option; when unpinned, gives the user a direct route to their list. */}
-      <Link
-        href="/watching"
-        className="inline-flex min-h-[44px] items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
-        style={{
-          background: "transparent",
-          color: "var(--mute-1)",
-          border: "1px solid var(--line)",
-        }}
-        aria-label="Go to Watching"
-      >
-        Go to Watching
-      </Link>
+      {pinned ? (
+        <Link
+          href="/watching"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          style={{
+            background: "transparent",
+            color: "var(--mute-1)",
+            border: "1px solid var(--line)",
+          }}
+          aria-label="Open Watching"
+        >
+          Open Watching
+        </Link>
+      ) : null}
     </div>
     <p
       className="mt-2 text-[11px] leading-snug"
       style={{ color: "var(--mute-1)", fontWeight: 500 }}
     >
-      Pin = bookmark for moment tracking. Notifications come from teams you{" "}
+      Pinning keeps this game in Watching. Alerts come from{" "}
       <Link
         href="/following"
         style={{ color: "var(--ink)", textDecoration: "underline", textUnderlineOffset: 3 }}
       >
-        follow
+        follows
       </Link>
       .
     </p>

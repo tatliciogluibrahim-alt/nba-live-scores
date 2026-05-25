@@ -107,6 +107,18 @@ function deriveFromCurrentGame(
         : "played";
   knownDots.set(gameNumber, gameDot(game, gameNumber, currentState));
 
+  if (currentState === "played") {
+    const next = Array.from(knownDots.values())
+      .filter((dot) => dot.state === "scheduled")
+      .sort(
+        (a, b) =>
+          new Date(a.date ?? 0).getTime() - new Date(b.date ?? 0).getTime()
+      )[0];
+    if (next) {
+      knownDots.set(next.number, { ...next, state: "next" });
+    }
+  }
+
   const scoreMatch = game.seriesSummary?.match(/(\d+)-(\d+)/);
   const winsA = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
   const winsB = scoreMatch ? parseInt(scoreMatch[2], 10) : 0;

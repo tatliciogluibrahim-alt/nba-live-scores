@@ -228,7 +228,7 @@ function tierWelcomeBody(tier: AlertPreset, follows: number): string {
   if (follows === 0) {
     return "Enable alerts on a follow to start getting pings.";
   }
-  if (tier === "quiet") return "Game starts and finals only.";
-  if (tier === "companion") return "Starts, period breaks, finals.";
-  return "Starts, period breaks, finals, plus close finishes.";
+  if (tier === "quiet") return "Start and final only.";
+  if (tier === "companion") return "Start, key breaks, final.";
+  return "Key swings and close finishes.";
 }

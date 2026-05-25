@@ -154,10 +154,10 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           {!canEnable ? (
             <p
               className="mt-2 text-[12px] leading-snug"
-              style={{ color: "var(--mute-1)", fontWeight: 500 }}
-            >
-              Notification follows are full ({alertSlotCount} of {alertSlotCap}).
-              Disable one to enable this.
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+              Alert slots are full ({alertSlotCount} of {alertSlotCap} alerts used).
+              Turn one off to enable this.
             </p>
           ) : null}
           <div className="mt-2">

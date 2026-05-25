@@ -88,7 +88,7 @@ export const PRESETS: Record<
   AlertPreset,
   { label: string; detail: string }
 > = {
-  quiet: { label: "Quiet", detail: "Start and final only" },
-  companion: { label: "Companion", detail: "Start, key breaks, final" },
-  all: { label: "All moments", detail: "Above + close finishes" },
+  quiet: { label: "Quiet", detail: "Start and final only." },
+  companion: { label: "Companion", detail: "Start, key breaks, final." },
+  all: { label: "All moments", detail: "Key swings and close finishes." },
 };

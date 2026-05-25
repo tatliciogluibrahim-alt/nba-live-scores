@@ -38,7 +38,7 @@ export function AboutClient() {
         <Section
           eyebrow="Tiers"
           headline="How loud you want it."
-          body="Three levels per follow. Quiet: start and final. Companion: plus key breaks. All moments: plus close finishes. Three follows can receive alerts at once."
+          body="Three levels per follow. Quiet: start and final. Companion: start, key breaks, final. All moments: key swings and close finishes. Three alert slots are available."
         />
       </div>
 

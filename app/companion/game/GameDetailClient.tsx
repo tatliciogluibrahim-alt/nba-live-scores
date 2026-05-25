@@ -21,21 +21,40 @@ type Resolved =
   | { source: "wc"; game: WCGameLite }
   | { source: null; game: null };
 
-async function fetchGames(): Promise<{ nba: NBAGame[]; wc: WCGameLite[] }> {
+type ApiResponse = {
+  games?: NBAGame[];
+  seriesGames?: NBAGame[];
+};
+
+function mergeNBAGames(
+  games: ReadonlyArray<NBAGame>,
+  seriesGames: ReadonlyArray<NBAGame>
+): NBAGame[] {
+  const byId = new Map<string, NBAGame>();
+  for (const game of seriesGames) byId.set(game.id, game);
+  for (const game of games) byId.set(game.id, game);
+  return Array.from(byId.values());
+}
+
+async function fetchGames(): Promise<{
+  nba: NBAGame[];
+  allNBA: NBAGame[];
+  wc: WCGameLite[];
+}> {
   try {
     const [nbaRes, wcRes] = await Promise.all([
       fetch("/api/live-scores", { cache: "no-store" }),
       fetch("/api/world-cup", { cache: "no-store" }),
     ]);
-    const nbaJson = nbaRes.ok
-      ? ((await nbaRes.json()) as { games?: NBAGame[] })
-      : { games: [] };
+    const nbaJson = nbaRes.ok ? ((await nbaRes.json()) as ApiResponse) : {};
+    const nba = nbaJson.games ?? [];
+    const allNBA = mergeNBAGames(nba, nbaJson.seriesGames ?? []);
     const wcJson = wcRes.ok
       ? ((await wcRes.json()) as { games?: WCGameLite[] })
       : { games: [] };
-    return { nba: nbaJson.games ?? [], wc: wcJson.games ?? [] };
+    return { nba, allNBA, wc: wcJson.games ?? [] };
   } catch {
-    return { nba: [], wc: [] };
+    return { nba: [], allNBA: [], wc: [] };
   }
 }
 
@@ -56,10 +75,10 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
     const mounted = { current: true };
 
     async function resolve() {
-      const { nba, wc } = await fetchGames();
+      const { nba, allNBA, wc } = await fetchGames();
       if (!mounted.current) return;
 
-      const nbaGame = nba.find((g) => g.id === gameId);
+      const nbaGame = nba.find((g) => g.id === gameId) ?? allNBA.find((g) => g.id === gameId);
       if (nbaGame) {
         // The /api/live-scores `NBAGame` is structurally a subset of the
         // nba/types `Game` — every field the Live Companion needs (away,
@@ -73,7 +92,7 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
         const next = {
           source: "nba",
           game: nbaGame as unknown as Game,
-          allNBAGames: nba as unknown as Game[],
+          allNBAGames: allNBA as unknown as Game[],
         } as const;
         resolvedRef.current = next;
         setResolved(next);
@@ -104,7 +123,7 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
             const next = {
               source: "nba",
               game: snapJson.game,
-              allNBAGames: nba as unknown as Game[],
+              allNBAGames: allNBA as unknown as Game[],
             } as const;
             resolvedRef.current = next;
             setResolved(next);

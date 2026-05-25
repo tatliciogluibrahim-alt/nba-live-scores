@@ -24,7 +24,7 @@ import type { SeriesDot, SeriesDotState } from "./series-data";
 //
 // Under No-Spoilers we collapse spoilery distinctions:
 //   - every played game looks the same regardless of winner
-//   - "if-necessary" downgrades to "scheduled" so we don't expose clinch
+//   - "if-necessary" stays dashed; schedules are public structure
 //   - the inline detail card still opens on tap, but the score row is
 //     Spoiler-wrapped (blurred until the user explicitly reveals it).
 
@@ -33,7 +33,6 @@ function normalizeForSpoilers(
   noSpoilers: boolean
 ): SeriesDotState {
   if (!noSpoilers) return state;
-  if (state === "if-necessary") return "scheduled";
   return state;
 }
 
@@ -156,6 +155,10 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
             (display === "live" || display === "next");
           const breathing = display === "live";
           const isSelected = selected === dot.number;
+          const dotLabel =
+            display === "played" && !noSpoilers && dot.winnerCode
+              ? dot.winnerCode.toUpperCase()
+              : String(dot.number);
 
           const dotNode = (
             <span
@@ -166,18 +169,14 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
               style={dotStyle(display, isSelected)}
             >
               {/* Played dots show the winning team's abbreviation (up to
-                  the first 2 letters — "SA", "NY", "OK") so the reader
-                  knows who took each game at a glance. A single letter
-                  was ambiguous (S could be Spurs/Sixers/Suns). Two
-                  letters disambiguate. Three-letter abbrs (OKC, MIL,
-                  PHX) get truncated to 2 so the type stays legible at
-                  the dot size. Suppressed under No-Spoilers — same
-                  gate as scoreLine. Falls back to the game number when
-                  winnerCode is absent. */}
+                  full abbreviation — "NYK", "OKC", "MIL" — so game detail
+                  and series detail speak the same shorthand. Suppressed under
+                  No-Spoilers. Falls back to the game number when winnerCode
+                  is absent. */}
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 11,
+                  fontSize: dotLabel.length > 2 ? 10 : 11,
                   fontWeight: 700,
                   letterSpacing: 0,
                   lineHeight: 1,
@@ -187,9 +186,7 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
                       : "var(--mute-1)",
                 }}
               >
-                {display === "played" && !noSpoilers && dot.winnerCode
-                  ? dot.winnerCode.slice(0, 2).toUpperCase()
-                  : dot.number}
+                {dotLabel}
               </span>
             </span>
           );

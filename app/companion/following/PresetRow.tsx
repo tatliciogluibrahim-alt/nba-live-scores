@@ -3,9 +3,8 @@
 import type { AlertPreset } from "../state/types";
 import { PRESETS } from "../state/types";
 
-// Three-preset radio used inside FollowCard. Copy is locked: Quiet / Companion /
-// All moments. Detail line follows the "<trigger> · <trigger> · <trigger>"
-// shape from HANDOFF.md §5. No sub-settings.
+// Three-preset radio used inside FollowCard. Copy is locked: Quiet /
+// Companion / All moments. No sub-settings.
 
 const PRESET_ORDER: AlertPreset[] = ["quiet", "companion", "all"];
 

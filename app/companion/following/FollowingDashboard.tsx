@@ -67,7 +67,7 @@ export function FollowingDashboard() {
         className="mb-3 text-[12px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        {alertSlotCount} of {alertSlotCap} follows getting alerts.
+        {alertSlotCount} of {alertSlotCap} alerts used.
       </p>
 
       <ul className="space-y-2">

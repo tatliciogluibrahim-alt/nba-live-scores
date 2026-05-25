@@ -8,6 +8,9 @@ import type { YouFollowItem } from "../today-data";
 // (no follows yet) shows a single prompt linking to the Following setup.
 
 export function YouFollow({ items }: { items: YouFollowItem[] }) {
+  const visibleItems = items.slice(0, 3);
+  const remainingCount = Math.max(0, items.length - visibleItems.length);
+
   if (items.length === 0) {
     return (
       <section>
@@ -50,20 +53,13 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
     );
   }
 
-  // Quiet inline text line — just chips, separated by a muted mid-dot.
-  // Status / kind labels removed: the chip format already conveys the
-  // kind (single-team chip vs paired "OKC·SA" chip vs flag chip), and
-  // live state surfaces via the --nba color. Pairing "OKC·SA · Series"
-  // was visually confusing because the same separator was doing two
-  // jobs at once.
+  // Compact chip row. Keep Today from becoming a ticker: show the first
+  // three follows, then route the rest through a quiet "+N" chip.
   return (
     <section>
       <SectionHeader label="You follow" />
-      <p
-        className="text-[12px] leading-relaxed"
-        style={{ fontWeight: 500, color: "var(--mute-1)" }}
-      >
-        {items.map((item, i) => {
+      <div className="flex flex-wrap items-center gap-1.5">
+        {visibleItems.map((item) => {
           const color =
             item.tone === "live"
               ? "var(--nba)"
@@ -71,27 +67,38 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
                 ? "var(--ink)"
                 : "var(--mute-1)";
           return (
-            <span key={`${item.kind}-${item.id}`}>
-              <Link
-                href={item.href}
-                aria-label={`${item.label}${item.tone === "live" ? ", live now" : ""}`}
-                className="no-noise-reveal-focus transition-opacity active:opacity-60"
-                style={{ color, fontWeight: item.tone === "live" ? 600 : 500 }}
-              >
-                {item.chip}
-              </Link>
-              {i < items.length - 1 ? (
-                <span
-                  aria-hidden
-                  style={{ color: "var(--mute-2)", padding: "0 0.5em" }}
-                >
-                  ·
-                </span>
-              ) : null}
-            </span>
+            <Link
+              key={`${item.kind}-${item.id}`}
+              href={item.href}
+              aria-label={`${item.label}${item.tone === "live" ? ", live now" : ""}`}
+              className="no-noise-reveal-focus inline-flex min-h-[30px] items-center rounded-full border px-2.5 text-[12px] transition active:scale-[0.98]"
+              style={{
+                background: item.tone === "live" ? "var(--nba-soft)" : "transparent",
+                borderColor: item.tone === "live" ? "var(--nba)" : "var(--line)",
+                color,
+                fontWeight: item.tone === "live" ? 700 : 600,
+              }}
+            >
+              {item.chip}
+            </Link>
           );
         })}
-      </p>
+        {remainingCount > 0 ? (
+          <Link
+            href="/following"
+            aria-label={`${remainingCount} more follows`}
+            className="no-noise-reveal-focus inline-flex min-h-[30px] items-center rounded-full border px-2.5 text-[12px] transition active:scale-[0.98]"
+            style={{
+              background: "transparent",
+              borderColor: "var(--line)",
+              color: "var(--mute-1)",
+              fontWeight: 700,
+            }}
+          >
+            +{remainingCount}
+          </Link>
+        ) : null}
+      </div>
     </section>
   );
 }
