@@ -113,15 +113,32 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
   return { deliveries, pruned };
 }
 
+/** Events whose copy reveals closeness or comeback drama. These get
+ *  suppressed for subscriptions where noSpoilers is true, even if the
+ *  user picked the "All moments" tier — they opted into both, both
+ *  should be respected. (Codex QA #1.) */
+const SPOILERY_EVENTS = new Set<PushEvent["type"]>(["close-game"]);
+
 function subscriptionWantsEvent(
   sub: StoredSubscription,
   event: PushEvent
 ): boolean {
-  if (!presetMatchesEvent(sub.alertPreset, event.type)) return false;
+  // Defensive: old Stage B rows can be missing follows/alertPreset
+  // entirely. The store normalizer fills them in now (Codex QA #2),
+  // but belt-and-suspenders.
+  const preset = sub.alertPreset ?? "companion";
+  const follows = Array.isArray(sub.follows) ? sub.follows : [];
+
+  if (!presetMatchesEvent(preset, event.type)) return false;
+
+  // No-Spoilers gate. The user explicitly opted into hiding closeness
+  // across the entire app — push notifications must honor that too.
+  if (sub.noSpoilers && SPOILERY_EVENTS.has(event.type)) return false;
+
   // The user is "interested" if any of their team-kind follows matches
   // either side of the matchup. Country / series / tournament follows
   // don't drive NBA push fanout (yet — those exist for WC and future).
-  return sub.follows.some(
+  return follows.some(
     (f) =>
       f.kind === "team" && (f.id === event.awayCode || f.id === event.homeCode)
   );

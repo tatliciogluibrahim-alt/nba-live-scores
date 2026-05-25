@@ -66,5 +66,5 @@ export const PRESETS: Record<
 > = {
   quiet: { label: "Quiet", detail: "Tipoff and final only" },
   companion: { label: "Companion", detail: "Tipoff, end of each quarter, final" },
-  all: { label: "All moments", detail: "Above + Q4 close games and comebacks" },
+  all: { label: "All moments", detail: "Above + Q4 close games" },
 };

@@ -85,7 +85,11 @@ export function EnableNotificationsCard() {
         // Create the Web Push subscription with follows + tier so the
         // dispatcher can fanout immediately on the next game state change.
         try {
-          await subscribe({ follows, alertPreset: tier });
+          await subscribe({
+            follows,
+            alertPreset: tier,
+            noSpoilers: prefs.noSpoilers,
+          });
         } catch {
           /* push subscription failed — local notifications still work */
         }
@@ -227,5 +231,5 @@ function tierWelcomeBody(tier: AlertPreset, follows: number): string {
   }
   if (tier === "quiet") return "Tipoffs and finals only.";
   if (tier === "companion") return "Tipoffs, end of quarters, finals.";
-  return "Tipoffs, quarters, finals, plus Q4 close games.";
+  return "Tipoffs, quarters, finals, and Q4 close games.";
 }

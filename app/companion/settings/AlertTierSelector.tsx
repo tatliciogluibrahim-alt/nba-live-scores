@@ -28,7 +28,7 @@ export function AlertTierSelector() {
     setAlertPreset(next);
     // Best-effort server sync. If the user isn't subscribed, this is a
     // no-op inside the hook.
-    void syncFollows({ follows, alertPreset: next });
+    void syncFollows({ follows, alertPreset: next, noSpoilers: prefs.noSpoilers });
   }
 
   return (

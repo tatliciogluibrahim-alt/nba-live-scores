@@ -1,7 +1,10 @@
-// Vercel Cron entrypoint — runs every minute via vercel.json.
+// Cron entrypoint — hit externally by GitHub Actions every 5 minutes
+// (see .github/workflows/scan-nba-cron.yml). Vercel Hobby plan blocks
+// sub-daily cron schedules, so we drive this from outside.
 //
 // What it does, in order:
-//   1. Auth (Bearer CRON_SECRET — what Vercel Cron sends).
+//   1. Auth (Bearer CRON_SECRET — same secret stored in Vercel env
+//      and as a GitHub repo secret used by the workflow).
 //   2. Fetch the canonical /api/live-scores response. We deliberately
 //      go through the public route rather than importing the parser
 //      because that route has lots of upstream-massaging logic we
@@ -19,6 +22,7 @@
 //   • web-push delivery fails for one device → dispatcher swallows it
 //     and records the reason. Cron continues for other devices.
 
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { detectEvents, type FreshGameState, type PushEvent } from "../../../lib/push/event-detector";
 import { dispatchEvents } from "../../../lib/push/dispatcher";
@@ -60,7 +64,15 @@ function isAuthorized(req: Request): boolean {
   if (!expected) return false; // fail closed — never run without a secret
   const header = req.headers.get("authorization") ?? "";
   if (!header.startsWith("Bearer ")) return false;
-  return header.slice("Bearer ".length).trim() === expected;
+  const provided = header.slice("Bearer ".length).trim();
+
+  // Constant-time compare. Plain `===` leaks length and byte-by-byte
+  // match timing. The check is low-value (the secret is long and
+  // random) but the fix is one line. (Codex QA #5.)
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
 function toFresh(game: NormalizedGame): FreshGameState {

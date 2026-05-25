@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     subscription?: PushSubscriptionJSON;
     follows?: unknown;
     alertPreset?: unknown;
+    noSpoilers?: unknown;
   };
   try {
     body = await req.json();
@@ -45,6 +46,7 @@ export async function POST(req: Request) {
   const sync = validateSyncPayload({
     follows: body?.follows,
     alertPreset: body?.alertPreset,
+    noSpoilers: body?.noSpoilers,
   });
 
   try {

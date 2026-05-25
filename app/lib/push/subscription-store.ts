@@ -21,6 +21,11 @@ export type StoredSubscription = {
   follows: SyncedFollow[];
   /** Global notification tier — quiet/companion/all. */
   alertPreset: AlertPreset;
+  /** No-Spoilers mode flag from prefs. When true, the dispatcher
+   *  suppresses any event whose copy leaks closeness (close-game,
+   *  comeback) so the user's No-Spoilers contract holds even on the
+   *  "All moments" tier. */
+  noSpoilers: boolean;
   /** When the device first registered. */
   createdAt: number;
   /** Last time we successfully delivered (or attempted) a push. */
@@ -35,6 +40,26 @@ function subscriptionKey(endpoint: string): string {
   return `${SUBSCRIPTION_KEY_PREFIX}${hash}`;
 }
 
+/** Defensive normalizer for rows pulled from KV. Old Stage B rows may
+ *  lack `follows`, `alertPreset`, or `noSpoilers` entirely — every
+ *  consumer downstream assumes these fields exist. Without this, the
+ *  dispatcher crashes on `.some()` against undefined. (Codex QA #2). */
+function normalizeStored(
+  endpoint: string,
+  row: Partial<StoredSubscription> | null | undefined
+): StoredSubscription | null {
+  if (!row || !row.keys?.p256dh || !row.keys?.auth) return null;
+  return {
+    endpoint: row.endpoint ?? endpoint,
+    keys: { p256dh: row.keys.p256dh, auth: row.keys.auth },
+    follows: Array.isArray(row.follows) ? row.follows : [],
+    alertPreset: (row.alertPreset as AlertPreset | undefined) ?? "companion",
+    noSpoilers: typeof row.noSpoilers === "boolean" ? row.noSpoilers : false,
+    createdAt: typeof row.createdAt === "number" ? row.createdAt : Date.now(),
+    lastSeenAt: typeof row.lastSeenAt === "number" ? row.lastSeenAt : Date.now(),
+  };
+}
+
 export async function upsertSubscription(
   sub: ValidPushSubscription,
   sync?: ValidSyncPayload
@@ -44,19 +69,24 @@ export async function upsertSubscription(
   }
 
   const key = subscriptionKey(sub.endpoint);
-  const existing = await kv.get<StoredSubscription>(key);
+  const raw = await kv.get<Partial<StoredSubscription>>(key);
+  const existing = normalizeStored(sub.endpoint, raw);
   const now = Date.now();
   // If the caller supplied a sync payload (subscribe / sync calls), use
   // it. Otherwise preserve whatever was there (test endpoint, dispatcher
   // refresh after delivery, etc).
   const follows = sync ? sync.follows : existing?.follows ?? [];
   const alertPreset = sync ? sync.alertPreset : existing?.alertPreset ?? "companion";
+  const noSpoilers = sync
+    ? sync.noSpoilers
+    : existing?.noSpoilers ?? false;
   const next: StoredSubscription = existing
     ? {
         ...existing,
         keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
         follows,
         alertPreset,
+        noSpoilers,
         lastSeenAt: now,
       }
     : {
@@ -64,6 +94,7 @@ export async function upsertSubscription(
         keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
         follows,
         alertPreset,
+        noSpoilers,
         createdAt: now,
         lastSeenAt: now,
       };
@@ -87,7 +118,8 @@ export async function removeSubscription(endpoint: string): Promise<boolean> {
 export async function getSubscription(
   endpoint: string
 ): Promise<StoredSubscription | undefined> {
-  return (await kv.get<StoredSubscription>(subscriptionKey(endpoint))) ?? undefined;
+  const raw = await kv.get<Partial<StoredSubscription>>(subscriptionKey(endpoint));
+  return normalizeStored(endpoint, raw) ?? undefined;
 }
 
 export async function listSubscriptions(): Promise<StoredSubscription[]> {

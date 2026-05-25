@@ -29,7 +29,7 @@ export function PushSyncEffect() {
     if (status.state !== "subscribed") return;
 
     const hash =
-      `${prefs.alertPreset}|` +
+      `${prefs.alertPreset}|${prefs.noSpoilers ? "1" : "0"}|` +
       follows.map((f) => `${f.kind}:${f.id}`).sort().join(",");
     if (lastHashRef.current === hash) return;
     lastHashRef.current = hash;
@@ -37,8 +37,17 @@ export function PushSyncEffect() {
     void syncFollows({
       follows,
       alertPreset: prefs.alertPreset ?? "companion",
+      noSpoilers: prefs.noSpoilers,
     });
-  }, [follows, prefs.alertPreset, status.state, followsHydrated, prefsHydrated, syncFollows]);
+  }, [
+    follows,
+    prefs.alertPreset,
+    prefs.noSpoilers,
+    status.state,
+    followsHydrated,
+    prefsHydrated,
+    syncFollows,
+  ]);
 
   return null;
 }

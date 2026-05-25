@@ -89,15 +89,24 @@ export function usePushSubscription(): {
   status: PushSubscriptionStatus;
   /** Create a new push subscription. Caller must have already secured
    *  Notification permission — otherwise pushManager.subscribe rejects.
-   *  Pass the current follows + global alert tier so the server knows
-   *  who to fan out which events to. */
-  subscribe: (sync?: { follows: Follow[]; alertPreset: AlertPreset }) => Promise<StoredSub | null>;
+   *  Pass the current follows + global alert tier + noSpoilers flag so
+   *  the server knows who to fan out which events to and which
+   *  closeness-leaking events to suppress. */
+  subscribe: (sync?: {
+    follows: Follow[];
+    alertPreset: AlertPreset;
+    noSpoilers: boolean;
+  }) => Promise<StoredSub | null>;
   /** Tear down the subscription on this device, both server and browser. */
   unsubscribe: () => Promise<void>;
-  /** Push the current follows + tier to the server without re-creating
-   *  the subscription. Called whenever the user changes follows or tier
+  /** Push the current follows + tier + noSpoilers to the server without
+   *  re-creating the subscription. Called whenever any of those change
    *  while already subscribed. No-op if not subscribed yet. */
-  syncFollows: (sync: { follows: Follow[]; alertPreset: AlertPreset }) => Promise<void>;
+  syncFollows: (sync: {
+    follows: Follow[];
+    alertPreset: AlertPreset;
+    noSpoilers: boolean;
+  }) => Promise<void>;
   /** Fire a test push via the server. Optional delay lets the caller
    *  close the app before delivery so they can confirm closed-app push. */
   sendTest: (opts?: { delayMs?: number }) => Promise<{ ok: boolean; error?: string }>;
@@ -164,7 +173,7 @@ export function usePushSubscription(): {
   }, []);
 
   const subscribe = useCallback(async (
-    sync?: { follows: Follow[]; alertPreset: AlertPreset }
+    sync?: { follows: Follow[]; alertPreset: AlertPreset; noSpoilers: boolean }
   ): Promise<StoredSub | null> => {
     if (typeof window === "undefined") return null;
     const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -194,6 +203,7 @@ export function usePushSubscription(): {
             subscription: stored,
             follows: sync?.follows.map((f) => ({ kind: f.kind, id: f.id })) ?? [],
             alertPreset: sync?.alertPreset ?? "companion",
+            noSpoilers: sync?.noSpoilers ?? false,
           }),
         });
       } catch {
@@ -246,7 +256,11 @@ export function usePushSubscription(): {
   }, []);
 
   const syncFollows = useCallback(
-    async (sync: { follows: Follow[]; alertPreset: AlertPreset }): Promise<void> => {
+    async (sync: {
+      follows: Follow[];
+      alertPreset: AlertPreset;
+      noSpoilers: boolean;
+    }): Promise<void> => {
       const local = readLocal();
       if (!local) return; // not subscribed → nothing to sync
       try {
@@ -257,6 +271,7 @@ export function usePushSubscription(): {
             subscription: local,
             follows: sync.follows.map((f) => ({ kind: f.kind, id: f.id })),
             alertPreset: sync.alertPreset,
+            noSpoilers: sync.noSpoilers,
           }),
         });
       } catch {

@@ -54,19 +54,44 @@ const CLOSE_GAME_PERIOD = 4;
 const CLOSE_GAME_MARGIN = 5;
 const CLOSE_GAME_MAX_SECONDS = 5 * 60; // last 5 minutes of Q4
 
+/** Status ranks for monotonic state — once a game has gone forward
+ *  along this axis, we treat any backward regression as a feed glitch
+ *  and pin the status forward. Without this, a transient `live →
+ *  upcoming → live` blip from the upstream would re-fire tipoff after
+ *  the dedupe TTL expires (Codex QA #4). */
+const STATUS_RANK: Record<FreshGameState["status"], number> = {
+  upcoming: 0,
+  live: 1,
+  final: 2,
+};
+
 export function detectEvents(
   prev: CachedGameState | null,
   next: FreshGameState
 ): { events: PushEvent[]; nextState: CachedGameState } {
+  // If the feed appears to regress (e.g. a brief `live → upcoming`),
+  // hold onto the prior forward state for diff purposes. We still
+  // accept new scores and period numbers, but the status — the most
+  // event-relevant field — pins to its highest-seen value.
+  const stableStatus: FreshGameState["status"] =
+    prev && STATUS_RANK[prev.status] > STATUS_RANK[next.status]
+      ? prev.status
+      : next.status;
+  const stableNext: FreshGameState = { ...next, status: stableStatus };
+
   const baseInfo = {
-    gameId: next.gameId,
-    awayCode: next.awayCode,
-    homeCode: next.homeCode,
+    gameId: stableNext.gameId,
+    awayCode: stableNext.awayCode,
+    homeCode: stableNext.homeCode,
   };
   const events: PushEvent[] = [];
 
-  const currentMargin = Math.abs(next.awayScore - next.homeScore);
+  const currentMargin = Math.abs(stableNext.awayScore - stableNext.homeScore);
   const maxLead = Math.max(prev?.maxLead ?? 0, currentMargin);
+
+  // Re-bind `next` to the stabilized version for the rest of detection.
+  // Keeps the existing detection logic readable.
+  next = stableNext;
 
   // Transition 1: upcoming → live → tipoff event.
   // We emit only on the actual transition. If we never saw the upcoming

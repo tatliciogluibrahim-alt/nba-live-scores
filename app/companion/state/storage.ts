@@ -120,6 +120,14 @@ export function normalizeStoredPrefs(value: unknown): UserPrefs {
       typeof value.noSpoilers === "boolean"
         ? value.noSpoilers
         : DEFAULT_PREFS.noSpoilers,
+    // Stage C: the global notification tier. Without this branch the
+    // user's tier was silently reset to "companion" on every reload —
+    // infuriating UX, real bug (Codex QA finding #3).
+    alertPreset:
+      typeof value.alertPreset === "string" &&
+      ALERT_PRESETS.has(value.alertPreset as AlertPreset)
+        ? (value.alertPreset as AlertPreset)
+        : DEFAULT_PREFS.alertPreset,
     remindBeforeMinutes:
       typeof value.remindBeforeMinutes === "number" &&
       Number.isFinite(value.remindBeforeMinutes)

@@ -12,6 +12,9 @@ export type SyncedFollow = {
 export type ValidSyncPayload = {
   follows: SyncedFollow[];
   alertPreset: AlertPreset;
+  /** No-Spoilers mode flag. Gates closeness-leaking events at the
+   *  dispatcher (close-game, comeback) — see Codex QA #1. */
+  noSpoilers: boolean;
 };
 
 const VALID_KINDS: ReadonlySet<FollowKind> = new Set([
@@ -34,10 +37,14 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
   // This keeps the subscribe endpoint backwards-compatible with clients
   // that POST only a subscription (no follows / preset yet).
   if (!input || typeof input !== "object") {
-    return { follows: [], alertPreset: "companion" };
+    return { follows: [], alertPreset: "companion", noSpoilers: false };
   }
 
-  const raw = input as { follows?: unknown; alertPreset?: unknown };
+  const raw = input as {
+    follows?: unknown;
+    alertPreset?: unknown;
+    noSpoilers?: unknown;
+  };
 
   const alertPreset: AlertPreset =
     typeof raw.alertPreset === "string" &&
@@ -59,5 +66,7 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
     follows.push({ kind: f.kind as FollowKind, id: f.id });
   }
 
-  return { follows, alertPreset };
+  const noSpoilers = raw.noSpoilers === true;
+
+  return { follows, alertPreset, noSpoilers };
 }
