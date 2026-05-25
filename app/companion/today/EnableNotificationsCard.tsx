@@ -40,9 +40,15 @@ export function EnableNotificationsCard() {
   const [tier, setTier] = useState<AlertPreset>(prefs.alertPreset ?? "companion");
 
   // Re-sync the local tier whenever the persisted preference changes
-  // (e.g. user opened Settings, changed it, came back to Today).
+  // (e.g. user opened Settings, changed it, came back to Today). The
+  // set-state-in-effect rule is suppressed: this *is* the documented
+  // pattern for syncing local UI state with an external store the
+  // useState initializer can't reach (prefs hydrate after mount).
   useEffect(() => {
-    if (prefs.alertPreset) setTier(prefs.alertPreset);
+    if (prefs.alertPreset) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTier(prefs.alertPreset);
+    }
   }, [prefs.alertPreset]);
 
   // Read current permission state once on mount.
