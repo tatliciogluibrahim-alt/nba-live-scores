@@ -26,6 +26,7 @@ import {
   readJSON,
   writeJSON,
 } from "./state/storage";
+import { PushSyncEffect } from "./push/PushSyncEffect";
 
 // ─── Follows ──────────────────────────────────────────────────────────
 type FollowsCtx = {
@@ -71,6 +72,9 @@ type PrefsCtx = {
   /** Records the YYYY-MM-DD the user dismissed the Quiet Recap card, so
    *  the recap won't re-render on subsequent opens that day. */
   markQuietRecapSeen: (yyyymmdd: string) => void;
+  /** Set the global notification tier (Stage C). The dispatcher uses
+   *  this value when deciding which events to fan out to this device. */
+  setAlertPreset: (preset: AlertPreset) => void;
   /** One-way flag. Set when the user either enables notifications or
    *  taps "Not now" on the Today prompt card. Once set, the prompt card
    *  never re-appears for that browser/install. */
@@ -266,6 +270,15 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setAlertPreset = useCallback((preset: AlertPreset) => {
+    setPrefs((prev) => {
+      if (prev.alertPreset === preset) return prev;
+      const next: UserPrefs = { ...prev, alertPreset: preset };
+      writeJSON(STORAGE_KEYS.prefs, next);
+      return next;
+    });
+  }, []);
+
   const dismissNotifPrompt = useCallback(() => {
     setPrefs((prev) => {
       if (prev.notifPromptDismissed) return prev;
@@ -306,6 +319,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       setRemindBeforeMinutes,
       setQuietHours,
       markQuietRecapSeen,
+      setAlertPreset,
       dismissNotifPrompt,
       hydrated,
     }),
@@ -315,6 +329,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       setRemindBeforeMinutes,
       setQuietHours,
       markQuietRecapSeen,
+      setAlertPreset,
       dismissNotifPrompt,
       hydrated,
     ]
@@ -324,6 +339,9 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     <FollowsContext.Provider value={followsValue}>
       <PinnedContext.Provider value={pinnedValue}>
         <PrefsContext.Provider value={prefsValue}>
+          {/* Stage C: keeps the server-side subscription in sync with
+              follows/tier changes while the app is open. Renders nothing. */}
+          <PushSyncEffect />
           {children}
         </PrefsContext.Provider>
       </PinnedContext.Provider>

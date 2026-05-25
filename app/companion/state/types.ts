@@ -21,6 +21,11 @@ export type PinnedGame = {
 
 export type UserPrefs = {
   noSpoilers: boolean;
+  /** Global notification tier — applies to every team the user follows.
+   *  Per-follow presets on `Follow` remain in the schema for a future
+   *  "override per team" power-user mode but are not consulted by the
+   *  Stage C dispatcher; the global tier is the source of truth. */
+  alertPreset: AlertPreset;
   /** Optional. Quiet hours suppress pushes between start/end (24h, "HH:MM"). */
   quietHours?: { start: string; end: string };
   /** Default 30. */
@@ -40,6 +45,7 @@ export type UserPrefs = {
 // ── Defaults ──────────────────────────────────────────────────────────
 export const DEFAULT_PREFS: UserPrefs = {
   noSpoilers: false,
+  alertPreset: "companion",
   remindBeforeMinutes: 30,
 };
 

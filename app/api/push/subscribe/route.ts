@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { upsertSubscription } from "../../../lib/push/subscription-store";
 import { rejectCrossOrigin, rejectRateLimited } from "../../../lib/push/request-guards";
 import { validatePushSubscription } from "../../../lib/push/subscription-validation";
+import { validateSyncPayload } from "../../../lib/push/sync-validation";
 import type { PushSubscriptionJSON } from "../../../lib/push/web-push-types";
 
 export const runtime = "nodejs"; // web-push needs node crypto
@@ -19,7 +20,11 @@ export async function POST(req: Request) {
   const rateLimitRejection = await rejectRateLimited(req, "subscribe");
   if (rateLimitRejection) return rateLimitRejection;
 
-  let body: { subscription?: PushSubscriptionJSON };
+  let body: {
+    subscription?: PushSubscriptionJSON;
+    follows?: unknown;
+    alertPreset?: unknown;
+  };
   try {
     body = await req.json();
   } catch {
@@ -34,8 +39,16 @@ export async function POST(req: Request) {
     );
   }
 
+  // Stage C: subscribe also carries the user's follows + tier so the
+  // dispatcher can fanout selectively. Body may not include these for
+  // old clients — the validator returns a safe default.
+  const sync = validateSyncPayload({
+    follows: body?.follows,
+    alertPreset: body?.alertPreset,
+  });
+
   try {
-    const stored = await upsertSubscription(validation.subscription);
+    const stored = await upsertSubscription(validation.subscription, sync);
     return NextResponse.json({
       ok: true,
       endpoint: stored.endpoint,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { AlertPreset, Follow } from "../state/types";
 
 // Push subscription hook — encapsulates the full Web Push subscription
 // lifecycle for a device: read existing subscription on mount, subscribe
@@ -87,10 +88,16 @@ function toStored(sub: PushSubscription): StoredSub {
 export function usePushSubscription(): {
   status: PushSubscriptionStatus;
   /** Create a new push subscription. Caller must have already secured
-   *  Notification permission — otherwise pushManager.subscribe rejects. */
-  subscribe: () => Promise<StoredSub | null>;
+   *  Notification permission — otherwise pushManager.subscribe rejects.
+   *  Pass the current follows + global alert tier so the server knows
+   *  who to fan out which events to. */
+  subscribe: (sync?: { follows: Follow[]; alertPreset: AlertPreset }) => Promise<StoredSub | null>;
   /** Tear down the subscription on this device, both server and browser. */
   unsubscribe: () => Promise<void>;
+  /** Push the current follows + tier to the server without re-creating
+   *  the subscription. Called whenever the user changes follows or tier
+   *  while already subscribed. No-op if not subscribed yet. */
+  syncFollows: (sync: { follows: Follow[]; alertPreset: AlertPreset }) => Promise<void>;
   /** Fire a test push via the server. Optional delay lets the caller
    *  close the app before delivery so they can confirm closed-app push. */
   sendTest: (opts?: { delayMs?: number }) => Promise<{ ok: boolean; error?: string }>;
@@ -156,7 +163,9 @@ export function usePushSubscription(): {
     };
   }, []);
 
-  const subscribe = useCallback(async (): Promise<StoredSub | null> => {
+  const subscribe = useCallback(async (
+    sync?: { follows: Follow[]; alertPreset: AlertPreset }
+  ): Promise<StoredSub | null> => {
     if (typeof window === "undefined") return null;
     const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!vapid) {
@@ -181,7 +190,11 @@ export function usePushSubscription(): {
         await fetch("/api/push/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subscription: stored }),
+          body: JSON.stringify({
+            subscription: stored,
+            follows: sync?.follows.map((f) => ({ kind: f.kind, id: f.id })) ?? [],
+            alertPreset: sync?.alertPreset ?? "companion",
+          }),
         });
       } catch {
         /* server might be down — try again on next session */
@@ -232,6 +245,27 @@ export function usePushSubscription(): {
     }
   }, []);
 
+  const syncFollows = useCallback(
+    async (sync: { follows: Follow[]; alertPreset: AlertPreset }): Promise<void> => {
+      const local = readLocal();
+      if (!local) return; // not subscribed → nothing to sync
+      try {
+        await fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subscription: local,
+            follows: sync.follows.map((f) => ({ kind: f.kind, id: f.id })),
+            alertPreset: sync.alertPreset,
+          }),
+        });
+      } catch {
+        /* sync is best-effort — will retry next time the user opens */
+      }
+    },
+    []
+  );
+
   const sendTest = useCallback(
     async (opts?: { delayMs?: number }): Promise<{ ok: boolean; error?: string }> => {
       const sub = readLocal();
@@ -266,5 +300,5 @@ export function usePushSubscription(): {
     []
   );
 
-  return { status, subscribe, unsubscribe, sendTest };
+  return { status, subscribe, unsubscribe, syncFollows, sendTest };
 }

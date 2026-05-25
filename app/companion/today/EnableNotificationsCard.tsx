@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUserPrefs } from "../providers";
+import { useFollows, useUserPrefs } from "../providers";
 import { usePushSubscription } from "../push/use-push-subscription";
+import type { AlertPreset } from "../state/types";
+import { PRESETS } from "../state/types";
 
-// Enable Notifications card — Stage A push pass.
+// Enable Notifications card — Stages A + C.
 //
-// The only place we proactively surface the notification permission
-// prompt. Renders on Today, below the Brief, only when:
+// Renders on Today, below the Brief, only when:
 //   • the user is hydrated
 //   • the browser supports the Notification API
 //   • permission is "default" (never asked, never denied)
@@ -18,24 +19,33 @@ import { usePushSubscription } from "../push/use-push-subscription";
 // itself only fires when the user *taps the button* — that user gesture
 // is what makes the permission request legitimate to iOS and Chrome.
 //
-// On grant, we fire a single welcome notification through the service
-// worker (NOT `new Notification()`, which is silently broken on iOS
-// PWAs) to confirm the wiring works end-to-end.
+// Stage C addition: the user picks a tier (Quiet / Companion / All)
+// before tapping enable. The picked tier persists to prefs.alertPreset
+// and is sent up with the subscription so the dispatcher knows what to
+// fanout to this device.
+
+const TIER_ORDER: AlertPreset[] = ["quiet", "companion", "all"];
 
 export function EnableNotificationsCard() {
-  const { prefs, dismissNotifPrompt, hydrated } = useUserPrefs();
+  const { prefs, dismissNotifPrompt, setAlertPreset, hydrated } = useUserPrefs();
+  const { follows } = useFollows();
   const { subscribe } = usePushSubscription();
   const [permission, setPermission] = useState<NotificationPermission | "unsupported" | null>(
     null
   );
   const [busy, setBusy] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
+  // Local tier state mirrors prefs so the user can preview their choice
+  // before committing via "Turn on." Defaults to companion.
+  const [tier, setTier] = useState<AlertPreset>(prefs.alertPreset ?? "companion");
 
-  // Read the current permission state once after hydration. We don't
-  // poll — iOS doesn't let the page observe permission changes anyway.
-  // The set-state-in-effect rule is suppressed here because the value
-  // we're setting comes from a browser-only API (Notification), which
-  // can't be evaluated during SSR.
+  // Re-sync the local tier whenever the persisted preference changes
+  // (e.g. user opened Settings, changed it, came back to Today).
+  useEffect(() => {
+    if (prefs.alertPreset) setTier(prefs.alertPreset);
+  }, [prefs.alertPreset]);
+
+  // Read current permission state once on mount.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!("Notification" in window)) {
@@ -46,8 +56,7 @@ export function EnableNotificationsCard() {
     setPermission(window.Notification.permission);
   }, []);
 
-  // Bail conditions — every one is silent (no UI). We never want this
-  // card to flash for users who shouldn't see it.
+  // Bail conditions — silent (no UI flash).
   if (!hydrated) return null;
   if (permission === null) return null;
   if (permission === "unsupported") return null;
@@ -58,52 +67,47 @@ export function EnableNotificationsCard() {
     if (typeof window === "undefined") return;
     setBusy(true);
     try {
+      // Persist tier choice BEFORE the prompt so it sticks even if the
+      // user denies — they can re-try from Settings later with the same
+      // tier intent.
+      setAlertPreset(tier);
+
       const result = await window.Notification.requestPermission();
       setPermission(result);
 
       if (result === "granted") {
-        // Stage B: as soon as permission lands, create the Web Push
-        // subscription and persist it server-side. Without this step,
-        // the user has granted permission but can't receive push from
-        // our backend — only in-app local notifications would work.
-        // Failure here is non-fatal; local notifications still work.
+        // Create the Web Push subscription with follows + tier so the
+        // dispatcher can fanout immediately on the next game state change.
         try {
-          await subscribe();
+          await subscribe({ follows, alertPreset: tier });
         } catch {
-          /* push subscription failed — local notifications still fire */
+          /* push subscription failed — local notifications still work */
         }
 
-        // Fire a welcome notification through the SW. iOS PWAs *will not*
-        // surface `new Notification(...)` from a page — only the SW path
-        // works. We also wait for `serviceWorker.ready` so registration
-        // races on first launch don't drop the notification.
+        // Welcome notification via SW (iOS PWA requirement).
         try {
           const reg = await navigator.serviceWorker.ready;
           await reg.showNotification("Notifications on.", {
-            body: "We'll only ping for moments that matter.",
+            body: tierWelcomeBody(tier, follows.length),
             icon: "/app-icon-192.png",
             badge: "/app-icon-192.png",
             tag: "welcome",
             data: { url: "/" },
           });
         } catch {
-          // SW not ready / unsupported — granted state still holds, the
-          // user just won't see this one welcome ping.
+          /* SW unavailable — granted state still holds */
         }
-        setConfirmation("Notifications on.");
-        // Mark as dismissed so the card retires after the welcome ping.
-        // Leaving it visible would make the user think the action wasn't
-        // recorded.
+
+        setConfirmation(
+          follows.length === 0
+            ? "Notifications on. Follow teams to get pings."
+            : `Notifications on for ${follows.length} ${follows.length === 1 ? "follow" : "follows"}.`
+        );
         window.setTimeout(() => {
           dismissNotifPrompt();
-        }, 1600);
+        }, 1800);
       } else if (result === "denied") {
-        // Permanent dismiss — user can re-enable from iOS Settings, we
-        // won't re-prompt automatically. Same effect as "Not now."
         dismissNotifPrompt();
-      } else {
-        // Result was "default" (user dismissed the prompt without
-        // choosing). Don't dismiss — they can try again from this card.
       }
     } finally {
       setBusy(false);
@@ -133,44 +137,89 @@ export function EnableNotificationsCard() {
               className="mt-1 text-[12px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Tipoffs, close games, finals. Tune later in Settings.
+              {follows.length === 0
+                ? "For the teams you follow. Pick a tier below."
+                : `For your ${follows.length} ${follows.length === 1 ? "follow" : "follows"}. Pick a tier below.`}
             </p>
           ) : null}
         </div>
       </div>
 
       {!confirmation ? (
-        <div className="mt-3 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onEnable}
-            disabled={busy}
-            aria-label="Turn on notifications"
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
-            style={{
-              background: "var(--ink)",
-              color: "var(--cream)",
-              border: "1px solid var(--ink)",
-              opacity: busy ? 0.7 : 1,
-            }}
+        <>
+          {/* Tier picker — three pills. The detail line under the row
+              changes as the selection changes so the user knows what
+              the tier means before they commit. */}
+          <div className="mt-3 flex items-center gap-1.5" role="radiogroup" aria-label="Notification tier">
+            {TIER_ORDER.map((p) => {
+              const active = tier === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setTier(p)}
+                  className="inline-flex flex-1 items-center justify-center rounded-full px-2.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+                  style={{
+                    background: active ? "var(--ink)" : "transparent",
+                    color: active ? "var(--cream)" : "var(--ink)",
+                    border: `1px solid ${active ? "var(--ink)" : "var(--line)"}`,
+                  }}
+                >
+                  {PRESETS[p].label}
+                </button>
+              );
+            })}
+          </div>
+          <p
+            className="mt-2 text-[11px] leading-snug"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            {busy ? "Asking…" : "Turn on notifications"}
-          </button>
-          <button
-            type="button"
-            onClick={() => dismissNotifPrompt()}
-            aria-label="Dismiss notification prompt"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
-            style={{
-              background: "transparent",
-              color: "var(--mute-1)",
-              border: "1px solid var(--line)",
-            }}
-          >
-            Not now
-          </button>
-        </div>
+            {PRESETS[tier].detail}.
+          </p>
+
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onEnable}
+              disabled={busy}
+              aria-label="Turn on notifications"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+              style={{
+                background: "var(--ink)",
+                color: "var(--cream)",
+                border: "1px solid var(--ink)",
+                opacity: busy ? 0.7 : 1,
+              }}
+            >
+              {busy ? "Asking…" : "Turn on"}
+            </button>
+            <button
+              type="button"
+              onClick={() => dismissNotifPrompt()}
+              aria-label="Dismiss notification prompt"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+              style={{
+                background: "transparent",
+                color: "var(--mute-1)",
+                border: "1px solid var(--line)",
+              }}
+            >
+              Not now
+            </button>
+          </div>
+        </>
       ) : null}
     </article>
   );
+}
+
+function tierWelcomeBody(tier: AlertPreset, follows: number): string {
+  if (follows === 0) {
+    return "Follow a team to start getting pings.";
+  }
+  if (tier === "quiet") return "Tipoffs and finals only.";
+  if (tier === "companion") return "Tipoffs, end of quarters, finals.";
+  return "Tipoffs, quarters, finals, plus Q4 close games.";
 }
