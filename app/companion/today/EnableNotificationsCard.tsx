@@ -90,7 +90,7 @@ export function EnableNotificationsCard() {
           // SW not ready / unsupported — granted state still holds, the
           // user just won't see this one welcome ping.
         }
-        setConfirmation("Notifications are on. We'll keep it calm.");
+        setConfirmation("Notifications on.");
         // Mark as dismissed so the card retires after the welcome ping.
         // Leaving it visible would make the user think the action wasn't
         // recorded.
@@ -126,14 +126,14 @@ export function EnableNotificationsCard() {
             className="text-[14px] leading-snug"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
-            {confirmation ?? "Get pinged for moments worth your attention."}
+            {confirmation ?? "Turn on notifications?"}
           </p>
           {!confirmation ? (
             <p
               className="mt-1 text-[12px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Tipoffs, one-possession games, finals — that&apos;s it. Change anytime in Settings.
+              Tipoffs, close games, finals. Tune later in Settings.
             </p>
           ) : null}
         </div>

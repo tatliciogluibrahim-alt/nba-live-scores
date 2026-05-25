@@ -31,19 +31,19 @@ const PRESET_PREVIEW: Record<AlertPreset, PreviewExample> = {
   quiet: {
     app: "NO NOISE SCORES",
     title: "Final · Knicks vs Cavaliers",
-    body: "The game is over. Tap to see the result.",
+    body: "Game's done. Tap when you're ready.",
     when: "now",
   },
   companion: {
     app: "NO NOISE SCORES",
-    title: "Tipoff · Knicks vs Cavaliers",
-    body: "It's a one-possession game in the final minute.",
+    title: "End of Q3 · Knicks vs Cavaliers",
+    body: "One quarter left. Tap to check in.",
     when: "now",
   },
   all: {
     app: "NO NOISE SCORES",
-    title: "Key moment · Knicks vs Cavaliers",
-    body: "Lead change. Tap to see what just happened.",
+    title: "Q4 · Knicks vs Cavaliers",
+    body: "One-possession game with 2:14 left.",
     when: "now",
   },
 };
@@ -61,7 +61,7 @@ export function NotificationPreview() {
         className="mb-3 text-[13px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        A preview for each preset. No alert ever wakes you with a score.
+        Three tiers. No alert ever leads with the score.
       </p>
 
       <div className="space-y-3">
