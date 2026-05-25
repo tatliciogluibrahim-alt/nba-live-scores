@@ -153,6 +153,9 @@ export function NBALiveCompanion({
           accent="var(--nba)"
           live={hero.live}
           surface={isLive ? "var(--nba-soft)" : undefined}
+          // Finals are reference, not action. Drop the accent rail so
+          // the strongest visual treatment is saved for live/upcoming.
+          muted={game.status === "final"}
         />
       </div>
 

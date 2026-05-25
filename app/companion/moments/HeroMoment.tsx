@@ -14,6 +14,11 @@ export function HeroMoment({
   live = false,
   surface,
   footer,
+  /** When true, drop the 3px sport-accent left rail and use a calm
+   *  paper card instead. Reserve the accent rail for live / upcoming
+   *  moments where the user might act; once a game is final the rail
+   *  promises an "act now" that no longer exists. */
+  muted = false,
 }: {
   eyebrow: string;
   headline: string;
@@ -27,6 +32,7 @@ export function HeroMoment({
   surface?: string;
   /** Optional slot below context (e.g. WatchLine). */
   footer?: ReactNode;
+  muted?: boolean;
 }) {
   return (
     <article
@@ -34,7 +40,7 @@ export function HeroMoment({
       style={{
         background: surface ?? "var(--paper)",
         borderColor: "var(--line)",
-        borderLeft: `3px solid ${accent}`,
+        borderLeft: muted ? "1px solid var(--line)" : `3px solid ${accent}`,
       }}
     >
       <div className="flex items-center gap-1.5">

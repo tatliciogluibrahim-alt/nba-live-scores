@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { Spoiler } from "../spoiler/Spoiler";
 import { useNoSpoilers } from "../providers";
+import { getTeam } from "../following/data/teams";
 import type { SeriesDot, SeriesDotState } from "./series-data";
 
 // Compact 7-game schedule strip. Under No-Spoilers, dots never reveal
@@ -90,12 +91,18 @@ function ariaLabel(
   if (displayState === "live") return `Game ${dot.number} is live`;
   if (displayState === "next") return `Game ${dot.number} is next`;
   if (displayState === "played") {
-    // Under No-Spoilers we never spell the score into the aria label —
-    // that would leak the winner to screen-reader users. The "tap to
-    // reveal" pattern handles the visible reveal explicitly.
-    return noSpoilers
-      ? `Game ${dot.number} played, tap to reveal details`
-      : `Game ${dot.number} played, tap to reveal score`;
+    // Under No-Spoilers we never name the winner. Without No-Spoilers
+    // and when we know who won, use the team's nickname ("Spurs",
+    // "Knicks") — that's how a fan would say it out loud, not "SA" or
+    // "San Antonio Spurs".
+    if (noSpoilers) {
+      return `Game ${dot.number} played, tap to reveal details`;
+    }
+    const winnerTeam = dot.winnerCode ? getTeam(dot.winnerCode) : undefined;
+    if (winnerTeam) {
+      return `Game ${dot.number}, ${winnerTeam.name} won`;
+    }
+    return `Game ${dot.number} played, tap to reveal score`;
   }
   if (displayState === "scheduled") return `Game ${dot.number} scheduled`;
   if (displayState === "if-necessary")
@@ -153,7 +160,7 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
           const dotNode = (
             <span
               aria-hidden
-              className={`grid h-[26px] w-[26px] place-items-center rounded-full ${
+              className={`grid h-[32px] w-[32px] place-items-center rounded-full ${
                 breathing ? "no-noise-live-fade" : ""
               }`}
               style={dotStyle(display, isSelected)}
@@ -170,7 +177,7 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: 700,
                   letterSpacing: 0,
                   lineHeight: 1,

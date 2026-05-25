@@ -50,10 +50,12 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
     );
   }
 
-  // Quiet inline text line — no pills, no dots. Items are separated by a
-  // muted mid-dot. Live items surface in --nba so they read as urgent
-  // without needing a badge. Upcoming items use --ink. Finals + quiet go
-  // muted. The whole row wraps naturally at narrow widths; no overflow.
+  // Quiet inline text line — just chips, separated by a muted mid-dot.
+  // Status / kind labels removed: the chip format already conveys the
+  // kind (single-team chip vs paired "OKC·SA" chip vs flag chip), and
+  // live state surfaces via the --nba color. Pairing "OKC·SA · Series"
+  // was visually confusing because the same separator was doing two
+  // jobs at once.
   return (
     <section>
       <SectionHeader label="You follow" />
@@ -72,18 +74,16 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
             <span key={`${item.kind}-${item.id}`}>
               <Link
                 href={item.href}
-                aria-label={`${item.label} · ${item.statusLabel}`}
+                aria-label={`${item.label}${item.tone === "live" ? ", live now" : ""}`}
                 className="no-noise-reveal-focus transition-opacity active:opacity-60"
                 style={{ color, fontWeight: item.tone === "live" ? 600 : 500 }}
               >
                 {item.chip}
-                <span style={{ color: "var(--mute-2)" }}>{" · "}</span>
-                {item.statusLabel}
               </Link>
               {i < items.length - 1 ? (
                 <span
                   aria-hidden
-                  style={{ color: "var(--mute-2)", padding: "0 0.35em" }}
+                  style={{ color: "var(--mute-2)", padding: "0 0.5em" }}
                 >
                   ·
                 </span>

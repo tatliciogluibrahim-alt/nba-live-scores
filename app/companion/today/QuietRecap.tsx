@@ -41,7 +41,9 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
 
   const sub = noSpoilers
     ? "Schedules stay visible. Tap when you're ready."
-    : "No more alerts tonight. Tap to see the wrap.";
+    : finalsCount === 1
+      ? "No more alerts tonight. Tap to see it."
+      : "No more alerts tonight. Tap to see the wrap.";
 
   return (
     <section
@@ -86,7 +88,11 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
         <div className="mt-4 flex items-center gap-2">
           <Link
             href="/watching"
-            aria-label="See tonight's wrap"
+            aria-label={
+              finalsCount === 1
+                ? "See tonight's final"
+                : "See tonight's wrap"
+            }
             className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--cream)",
@@ -94,7 +100,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
               border: "1px solid var(--cream)",
             }}
           >
-            See the wrap
+            {finalsCount === 1 ? "See it" : "See the wrap"}
           </Link>
           <button
             type="button"
