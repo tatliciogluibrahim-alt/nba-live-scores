@@ -44,13 +44,16 @@ export function SettingsClient() {
         </Link>
       </div>
 
+      {/* Per-follow alerts is the heart of this screen — push test
+          controls live below so they don't visually overpower the
+          alert-tier picker. No-Spoilers stays on top as a global mode. */}
       <div className="space-y-5">
         <NoSpoilersToggle />
-        <PushSubscriptionPanel />
         <PerFollowAlerts />
-        <NotificationPreview />
         <ReminderSelector />
         <QuietHoursSelector />
+        <PushSubscriptionPanel />
+        <NotificationPreview />
         <WatchGuidanceBlock />
       </div>
     </main>

@@ -287,7 +287,19 @@ function NotFound({
           >
             Unpin
           </button>
-        ) : null}
+        ) : (
+          <Link
+            href="/following"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+            style={{
+              background: "transparent",
+              color: "var(--ink)",
+              border: "1px solid var(--line)",
+            }}
+          >
+            Back to Following
+          </Link>
+        )}
         <Link
           href="/"
           className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"

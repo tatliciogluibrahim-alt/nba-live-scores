@@ -49,11 +49,29 @@ export function PathTimeline({
           const hideReachedState = noSpoilers && reached && stage.key !== "group";
           const displayReached = reached && !hideReachedState;
 
+          // Pre-tournament: the Group stage is technically "reached" in
+          // the data model (the bracket exists, fixtures are scheduled),
+          // but "In progress" misreads before the first whistle. Surface
+          // it as a calm "Group set" until the tournament actually begins.
+          const isGroupPreTournament = stage.key === "group" && !tournamentStarted;
+
           const stateLabel = hideReachedState
             ? "Hidden"
-            : reached
-              ? "In progress"
-              : "Possible path";
+            : isGroupPreTournament
+              ? "Group set"
+              : reached
+                ? "In progress"
+                : "Possible path";
+
+          // Pre-tournament Group detail: pair the "Group set" state with
+          // a confident structural sentence so the row tells the user
+          // what's true today (the group is fixed, dates are known).
+          const stageDetail =
+            isGroupPreTournament
+              ? `Group is set. Matches begin June 11.`
+              : hideReachedState
+                ? HIDDEN_CAPTIONS.path
+                : stage.detail;
 
           return (
             <li
@@ -106,7 +124,7 @@ export function PathTimeline({
                   className="mt-1 text-[12px]"
                   style={{ color: "var(--mute-1)", fontWeight: 500 }}
                 >
-                  {hideReachedState ? HIDDEN_CAPTIONS.path : stage.detail}
+                  {stageDetail}
                 </p>
               </div>
             </li>

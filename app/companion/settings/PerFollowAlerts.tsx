@@ -103,7 +103,7 @@ export function PerFollowAlerts() {
         className="mb-3 text-[12px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        {alertSlotCount} of {alertSlotCap} alerts used. Follows are unlimited.
+        {alertSlotCount} of {alertSlotCap} alert slots used. Follows are unlimited.
       </p>
       <ul className="space-y-2">
         {follows.map((follow) => {
@@ -240,7 +240,7 @@ export function PerFollowAlerts() {
                       className="mt-2 text-[12px] leading-snug"
                       style={{ color: "var(--mute-1)", fontWeight: 500 }}
                     >
-                      Alert slots are full ({alertSlotCount} of {alertSlotCap} alerts used).
+                      Alert slots are full ({alertSlotCount} of {alertSlotCap} alert slots used).
                       Turn one off to enable this.
                     </p>
                   ) : null}

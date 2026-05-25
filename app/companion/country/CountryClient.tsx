@@ -10,11 +10,14 @@ import { NextMatchBlock } from "./NextMatchBlock";
 import { GroupStrip } from "./GroupStrip";
 import { PathTimeline } from "./PathTimeline";
 import { TournamentCountdown } from "./TournamentCountdown";
+import { useFollows } from "../providers";
+import { PRESETS } from "../state/types";
 
 // Single-screen World Cup Country Dashboard. Composition only.
 
 export function CountryClient({ countryCode }: { countryCode: string }) {
   const { payload, hydrated, tournamentStarted } = useCountryData(countryCode);
+  const { follows } = useFollows();
 
   if (!hydrated) {
     return <LoadingShell />;
@@ -26,9 +29,48 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
 
   const { country, nextMatch, groupRows, pathStages, hasAnyFeed } = payload;
 
+  // Surface the user's current alert state for this country right under
+  // the hero — small and passive so it confirms the personalization
+  // without becoming a settings panel. The full controls live below in
+  // CountryPresetSection.
+  const followed = follows.find(
+    (f) => f.kind === "country" && f.id === country.id
+  );
+  const alertStateLabel = followed
+    ? followed.alertEnabled
+      ? PRESETS[followed.alertTier].label
+      : "Alerts off"
+    : null;
+
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
       <CountryHeader country={country} />
+
+      {alertStateLabel ? (
+        <div className="mt-2 flex items-center gap-2 px-1">
+          <span
+            aria-hidden
+            className="h-1.5 w-1.5 shrink-0 rounded-full"
+            style={{
+              background: followed?.alertEnabled
+                ? "var(--wc)"
+                : "var(--mute-2)",
+            }}
+          />
+          <span
+            className="text-[11px] uppercase"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+              color: "var(--mute-1)",
+            }}
+            aria-label={`Alert state for ${country.name}: ${alertStateLabel}`}
+          >
+            {alertStateLabel}
+          </span>
+        </div>
+      ) : null}
 
       {/* ── Tournament countdown — only renders in the final 7 days ──── */}
       <TournamentCountdown country={country} />
@@ -59,7 +101,7 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
           >
             {hasAnyFeed
               ? `${country.name} doesn't have a match in the current window.`
-              : "Fixtures will appear here once the feed is ready."}
+              : "Match times are still being confirmed. We'll surface the opener here."}
           </p>
         </section>
       )}

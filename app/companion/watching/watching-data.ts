@@ -99,7 +99,7 @@ function formatGameDay(date: string, now = new Date()): string {
 
 // ── Per-source builders ───────────────────────────────────────────────
 
-function nbaToPinned(g: NBAGame, pinnedAt: number): PinnedItem {
+export function nbaToPinned(g: NBAGame, pinnedAt: number): PinnedItem {
   const { tone, label } = statusToToneAndLabel(g.status);
   const isFinal = g.status === "final";
   const isUpcoming = g.status === "upcoming";

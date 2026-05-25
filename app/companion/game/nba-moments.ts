@@ -101,23 +101,11 @@ export function deriveHero(
       ? `Game ${gameNumber} tips off ${tipoff}.`
       : `Tips off ${tipoff}.`;
 
-    // Context — series status (spoilery under No-Spoilers) + broadcast.
-    // "OKC LEADS SERIES 2-1" → "OKC leads series 2-1". Under No-Spoilers
-    // we omit the series line so we don't leak who's up.
-    const broadcast = game.broadcasts[0] ?? null;
-    const rawSeries = game.seriesSummary ?? "";
-    const seriesLine = rawSeries
-      ? rawSeries.charAt(0).toUpperCase() + rawSeries.slice(1).toLowerCase()
-      : "";
-
-    let context: string | undefined;
-    if (!noSpoilers && seriesLine) {
-      context = broadcast ? `${seriesLine} · ${broadcast}` : seriesLine;
-    } else if (broadcast) {
-      context = broadcast;
-    }
-
-    return { eyebrow: "Preview", headline, context, live: false };
+    // No context line here: the spoilery series summary now lives in the
+    // canonical Series block under the scoreboard, and the broadcast is
+    // already in WatchLine. Repeating either of them inside the Preview
+    // hero turned the page into an admin stack of duplicated facts.
+    return { eyebrow: "Preview", headline, live: false };
   }
 
   if (isFinal) {

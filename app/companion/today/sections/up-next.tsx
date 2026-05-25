@@ -44,7 +44,7 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
             >
               <div className="flex items-baseline gap-2">
                 {item.pinned ? (
-                  <Eyebrow color="var(--ink)">Pinned</Eyebrow>
+                  <Eyebrow color="var(--nba)">Pinned</Eyebrow>
                 ) : null}
                 <Eyebrow>{item.eyebrow}</Eyebrow>
               </div>

@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 
-// Shared pin / unpin + Watching link control. Used by both NBA Live
-// Companion and the WC game shell.
+// Shared pin / unpin control. Used by both NBA Live Companion and the
+// WC game shell. State-correct: an unpinned game offers just the pin
+// action — "Open Watching" doesn't appear yet because pinning is the
+// step the page is asking the user to take. Once the game is pinned,
+// "Open Watching" appears as a quiet secondary link.
 
 export function PinControls({
   pinned,
@@ -18,21 +21,15 @@ export function PinControls({
   subject: string;
   className?: string;
 }) {
-  // Pin controls keep the core model separate: pinning bookmarks this game,
-  // while follows drive alerts.
   return (
     <div className={className}>
-    <div className="flex items-center gap-2">
       {pinned ? (
-        // Pinned state: primary action is to unpin (outline so the
-        // destructive-ish intent reads lighter than a filled button).
-        // A small checkmark confirms the current pinned state inline.
         <button
           type="button"
           onClick={onUnpin}
           aria-label={`Unpin ${subject}`}
           aria-pressed
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "transparent",
             color: "var(--ink)",
@@ -50,7 +47,7 @@ export function PinControls({
           >
             ✓
           </span>
-          Unpin
+          Pinned · Tap to unpin
         </button>
       ) : (
         <button
@@ -58,7 +55,7 @@ export function PinControls({
           onClick={onPin}
           aria-label={`Pin ${subject} to Watching`}
           aria-pressed={false}
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",
             color: "var(--cream)",
@@ -68,34 +65,22 @@ export function PinControls({
           Pin to Watching
         </button>
       )}
-      {pinned ? (
-        <Link
-          href="/watching"
-          className="inline-flex min-h-[44px] items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
-          style={{
-            background: "transparent",
-            color: "var(--mute-1)",
-            border: "1px solid var(--line)",
-          }}
-          aria-label="Open Watching"
-        >
-          Open Watching
-        </Link>
-      ) : null}
-    </div>
-    <p
-      className="mt-2 text-[11px] leading-snug"
-      style={{ color: "var(--mute-1)", fontWeight: 500 }}
-    >
-      Pinning keeps this game in Watching. Alerts come from{" "}
-      <Link
-        href="/following"
-        style={{ color: "var(--ink)", textDecoration: "underline", textUnderlineOffset: 3 }}
+
+      <p
+        className="mt-2 flex flex-wrap items-baseline gap-x-2 text-[11px] leading-snug"
+        style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        follows
-      </Link>
-      .
-    </p>
+        <span>Pinning keeps this game in Watching. Alerts come from follows.</span>
+        {pinned ? (
+          <Link
+            href="/watching"
+            aria-label="Open Watching"
+            style={{ color: "var(--mute-1)", fontWeight: 600 }}
+          >
+            Open Watching →
+          </Link>
+        ) : null}
+      </p>
     </div>
   );
 }

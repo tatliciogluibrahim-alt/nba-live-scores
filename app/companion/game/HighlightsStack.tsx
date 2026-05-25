@@ -62,7 +62,7 @@ export function HighlightsStack({ game }: { game: Game }) {
         >
           {isLive
             ? "Highlights will update as the game develops."
-            : "No highlights available for this game."}
+            : "Highlights will appear when the snapshot is ready."}
         </p>
       ) : (
         <ul className="space-y-2">

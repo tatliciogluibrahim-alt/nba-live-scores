@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Display } from "../atoms/Display";
-import { Eyebrow } from "../atoms/Eyebrow";
 import { ScoreModule } from "../atoms/ScoreModule";
 import { HeroMoment } from "../moments/HeroMoment";
 import { SevenDotStrip } from "../series/SevenDotStrip";
@@ -122,25 +121,53 @@ export function NBALiveCompanion({
         />
       </div>
 
-      {/* ── Series dots + freshness — fill the dead zone below scoreboard ─ */}
-      {seriesDots.length > 0 ? (
-        <div
-          className="mt-3 flex items-center justify-between gap-4 px-1"
+      {/* ── Series block — dots + spoilery context as one section ─────── */}
+      {/* One canonical place for series state, sitting right under the
+          scoreboard so the dot strip reads as part of "where this game
+          fits in the series", not a floating ornament. The spoilery
+          summary ("NY leads 3–0") joins the dots here instead of in a
+          separate card near the pin button — that separation made the
+          page feel like stacked admin tiles. */}
+      {seriesDots.length > 0 ||
+      spoileryLine ||
+      (noSpoilers && hasSpoilerySeriesText) ? (
+        <section
+          className="mt-3 rounded-[14px] border px-3 py-2.5"
+          style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+          aria-label="Series"
         >
-          <SevenDotStrip dots={seriesDots} />
-          {/* Freshness indicator — only when live and data has loaded. */}
-          {isLive && lastFetched ? (
-            <FreshnessIndicator lastFetched={lastFetched} />
+          {seriesDots.length > 0 ? (
+            <div className="flex items-center justify-between gap-4">
+              <SevenDotStrip dots={seriesDots} />
+              {isLive && lastFetched ? (
+                <FreshnessIndicator lastFetched={lastFetched} />
+              ) : null}
+            </div>
           ) : null}
+          {spoileryLine ? (
+            <p
+              className={`${seriesDots.length > 0 ? "mt-2" : ""} text-[13px] leading-snug`}
+              style={{ color: "var(--ink)", fontWeight: 600 }}
+            >
+              {spoileryLine}
+            </p>
+          ) : noSpoilers && hasSpoilerySeriesText ? (
+            <p
+              className={`${seriesDots.length > 0 ? "mt-2" : ""} text-[12px]`}
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              {HIDDEN_CAPTIONS.series}
+            </p>
+          ) : null}
+        </section>
+      ) : isLive && lastFetched ? (
+        // Regular-season game with no series context but live data —
+        // keep just the freshness indicator so the live state still
+        // shows it's breathing.
+        <div className="mt-2 px-1">
+          <FreshnessIndicator lastFetched={lastFetched} />
         </div>
-      ) : (
-        // No series context (regular-season game) — still show freshness
-        isLive && lastFetched ? (
-          <div className="mt-2 px-1">
-            <FreshnessIndicator lastFetched={lastFetched} />
-          </div>
-        ) : null
-      )}
+      ) : null}
 
       {/* ── Hero moment band (one earned moment) ────────────────────────── */}
       {/* Live games get a warm card surface — physically warmer than
@@ -177,33 +204,8 @@ export function NBALiveCompanion({
         </div>
       )}
 
-      {/* ── Series context (redacted under No-Spoilers) ─────────────────── */}
-      {/* Wrapped in a compact card with a Series eyebrow so the line reads
-          as a deliberate section, not a floating status string. Under
-          No-Spoilers the body swaps to the canonical hidden caption. */}
-      {spoileryLine || (noSpoilers && hasSpoilerySeriesText) ? (
-        <div
-          className="mt-4 rounded-[14px] border px-3 py-2.5"
-          style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-        >
-          <Eyebrow>Series context</Eyebrow>
-          {spoileryLine ? (
-            <p
-              className="mt-1 text-[13px] leading-snug"
-              style={{ color: "var(--ink)", fontWeight: 600 }}
-            >
-              {spoileryLine}
-            </p>
-          ) : (
-            <p
-              className="mt-1 text-[12px]"
-              style={{ color: "var(--mute-1)", fontWeight: 500 }}
-            >
-              {HIDDEN_CAPTIONS.series}
-            </p>
-          )}
-        </div>
-      ) : null}
+      {/* Series state lives in the consolidated Series block under the
+          scoreboard now — no second card before the pin controls. */}
 
       {/* ── Pin / Watching ──────────────────────────────────────────────── */}
       <PinControls

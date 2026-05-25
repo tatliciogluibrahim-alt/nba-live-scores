@@ -71,7 +71,7 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
               key={`${item.kind}-${item.id}`}
               href={item.href}
               aria-label={`${item.label}${item.tone === "live" ? ", live now" : ""}`}
-              className="no-noise-reveal-focus inline-flex min-h-[30px] items-center rounded-full border px-2.5 text-[12px] transition active:scale-[0.98]"
+              className="no-noise-reveal-focus inline-flex min-h-[32px] items-center rounded-full border px-2.5 text-[12px] transition active:scale-[0.98]"
               style={{
                 background: item.tone === "live" ? "var(--nba-soft)" : "transparent",
                 borderColor: item.tone === "live" ? "var(--nba)" : "var(--line)",
@@ -87,7 +87,7 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
           <Link
             href="/following"
             aria-label={`${remainingCount} more follows`}
-            className="no-noise-reveal-focus inline-flex min-h-[30px] items-center rounded-full border px-2.5 text-[12px] transition active:scale-[0.98]"
+            className="no-noise-reveal-focus inline-flex min-h-[32px] items-center rounded-full border px-2.5 text-[12px] transition active:scale-[0.98]"
             style={{
               background: "transparent",
               borderColor: "var(--line)",
