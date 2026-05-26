@@ -59,6 +59,9 @@ export function FollowChoice({
 
 // Canonical Following choice set. Used on the empty Following state
 // AND the /following/add screen, so the four nouns are defined once.
+// Kept as the flat fallback for any consumer that still wants the
+// noun-first ordering. The moment-grouped layout (FOLLOW_MOMENTS
+// below) is the canonical presentation as of Phase 8b.
 export const FOLLOW_CHOICES = [
   {
     eyebrow: "Team",
@@ -83,5 +86,89 @@ export const FOLLOW_CHOICES = [
     title: "Follow a tournament",
     detail: "World Cup · NBA Playoffs",
     href: "/following/tournament",
+  },
+];
+
+// Moment-grouped choice set. Each moment (NBA Playoffs, FIFA WC) lists
+// the granularity ladder you can pick from. Same underlying picker
+// routes — this is purely a presentation reshape that makes the model
+// readable at a glance: "I follow an NBA thing OR a soccer thing,
+// then how much of it." Future moments (NFL Playoffs, March Madness)
+// land here as new sections without changing the schema.
+export type FollowGranularity = {
+  /** Mono caps label on the granularity row. */
+  eyebrow: string;
+  /** Body title (e.g. "The whole tournament", "A team"). */
+  title: string;
+  /** One-line clarifier. */
+  detail: string;
+  /** Picker route this granularity opens. */
+  href: string;
+};
+
+export type FollowMoment = {
+  id: string;
+  /** Display name (e.g. "NBA Playoffs"). */
+  name: string;
+  /** Short one-line description of the moment itself. */
+  description: string;
+  /** Sport-accent color token used for the section's left rail. */
+  accent: string;
+  /** Plain-text icon glyph used in the section header. */
+  icon: string;
+  /** Ordered list — broadest follow first, most-specific last. The
+   *  ladder is intentional: a user who's just curious can pick "Whole
+   *  tournament" and walk the ladder down as their interest narrows. */
+  granularities: FollowGranularity[];
+};
+
+export const FOLLOW_MOMENTS: FollowMoment[] = [
+  {
+    id: "nba-playoffs",
+    name: "NBA Playoffs",
+    description: "The bracket through the Finals.",
+    accent: "var(--nba)",
+    icon: "🏀",
+    granularities: [
+      {
+        eyebrow: "Tournament",
+        title: "The whole tournament",
+        detail: "Every series. Every game start and final.",
+        href: "/following/tournament",
+      },
+      {
+        eyebrow: "Series",
+        title: "A playoff series",
+        detail: "Best-of-7. East and West.",
+        href: "/following/series",
+      },
+      {
+        eyebrow: "Team",
+        title: "A team",
+        detail: "All 30 NBA teams.",
+        href: "/following/team",
+      },
+    ],
+  },
+  {
+    id: "fifa-wc-2026",
+    name: "FIFA World Cup 2026",
+    description: "48 nations through the final.",
+    accent: "var(--wc)",
+    icon: "⚽",
+    granularities: [
+      {
+        eyebrow: "Tournament",
+        title: "The whole tournament",
+        detail: "Every match. Group stage through the final.",
+        href: "/following/tournament",
+      },
+      {
+        eyebrow: "Country",
+        title: "A country",
+        detail: "All 48 nations. Group, path, and matches.",
+        href: "/following/country",
+      },
+    ],
   },
 ];

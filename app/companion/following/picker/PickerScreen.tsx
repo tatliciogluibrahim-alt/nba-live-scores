@@ -9,7 +9,14 @@ export type PickerOption = {
   id: string;
   primary: string;       // e.g. "New York Knicks"
   secondary?: string;    // e.g. "Eastern Conference"
-  mark?: string;         // identity chip text (abbr or flag emoji)
+  /** Single-line identity chip text (abbr or flag emoji). Use for team
+   *  pickers, country pickers, tournament pickers where one symbol
+   *  fits comfortably in a 36×36 tile. */
+  mark?: string;
+  /** Stacked chip lines for series-style marks where two team codes
+   *  would otherwise overflow the chip (e.g. "CLE·NYK" = 7 chars at
+   *  11px mono won't fit). Each entry renders on its own line. */
+  markLines?: string[];
   group?: string;        // optional group label for section headers
   searchKeys?: string[]; // extra strings to match for search
 };
@@ -148,7 +155,37 @@ export function PickerScreen({
                           borderColor: "var(--line)",
                         }}
                       >
-                        {opt.mark ? (
+                        {opt.markLines && opt.markLines.length > 0 ? (
+                          <span
+                            aria-hidden
+                            className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] leading-none"
+                            style={{
+                              background: following ? "var(--paper)" : "var(--cream-2)",
+                              color: "var(--ink)",
+                              fontFamily: "var(--font-mono)",
+                              // Each line at 10px mono with 1.1
+                              // line-height leaves comfortable room
+                              // for 2-line marks like "CLE / NYK"
+                              // inside the 36px tile.
+                              fontSize: 10,
+                              fontWeight: 700,
+                              letterSpacing: "0.02em",
+                              textAlign: "center",
+                            }}
+                          >
+                            <span className="block">
+                              {opt.markLines.map((line, i) => (
+                                <span
+                                  key={i}
+                                  className="block"
+                                  style={{ lineHeight: 1.1 }}
+                                >
+                                  {line}
+                                </span>
+                              ))}
+                            </span>
+                          </span>
+                        ) : opt.mark ? (
                           <span
                             aria-hidden
                             className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px]"

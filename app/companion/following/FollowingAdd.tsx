@@ -1,9 +1,22 @@
 import { Display } from "../atoms/Display";
-import { FOLLOW_CHOICES, FollowChoice } from "./FollowChoice";
+import { FOLLOW_MOMENTS } from "./FollowChoice";
+import { MomentSection } from "./MomentSection";
 
-// /following/add — the four-noun choice grid for users who already have
-// follows and want to add more. Empty Following uses FOLLOWING_EMPTY which
-// also renders this set, so the choice copy is centralised in FOLLOW_CHOICES.
+// /following/add — moment-grouped follow picker. NBA Playoffs and
+// FIFA World Cup 2026 each get their own section with a granularity
+// ladder (broadest first, most-specific last). Same underlying picker
+// routes — this layout just makes the model readable: a new user
+// understands "I pick a moment, then how much of it" in one glance.
+//
+// Pre-Phase-8b this was a flat four-noun grid (Team / Country / Series
+// / Tournament). The flat layout didn't scale: once a user followed
+// NBA Playoffs *and* Knicks, the redundancy wasn't visible, and a
+// future NFL Playoffs would have meant "Team" had two unrelated
+// meanings. Moment-first sidesteps both.
+//
+// Schema is unchanged — the underlying Follow record is still
+// { kind: team/country/series/tournament, id }. See Phase 11 design
+// doc for the full moment+scope refactor.
 
 export function FollowingAdd() {
   return (
@@ -15,18 +28,12 @@ export function FollowingAdd() {
         className="mb-4 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Pick a team, a country, a playoff series, or a tournament. We surface only their games.
+        Pick a moment, then how much of it. We surface only what you follow.
       </p>
 
-      <div className="space-y-2">
-        {FOLLOW_CHOICES.map((c) => (
-          <FollowChoice
-            key={c.href}
-            eyebrow={c.eyebrow}
-            title={c.title}
-            detail={c.detail}
-            href={c.href}
-          />
+      <div className="space-y-3">
+        {FOLLOW_MOMENTS.map((moment) => (
+          <MomentSection key={moment.id} moment={moment} />
         ))}
       </div>
     </main>

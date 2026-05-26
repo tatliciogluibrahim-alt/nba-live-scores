@@ -82,7 +82,11 @@ export function SeriesPicker() {
         secondary: g.seriesConference
           ? `${round} · ${g.seriesConference}`
           : round,
-        mark: `${a}·${b}`,
+        // Two-line stacked mark — `${a}·${b}` was 7 chars at 11px mono
+        // and overflowed the 36×36 chip ("CLE·NYK" → bled outside the
+        // tile). Stacking each team code on its own line keeps the
+        // series identity visible without breaking the square tile.
+        markLines: [a, b],
         searchKeys: [a, b, round, g.seriesConference],
       };
     });

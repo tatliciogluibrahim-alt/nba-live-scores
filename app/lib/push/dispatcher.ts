@@ -17,10 +17,10 @@ import {
   type PushPayload,
 } from "./web-push-config";
 import { presetMatchesEvent } from "./preset-matcher";
+import type { AlertPreset } from "../../companion/state/types";
 import { claimDelivery, releaseDelivery } from "./dedupe";
 import {
   listSubscriptions,
-  listSubscriptionsByTeams,
   removeSubscription,
   upsertSubscription,
   type StoredSubscription,
@@ -50,29 +50,20 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
 }> {
   if (events.length === 0) return { deliveries: [], pruned: 0 };
 
-  // Build the candidate subscription set. For NBA events we use the
-  // per-team reverse index (Phase 2.4) so fanout is O(interested subs).
-  // For WC events we don't yet maintain a per-country reverse index —
-  // volume is low (64 matches over the tournament) and friend-test
-  // subscription count is small, so iterating all subs is fine for v1.
-  // If WC pushes go wide later, mirror the team-index pattern with a
-  // country-index in subscription-store.
-  const hasWCEvents = events.some(isWCEvent);
-  const hasNBAEvents = events.some((e) => !isWCEvent(e));
-
-  let subs: StoredSubscription[];
-  if (hasWCEvents && hasNBAEvents) {
-    subs = await listSubscriptions();
-  } else if (hasWCEvents) {
-    subs = await listSubscriptions();
-  } else {
-    const teamCodes = new Set<string>();
-    for (const ev of events) {
-      teamCodes.add(ev.awayCode);
-      teamCodes.add(ev.homeCode);
-    }
-    subs = await listSubscriptionsByTeams(Array.from(teamCodes));
-  }
+  // Build the candidate subscription set. We used to query the
+  // per-team reverse index for NBA events (Phase 2.4 optimization),
+  // but that quietly excluded users who follow a series or tournament
+  // *without* following the specific teams in it — the matcher below
+  // can match four follow kinds (team / country / series / tournament)
+  // and the index only knows about teams, so it was dropping
+  // legitimate candidates pre-match.
+  //
+  // At friend-test scale this is fine; `listSubscriptions()` returns
+  // O(total devices). If push volume grows past a few thousand subs
+  // we can rebuild a multi-kind reverse index that covers all four
+  // follow types, but that's premature today and was masking a real
+  // correctness bug.
+  const subs = await listSubscriptions();
   if (subs.length === 0) return { deliveries: [], pruned: 0 };
 
   const deliveries: DeliveryResult[] = [];
@@ -208,26 +199,59 @@ function subscriptionWantsEvent(
   if (sub.noSpoilers && SPOILERY_EVENTS.has(event.type)) return false;
 
   const alerts = Array.isArray(sub.alerts) ? sub.alerts : [];
+  const wc = isWCEvent(event);
+  const tierOk = (tier: AlertPreset) => presetMatchesEvent(tier, event.type);
 
-  // WC events match country follows. NBA events match team follows.
-  // Both gate by the per-follow tier through preset-matcher. Other
-  // follow kinds (series, tournament) are kept in the schema for
-  // future fanout but don't drive notifications today.
-  if (isWCEvent(event)) {
-    return alerts.some(
-      (f) =>
-        f.kind === "country" &&
-        (f.id === event.awayCode || f.id === event.homeCode) &&
-        presetMatchesEvent(f.tier, event.type)
-    );
-  }
+  // The Following UI offers four kinds — team, country, series,
+  // tournament. Each kind has its own way of matching to an event:
+  //
+  //   1. Direct entity match
+  //      NBA event ↔ team follow whose id matches awayCode/homeCode
+  //      WC  event ↔ country follow whose id matches awayCode/homeCode
+  //
+  //   2. Series match (NBA only — the schema has no WC series follows)
+  //      A series follow's id is `${teamA}-${teamB}` (sorted). The
+  //      event matches if BOTH team codes are in that id. This is what
+  //      lets a user follow the "OKC vs SA" series once and get pings
+  //      for every game in it, regardless of home/away.
+  //
+  //   3. Tournament match (broadest follow)
+  //      NBA event ↔ tournament follow whose id starts with
+  //                    "nba-playoffs-" (covers future seasons too)
+  //      WC  event ↔ tournament follow whose id starts with
+  //                    "fifa-world-cup-"
+  //
+  // Any one of these matches with a tier that includes the event type
+  // is enough to fan out. Per-tier filtering applies uniformly across
+  // all four kinds — "Quiet" still gets bookends only, etc.
+  return alerts.some((f) => {
+    if (!tierOk(f.tier)) return false;
 
-  return alerts.some(
-    (f) =>
-      f.kind === "team" &&
-      (f.id === event.awayCode || f.id === event.homeCode) &&
-      presetMatchesEvent(f.tier, event.type)
-  );
+    // 1. Direct entity.
+    if (
+      ((wc && f.kind === "country") || (!wc && f.kind === "team")) &&
+      (f.id === event.awayCode || f.id === event.homeCode)
+    ) {
+      return true;
+    }
+
+    // 2. Series — NBA only. Series ids are `${teamA}-${teamB}`.
+    if (!wc && f.kind === "series") {
+      const [a, b] = f.id.split("-");
+      const has = (code: string) =>
+        code === event.awayCode || code === event.homeCode;
+      if (a && b && has(a) && has(b)) return true;
+    }
+
+    // 3. Tournament — match by id prefix so future seasons
+    //    (`nba-playoffs-2026`, etc.) inherit without code changes.
+    if (f.kind === "tournament") {
+      if (wc && f.id.startsWith("fifa-world-cup-")) return true;
+      if (!wc && f.id.startsWith("nba-playoffs-")) return true;
+    }
+
+    return false;
+  });
 }
 
 /** Format the score line for push bodies. Matches the canonical

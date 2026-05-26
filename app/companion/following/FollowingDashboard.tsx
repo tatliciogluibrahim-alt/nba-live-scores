@@ -8,6 +8,40 @@ import { useFollows } from "../providers";
 import type { Follow } from "../state/types";
 import { FollowCard, type FollowCardData } from "./FollowCard";
 
+/** Detect "overlapping" follow combinations — these aren't bugs but
+ *  they raise the "am I getting two notifications per event?" worry.
+ *  The dispatcher's per-(endpoint, event-tag) dedupe guarantees one
+ *  push per event regardless of how many of your follows matched it.
+ *  We surface a single calm one-liner when overlap is present so the
+ *  user knows. Cases that count as overlap:
+ *
+ *   • Any tournament follow paired with any other kind. (Tournament
+ *     follows are the broadest — every team / country / series event
+ *     in that tournament is double-covered.)
+ *   • A series follow whose two teams are both also followed (or
+ *     either is also team-followed). Each game in the series matches
+ *     both the series follow and the team follow.
+ */
+function hasOverlappingFollows(follows: Follow[]): boolean {
+  const tournaments = follows.filter((f) => f.kind === "tournament");
+  const otherKinds = follows.filter((f) => f.kind !== "tournament");
+
+  // Tournament + anything else is the simplest overlap.
+  if (tournaments.length > 0 && otherKinds.length > 0) return true;
+
+  // Series + matching team(s).
+  const teamIds = new Set(
+    follows.filter((f) => f.kind === "team").map((f) => f.id)
+  );
+  for (const f of follows) {
+    if (f.kind !== "series") continue;
+    const [a, b] = f.id.split("-");
+    if ((a && teamIds.has(a)) || (b && teamIds.has(b))) return true;
+  }
+
+  return false;
+}
+
 /** Compact "2 teams · 1 country · 1 tournament" summary built from the
  *  raw follow kinds. Skips zero buckets and pluralises gracefully.
  *  Returns "" when there are no follows so the caller's sentence stays
@@ -76,6 +110,22 @@ export function FollowingDashboard() {
         </p>
       ) : null}
 
+      {/* Overlap hint. When the user follows broader + narrower things
+          (e.g. NBA Playoffs tournament + Knicks team), each event
+          matches multiple of their follows. The dispatcher's dedupe
+          guarantees one push per event-per-device, but the user has
+          no way to know that — this one-liner defuses the "am I
+          double-subscribing?" question. */}
+      {hasOverlappingFollows(follows) ? (
+        <p
+          className="mb-3 text-[12px] leading-snug"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          Some of these overlap. You&apos;ll still only get one alert per
+          game.
+        </p>
+      ) : null}
+
       <ul className="space-y-2">
         {cards.map((c) => (
           <li key={`${c.follow.kind}-${c.follow.id}`}>
@@ -94,7 +144,7 @@ export function FollowingDashboard() {
             borderColor: "var(--mute-2)",
             color: "var(--ink)",
           }}
-          aria-label="Follow more — team, country, series, or tournament"
+          aria-label="Follow more — NBA Playoffs or FIFA World Cup"
         >
           <span className="text-[13px]" style={{ fontWeight: 600 }}>
             Follow more
@@ -103,7 +153,7 @@ export function FollowingDashboard() {
             className="text-[11px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            Team · Country · Series · Tournament
+            NBA Playoffs · FIFA World Cup
           </span>
         </Link>
 

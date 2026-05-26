@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Display } from "../atoms/Display";
-import { FOLLOW_CHOICES, FollowChoice } from "./FollowChoice";
+import { FOLLOW_MOMENTS } from "./FollowChoice";
+import { MomentSection } from "./MomentSection";
 
-// Following — empty / onboarding. One editorial headline + four nouns +
-// a persistent Watch + Alerts link. That last bit is critical: a fresh
-// install with zero follows still needs a path to turn on notifications,
-// quiet hours, No-Spoilers, etc.
+// Following — empty / onboarding. Moment-grouped picker (NBA Playoffs,
+// FIFA WC 2026) with the granularity ladder inside each section, plus
+// a persistent Watch + Alerts link. The Watch + Alerts shortcut stays
+// because a fresh install with zero follows still needs a path to
+// turn on notifications, quiet hours, No-Spoilers, etc.
 
 export function FollowingEmpty() {
   return (
@@ -17,18 +19,12 @@ export function FollowingEmpty() {
         className="mb-4 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        These drive your notifications. Only their games surface here. Everything else stays quiet.
+        Pick a moment, then how much of it. Only what you follow surfaces here. Everything else stays quiet.
       </p>
 
-      <div className="space-y-2">
-        {FOLLOW_CHOICES.map((c) => (
-          <FollowChoice
-            key={c.href}
-            eyebrow={c.eyebrow}
-            title={c.title}
-            detail={c.detail}
-            href={c.href}
-          />
+      <div className="space-y-3">
+        {FOLLOW_MOMENTS.map((moment) => (
+          <MomentSection key={moment.id} moment={moment} />
         ))}
       </div>
 
