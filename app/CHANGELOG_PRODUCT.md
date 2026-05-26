@@ -2,6 +2,94 @@
 
 ---
 
+## Phase 8 — World Cup Pre-Kickoff Readiness — 2026-05-25
+
+Tightens the run-up to the June 11 opener and lays the WC notification
+path. Touches Today's hero + brief, the country page hierarchy, the
+TournamentCountdown intensity ladder, and adds a parallel WC cron + WC
+event detector + dispatcher branch so country-followed users get
+kickoff and full-time pushes.
+
+### Pre-tournament Today brief
+
+- `daily-brief.ts` priority 4b — new awareness band for `8 ≤ wcDays ≤ 30`.
+  Falls between the final-week intensity and the calm "Your follows
+  are set." default so the 8–30 day window doesn't read as sleepy.
+  Different copy depending on whether the user has a country picked.
+- Existing priority 4 (≤7 days) is unchanged.
+
+### Country page hierarchy
+
+- `TournamentCountdown` now renders across the entire pre-kickoff arc
+  (≤30 days). Three intensity tiers:
+    - ≤6h  — live pip + "kicks off soon"
+    - ≤24h — accent rail + "opener is tomorrow"
+    - ≤7d  — accent rail + close-week copy
+    - 8–30d — 1px line, "are getting ready", neutral eyebrow
+- `CountryClient` now skips the empty Next Match section pre-kickoff
+  when no fixtures exist for the country, since the Countdown already
+  carries the page. Once the tournament starts or fixtures parse,
+  Next Match returns to its normal placement.
+
+### Kickoff-day Today hero
+
+- `pickHero` in `today-data.ts` now emits a `wc-countdown` hero inside
+  the final 24h before first whistle when no NBA hero is earning the
+  slot. Tier-aware copy ("kicks off in N hours" / "first whistle in
+  N hours") and country-specific headline when a country is followed.
+
+### WC country notifications (v1)
+
+- New `app/lib/push/wc-state-cache.ts` — per-WC-game KV state cache,
+  14-day TTL, separate prefix from the NBA state cache.
+- New `app/lib/push/wc-event-detector.ts` — `detectWCEvents(prev, next)`.
+  Emits `wc-kickoff` on `upcoming → live` and `wc-final` on
+  `live → final`. Same status-rank pin behavior the NBA detector
+  uses so feed regressions don't re-fire kickoff.
+- Extended `EventType` with `wc-kickoff | wc-final`, added them to
+  `preset-matcher.ts` (every tier gets both — they're tournament
+  bookends).
+- Extended `dispatcher.ts`:
+    - Recognizes WC events and matches them against `kind: "country"`
+      follows (NBA events still match `kind: "team"`).
+    - Falls back to `listSubscriptions()` for WC events (no per-country
+      reverse index yet — v1 is friend-test scale, easy to upgrade
+      later if WC fanout grows).
+    - New payload branches for `wc-kickoff` ("Kickoff · USA vs MEX")
+      and `wc-final` ("Full time · USA vs MEX"). No-Spoilers respected
+      on `wc-final` body.
+- New `app/api/cron/scan-wc/route.ts` — parallel to scan-nba; fetches
+  `/api/world-cup`, runs the detector per game, dispatches.
+- New `.github/workflows/scan-wc-cron.yml` — 5-minute external trigger.
+
+### Quiet-time cleanup that landed alongside Phase 8
+
+- Today brief priority 5 (`"USA is in Group X. We'll surface the opener
+  when fixtures land."`) — removed (duplicated the bottom reminder).
+- Hero spot no longer inflates the WC countdown into a big editorial
+  block when there's nothing else live; the bottom `ReminderRow` does
+  that work calmly. The new kickoff-day branch (≤24h) is the one
+  exception that keeps the hero slot.
+
+### Build / lint / typecheck
+
+- `npm run lint` → clean
+- `npx tsc --noEmit` → clean
+- `npm run build` → ✓, 19 server routes including the new
+  `/api/cron/scan-wc`
+
+### What's NOT in Phase 8
+
+- Goal / halftime / red-card WC events — wait until v1 cron volume
+  proves out the basics.
+- Per-country reverse index — add when fanout grows past friend-test.
+- Legacy `/legacy/world-cup` tab overflow — that page isn't reachable
+  from the companion flow users see today.
+- Tournament / team detail pages — Phase 1 fallbacks still hold.
+- Share cards — Phase 9.
+
+---
+
 ## Phases 1–7 — 2026-05-25
 
 A consolidated pass across navigation, Today calmness, game detail

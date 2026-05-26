@@ -188,6 +188,27 @@ export function deriveDailyBrief({
     };
   }
 
+  // 4b ─ Pre-tournament awareness window (8–30 days). Final-week copy
+  // is reserved for the genuine final week; this calmer band keeps
+  // Today from feeling sleepy during the run-up. Only fires when the
+  // user has a follow (otherwise priority 6 handles onboarding) and
+  // there's nothing live / today on the radar to displace it.
+  if (wcDays !== null && wcDays > 7 && wcDays <= 30) {
+    const country = followedCountry ? getCountry(followedCountry.id) : null;
+    if (country) {
+      return {
+        text: `${wcDays} days to first whistle. ${country.name} are in Group ${country.group}.`,
+        cta: { label: `Open ${country.name}`, href: `/country/${country.id}` },
+      };
+    }
+    // Has follows but no country picked yet — invite calmly without
+    // hijacking the brief into a hard sell.
+    return {
+      text: `World Cup starts in ${wcDays} days. Pick a country to make it personal.`,
+      cta: { label: "Pick a country", href: "/following/country" },
+    };
+  }
+
   // Tournament is underway — country has a live or final fixture.
   if (tournamentIsLive(payload) && followedCountry) {
     const country = getCountry(followedCountry.id);

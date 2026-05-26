@@ -85,6 +85,9 @@ detail.
 
 Completed phases (most recent first):
 
+- Phase 8 — World Cup pre-kickoff readiness (extended brief band,
+  TournamentCountdown carries the country page across the 30-day
+  arc, kickoff-day Today hero, WC country notifications cron + path)
 - Phase 7 — Small visual system polish (pinned accent on Today, chip
   tap targets)
 - Phase 6 — Final game snapshot fallback in /watching and /game/[id]

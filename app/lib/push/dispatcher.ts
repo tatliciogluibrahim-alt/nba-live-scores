@@ -19,13 +19,23 @@ import {
 import { presetMatchesEvent } from "./preset-matcher";
 import { claimDelivery, releaseDelivery } from "./dedupe";
 import {
+  listSubscriptions,
   listSubscriptionsByTeams,
   removeSubscription,
   upsertSubscription,
   type StoredSubscription,
 } from "./subscription-store";
-import type { PushEvent } from "./event-detector";
+import type { EventType, PushEvent } from "./event-detector";
 import { incrCounter } from "./ops-metrics";
+
+const WC_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
+  "wc-kickoff",
+  "wc-final",
+]);
+
+function isWCEvent(event: PushEvent): boolean {
+  return WC_EVENT_TYPES.has(event.type);
+}
 
 type DeliveryResult = {
   endpoint: string;
@@ -40,16 +50,29 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
 }> {
   if (events.length === 0) return { deliveries: [], pruned: 0 };
 
-  // Phase 2.4 reverse-index: pull only the subscriptions that follow
-  // any team mentioned in this batch of events. The per-event filter
-  // below still runs (preset matching, no-spoilers gating), but the
-  // candidate set is now O(interested subs) instead of O(all subs).
-  const teamCodes = new Set<string>();
-  for (const ev of events) {
-    teamCodes.add(ev.awayCode);
-    teamCodes.add(ev.homeCode);
+  // Build the candidate subscription set. For NBA events we use the
+  // per-team reverse index (Phase 2.4) so fanout is O(interested subs).
+  // For WC events we don't yet maintain a per-country reverse index —
+  // volume is low (64 matches over the tournament) and friend-test
+  // subscription count is small, so iterating all subs is fine for v1.
+  // If WC pushes go wide later, mirror the team-index pattern with a
+  // country-index in subscription-store.
+  const hasWCEvents = events.some(isWCEvent);
+  const hasNBAEvents = events.some((e) => !isWCEvent(e));
+
+  let subs: StoredSubscription[];
+  if (hasWCEvents && hasNBAEvents) {
+    subs = await listSubscriptions();
+  } else if (hasWCEvents) {
+    subs = await listSubscriptions();
+  } else {
+    const teamCodes = new Set<string>();
+    for (const ev of events) {
+      teamCodes.add(ev.awayCode);
+      teamCodes.add(ev.homeCode);
+    }
+    subs = await listSubscriptionsByTeams(Array.from(teamCodes));
   }
-  const subs = await listSubscriptionsByTeams(Array.from(teamCodes));
   if (subs.length === 0) return { deliveries: [], pruned: 0 };
 
   const deliveries: DeliveryResult[] = [];
@@ -186,10 +209,19 @@ function subscriptionWantsEvent(
 
   const alerts = Array.isArray(sub.alerts) ? sub.alerts : [];
 
-  // The user is "interested" if any alert-enabled team follow matches
-  // either side of the matchup and that specific follow's tier includes
-  // the event type. Country / series / tournament alerts are kept in the
-  // schema for WC/future fanout but don't drive NBA team events yet.
+  // WC events match country follows. NBA events match team follows.
+  // Both gate by the per-follow tier through preset-matcher. Other
+  // follow kinds (series, tournament) are kept in the schema for
+  // future fanout but don't drive notifications today.
+  if (isWCEvent(event)) {
+    return alerts.some(
+      (f) =>
+        f.kind === "country" &&
+        (f.id === event.awayCode || f.id === event.homeCode) &&
+        presetMatchesEvent(f.tier, event.type)
+    );
+  }
+
   return alerts.some(
     (f) =>
       f.kind === "team" &&
@@ -267,6 +299,25 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
         body: noSpoilers ? "Game's done. Tap when you're ready." : scoreLine(event),
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:final`,
+      };
+    case "wc-kickoff":
+      // World Cup kickoff — soccer-bespoke verb ("Kickoff" not "Tipoff").
+      // Score is 0–0 at kickoff so we omit it whether or not No-Spoilers
+      // is on; the body just sets the moment.
+      return {
+        title: `Kickoff · ${matchup}`,
+        body: "The match is underway. Tap to follow along.",
+        url: `/game/${event.gameId}`,
+        tag: `${event.gameId}:wc-kickoff`,
+      };
+    case "wc-final":
+      return {
+        title: `Full time · ${matchup}`,
+        body: noSpoilers
+          ? "Match wrapped. Tap when you're ready."
+          : scoreLine(event),
+        url: `/game/${event.gameId}`,
+        tag: `${event.gameId}:wc-final`,
       };
   }
 }

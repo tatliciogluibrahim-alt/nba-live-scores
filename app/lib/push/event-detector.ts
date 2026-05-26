@@ -25,7 +25,14 @@ export type EventType =
   | "eoq-3"
   | "close-game"
   | "comeback"
-  | "final";
+  | "final"
+  // World Cup events (Phase 8 — kickoff + final only for v1). The
+  // dispatcher uses these types to pick a country-follow matcher and a
+  // soccer-bespoke payload body. WC events carry country ISO codes
+  // (USA, BRA, ...) in the same awayCode/homeCode slots used by NBA
+  // team abbrs.
+  | "wc-kickoff"
+  | "wc-final";
 
 export type PushEvent = {
   type: EventType;

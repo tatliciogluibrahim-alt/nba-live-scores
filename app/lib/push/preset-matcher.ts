@@ -26,6 +26,12 @@ const MATRIX: Record<EventType, ReadonlySet<AlertPreset>> = {
   "close-game": new Set<AlertPreset>(["all"]),
   comeback: new Set<AlertPreset>(["all"]),
   final: new Set<AlertPreset>(["quiet", "companion", "all"]),
+  // World Cup — v1 ships kickoff + final only, both treated as bookend
+  // events (every tier gets them). When/if we add wc-halftime or
+  // wc-goal, those map to companion+/all only, matching the NBA matrix
+  // shape.
+  "wc-kickoff": new Set<AlertPreset>(["quiet", "companion", "all"]),
+  "wc-final": new Set<AlertPreset>(["quiet", "companion", "all"]),
 };
 
 export function presetMatchesEvent(

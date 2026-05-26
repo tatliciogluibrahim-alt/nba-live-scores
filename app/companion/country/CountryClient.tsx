@@ -27,7 +27,17 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
     return <CountryNotFound countryCode={countryCode} />;
   }
 
-  const { country, nextMatch, groupRows, pathStages, hasAnyFeed } = payload;
+  const { country, nextMatch, groupRows, pathStages, hasAnyFeed, fixtures } =
+    payload;
+
+  // Pre-kickoff and no fixtures parsed for this country yet: let
+  // TournamentCountdown be the page anchor on its own. The empty
+  // "Match times are still being confirmed." card would otherwise
+  // stack right beneath the countdown saying essentially the same
+  // thing. Once any fixture lands for this country, we surface
+  // NextMatch normally (with its own empty-state copy for between-
+  // match windows).
+  const showNextMatchSection = tournamentStarted || fixtures.length > 0;
 
   // Surface the user's current alert state for this country right under
   // the hero — small and passive so it confirms the personalization
@@ -75,36 +85,48 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
       {/* ── Tournament countdown — only renders in the final 7 days ──── */}
       <TournamentCountdown country={country} />
 
-      {/* ── Next match block (top priority when one exists) ──────────── */}
-      {nextMatch ? (
-        <section className="mt-4">
-          <div className="mb-2 flex items-center gap-3">
-            <Eyebrow>Next match</Eyebrow>
-            <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-          </div>
-          <NextMatchBlock match={nextMatch} countryCode={country.id} />
-        </section>
-      ) : (
-        <section className="mt-4">
-          <div className="mb-2 flex items-center gap-3">
-            <Eyebrow>Next match</Eyebrow>
-            <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-          </div>
-          <p
-            className="rounded-[14px] border px-4 py-3 text-[13px]"
-            style={{
-              background: "var(--paper)",
-              borderColor: "var(--line)",
-              color: "var(--mute-1)",
-              fontWeight: 500,
-            }}
-          >
-            {hasAnyFeed
-              ? `${country.name} doesn't have a match in the current window.`
-              : "Match times are still being confirmed. We'll surface the opener here."}
-          </p>
-        </section>
-      )}
+      {/* ── Next match block ─────────────────────────────────────────── */}
+      {/* Pre-kickoff with no parsed fixtures for this country: skip the
+          section entirely. TournamentCountdown already carries the page
+          and the empty placeholder beneath it was reading as "we don't
+          have the data" rather than "the tournament hasn't started." */}
+      {showNextMatchSection ? (
+        nextMatch ? (
+          <section className="mt-4">
+            <div className="mb-2 flex items-center gap-3">
+              <Eyebrow>Next match</Eyebrow>
+              <div
+                className="h-px flex-1"
+                style={{ background: "var(--line)" }}
+              />
+            </div>
+            <NextMatchBlock match={nextMatch} countryCode={country.id} />
+          </section>
+        ) : (
+          <section className="mt-4">
+            <div className="mb-2 flex items-center gap-3">
+              <Eyebrow>Next match</Eyebrow>
+              <div
+                className="h-px flex-1"
+                style={{ background: "var(--line)" }}
+              />
+            </div>
+            <p
+              className="rounded-[14px] border px-4 py-3 text-[13px]"
+              style={{
+                background: "var(--paper)",
+                borderColor: "var(--line)",
+                color: "var(--mute-1)",
+                fontWeight: 500,
+              }}
+            >
+              {hasAnyFeed
+                ? `${country.name} doesn't have a match in the current window.`
+                : "Match times are still being confirmed. We'll surface the opener here."}
+            </p>
+          </section>
+        )
+      ) : null}
 
       {/* ── Group strip ──────────────────────────────────────────────── */}
       <div className="mt-5">

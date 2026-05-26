@@ -1,0 +1,29 @@
+name: scan-wc-cron
+
+on:
+  schedule:
+    # Same 5-minute cadence as the NBA cron. WC matches run ~95 minutes
+    # so a 5-minute window covers kickoff + final transitions without
+    # over-polling. If we add intra-match events later (halftime, goal)
+    # consider tightening this to 2 minutes during fixture windows.
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+# Least-privilege: this workflow only curls an external endpoint. It
+# needs no repo write access.
+permissions: {}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Trigger World Cup push scan
+        run: |
+          # --retry handles transient 5xx from the cron endpoint so a
+          # single bad upstream WC fetch doesn't leave a noisy failed
+          # run in the Actions history.
+          curl -fsS \
+            --retry 3 --retry-delay 5 --retry-all-errors \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://nonoisescores.app/api/cron/scan-wc

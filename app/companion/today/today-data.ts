@@ -205,7 +205,8 @@ function pickHero(
   nba: NBAGame[],
   wc: WCGameLite[],
   follows: Follow[],
-  pinned: PinnedGame[]
+  pinned: PinnedGame[],
+  now: Date = new Date()
 ): TodayHero | null {
   const followedTeams = new Set(
     follows.filter((f) => f.kind === "team").map((f) => f.id)
@@ -279,6 +280,31 @@ function pickHero(
   // of Today. Letting the hero stay empty when there's nothing live
   // honors the "what matters now" promise; the reminder picks up the
   // slack down the screen.
+  //
+  // Exception (Phase 8): the day of WC kickoff is a one-shot moment. If
+  // we're inside the final 24h before first whistle (or the tournament
+  // just opened today), and the user is following a country whose
+  // opener is part of the action, the hero earns the editorial slot.
+  const hoursUntilKickoff = (WC_KICKOFF.getTime() - now.getTime()) / 3_600_000;
+  if (hoursUntilKickoff > 0 && hoursUntilKickoff <= 24) {
+    const followedCountry = follows.find((f) => f.kind === "country");
+    const country = followedCountry ? getCountry(followedCountry.id) : null;
+    const hoursRounded = Math.max(1, Math.ceil(hoursUntilKickoff));
+    return {
+      kind: "wc-countdown",
+      eyebrow: country ? "Tournament day" : "World Cup 2026",
+      headline: country
+        ? `${country.name}'s tournament begins.`
+        : "World Cup kicks off today.",
+      context:
+        hoursRounded <= 6
+          ? `Kicks off in ${hoursRounded} hour${hoursRounded === 1 ? "" : "s"}.`
+          : `First whistle in ${hoursRounded} hours.`,
+      live: false,
+      accent: "var(--wc)",
+      href: country ? `/country/${country.id}` : "/following/country",
+    };
+  }
 
   return null;
 }
@@ -592,7 +618,7 @@ export function buildTodayPayload({
   pinned: PinnedGame[];
   now?: Date;
 }): TodayPayload {
-  const hero = pickHero(nba, wc, follows, pinned);
+  const hero = pickHero(nba, wc, follows, pinned, now);
   const youFollow = buildYouFollow(nba, wc, follows, now);
   const upNext = buildUpNext(nba, wc, follows, pinned);
   const quietWrap = buildQuietWrap(nba, follows);
