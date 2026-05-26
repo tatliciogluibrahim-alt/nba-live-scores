@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { PreviewModeBanner } from "../dev/PreviewModeBanner";
 import { TabBar } from "./TabBar";
 
 // Per-screen frame: scroll surface + fixed bottom tab bar.
@@ -27,6 +28,7 @@ export function CompanionFrame({
           : "calc(max(env(safe-area-inset-bottom), 12px) + 84px)",
       }}
     >
+      <PreviewModeBanner />
       {children}
       {!hideTabBar ? <TabBar /> : null}
     </div>

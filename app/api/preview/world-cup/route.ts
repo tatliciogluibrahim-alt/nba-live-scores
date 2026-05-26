@@ -1,0 +1,100 @@
+// GET /api/preview/world-cup
+//
+// Public preview endpoint — returns a hardcoded "live match day"
+// snapshot in the same shape as /api/world-cup. Used by the WC live-day
+// simulation harness so we can feel the day-of UX (Today brief, hero,
+// country detail, watching) without waiting for June 11.
+//
+// Scenario: mid-tournament Group Stage match day, ~5:30 PM ET.
+//   • USA vs TUR (Group D)     — LIVE, 50' minute, 1–1
+//   • PAR vs AUS (Group D)     — UPCOMING, kickoff in 3 hours
+//   • BRA vs SCO (Group C)     — FINAL earlier today, 2–0
+//   • MEX vs CZE (Group A)     — UPCOMING tomorrow afternoon
+//
+// All `date` fields are computed relative to now so the time labels
+// ("Tonight", "Tomorrow", "Halftime", etc.) read correctly whenever
+// the preview is hit. No auth — preview data is not secret and
+// users have to actively pass `?preview=wc-day` in the UI to see it.
+
+import { NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type FeedGame = {
+  id: string;
+  date: string;
+  status: "live" | "upcoming" | "final";
+  statusText: string;
+  stage: string;
+  group: string;
+  home: { name: string; abbreviation: string; score: number };
+  away: { name: string; abbreviation: string; score: number };
+  broadcasts: string[];
+  watchLabel: string;
+};
+
+function offsetIso(ms: number): string {
+  return new Date(Date.now() + ms).toISOString();
+}
+
+export function GET() {
+  const games: FeedGame[] = [
+    {
+      // USA vs TUR — live, 50th minute, 1–1. The hero of the preview.
+      id: "preview-wc-usa-tur",
+      date: offsetIso(-50 * 60 * 1000), // kicked off 50 min ago
+      status: "live",
+      statusText: "50'",
+      stage: "Group Stage",
+      group: "D",
+      home: { name: "United States", abbreviation: "USA", score: 1 },
+      away: { name: "Türkiye", abbreviation: "TUR", score: 1 },
+      broadcasts: ["FOX"],
+      watchLabel: "FOX",
+    },
+    {
+      // PAR vs AUS — same group, kickoff later tonight. Drives the
+      // "later tonight" brief copy and an Up Next slot.
+      id: "preview-wc-par-aus",
+      date: offsetIso(3 * 60 * 60 * 1000), // 3 hours from now
+      status: "upcoming",
+      statusText: "Upcoming",
+      stage: "Group Stage",
+      group: "D",
+      home: { name: "Australia", abbreviation: "AUS", score: 0 },
+      away: { name: "Paraguay", abbreviation: "PAR", score: 0 },
+      broadcasts: ["FS1"],
+      watchLabel: "FS1",
+    },
+    {
+      // BRA vs SCO — wrapped earlier today. Drives Quiet Wrap section
+      // + tests final-game display in a non-Group-D context.
+      id: "preview-wc-bra-sco",
+      date: offsetIso(-4 * 60 * 60 * 1000), // 4 hours ago
+      status: "final",
+      statusText: "Full time",
+      stage: "Group Stage",
+      group: "C",
+      home: { name: "Scotland", abbreviation: "SCO", score: 0 },
+      away: { name: "Brazil", abbreviation: "BRA", score: 2 },
+      broadcasts: ["FOX"],
+      watchLabel: "FOX",
+    },
+    {
+      // MEX vs CZE — tomorrow. Tests Up Next when game isn't tonight.
+      id: "preview-wc-mex-cze",
+      date: offsetIso(20 * 60 * 60 * 1000), // 20 hours from now
+      status: "upcoming",
+      statusText: "Upcoming",
+      stage: "Group Stage",
+      group: "A",
+      home: { name: "Mexico", abbreviation: "MEX", score: 0 },
+      away: { name: "Czechia", abbreviation: "CZE", score: 0 },
+      broadcasts: ["Telemundo"],
+      watchLabel: "Telemundo",
+    },
+  ];
+
+  return NextResponse.json({ games });
+}

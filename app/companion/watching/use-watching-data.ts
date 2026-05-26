@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePinned } from "../providers";
+import { wcFeedUrl } from "../dev/preview-mode";
 import type { Game } from "../../nba/types";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 import {
@@ -35,7 +36,9 @@ async function fetchNBA(): Promise<NBAGame[]> {
 
 async function fetchWC(): Promise<WCGameLite[]> {
   try {
-    const res = await fetch("/api/world-cup", { cache: "no-store" });
+    // wcFeedUrl() honors ?preview=wc-day to swap in simulation data
+    // when the harness is active.
+    const res = await fetch(wcFeedUrl(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = (await res.json()) as { games?: WCGameLite[] };
     return json.games ?? [];

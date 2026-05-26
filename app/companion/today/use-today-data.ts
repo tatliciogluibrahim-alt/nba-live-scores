@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFollows, usePinned } from "../providers";
+import { wcFeedUrl } from "../dev/preview-mode";
 import {
   buildTodayPayload,
   type NBAGame,
@@ -46,7 +47,10 @@ async function fetchNBA(): Promise<NBAGame[]> {
 
 async function fetchWC(): Promise<WCGameLite[]> {
   try {
-    const res = await fetch("/api/world-cup", { cache: "no-store" });
+    // wcFeedUrl() swaps to /api/preview/world-cup when the URL has
+    // ?preview=wc-day, so we can feel the live-day UX without
+    // waiting for kickoff. Real path otherwise.
+    const res = await fetch(wcFeedUrl(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = (await res.json()) as { games?: WCGameLite[] };
     return json.games ?? [];

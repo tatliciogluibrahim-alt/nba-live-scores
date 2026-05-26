@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { WCGameLite } from "../today/today-data";
+import { wcFeedUrl } from "../dev/preview-mode";
 import {
   buildCountryPayload,
   tournamentHasStarted,
@@ -17,7 +18,9 @@ function pageIsVisible(): boolean {
 
 async function fetchWC(): Promise<WCGameLite[]> {
   try {
-    const res = await fetch("/api/world-cup", { cache: "no-store" });
+    // wcFeedUrl() honors ?preview=wc-day to swap in the simulation
+    // harness data; real /api/world-cup otherwise.
+    const res = await fetch(wcFeedUrl(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = (await res.json()) as { games?: WCGameLite[] };
     return json.games ?? [];
