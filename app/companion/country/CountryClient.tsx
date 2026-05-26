@@ -82,19 +82,32 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
         </div>
       ) : null}
 
-      {/* ── Tournament countdown — only renders in the final 7 days ──── */}
-      <TournamentCountdown country={country} />
+      {/* ── Tournament countdown — pre-kickoff only ─────────────────── */}
+      {/* Hide the countdown entirely once the tournament has actually
+          started. Pre-Phase-8b the card kept reading "17 days until
+          first whistle" even when live games were running (visible
+          under the preview harness): two states arguing on one page. */}
+      {tournamentStarted ? null : <TournamentCountdown country={country} />}
 
-      {/* ── Next match block ─────────────────────────────────────────── */}
+      {/* ── Next match / Live match block ────────────────────────────── */}
       {/* Pre-kickoff with no parsed fixtures for this country: skip the
           section entirely. TournamentCountdown already carries the page
           and the empty placeholder beneath it was reading as "we don't
-          have the data" rather than "the tournament hasn't started." */}
+          have the data" rather than "the tournament hasn't started."
+          Section header swaps to "Live now" when nextMatch is in
+          progress — "Next match" + a live pill side-by-side read as a
+          contradiction. */}
       {showNextMatchSection ? (
         nextMatch ? (
           <section className="mt-4">
             <div className="mb-2 flex items-center gap-3">
-              <Eyebrow>Next match</Eyebrow>
+              <Eyebrow
+                color={
+                  nextMatch.status === "live" ? "var(--live)" : undefined
+                }
+              >
+                {nextMatch.status === "live" ? "Live now" : "Next match"}
+              </Eyebrow>
               <div
                 className="h-px flex-1"
                 style={{ background: "var(--line)" }}

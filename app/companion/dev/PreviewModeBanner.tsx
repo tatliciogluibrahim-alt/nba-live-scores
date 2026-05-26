@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isWCPreviewMode } from "./preview-mode";
+import { clearWCPreview, isWCPreviewMode } from "./preview-mode";
 
-// Thin caution-yellow strip that pins to the top of every screen when
-// the WC live-day simulation harness is active. Lets the operator
-// instantly tell mocked data apart from the real feed at a glance —
-// without it, the simulated scoreline could be misread as a real one.
+// Pinned banner at the top of every screen when the WC live-day
+// simulation harness is active. Two jobs:
+//   1. Make mocked data unmistakable from real data — without this,
+//      the simulated scoreline could be misread as a real one.
+//   2. Offer a clean exit so the operator isn't stuck in preview
+//      after they're done testing.
 //
-// SSR-safe: returns null on the server (no URL access), then re-checks
-// after mount. Re-checks on `popstate` / `pushstate` too so navigating
-// in/out of the preview URL flips the banner immediately.
+// SSR-safe: returns null on the server (no URL access), then
+// re-checks after mount. Re-polls every second to catch internal
+// navigations without a `popstate` event.
 
 export function PreviewModeBanner() {
   const [active, setActive] = useState(false);
@@ -19,10 +21,7 @@ export function PreviewModeBanner() {
     const update = () => setActive(isWCPreviewMode());
     update();
 
-    // Browser back/forward + any pushState/replaceState by Next router.
     window.addEventListener("popstate", update);
-    // Next.js client navigation fires a custom event in some versions;
-    // we also re-check periodically for safety, but cheap.
     const interval = setInterval(update, 1000);
 
     return () => {
@@ -32,6 +31,16 @@ export function PreviewModeBanner() {
   }, []);
 
   if (!active) return null;
+
+  const handleExit = () => {
+    clearWCPreview();
+    // Drop any preview= param from the URL so a refresh doesn't
+    // re-enable, then force a full reload so every hook re-fetches
+    // against the real feed.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("preview");
+    window.location.href = url.pathname + url.search;
+  };
 
   return (
     <div
@@ -43,18 +52,40 @@ export function PreviewModeBanner() {
         zIndex: 40,
         background: "var(--wc)",
         color: "var(--cream)",
-        textAlign: "center",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
         fontFamily: "var(--font-mono)",
         fontSize: 11,
         fontWeight: 700,
         letterSpacing: "0.12em",
         textTransform: "uppercase",
         padding: "6px 12px",
-        // Tuck under the iOS status bar / Dynamic Island
         paddingTop: "max(env(safe-area-inset-top), 6px)",
       }}
     >
-      Preview · WC live-day simulation
+      <span>Preview · WC live-day simulation</span>
+      <button
+        type="button"
+        onClick={handleExit}
+        aria-label="Exit preview mode"
+        style={{
+          color: "var(--cream)",
+          background: "transparent",
+          border: "1px solid var(--cream-on-dark-hairline)",
+          borderRadius: 999,
+          padding: "2px 10px",
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          cursor: "pointer",
+        }}
+      >
+        Exit
+      </button>
     </div>
   );
 }

@@ -19,13 +19,15 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
         {items.map((item) => {
           const accentColor =
             item.source === "nba" ? "var(--nba)" : "var(--wc)";
-          // Personal games (followed team/country) get a 3px border + soft
-          // sport-tinted surface so the eye immediately finds "mine" without
-          // scanning the headline. Generic feed games stay at 2px / paper.
+          // Personal games (followed team/country) get a wider accent
+          // rail so the eye finds "mine" without scanning the headline.
+          // Used to also paint a soft sport-tinted background, but that
+          // double-coding made a row of three personal cards read as
+          // a wall of red/green on busy days — every card shouted the
+          // same volume. Now the rail width + accent does the work and
+          // every card sits on a calm paper surface.
           const borderWidth = item.personal ? 3 : 2;
-          const cardBg = item.personal
-            ? item.source === "nba" ? "var(--nba-soft)" : "var(--wc-soft)"
-            : "var(--paper)";
+          const cardBg = "var(--paper)";
           return (
           <li key={item.id}>
             <Link

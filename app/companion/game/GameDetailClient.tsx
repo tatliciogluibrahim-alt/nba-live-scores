@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { usePinned } from "../providers";
+import { wcFeedUrl } from "../dev/preview-mode";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 import type { Game } from "../../nba/types";
 import { NBALiveCompanion } from "./NBALiveCompanion";
@@ -42,9 +43,14 @@ async function fetchGames(): Promise<{
   wc: WCGameLite[];
 }> {
   try {
+    // wcFeedUrl() honors ?preview=wc-day so a pinned preview WC match
+    // resolves cleanly when its detail page loads — otherwise the
+    // dispatcher's preview gameId (e.g. "preview-wc-usa-tur") won't
+    // appear in real /api/world-cup data and the page falls through
+    // to the "Game snapshot unavailable" NotFound.
     const [nbaRes, wcRes] = await Promise.all([
       fetch("/api/live-scores", { cache: "no-store" }),
-      fetch("/api/world-cup", { cache: "no-store" }),
+      fetch(wcFeedUrl(), { cache: "no-store" }),
     ]);
     const nbaJson = nbaRes.ok ? ((await nbaRes.json()) as ApiResponse) : {};
     const nba = nbaJson.games ?? [];

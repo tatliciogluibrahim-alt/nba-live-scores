@@ -8,8 +8,23 @@ import { useNoSpoilers } from "../../providers";
 import { SectionHeader } from "./section-header";
 import type { TodayHero } from "../today-data";
 
+// Pick a section label that matches the hero's time horizon. The
+// generic "Worth checking now" read as misleading when the hero was a
+// game still 8 hours away — "now" implies live action. We use the
+// hero's `live` flag and `kind` to pick a label that reads true to
+// what's earning the slot:
+//   • Live game / WC live      → "Worth checking now"
+//   • Upcoming game (any sport) → "Coming up next"
+//   • WC countdown card        → "Tournament soon"
+function sectionLabelForHero(hero: TodayHero): string {
+  if (hero.live) return "Worth checking now";
+  if (hero.kind === "wc-countdown") return "Tournament soon";
+  return "Coming up next";
+}
+
 export function WorthCheckingNow({ hero }: { hero: TodayHero }) {
   const noSpoilers = useNoSpoilers();
+  const sectionLabel = sectionLabelForHero(hero);
 
   // When No-Spoilers is on, the hero collapses to a NoSpoilerGameCard for
   // game-flavored heroes. The WC countdown hero has no score to redact, so
@@ -17,7 +32,7 @@ export function WorthCheckingNow({ hero }: { hero: TodayHero }) {
   if (noSpoilers && hero.spoilerMatchup && hero.spoilerKind) {
     return (
       <section>
-        <SectionHeader label="Worth checking now" />
+        <SectionHeader label={sectionLabel} />
         <NoSpoilerGameCard
           kind={hero.spoilerKind}
           matchup={hero.spoilerMatchup}
@@ -71,7 +86,7 @@ export function WorthCheckingNow({ hero }: { hero: TodayHero }) {
 
   return (
     <section>
-      <SectionHeader label="Worth checking now" />
+      <SectionHeader label={sectionLabel} />
       <Link
         href={hero.href}
         aria-label={`Open ${hero.spoilerSubject ?? hero.headline} detail`}
