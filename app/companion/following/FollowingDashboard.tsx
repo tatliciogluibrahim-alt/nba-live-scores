@@ -7,6 +7,7 @@ import { resolveFollowIdentity } from "../follow/identity";
 import { useFollows } from "../providers";
 import type { Follow } from "../state/types";
 import { FollowCard, type FollowCardData } from "./FollowCard";
+import { useWrappedSeries } from "./use-wrapped-series";
 
 /** Detect "overlapping" follow combinations — these aren't bugs but
  *  they raise the "am I getting two notifications per event?" worry.
@@ -73,6 +74,11 @@ function buildFollowSummary(follows: Follow[]): string {
 
 export function FollowingDashboard() {
   const { follows, alertSlotCount, alertSlotCap } = useFollows();
+  // Wrapped-series detection. Series follows whose underlying playoff
+  // matchup is over render with a calm "Wrapped" chip — the user
+  // still owns the follow (in case they want to look back at the
+  // series detail), but the card signals it won't drive new alerts.
+  const wrappedSeries = useWrappedSeries();
 
   const cards: FollowCardData[] = follows.map((f) => {
     const identity = resolveFollowIdentity(f);
@@ -83,6 +89,7 @@ export function FollowingDashboard() {
       name: identity.name,
       detail: identity.detail,
       accent: identity.accent,
+      wrapped: f.kind === "series" && wrappedSeries.has(f.id),
     };
   });
 

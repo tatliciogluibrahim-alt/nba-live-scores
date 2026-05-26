@@ -12,6 +12,7 @@ import type { Game } from "../../nba/types";
 import { PinControls } from "./PinControls";
 import { deriveHero, deriveSeriesContext, deriveSeriesDots } from "./nba-moments";
 import { HighlightsStack } from "./HighlightsStack";
+import { PeriodScoreLine } from "./PeriodScoreLine";
 import { useNBADetail } from "./use-nba-detail";
 
 // NBA Live Companion — the deepened /game/[id] for NBA games. Moments-first,
@@ -192,6 +193,16 @@ export function NBALiveCompanion({
           <WatchLine channel={channel} ariaSubject={subject} />
         </div>
       ) : null}
+
+      {/* ── Per-quarter scoring ─────────────────────────────────────────── */}
+      {/* The basketball-native breakdown — each quarter's score by team.
+          PeriodScoreLine returns null when periodScores is empty (pre-
+          tipoff), so this slot stays clean for upcoming games. */}
+      {isUpcoming ? null : (
+        <div className="mt-4">
+          <PeriodScoreLine game={game} />
+        </div>
+      )}
 
       {/* ── Highlights (3 distilled lines, not a play-by-play) ───────────── */}
       {/* The old MomentsStack listed every notable play. A list of plays

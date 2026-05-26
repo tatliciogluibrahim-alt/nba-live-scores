@@ -20,19 +20,27 @@ export type FollowCardData = {
   name: string;               // "New York Knicks", "Bosnia & Herzegovina", etc.
   detail?: string;            // optional second line ("Plays tonight · 8:00 PM")
   accent?: string;            // optional accent for the identity chip
+  /** True when this follow's underlying entity is no longer active —
+   *  currently only fires for series follows whose matchup has wrapped
+   *  ("NYK wins series 4-0"). The card renders a calm "Wrapped" chip
+   *  next to the kind label so the user knows alerts won't fire here
+   *  going forward without taking the follow away. */
+  wrapped?: boolean;
 };
 
-// Detail route resolver. Returns null for kinds that don't have a detail
-// page yet — those rows render as static (no nav) and document the gap.
+// Detail route resolver. All four kinds now route to real detail
+// pages. The Phase 1 fallback (static non-interactive bodies for
+// team / tournament) is fully replaced as of this session.
 function detailHrefFor(follow: Follow): string | null {
   switch (follow.kind) {
     case "country":
       return `/country/${follow.id}`;
     case "series":
       return `/series/${follow.id}`;
-    case "team":
     case "tournament":
-      return null;
+      return `/tournament/${follow.id}`;
+    case "team":
+      return `/team/${follow.id}`;
   }
 }
 
@@ -46,7 +54,8 @@ export function FollowCard({ data }: { data: FollowCardData }) {
   } = useFollows();
   const [expanded, setExpanded] = useState(false);
 
-  const { follow, kindLabel, identityMark, name, detail, accent } = data;
+  const { follow, kindLabel, identityMark, name, detail, accent, wrapped } =
+    data;
   const presetMeta = PRESETS[follow.alertTier];
   const slotsFull = alertSlotCount >= alertSlotCap;
   const canEnable = follow.alertEnabled || !slotsFull;
@@ -88,11 +97,38 @@ export function FollowCard({ data }: { data: FollowCardData }) {
 
   const identityText = (
     <div className="min-w-0 flex-1">
-      <Eyebrow>{kindLabel}</Eyebrow>
+      <div className="flex items-center gap-1.5">
+        <Eyebrow>{kindLabel}</Eyebrow>
+        {wrapped ? (
+          // Calm "Wrapped" chip next to the kind label. Reads as a
+          // status pip rather than a CTA — the user can keep the
+          // follow for posterity or unfollow it explicitly.
+          <span
+            aria-label="Series wrapped"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--mute-1)",
+              background: "var(--cream-2)",
+              border: "1px solid var(--line)",
+              borderRadius: 999,
+              padding: "1px 6px",
+              lineHeight: 1.4,
+            }}
+          >
+            Wrapped
+          </span>
+        ) : null}
+      </div>
       <p
         className="mt-1 truncate text-[14px] leading-snug"
         style={{
-          color: "var(--ink)",
+          // Wrapped series lose a touch of weight + color so the card
+          // visually steps back from active follows without disappearing.
+          color: wrapped ? "var(--mute-1)" : "var(--ink)",
           fontWeight: 700,
           letterSpacing: "-0.005em",
         }}

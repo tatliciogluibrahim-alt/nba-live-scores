@@ -357,9 +357,10 @@ function buildYouFollow(
             href: `/game/${g.id}`,
           };
         }
-        // No standalone team detail route yet — fall back to /following
-        // so the chip stays useful (user can manage the follow from there)
-        // instead of dead-ending on an invalid /series/<teamAbbr> URL.
+        // No live or upcoming game for this team — chip routes to the
+        // team detail page (/team/[abbr]) so users can see recent
+        // results + series context. Pre-Phase-9 this fell back to
+        // /following because no team detail page existed.
         return {
           kind: "team",
           id: f.id,
@@ -367,7 +368,7 @@ function buildYouFollow(
           chip: f.id,
           statusLabel: "Quiet",
           tone: "final",
-          href: "/following",
+          href: `/team/${f.id}`,
         };
       }
       if (f.kind === "country") {
@@ -427,7 +428,9 @@ function buildYouFollow(
           chip: tournament?.chip ?? "CUP",
           statusLabel: "Cup",
           tone: "current",
-          href: "/following",
+          // /tournament/[id] became a real detail page in Phase 9 —
+          // chip routes there now instead of falling back to /following.
+          href: `/tournament/${f.id}`,
         };
       }
       return null;

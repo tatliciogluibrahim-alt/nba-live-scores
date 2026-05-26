@@ -1,0 +1,70 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+// Detect which playoff series have wrapped. A series is "wrapped" when
+// any final game in the last few weeks carries a "WINS SERIES" marker
+// in its seriesSummary — that's ESPN's signal that the series ended.
+//
+// Used by FollowingDashboard to flag series follows whose underlying
+// series is over (e.g. NYK · CLE after NYK closed out 4–0). Visually
+// that follow becomes inert — no future games will fire alerts — so
+// we surface a calm "Wrapped" chip on the FollowCard rather than
+// having the user wonder why nothing's happening.
+//
+// Detection is best-effort: one fetch on mount, cached for the session.
+// If the API fails we return an empty set, the chip simply doesn't
+// render, and nothing is broken.
+
+type ApiGame = {
+  status: "live" | "upcoming" | "final";
+  seriesSummary?: string;
+  away: { abbreviation: string };
+  home: { abbreviation: string };
+};
+
+/** Match the series picker's id format: codes alphabetized + joined
+ *  with a hyphen. e.g. NYK vs CLE → "CLE-NYK". Always pass team
+ *  abbreviations that have been through the canonical-alias layer
+ *  (the /api/live-scores route applies NY → NYK before returning). */
+function buildSeriesKey(a: string, b: string): string {
+  return [a, b].sort().join("-");
+}
+
+export function useWrappedSeries(): Set<string> {
+  const [wrappedIds, setWrappedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/live-scores", { cache: "no-store" });
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          games?: ApiGame[];
+          seriesGames?: ApiGame[];
+        };
+        // Prefer seriesGames (wider window, ~14 days back) so a series
+        // that wrapped a few days ago still registers.
+        const source = json.seriesGames ?? json.games ?? [];
+        const wrapped = new Set<string>();
+        for (const g of source) {
+          if (g.status !== "final") continue;
+          if (!/WINS\s+SERIES/i.test(g.seriesSummary ?? "")) continue;
+          if (!g.away?.abbreviation || !g.home?.abbreviation) continue;
+          wrapped.add(
+            buildSeriesKey(g.away.abbreviation, g.home.abbreviation)
+          );
+        }
+        if (!cancelled) setWrappedIds(wrapped);
+      } catch {
+        // Best-effort. No-op on failure.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return wrappedIds;
+}
