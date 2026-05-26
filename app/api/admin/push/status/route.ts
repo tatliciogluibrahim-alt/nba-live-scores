@@ -8,22 +8,31 @@
 
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { subscriptionCount } from "../../../../lib/push/subscription-store";
+import {
+  listSubscriptionsByTeams,
+  subscriptionCount,
+} from "../../../../lib/push/subscription-store";
 import { readRecentSnapshots, type OpsSnapshot } from "../../../../lib/push/ops-metrics";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Accept either ADMIN_TOKEN (preferred) or CRON_SECRET (fallback) so
+ *  the operator doesn't have to manage a second secret just to read
+ *  ops metrics. Phase 8 friend-test debugging convenience. */
 function isAuthorized(req: Request): boolean {
-  const expected = process.env.ADMIN_TOKEN;
-  if (!expected) return false;
   const header = req.headers.get("authorization") ?? "";
   if (!header.startsWith("Bearer ")) return false;
-  const provided = header.slice("Bearer ".length).trim();
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
+  const provided = Buffer.from(header.slice("Bearer ".length).trim());
+
+  for (const envName of ["ADMIN_TOKEN", "CRON_SECRET"]) {
+    const expected = process.env[envName];
+    if (!expected) continue;
+    const b = Buffer.from(expected);
+    if (provided.length !== b.length) continue;
+    if (timingSafeEqual(provided, b)) return true;
+  }
+  return false;
 }
 
 function summarize(snap: OpsSnapshot) {
@@ -63,16 +72,50 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Optional per-team diagnostic: ?team=NYK returns the number of
+  // alert-enabled subscriptions whose `alerts` array includes that
+  // team. Critical for answering "why didn't I get a push during X
+  // team's game?" — if this is zero, the reverse index is empty for
+  // that team and dispatch will have nobody to send to, regardless of
+  // how many events the cron detects.
+  const url = new URL(req.url);
+  const teamParam = url.searchParams.get("team");
+  const team = teamParam ? teamParam.toUpperCase() : null;
+
   try {
-    const [subs, snapshots] = await Promise.all([
+    const [subs, snapshots, teamSubs] = await Promise.all([
       subscriptionCount(),
       readRecentSnapshots(),
+      team ? listSubscriptionsByTeams([team]) : Promise.resolve([]),
     ]);
+
+    const teamDetail = team
+      ? {
+          team,
+          subscriptionsInReverseIndex: teamSubs.length,
+          // Per-sub breakdown of how the sub is configured for this
+          // team. Endpoints are hashed-not-shown to keep the response
+          // safe to paste into a debug thread; we expose only the
+          // tier and noSpoilers flag the dispatcher actually reads.
+          breakdown: teamSubs.map((s) => {
+            const match = s.alerts.find(
+              (f) => f.kind === "team" && f.id.toUpperCase() === team
+            );
+            return {
+              tier: match?.tier ?? null,
+              noSpoilers: s.noSpoilers,
+              alertCount: s.alerts.length,
+            };
+          }),
+        }
+      : null;
+
     return NextResponse.json({
       ok: true,
       subscriptions: subs,
       today: summarize(snapshots.today),
       yesterday: summarize(snapshots.yesterday),
+      ...(teamDetail ? { teamDetail } : {}),
     });
   } catch (err) {
     return NextResponse.json(
