@@ -23,7 +23,8 @@ export type OpsCounter =
   | "dispatch.deduped"
   | "dispatch.gone"
   | "dispatch.payload-too-large"
-  | "dispatch.failed";
+  | "dispatch.failed"
+  | "dispatch.claim-failed";
 
 function todayBucket(): string {
   const d = new Date();
@@ -65,6 +66,7 @@ const COUNTER_NAMES: OpsCounter[] = [
   "dispatch.gone",
   "dispatch.payload-too-large",
   "dispatch.failed",
+  "dispatch.claim-failed",
 ];
 
 /** Read all counters for a given bucket (default: today). Missing

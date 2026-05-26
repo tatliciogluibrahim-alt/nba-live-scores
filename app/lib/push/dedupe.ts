@@ -35,3 +35,23 @@ export async function claimDelivery(
   const result = await kv.set(key, 1, { ex: DEDUPE_TTL_SECONDS, nx: true });
   return result === "OK";
 }
+
+/** Release a previously-claimed dedupe slot. The dispatcher calls this
+ *  when a send fails for a transient reason (push service blip, network
+ *  error) so the next cron tick can retry the event for that endpoint
+ *  if the event is still relevant. We never release on permanent
+ *  failures (404/410 gone), because the subscription itself is dead and
+ *  retrying would just churn KV. */
+export async function releaseDelivery(
+  eventTag: string,
+  endpoint: string
+): Promise<void> {
+  const key = dedupeKey(eventTag, endpoint);
+  try {
+    await kv.del(key);
+  } catch (err) {
+    // Best-effort — if KV is unreachable we simply keep the dedupe slot
+    // and skip the retry. Logged for observability, never surfaced.
+    console.warn("releaseDelivery failed", { eventTag, err });
+  }
+}

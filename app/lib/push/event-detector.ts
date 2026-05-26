@@ -97,7 +97,45 @@ export function detectEvents(
     prev && STATUS_RANK[prev.status] > STATUS_RANK[next.status]
       ? prev.status
       : next.status;
-  const stableNext: FreshGameState = { ...next, status: stableStatus };
+
+  // Period guard. The upstream NBA feed occasionally blips
+  // (period briefly jumps multiple quarters, or reverts after a
+  // game-state UI bug). Either case can mint a wrong end-of-quarter
+  // push and — worse — lock the cached period above the true value,
+  // suppressing every subsequent legitimate eoq event for the game.
+  //
+  // Rules:
+  //   • period regressed (next < prev): pin period to prev, do not
+  //     emit eoq events from this tick.
+  //   • period jumped by more than 1 in a single live→live tick: same
+  //     treatment. A 5-minute cron interval should never see a jump
+  //     > 1 in real play; this is a feed glitch, not a fast game.
+  //   • period unchanged or +1: trust the feed, emit normally.
+  //
+  // We log the skip reason so production scans can be inspected for
+  // upstream flakiness. We never log subscription identifiers.
+  const prevPeriod = prev?.period ?? 0;
+  const periodDelta = next.period - prevPeriod;
+  const liveToLive =
+    prev?.status === "live" && stableStatus === "live";
+  const periodSuspicious = liveToLive && (periodDelta < 0 || periodDelta > 1);
+  const stablePeriod = periodSuspicious ? prevPeriod : next.period;
+
+  if (periodSuspicious) {
+    console.warn("event-detector: skipping suspicious period transition", {
+      gameId: next.gameId,
+      prevPeriod,
+      feedPeriod: next.period,
+      delta: periodDelta,
+      reason: periodDelta < 0 ? "regression" : "jump>1",
+    });
+  }
+
+  const stableNext: FreshGameState = {
+    ...next,
+    status: stableStatus,
+    period: stablePeriod,
+  };
 
   const baseInfo = {
     gameId: stableNext.gameId,
@@ -123,13 +161,15 @@ export function detectEvents(
     events.push({ ...baseInfo, type: "tipoff" });
   }
 
-  // Transition 2: live game, period incremented (1→2, 2→3, 3→4).
-  // We don't fire for 4→OT or for the final period itself — the "final"
-  // event covers the actual game end.
+  // Transition 2: live game, period incremented by exactly +1
+  // (1→2, 2→3, 3→4). The strict equality blocks the multi-period
+  // jump case (e.g. 2→4) from minting a single wrong eoq event —
+  // upstream blips of that shape are routed through the period-
+  // suspicious branch above and don't reach here.
   if (
     prev?.status === "live" &&
     next.status === "live" &&
-    next.period > (prev?.period ?? 0) &&
+    next.period === prevPeriod + 1 &&
     next.period >= 2 &&
     next.period <= 4
   ) {

@@ -103,28 +103,30 @@ export function HighlightsStack({ game }: { game: Game }) {
 // ── Derivation ─────────────────────────────────────────────────────────
 
 function deriveHighlights(game: Game, noSpoilers: boolean): Highlight[] {
+  const isLive = game.status === "live";
   const out: Highlight[] = [];
 
   const performer = deriveTopPerformer(game);
   if (performer) out.push(performer);
 
-  const teamStat = deriveTeamStat(game);
+  const teamStat = deriveTeamStat(game, isLive);
   if (teamStat) out.push(teamStat);
 
   const secondary = deriveSecondaryLeader(game, performer?.subjectName);
   if (secondary) out.push(secondary);
 
-  if (!noSpoilers && out.length < 3) {
+  // Story is final-only. Live games already say "Q3 underway." in the
+  // HeroMoment / Series block — adding a "Game state" highlight here was
+  // generic filler, not a real moment. Pre-Phase-8 this slot leaked
+  // copy like "Q2 underway." into Highlights.
+  if (!noSpoilers && !isLive && out.length < 3) {
     const story = deriveStory(game);
     if (story) out.push(story);
   }
 
-  // Overflow: series context (only if we have fewer than 3 highlights
-  //    already, otherwise the rendering caps at 3 anyway).
-  if (out.length < 3) {
-    const series = deriveSeriesContext(game);
-    if (series) out.push(series);
-  }
+  // Series context lives in its own canonical Series block under the
+  // scoreboard (Phase 3). Don't duplicate it here as a "highlight" —
+  // "NY leads the series 3–0." is structural context, not a moment.
 
   return out.slice(0, 3);
 }
@@ -132,13 +134,10 @@ function deriveHighlights(game: Game, noSpoilers: boolean): Highlight[] {
 // ── Story ──────────────────────────────────────────────────────────────
 
 function deriveStory(game: Game): Highlight | null {
-  if (game.status === "live") {
-    if (game.period >= 4) return { eyebrow: "Game state", body: "Q4 underway." };
-    if (game.period === 0 || game.period == null) {
-      return { eyebrow: "Game state", body: "Game underway." };
-    }
-    return { eyebrow: "Game state", body: `Q${game.period} underway.` };
-  }
+  // Live games don't get a Story highlight — the HeroMoment band on the
+  // game detail page already carries the live state. Repeating it here
+  // turned Highlights into a status feed.
+  if (game.status !== "final") return null;
 
   // For finals, pick the most interesting available story.
   const ot = detectOvertime(game);
@@ -288,17 +287,19 @@ function deriveSecondaryLeader(
 
 // ── Team-level stat ────────────────────────────────────────────────────
 
-function deriveTeamStat(game: Game): Highlight | null {
+function deriveTeamStat(game: Game, isLive: boolean): Highlight | null {
   const comp = game.teamComparison ?? [];
   if (comp.length === 0) return null;
 
   // Try each candidate; return the FIRST one that produces a meaningful
   // body. Ordering reflects narrative interest: rebound dominance >
-  // shooting outliers > assist disparity.
+  // shooting outliers > assist disparity. Tense is decided per-stat
+  // since live and final read differently ("is leading the boards" vs
+  // "won the boards").
   return (
-    rebDominanceHighlight(game, comp) ||
-    threePointOutlierHighlight(game, comp) ||
-    assistDisparityHighlight(game, comp)
+    rebDominanceHighlight(game, comp, isLive) ||
+    threePointOutlierHighlight(game, comp, isLive) ||
+    assistDisparityHighlight(game, comp, isLive)
   );
 }
 
@@ -318,7 +319,8 @@ function parseStat(s: TeamComparisonStat): { a: number; h: number } | null {
 
 function rebDominanceHighlight(
   game: Game,
-  comp: TeamComparisonStat[]
+  comp: TeamComparisonStat[],
+  isLive: boolean
 ): Highlight | null {
   const stat = findStat(comp, /^REB$|rebound/i);
   if (!stat) return null;
@@ -326,19 +328,26 @@ function rebDominanceHighlight(
   if (!parsed) return null;
   const margin = Math.abs(parsed.a - parsed.h);
   if (margin < 8) return null;
-  const winnerCode = parsed.a > parsed.h ? game.away.abbreviation : game.home.abbreviation;
+  const leaderCode = parsed.a > parsed.h ? game.away.abbreviation : game.home.abbreviation;
   const max = Math.max(parsed.a, parsed.h);
   const min = Math.min(parsed.a, parsed.h);
+  // Live = present progressive ("is leading"), final = past tense ("won").
+  // "won the boards" while the game is still in Q2 reads as the game
+  // having ended — never use a finality verb on a live game.
+  const body = isLive
+    ? `${leaderCode} leading the glass, ${max}–${min}.`
+    : `${leaderCode} won the boards, ${max}–${min}.`;
   return {
     eyebrow: "On the glass",
-    body: `${winnerCode} won the boards, ${max}–${min}.`,
+    body,
     spoilery: true,
   };
 }
 
 function threePointOutlierHighlight(
   game: Game,
-  comp: TeamComparisonStat[]
+  comp: TeamComparisonStat[],
+  isLive: boolean
 ): Highlight | null {
   const stat = findStat(comp, /3P%|three/i);
   if (!stat) return null;
@@ -349,31 +358,35 @@ function threePointOutlierHighlight(
   const cold = parsed.a <= 25 || parsed.h <= 25;
   if (!hot && !cold) return null;
 
+  // Hot/cold are already present-tense adjectives — tense lives in the
+  // verb. "is hot from three" for live, "were hot from three" for final.
+  const verb = isLive ? "is" : "was";
+
   if (parsed.a >= 45 && parsed.a >= parsed.h) {
     return {
       eyebrow: "From deep",
-      body: `${game.away.abbreviation} hot from three (${formatPercent(parsed.a)}).`,
+      body: `${game.away.abbreviation} ${verb} hot from three (${formatPercent(parsed.a)}).`,
       spoilery: true,
     };
   }
   if (parsed.h >= 45) {
     return {
       eyebrow: "From deep",
-      body: `${game.home.abbreviation} hot from three (${formatPercent(parsed.h)}).`,
+      body: `${game.home.abbreviation} ${verb} hot from three (${formatPercent(parsed.h)}).`,
       spoilery: true,
     };
   }
   if (parsed.a <= 25 && parsed.a <= parsed.h) {
     return {
       eyebrow: "From deep",
-      body: `${game.away.abbreviation} cold from three (${formatPercent(parsed.a)}).`,
+      body: `${game.away.abbreviation} ${verb} cold from three (${formatPercent(parsed.a)}).`,
       spoilery: true,
     };
   }
   if (parsed.h <= 25) {
     return {
       eyebrow: "From deep",
-      body: `${game.home.abbreviation} cold from three (${formatPercent(parsed.h)}).`,
+      body: `${game.home.abbreviation} ${verb} cold from three (${formatPercent(parsed.h)}).`,
       spoilery: true,
     };
   }
@@ -382,7 +395,8 @@ function threePointOutlierHighlight(
 
 function assistDisparityHighlight(
   game: Game,
-  comp: TeamComparisonStat[]
+  comp: TeamComparisonStat[],
+  isLive: boolean
 ): Highlight | null {
   const stat = findStat(comp, /^AST$|assist/i);
   if (!stat) return null;
@@ -390,44 +404,25 @@ function assistDisparityHighlight(
   if (!parsed) return null;
   const margin = Math.abs(parsed.a - parsed.h);
   if (margin < 7) return null;
-  const winnerCode = parsed.a > parsed.h ? game.away.abbreviation : game.home.abbreviation;
+  const leaderCode = parsed.a > parsed.h ? game.away.abbreviation : game.home.abbreviation;
   const max = Math.max(parsed.a, parsed.h);
+  // "ran the offense" is a finality phrase — live games haven't run
+  // anything yet, they're running it. Switch to present progressive.
+  const body = isLive
+    ? `${leaderCode} moving the ball, ${max} assists.`
+    : `${leaderCode} ran the offense, ${max} assists.`;
   return {
     eyebrow: "Ball movement",
-    body: `${winnerCode} ran the offense, ${max} assists.`,
+    body,
     spoilery: true,
   };
 }
 
-// ── Series context ─────────────────────────────────────────────────────
-
-function deriveSeriesContext(game: Game): Highlight | null {
-  if (!game.seriesSummary) return null;
-  const m = game.seriesSummary.match(/(\w+)\s+(LEADS|WINS?)\s+SERIES\s+(\d+)-(\d+)/i);
-  if (!m) return null;
-  const [, team, action, winStr, lossStr] = m;
-  const win = winStr;
-  const loss = lossStr;
-  if (/WINS?/i.test(action)) {
-    return {
-      eyebrow: "Series",
-      body: `${team} wins the series ${win}–${loss}.`,
-      spoilery: true,
-    };
-  }
-  if (win === loss) {
-    return {
-      eyebrow: "Series",
-      body: `Series tied ${win}–${loss}.`,
-      spoilery: true,
-    };
-  }
-  return {
-    eyebrow: "Series",
-    body: `${team} leads the series ${win}–${loss}.`,
-    spoilery: true,
-  };
-}
+// Series context used to be surfaced here as a "highlight," but
+// "NY leads the series 3–0." is structural state, not a moment. The
+// consolidated Series block under the scoreboard (see NBALiveCompanion)
+// is now the single home for series summaries — keeping a duplicate
+// helper here would invite a regression.
 
 // ── Utilities ──────────────────────────────────────────────────────────
 

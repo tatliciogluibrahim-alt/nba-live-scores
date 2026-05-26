@@ -17,7 +17,7 @@ import {
   type PushPayload,
 } from "./web-push-config";
 import { presetMatchesEvent } from "./preset-matcher";
-import { claimDelivery } from "./dedupe";
+import { claimDelivery, releaseDelivery } from "./dedupe";
 import {
   listSubscriptionsByTeams,
   removeSubscription,
@@ -61,65 +61,108 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
     const matching = subs.filter((s) => subscriptionWantsEvent(s, event));
 
     for (const sub of matching) {
-      const claimed = await claimDelivery(eventTag, sub.endpoint);
-      if (!claimed) {
-        deliveries.push({
-          endpoint: sub.endpoint,
-          delivered: false,
-          reason: "deduped",
-        });
-        await incrCounter("dispatch.deduped");
-        continue;
-      }
-
-      const payload = buildPayload(event, sub.noSpoilers);
-      let encoded: string;
+      // Per-(sub, event) processing is wrapped so one catastrophic
+      // failure (e.g. KV outage on claimDelivery) can't take down the
+      // whole batch. Each sub records its own DeliveryResult.
       try {
-        encoded = encodePushPayload(payload);
-      } catch (err) {
-        deliveries.push({
-          endpoint: sub.endpoint,
-          delivered: false,
-          reason: err instanceof Error ? err.message : "payload-too-large",
-        });
-        await incrCounter("dispatch.payload-too-large");
-        continue;
-      }
-
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
-          },
-          encoded
-        );
-        // Update lastSeenAt so we know this subscription is alive.
-        await upsertSubscription({
-          endpoint: sub.endpoint,
-          keys: sub.keys,
-        });
-        deliveries.push({ endpoint: sub.endpoint, delivered: true });
-        await incrCounter("dispatch.delivered");
-      } catch (err) {
-        const statusCode = (err as { statusCode?: number })?.statusCode;
-        if (statusCode === 404 || statusCode === 410) {
-          await removeSubscription(sub.endpoint);
-          pruned += 1;
+        let claimed = false;
+        try {
+          claimed = await claimDelivery(eventTag, sub.endpoint);
+        } catch (err) {
+          // KV blip — skip this sub for now; next cron tick will retry.
+          // We never want a KV blip to fan out duplicate pushes.
+          console.warn("dispatch: claimDelivery threw, skipping", {
+            eventTag,
+            err: err instanceof Error ? err.message : String(err),
+          });
           deliveries.push({
             endpoint: sub.endpoint,
             delivered: false,
-            reason: "gone",
+            reason: "claim-failed",
           });
-          await incrCounter("dispatch.gone");
-        } else {
-          deliveries.push({
-            endpoint: sub.endpoint,
-            delivered: false,
-            reason: `push-failed-${statusCode ?? "?"}`,
-          });
-          await incrCounter("dispatch.failed");
+          await incrCounter("dispatch.claim-failed");
+          continue;
         }
+
+        if (!claimed) {
+          deliveries.push({
+            endpoint: sub.endpoint,
+            delivered: false,
+            reason: "deduped",
+          });
+          await incrCounter("dispatch.deduped");
+          continue;
+        }
+
+        const payload = buildPayload(event, sub.noSpoilers);
+        let encoded: string;
+        try {
+          encoded = encodePushPayload(payload);
+        } catch (err) {
+          deliveries.push({
+            endpoint: sub.endpoint,
+            delivered: false,
+            reason: err instanceof Error ? err.message : "payload-too-large",
+          });
+          await incrCounter("dispatch.payload-too-large");
+          // Payload-too-large is a deterministic bug, not transient —
+          // retrying won't help. Keep the dedupe slot claimed.
+          continue;
+        }
+
+        try {
+          await webpush.sendNotification(
+            {
+              endpoint: sub.endpoint,
+              keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
+            },
+            encoded
+          );
+          // Update lastSeenAt so we know this subscription is alive.
+          await upsertSubscription({
+            endpoint: sub.endpoint,
+            keys: sub.keys,
+          });
+          deliveries.push({ endpoint: sub.endpoint, delivered: true });
+          await incrCounter("dispatch.delivered");
+        } catch (err) {
+          const statusCode = (err as { statusCode?: number })?.statusCode;
+          if (statusCode === 404 || statusCode === 410) {
+            // Permanent: the subscription is gone. Keep the dedupe
+            // claim so we don't churn on a dead endpoint.
+            await removeSubscription(sub.endpoint);
+            pruned += 1;
+            deliveries.push({
+              endpoint: sub.endpoint,
+              delivered: false,
+              reason: "gone",
+            });
+            await incrCounter("dispatch.gone");
+          } else {
+            // Transient: release the dedupe slot so the next cron tick
+            // can retry. Without this, a single push-service blip would
+            // silently swallow the event for the rest of the dedupe TTL.
+            await releaseDelivery(eventTag, sub.endpoint);
+            deliveries.push({
+              endpoint: sub.endpoint,
+              delivered: false,
+              reason: `push-failed-${statusCode ?? "?"}`,
+            });
+            await incrCounter("dispatch.failed");
+          }
+        }
+      } catch (err) {
+        // Final safety net — anything unexpected (e.g. upsertSubscription
+        // throwing) lands here so the loop can continue to the next sub.
+        console.error("dispatch: unexpected per-sub error", {
+          eventTag,
+          err: err instanceof Error ? err.message : String(err),
+        });
+        deliveries.push({
+          endpoint: sub.endpoint,
+          delivered: false,
+          reason: "unexpected",
+        });
       }
     }
   }
