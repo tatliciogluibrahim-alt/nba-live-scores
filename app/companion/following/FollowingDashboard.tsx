@@ -92,10 +92,23 @@ export function FollowingDashboard() {
         Following.
       </Display>
       <p
-        className="mb-4 text-[14px] leading-snug"
+        className="mb-2 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Your sports circle. {buildFollowSummary(follows)}
+      </p>
+      {/* One-line reinforcement of the pin / follow distinction.
+          Follow = these surface and drive alerts. Pin = bookmark a
+          specific game in Watching. Users used to conflate the two
+          (pin felt like "follow"); a calm line on the dashboard makes
+          the model explicit before the user opens an alert tier
+          selector and wonders why pinning isn't there. */}
+      <p
+        className="mb-4 text-[12px] leading-snug"
+        style={{ color: "var(--mute-2)", fontWeight: 500 }}
+      >
+        Follows drive what you see and what you&apos;re alerted to.
+        Pinning a specific game is separate — that lives in Watching.
       </p>
       {/* Alert-slot counter only renders when at least one follow is
           alert-enabled. With zero alerts the line read as "you haven't

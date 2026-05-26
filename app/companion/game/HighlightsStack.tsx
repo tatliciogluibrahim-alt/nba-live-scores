@@ -139,7 +139,10 @@ function deriveStory(game: Game): Highlight | null {
   // turned Highlights into a status feed.
   if (game.status !== "final") return null;
 
-  // For finals, pick the most interesting available story.
+  // Try the narrative-rich detectors in order of "interesting." Each
+  // produces a specific eyebrow ("Comeback", "Overtime", "Q4 push")
+  // rather than the generic "Story" label so the highlight reads like
+  // a curated tag, not a category bucket.
   const ot = detectOvertime(game);
   if (ot) return ot;
 
@@ -149,20 +152,67 @@ function deriveStory(game: Game): Highlight | null {
   const q4 = detectQ4Surge(game);
   if (q4) return q4;
 
+  const wire = detectWireToWire(game);
+  if (wire) return wire;
+
+  // Margin-based fallback. Used to bottom out as "Decided by N." which
+  // read like an admin stat. The new copy names the winner (which is
+  // already spoilery and gets Spoiler-wrapped under No-Spoilers) and
+  // varies the verb so back-to-back highlights don't feel templated.
   const margin = Math.abs(game.away.score - game.home.score);
-  if (margin === 0) return { eyebrow: "Story", body: "Tied at the buzzer." };
-  if (margin <= 3) return { eyebrow: "Story", body: "One-possession finish." };
-  if (margin <= 6) return { eyebrow: "Story", body: "Close all night." };
-  if (margin >= 20) return { eyebrow: "Story", body: `${margin}-point blowout.` };
-  return { eyebrow: "Story", body: `Decided by ${margin}.` };
+  const awayWon = game.away.score > game.home.score;
+  const winner = awayWon ? game.away.abbreviation : game.home.abbreviation;
+
+  if (margin === 0) {
+    // Should be impossible in NBA finals (no ties), but guard anyway.
+    return { eyebrow: "Buzzer", body: "Tied at the buzzer.", spoilery: true };
+  }
+  if (margin <= 3) {
+    return {
+      eyebrow: "One possession",
+      body: `${winner} held on at the buzzer.`,
+      spoilery: true,
+    };
+  }
+  if (margin <= 7) {
+    return {
+      eyebrow: "Tight finish",
+      body: `Came down to the last minute.`,
+      spoilery: true,
+    };
+  }
+  if (margin <= 14) {
+    return {
+      eyebrow: "Closed it out",
+      body: `${winner} closed it out by ${margin}.`,
+      spoilery: true,
+    };
+  }
+  if (margin <= 19) {
+    return {
+      eyebrow: "Pulled away",
+      body: `${winner} pulled away late, ${margin} the margin.`,
+      spoilery: true,
+    };
+  }
+  return {
+    eyebrow: "Blowout",
+    body: `${winner} ran away with it, ${margin} points.`,
+    spoilery: true,
+  };
 }
 
 function detectOvertime(game: Game): Highlight | null {
   const len = game.periodScores?.away?.length ?? 0;
   if (len <= 4) return null;
   const otCount = len - 4;
-  const label = otCount === 1 ? "Overtime." : `${otCount} overtimes.`;
-  return { eyebrow: "Story", body: label };
+  const awayWon = game.away.score > game.home.score;
+  const winner = awayWon ? game.away.abbreviation : game.home.abbreviation;
+  const label =
+    otCount === 1
+      ? `${winner} took it in overtime.`
+      : `${winner} took it after ${otCount} overtimes.`;
+  return { eyebrow: "Overtime", body: label, spoilery: true };
 }
 
 function detectComeback(game: Game): Highlight | null {
@@ -186,14 +236,57 @@ function detectComeback(game: Game): Highlight | null {
 
   if (awayWon && maxHomeLead >= 15) {
     return {
-      eyebrow: "Story",
+      eyebrow: "Comeback",
       body: `${game.away.abbreviation} erased a ${maxHomeLead}-point deficit.`,
+      spoilery: true,
     };
   }
   if (homeWon && maxAwayLead >= 15) {
     return {
-      eyebrow: "Story",
+      eyebrow: "Comeback",
       body: `${game.home.abbreviation} erased a ${maxAwayLead}-point deficit.`,
+      spoilery: true,
+    };
+  }
+  return null;
+}
+
+/** Wire-to-wire detector — the winning team led at the end of every
+ *  quarter. Iconic basketball storyline, simple to compute from
+ *  periodScores. Fires only when the lead was maintained, never
+ *  surrendered. */
+function detectWireToWire(game: Game): Highlight | null {
+  const a = game.periodScores?.away;
+  const h = game.periodScores?.home;
+  if (!a || !h || a.length < 4) return null;
+
+  const awayWon = game.away.score > game.home.score;
+  const homeWon = game.home.score > game.away.score;
+  if (!awayWon && !homeWon) return null;
+
+  let aRun = 0;
+  let hRun = 0;
+  let awayLedEveryQuarter = true;
+  let homeLedEveryQuarter = true;
+  for (let i = 0; i < a.length; i++) {
+    aRun += a[i] ?? 0;
+    hRun += h[i] ?? 0;
+    if (aRun <= hRun) awayLedEveryQuarter = false;
+    if (hRun <= aRun) homeLedEveryQuarter = false;
+  }
+
+  if (awayWon && awayLedEveryQuarter) {
+    return {
+      eyebrow: "Wire to wire",
+      body: `${game.away.abbreviation} led from start to finish.`,
+      spoilery: true,
+    };
+  }
+  if (homeWon && homeLedEveryQuarter) {
+    return {
+      eyebrow: "Wire to wire",
+      body: `${game.home.abbreviation} led from start to finish.`,
+      spoilery: true,
     };
   }
   return null;
@@ -210,17 +303,21 @@ function detectQ4Surge(game: Game): Highlight | null {
   const homeWon = game.home.score > game.away.score;
 
   // "Pulled away" only reads right if the team that took Q4 also won.
-  // Q4 margin of 8+ feels meaningful without false-positiving normal runs.
+  // Q4 margin of 8+ feels meaningful without false-positiving normal
+  // runs. Eyebrow uses "Q4 push" instead of the generic "Story" so the
+  // highlight reads as a curated tag, not a category bucket.
   if (q4Margin >= 8 && awayWon) {
     return {
-      eyebrow: "Story",
-      body: `${game.away.abbreviation} pulled away in Q4.`,
+      eyebrow: "Q4 push",
+      body: `${game.away.abbreviation} pulled away in Q4 by ${q4Margin}.`,
+      spoilery: true,
     };
   }
   if (q4Margin <= -8 && homeWon) {
     return {
-      eyebrow: "Story",
-      body: `${game.home.abbreviation} pulled away in Q4.`,
+      eyebrow: "Q4 push",
+      body: `${game.home.abbreviation} pulled away in Q4 by ${Math.abs(q4Margin)}.`,
+      spoilery: true,
     };
   }
   return null;
