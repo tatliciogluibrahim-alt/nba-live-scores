@@ -5,7 +5,7 @@ import { MomentSection } from "./MomentSection";
 
 // Following — empty / onboarding. Moment-grouped picker (NBA Playoffs,
 // FIFA WC 2026) with the granularity ladder inside each section, plus
-// a persistent Watch + Alerts link. The Watch + Alerts shortcut stays
+// a persistent Alerts & Notifications link. The Alerts & Notifications shortcut stays
 // because a fresh install with zero follows still needs a path to
 // turn on notifications, quiet hours, No-Spoilers, etc.
 
@@ -13,13 +13,14 @@ export function FollowingEmpty() {
   return (
     <section>
       <Display as="h1" size="lg" className="mb-2">
-        Tell us who you follow.
+        Build your sports circle.
       </Display>
       <p
         className="mb-4 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Pick a moment, then how much of it. Only what you follow surfaces here. Everything else stays quiet.
+        Pick a moment, then who in it. Only what you follow surfaces in
+        this app — everything else stays quiet.
       </p>
 
       <div className="space-y-3">
@@ -28,7 +29,7 @@ export function FollowingEmpty() {
         ))}
       </div>
 
-      {/* Watch + Alerts shortcut. Always reachable from Following, even
+      {/* Alerts & Notifications shortcut. Always reachable from Following, even
           before the user has anything to follow — that's where push gets
           enabled. */}
       <Link
@@ -39,10 +40,10 @@ export function FollowingEmpty() {
           borderColor: "var(--mute-2)",
           color: "var(--ink)",
         }}
-        aria-label="Open Watch + Alerts"
+        aria-label="Open Alerts & Notifications"
       >
         <span className="text-[13px]" style={{ fontWeight: 600 }}>
-          Watch + Alerts
+          Alerts & Notifications
         </span>
         <span
           className="text-[11px]"

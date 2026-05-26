@@ -9,8 +9,9 @@ import { PerFollowAlerts } from "./PerFollowAlerts";
 import { WatchGuidanceBlock } from "./WatchGuidanceBlock";
 import { NotificationPreview } from "./NotificationPreview";
 import { PushSubscriptionPanel } from "./PushSubscriptionPanel";
+import { ThemeSelector } from "./ThemeSelector";
 
-// Watch + Alerts — single calm settings-style screen.
+// Alerts & Notifications — single calm settings-style screen.
 //
 // No-Spoilers lives here now. It is a preference you set once, not a
 // decision the app should ask you to make every time Today opens.
@@ -23,7 +24,7 @@ export function SettingsClient() {
       <div className="mb-5 flex items-baseline justify-between gap-3">
         <div>
           <Display as="h1" size="lg" className="mb-1">
-            Watch + Alerts.
+            Alerts & Notifications.
           </Display>
           <p
             className="text-[14px] leading-snug"
@@ -52,6 +53,7 @@ export function SettingsClient() {
         <PerFollowAlerts />
         <ReminderSelector />
         <QuietHoursSelector />
+        <ThemeSelector />
         <PushSubscriptionPanel />
         <NotificationPreview />
         <WatchGuidanceBlock />

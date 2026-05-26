@@ -4,6 +4,7 @@ import { WatchingClient } from "../companion/watching/WatchingClient";
 
 export const metadata = {
   title: "Watching — No Noise Scores",
+  robots: { index: false, follow: false },
 };
 
 export default function WatchingPage() {

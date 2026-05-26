@@ -3,7 +3,7 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { TeamPicker } from "../../companion/following/picker/TeamPicker";
 
 export const metadata = {
-  title: "Follow a team — No Noise Scores",
+  robots: { index: false, follow: false },  title: "Follow a team — No Noise Scores",
 };
 
 export default function FollowTeamPage() {

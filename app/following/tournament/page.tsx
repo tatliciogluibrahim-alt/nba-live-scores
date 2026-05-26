@@ -3,7 +3,7 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { TournamentPicker } from "../../companion/following/picker/TournamentPicker";
 
 export const metadata = {
-  title: "Follow a tournament — No Noise Scores",
+  robots: { index: false, follow: false },  title: "Follow a tournament — No Noise Scores",
 };
 
 export default function FollowTournamentPage() {

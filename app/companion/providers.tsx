@@ -84,6 +84,8 @@ type PrefsCtx = {
   dismissNotifPrompt: () => void;
   /** Dismiss the first-run onboarding strip on Today. */
   dismissFirstRun: () => void;
+  /** Dismiss the PWA install prompt card on Today. One-way flag. */
+  dismissInstallPrompt: () => void;
   hydrated: boolean;
 };
 
@@ -337,6 +339,15 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const dismissInstallPrompt = useCallback(() => {
+    setPrefs((prev) => {
+      if (prev.installPromptDismissed) return prev;
+      const next: UserPrefs = { ...prev, installPromptDismissed: true };
+      writeJSON(STORAGE_KEYS.prefs, next);
+      return next;
+    });
+  }, []);
+
   // ── Memoize context values to avoid downstream re-renders ──────────
   const followsValue = useMemo<FollowsCtx>(
     () => ({
@@ -383,6 +394,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       setDefaultAlertTier,
       dismissNotifPrompt,
       dismissFirstRun,
+      dismissInstallPrompt,
       hydrated,
     }),
     [
@@ -394,6 +406,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       setDefaultAlertTier,
       dismissNotifPrompt,
       dismissFirstRun,
+      dismissInstallPrompt,
       hydrated,
     ]
   );

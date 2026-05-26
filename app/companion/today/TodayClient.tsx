@@ -8,6 +8,7 @@ import { useTodayData } from "./use-today-data";
 import { deriveDailyBrief } from "./daily-brief";
 import { BriefCard } from "./BriefCard";
 import { EnableNotificationsCard } from "./EnableNotificationsCard";
+import { InstallPromptCard } from "./InstallPromptCard";
 import { FirstRunStrip } from "./FirstRunStrip";
 import { QuietRecap } from "./QuietRecap";
 import { WorthCheckingNow } from "./sections/worth-checking-now";
@@ -22,7 +23,7 @@ import { CalmCard } from "./sections/calm-card";
 //   2. No-Spoilers — same shape, score-hidden cards; passive dot in header
 //   3. Quiet day — no live → no hero, "Calm is a feature" payoff card
 //
-// No-Spoilers is configured once in Watch + Alerts (Settings), not toggled
+// No-Spoilers is configured once in Alerts & Notifications (Settings), not toggled
 // per-visit. When active, a small muted dot in the Today header confirms
 // the mode without demanding interaction. The old inline chip is gone.
 
@@ -75,7 +76,7 @@ export function TodayClient() {
         {/* Ambient No-Spoilers indicator — only shown when active.
             Passive status display, not a toggle. The app shouldn't
             ask the user to make a scores decision every time they
-            open Today. Configure it once in Watch + Alerts. */}
+            open Today. Configure it once in Alerts & Notifications. */}
         <NoSpoilersAmbientDot />
       </header>
 
@@ -91,6 +92,12 @@ export function TodayClient() {
 
       {/* Daily Brief — calm sentence + optional routing CTA */}
       {brief ? <BriefCard brief={brief} /> : null}
+
+      {/* Install for game alerts — Phase 9 friend-beta gate. Sits above
+          EnableNotificationsCard because on iOS, install is a prerequisite
+          for push working at all. Internally bails when running standalone
+          or when the user has dismissed. */}
+      <InstallPromptCard />
 
       {/* Enable Notifications — Stage A push pass. Renders below the
           Brief so a fresh-install user sees it without it competing
@@ -127,7 +134,7 @@ export function TodayClient() {
 // ── Ambient No-Spoilers indicator ─────────────────────────────────────
 // Passive status dot. Only renders when No-Spoilers is on — its absence
 // is the signal that scores are visible, so there's nothing to show when
-// the mode is off. Tapping takes you to Watch + Alerts to change it.
+// the mode is off. Tapping takes you to Alerts & Notifications to change it.
 // Deliberately low visual weight: muted color, small type, no border,
 // no filled background. The app should not prompt a scores decision
 // every time Today opens.
@@ -139,7 +146,7 @@ function NoSpoilersAmbientDot() {
   return (
     <Link
       href="/settings"
-      aria-label="Scores hidden — open Watch + Alerts to change"
+      aria-label="Scores hidden — open Alerts & Notifications to change"
       className="no-noise-reveal-focus inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 transition active:scale-[0.97]"
       style={{ color: "var(--mute-1)" }}
     >

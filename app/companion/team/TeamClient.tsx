@@ -618,7 +618,7 @@ function TeamPresetSection({
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             New follows use your default alert level. Change it later
-            in Watch + Alerts.
+            in Alerts & Notifications.
           </p>
           <button
             type="button"

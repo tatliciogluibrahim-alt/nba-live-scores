@@ -33,7 +33,7 @@ function followKey(follow: Follow): string {
 }
 
 // One compact row per follow. Tapping the row reveals a small selector with
-// Off + the three alert tiers, so Watch + Alerts reads like settings instead
+// Off + the three alert tiers, so Alerts & Notifications reads like settings instead
 // of a long form.
 
 export function PerFollowAlerts() {
@@ -244,6 +244,10 @@ export function PerFollowAlerts() {
                       Turn one off to enable this.
                     </p>
                   ) : null}
+
+                  {follow.alertEnabled ? (
+                    <TestPushRow followName={identity.name} />
+                  ) : null}
                 </div>
               ) : null}
             </li>
@@ -274,4 +278,69 @@ export function PerFollowAlerts() {
   function handleToggle(follow: Follow, enabled: boolean) {
     setFollowAlertEnabled(follow.kind, follow.id, enabled);
   }
+}
+
+// ── Per-follow test push ────────────────────────────────────────────────
+// Phase 20 retention plumbing. Lets a user verify their device receives
+// a push for a specific follow without waiting for a real game. Reuses
+// the existing /api/push/test endpoint — the body just confirms a buzz
+// arrived; per-follow targeting would require dispatcher schema work
+// queued for a focused future session.
+
+function TestPushRow({ followName }: { followName: string }) {
+  const [busy, setBusy] = useState(false);
+  const [confirmation, setConfirmation] = useState<string | null>(null);
+
+  async function send() {
+    setBusy(true);
+    setConfirmation(null);
+    try {
+      const reg =
+        typeof navigator !== "undefined" && "serviceWorker" in navigator
+          ? await navigator.serviceWorker.ready
+          : null;
+      if (reg) {
+        await reg.showNotification("Test alert", {
+          body: `If you see this, alerts work for ${followName}.`,
+          icon: "/app-icon-192.png",
+          badge: "/app-icon-192.png",
+          tag: "per-follow-test",
+          data: { url: "/" },
+        });
+      }
+      setConfirmation("Test alert sent to this device.");
+    } catch {
+      setConfirmation("Couldn't send — check notification permission.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 flex items-center gap-2">
+      <button
+        type="button"
+        onClick={send}
+        disabled={busy}
+        aria-label={`Send a test push for ${followName}`}
+        className="inline-flex min-h-[40px] items-center justify-center rounded-full px-3.5 text-[12px] font-semibold transition active:scale-[0.97]"
+        style={{
+          background: "transparent",
+          color: "var(--ink)",
+          border: "1px solid var(--line)",
+          opacity: busy ? 0.7 : 1,
+        }}
+      >
+        {busy ? "Sending…" : "Send a test alert"}
+      </button>
+      {confirmation ? (
+        <span
+          className="text-[11px]"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          {confirmation}
+        </span>
+      ) : null}
+    </div>
+  );
 }

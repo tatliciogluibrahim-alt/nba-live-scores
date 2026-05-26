@@ -3,7 +3,7 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { AboutClient } from "../../companion/settings/AboutClient";
 
 export const metadata = {
-  title: "How this works — No Noise Scores",
+  robots: { index: false, follow: false },  title: "How this works — No Noise Scores",
 };
 
 export default function AboutPage() {
@@ -11,7 +11,7 @@ export default function AboutPage() {
     <CompanionFrame>
       <CrumbBar
         backHref="/settings"
-        backLabel="Watch + Alerts"
+        backLabel="Alerts & Notifications"
         title="How this works"
       />
       <AboutClient />

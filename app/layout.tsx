@@ -103,8 +103,14 @@ export const viewport: Viewport = {
   initialScale: 1,
   minimumScale: 1,
   viewportFit: "cover",
-  themeColor: "#f1ead8",
-  colorScheme: "light",
+  // Theme color shifts with prefers-color-scheme so the iOS status bar
+  // chrome matches the chassis on both modes. Light cream by default,
+  // warm dark when the system is in dark mode.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f1ead8" },
+    { media: "(prefers-color-scheme: dark)", color: "#1d1812" },
+  ],
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({
@@ -160,6 +166,17 @@ export default function RootLayout({
           rel="apple-touch-startup-image"
           href="/splash/iphone-x-xs-11-pro-1125x2436.png"
           media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+        />
+
+        {/* Theme bootstrap — Phase 19. Runs before paint to apply any
+            manually-stored theme override (no-noise-theme = "light" |
+            "dark"). Without this, a dark-mode user who manually picked
+            light would briefly see dark on first paint. Tiny script
+            kept inline so it never blocks render. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('no-noise-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t)}}catch(e){}})();`,
+          }}
         />
       </head>
       <body>

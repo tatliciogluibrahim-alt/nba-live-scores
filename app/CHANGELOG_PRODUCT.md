@@ -2,6 +2,180 @@
 
 ---
 
+## Phases 9–20 — Friend Beta Gate, Desktop Landing, SEO, Content, Polish — 2026-05-26
+
+The biggest single push to date. Turns the app from a mobile-only PWA
+into a real two-products-on-one-domain product:
+
+1. The mobile app (Today / Following / Watching) — calm, narrow.
+2. The desktop landing + content library — marketing, SEO, AI-search
+   ready.
+
+41 routes total after this push. 21 brand-new pages. Build + lint +
+typecheck clean throughout.
+
+### Phase 9 — Friend Beta Gate
+
+- New `app/companion/today/InstallPromptCard.tsx` — dismissible
+  "Add to your home screen" card on Today. Android Chrome:
+  `beforeinstallprompt` one-tap install. iOS Safari: expandable
+  Share → Add to Home Screen instructions chip.
+- Settings page renamed across the codebase: **"Watch + Alerts"
+  → "Alerts & Notifications"** (kills the collision with /watching).
+- `installPromptDismissed` added to `UserPrefs` + storage parser +
+  provider context.
+- No-Spoilers leak audit: confirmed push dispatcher body strings,
+  static page metadata, and Spoiler primitives are end-to-end safe.
+- `FirstRunStrip` Follow-vs-Pin distinction reinforced.
+
+### Phase 10 — Web Route Architecture Split
+
+- `app/page.tsx` is now responsive-aware: mobile UA → renders
+  `TodayClient` (current app); desktop UA → renders `LandingShell`.
+  UA sniffing via `headers().get("user-agent")` at the server
+  boundary.
+- New `app/app/page.tsx` — canonical "open the app on any device"
+  route. Desktop landing CTAs point here. Direct deep-link target.
+- Mobile nav unchanged. PWA installs still resolve to `/` correctly.
+
+### Phase 11 — Desktop Landing Shell
+
+New `app/companion/landing/` directory with six on-brand components:
+
+- `LandingHero.tsx` — left product story (locked positioning copy,
+  install / beta CTAs), right phone-sized live preview snapshot
+  (static visual; doesn't depend on client hydration).
+- `HowItWorksCapsule.tsx` — four-step capsule (Follow / Alert / Pin
+  / No-Spoilers). Plus shared `SectionHeader` primitive.
+- `MomentsBand.tsx` — NBA Playoffs, FIFA World Cup 2026, NFL (coming
+  Aug 2026) as three accent-railed moment cards.
+- `DifferentiatorPillars.tsx` — "Calm by default," "Personalized,
+  not algorithmic," "Hide-by-default when you want."
+- `LandingFAQ.tsx` — six questions with expand-on-tap rows. Q&A
+  data lives in `faq-data.ts` so both the client component and
+  the server-side JSON-LD payload can import it.
+- `LandingFooter.tsx` — quiet library of links to every content
+  page, organized into Features / Guides / Compare / Product.
+
+### Phase 12 — SEO Foundation
+
+- New `app/robots.ts` — explicit allow-list for Googlebot, Bingbot,
+  OAI-SearchBot, ClaudeBot, Claude-Web, PerplexityBot. Disallowed
+  GPTBot / anthropic-ai / CCBot training crawlers. Disallowed
+  user-state routes (`/watching`, `/following/*`, `/brief/*`,
+  `/app`, `/api/*`).
+- New `app/sitemap.ts` — 17 public routes with priorities.
+- JSON-LD on landing: Organization + WebApplication + FAQPage
+  emitted as a single graph for AI-search citation lift.
+- `<noindex>` added to stateful route metadata: `/watching`,
+  `/following/*`, `/brief/subscribe`, `/brief/preview`, `/settings`,
+  `/settings/about`.
+
+### Phase 13 — Core Content Pages
+
+New `ContentPageShell` (in `app/companion/landing/`) with shared
+chrome and primitives (`H2`, `H3`, `P`, `Quote`, `CalloutBox`,
+`BulletList`, `CompareTable`). Pages:
+
+- `/about` — what is this, who builds it, the philosophy.
+- `/privacy` — plain-English data list. What we collect, what we
+  don't, why.
+- `/changelog` — public-facing editorial summary.
+- `/beta` — friend beta sign-up landing (DM-driven for now;
+  form lands later).
+
+### Phase 14 — Feature Pages (the "Manifesto" Set)
+
+- `/how-it-works` — the master manifesto page (Follow → Alert →
+  Pin → No-Spoilers as one story).
+- `/features/no-spoilers` — what gets hidden, what stays visible,
+  the contract end-to-end.
+- `/features/sports-circle` — the three nouns (Follow / Alert /
+  Pin) framed as one personalization system.
+- `/features/quiet-sports-alerts` — three tiers, quiet hours,
+  spoiler-safe previews.
+
+### Phase 15 — Guide Pages
+
+- `/guides/how-to-add-to-iphone-home-screen` — screenshot-led
+  walkthrough.
+- `/guides/follow-vs-pin` — concept distinction with comparison
+  table.
+- `/guides/watch-games-later-without-spoilers` — practical
+  spoiler-safe workflow.
+
+### Phase 16 — Comparison + Niche Capture
+
+- `/compare/apple-sports-alternative` — honest table where each
+  app wins.
+- `/compare/espn-app-alternative` — honest table; calmer-alternative
+  framing.
+- `/nba-playoffs-alerts` — intent capture for playoff months.
+- `/world-cup-2026-app` — intent capture for pre-tournament window.
+
+### Phase 17 — Following = Sports Circle
+
+- H1 reframed: "Following." → **"Your sports circle."**
+- Empty-state H1: "Tell us who you follow." → **"Build your sports
+  circle."**
+- Summary subtitle pivots to count-based copy when follows exist,
+  invitation copy when empty.
+
+### Phase 18 — Watching Deepening
+
+- WatchingEmpty H1: "Nothing pinned yet." → **"Your live cockpit."**
+  Body reinforces "Pin = one game tonight; Follow = whole season."
+- `WatchingDashboard` switches from `space-y-2` to a 2-up grid at
+  md+ widths when 2+ pins exist. Single-pin layout stays
+  single-column.
+
+### Phase 19 — Dark Mode (warm dark)
+
+- New token block in `app/globals.css` for warm dark (background
+  `#1d1812`, paper `#251f17`, ink-on-dark `#f1ead8`). Sport
+  accents shift slightly for dark readability (NBA `#f47743`,
+  WC `#3d9d5d`, NFL `#4a78c4`, live `#f47743`).
+- Auto-detects via `@media (prefers-color-scheme: dark)` unless
+  the user has manually overridden.
+- New `app/companion/settings/ThemeSelector.tsx` — three-option pill
+  row in Alerts & Notifications: System / Light / Dark. Writes to
+  `localStorage` under `no-noise-theme` and sets `data-theme` on
+  `<html>`.
+- Inline `<script>` in `app/layout.tsx` reads the stored choice
+  before paint to avoid the flash.
+- iOS theme-color now responds per color scheme (cream when light,
+  warm dark when dark).
+
+### Phase 20 — Retention Plumbing
+
+- New `TestPushRow` inside the expanded per-follow alert row. Sends
+  a local SW notification via `serviceWorker.ready.showNotification`
+  with body "If you see this, alerts work for [followName]."
+- Lets users verify their device receives alerts without waiting
+  for a real game.
+- Custom "Q4 with margin < 6" tier deferred to a focused future
+  session (requires dispatcher schema work).
+
+### What's NOT in Phases 9–20
+
+- Brief send pipeline (still gated on domain email setup — Phase 21).
+- NFL build (Phase 22).
+- Custom alert tier additions ("Q4 with margin < 6" — needs
+  dispatcher schema work).
+- Multi-device push relay.
+- Per-follow targeted test push (the current Phase 20 test-row
+  fires a generic local notification; per-follow event simulation
+  would require dispatcher schema work).
+
+### Build / lint / typecheck
+
+- `npm run lint` → clean
+- `npx tsc --noEmit` → clean
+- `npm run build` → ✓, 41 routes (21 new content pages + landing
+  + app + sitemap.xml + robots.txt + existing app routes).
+
+---
+
 ## Phases A / B / C — Feature Expansion Set — 2026-05-26
 
 Three editorial features that take the product from "calm scoreboard"

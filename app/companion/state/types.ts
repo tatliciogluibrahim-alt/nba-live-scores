@@ -61,6 +61,11 @@ export type UserPrefs = {
    *  steps are complete (follow + pin + notify), so most users will
    *  never need to explicitly dismiss. */
   firstRunDismissed?: boolean;
+  /** True when the user has dismissed the "Install for game alerts"
+   *  card on Today (Phase 9 friend-beta gate). Persisting this is what
+   *  keeps the card from re-rendering on every session — we never
+   *  re-prompt for install automatically. */
+  installPromptDismissed?: boolean;
 };
 
 // ── Defaults ──────────────────────────────────────────────────────────

@@ -331,8 +331,9 @@ When making code changes:
 
 ## Current Priority
 
-Phases 1–8 and A/B/C are complete (see `CHANGELOG_PRODUCT.md` for
-per-phase detail). The product is shippable. Recent work covered:
+Phases 1–8, A/B/C, and **9–20** are complete (see `CHANGELOG_PRODUCT.md`
+for per-phase detail). The product is shippable on web AND has a full
+desktop landing + SEO content layer in place. Recent work covered:
 
 1. Phases 1–7 — object-detail nav, Today calmness, game detail
    hierarchy, country pre-tournament polish, compact alerts, snapshot
@@ -354,16 +355,43 @@ per-phase detail). The product is shippable. Recent work covered:
 8. Highlights basketball-native overhaul; per-quarter scoring line on
    game detail; series-wrapped polish.
 
-**Next: the Roadmap (Phases 9–22+).** See `docs/ROADMAP.md` for the
-full sequenced plan. The big themes:
+Phases 9–20 shipped as one mega-push (May 2026):
 
-- Phase 9 — Friend Beta Gate (must-fix before sharing with friends).
-- Phases 10–16 — Web architecture split + landing shell + SEO + content
-  pages (the "two products on one domain" model).
-- Phases 17–20 — In-app polish (Following = sports circle, Watching
-  deepening, dark mode, retention plumbing).
+- Phase 9 — Friend Beta Gate (No-Spoilers leak audit, PWA install CTA
+  card, settings renamed to "Alerts & Notifications", manifest sanity,
+  FirstRunStrip clarification).
+- Phase 10 — Web route architecture split (`/` is now responsive:
+  desktop landing vs mobile app; `/app` added as canonical app entry).
+- Phase 11 — Desktop landing shell (hero + phone preview, how-it-works
+  capsule, moments band, differentiator pillars, FAQ, footer).
+- Phase 12 — SEO foundation (robots.ts, sitemap.ts, JSON-LD on landing,
+  noindex on stateful routes, OAI-SearchBot / ClaudeBot / Perplexity
+  allow-listed).
+- Phase 13 — Core content pages: /about, /privacy, /changelog, /beta.
+- Phase 14 — Feature pages: /how-it-works, /features/no-spoilers,
+  /features/sports-circle, /features/quiet-sports-alerts.
+- Phase 15 — Guide pages: /guides/how-to-add-to-iphone-home-screen,
+  /guides/follow-vs-pin, /guides/watch-games-later-without-spoilers.
+- Phase 16 — Comparison + niche capture: /compare/apple-sports-
+  alternative, /compare/espn-app-alternative, /nba-playoffs-alerts,
+  /world-cup-2026-app.
+- Phase 17 — Following = Sports Circle (H1 reframed, empty-state
+  personality, summary language).
+- Phase 18 — Watching deepening (responsive grid on wider widths,
+  cockpit-framed empty state copy).
+- Phase 19 — Dark mode (warm dark, not generic dark): tokens flip via
+  `prefers-color-scheme` + manual override in Alerts & Notifications;
+  theme bootstrap script in layout to avoid flash; iOS theme-color
+  responds per scheme.
+- Phase 20 — Retention plumbing: per-follow "Send a test alert" button
+  inside the expanded row.
+
+**Next:** Phases 21–23+. See `docs/ROADMAP.md`.
+
 - Phase 21 — Brief launch (when domain email is sorted).
 - Phase 22 — NFL season build (August 2026).
+- Phase 23+ — Sports Circle visual prototype, Path B refactor,
+  multi-device push relay, No-Spoilers Pro, iOS Live Activities.
 
 Each phase is its own go/no-go unit. Do not jump ahead.
 

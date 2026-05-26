@@ -3,7 +3,7 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { BriefPreviewClient } from "../../companion/brief/BriefPreviewClient";
 
 export const metadata = {
-  title: "Brief · Preview — No Noise Scores",
+  robots: { index: false, follow: false },  title: "Brief · Preview — No Noise Scores",
 };
 
 export default function BriefPreviewPage() {

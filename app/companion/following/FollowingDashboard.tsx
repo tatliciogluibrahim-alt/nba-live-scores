@@ -96,13 +96,14 @@ export function FollowingDashboard() {
   return (
     <section>
       <Display as="h1" size="lg" className="mb-2">
-        Following.
+        Your sports circle.
       </Display>
       <p
         className="mb-2 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Your sports circle. {buildFollowSummary(follows)}
+        {buildFollowSummary(follows) ||
+          "Add what you care about. Nothing else surfaces here."}
       </p>
       {/* One-line reinforcement of the pin / follow distinction.
           Follow = these surface and drive alerts. Pin = bookmark a
@@ -120,7 +121,7 @@ export function FollowingDashboard() {
       {/* Alert-slot counter only renders when at least one follow is
           alert-enabled. With zero alerts the line read as "you haven't
           done anything" rather than a useful status; the full
-          breakdown lives in Watch + Alerts anyway. */}
+          breakdown lives in Alerts & Notifications anyway. */}
       {alertSlotCount > 0 ? (
         <p
           className="mb-3 text-[12px] leading-snug"
@@ -185,10 +186,10 @@ export function FollowingDashboard() {
             borderColor: "var(--mute-2)",
             color: "var(--ink)",
           }}
-          aria-label="Open Watch + Alerts — reminders, quiet hours, per-follow alerts"
+          aria-label="Open Alerts & Notifications — reminders, quiet hours, per-follow alerts"
         >
           <span className="text-[13px]" style={{ fontWeight: 600 }}>
-            Watch + Alerts
+            Alerts & Notifications
           </span>
           <span
             className="text-[11px]"

@@ -80,7 +80,17 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
               <div className="h-px flex-1" style={{ background: "var(--line)" }} />
             </div>
           ) : null}
-          <ul className="space-y-2">
+          {/* Stack on mobile; 2-up on md+ when there are 2+ cards so
+              desktop visitors aren't stuck with a tall single column.
+              Single-card case stays single-column to preserve the
+              "this one game" focus on wider widths too. */}
+          <ul
+            className={
+              restItems.length >= 2
+                ? "grid gap-2 md:grid-cols-2"
+                : "space-y-2"
+            }
+          >
             {restItems.map((item) => (
               <li key={item.id}>
                 <PinnedCard item={item} />

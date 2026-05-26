@@ -32,7 +32,7 @@ export function AboutClient() {
         <Section
           eyebrow="No-Spoilers"
           headline="Hides scores everywhere."
-          body="Scores and series outcomes blur until you tap to reveal. Notifications stay calm. Toggle it in Watch + Alerts."
+          body="Scores and series outcomes blur until you tap to reveal. Notifications stay calm. Toggle it in Alerts & Notifications."
         />
 
         <Section
@@ -58,7 +58,7 @@ export function AboutClient() {
           border: "1px solid var(--line)",
         }}
       >
-        Back to Watch + Alerts
+        Back to Alerts & Notifications
       </Link>
     </main>
   );

@@ -595,7 +595,7 @@ function TournamentPresetSection({
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Every game across the tournament. Tier defaults to your
-            preference; change it in Watch + Alerts.
+            preference; change it in Alerts & Notifications.
           </p>
           <button
             type="button"

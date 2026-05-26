@@ -175,6 +175,9 @@ export function normalizeStoredPrefs(value: unknown): UserPrefs {
   if (typeof value.firstRunDismissed === "boolean") {
     next.firstRunDismissed = value.firstRunDismissed;
   }
+  if (typeof value.installPromptDismissed === "boolean") {
+    next.installPromptDismissed = value.installPromptDismissed;
+  }
 
   return next;
 }

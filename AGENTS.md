@@ -126,8 +126,9 @@ When changing code:
 
 ## Current Phase
 
-Phases 1–8 and A/B/C are complete. The product is in a settled,
-shippable state. See `app/CHANGELOG_PRODUCT.md` for per-phase detail.
+Phases 1–8, A/B/C, and **9–20** are complete. The product is in a
+shippable state with a live desktop landing surface and a full SEO
+content layer. See `app/CHANGELOG_PRODUCT.md` for per-phase detail.
 
 Completed phases (most recent first):
 
@@ -147,25 +148,13 @@ Completed phases (most recent first):
   hierarchy, country detail polish, compact alerts, snapshot fallback,
   small visual calibration.
 
-**Next: the Roadmap (Phases 9–22+)** — see `docs/ROADMAP.md` for the
-full sequenced plan. Brief summary:
+**Next:** Phases 21–23+ — see `docs/ROADMAP.md` for the full sequenced
+plan.
 
-- **Phase 9** — Friend Beta Gate (No-Spoilers leak audit, PWA install
-  CTA, settings rename, manifest sanity).
-- **Phase 10** — Web Route Architecture Split (desktop landing vs
-  mobile app, `/app` as canonical app entry).
-- **Phase 11** — Desktop Landing Shell (marketing page + live preview).
-- **Phase 12** — SEO Foundation (robots, sitemap, JSON-LD, OG).
-- **Phase 13** — Core Content Pages (/about, /privacy, /changelog, /beta).
-- **Phase 14** — Feature Pages (the "manifesto" set).
-- **Phase 15** — Guide Pages.
-- **Phase 16** — Comparison + niche capture pages.
-- **Phase 17** — Following = Sports Circle in-app polish.
-- **Phase 18** — Watching deepening.
-- **Phase 19** — Dark mode (warm dark).
-- **Phase 20** — Retention plumbing.
 - **Phase 21** — Brief launch (gated on domain email).
 - **Phase 22** — NFL season build (August 2026).
+- **Phase 23+** — Beyond: Sports Circle prototype, multi-device push,
+  No-Spoilers Pro, Path B follow-schema refactor, iOS Live Activities.
 
 Each phase is its own go/no-go unit. Do not jump ahead.
 

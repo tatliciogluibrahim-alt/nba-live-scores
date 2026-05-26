@@ -3,7 +3,7 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { CountryPicker } from "../../companion/following/picker/CountryPicker";
 
 export const metadata = {
-  title: "Follow a country — No Noise Scores",
+  robots: { index: false, follow: false },  title: "Follow a country — No Noise Scores",
 };
 
 export default function FollowCountryPage() {

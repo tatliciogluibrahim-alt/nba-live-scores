@@ -74,6 +74,117 @@
   --status-current-bg:  rgba(30, 107, 60, 0.12);
   --status-current-fg:  #1a5230;
   --status-current-dot: #1e6b3c;
+
+  /* Theme switch — manual override. When [data-theme="dark"] is on
+     <html>, the dark token block below takes effect. Auto-detect via
+     prefers-color-scheme is handled in a separate block (matches when
+     the user has system dark mode AND hasn't manually overridden). */
+  color-scheme: light;
+}
+
+/* ── Dark mode — warm dark, not generic dark ──────────────────────────
+   Phase 19. The cream identity stays — we don't go pure black. The
+   chassis becomes a warm dark ink-2 surface; paper becomes a slightly
+   lifted dark; text inverts to cream. Sport accents shift slightly so
+   they read on dark without saturating the screen.
+
+   Two triggers, both write into the same token block:
+   1. System dark mode (prefers-color-scheme: dark) AND the user hasn't
+      manually overridden — handled by an explicit `:root:not(...)`
+      selector so the manual light override wins.
+   2. Manual override (<html data-theme="dark">) — landing has a toggle
+      that writes to this attribute and to localStorage. */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background:                #1d1812;
+    --foreground:                #f1ead8;
+
+    --cream:                     #1d1812;
+    --cream-2:                   #2a231b;
+    --paper:                     #251f17;
+    --ink:                       #f1ead8;
+    --ink-2:                     #e5dcc1;
+    --mute-1:                    #b0a585;
+    --mute-2:                    #756a52;
+    --line:                      rgba(241, 234, 216, 0.14);
+
+    --nba:                       #f47743;
+    --nba-soft:                  rgba(244, 119, 67, 0.14);
+    --wc:                        #3d9d5d;
+    --wc-soft:                   rgba(61, 157, 93, 0.14);
+    --nfl:                       #4a78c4;
+    --nfl-soft:                  rgba(74, 120, 196, 0.14);
+    --up:                        #6a8fdc;
+    --up-soft:                   rgba(106, 143, 220, 0.14);
+    --critical:                  #e2554a;
+    --pos:                       #3d9d5d;
+    --live:                      #f47743;
+
+    --cream-on-dark-primary:     var(--ink);
+    --cream-on-dark-secondary:   rgba(241, 234, 216, 0.78);
+    --cream-on-dark-tertiary:    rgba(241, 234, 216, 0.6);
+    --cream-on-dark-hairline:    rgba(241, 234, 216, 0.35);
+
+    --status-live-bg:            rgba(226, 85, 74, 0.16);
+    --status-live-fg:            #e2554a;
+    --status-live-dot:           #e2554a;
+    --status-upcoming-bg:        rgba(241, 234, 216, 0.08);
+    --status-upcoming-fg:        #b0a585;
+    --status-upcoming-dot:       #756a52;
+    --status-final-bg:           rgba(241, 234, 216, 0.10);
+    --status-final-fg:           #b0a585;
+    --status-current-bg:         rgba(61, 157, 93, 0.16);
+    --status-current-fg:         #6cc585;
+    --status-current-dot:        #3d9d5d;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --background:                #1d1812;
+  --foreground:                #f1ead8;
+
+  --cream:                     #1d1812;
+  --cream-2:                   #2a231b;
+  --paper:                     #251f17;
+  --ink:                       #f1ead8;
+  --ink-2:                     #e5dcc1;
+  --mute-1:                    #b0a585;
+  --mute-2:                    #756a52;
+  --line:                      rgba(241, 234, 216, 0.14);
+
+  --nba:                       #f47743;
+  --nba-soft:                  rgba(244, 119, 67, 0.14);
+  --wc:                        #3d9d5d;
+  --wc-soft:                   rgba(61, 157, 93, 0.14);
+  --nfl:                       #4a78c4;
+  --nfl-soft:                  rgba(74, 120, 196, 0.14);
+  --up:                        #6a8fdc;
+  --up-soft:                   rgba(106, 143, 220, 0.14);
+  --critical:                  #e2554a;
+  --pos:                       #3d9d5d;
+  --live:                      #f47743;
+
+  --cream-on-dark-primary:     var(--ink);
+  --cream-on-dark-secondary:   rgba(241, 234, 216, 0.78);
+  --cream-on-dark-tertiary:    rgba(241, 234, 216, 0.6);
+  --cream-on-dark-hairline:    rgba(241, 234, 216, 0.35);
+
+  --status-live-bg:            rgba(226, 85, 74, 0.16);
+  --status-live-fg:             #e2554a;
+  --status-live-dot:            #e2554a;
+  --status-upcoming-bg:         rgba(241, 234, 216, 0.08);
+  --status-upcoming-fg:         #b0a585;
+  --status-upcoming-dot:        #756a52;
+  --status-final-bg:            rgba(241, 234, 216, 0.10);
+  --status-final-fg:            #b0a585;
+  --status-current-bg:          rgba(61, 157, 93, 0.16);
+  --status-current-fg:          #6cc585;
+  --status-current-dot:         #3d9d5d;
+
+  color-scheme: dark;
 }
 
 * {

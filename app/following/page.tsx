@@ -3,7 +3,7 @@ import { CompanionFrame } from "../companion/frame/CompanionFrame";
 import { FollowingClient } from "../companion/following/FollowingClient";
 
 export const metadata = {
-  title: "Following — No Noise Scores",
+  robots: { index: false, follow: false },  title: "Following — No Noise Scores",
 };
 
 export default function FollowingPage() {

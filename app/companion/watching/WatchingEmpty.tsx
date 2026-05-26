@@ -8,13 +8,15 @@ export function WatchingEmpty() {
   return (
     <section>
       <Display as="h1" size="lg" className="mb-2">
-        Nothing pinned yet.
+        Your live cockpit.
       </Display>
       <p
         className="mb-5 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Pin a game to keep it here. Alerts come from follows.
+        Pin a specific game here when you want a focused tracking
+        surface for it. Pin is for one game tonight; Follow is for the
+        whole season.
       </p>
 
       <div className="space-y-2">
