@@ -9,11 +9,11 @@ export type FAQItem = { q: string; a: string };
 export const FAQ_ITEMS: FAQItem[] = [
   {
     q: "Is it free?",
-    a: "Yes — for most people. Follows are unlimited and free. Alerts are on the house for the first 3 follows, which covers a team, a country, and one more thing. If you want alerts on more than that at once, a small paid tier unlocks unlimited (and helps cover the cost of running the notification backend at scale). No ads either way.",
+    a: "Yes, for most people. Follows are unlimited and free. Alerts are on the house for your first 3 follows. If you want alerts on more than that, a paid tier unlocks unlimited. That helps cover the cost of running the notification backend. No ads either way.",
   },
   {
     q: "Does it work on iPhone?",
-    a: "Yes. Open the site in Safari, tap Share, then Add to Home Screen. Push notifications work after install — that's an Apple rule for web apps, not us.",
+    a: "Yes. Open the site in Safari, tap Share, then Add to Home Screen. Push notifications work after install. That's an Apple rule for web apps, not ours.",
   },
   {
     q: "What sports are covered?",
@@ -21,7 +21,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     q: "How is this different from Apple Sports?",
-    a: "Apple Sports is fast and scores-first. This one's slower-paced — alert tiers per follow, recap cards, series context, and a hide-everything mode for watching on delay. They're different tools for different moods.",
+    a: "Apple Sports is fast and scores-first. This one's slower-paced. Alert tiers per follow, recap cards, series context, and a hide-everything mode for watching on delay. Different tools for different moods.",
   },
   {
     q: "Does it have spoilers?",
@@ -29,6 +29,6 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     q: "When does NFL ship?",
-    a: "August 2026, a few weeks before the season opener. The data layer and design are already in place; not rushing the rest.",
+    a: "August 2026, a few weeks before the season opener. The data layer and design are in place. Not rushing the rest.",
   },
 ];

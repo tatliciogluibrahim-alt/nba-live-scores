@@ -6,7 +6,7 @@ import {
 import { BetaFeedbackForm } from "../../companion/beta/BetaFeedbackForm";
 
 export const metadata = {
-  title: "Beta feedback — No Noise Scores",
+  title: "Beta feedback | No Noise Scores",
   description:
     "After a week of using the app, tell me what's working, what's broken, and what's missing.",
   alternates: {

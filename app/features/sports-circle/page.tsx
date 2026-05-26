@@ -7,7 +7,7 @@ import {
 } from "../../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "Sports circle — No Noise Scores",
+  title: "Sports circle | No Noise Scores",
   description:
     "Your follows, alerts, and pinned games as one connected system. That's your sports circle.",
   alternates: {
@@ -30,7 +30,7 @@ export default function SportsCirclePage() {
       </P>
       <P>
         No Noise Scores treats your follows, alerts, and pinned games as
-        one connected system — the small set of things you actually care
+        one connected system. The small set of things you actually care
         about. We call it your{" "}
         <strong style={{ color: "var(--ink)" }}>sports circle</strong>.
       </P>
@@ -38,17 +38,17 @@ export default function SportsCirclePage() {
       <H2>What goes in it</H2>
       <BulletList
         items={[
-          "Teams — Knicks, Eagles, USA.",
-          "Countries — for the World Cup, Olympics, etc.",
-          "Series — Knicks vs Cavaliers, USA's opening match.",
-          "Tournaments — NBA Playoffs, FIFA World Cup 2026.",
+          "Teams. Knicks, Eagles, USA.",
+          "Countries. For the World Cup, Olympics, etc.",
+          "Series. Knicks vs Cavaliers, USA's opening match.",
+          "Tournaments. NBA Playoffs, FIFA World Cup 2026.",
         ]}
       />
 
       <H2>Each item is its own page</H2>
       <P>
         Tap anything in your circle and you get a real page for that
-        object — scores, recent games, series state, tournament
+        object: scores, recent games, series state, tournament
         structure. Not a feed wrapped around it; an actual page.
       </P>
 
@@ -72,7 +72,7 @@ export default function SportsCirclePage() {
       <BulletList
         items={[
           "Today shows what's happening right now for your follows.",
-          "Following is where your circle lives — add, remove, tune.",
+          "Following is where your circle lives. Add, remove, tune.",
           "Watching is for the game you pinned for the night.",
         ]}
       />
@@ -90,7 +90,7 @@ export default function SportsCirclePage() {
         >
           app
         </a>{" "}
-        — start with one team, see how it feels.
+        . Start with one team, see how it feels.
       </P>
     </ContentPageShell>
   );

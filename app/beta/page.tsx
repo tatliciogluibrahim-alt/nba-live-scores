@@ -8,7 +8,7 @@ import {
 import { BetaSignupForm } from "../companion/beta/BetaSignupForm";
 
 export const metadata = {
-  title: "Friend beta — No Noise Scores",
+  title: "Friend beta | No Noise Scores",
   description:
     "Help test No Noise Scores. Install it, follow your team, and tell me what feels right and what doesn't.",
   alternates: { canonical: "https://nonoisescores.app/beta" },
@@ -22,10 +22,10 @@ export default function BetaPage() {
       intro="No Noise Scores is in friend beta. If you're the kind of person who turns off ESPN notifications because they're too loud, I'd love your feedback."
     >
       <P>
-        I&apos;m looking for a small group of testers who&apos;ll use it for real
-        — follow a team or country they actually care about, install it
-        on their phone, leave notifications on for a week, and tell me
-        what feels right and what doesn&apos;t.
+        I&apos;m looking for a small group of testers who&apos;ll use
+        it for real. Follow a team or country you actually care about,
+        install it on your phone, leave notifications on for a week,
+        and tell me what feels right and what doesn&apos;t.
       </P>
 
       <H2>What you&apos;d get</H2>
@@ -44,7 +44,7 @@ export default function BetaPage() {
           "Follow something you actually care about.",
           "Leave alerts on for a week. Tell me if they hit at the right time.",
           "Try No-Spoilers for a game you watch on delay. Tell me if anything leaked.",
-          "Brutal feedback welcome — especially if something feels generic.",
+          "Brutal feedback welcome, especially if something feels generic.",
         ]}
       />
 
@@ -97,8 +97,8 @@ export default function BetaPage() {
           }}
         >
           send feedback
-        </a>{" "}
-        — three short fields, no marketing form energy.
+        </a>
+        . Three short fields, no marketing form energy.
       </P>
 
       <CalloutBox eyebrow="Heads up">

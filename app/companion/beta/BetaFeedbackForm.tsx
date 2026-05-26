@@ -6,11 +6,11 @@ import { FormField } from "./BetaSignupForm";
 type Status = "idle" | "submitting" | "saved" | "error";
 
 // Structured feedback form for beta testers. Five fields:
-//   email      — for follow-up
-//   working    — what feels right
-//   broken     — what feels wrong
-//   missing    — what's not there yet
-//   vibe       — one-line gut summary
+//   email     . For follow-up
+//   working   . What feels right
+//   broken    . What feels wrong
+//   missing   . What's not there yet
+//   vibe      . One-line gut summary
 //
 // All optional except email; backend rejects submissions that are
 // fully empty (just an email). POSTs to /api/beta/feedback.

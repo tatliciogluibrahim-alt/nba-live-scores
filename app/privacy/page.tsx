@@ -6,7 +6,7 @@ import {
 } from "../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "Privacy — No Noise Scores",
+  title: "Privacy | No Noise Scores",
   description:
     "What No Noise Scores collects, what we don't, and why. Plain English. No legal boilerplate.",
   alternates: { canonical: "https://nonoisescores.app/privacy" },
@@ -21,8 +21,8 @@ export default function PrivacyPage() {
     >
       <H2>The short version</H2>
       <P>
-        Most of what you set in the app — follows, pinned games,
-        No-Spoilers, alert levels — lives in your browser&apos;s
+        Most of what you set in the app (follows, pinned games,
+        No-Spoilers, alert levels) lives in your browser&apos;s
         localStorage, not on a server. We don&apos;t sell data, share it
         with advertisers, or track you across other sites.
       </P>
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
       <H2>What lives on your device</H2>
       <BulletList
         items={[
-          "Your follows — teams, countries, series, tournaments.",
+          "Your follows: teams, countries, series, tournaments.",
           "Your pinned games.",
           "Your No-Spoilers preference, alert tiers, quiet hours.",
           "Onboarding state (whether you've dismissed the first-run strip, install prompt, etc).",
@@ -45,8 +45,8 @@ export default function PrivacyPage() {
       <H2>What lives on our servers</H2>
       <BulletList
         items={[
-          "Web Push subscription endpoint (only if you enabled notifications) — required by the browser standard so we can send pushes to your device.",
-          "Your enabled alert follows + tiers + No-Spoilers flag attached to that subscription — used by the push dispatcher to decide what to send you.",
+          "Web Push subscription endpoint (only if you enabled notifications). Required by the browser standard so we can send pushes to your device.",
+          "Your enabled alert follows, tiers, and No-Spoilers flag attached to that subscription. Used by the push dispatcher to decide what to send you.",
           "If you subscribe to the No Noise Brief (email recap): your email, a hashed key, and your follow list at signup time.",
         ]}
       />

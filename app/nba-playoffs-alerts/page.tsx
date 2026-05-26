@@ -7,9 +7,9 @@ import {
 } from "../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "NBA Playoffs alerts — quiet, calm, on your terms",
+  title: "NBA Playoffs alerts",
   description:
-    "Follow your team through the playoffs. Tipoff, close-game, final, series-wrap pushes — exactly the ones you want.",
+    "Follow your team through the playoffs. Tipoff, close-game, final, series-wrap pushes for the moments you want.",
   alternates: {
     canonical: "https://nonoisescores.app/nba-playoffs-alerts",
   },
@@ -24,20 +24,20 @@ export default function NBAPlayoffsAlertsPage() {
     >
       <P>
         Most sports apps treat playoff games the same way they treat
-        regular-season games — a steady drip of generic notifications.
+        regular-season games: a steady drip of generic notifications.
         This app treats them as the moment they are.
       </P>
 
       <H2>What you can alert on</H2>
       <BulletList
         items={[
-          "Tipoff — your team's playoff game just started.",
-          "End of quarter — Q1 wrapped, Q2 wrapped, halftime, end of Q3.",
-          "Last quarter — Q4 is about to start.",
-          "Close-game — the final minutes of a 3-point game.",
-          "Comeback — a 15+ point lead just got erased.",
-          "Final — your team's game just ended.",
-          "Series-wrap — a series just got decided.",
+          "Tipoff. Your team's playoff game just started.",
+          "End of quarter. Q1 wrapped, Q2 wrapped, halftime, end of Q3.",
+          "Last quarter. Q4 is about to start.",
+          "Close-game. The final minutes of a 3-point game.",
+          "Comeback. A 15+ point lead just got erased.",
+          "Final. Your team's game just ended.",
+          "Series-wrap. A series just got decided.",
         ]}
       />
 
@@ -49,9 +49,9 @@ export default function NBAPlayoffsAlertsPage() {
       </P>
       <BulletList
         items={[
-          "Quiet — Tipoff and Final only. Two pushes per game.",
-          "Companion — Tipoff, end-of-Q, last quarter, Final. Around 4–5 per game.",
-          "All moments — Add close-game and comeback. Around 6–8 per game during dramatic games.",
+          "Quiet: Tipoff and Final only. Two pushes per game.",
+          "Companion: Tipoff, end-of-Q, last quarter, Final. Around 4–5 per game.",
+          "All moments: adds close-game and comeback. Around 6–8 per dramatic game.",
         ]}
       />
 
@@ -70,7 +70,7 @@ export default function NBAPlayoffsAlertsPage() {
 
       <CalloutBox eyebrow="Series-wrap alerts">
         When a series ends, you get one final push that names the result
-        and the advancement — &quot;Series · NY took it 4-2. They
+        and the advancement: &quot;Series · NY took it 4-2. They
         advance.&quot; If No-Spoilers is on, you get &quot;Series
         wrapped. Tap when you&apos;re ready.&quot;
       </CalloutBox>
@@ -110,7 +110,7 @@ export default function NBAPlayoffsAlertsPage() {
       </P>
 
       <P>
-        Try it —{" "}
+        Try it.{" "}
         <a
           href="/app"
           style={{

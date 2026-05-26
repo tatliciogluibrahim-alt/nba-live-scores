@@ -7,7 +7,7 @@ import {
 } from "../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "Changelog — No Noise Scores",
+  title: "Changelog | No Noise Scores",
   description:
     "Public version of what we ship. Editorial summaries, not git log dumps.",
   alternates: { canonical: "https://nonoisescores.app/changelog" },
@@ -29,7 +29,7 @@ export default function ChangelogPage() {
     >
       <H2>2026</H2>
 
-      <H3>May — Stakes, recap, brief</H3>
+      <H3>May. Stakes, recap, brief.</H3>
       <P>
         Three features that turn the app from a calm scoreboard into a
         calm sports companion.
@@ -37,14 +37,14 @@ export default function ChangelogPage() {
       <BulletList
         items={[
           "Stakes lines on game and country pages: \"X can close the series with one more win.\" / \"Game 7. Winner takes the series.\"",
-          "Quiet Recap Card — a premium final-game artifact: winner-named headline, big score, what mattered, optional next game.",
-          "No Noise Brief — the personalized morning email recap. Code complete; the live send is gated on domain email setup.",
+          "Quiet Recap Card. A final-game artifact: winner-named headline, big score, what mattered, optional next game.",
+          "No Noise Brief. Personalized morning email recap. Code complete; live send gated on domain email setup.",
           "Tournament and team detail pages.",
           "WC country navigation: back to all-countries from a country page.",
         ]}
       />
 
-      <H3>May — World Cup pre-kickoff readiness</H3>
+      <H3>May. World Cup pre-kickoff readiness.</H3>
       <P>
         Tightens the 30-day run-up to June 11. The tournament-countdown
         component now carries the country page across the full
@@ -56,11 +56,11 @@ export default function ChangelogPage() {
           "Today brief surfaces a calm awareness band 8–30 days out.",
           "Kickoff-day Today hero takes over the slot in the last 24 hours.",
           "Country alert state pill confirms the user's current alert tier passively.",
-          "WC country notifications cron — kickoff + full-time pushes for country follows.",
+          "WC country notifications cron. Kickoff and full-time pushes for country follows.",
         ]}
       />
 
-      <H3>Apr–May — Phases 1–7</H3>
+      <H3>Apr–May. Phases 1–7.</H3>
       <P>
         A consolidated pass across navigation, Today calmness, game
         detail hierarchy, country detail copy, alert controls, snapshot

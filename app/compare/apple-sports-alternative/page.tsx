@@ -7,7 +7,7 @@ import {
 } from "../../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "No Noise Scores vs Apple Sports — honest comparison",
+  title: "No Noise Scores vs Apple Sports",
   description:
     "Apple Sports is fast and OS-integrated. No Noise Scores is calm and editorial. Here's where each wins.",
   alternates: {
@@ -30,7 +30,7 @@ export default function VsAppleSportsPage() {
         No-Spoilers mode, web-first.
       </P>
       <P>
-        Apple Sports is good at what it does — we&apos;re not trying to
+        Apple Sports is good at what it does. We&apos;re not trying to
         beat them at it. Different tools for different moods.
       </P>
 
@@ -42,7 +42,7 @@ export default function VsAppleSportsPage() {
           [
             "OS integration",
             "Live Activities, Lock Screen widgets, watch complication",
-            "PWA — no Live Activities on iOS",
+            "PWA. No Live Activities on iOS.",
           ],
           ["Sport breadth", "Many sports, all seasons", "NBA Playoffs + World Cup + NFL coming"],
           ["Install friction", "App Store, free, one tap", "Add to Home Screen on iPhone"],
@@ -52,8 +52,8 @@ export default function VsAppleSportsPage() {
       <P>
         If raw speed-to-score and OS integration matter most to you,
         Apple Sports is the right pick. They have advantages we
-        structurally can&apos;t match — iOS Live Activities aren&apos;t
-        available to web apps.
+        structurally can&apos;t match (iOS Live Activities aren&apos;t
+        available to web apps).
       </P>
 
       <H2>Where No Noise Scores wins</H2>
@@ -63,17 +63,17 @@ export default function VsAppleSportsPage() {
           [
             "Per-follow alert tiers",
             "On/off per team",
-            "Three tiers per follow — Quiet, Companion, All moments",
+            "Three tiers per follow: Quiet, Companion, All moments",
           ],
           [
             "Editorial voice",
-            "Sterile — \"NYK 110, BOS 102 — Final\"",
-            "Calm — \"Knicks took it.\" + what mattered bullets",
+            "Sterile: \"NYK 110, BOS 102. Final\"",
+            "Calm: \"Knicks took it.\" + what mattered bullets",
           ],
           [
             "No-Spoilers mode",
             "Not available",
-            "End-to-end contract — push previews stay vague too",
+            "End-to-end contract; push previews stay vague too",
           ],
           [
             "Series context",
@@ -125,12 +125,12 @@ export default function VsAppleSportsPage() {
       <H2>What this app won&apos;t copy from Apple Sports</H2>
       <P>
         Their scope. Apple Sports covers every major sport. This one
-        stays narrow on purpose — going deep on the moments that matter,
-        not wide on every season.
+        stays narrow on purpose, going deep on the moments that matter
+        instead of wide on every season.
       </P>
 
       <P>
-        Try No Noise Scores —{" "}
+        Try No Noise Scores.{" "}
         <a
           href="/app"
           style={{

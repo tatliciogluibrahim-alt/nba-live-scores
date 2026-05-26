@@ -235,8 +235,8 @@ export function FollowCard({ data }: { data: FollowCardData }) {
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
               Alert slots are full ({alertSlotCount} of {alertSlotCap} on
-              the free plan). Turn one off to enable this — unlimited
-              alerts land in a small paid tier later.
+              the free plan). Turn one off to enable this. Unlimited
+              alerts land in a paid tier later.
             </p>
           ) : null}
           <div className="mt-2">

@@ -7,19 +7,19 @@
 const STEPS = [
   {
     title: "Follow",
-    body: "Pick the teams, countries, series, and tournaments you care about. That's your sports circle.",
+    body: "Tell the app what you care about. Teams, countries, series, tournaments. Only those show up.",
   },
   {
     title: "Alert",
-    body: "Turn alerts on per follow. Three levels: Quiet, Companion, All moments. Pick one and adjust later.",
+    body: "Per-follow notifications. Three volume levels. You decide which moments buzz your phone.",
   },
   {
     title: "Pin",
-    body: "Pin a specific game to Watching. It becomes your tracking screen for that night. Pin is separate from Alert.",
+    body: "Pin one game. It lives on the Watching tab until the game ends. Tracking, not alerts.",
   },
   {
     title: "No-Spoilers",
-    body: "Hide scores, headlines, and outcomes across every screen. Reveal one at a time. Good for watching on delay.",
+    body: "Blur every score, headline, and outcome. Push previews stay vague. Reveal anything with a tap.",
   },
 ];
 
@@ -31,7 +31,7 @@ export function HowItWorksCapsule() {
     >
       <SectionHeader
         eyebrow="How it works"
-        title="Four ideas, and that's it."
+        title="Four ideas. That's the app."
       />
 
       <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">

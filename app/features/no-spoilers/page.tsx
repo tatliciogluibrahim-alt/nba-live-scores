@@ -7,7 +7,7 @@ import {
 } from "../../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "No-Spoilers — No Noise Scores",
+  title: "No-Spoilers | No Noise Scores",
   description:
     "Hide scores, headlines, and outcomes across every screen. Push notification previews stay vague.",
   alternates: { canonical: "https://nonoisescores.app/features/no-spoilers" },
@@ -38,15 +38,15 @@ export default function NoSpoilersPage() {
           "Series state (\"X leads 3-1\") on game and series pages.",
           "Recap headlines that name the winner.",
           "\"What mattered\" bullets that reveal outcome.",
-          "Push notification body text — rewritten to stay vague (e.g. \"Quarter wrapped. Tap to check in.\").",
-          "Close-game and comeback alerts — skipped entirely.",
+          "Push notification body text. Rewritten to stay vague (e.g. \"Quarter wrapped. Tap to check in.\").",
+          "Close-game and comeback alerts. Skipped entirely.",
           "End-of-night recap cards on Today.",
         ]}
       />
 
       <H2>What stays visible</H2>
       <P>
-        Structural info stays — that a game is{" "}
+        Structural info stays. That a game is{" "}
         <em>final</em>, that a series is best-of-seven, that there&apos;s
         a Game 7. Team and country codes stay too, so you can still find
         what you&apos;re looking for.
@@ -64,7 +64,7 @@ export default function NoSpoilersPage() {
         <strong style={{ color: "var(--ink)" }}>Alerts & Notifications</strong>{" "}
         in the bottom nav. Toggle{" "}
         <strong style={{ color: "var(--ink)" }}>No-Spoilers</strong> at
-        the top. That&apos;s the whole switch — it stays on across visits
+        the top. That&apos;s the whole switch. It stays on across visits
         until you turn it off.
       </P>
       <P>

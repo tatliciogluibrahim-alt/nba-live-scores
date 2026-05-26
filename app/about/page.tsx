@@ -6,7 +6,7 @@ import {
 } from "../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "About — No Noise Scores",
+  title: "About | No Noise Scores",
   description:
     "A calm sports companion for the moments that matter. Built by one person, kept narrow on purpose.",
   alternates: { canonical: "https://nonoisescores.app/about" },
@@ -28,8 +28,8 @@ export default function AboutPage() {
 
       <P>
         This one is narrower on purpose. It covers the events that pull
-        you to the screen — NBA Playoffs, the FIFA World Cup, NFL when it
-        gets here — and it stays quiet the rest of the time.
+        you to the screen. NBA Playoffs, the FIFA World Cup, NFL when it
+        gets here. The rest of the time it stays quiet.
       </P>
 
       <H2>What it does</H2>
@@ -38,7 +38,7 @@ export default function AboutPage() {
           "Lets you follow teams, countries, series, and tournaments.",
           "Sends per-follow alerts at three levels: Quiet, Companion, All moments.",
           "Lets you pin a specific game to Watching for the night.",
-          "Hides scores, headlines, and outcomes across every screen when you want — push notification previews stay vague.",
+          "Hides scores, headlines, and outcomes across every screen when you want. Push notification previews stay vague.",
           "Shows a recap card after a game ends so you can catch up without a feed.",
           "Counts down to tournaments. Anchors country pages around your group.",
         ]}
@@ -59,8 +59,8 @@ export default function AboutPage() {
       <H2>Who&apos;s building it</H2>
       <P>
         Solo project by Ibrahim. Built mobile-first as a Progressive Web
-        App — install it on your phone, it acts like a regular app with
-        push notifications and a home-screen icon.
+        App. Install it on your phone and it acts like a regular app
+        with push notifications and a home-screen icon.
       </P>
 
       <H2>Get in touch</H2>

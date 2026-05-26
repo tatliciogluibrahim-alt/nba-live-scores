@@ -241,8 +241,8 @@ export function PerFollowAlerts() {
                       style={{ color: "var(--mute-1)", fontWeight: 500 }}
                     >
                       Alert slots are full ({alertSlotCount} of {alertSlotCap}{" "}
-                      on the free plan). Turn one off to enable this — or
-                      unlimited alerts will land in a small paid tier later.
+                      on the free plan). Turn one off to enable this.
+                      Unlimited alerts will land in a paid tier later.
                     </p>
                   ) : null}
 

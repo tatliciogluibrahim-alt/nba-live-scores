@@ -5,7 +5,20 @@ import { SectionHeader } from "./HowItWorksCapsule";
 // this section makes that narrowness feel intentional and curated,
 // not lacking.
 
-const MOMENTS = [
+type MomentEntry = {
+  sport: string;
+  title: string;
+  detail: string;
+  accent: string;
+  soft: string;
+  icon: string;
+  /** Optional status pill — only shown when set. NBA and WC don't need
+   *  one (they're live or in the pre-window); NFL uses it for the
+   *  ship date. */
+  status?: string;
+};
+
+const MOMENTS: MomentEntry[] = [
   {
     sport: "NBA",
     title: "NBA Playoffs",
@@ -14,17 +27,15 @@ const MOMENTS = [
     accent: "var(--nba)",
     soft: "var(--nba-soft)",
     icon: "🏀",
-    status: "Live moment",
   },
   {
     sport: "FIFA",
     title: "World Cup 2026",
     detail:
-      "Country pages with group, path-to-final, opener countdown, kickoff and full-time alerts. June 11, 2026 — Mexico City.",
+      "Country pages with group, path-to-final, opener countdown, kickoff and full-time alerts. June 11, 2026 in Mexico City.",
     accent: "var(--wc)",
     soft: "var(--wc-soft)",
     icon: "⚽",
-    status: "Pre-tournament",
   },
   {
     sport: "NFL",
@@ -76,18 +87,20 @@ export function MomentsBand() {
                 <span aria-hidden style={{ fontSize: 32 }}>
                   {m.icon}
                 </span>
-                <span
-                  className="rounded-full px-2.5 py-1 text-[10px] uppercase"
-                  style={{
-                    background: "var(--paper)",
-                    color: m.accent,
-                    fontFamily: "var(--font-mono)",
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                  }}
-                >
-                  {m.status}
-                </span>
+                {m.status ? (
+                  <span
+                    className="rounded-full px-2.5 py-1 text-[10px] uppercase"
+                    style={{
+                      background: "var(--paper)",
+                      color: m.accent,
+                      fontFamily: "var(--font-mono)",
+                      fontWeight: 700,
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    {m.status}
+                  </span>
+                ) : null}
               </div>
               <p
                 className="mb-1 text-[11px] uppercase"

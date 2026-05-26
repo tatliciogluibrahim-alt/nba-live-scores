@@ -7,7 +7,7 @@ import {
 } from "../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "World Cup 2026 app — calm tournament companion",
+  title: "World Cup 2026 app",
   description:
     "Pick your country. Countdown to kickoff. Group context. Path to the final. Kickoff and full-time alerts. June 11, 2026.",
   alternates: {
@@ -20,7 +20,7 @@ export default function WorldCup2026Page() {
     <ContentPageShell
       eyebrow="FIFA World Cup 2026"
       headline="A calm companion for the World Cup."
-      intro="June 11, 2026 — Mexico City. Pick your country. Countdown, your group, kickoff and full-time pings."
+      intro="June 11, 2026. Mexico City. Pick your country. Countdown, your group, kickoff and full-time pings."
     >
       <P>
         The World Cup is a 32-day event with 48 teams across the US,
@@ -33,12 +33,12 @@ export default function WorldCup2026Page() {
       <H2>What the World Cup pages do</H2>
       <BulletList
         items={[
-          "Pick your country. You see your country's path through the tournament — group, opponents, knockout bracket.",
+          "Pick your country. You see your country's path through the tournament. Group, opponents, knockout bracket.",
           "Live countdown to the opening match (June 11) with intensity tiers as kickoff approaches.",
           "Group strip showing your group's current standings (lights up post-kickoff).",
-          "Path timeline — Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final.",
+          "Path timeline. Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final.",
           "Stakes line: \"Top two in Group X advance. Best four third-place finishers also move on.\"",
-          "Country's next match block — opponent, time, channel.",
+          "Country's next match block. Opponent, time, channel.",
         ]}
       />
 
@@ -49,8 +49,8 @@ export default function WorldCup2026Page() {
       </P>
       <BulletList
         items={[
-          "Kickoff — your country's match just started.",
-          "Full time — the match just ended.",
+          "Kickoff. Your country's match just started.",
+          "Full time. The match just ended.",
         ]}
       />
       <P>
@@ -63,7 +63,7 @@ export default function WorldCup2026Page() {
         Watching the match on delay tonight? Turn No-Spoilers on. Group
         standings, scores, and recap cards stay blurred. The push you
         get at full-time will read &quot;Match wrapped. Tap when
-        you&apos;re ready.&quot; — no score, no winner.
+        you&apos;re ready.&quot;. No score, no winner.
       </CalloutBox>
 
       <H2>How it&apos;s different from FotMob / SofaScore</H2>

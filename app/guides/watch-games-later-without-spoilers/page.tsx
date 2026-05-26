@@ -7,7 +7,7 @@ import {
 } from "../../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "Watch games later without spoilers — guide",
+  title: "Watch games later without spoilers",
   description:
     "Recorded the game? Watch it on delay without seeing scores, headlines, or push previews. Here's how.",
   alternates: {
@@ -25,7 +25,7 @@ export default function WatchLaterGuide() {
     >
       <P>
         The hardest part of watching on delay isn&apos;t the sports app
-        you choose — it&apos;s every notification, feed, and friend
+        you choose. It&apos;s every notification, feed, and friend
         group chat that leaks the score first.
       </P>
       <P>
@@ -34,7 +34,7 @@ export default function WatchLaterGuide() {
         rest.
       </P>
 
-      <H2>Step 1 — Turn No-Spoilers on</H2>
+      <H2>Step 1. Turn No-Spoilers on</H2>
       <P>
         Open the app. Tap{" "}
         <strong style={{ color: "var(--ink)" }}>
@@ -50,15 +50,15 @@ export default function WatchLaterGuide() {
         tap to reveal. Push notification bodies stay vague.
       </P>
 
-      <H2>Step 2 — Confirm the contract</H2>
+      <H2>Step 2. Confirm the contract</H2>
       <P>
         Before you start the game, spot-check the contract:
       </P>
       <BulletList
         items={[
-          "Open Today — you should see a small muted dot in the header indicating No-Spoilers is on.",
-          "Tap into any game you've already played — score should be blurred. Headline should be \"Game wrapped.\" not \"X took it.\"",
-          "Tap your team's series page — series state should be \"Series context hidden.\" not \"NY leads 3–1.\"",
+          "Open Today. You should see a small muted dot in the header indicating No-Spoilers is on.",
+          "Tap into any game you've already played. Score should be blurred. Headline should be \"Game wrapped.\" not \"X took it.\"",
+          "Tap your team's series page. Series state should be \"Series context hidden.\" not \"NY leads 3–1.\"",
           "If you have alerts on, the next push you get should not name a score or winner.",
         ]}
       />
@@ -73,32 +73,32 @@ export default function WatchLaterGuide() {
         after the game.
       </CalloutBox>
 
-      <H2>Step 3 — During the game</H2>
+      <H2>Step 3. During the game</H2>
       <P>
         Open the app while you watch if you want a real-time companion.
         The score stays blurred. Series state stays hidden. The Quiet
         Recap card that fires at the end of the night stays hidden too.
       </P>
       <P>
-        If you want to peek at the score — tap the blurred number. It
+        If you want to peek at the score. Tap the blurred number. It
         reveals just that one element, not the whole page. The blur
         comes back on the next visit unless you turn No-Spoilers off.
       </P>
 
-      <H2>Step 4 — When you&apos;re done</H2>
+      <H2>Step 4. When you&apos;re done</H2>
       <P>
         Watched the game? Turn No-Spoilers off in{" "}
         <strong style={{ color: "var(--ink)" }}>
           Alerts & Notifications
         </strong>
-        . You don&apos;t need to leave it on — though many users do
+        . You don&apos;t need to leave it on. Though many users do
         because it keeps the app calmer overall.
       </P>
 
       <H2>If you watch on delay regularly</H2>
       <P>
         Keep No-Spoilers on as your default. The reveal mechanic per
-        element means you can use the app live too — just tap any score
+        element means you can use the app live too. Just tap any score
         you want to see. The &ldquo;hide first, reveal on demand&rdquo; model is
         actually the right default for anyone who finds sports apps
         overwhelming, not just delay-watchers.

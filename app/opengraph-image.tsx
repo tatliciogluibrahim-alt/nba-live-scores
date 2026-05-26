@@ -7,12 +7,15 @@ import { ImageResponse } from "next/og";
 // the next/og Satori pipeline.
 //
 // Brand-aligned: cream chassis, ink type, mono ticker, BrandMark glyph
-// in the corner. No imagery, no logos — same Stadium Panel aesthetic
+// in the corner. No imagery, no logos. Same Stadium Panel aesthetic
 // as the app.
 //
 // 1200x630 is the Twitter / LinkedIn / Facebook standard.
-
-export const runtime = "edge";
+//
+// Runtime is Node (not Edge) because next/og pushes the Edge bundle
+// past Vercel's 1 MB Hobby-tier limit. Node has a 50 MB limit and
+// Vercel caches the rendered PNG, so the slightly slower cold start
+// only happens on the first request after deploy.
 export const alt = "No Noise Scores — the calm sports companion";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

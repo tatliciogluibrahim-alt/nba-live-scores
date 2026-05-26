@@ -7,7 +7,7 @@ import {
 } from "../../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "Quiet sports alerts — No Noise Scores",
+  title: "Quiet sports alerts | No Noise Scores",
   description:
     "Per-follow alert levels. Quiet hours. Push previews that respect No-Spoilers.",
   alternates: {
@@ -46,7 +46,7 @@ export default function QuietSportsAlertsPage() {
 
       <H2>Quiet hours</H2>
       <P>
-        Set a daily quiet window — say 10pm to 7am — and pushes hold off
+        Set a daily quiet window, say 10pm to 7am, and pushes hold off
         across that block. Delivery resumes the moment your window ends.
       </P>
 
@@ -66,7 +66,7 @@ export default function QuietSportsAlertsPage() {
       </P>
       <P>
         Close-game and comeback alerts are skipped entirely under
-        No-Spoilers — those are inherently spoilery.
+        No-Spoilers. Those are inherently spoilery.
       </P>
 
       <H2>What we don&apos;t do</H2>
@@ -76,7 +76,7 @@ export default function QuietSportsAlertsPage() {
           "Marketing pings in the notification body.",
           "\"Don't miss the playoffs!\" hype.",
           "Re-engagement pings if you stop using the app.",
-          "Selling push data — no advertiser knows you got a Knicks alert.",
+          "Selling push data. No advertiser knows you got a Knicks alert.",
         ]}
       />
 

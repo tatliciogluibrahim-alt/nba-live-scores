@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 // Friend beta signup form. Calm, three-field. POSTs to /api/beta/signup
-// which is KV-backed + rate-limited. No confirmation email — the
+// which is KV-backed + rate-limited. No confirmation email. The
 // follow-up DM is manual.
 
 type Status = "idle" | "submitting" | "saved" | "error";
@@ -159,7 +159,7 @@ export function BetaSignupForm() {
         className="mt-3 text-[12px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Email goes to KV storage. No confirmation email gets sent — I&apos;ll
+        Email goes to KV storage. No confirmation email gets sent. I&apos;ll
         DM/email you when the next wave opens. See{" "}
         <a
           href="/privacy"

@@ -7,7 +7,7 @@ import {
 } from "../../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "Follow vs Pin — what's the difference?",
+  title: "Follow vs Pin",
   description:
     "Follow is for teams, countries, series. Pin is for one specific game. Here's how they work together.",
   alternates: {
@@ -46,7 +46,7 @@ export default function FollowVsPinPage() {
           ],
           ["How many you can have", "Unlimited", "Multiple, but typically 1–3 at a time"],
           ["Where it shows up", "Today, Following", "Watching"],
-          ["Sends notifications?", "Yes, if alerts are enabled", "No — pinning doesn't alert"],
+          ["Sends notifications?", "Yes, if alerts are enabled", "No. Pinning doesn't alert"],
           ["Disappears when?", "When you unfollow", "Automatically after the game ends"],
         ]}
       />
@@ -65,7 +65,7 @@ export default function FollowVsPinPage() {
       <CalloutBox eyebrow="The Watching tab">
         Your Watching tab is the home for pinned games. If nothing is
         pinned, Watching is empty. Pin a game and it becomes your
-        cockpit for that game — live score, what mattered, broadcast
+        cockpit for that game. Live score, what mattered, broadcast
         info, the works.
       </CalloutBox>
 
@@ -85,7 +85,7 @@ export default function FollowVsPinPage() {
 
       <H2>How to pin</H2>
       <P>
-        Open any game page — tap a game card on Today, Following, or
+        Open any game page. Tap a game card on Today, Following, or
         anywhere else. On the game page, tap{" "}
         <strong style={{ color: "var(--ink)" }}>Pin to Watching</strong>.
         That game now lives in Watching until it ends.
@@ -99,7 +99,7 @@ export default function FollowVsPinPage() {
       <P>
         Yes. Most users will have follows + alerts for their team year-
         round, then pin specific games on game nights for focused
-        tracking. They reinforce each other — your follows tell us what
+        tracking. They reinforce each other. Your follows tell us what
         to surface and when to ping; your pin tells us what you&apos;re
         actively tracking right now.
       </P>
