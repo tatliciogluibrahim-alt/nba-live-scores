@@ -188,26 +188,17 @@ export function deriveDailyBrief({
     };
   }
 
-  // 4b ─ Pre-tournament awareness window (8–30 days). Final-week copy
-  // is reserved for the genuine final week; this calmer band keeps
-  // Today from feeling sleepy during the run-up. Only fires when the
-  // user has a follow (otherwise priority 6 handles onboarding) and
-  // there's nothing live / today on the radar to displace it.
-  if (wcDays !== null && wcDays > 7 && wcDays <= 30) {
-    const country = followedCountry ? getCountry(followedCountry.id) : null;
-    if (country) {
-      return {
-        text: `${wcDays} days to first whistle. ${country.name} are in Group ${country.group}.`,
-        cta: { label: `Open ${country.name}`, href: `/country/${country.id}` },
-      };
-    }
-    // Has follows but no country picked yet — invite calmly without
-    // hijacking the brief into a hard sell.
-    return {
-      text: `World Cup starts in ${wcDays} days. Pick a country to make it personal.`,
-      cta: { label: "Pick a country", href: "/following/country" },
-    };
-  }
+  // 4b ─ Pre-tournament awareness window (8–30 days). Removed in a
+  // post-Phase-8 polish pass: the bottom ReminderRow already says
+  // exactly the same thing ("USA kick off in 17 days. Group draw is
+  // set.") and the brief copy was stacking redundantly on top of it.
+  // Letting the brief fall through to the calmer default ("Your
+  // follows are set.") gives the reminder the floor for WC
+  // anticipation in this window and frees up Today's top of frame.
+  //
+  // Final-week brief (≤7 days, priority 4 above) and kickoff-day hero
+  // (≤24h, in pickHero) still earn the top slot — those are the
+  // genuinely time-sensitive states.
 
   // Tournament is underway — country has a live or final fixture.
   if (tournamentIsLive(payload) && followedCountry) {

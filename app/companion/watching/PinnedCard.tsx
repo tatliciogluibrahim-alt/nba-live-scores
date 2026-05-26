@@ -82,6 +82,13 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
             contextLine={detailToShow || undefined}
             spoilerSubject={item.spoilerSubject}
             size="md"
+            // The TeamChip row above the ScoreModule already carries
+            // the matchup identity ("SA  vs  OKC"). Letting the score
+            // module render its own internal "SA · OKC" row meant
+            // every pinned card showed the matchup twice on top of
+            // each other — same pattern the game-detail H1 + ScoreModule
+            // already solves with hideMatchup.
+            hideMatchup
           />
         </div>
 
