@@ -77,16 +77,29 @@ When changing code:
 
 Current phase:
 
-Phase 3: World Cup mobile UX and share-card polish.
+Phases 1–7 are complete. The product is in a settled state covering
+object-detail navigation, Today calmness, game detail hierarchy, country
+pre-tournament polish, compact alerts, snapshot fallback, and small
+visual calibration. See `app/CHANGELOG_PRODUCT.md` for the per-phase
+detail.
 
-Allowed work in this phase:
+Completed phases (most recent first):
 
-- Improve World Cup no-country state
-- Fix World Cup mobile tab overflow
-- Improve World Cup selected-country hierarchy
-- Improve share card branding
-- Keep Instagram only as a subtle share card footer
-- Preserve NBA page
+- Phase 7 — Small visual system polish (pinned accent on Today, chip
+  tap targets)
+- Phase 6 — Final game snapshot fallback in /watching and /game/[id]
+- Phase 5 — Compact per-follow alert controls in Watch + Alerts
+- Phase 4 — Country detail pre-tournament polish
+- Phase 3 — Game detail hierarchy refinement
+- Phase 2 — Today pinned-state redundancy cleanup
+- Phase 1 — Object-detail navigation cleanup
+
+Work that may follow:
+
+- World Cup mobile UX refinements (tab overflow, no-country state
+  evolution, selected-country hierarchy)
+- Share card branding polish
+- Email signup (only when explicitly asked)
 
 Do not do yet:
 

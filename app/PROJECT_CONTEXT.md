@@ -307,17 +307,34 @@ When making code changes:
 
 ## Current Priority
 
-Current phase:
+Phases 1–7 are complete (see `CHANGELOG_PRODUCT.md` for per-phase
+detail). The product is in a settled state. Recent work covered:
 
-Phase 3: World Cup mobile UX and tournament companion polish.
+1. Object-detail navigation across Today / Following / game / country /
+   series detail pages
+2. Today pinned-state redundancy cleanup
+3. Game detail hierarchy refinement (consolidated Series block, pin
+   state hierarchy)
+4. Country detail pre-tournament polish (alert-state pill, "Group set"
+   pre-tournament copy)
+5. Compact per-follow alert controls in Watch + Alerts
+6. Snapshot fallback so historical/final games never dead-end at
+   "Not in the live feed"
+7. Small visual calibration (pinned orange accent on Today UpNext,
+   slightly larger chip tap targets)
 
-Focus on:
+Still on hold:
 
-1. Better World Cup no-country state
-2. Fix mobile tab/copy overflow
-3. Improve selected-country hierarchy
-4. Improve share card brand output
-5. Keep Instagram only in share card footer for now
-6. Do not add email signup yet
-7. Do not add monetization UI yet
-8. Do not refactor the whole app yet
+- Email signup
+- Monetization UI
+- PWA / iOS work
+- Whole-app refactor
+- New backend / account system
+
+Open follow-ups worth queuing when asked:
+
+- World Cup mobile UX (tab overflow, no-country state, selected-country
+  hierarchy)
+- Share card brand output polish
+- Tournament / team detail pages (Phase 1 used safe fallbacks because
+  these routes don't exist yet)

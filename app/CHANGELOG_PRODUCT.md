@@ -2,7 +2,133 @@
 
 ---
 
-## Cohesion Pass — 2026-05-22
+## Phases 1–7 — 2026-05-25
+
+A consolidated pass across navigation, Today calmness, game detail
+hierarchy, country detail copy, alert controls, snapshot fallback, and
+small visual calibration. Each phase was scoped to be targeted; no
+broad rewrites. Build + lint clean across all phases.
+
+### Phase 1 — Object detail navigation cleanup
+
+- Today "You Follow" chips: country/series chips already routed
+  correctly; fixed a broken `/series/<teamAbbr>` fallback in
+  `today-data.ts` for quiet team chips — now routes to `/following`.
+- Following card body now opens the object's detail page (country,
+  series) via a `<Link>`. Team and tournament rows leave the body
+  non-interactive until their detail pages exist.
+- Alert pill on each Following row is now an explicit `<button>` that
+  toggles the alert/unfollow panel — separated from body navigation so
+  taps don't collide.
+- Object types without detail routes (team, tournament) documented and
+  given safe fallbacks rather than dead-ending.
+
+Files: `app/companion/today/today-data.ts`,
+`app/companion/following/FollowCard.tsx`.
+
+### Phase 2 — Today pinned-state redundancy cleanup
+
+- `deriveDailyBrief` priority-2 (pinned) now suppresses the
+  "game pinned" CTA when the pinned game is already the first Up Next
+  card directly below the brief.
+- When pinned is hidden, copy reflects state:
+  `"One pinned game is live."` for live-pinned (hero pinned),
+  `"One game pinned for later."` otherwise.
+- Plurals preserved. Falls through cleanly to lower-priority briefs
+  (No-Spoilers, live followed games, tournament countdown).
+
+Files: `app/companion/today/daily-brief.ts`.
+
+### Phase 3 — Game detail hierarchy refinement
+
+- Consolidated the series dots strip + spoilery context into one
+  "Series" block under the scoreboard. Removed the duplicate bottom
+  Series Context card.
+- `deriveHero` no longer injects the spoilery series summary or
+  broadcast into the Preview hero context (both live in their
+  canonical sections: Series block + WatchLine).
+- `PinControls`: primary button is full width; "Open Watching" demoted
+  to a quiet inline link in the helper row, only present when the
+  game is actually pinned. Helper line is plain caption type without
+  an underlined link.
+- Pin button copy: `"Pin to Watching"` (unpinned) /
+  `"✓ Pinned · Tap to unpin"` (pinned).
+
+Files: `app/companion/game/NBALiveCompanion.tsx`,
+`app/companion/game/nba-moments.ts`,
+`app/companion/game/PinControls.tsx`.
+
+### Phase 4 — Country detail pre-tournament polish
+
+- Next Match empty (no feed): copy moves from
+  `"Fixtures will appear here once the feed is ready."` to
+  `"Match times are still being confirmed. We'll surface the opener here."`
+- `PathTimeline` Group stage uses pre-tournament-safe language:
+  state label `"Group set"` (was `"In Progress"`), detail
+  `"Group is set. Matches begin June 11."` Other path stages
+  unchanged.
+- Small alert-state pill (dot + uppercase mono label) under the
+  country header surfaces the user's current alert tier:
+  `Alerts off / Quiet / Companion / All moments`. Full controls
+  still live in `CountryPresetSection` below.
+
+Files: `app/companion/country/CountryClient.tsx`,
+`app/companion/country/PathTimeline.tsx`.
+
+### Phase 5 — Compact per-follow alert controls
+
+- `PerFollowAlerts` already used single-row expansion via `expandedKey`;
+  kept the pattern. Compact rows show object badge, kind label, name,
+  current state pill, and a "Change" affordance.
+- Alert slot copy consistent across the screen:
+  `"3 of 3 alert slots used. Follows are unlimited."`
+- Section order in `SettingsClient` reshuffled so `PerFollowAlerts`
+  comes before `PushSubscriptionPanel` / `NotificationPreview`.
+  Push test controls preserved (Send test push now / Send in 10s /
+  Disable push on this device) but no longer visually overpower the
+  alert-tier picker.
+
+Files: `app/companion/settings/PerFollowAlerts.tsx`,
+`app/companion/settings/SettingsClient.tsx`.
+
+### Phase 6 — Final game snapshot fallback
+
+- `useWatchingData` now fetches `/api/game-snapshot/{id}` for any
+  pinned game the live feeds don't know about. Resolved snapshots
+  render as real PinnedItems via `nbaToPinned`, not
+  "No longer in the live feed." rows. Stale state is reserved for
+  pins the snapshot store also can't resolve.
+- Snapshot cache persists across polls (brief feed flicker won't drop
+  the historical card). Merge filters by current pinned IDs so
+  unpinning still works.
+- `HighlightsStack` empty state for finals:
+  `"Highlights will appear when the snapshot is ready."`
+- `NotFound` for unknown game IDs gets a secondary
+  "Back to Following" alongside "Open Today".
+- No-Spoilers behavior preserved: snapshot pages flow through the
+  same `NBALiveCompanion` pipeline so `<Spoiler>`, `safeText()`, and
+  the canonical hidden caption all apply.
+
+Files: `app/companion/watching/watching-data.ts`,
+`app/companion/watching/use-watching-data.ts`,
+`app/companion/game/HighlightsStack.tsx`,
+`app/companion/game/GameDetailClient.tsx`.
+
+### Phase 7 — Small visual system polish
+
+- Pinned eyebrow on Today UpNext cards now uses `var(--nba)` orange,
+  consistent with the spec's "orange = active/pinned" accent rule.
+  Surfaces, borders, and personal-tint logic untouched.
+- Today follow-chip min tap target bumped 30px → 32px across all
+  chip variants (visible chips, live chips, "+N" overflow).
+- No major layout shifts. No new components. Visual system preserved.
+
+Files: `app/companion/today/sections/up-next.tsx`,
+`app/companion/today/sections/you-follow.tsx`.
+
+---
+
+
 
 A system-wide refactor to make every screen feel like one product. See
 `DESIGN.md` at the repo root for the principles, tokens, type allowlist,
