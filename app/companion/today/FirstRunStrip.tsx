@@ -108,7 +108,10 @@ function Step({ index, done, title, doneDetail, href, onAction }: StepProps) {
         className="grid h-7 w-7 shrink-0 place-items-center rounded-full"
         style={{
           background: done ? "var(--ink)" : "transparent",
-          border: `1.5px solid ${done ? "var(--ink)" : "var(--mute-2)"}`,
+          // Both states use 2px so the visual weight is consistent
+          // between done and pending steps. 1.5px borders rendered
+          // brittle at mobile pixel density.
+          border: `2px solid ${done ? "var(--ink)" : "var(--mute-2)"}`,
           color: done ? "var(--cream)" : "var(--mute-1)",
           fontFamily: "var(--font-mono)",
           fontSize: 12,

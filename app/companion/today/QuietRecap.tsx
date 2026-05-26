@@ -62,8 +62,11 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
             fontFamily: "var(--font-mono)",
             fontSize: 11,
             fontWeight: 700,
-            letterSpacing: "0.16em",
-            color: "rgba(241, 234, 216, 0.6)",
+            // Aligned to the canonical Eyebrow letter-spacing (0.12em)
+            // so the recap's caps mono reads as part of the same
+            // typographic system as every other section header.
+            letterSpacing: "0.12em",
+            color: "var(--cream-on-dark-tertiary)",
           }}
         >
           Recap
@@ -80,7 +83,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
 
         <p
           className="mt-2 text-[13px] leading-snug"
-          style={{ color: "rgba(241, 234, 216, 0.78)", fontWeight: 500 }}
+          style={{ color: "var(--cream-on-dark-secondary)", fontWeight: 500 }}
         >
           {sub}
         </p>
@@ -110,7 +113,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
             style={{
               background: "transparent",
               color: "var(--cream)",
-              border: "1px solid rgba(241, 234, 216, 0.35)",
+              border: "1px solid var(--cream-on-dark-hairline)",
             }}
           >
             Dismiss

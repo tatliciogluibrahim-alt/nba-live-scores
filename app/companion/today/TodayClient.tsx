@@ -153,7 +153,10 @@ function NoSpoilersAmbientDot() {
           fontFamily: "var(--font-mono)",
           fontSize: 10,
           fontWeight: 600,
-          letterSpacing: "0.1em",
+          // Aligned to canonical Eyebrow letter-spacing (0.12em) so
+          // every caps-mono micro-label on Today reads as one
+          // consistent system, not two different styles.
+          letterSpacing: "0.12em",
           textTransform: "uppercase",
         }}
       >

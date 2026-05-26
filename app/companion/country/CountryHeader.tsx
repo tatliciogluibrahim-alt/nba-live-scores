@@ -12,15 +12,19 @@ export function CountryHeader({ country }: { country: CountryEntry }) {
   // WC pages are the one place in the app where leaning into sport accent
   // pays off — soccer fans expect tournament identity. The flag chip
   // swaps from the neutral --cream-2 tile to a confident --wc-soft tile
-  // with a --wc-tinted text shadow on the eyebrow, and a thin --wc rail
-  // on the left edge anchors the whole header as "World Cup territory."
+  // with a --wc-tinted text shadow on the eyebrow, a slightly stronger
+  // 4px --wc rail (vs the standard 3px used by NBA cards) anchors the
+  // whole header as "World Cup territory" without changing the layout.
+  // The bump from 3px to 4px is small but reads as a clear signal that
+  // this isn't a generic detail page — same width as the bottom nav's
+  // active accent.
   return (
     <header
       className="rounded-[14px] border px-3 py-3"
       style={{
         background: "var(--paper)",
         borderColor: "var(--line)",
-        borderLeft: "3px solid var(--wc)",
+        borderLeft: "4px solid var(--wc)",
       }}
     >
       <div className="flex items-center gap-3">

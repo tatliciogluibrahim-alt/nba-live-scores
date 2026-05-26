@@ -169,7 +169,11 @@ export function EnableNotificationsCard() {
                   role="radio"
                   aria-checked={active}
                   onClick={() => setTier(p)}
-                  className="inline-flex flex-1 items-center justify-center rounded-full px-2.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+                  // min-h-[44px] hits the iOS tap target baseline so
+                  // the three pills feel equally tappable even when
+                  // label text widths differ ("Quiet" vs "Companion"
+                  // vs "All moments"). Slightly roomier padding too.
+                  className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-2 text-[12px] font-semibold transition active:scale-[0.97]"
                   style={{
                     background: active ? "var(--ink)" : "transparent",
                     color: active ? "var(--cream)" : "var(--ink)",

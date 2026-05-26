@@ -108,7 +108,7 @@ export function TournamentCountdown({ country }: { country: CountryEntry }) {
       </div>
 
       <article
-        className="rounded-[14px] border px-4 py-4"
+        className="no-noise-tier-transition rounded-[14px] border px-4 py-4"
         style={{
           background: "var(--paper)",
           borderColor: "var(--line)",

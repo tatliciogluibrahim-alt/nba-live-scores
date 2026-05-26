@@ -63,12 +63,18 @@ export function FollowingDashboard() {
       >
         Your sports circle. {buildFollowSummary(follows)}
       </p>
-      <p
-        className="mb-3 text-[12px] leading-snug"
-        style={{ color: "var(--mute-1)", fontWeight: 500 }}
-      >
-        {alertSlotCount} of {alertSlotCap} alerts used.
-      </p>
+      {/* Alert-slot counter only renders when at least one follow is
+          alert-enabled. With zero alerts the line read as "you haven't
+          done anything" rather than a useful status; the full
+          breakdown lives in Watch + Alerts anyway. */}
+      {alertSlotCount > 0 ? (
+        <p
+          className="mb-3 text-[12px] leading-snug"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          {alertSlotCount} of {alertSlotCap} alert slots used.
+        </p>
+      ) : null}
 
       <ul className="space-y-2">
         {cards.map((c) => (

@@ -9,7 +9,10 @@ export function CalmCard() {
       className="rounded-[14px] border border-dashed px-4 py-5 text-center"
       style={{
         background: "var(--paper)",
-        borderColor: "var(--mute-2)",
+        // Use --line for dashed borders — --mute-2 sits too close to
+        // the paper background on a bright light display and the
+        // dash pattern stops reading at all.
+        borderColor: "var(--line)",
       }}
     >
       <Display as="p" size="sm">

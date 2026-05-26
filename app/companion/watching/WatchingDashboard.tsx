@@ -118,7 +118,14 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
 
       {stalePins.length > 0 ? (
         <div className="mt-5">
-          <Eyebrow>Out of feed</Eyebrow>
+          <Eyebrow>Archived pins</Eyebrow>
+          <p
+            className="mt-1 text-[12px] leading-snug"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            These games are no longer in the live feed. You can unpin
+            them below.
+          </p>
           <ul className="mt-2 space-y-2">
             {stalePins.map((pin) => (
               <li key={pin.id}>

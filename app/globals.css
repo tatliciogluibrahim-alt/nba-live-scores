@@ -35,6 +35,16 @@
      stay separate so basketball / football cards retain their identity. */
   --live:       #b85a2a;
 
+  /* Cream-on-dark scale. Used by components that flip the chassis
+     (QuietRecap's end-of-night card, future dark surfaces). Three
+     tiers — primary text, secondary text, tertiary text / hairlines —
+     so we don't keep hand-tuning rgba alphas inside components. The
+     literal cream value (#f1ead8) matches --cream above. */
+  --cream-on-dark-primary:    var(--cream);
+  --cream-on-dark-secondary:  rgba(241, 234, 216, 0.78);
+  --cream-on-dark-tertiary:   rgba(241, 234, 216, 0.6);
+  --cream-on-dark-hairline:   rgba(241, 234, 216, 0.35);
+
   /* Fonts. Next.js (app/layout.tsx) replaces these CSS variables with
      real font-family values for Bricolage Grotesque (display), Inter
      (body), and JetBrains Mono (mono) when the web fonts are loaded.
@@ -123,8 +133,27 @@ a {
   animation: no-noise-live-fade 1.8s ease-in-out infinite;
 }
 
+/* Tier-transition fade. Used by the TournamentCountdown card when it
+   crosses an intensity threshold (e.g. 31 → 30 days, 8 → 7 days,
+   25 → 24 hours, 7 → 6 hours). The card stays mounted but its copy +
+   accent rail swap, which was popping abruptly. A short fade-in on
+   re-render smooths the moment without overselling it. */
+@keyframes no-noise-tier-fade-in {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.no-noise-tier-transition {
+  animation: no-noise-tier-fade-in 240ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .no-noise-live-fade {
+  .no-noise-live-fade,
+  .no-noise-tier-transition {
     animation: none !important;
   }
 }

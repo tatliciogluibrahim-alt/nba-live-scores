@@ -8,13 +8,13 @@ export function WatchingEmpty() {
   return (
     <section>
       <Display as="h1" size="lg" className="mb-2">
-        Nothing pinned.
+        Nothing pinned yet.
       </Display>
       <p
         className="mb-5 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Pinning keeps games here. Alerts come from follows.
+        Pin a game to keep it here. Alerts come from follows.
       </p>
 
       <div className="space-y-2">
@@ -56,7 +56,7 @@ export function WatchingEmpty() {
             className="text-[11px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            Team · Country · Series · Tournament
+            Teams, countries, series, tournaments
           </span>
         </Link>
       </div>
