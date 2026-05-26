@@ -362,13 +362,36 @@ function normalizeSeriesSummary(summary?: string) {
     .toUpperCase();
 }
 
+// ESPN abbreviation → app-canonical abbreviation. The app's team
+// directory (app/companion/following/data/teams.ts) uses canonical NBA
+// abbreviations ("NYK" for Knicks, "NOP" wouldn't apply here, etc.).
+// ESPN's scoreboard endpoint occasionally returns a shorter variant
+// ("NY") that doesn't match the directory, which silently breaks the
+// push reverse index — events come in with "NY", subs are indexed under
+// "NYK", `listSubscriptionsByTeams(["NY"])` returns empty, dispatcher
+// fans out to nobody.
+//
+// We normalize at this single boundary so every downstream consumer
+// (cron detector, dispatcher, UI matchups, share cards) sees one
+// consistent code per team. Only add an entry here when an ESPN code
+// does NOT match the directory — most teams already line up.
+const TEAM_ABBR_ALIASES: Record<string, string> = {
+  NY: "NYK",
+};
+
+function canonicalAbbreviation(raw: string | undefined): string {
+  const upper = (raw ?? "").toUpperCase();
+  if (!upper) return "TBD";
+  return TEAM_ABBR_ALIASES[upper] ?? upper;
+}
+
 function normalizeTeam(competitor?: ESPNCompetitor): Team {
   const team = competitor?.team;
 
   return {
     id: team?.id ?? competitor?.id,
     name: team?.displayName ?? team?.shortDisplayName ?? "Team",
-    abbreviation: team?.abbreviation ?? "TBD",
+    abbreviation: canonicalAbbreviation(team?.abbreviation),
     score: Number(competitor?.score ?? 0),
     logo: team?.logos?.[0]?.href ?? team?.logo ?? "",
   };
