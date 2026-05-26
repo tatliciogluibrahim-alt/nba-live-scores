@@ -71,7 +71,7 @@ export default function BetaPage() {
         </a>{" "}
         on Instagram or email{" "}
         <a
-          href="mailto:tatlicioglu.ibrahim@gmail.com"
+          href="mailto:nonoisescores@gmail.com"
           style={{
             color: "var(--ink)",
             textDecoration: "underline",
@@ -79,7 +79,7 @@ export default function BetaPage() {
             textUnderlineOffset: "3px",
           }}
         >
-          tatlicioglu.ibrahim@gmail.com
+          nonoisescores@gmail.com
         </a>
         .
       </P>

@@ -92,6 +92,12 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  // Search Console ownership verification. Once Google's bots see this
+  // tag on /, the property at search.google.com/search-console verifies
+  // as owned. The string is a public token — safe to commit.
+  verification: {
+    google: "TkVwyeTc6lisFqx5kJzDZj99pQGKKD5PL-jzyTy6KZ0",
+  },
 };
 
 export const viewport: Viewport = {

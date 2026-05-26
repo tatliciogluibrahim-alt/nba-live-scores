@@ -144,14 +144,14 @@ export function LandingFooter() {
               @nonoisescores on Instagram
             </a>
             <a
-              href="mailto:tatlicioglu.ibrahim@gmail.com"
+              href="mailto:nonoisescores@gmail.com"
               className="text-[12px] transition hover:underline"
               style={{
                 color: "var(--cream-on-dark-1, rgba(241,234,216,0.9))",
                 fontWeight: 500,
               }}
             >
-              tatlicioglu.ibrahim@gmail.com
+              nonoisescores@gmail.com
             </a>
           </div>
           <p

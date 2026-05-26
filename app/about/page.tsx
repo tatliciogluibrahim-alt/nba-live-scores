@@ -81,7 +81,7 @@ export default function AboutPage() {
         </a>{" "}
         on Instagram, or email{" "}
         <a
-          href="mailto:tatlicioglu.ibrahim@gmail.com"
+          href="mailto:nonoisescores@gmail.com"
           style={{
             color: "var(--ink)",
             textDecoration: "underline",
@@ -89,7 +89,7 @@ export default function AboutPage() {
             textUnderlineOffset: "3px",
           }}
         >
-          tatlicioglu.ibrahim@gmail.com
+          nonoisescores@gmail.com
         </a>
         . Real questions, real feedback, anything.
       </P>

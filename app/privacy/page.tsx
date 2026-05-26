@@ -124,7 +124,7 @@ export default function PrivacyPage() {
         </a>{" "}
         or email{" "}
         <a
-          href="mailto:tatlicioglu.ibrahim@gmail.com"
+          href="mailto:nonoisescores@gmail.com"
           style={{
             color: "var(--ink)",
             textDecoration: "underline",
@@ -132,7 +132,7 @@ export default function PrivacyPage() {
             textUnderlineOffset: "3px",
           }}
         >
-          tatlicioglu.ibrahim@gmail.com
+          nonoisescores@gmail.com
         </a>
         .
       </P>
