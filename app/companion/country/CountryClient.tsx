@@ -12,6 +12,8 @@ import { PathTimeline } from "./PathTimeline";
 import { TournamentCountdown } from "./TournamentCountdown";
 import { useFollows } from "../providers";
 import { PRESETS } from "../state/types";
+import { StakesLine } from "../stakes/StakesLine";
+import { deriveWCGroupStake } from "../stakes/derive-stakes";
 
 // Single-screen World Cup Country Dashboard. Composition only.
 
@@ -151,6 +153,15 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
         <PathTimeline
           stages={pathStages}
           tournamentStarted={tournamentStarted}
+        />
+        {/* Plain-English stake — sits under the path stages so it reads
+            as commentary on the structure above. Currently emits a
+            pre-tournament line ("Top two control their path") only; the
+            mid-tournament standings-aware variant ships when the WC
+            standings feed lands. */}
+        <StakesLine
+          stake={deriveWCGroupStake(country, tournamentStarted)}
+          ariaSubject={country.name}
         />
       </div>
 

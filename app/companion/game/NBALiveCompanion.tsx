@@ -13,6 +13,9 @@ import { PinControls } from "./PinControls";
 import { deriveHero, deriveSeriesContext, deriveSeriesDots } from "./nba-moments";
 import { HighlightsStack } from "./HighlightsStack";
 import { PeriodScoreLine } from "./PeriodScoreLine";
+import { StakesLine } from "../stakes/StakesLine";
+import { deriveNBASeriesStake } from "../stakes/derive-stakes";
+import { QuietRecapCard } from "../recap/QuietRecapCard";
 import { useNBADetail } from "./use-nba-detail";
 
 // NBA Live Companion — the deepened /game/[id] for NBA games. Moments-first,
@@ -170,22 +173,34 @@ export function NBALiveCompanion({
         </div>
       ) : null}
 
-      {/* ── Hero moment band (one earned moment) ────────────────────────── */}
-      {/* Live games get a warm card surface — physically warmer than
-          upcoming/final so the live state has a distinct visual feel. */}
-      <div className="mt-4">
-        <HeroMoment
-          eyebrow={hero.eyebrow}
-          headline={hero.headline}
-          context={hero.context}
-          accent="var(--nba)"
-          live={hero.live}
-          surface={isLive ? "var(--nba-soft)" : undefined}
-          // Finals are reference, not action. Drop the accent rail so
-          // the strongest visual treatment is saved for live/upcoming.
-          muted={game.status === "final"}
-        />
-      </div>
+      {/* ── Stakes ─────────────────────────────────────────────────────── */}
+      {/* Plain-English context: "X can close the series with one more
+          win." / "Game 7. Winner takes the series." Sits as inline body
+          copy under the Series block — not a card, not a rail. Returns
+          null when there's no derivable stake (regular-season games). */}
+      <StakesLine
+        stake={deriveNBASeriesStake(game)}
+        ariaSubject={subject}
+      />
+
+      {/* ── Hero moment band (live + upcoming) ──────────────────────────── */}
+      {/* For finals, the QuietRecapCard further down takes the editorial
+          moment slot — having both HeroMoment ("Final.") and the recap
+          stacked one above the other read as two cards saying the same
+          thing. Live and upcoming still earn the HeroMoment because
+          there's no recap to anchor them. */}
+      {game.status === "final" ? null : (
+        <div className="mt-4">
+          <HeroMoment
+            eyebrow={hero.eyebrow}
+            headline={hero.headline}
+            context={hero.context}
+            accent="var(--nba)"
+            live={hero.live}
+            surface={isLive ? "var(--nba-soft)" : undefined}
+          />
+        </div>
+      )}
 
       {/* ── Watch (single canonical line) ───────────────────────────────── */}
       {channel ? (
@@ -194,22 +209,37 @@ export function NBALiveCompanion({
         </div>
       ) : null}
 
+      {/* ── Quiet Recap Card (finals only) ──────────────────────────────── */}
+      {/* The editorial finale: winner-named headline, big score, series
+          state, up to 3 "what mattered" bullets, optional next-game
+          line. Replaces the live HeroMoment + HighlightsStack for
+          finals — having both stacked read as two cards saying the
+          same thing. */}
+      {game.status === "final" ? (
+        <div className="mt-4">
+          <QuietRecapCard game={game} />
+        </div>
+      ) : null}
+
       {/* ── Per-quarter scoring ─────────────────────────────────────────── */}
       {/* The basketball-native breakdown — each quarter's score by team.
           PeriodScoreLine returns null when periodScores is empty (pre-
-          tipoff), so this slot stays clean for upcoming games. */}
+          tipoff), so this slot stays clean for upcoming games. Renders
+          for both live and final — for finals the recap card above
+          covers the narrative; the per-quarter table below covers the
+          reference / box-score craving. */}
       {isUpcoming ? null : (
         <div className="mt-4">
           <PeriodScoreLine game={game} />
         </div>
       )}
 
-      {/* ── Highlights (3 distilled lines, not a play-by-play) ───────────── */}
-      {/* The old MomentsStack listed every notable play. A list of plays
-          is a transcript, not insight. HighlightsStack distills the
-          game into 3 signal-dense cards: game character, top scorer,
-          and one more notable stat. */}
-      {isUpcoming ? null : (
+      {/* ── Highlights (live only) ──────────────────────────────────────── */}
+      {/* For finals, the Recap Card carries the "what mattered" bullets.
+          For live games, HighlightsStack stays — its present-tense
+          "leading the glass, 22–11" / "is hot from three" copy reads
+          as live commentary, which the recap shape isn't for. */}
+      {isUpcoming || game.status === "final" ? null : (
         <div className="mt-5">
           <HighlightsStack game={game} />
         </div>

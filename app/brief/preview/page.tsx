@@ -1,0 +1,16 @@
+import { CompanionFrame } from "../../companion/frame/CompanionFrame";
+import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { BriefPreviewClient } from "../../companion/brief/BriefPreviewClient";
+
+export const metadata = {
+  title: "Brief · Preview — No Noise Scores",
+};
+
+export default function BriefPreviewPage() {
+  return (
+    <CompanionFrame>
+      <CrumbBar backHref="/brief/subscribe" backLabel="Brief" title="Preview" />
+      <BriefPreviewClient />
+    </CompanionFrame>
+  );
+}
