@@ -39,11 +39,13 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
       </header>
 
       {/* Granularity ladder. A 1px line separator on each row keeps
-          the ladder visually distinct from the section header without
-          adding spacing that would inflate the card height. */}
+          the ladder visually distinct from the section header and
+          from each adjacent row, without adding vertical padding that
+          would inflate the card. Every row gets the same border —
+          the section header above naturally pairs with the first
+          row's top border, so no special-casing is needed. */}
       <ul>
-        {moment.granularities.map((g, idx) => {
-          const isFirst = idx === 0;
+        {moment.granularities.map((g) => {
           return (
             <li key={g.href + g.eyebrow}>
               <Link
@@ -53,7 +55,7 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
                 style={{
                   background: "transparent",
                   color: "var(--ink)",
-                  borderTop: isFirst ? "1px solid var(--line)" : "1px solid var(--line)",
+                  borderTop: "1px solid var(--line)",
                 }}
               >
                 <div className="min-w-0 flex-1">

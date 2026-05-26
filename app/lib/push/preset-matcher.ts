@@ -5,15 +5,23 @@
 // tipoff             ✓       ✓        ✓
 // eoq-1/2/3          ·       ✓        ✓
 // close-game         ·       ·        ✓
+// comeback           ·       ·        ✓
 // final              ✓       ✓        ✓
+// wc-kickoff         ✓       ✓        ✓
+// wc-final           ✓       ✓        ✓
 //
-// If the user is following at "quiet" they get bookends only. At
-// "companion" they also get the per-quarter pulses. At "all" they get
-// late-game drama on top of that.
+// If the user is following at "quiet" they get bookends only — game
+// start and final, in either sport. At "companion" they also get the
+// per-quarter pulses (NBA). At "all" they get late-game drama
+// (close-game, comeback) on top of that.
 //
-// "all" matches everything quiet/companion match plus the close-game
-// pulse. There's no "all but quieter than companion" path — quiet is
-// the floor.
+// WC v1 only emits kickoff + final. When wc-halftime / wc-goal /
+// wc-red-card land they'll go in the companion / all tiers, mirroring
+// the NBA per-quarter pattern.
+//
+// "all" matches everything quiet / companion match plus the
+// closeness-revealing events. There's no "all but quieter than
+// companion" path — quiet is the floor.
 
 import type { AlertPreset } from "../../companion/state/types";
 import type { EventType } from "./event-detector";

@@ -47,9 +47,13 @@ export function PreviewModeBanner() {
       role="status"
       aria-label="World Cup preview mode active"
       style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 40,
+        // Inline at the top of the scroll container rather than sticky.
+        // Both this banner and BrandBar were targeting `top: 0` and the
+        // banner's higher z-index visually covered BrandBar when
+        // scrolled. Letting the banner scroll away with content keeps
+        // both surfaces clean — it's visible on every page load and on
+        // every internal navigation, which is enough warning given
+        // preview is a deliberate operator action.
         background: "var(--wc)",
         color: "var(--cream)",
         display: "flex",

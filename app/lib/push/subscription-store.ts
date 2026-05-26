@@ -36,9 +36,20 @@ export type StoredSubscription = {
 
 const SUBSCRIPTION_INDEX_KEY = "nns:push:subscriptions:v1";
 const SUBSCRIPTION_KEY_PREFIX = "nns:push:subscription:v1:";
-// Reverse index: for each alert-enabled team abbr, a set of endpoint URLs
-// that want pings for it. Lets the dispatcher fanout selectively instead of
-// iterating every subscription on every event. (Phase 2.4)
+// Reverse index: per team abbreviation, the set of endpoint URLs whose
+// alerts include that team. Originally built in Phase 2.4 to let the
+// dispatcher fanout selectively (only the team's followers) instead of
+// iterating every subscription.
+//
+// As of Phase 8b the dispatcher iterates all subscriptions because the
+// matcher now spans four follow kinds (team / country / series /
+// tournament) — a team-only index would silently drop legitimate
+// series and tournament matches. The index is kept maintained on every
+// upsertSubscription() because the admin status endpoint reads it for
+// the `?team=NYK` diagnostic, which was crucial in finding the NY→NYK
+// alias bug. Cost per upsert is small and the diagnostic value is
+// high. Remove when the moment+scope refactor lands a smarter index
+// across all kinds.
 const TEAM_INDEX_KEY_PREFIX = "nns:push:by-team:v1:";
 
 function subscriptionKey(endpoint: string): string {
