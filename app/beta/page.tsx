@@ -5,6 +5,7 @@ import {
   BulletList,
   CalloutBox,
 } from "../companion/landing/ContentPageShell";
+import { BetaSignupForm } from "../companion/beta/BetaSignupForm";
 
 export const metadata = {
   title: "Friend beta — No Noise Scores",
@@ -47,9 +48,14 @@ export default function BetaPage() {
         ]}
       />
 
-      <H2>How to join</H2>
+      <H2>Sign up</H2>
       <P>
-        DM{" "}
+        Drop your email below and I&apos;ll reach out when the next wave
+        opens.
+      </P>
+      <BetaSignupForm />
+      <P>
+        Prefer to DM? Reach{" "}
         <a
           href="https://instagram.com/nonoisescores"
           target="_blank"
@@ -63,7 +69,7 @@ export default function BetaPage() {
         >
           @nonoisescores
         </a>{" "}
-        on Instagram, or email{" "}
+        on Instagram or email{" "}
         <a
           href="mailto:tatlicioglu.ibrahim@gmail.com"
           style={{
@@ -75,7 +81,24 @@ export default function BetaPage() {
         >
           tatlicioglu.ibrahim@gmail.com
         </a>
-        . Either works.
+        .
+      </P>
+
+      <H2>Already in the beta?</H2>
+      <P>
+        After a week of real use,{" "}
+        <a
+          href="/beta/feedback"
+          style={{
+            color: "var(--ink)",
+            textDecoration: "underline",
+            textDecorationThickness: "1px",
+            textUnderlineOffset: "3px",
+          }}
+        >
+          send feedback
+        </a>{" "}
+        — three short fields, no marketing form energy.
       </P>
 
       <CalloutBox eyebrow="Heads up">

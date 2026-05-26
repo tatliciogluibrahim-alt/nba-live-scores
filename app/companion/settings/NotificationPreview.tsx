@@ -31,13 +31,13 @@ const PRESET_PREVIEW: Record<AlertPreset, PreviewExample> = {
   quiet: {
     app: "NO NOISE SCORES",
     title: "Final · Knicks vs Cavaliers",
-    body: "Game's done. Tap when you're ready.",
+    body: "Knicks 110 – Cavaliers 102.",
     when: "now",
   },
   companion: {
     app: "NO NOISE SCORES",
     title: "End of Q3 · Knicks vs Cavaliers",
-    body: "One quarter left. Tap to check in.",
+    body: "Knicks 78 – Cavaliers 65.",
     when: "now",
   },
   all: {
@@ -46,6 +46,18 @@ const PRESET_PREVIEW: Record<AlertPreset, PreviewExample> = {
     body: "One-possession game with 2:14 left.",
     when: "now",
   },
+};
+
+// NS-safe variants — mirrors the dispatcher's noSpoilers branch in
+// app/lib/push/dispatcher.ts. The `suppressed` flag means the alert
+// wouldn't fire at all under NS (close-game, comeback). Used by the
+// preview to show users what they'd see with No-Spoilers on.
+type NSPreview = { body: string; suppressed?: boolean };
+
+const PRESET_NS_PREVIEW: Record<AlertPreset, NSPreview> = {
+  quiet: { body: "Game's done. Tap when you're ready." },
+  companion: { body: "Quarter wrapped. Tap to check in." },
+  all: { body: "Close-game alerts are skipped.", suppressed: true },
 };
 
 const PRESET_ORDER: AlertPreset[] = ["quiet", "companion", "all"];
@@ -76,6 +88,7 @@ export function NotificationPreview() {
 function PresetPreviewCard({ preset }: { preset: AlertPreset }) {
   const meta = PRESETS[preset];
   const preview = PRESET_PREVIEW[preset];
+  const nsPreview = PRESET_NS_PREVIEW[preset];
 
   return (
     <article
@@ -107,8 +120,44 @@ function PresetPreviewCard({ preset }: { preset: AlertPreset }) {
         <TestPushButton preview={preview} />
       </div>
 
-      {/* iOS-style lock-screen push mock */}
+      {/* iOS-style lock-screen push mock — default (No-Spoilers off) */}
       <LockScreenPushMock preview={preview} />
+
+      {/* No-Spoilers variant — what the same alert looks like with NS on.
+          Sits below the default mock with a small label so the difference
+          is visible at a glance. Suppressed alerts (close-game, comeback)
+          render as a flat row instead of a notification, since they
+          literally don't fire under NS. */}
+      <div className="mt-3 flex items-center gap-2">
+        <span
+          className="text-[10px] uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontWeight: 700,
+            letterSpacing: "0.1em",
+            color: "var(--mute-1)",
+          }}
+        >
+          With No-Spoilers on
+        </span>
+        <div
+          className="h-px flex-1"
+          style={{ background: "var(--line)" }}
+        />
+      </div>
+
+      {nsPreview.suppressed ? (
+        <p
+          className="mt-2 text-[12px] leading-snug"
+          style={{ color: "var(--mute-1)", fontWeight: 500, fontStyle: "italic" }}
+        >
+          {nsPreview.body}
+        </p>
+      ) : (
+        <LockScreenPushMock
+          preview={{ ...preview, body: nsPreview.body }}
+        />
+      )}
     </article>
   );
 }

@@ -5,7 +5,13 @@ import { NextResponse } from "next/server";
 // Type name kept as `PushRouteKind` for back-compat but it now covers
 // any user-initiated POST endpoint that benefits from per-IP rate
 // limiting — including the Brief email signup flow.
-type PushRouteKind = "subscribe" | "unsubscribe" | "test" | "brief-subscribe";
+type PushRouteKind =
+  | "subscribe"
+  | "unsubscribe"
+  | "test"
+  | "brief-subscribe"
+  | "beta-signup"
+  | "beta-feedback";
 
 const LIMITS = {
   subscribe: { tokens: 20, window: "1 m" },
@@ -14,6 +20,11 @@ const LIMITS = {
   // Brief signup: 5/min/IP is generous for a manual form submit and
   // prevents a script from enumerating emails or signup-spamming.
   "brief-subscribe": { tokens: 5, window: "1 m" },
+  // Beta signup: same posture as the brief.
+  "beta-signup": { tokens: 5, window: "1 m" },
+  // Beta feedback: a tester filling out the form should never hit 10
+  // submissions in a minute — anything more is a script.
+  "beta-feedback": { tokens: 10, window: "1 m" },
 } as const satisfies Record<PushRouteKind, { tokens: number; window: "1 m" }>;
 
 const rateLimiters: Record<PushRouteKind, Ratelimit> = {
@@ -43,6 +54,24 @@ const rateLimiters: Record<PushRouteKind, Ratelimit> = {
     ),
     analytics: false,
     prefix: "nns:brief:rate:subscribe:v1",
+  }),
+  "beta-signup": new Ratelimit({
+    redis: kv,
+    limiter: Ratelimit.slidingWindow(
+      LIMITS["beta-signup"].tokens,
+      LIMITS["beta-signup"].window
+    ),
+    analytics: false,
+    prefix: "nns:beta:rate:signup:v1",
+  }),
+  "beta-feedback": new Ratelimit({
+    redis: kv,
+    limiter: Ratelimit.slidingWindow(
+      LIMITS["beta-feedback"].tokens,
+      LIMITS["beta-feedback"].window
+    ),
+    analytics: false,
+    prefix: "nns:beta:rate:feedback:v1",
   }),
 };
 

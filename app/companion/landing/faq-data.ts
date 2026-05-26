@@ -9,7 +9,7 @@ export type FAQItem = { q: string; a: string };
 export const FAQ_ITEMS: FAQItem[] = [
   {
     q: "Is it free?",
-    a: "Yes. No ads, no paywalls. A paid morning email recap might come later; the app itself stays free.",
+    a: "Yes — for most people. Follows are unlimited and free. Alerts are on the house for the first 3 follows, which covers a team, a country, and one more thing. If you want alerts on more than that at once, a small paid tier unlocks unlimited (and helps cover the cost of running the notification backend at scale). No ads either way.",
   },
   {
     q: "Does it work on iPhone?",

@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
-
+<!-- BrandMark glyph — matches `app/companion/frame/BrandMark.tsx`.
+     Dark ink rounded-square chip + cream scoreboard pill + rust live pip.
+     Reads identically on light and dark browser chrome because the
+     chip provides its own background. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <rect x="10" y="34" width="80" height="32" rx="7" fill="#1A1612"></rect>
-  <circle cx="80" cy="42" r="4.2" fill="#B85A2A"></circle>
+  <rect width="100" height="100" rx="23" fill="#1A1612"/>
+  <rect x="14" y="33" width="72" height="34" rx="8" fill="#F1EAD8"/>
+  <circle cx="78" cy="42" r="5" fill="#B85A2A"/>
 </svg>

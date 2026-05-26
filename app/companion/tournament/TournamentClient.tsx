@@ -219,7 +219,27 @@ function NBAPlayoffsBody() {
         ? `${round} · ${g.seriesConference}`
         : round;
       const isWrapped = /WINS\s+SERIES/i.test(g.seriesSummary);
-      return { id: key, a, b, label: conf, wrapped: isWrapped };
+
+      // Pull win counts out of the summary so we can render an inline
+      // 7-dot strip for the series. Both `WINS SERIES` and `LEADS
+      // SERIES` patterns expose the hi-lo numbers. `TIED` is symmetric.
+      // Numbers default to 0-0 when nothing matches (rare).
+      let winsTotal = 0;
+      const wm =
+        g.seriesSummary.match(/WINS?\s+SERIES\s+(\d+)\s*-\s*(\d+)/i) ||
+        g.seriesSummary.match(/LEADS?\s+SERIES\s+(\d+)\s*-\s*(\d+)/i);
+      const tm = g.seriesSummary.match(/TIED\s+(\d+)\s*-\s*(\d+)/i);
+      if (wm) winsTotal = Number(wm[1]) + Number(wm[2]);
+      else if (tm) winsTotal = Number(tm[1]) + Number(tm[2]);
+
+      return {
+        id: key,
+        a,
+        b,
+        label: conf,
+        wrapped: isWrapped,
+        gamesPlayed: Math.min(7, winsTotal),
+      };
     });
   }, [games]);
 
@@ -329,6 +349,10 @@ function NBAPlayoffsBody() {
                   {s.label}
                   {s.wrapped ? " · Wrapped" : ""}
                 </p>
+                {/* Inline 7-dot strip — at-a-glance series state.
+                    Filled dots = games played, dashed dots = remaining.
+                    Spoiler-safe (no winner attribution per dot). */}
+                <MiniSeriesStrip gamesPlayed={s.gamesPlayed} />
               </div>
               <svg
                 width="14"
@@ -347,6 +371,43 @@ function NBAPlayoffsBody() {
         ))}
       </ul>
     </section>
+  );
+}
+
+// ── Mini series strip ──────────────────────────────────────────────────
+// Inline 7-dot strip showing series progress for a row in the
+// tournament list. Spoiler-safe — filled dots = games played, dashed
+// dots = unplayed slots. No winner attribution per dot, no scores.
+// For the full interactive strip (with winner initials + game detail
+// expanders), see `app/companion/series/SevenDotStrip.tsx` on the
+// dedicated series detail page.
+
+function MiniSeriesStrip({ gamesPlayed }: { gamesPlayed: number }) {
+  const played = Math.max(0, Math.min(7, gamesPlayed));
+  return (
+    <div
+      className="mt-1.5 flex items-center gap-1"
+      aria-label={`${played} of 7 games played`}
+    >
+      {Array.from({ length: 7 }).map((_, i) => {
+        const isPlayed = i < played;
+        return (
+          <span
+            key={i}
+            aria-hidden
+            className="inline-block rounded-full"
+            style={{
+              width: 6,
+              height: 6,
+              background: isPlayed ? "var(--ink)" : "transparent",
+              border: isPlayed
+                ? "1px solid var(--ink)"
+                : "1px dashed var(--mute-2)",
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }
 

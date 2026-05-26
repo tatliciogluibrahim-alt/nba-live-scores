@@ -64,20 +64,16 @@ export const metadata: Metadata = {
     url: "https://nonoisescores.app",
     siteName: "No Noise Scores",
     type: "website",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "No Noise Scores — the calm sports app.",
-      },
-    ],
+    // Next.js auto-resolves the `opengraph-image.tsx` route file in
+    // app/ and injects it as the default OG image. No need to specify
+    // images here — Next prepends the dynamic image automatically.
+    // Per-page OG images can still override this when needed.
   },
   twitter: {
     card: "summary_large_image",
     title: "No Noise Scores",
     description: "Live scores for the sports moments that matter.",
-    images: ["/og-image.png"],
+    // Same: `twitter-image.tsx` is auto-resolved.
   },
   manifest: "/manifest.webmanifest",
   icons: {

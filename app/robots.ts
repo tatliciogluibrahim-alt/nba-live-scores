@@ -33,6 +33,8 @@ const DISALLOW_PATHS = [
   "/api/cron",
   "/api/push",
   "/api/brief",
+  "/api/beta",
+  "/beta/feedback",
   // Legacy
   "/legacy",
 ];

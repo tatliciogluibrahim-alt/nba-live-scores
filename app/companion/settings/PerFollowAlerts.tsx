@@ -240,8 +240,9 @@ export function PerFollowAlerts() {
                       className="mt-2 text-[12px] leading-snug"
                       style={{ color: "var(--mute-1)", fontWeight: 500 }}
                     >
-                      Alert slots are full ({alertSlotCount} of {alertSlotCap} alert slots used).
-                      Turn one off to enable this.
+                      Alert slots are full ({alertSlotCount} of {alertSlotCap}{" "}
+                      on the free plan). Turn one off to enable this — or
+                      unlimited alerts will land in a small paid tier later.
                     </p>
                   ) : null}
 
