@@ -1,8 +1,54 @@
 import type { Metadata, Viewport } from "next";
+import {
+  Bricolage_Grotesque,
+  Inter,
+  JetBrains_Mono,
+} from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { CompanionProviders } from "./companion/providers";
 import "./globals.css";
+
+// Premium typography via Next.js font optimization. Three CSS variables
+// land on <html> and override the system-stack fallbacks declared in
+// globals.css, so every component already reading var(--font-display)
+// / var(--font-body) / var(--font-mono) picks the new faces up with
+// zero per-component changes.
+//
+// • Bricolage Grotesque — variable display sans with a tight, confident
+//   condensed feel. Replaces Impact while keeping the "sports
+//   broadcast" energy.
+// • Inter — body grotesque, premium reading rhythm.
+// • JetBrains Mono — warm coding-style mono for tabular numbers,
+//   eyebrows, and freshness readouts.
+//
+// `display: "swap"` lets the cream background paint immediately and
+// swap to the web font once it loads — no FOIT, no white flash.
+
+const displayFont = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+  // Variable font: pull the full weight + width axes so we can dial
+  // both the condensed display headlines and the lighter weights some
+  // small labels need. `next/font` requires omitting `weight` (or
+  // setting it to "variable") whenever `axes` is present.
+  axes: ["wdth"],
+});
+
+const bodyFont = Inter({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
+});
+
+const monoFont = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+  weight: ["500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: "No Noise Scores",
@@ -67,7 +113,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
+    >
       <head>
         {/* iOS apple-touch-startup-image — per-device cream splash that
             replaces the white flash on cold launch from home screen.

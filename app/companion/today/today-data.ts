@@ -272,20 +272,13 @@ function pickHero(
     };
   }
 
-  // Nothing live or imminent on NBA — dress up the WC countdown as the hero
-  // if there's actually nothing else worth a hero spot.
-  const days = daysUntil(WC_KICKOFF);
-  if (days > 0 && days < 60 && nba.length === 0 && wc.length === 0) {
-    return {
-      kind: "wc-countdown",
-      eyebrow: "World Cup 2026",
-      headline: `${days} day${days === 1 ? "" : "s"} to first whistle.`,
-      context: "Mexico City · Group A · Tournament starts June 11.",
-      live: false,
-      accent: "var(--wc)",
-      href: "/following/country",
-    };
-  }
+  // Nothing live or imminent on NBA. We used to inflate the World Cup
+  // countdown into a hero card here ("17 days to first whistle"), but
+  // the bottom ReminderRow already says exactly the same thing — and
+  // does it as a calm one-liner, not a big editorial block at the top
+  // of Today. Letting the hero stay empty when there's nothing live
+  // honors the "what matters now" promise; the reminder picks up the
+  // slack down the screen.
 
   return null;
 }

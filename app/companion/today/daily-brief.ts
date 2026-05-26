@@ -200,15 +200,14 @@ export function deriveDailyBrief({
   }
 
   // 5 ─ Followed WC country (far-from-kickoff calm state).
-  if (followedCountry) {
-    const country = getCountry(followedCountry.id);
-    if (country) {
-      return {
-        text: `${country.name} is in Group ${country.group}. We'll surface the opener when fixtures land.`,
-        cta: { label: `Open ${country.name}`, href: `/country/${country.id}` },
-      };
-    }
-  }
+  //
+  // We used to surface "USA is in Group X" + "Open USA" here, but on
+  // pre-tournament days that line stacks directly above the bottom
+  // ReminderRow ("USA kick off in N days. Group draw is set.") — same
+  // information, same destination, two cards' worth of vertical real
+  // estate. Falling through to the calmer "Your follows are set."
+  // default lets the reminder be the one place that talks about the
+  // tournament.
 
   // 6 ─ No follows yet.
   if (follows.length === 0) {
