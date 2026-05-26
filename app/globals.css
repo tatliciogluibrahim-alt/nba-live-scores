@@ -24,6 +24,13 @@
   --nba-soft:   #fce9dd;
   --wc:         #1e6b3c;
   --wc-soft:    #ddeade;
+  /* NFL identity. Picked a deep navy so football cards read distinctly
+     from `--up` (upcoming-status blue, used for any sport's pre-game
+     state) — same semantic separation between `--wc` and `--pos`. The
+     NFL section ships in Phase 9 scaffolding as "coming this fall";
+     full event detection arrives in Phase 12 ahead of September. */
+  --nfl:        #1f3a6b;
+  --nfl-soft:   #e0e5ee;
   --up:         #2e5bd7;
   --up-soft:    #dce4f8;
   --critical:   #c9362b;

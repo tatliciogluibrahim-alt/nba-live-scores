@@ -20,7 +20,9 @@ export type FollowGranularity = {
   title: string;
   /** One-line clarifier. */
   detail: string;
-  /** Picker route this granularity opens. */
+  /** Picker route this granularity opens. When the parent moment is
+   *  in `comingSoon` state, the row renders as static (not tappable)
+   *  and this href is ignored. */
   href: string;
 };
 
@@ -38,6 +40,16 @@ export type FollowMoment = {
    *  ladder is intentional: a user who's just curious can pick "Whole
    *  tournament" and walk the ladder down as their interest narrows. */
   granularities: FollowGranularity[];
+  /** When set, the moment shows in the picker as discoverable but its
+   *  ladder rows are static — the data layer is scaffolded but the
+   *  live feed / event detection isn't wired yet. Used for NFL
+   *  pre-season so users can see "NFL is coming" without being able
+   *  to follow into a dead pipeline. */
+  comingSoon?: {
+    /** Short uppercase label rendered as a chip on the section
+     *  header, e.g. "Kicks off September". */
+    label: string;
+  };
 };
 
 export const FOLLOW_MOMENTS: FollowMoment[] = [
@@ -86,6 +98,36 @@ export const FOLLOW_MOMENTS: FollowMoment[] = [
         title: "A country",
         detail: "All 48 nations. Group, path, and matches.",
         href: "/following/country",
+      },
+    ],
+  },
+  {
+    // NFL Season 2026 — scaffolding-only in Phase 9. Picker shows the
+    // section + ladder, but rows are static and a "Kicks off
+    // September" chip sits on the header. Per-play touchdown + big-play
+    // events arrive in Phase 12 ahead of kickoff. See
+    // docs/nfl-design.md for the full event taxonomy and fantasy-tier
+    // model.
+    id: "nfl-season-2026",
+    name: "NFL Season 2026",
+    description: "Regular season and playoffs · 32 teams.",
+    accent: "var(--nfl)",
+    icon: "🏈",
+    comingSoon: {
+      label: "Kicks off September",
+    },
+    granularities: [
+      {
+        eyebrow: "Season",
+        title: "The whole season",
+        detail: "Every game · regular season and playoffs.",
+        href: "/following/tournament",
+      },
+      {
+        eyebrow: "Team",
+        title: "A team",
+        detail: "All 32 NFL teams.",
+        href: "/following/team",
       },
     ],
   },

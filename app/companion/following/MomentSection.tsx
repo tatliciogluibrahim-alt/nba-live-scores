@@ -9,10 +9,19 @@ import type { FollowMoment } from "./FollowChoice";
 // a sport-accent left rail so the eye groups everything inside as
 // "this moment's options."
 //
-// Adding a new moment (e.g. NFL Playoffs, March Madness) is just
+// Coming-soon state (e.g. NFL Season 2026 between Phase 9 scaffolding
+// and Phase 12 build): the section still renders so users discover
+// what's on the horizon, but the ladder rows are static (no Link, no
+// hover, dimmed) and the section header carries a chip with the
+// availability label. Keeps the picker honest — we don't pretend NFL
+// works while the pipeline is still being wired.
+//
+// Adding a new moment (e.g. March Madness, Champions League) is just
 // appending another FollowMoment entry — no layout changes needed.
 
 export function MomentSection({ moment }: { moment: FollowMoment }) {
+  const isComingSoon = Boolean(moment.comingSoon);
+
   return (
     <section
       className="overflow-hidden rounded-[14px] border"
@@ -20,15 +29,35 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
         background: "var(--paper)",
         borderColor: "var(--line)",
         borderLeft: `4px solid ${moment.accent}`,
+        // Subtle overall opacity dip on coming-soon sections so the
+        // active moments (NBA, WC) earn the user's eye first.
+        opacity: isComingSoon ? 0.78 : 1,
       }}
     >
-      {/* Section header — icon, name, description. */}
+      {/* Section header — icon, name, description, optional chip. */}
       <header className="px-4 pb-2 pt-3.5">
         <div className="flex items-center gap-2">
           <span aria-hidden style={{ fontSize: 18, lineHeight: 1 }}>
             {moment.icon}
           </span>
           <Eyebrow color={moment.accent}>{moment.name}</Eyebrow>
+          {moment.comingSoon ? (
+            <span
+              className="ml-auto rounded-full px-2 py-0.5"
+              style={{
+                background: "var(--cream-2)",
+                color: "var(--mute-1)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                border: "1px solid var(--line)",
+              }}
+            >
+              {moment.comingSoon.label}
+            </span>
+          ) : null}
         </div>
         <p
           className="mt-1 text-[12px] leading-snug"
@@ -38,45 +67,47 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
         </p>
       </header>
 
-      {/* Granularity ladder. A 1px line separator on each row keeps
-          the ladder visually distinct from the section header and
-          from each adjacent row, without adding vertical padding that
-          would inflate the card. Every row gets the same border —
-          the section header above naturally pairs with the first
-          row's top border, so no special-casing is needed. */}
+      {/* Granularity ladder. Active sections render each row as a Link;
+          coming-soon sections render each row as a static div with a
+          "Not yet" tail so the row reads as informational. The shape
+          stays identical so users see the same model regardless of
+          whether they can act on it today. */}
       <ul>
         {moment.granularities.map((g) => {
-          return (
-            <li key={g.href + g.eyebrow}>
-              <Link
-                href={g.href}
-                aria-label={`${moment.name} — ${g.title}`}
-                className="flex min-h-[64px] items-center gap-3 px-4 py-3 transition active:scale-[0.99]"
-                style={{
-                  background: "transparent",
-                  color: "var(--ink)",
-                  borderTop: "1px solid var(--line)",
-                }}
-              >
-                <div className="min-w-0 flex-1">
-                  <Eyebrow>{g.eyebrow}</Eyebrow>
-                  <p
-                    className="mt-1 text-[14px] leading-snug"
-                    style={{
-                      color: "var(--ink)",
-                      fontWeight: 700,
-                      letterSpacing: "-0.005em",
-                    }}
-                  >
-                    {g.title}
-                  </p>
-                  <p
-                    className="mt-0.5 text-[12px]"
-                    style={{ color: "var(--mute-1)", fontWeight: 500 }}
-                  >
-                    {g.detail}
-                  </p>
-                </div>
+          const inner = (
+            <>
+              <div className="min-w-0 flex-1">
+                <Eyebrow>{g.eyebrow}</Eyebrow>
+                <p
+                  className="mt-1 text-[14px] leading-snug"
+                  style={{
+                    color: "var(--ink)",
+                    fontWeight: 700,
+                    letterSpacing: "-0.005em",
+                  }}
+                >
+                  {g.title}
+                </p>
+                <p
+                  className="mt-0.5 text-[12px]"
+                  style={{ color: "var(--mute-1)", fontWeight: 500 }}
+                >
+                  {g.detail}
+                </p>
+              </div>
+              {isComingSoon ? (
+                <span
+                  className="shrink-0 text-[11px] uppercase"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    letterSpacing: "0.08em",
+                    color: "var(--mute-2)",
+                    fontWeight: 600,
+                  }}
+                >
+                  Not yet
+                </span>
+              ) : (
                 <svg
                   width="14"
                   height="14"
@@ -89,7 +120,38 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
                 >
                   <path d="M9 6l6 6-6 6" />
                 </svg>
-              </Link>
+              )}
+            </>
+          );
+
+          return (
+            <li key={g.href + g.eyebrow}>
+              {isComingSoon ? (
+                <div
+                  className="flex min-h-[64px] items-center gap-3 px-4 py-3"
+                  style={{
+                    background: "transparent",
+                    color: "var(--ink)",
+                    borderTop: "1px solid var(--line)",
+                  }}
+                  aria-label={`${moment.name} — ${g.title} (coming soon)`}
+                >
+                  {inner}
+                </div>
+              ) : (
+                <Link
+                  href={g.href}
+                  aria-label={`${moment.name} — ${g.title}`}
+                  className="flex min-h-[64px] items-center gap-3 px-4 py-3 transition active:scale-[0.99]"
+                  style={{
+                    background: "transparent",
+                    color: "var(--ink)",
+                    borderTop: "1px solid var(--line)",
+                  }}
+                >
+                  {inner}
+                </Link>
+              )}
             </li>
           );
         })}
