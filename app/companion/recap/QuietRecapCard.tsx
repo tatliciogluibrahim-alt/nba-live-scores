@@ -27,8 +27,22 @@ import type { Game } from "../../nba/types";
 // treatment. Eyebrows and team codes stay visible because they're
 // structural.
 
-export function QuietRecapCard({ game }: { game: Game }) {
-  const recap = deriveNBARecap(game);
+export function QuietRecapCard({
+  game,
+  allNBAGames = [],
+  recap: precomputed,
+}: {
+  game: Game;
+  /** Full NBA games list — enables a "Next" line when the series
+   *  continues. Optional; without it the card still renders, just
+   *  without next-game guidance. */
+  allNBAGames?: Game[];
+  /** Optional precomputed recap. When the parent already derived the
+   *  shape (to branch into a fallback when null), it can pass it
+   *  through to avoid recomputing. */
+  recap?: NBARecap | null;
+}) {
+  const recap = precomputed ?? deriveNBARecap(game, allNBAGames);
   if (!recap) return null;
   return <RecapCardBody recap={recap} />;
 }

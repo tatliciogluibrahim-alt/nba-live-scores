@@ -295,9 +295,80 @@ function storyBullet(game: Game): RecapBullet | null {
   return null;
 }
 
+/** Match-up key for finding the next game in the same playoff series.
+ *  Order-independent so AWAY+HOME flip between games doesn't break it. */
+function matchupKey(a: string, b: string): string {
+  return [a, b].sort().join("|");
+}
+
+/** Find the next game between the same two teams later than `game`.
+ *  Returns null when the series wrapped (someone WINS SERIES), or when
+ *  no upcoming game is in the parsed window. */
+function findNextGame(game: Game, all: Game[]): Game | null {
+  // If the summary says series wrapped, there's no "next."
+  if (/WINS?\s+SERIES/i.test(game.seriesSummary)) return null;
+
+  const key = matchupKey(game.away.abbreviation, game.home.abbreviation);
+  const currentTime = new Date(game.date).getTime();
+  if (!isFinite(currentTime)) return null;
+
+  const candidates = all
+    .filter((g) => g.id !== game.id)
+    .filter((g) => g.status === "upcoming")
+    .filter(
+      (g) =>
+        matchupKey(g.away.abbreviation, g.home.abbreviation) === key
+    )
+    .map((g) => ({ g, t: new Date(g.date).getTime() }))
+    .filter((x) => isFinite(x.t) && x.t > currentTime)
+    .sort((a, b) => a.t - b.t);
+
+  return candidates[0]?.g ?? null;
+}
+
+/** Build "Next: Game N · in NY · Tue 8:00 PM" from a future game. We
+ *  don't always know the game number (ESPN doesn't surface it
+ *  uniformly), so we degrade gracefully: with a number when present,
+ *  without when not. */
+function composeNextLine(game: Game, next: Game): string {
+  // The home team plays "in [city/code]" — use the upcoming game's
+  // home abbreviation as the venue marker.
+  const venue = next.home.abbreviation;
+
+  // Day + time. Compact, single line.
+  let when = "";
+  try {
+    const d = new Date(next.date);
+    when = d.toLocaleString(undefined, {
+      weekday: "short",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    when = "";
+  }
+
+  // Try to lift "Game N" out of gameContext or seriesSummary on the
+  // upcoming game; otherwise fall back to a plain "Next game."
+  const ctx = `${next.gameContext ?? ""} ${next.seriesSummary ?? ""}`;
+  const gn = ctx.match(/Game\s+(\d+)/i);
+  const head = gn ? `Game ${gn[1]}` : "Next game";
+
+  const venueClause = venue ? ` · in ${venue}` : "";
+  const whenClause = when ? ` · ${when}` : "";
+  // Game still uses the same matchup so we don't need to restate it.
+  // The series block above the recap already shows the dots.
+  void game;
+  return `${head}${venueClause}${whenClause}.`;
+}
+
 /** Compose the NBA recap shape. Returns null when the game is not
- *  final — callers should only invoke for finals. */
-export function deriveNBARecap(game: Game): NBARecap | null {
+ *  final — callers should only invoke for finals. The optional
+ *  `allNBAGames` enables a "Next" line when the series continues. */
+export function deriveNBARecap(
+  game: Game,
+  allNBAGames: Game[] = []
+): NBARecap | null {
   if (game.status !== "final") return null;
 
   const awayWon = game.away.score > game.home.score;
@@ -330,11 +401,11 @@ export function deriveNBARecap(game: Game): NBARecap | null {
     if (story) bullets.push(story);
   }
 
-  // Next-game line: only when we have nextGameContext. ESPN's
-  // seriesSummary doesn't carry forward dates in a structured way,
-  // so for now we emit null and let the caller compose a "Next game"
-  // section from elsewhere if present.
-  const nextLine = null;
+  // Next-game line: look across the full games list for the next
+  // upcoming game between the same two teams. Skip when the series
+  // wrapped or when no upcoming game is in the parsed window.
+  const next = findNextGame(game, allNBAGames);
+  const nextLine = next ? composeNextLine(game, next) : null;
 
   return {
     source: "nba",

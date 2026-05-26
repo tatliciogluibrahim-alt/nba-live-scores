@@ -2,13 +2,37 @@
 
 ## Product Summary
 
-No Noise Scores is a calm, premium, mobile-first live hub for major sports moments.
+No Noise Scores is a calm personalized sports companion for the teams,
+countries, series, and tournaments you follow.
 
-The product is not trying to become another ESPN, Bleacher Report, or betting-heavy sports app. It should strip away clutter and help fans quickly follow the games, teams, countries, and tournaments they care about.
+The product is not trying to become another ESPN, Bleacher Report, or
+betting-heavy sports app. It is also not a "no-spoiler app" — though
+No-Spoilers is a first-class feature. The brand is broader: a calm
+control panel for the sports moments you care about.
 
-Core positioning:
+## Positioning (locked)
 
-> Live scores for the moments that matter. No feeds. No clutter.
+- **One-line:** A calm sports companion for the moments that matter.
+- **Tagline:** Follow what matters. Skip the rest.
+- **App store / subhead:** Scores, alerts, and recaps for what you follow.
+- **PWA install prompt:** Add to your home screen for instant access to your sports circle.
+
+These lines are approved. Don't paraphrase or drift.
+
+## Two products on one domain
+
+No Noise Scores ships as two surfaces on `nonoisescores.app`:
+
+1. **The app experience** — mobile-first PWA at `/`, `/following`,
+   `/watching`, `/game/[id]`, etc. Calm, narrow, action-oriented.
+2. **The website / content layer** — desktop landing shell at `/`,
+   plus public content pages (`/features/*`, `/guides/*`, `/compare/*`,
+   `/about`, `/privacy`, `/changelog`, `/beta`). SEO and AI-search
+   discoverability, onboarding, beta conversion.
+
+Desktop visitors land on a marketing shell with a live phone-sized app
+preview. Mobile visitors open straight into the app's Today screen.
+`/app` is the explicit "open the app on any device" entry.
 
 ## Current Domain
 
@@ -307,34 +331,47 @@ When making code changes:
 
 ## Current Priority
 
-Phases 1–7 are complete (see `CHANGELOG_PRODUCT.md` for per-phase
-detail). The product is in a settled state. Recent work covered:
+Phases 1–8 and A/B/C are complete (see `CHANGELOG_PRODUCT.md` for
+per-phase detail). The product is shippable. Recent work covered:
 
-1. Object-detail navigation across Today / Following / game / country /
-   series detail pages
-2. Today pinned-state redundancy cleanup
-3. Game detail hierarchy refinement (consolidated Series block, pin
-   state hierarchy)
-4. Country detail pre-tournament polish (alert-state pill, "Group set"
-   pre-tournament copy)
-5. Compact per-follow alert controls in Watch + Alerts
-6. Snapshot fallback so historical/final games never dead-end at
-   "Not in the live feed"
-7. Small visual calibration (pinned orange accent on Today UpNext,
-   slightly larger chip tap targets)
+1. Phases 1–7 — object-detail nav, Today calmness, game detail
+   hierarchy, country pre-tournament polish, compact alerts, snapshot
+   fallback, visual calibration.
+2. Phase 8 — World Cup pre-kickoff readiness (extended brief band,
+   TournamentCountdown across 30-day arc, kickoff-day Today hero, WC
+   country notifications cron + path).
+3. Phase A — Explain the Stakes (NBA series + WC group derivers,
+   StakesLine on game detail + country detail).
+4. Phase B — Quiet Recap Card (premium final-game artifact with
+   spoiler-safe headline, score, "what mattered" bullets, optional
+   next-game line; HeroMoment fallback when boxscore is delayed).
+5. Phase C — No Noise Brief email infrastructure (composer, renderer,
+   send pipeline, signup/unsubscribe/preview surfaces; send pipeline
+   gated on domain email setup).
+6. Tournament + team detail pages shipped (closing Phase 1 fallbacks).
+7. NFL data scaffolding + design doc (full build queued for August
+   2026 ahead of season opener).
+8. Highlights basketball-native overhaul; per-quarter scoring line on
+   game detail; series-wrapped polish.
+
+**Next: the Roadmap (Phases 9–22+).** See `docs/ROADMAP.md` for the
+full sequenced plan. The big themes:
+
+- Phase 9 — Friend Beta Gate (must-fix before sharing with friends).
+- Phases 10–16 — Web architecture split + landing shell + SEO + content
+  pages (the "two products on one domain" model).
+- Phases 17–20 — In-app polish (Following = sports circle, Watching
+  deepening, dark mode, retention plumbing).
+- Phase 21 — Brief launch (when domain email is sorted).
+- Phase 22 — NFL season build (August 2026).
+
+Each phase is its own go/no-go unit. Do not jump ahead.
 
 Still on hold:
 
-- Email signup
+- Brief send pipeline (Phase 21 — blocked on DNS / Resend domain auth)
 - Monetization UI
-- PWA / iOS work
+- iOS native wrap
 - Whole-app refactor
 - New backend / account system
-
-Open follow-ups worth queuing when asked:
-
-- World Cup mobile UX (tab overflow, no-country state, selected-country
-  hierarchy)
-- Share card brand output polish
-- Tournament / team detail pages (Phase 1 used safe fallbacks because
-  these routes don't exist yet)
+- Path B follow-schema refactor (wait for 3rd moment)

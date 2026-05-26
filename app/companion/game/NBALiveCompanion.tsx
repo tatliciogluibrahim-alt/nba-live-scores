@@ -16,6 +16,7 @@ import { PeriodScoreLine } from "./PeriodScoreLine";
 import { StakesLine } from "../stakes/StakesLine";
 import { deriveNBASeriesStake } from "../stakes/derive-stakes";
 import { QuietRecapCard } from "../recap/QuietRecapCard";
+import { deriveNBARecap } from "../recap/derive-recap";
 import { useNBADetail } from "./use-nba-detail";
 
 // NBA Live Companion — the deepened /game/[id] for NBA games. Moments-first,
@@ -66,6 +67,15 @@ export function NBALiveCompanion({
   const hero = deriveHero(game, noSpoilers);
   const series = deriveSeriesContext(game);
   const seriesDots = deriveSeriesDots(game, allNBAGames);
+
+  // Precompute the recap so we can branch the final-game layout: render
+  // the QuietRecapCard when the boxscore is rich enough, otherwise fall
+  // back to a slim HeroMoment "Final." block. Without this guard a final
+  // with a delayed/missing boxscore would render an empty Recap slot
+  // (HeroMoment + HighlightsStack are both hidden on finals).
+  const recap =
+    game.status === "final" ? deriveNBARecap(game, allNBAGames) : null;
+  const hasRecap = Boolean(recap);
 
   // Pull broadcasts from the detail endpoint when present; fall back to
   // whatever the scoreboard list already gave us. One WatchLine per screen.
@@ -183,13 +193,13 @@ export function NBALiveCompanion({
         ariaSubject={subject}
       />
 
-      {/* ── Hero moment band (live + upcoming) ──────────────────────────── */}
-      {/* For finals, the QuietRecapCard further down takes the editorial
-          moment slot — having both HeroMoment ("Final.") and the recap
-          stacked one above the other read as two cards saying the same
-          thing. Live and upcoming still earn the HeroMoment because
-          there's no recap to anchor them. */}
-      {game.status === "final" ? null : (
+      {/* ── Hero moment band (live + upcoming + recap-less finals) ─────── */}
+      {/* Finals normally hand the editorial slot to QuietRecapCard
+          below — having both HeroMoment ("Final.") and the recap card
+          stacked read as two cards saying the same thing. But when the
+          boxscore feed is delayed (recap === null), we keep the slim
+          HeroMoment so the page isn't empty under the scoreboard. */}
+      {game.status === "final" && hasRecap ? null : (
         <div className="mt-4">
           <HeroMoment
             eyebrow={hero.eyebrow}
@@ -215,9 +225,13 @@ export function NBALiveCompanion({
           line. Replaces the live HeroMoment + HighlightsStack for
           finals — having both stacked read as two cards saying the
           same thing. */}
-      {game.status === "final" ? (
+      {game.status === "final" && hasRecap ? (
         <div className="mt-4">
-          <QuietRecapCard game={game} />
+          <QuietRecapCard
+            game={game}
+            allNBAGames={allNBAGames}
+            recap={recap}
+          />
         </div>
       ) : null}
 

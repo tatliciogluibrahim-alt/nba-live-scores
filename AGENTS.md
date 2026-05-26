@@ -4,11 +4,41 @@
 
 Before making changes, read:
 
-1. `PROJECT_CONTEXT.md`
-2. `CHANGELOG_PRODUCT.md`
-3. This file
+1. `app/PROJECT_CONTEXT.md`
+2. `app/CHANGELOG_PRODUCT.md`
+3. `docs/ROADMAP.md`
+4. This file
 
 Follow the product direction in those files.
+
+## Positioning (locked)
+
+These lines have been chosen and approved. Do not paraphrase them, do
+not invent alternatives, do not let copy drift.
+
+- **One-line:** A calm sports companion for the moments that matter.
+- **Tagline:** Follow what matters. Skip the rest.
+- **App store / subhead:** Scores, alerts, and recaps for what you follow.
+- **PWA install prompt:** Add to your home screen for instant access to your sports circle.
+
+The product is a **calm personalized sports companion**, not a
+"no-spoiler app." No-Spoilers is a first-class feature, never the
+whole pitch.
+
+## Product Model (two products, one domain)
+
+No Noise Scores ships as two surfaces on `nonoisescores.app`:
+
+1. **The app experience** — mobile-first PWA. Calm, narrow,
+   action-oriented. Today / Following / Watching IA.
+2. **The website / content layer** — desktop landing shell, feature
+   pages, guides, comparison pages. SEO + AI-search discoverability,
+   onboarding, beta conversion.
+
+The two layers share the brand, the visual system, and the voice. They
+do not share screens. Desktop visitors land on a marketing shell;
+mobile visitors open straight into the app. `/app` is the explicit
+"open the app on any device" entry.
 
 ## Product Rule
 
@@ -18,6 +48,11 @@ Current focus:
 
 - NBA Playoffs
 - FIFA World Cup 2026
+
+Likely next sports (don't build until close to their moment):
+
+- NFL (full build August 2026 ahead of season opener)
+- Champions League knockout rounds (long-horizon)
 
 Do not add regular-season experiences unless explicitly asked.
 
@@ -32,15 +67,31 @@ This product should feel:
 - editorial
 - uncluttered
 
+Three things the app should say clearly:
+
+1. **You're in control of what you see.** (Follows, alerts, No-Spoilers — opt-in.)
+2. **No feeds, no ads, no noise.** (The negative is the position.)
+3. **Built for the moments that matter — NBA Playoffs, FIFA World Cup, NFL.**
+
+Three things the app should never say:
+
+1. "Trending now." (Feed language.)
+2. "Top stories." (News-app language.)
+3. "Don't miss out." (FOMO language — the opposite of the brand.)
+
 Avoid:
 
 - feeds
 - betting modules
+- fantasy modules
+- social feeds
+- news feeds
 - loud ads
 - unnecessary stats
 - intrusive popups
 - generic SaaS design
 - random redesigns
+- positioning that reduces the product to "no-spoiler app"
 
 ## Visual System Rule
 
@@ -75,44 +126,59 @@ When changing code:
 
 ## Current Phase
 
-Current phase:
-
-Phases 1–7 are complete. The product is in a settled state covering
-object-detail navigation, Today calmness, game detail hierarchy, country
-pre-tournament polish, compact alerts, snapshot fallback, and small
-visual calibration. See `app/CHANGELOG_PRODUCT.md` for the per-phase
-detail.
+Phases 1–8 and A/B/C are complete. The product is in a settled,
+shippable state. See `app/CHANGELOG_PRODUCT.md` for per-phase detail.
 
 Completed phases (most recent first):
 
+- Phase C — No Noise Brief email infrastructure (subscriber store,
+  composer, renderer, Resend send wrapper, subscribe / unsubscribe /
+  cron routes, preview + signup + unsubscribed pages). Code complete;
+  send pipeline gated on domain email setup.
+- Phase B — Quiet Recap Card (premium final-game artifact: winner
+  headline, score, series state, "what mattered" bullets, optional
+  next-game line) + null-fallback + nextLine via allNBAGames.
+- Phase A — Explain the Stakes (deriveNBASeriesStake, StakesLine,
+  mounted on game detail + country detail).
 - Phase 8 — World Cup pre-kickoff readiness (extended brief band,
   TournamentCountdown carries the country page across the 30-day
-  arc, kickoff-day Today hero, WC country notifications cron + path)
-- Phase 7 — Small visual system polish (pinned accent on Today, chip
-  tap targets)
-- Phase 6 — Final game snapshot fallback in /watching and /game/[id]
-- Phase 5 — Compact per-follow alert controls in Watch + Alerts
-- Phase 4 — Country detail pre-tournament polish
-- Phase 3 — Game detail hierarchy refinement
-- Phase 2 — Today pinned-state redundancy cleanup
-- Phase 1 — Object-detail navigation cleanup
+  arc, kickoff-day Today hero, WC country notifications cron + path).
+- Phases 1–7 — Object-detail navigation, Today calmness, game detail
+  hierarchy, country detail polish, compact alerts, snapshot fallback,
+  small visual calibration.
 
-Work that may follow:
+**Next: the Roadmap (Phases 9–22+)** — see `docs/ROADMAP.md` for the
+full sequenced plan. Brief summary:
 
-- World Cup mobile UX refinements (tab overflow, no-country state
-  evolution, selected-country hierarchy)
-- Share card branding polish
-- Email signup (only when explicitly asked)
+- **Phase 9** — Friend Beta Gate (No-Spoilers leak audit, PWA install
+  CTA, settings rename, manifest sanity).
+- **Phase 10** — Web Route Architecture Split (desktop landing vs
+  mobile app, `/app` as canonical app entry).
+- **Phase 11** — Desktop Landing Shell (marketing page + live preview).
+- **Phase 12** — SEO Foundation (robots, sitemap, JSON-LD, OG).
+- **Phase 13** — Core Content Pages (/about, /privacy, /changelog, /beta).
+- **Phase 14** — Feature Pages (the "manifesto" set).
+- **Phase 15** — Guide Pages.
+- **Phase 16** — Comparison + niche capture pages.
+- **Phase 17** — Following = Sports Circle in-app polish.
+- **Phase 18** — Watching deepening.
+- **Phase 19** — Dark mode (warm dark).
+- **Phase 20** — Retention plumbing.
+- **Phase 21** — Brief launch (gated on domain email).
+- **Phase 22** — NFL season build (August 2026).
+
+Each phase is its own go/no-go unit. Do not jump ahead.
 
 Do not do yet:
 
-- Email signup
-- PWA work
-- iOS work
-- monetization UI
-- large refactor
-- new backend
-- account system
+- Brief send pipeline (Phase 21 — blocked on domain email setup)
+- NFL full build (Phase 22 — August 2026)
+- iOS native wrap
+- Account system
+- Monetization UI
+- Large refactor
+- New backend
+- Path B follow-schema refactor (wait for 3rd moment)
 
 ## NBA Rules
 

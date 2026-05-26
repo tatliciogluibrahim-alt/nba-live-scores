@@ -75,7 +75,7 @@ export function TournamentClient({ tournamentId }: { tournamentId: string }) {
       ) : tournament.id.startsWith("nba-playoffs-") ? (
         <NBAPlayoffsBody />
       ) : tournament.id.startsWith("fifa-world-cup-") ? (
-        <FIFAWorldCupBody />
+        <FIFAWorldCupBody tournamentId={tournament.id} />
       ) : (
         <GenericTournamentBody />
       )}
@@ -352,7 +352,7 @@ function NBAPlayoffsBody() {
 
 // ── FIFA World Cup body ────────────────────────────────────────────────
 
-function FIFAWorldCupBody() {
+function FIFAWorldCupBody({ tournamentId }: { tournamentId: string }) {
   // Group all 48 countries by their group letter (A–L). Render one
   // small card per group with the four member countries.
   const groups = useMemo(() => {
@@ -402,7 +402,7 @@ function FIFAWorldCupBody() {
               {members.map((country) => (
                 <li key={country.id}>
                   <Link
-                    href={`/country/${country.id}`}
+                    href={`/country/${country.id}?from=${tournamentId}`}
                     aria-label={`Open ${country.name}`}
                     className="flex min-h-[44px] items-center gap-2 rounded-[10px] border px-2 py-1.5 transition active:scale-[0.98]"
                     style={{

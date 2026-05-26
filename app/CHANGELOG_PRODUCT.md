@@ -2,6 +2,102 @@
 
 ---
 
+## Phases A / B / C — Feature Expansion Set — 2026-05-26
+
+Three editorial features that take the product from "calm scoreboard"
+to "calm sports companion." Stakes, Quiet Recap, and the Brief email
+infrastructure all land here. Build + lint + typecheck clean.
+
+### Phase A — Explain the Stakes
+
+Plain-English stake derivation. Rules-based, no probabilities, no
+predictions — just editorial context for "why this game/series/group
+matters."
+
+- New `app/companion/stakes/derive-stakes.ts` — `deriveNBASeriesStake`
+  parses `seriesSummary` for WINS/LEADS/TIED patterns; emits lines like
+  "NY can close the series with one more win." / "Game 7. Winner takes
+  the series." `deriveWCGroupStake` returns the pre-tournament
+  structural line or null (defers to the standings feed once it lands).
+- New `app/companion/stakes/StakesLine.tsx` — Eyebrow + sentence as
+  inline body copy under the relevant section header. Spoiler-wrapped
+  when the stake is state-revealing.
+- Mounted on `NBALiveCompanion` (under Series block) and `CountryClient`
+  (under PathTimeline).
+
+### Phase B — Quiet Recap Card
+
+Premium in-app final-game artifact. Replaces the live HeroMoment +
+HighlightsStack treatment on finals.
+
+- New `app/companion/recap/derive-recap.ts` — composes the `NBARecap`
+  shape (headline, score, series state, up to 3 "what mattered" bullets,
+  optional next-game line). Bullet derivation covers triple-doubles /
+  double-doubles / 30-/40-point nights, rebound dominance, hot-or-cold
+  three-point shooting, OT / comeback / Q4 push / margin stories.
+- New `app/companion/recap/QuietRecapCard.tsx` — paper chassis, 3px NBA
+  accent rail, Eyebrow "Recap," Display headline ("Knicks took it."),
+  tabular score line, series state, bullet list, optional "Next" block.
+  Every spoilery cell Spoiler-wrapped under No-Spoilers.
+- `NBALiveCompanion` skips HeroMoment + HighlightsStack on finals when
+  recap composes; falls back to slim HeroMoment "Final." when boxscore
+  is delayed (recap null-fallback).
+- `deriveNBARecap` accepts `allNBAGames` and emits a "Next" line
+  ("Game 5 · in NY · Wed 8:00 PM.") when the series isn't wrapped.
+
+### Phase C — No Noise Brief (email infrastructure)
+
+Personalized morning recap of yesterday's games for follows. Code
+complete; send pipeline gated on domain email setup (DNS / Resend
+domain auth not yet configured).
+
+- New `app/lib/brief/subscriber-store.ts` — KV-backed subscriber model,
+  SHA-256 hashed email keys, opaque unsubscribe tokens.
+- New `app/lib/brief/compose-brief.ts` — pure composer; per-user
+  follow-match filtering against NBA games (team / series / tournament
+  kinds); reuses `deriveNBARecap` for blurbs; `shouldSendBrief` skips
+  empty days.
+- New `app/lib/brief/render-email.ts` — HTML email renderer with inline
+  styles (Gmail / Apple Mail safe) plus plain-text fallback.
+- New `app/lib/brief/send-email.ts` — Resend HTTP API wrapper, no SDK.
+  Reads `RESEND_API_KEY` + `BRIEF_FROM` env vars.
+- New API routes: `/api/brief/subscribe`, `/api/brief/unsubscribe`,
+  `/api/cron/send-briefs`. Rate-limited via the existing
+  `request-guards.ts` (new `"brief-subscribe"` kind, 5/min/IP).
+- New pages: `/brief/subscribe`, `/brief/preview`, `/brief/unsubscribed`.
+  No entry point in nav by design — Brief stays dark until email is
+  sorted (Phase 21).
+
+### Closures alongside the feature set
+
+- WC navigation: country detail page reads `?from=` searchParam; back
+  target is contextual (`from=fifa-world-cup-2026` routes back to the
+  tournament page).
+- Tournament detail page (Phase 49) and Team detail page (Phase 50)
+  shipped, closing the Phase 1 fallback routes.
+- NFL data scaffolding (Phase 45) + design doc (Phase 46). Full build
+  queued for Phase 22 (August 2026).
+- Path B follow-schema design doc lives in `docs/follow-moments-design.md`
+  for when a 3rd moment-tournament triggers the refactor.
+
+### Build / lint / typecheck
+
+- `npm run lint` → clean
+- `npx tsc --noEmit` → clean
+- `npm run build` → ✓, 21 static pages + 3 new API routes
+  (`/api/brief/subscribe`, `/api/brief/unsubscribe`,
+  `/api/cron/send-briefs`).
+
+### What's NOT in Phases A/B/C
+
+- Brief send pipeline running — blocked on domain email setup at Vercel
+  DNS / Resend domain auth. Phase 21.
+- Brief signup entry point in the nav — held until email is sorted.
+- WC mid-tournament stakes — `deriveWCGroupStake` returns null
+  post-kickoff until standings feed lands.
+
+---
+
 ## Phase 8 — World Cup Pre-Kickoff Readiness — 2026-05-25
 
 Tightens the run-up to the June 11 opener and lays the WC notification
@@ -501,237 +597,14 @@ None.
 
 ---
 
-## Current Direction
-
-No Noise Scores is a calm, mobile-first live hub for major sports moments.
-
-We are focusing on sports moments, not regular seasons.
-
-Current active experiences:
-
-- NBA Playoffs
-- FIFA World Cup 2026
-
-## Domain
-
-Production domain:
-
-https://nonoisescores.app
-
-## Key Product Decisions
-
-### Major Sports Moments
-
-We chose Option B:
-
-No Noise Scores should be a hub for major sports moments instead of a generic all-season scoreboard.
-
-Examples:
-
-- NBA Playoffs
-- FIFA World Cup 2026
-- March Madness
-- NFL Playoffs
-- Champions League
-- Olympics
-
-### NBA
-
-NBA should be framed around playoffs.
-
-Current useful features:
-
-- live scores
-- next/upcoming games
-- final scores
-- playoff series context
-- favorite team dropdown
-- My Team filter
-- share cards
-
-### World Cup
-
-World Cup should feel like a calm tournament companion.
-
-Important ideas:
-
-- pick your country
-- team/country colors follow you
-- countdown to kickoff
-- group context
-- reminder prompt
-- table and schedule unlock later
-
-### Filters
-
-Floating/sticky filter dock was tested and rejected for now.
-
-Current preference:
-
-- normal control dock under hero/header
-- clean spacing
-- no heavy overlay
-
-### Favorite Team / Country
-
-Large inline Follow buttons were tested but felt too noisy.
-
-Preferred approach:
-
-- favorite team dropdown
-- country picker
-- My Team / selected country filter
-- subtle badges only
-
-### Share Cards
-
-Share cards are a major growth loop.
-
-They should include:
-
-- No Noise logo
-- team logos or country flag
-- scores/status/countdown
-- nonoisescores.app
-- @nonoisescores
-
-### Instagram
-
-Instagram should not be a big button in the app yet.
-
-Preferred placement for now:
-
-- share card footer only:
-  `nonoisescores.app · @nonoisescores`
-
-### Email Signup
-
-Email signup is a good future idea but not current Phase 3.
-
-Possible product:
-
-The Quiet Recap
-
-Concept:
-
-- final scores without the feed
-- weekly or nightly recap
-- personalized by team/country later
-
-Do not add yet unless explicitly requested.
-
-## Current Phase
-
-Phase 3: World Cup page hierarchy and mobile UX.
-
-Current Phase 3 priorities:
-
-1. Fix World Cup mobile no-country empty state
-2. Make Pick Country the central CTA when no country is selected
-3. Fix “Table & Schedule unlock June 11” mobile cutoff
-4. Improve share card branding
-5. Keep Instagram subtle in share card footer
-6. Preserve NBA experience
-
-## Recent Notes
-
-- Bought `nonoisescores.app`
-- Sports picker homepage now makes product feel like a platform
-- World Cup page is a strong wedge because:
-  - casual fans
-  - national identity
-  - tournament complexity
-  - reminders
-  - shareable countdowns
-- NBA page is strong as an event scoreboard for playoffs
-- Product should not become cluttered or generic
-
-## Future Roadmap
-
-### Phase 4: Country Picker Polish
-
-- Search
-- Groups
-- Better selected states
-- Persist selected country
-- Better mobile touch targets
-
-### Phase 5: Country Color Theming
-
-- Theme map
-- Primary and secondary colors
-- Safe contrast
-- Use color as accent
-
-### Phase 6: Reminder Soft Launch
-
-- Save reminder intent locally
-- No backend yet
-- Future-ready for email/browser/iOS alerts
-
-### Phase 7: Share Cards
-
-- Reusable share card system
-- NBA score cards
-- World Cup countdown cards
-- Country cards
-- App-branded social output
-
-### Phase 8: NBA Playoffs Cleanup
-
-- Make playoff framing clearer
-- Preserve live scores and series context
-- Avoid regular-season expansion
-
-### Phase 9: Empty States
-
-- No live games
-- No games for selected team
-- No selected country
-- Locked schedule/table
-- No results in filter
-
-### Phase 10: Code Cleanup
-
-Potential files:
-
-components/
-- BrandLockup.tsx
-- EventCard.tsx
-- FilterDock.tsx
-- FilterPill.tsx
-- GameCard.tsx
-- TeamLogo.tsx
-- TeamLine.tsx
-- PlayoffBand.tsx
-- SectionHeader.tsx
-- EmptyState.tsx
-- ShareCardModal.tsx
-
-lib/
-- game-types.ts
-- game-formatters.ts
-- game-sections.ts
-- site-config.ts
-- world-cup-data.ts
-- country-themes.ts
-
-hooks/
-- useLiveScores.ts
-- useLocalStorage.ts
-- useFavoriteTeam.ts
-- useSelectedCountry.ts
-
-### Phase 11: Domain/PWA Polish
-
-- metadata
-- manifest
-- theme color
-- app icon
-- social preview
-
-### Phase 12: Monetization Foundation
-
-- feature flags
-- sponsor config
-- no paywall yet
+## Source of truth
+
+The stale "Current Direction" / "Future Roadmap" sections that used to
+live at the foot of this changelog have been retired. They drifted out
+of sync with the actual phase numbering above. Authoritative sources
+are now:
+
+- **Positioning + product model:** `app/PROJECT_CONTEXT.md`
+- **Active phase + brand rules:** `AGENTS.md`
+- **Forward roadmap (Phases 9–22+):** `docs/ROADMAP.md`
+- **Per-phase changelog:** this file (append above this line)
