@@ -21,18 +21,17 @@ export default function VsAppleSportsPage() {
     <ContentPageShell
       eyebrow="Compare"
       headline="No Noise Scores vs Apple Sports."
-      intro="Two calm sports apps. Different positions. Here's an honest read on where each one wins."
+      intro="Two calm sports apps with different bets. Here's an honest read on where each one fits."
     >
       <P>
-        Apple Sports launched in 2024 with a clear point of view: fast,
-        clean, scores-first, deeply integrated with iOS. We launched
-        with a different one: calm, editorial, personalized, web-first
-        and built around the moments that actually pull you in.
+        Apple Sports launched in 2024 with a clear bet: fast, clean,
+        scores-first, deeply integrated with iOS. This one made a
+        different bet: editorial voice, per-follow alert levels, real
+        No-Spoilers mode, web-first.
       </P>
       <P>
-        We respect Apple Sports. They built the bar that most sports
-        apps fail to clear. We don&apos;t try to beat them at their
-        game — we play a different one.
+        Apple Sports is good at what it does — we&apos;re not trying to
+        beat them at it. Different tools for different moods.
       </P>
 
       <H2>Where Apple Sports wins</H2>
@@ -106,7 +105,7 @@ export default function VsAppleSportsPage() {
         </strong>{" "}
         you live on iPhone, you mostly want scores and Live Activities,
         you don&apos;t need No-Spoilers, you follow more sports than
-        we cover, or you prefer one-tap App Store install.
+        this app covers, or you prefer one-tap App Store install.
       </P>
       <P>
         <strong style={{ color: "var(--ink)" }}>
@@ -119,16 +118,14 @@ export default function VsAppleSportsPage() {
       </P>
 
       <CalloutBox eyebrow="Honest take">
-        You can use both. They&apos;re not zero-sum. Apple Sports for
-        widget-level glance; No Noise Scores for the games you&apos;re
-        actually living through.
+        You can use both. Apple Sports for widget-level glance, this one
+        for the games you&apos;re actually living through.
       </CalloutBox>
 
-      <H2>What we&apos;ll never copy from Apple Sports</H2>
+      <H2>What this app won&apos;t copy from Apple Sports</H2>
       <P>
-        Their scope. Apple Sports tries to cover every major sport
-        because they have the resources to do it well. We deliberately
-        don&apos;t. Our wedge is going deep on the moments that matter,
+        Their scope. Apple Sports covers every major sport. This one
+        stays narrow on purpose — going deep on the moments that matter,
         not wide on every season.
       </P>
 

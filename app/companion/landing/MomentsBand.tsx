@@ -10,7 +10,7 @@ const MOMENTS = [
     sport: "NBA",
     title: "NBA Playoffs",
     detail:
-      "Series state, dot strips, quiet recap cards, per-quarter scoring lines, close-game alerts. Calm during the season, dialed in during the postseason.",
+      "Series state, dot strips, recap cards, per-quarter scores, close-game alerts. Built for the postseason.",
     accent: "var(--nba)",
     soft: "var(--nba-soft)",
     icon: "🏀",
@@ -30,7 +30,7 @@ const MOMENTS = [
     sport: "NFL",
     title: "NFL Season",
     detail:
-      "Drive-led highlights, possession state, Sunday-aware reminders. Full build lands ahead of the 2026 season opener.",
+      "Sunday game tracking, drive-led highlights, possession state, weekly reminders. Lands ahead of the 2026 season opener.",
     accent: "var(--nfl, #6b7280)",
     soft: "var(--cream-2)",
     icon: "🏈",
@@ -51,15 +51,14 @@ export function MomentsBand() {
       <div className="mx-auto" style={{ maxWidth: 1280 }}>
         <SectionHeader
           eyebrow="Built for the moments"
-          title="Major sports moments — not every season."
+          title="The events that pull you to the screen."
         />
         <p
           className="mt-4 max-w-[60ch] text-[16px] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
-          We don&apos;t cover regular-season filler. We cover the
-          playoffs, tournaments, and championship runs that actually pull
-          you to the screen.
+          NBA Playoffs, the World Cup, NFL Sundays. We add sports
+          moment by moment, not all at once.
         </p>
 
         <div className="mt-10 grid gap-6 md:grid-cols-3 lg:gap-8">

@@ -62,6 +62,12 @@
   --font-body:     "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono:     "JetBrains Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 
+  /* Blur-backdrop chassis for sticky nav surfaces (BrandBar, CrumbBar).
+     Used as `background: var(--bar-blur-bg)`. Light = cream rgba; dark
+     block below overrides to the warm-dark rgba so the sticky nav doesn't
+     punch a cream hole through a dark page. */
+  --bar-blur-bg: rgba(241, 234, 216, 0.85);
+
   /* Status tones — live / upcoming / final / current. Four. */
   --status-live-bg:     rgba(201, 54, 43, 0.10);
   --status-live-fg:     #a82a21;
@@ -82,65 +88,15 @@
   color-scheme: light;
 }
 
-/* ── Dark mode — warm dark, not generic dark ──────────────────────────
-   Phase 19. The cream identity stays — we don't go pure black. The
-   chassis becomes a warm dark ink-2 surface; paper becomes a slightly
-   lifted dark; text inverts to cream. Sport accents shift slightly so
-   they read on dark without saturating the screen.
-
-   Two triggers, both write into the same token block:
-   1. System dark mode (prefers-color-scheme: dark) AND the user hasn't
-      manually overridden — handled by an explicit `:root:not(...)`
-      selector so the manual light override wins.
-   2. Manual override (<html data-theme="dark">) — landing has a toggle
-      that writes to this attribute and to localStorage. */
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --background:                #1d1812;
-    --foreground:                #f1ead8;
-
-    --cream:                     #1d1812;
-    --cream-2:                   #2a231b;
-    --paper:                     #251f17;
-    --ink:                       #f1ead8;
-    --ink-2:                     #e5dcc1;
-    --mute-1:                    #b0a585;
-    --mute-2:                    #756a52;
-    --line:                      rgba(241, 234, 216, 0.14);
-
-    --nba:                       #f47743;
-    --nba-soft:                  rgba(244, 119, 67, 0.14);
-    --wc:                        #3d9d5d;
-    --wc-soft:                   rgba(61, 157, 93, 0.14);
-    --nfl:                       #4a78c4;
-    --nfl-soft:                  rgba(74, 120, 196, 0.14);
-    --up:                        #6a8fdc;
-    --up-soft:                   rgba(106, 143, 220, 0.14);
-    --critical:                  #e2554a;
-    --pos:                       #3d9d5d;
-    --live:                      #f47743;
-
-    --cream-on-dark-primary:     var(--ink);
-    --cream-on-dark-secondary:   rgba(241, 234, 216, 0.78);
-    --cream-on-dark-tertiary:    rgba(241, 234, 216, 0.6);
-    --cream-on-dark-hairline:    rgba(241, 234, 216, 0.35);
-
-    --status-live-bg:            rgba(226, 85, 74, 0.16);
-    --status-live-fg:            #e2554a;
-    --status-live-dot:           #e2554a;
-    --status-upcoming-bg:        rgba(241, 234, 216, 0.08);
-    --status-upcoming-fg:        #b0a585;
-    --status-upcoming-dot:       #756a52;
-    --status-final-bg:           rgba(241, 234, 216, 0.10);
-    --status-final-fg:           #b0a585;
-    --status-current-bg:         rgba(61, 157, 93, 0.16);
-    --status-current-fg:         #6cc585;
-    --status-current-dot:        #3d9d5d;
-
-    color-scheme: dark;
-  }
-}
+/* ── Dark mode — warm dark, opt-in only ────────────────────────────────
+   Phase 19, revised. Light cream is the default daylight experience
+   under all conditions. Dark mode fires only when the user explicitly
+   picks "Dark" in Alerts & Notifications (which sets
+   <html data-theme="dark">). The system prefers-color-scheme detection
+   was removed — users with system-dark phones still get cream by
+   default, which keeps the brand identity intact and avoids the "why
+   is my sports app suddenly different?" surprise on first install.
+   They can still opt in to dark via the Theme selector. */
 
 :root[data-theme="dark"] {
   --background:                #1d1812;
@@ -171,6 +127,8 @@
   --cream-on-dark-secondary:   rgba(241, 234, 216, 0.78);
   --cream-on-dark-tertiary:    rgba(241, 234, 216, 0.6);
   --cream-on-dark-hairline:    rgba(241, 234, 216, 0.35);
+
+  --bar-blur-bg:               rgba(29, 24, 18, 0.85);
 
   --status-live-bg:            rgba(226, 85, 74, 0.16);
   --status-live-fg:             #e2554a;

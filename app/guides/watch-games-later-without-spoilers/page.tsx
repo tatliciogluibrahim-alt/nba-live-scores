@@ -20,20 +20,18 @@ export default function WatchLaterGuide() {
   return (
     <ContentPageShell
       eyebrow="Guide"
-      headline="Watch games on delay. Avoid spoilers."
-      intro="If you're going to watch a game later — tonight, tomorrow, after work — here's how to stay spoiler-free across every app on your phone."
+      headline="Watch on delay. Skip the spoilers."
+      intro="If you're watching a game later, here's how to stay spoiler-free across the apps on your phone."
     >
       <P>
-        The hardest part of watching games on delay isn&apos;t the
-        sports app you choose — it&apos;s every notification, news
-        feed, and friend group chat that leaks the score before you can
-        get to it.
+        The hardest part of watching on delay isn&apos;t the sports app
+        you choose — it&apos;s every notification, feed, and friend
+        group chat that leaks the score first.
       </P>
       <P>
-        No Noise Scores can&apos;t silence your friends, but we can
-        guarantee one thing: while the app is open, no part of it will
-        spoil you. Here&apos;s how to set up an end-to-end spoiler-free
-        watch.
+        No Noise Scores can&apos;t silence your friends, but it won&apos;t
+        spoil you while the app is open. Here&apos;s how to set up the
+        rest.
       </P>
 
       <H2>Step 1 — Turn No-Spoilers on</H2>

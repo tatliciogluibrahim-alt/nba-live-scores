@@ -21,19 +21,17 @@ export default function VsESPNPage() {
     <ContentPageShell
       eyebrow="Compare"
       headline="No Noise Scores vs the ESPN app."
-      intro="ESPN is the everything-store of sports apps. We're the deliberately-narrow alternative. Here's where the difference matters."
+      intro="ESPN is the everything-store of sports. This one is deliberately narrow. Here's how they compare."
     >
       <P>
-        ESPN is the default. It has the deepest coverage of any major
-        sports app on the market — every sport, every league, every
-        regular-season game, plus news, video, fantasy, social, and
-        betting. That comprehensiveness is also the source of its
-        loudness problem.
+        ESPN is the default for a reason — every sport, every league,
+        every regular-season game, plus news, video, fantasy, social,
+        and betting. That breadth is also where the noise comes from.
       </P>
       <P>
-        We&apos;re built for the opposite use case: you don&apos;t want
-        a news app. You want a sports companion for the moments you
-        actually care about.
+        No Noise Scores is for the opposite use case: when you want a
+        sports companion for the moments you actually care about, not a
+        news app.
       </P>
 
       <H2>The honest side-by-side</H2>
@@ -56,11 +54,11 @@ export default function VsESPNPage() {
       <H2>What you give up by switching</H2>
       <BulletList
         items={[
-          "Regular-season coverage. We don't cover most regular-season games.",
-          "Breaking news. We're not a newsroom.",
-          "Video highlights inside the app. We surface what mattered as editorial bullets, not clips.",
-          "Fantasy integration. Not our scope.",
-          "Betting context. We won't ship this — it conflicts with the brand.",
+          "Most regular-season coverage outside NFL Sundays.",
+          "Breaking news — this isn't a newsroom.",
+          "Video highlights inside the app. What mattered shows up as short editorial bullets, not clips.",
+          "Fantasy integration. Out of scope.",
+          "Betting context. Won't ship — conflicts with the brand.",
         ]}
       />
 
@@ -80,8 +78,8 @@ export default function VsESPNPage() {
       <P>
         If you actively want the news flavor — you check ESPN multiple
         times a day to see what&apos;s happening across every league —
-        we&apos;re probably not for you. We&apos;d frustrate you with
-        how little we cover.
+        this app isn&apos;t for you. The narrow coverage would frustrate
+        you.
       </P>
       <P>
         If you bet on games or play fantasy, you&apos;ll want to keep

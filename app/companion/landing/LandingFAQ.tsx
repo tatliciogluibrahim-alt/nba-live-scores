@@ -15,7 +15,7 @@ export function LandingFAQ() {
       className="mx-auto px-8 py-16 md:px-12 lg:px-20"
       style={{ maxWidth: 900 }}
     >
-      <SectionHeader eyebrow="FAQ" title="Plain answers." />
+      <SectionHeader eyebrow="FAQ" title="Common questions." />
 
       <div
         className="mt-10 overflow-hidden rounded-[16px] border"

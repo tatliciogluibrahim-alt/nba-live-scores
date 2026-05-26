@@ -24,8 +24,8 @@ export default function ChangelogPage() {
   return (
     <ContentPageShell
       eyebrow="Changelog"
-      headline="What we shipped."
-      intro="Public, plain-English list of releases. Most recent on top."
+      headline="What shipped."
+      intro="Most recent on top."
     >
       <H2>2026</H2>
 

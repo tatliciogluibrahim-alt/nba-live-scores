@@ -9,26 +9,26 @@ export type FAQItem = { q: string; a: string };
 export const FAQ_ITEMS: FAQItem[] = [
   {
     q: "Is it free?",
-    a: "Yes. The app is free. No ads, no paywalls. A paid morning Brief is in the plan for later; the app itself stays free.",
+    a: "Yes. No ads, no paywalls. A paid morning email recap might come later; the app itself stays free.",
   },
   {
     q: "Does it work on iPhone?",
-    a: "Yes. Open the site in Safari and tap Share → Add to Home Screen. The app installs as a PWA. Push notifications work after install.",
+    a: "Yes. Open the site in Safari, tap Share, then Add to Home Screen. Push notifications work after install — that's an Apple rule for web apps, not us.",
   },
   {
     q: "What sports are covered?",
-    a: "NBA Playoffs and the FIFA World Cup 2026 right now. NFL ships ahead of the August 2026 season. We add sports moment-by-moment, not all at once.",
+    a: "NBA Playoffs and FIFA World Cup 2026 right now. NFL lands ahead of the August 2026 season opener. More sports get added as their moment arrives.",
   },
   {
     q: "How is this different from Apple Sports?",
-    a: "Apple Sports is a fast scores viewer with widgets and Live Activities. No Noise Scores is a calm companion with per-follow alert tiers, editorial recap cards, series context, and a real No-Spoilers mode. We don't try to beat Apple at speed — we beat them at calm.",
+    a: "Apple Sports is fast and scores-first. This one's slower-paced — alert tiers per follow, recap cards, series context, and a hide-everything mode for watching on delay. They're different tools for different moods.",
   },
   {
     q: "Does it have spoilers?",
-    a: "Only when you want them. Turn No-Spoilers on once in Alerts & Notifications and scores, headlines, and outcomes blur across every screen — push previews included. Reveal one moment at a time.",
+    a: "Only when you want them. Turn No-Spoilers on in Alerts & Notifications and scores, headlines, and outcomes blur across every screen, including push previews. Tap to reveal one at a time.",
   },
   {
     q: "When does NFL ship?",
-    a: "August 2026 — about five weeks before the season opener. We're not rushing it. Data layer + design doc are already in place.",
+    a: "August 2026, a few weeks before the season opener. The data layer and design are already in place; not rushing the rest.",
   },
 ];

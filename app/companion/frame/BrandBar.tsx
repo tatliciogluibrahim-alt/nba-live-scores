@@ -19,7 +19,7 @@ export function BrandBar({ trailing }: { trailing?: ReactNode }) {
         // blur masks content that scrolls underneath — the standard
         // iOS pattern for translucent headers.
         paddingTop: "max(env(safe-area-inset-top), 12px)",
-        background: "rgba(241, 234, 216, 0.85)",
+        background: "var(--bar-blur-bg)",
         backdropFilter: "blur(14px) saturate(140%)",
         WebkitBackdropFilter: "blur(14px) saturate(140%)",
       }}

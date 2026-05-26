@@ -114,17 +114,26 @@ function PresetPreviewCard({ preset }: { preset: AlertPreset }) {
 }
 
 /** Compact iOS-style notification card. Pure visual — no animation,
- *  no shadow tricks, no platform sniffing. The ink/cream palette here
- *  is intentionally the inverse of the page so the mock reads as
- *  "your phone, not the app." */
+ *  no shadow tricks, no platform sniffing.
+ *
+ *  Uses *literal* colors (not theme tokens) so the mockup always looks
+ *  like an iOS lock-screen push regardless of the app's current
+ *  theme. Previously the mock used --ink / --cream tokens which
+ *  inverted under dark mode, producing a cream tile on a dark page
+ *  with poor contrast. This component represents the phone's
+ *  lockscreen — it shouldn't follow the app's theme. */
+const LOCK_DARK = "#2b2520";
+const LOCK_DARK_BORDER = "#1a1612";
+const LOCK_CREAM = "#f1ead8";
+
 function LockScreenPushMock({ preview }: { preview: PreviewExample }) {
   return (
     <div
       className="mt-3 rounded-[12px] px-3 py-2.5"
       style={{
-        background: "var(--ink-2)",
-        color: "var(--cream)",
-        border: "1px solid var(--ink)",
+        background: LOCK_DARK,
+        color: LOCK_CREAM,
+        border: `1px solid ${LOCK_DARK_BORDER}`,
       }}
       aria-label="Example notification"
       role="img"
@@ -135,8 +144,8 @@ function LockScreenPushMock({ preview }: { preview: PreviewExample }) {
             aria-hidden
             className="h-4 w-4 shrink-0 rounded-sm"
             style={{
-              background: "var(--cream)",
-              boxShadow: "inset 0 0 0 1px var(--ink-2)",
+              background: LOCK_CREAM,
+              boxShadow: `inset 0 0 0 1px ${LOCK_DARK}`,
             }}
           />
           <span
@@ -166,7 +175,7 @@ function LockScreenPushMock({ preview }: { preview: PreviewExample }) {
       </div>
       <p
         className="mt-1.5 text-[13px] leading-snug"
-        style={{ color: "var(--cream)", fontWeight: 700, letterSpacing: "-0.005em" }}
+        style={{ color: LOCK_CREAM, fontWeight: 700, letterSpacing: "-0.005em" }}
       >
         {preview.title}
       </p>

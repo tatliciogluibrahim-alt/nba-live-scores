@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandMark } from "../frame/BrandMark";
 
 // Landing hero — the first thing a desktop visitor sees.
 //
@@ -19,17 +20,23 @@ export function LandingHero() {
     >
       {/* ── Left: positioning + CTAs ─────────────────────────────────── */}
       <div className="flex flex-col justify-center">
-        <p
-          className="mb-3 text-[11px] uppercase"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            letterSpacing: "0.14em",
-            color: "var(--nba)",
-          }}
-        >
-          No Noise Scores
-        </p>
+        {/* Brand lockup — BrandMark glyph + wordmark. Sized small so it
+            reads as identity (not a hero element); the H1 below carries
+            the editorial weight. */}
+        <div className="mb-5 flex items-center gap-2.5">
+          <BrandMark size={32} />
+          <p
+            className="text-[14px]"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              letterSpacing: "-0.005em",
+              color: "var(--ink)",
+            }}
+          >
+            No Noise Scores
+          </p>
+        </div>
         <h1
           className="leading-[1.05]"
           style={{
@@ -47,8 +54,8 @@ export function LandingHero() {
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Follow what matters. Skip the rest. Scores, alerts, and recaps
-          for the teams, countries, series, and tournaments you actually
-          care about — and nothing else.
+          for the teams, countries, series, and tournaments you care
+          about.
         </p>
 
         {/* CTAs */}
@@ -82,7 +89,7 @@ export function LandingHero() {
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Add to your home screen for instant access to your sports
-          circle. Push notifications, calmly.
+          circle.
         </p>
 
         {/* Tiny moments line */}
@@ -95,7 +102,7 @@ export function LandingHero() {
             fontWeight: 600,
           }}
         >
-          NBA Playoffs · FIFA World Cup 2026 · NFL coming
+          NBA · FIFA World Cup 2026 · NFL coming
         </p>
       </div>
 
@@ -129,13 +136,17 @@ function PhonePreview() {
       aria-label="No Noise Scores app preview"
     >
       <div
-        className="h-full w-full overflow-hidden"
+        className="flex h-full w-full flex-col overflow-hidden"
         style={{
           background: "var(--cream)",
           borderRadius: 32,
-          padding: "20px 16px",
         }}
       >
+        {/* Scrollable content area — pads to leave room for tab bar */}
+        <div
+          className="flex-1 overflow-hidden"
+          style={{ padding: "20px 16px 0" }}
+        >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <p
@@ -349,7 +360,132 @@ function PhonePreview() {
             16 days until first whistle.
           </p>
         </div>
+        </div>
+        {/* ── Bottom tab nav mockup — Today / Following / Watching ───── */}
+        <PreviewTabBar />
       </div>
     </div>
+  );
+}
+
+// PreviewTabBar — static mockup of the app's bottom tab navigation.
+// Mirrors `app/companion/frame/TabBar.tsx` with Today active. Visual
+// only; no navigation. The 3-tab IA is core product — showing it on
+// the landing makes the structure obvious in five seconds.
+
+function PreviewTabBar() {
+  return (
+    <nav
+      aria-hidden
+      className="flex shrink-0 items-stretch justify-around border-t px-3 pb-3 pt-2"
+      style={{
+        background: "var(--cream)",
+        borderColor: "var(--line)",
+      }}
+    >
+      <TabSlot label="Today" active icon={<TabSunIcon />} />
+      <TabSlot label="Following" icon={<TabHeartIcon />} />
+      <TabSlot label="Watching" icon={<TabPinIcon />} />
+    </nav>
+  );
+}
+
+function TabSlot({
+  label,
+  active = false,
+  icon,
+}: {
+  label: string;
+  active?: boolean;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div
+      className="relative flex flex-1 flex-col items-center gap-1 px-2 py-1"
+      style={{
+        color: active ? "var(--ink)" : "var(--mute-1)",
+        opacity: active ? 1 : 0.85,
+      }}
+    >
+      {/* Active indicator — 3px ink pill above icon */}
+      <span
+        aria-hidden
+        className="absolute left-1/2 top-0 -translate-x-1/2 rounded-full"
+        style={{
+          width: active ? 18 : 0,
+          height: 3,
+          background: "var(--ink)",
+        }}
+      />
+      {icon}
+      <span
+        className="text-[9px] uppercase"
+        style={{
+          fontWeight: active ? 800 : 600,
+          letterSpacing: "0.06em",
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// SVG icons mirror the real TabBar (Today = sun, Following = heart,
+// Watching = pin). Sized 16px to fit the smaller mockup.
+
+function TabSunIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </svg>
+  );
+}
+
+function TabHeartIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+    </svg>
+  );
+}
+
+function TabPinIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 17v5" />
+      <path d="M9 10.76A2 2 0 0 1 8 9V4h8v5a2 2 0 0 1-1 1.76l-1 .57V17H10v-5.67l-1-.57z" />
+    </svg>
   );
 }

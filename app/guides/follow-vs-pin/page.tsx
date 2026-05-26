@@ -20,17 +20,17 @@ export default function FollowVsPinPage() {
     <ContentPageShell
       eyebrow="Guide"
       headline="Follow vs Pin."
-      intro="The two concepts new users mix up most. They're related but distinct."
+      intro="The two things people mix up most. Related but separate."
     >
-      <H2>The short version</H2>
+      <H2>Short version</H2>
       <P>
         <strong style={{ color: "var(--ink)" }}>Follow</strong> a team,
-        country, series, or tournament — it personalizes the app and can
+        country, series, or tournament. It personalizes the app and can
         send you alerts.
       </P>
       <P>
         <strong style={{ color: "var(--ink)" }}>Pin</strong> a specific
-        game — it gives you a focused tracking surface on Watching for
+        game. It gives you a focused tracking screen on Watching for
         that game.
       </P>
 

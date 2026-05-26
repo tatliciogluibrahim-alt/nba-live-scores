@@ -8,15 +8,15 @@ import { SectionHeader } from "./HowItWorksCapsule";
 const PILLARS = [
   {
     title: "Calm by default.",
-    body: "No feeds. No top-stories. No trending. No betting modules, no fantasy ads, no doomscroll. The app sits quiet until something you follow matters.",
+    body: "No feed. No top stories. No trending tab. No betting widgets, no fantasy ads. The app sits quiet until something you follow happens.",
   },
   {
     title: "Personalized, not algorithmic.",
-    body: "You pick what you follow. You pick what alerts you. The app respects those picks. It doesn't decide for you and it doesn't show you things to keep you scrolling.",
+    body: "You pick what you follow. You pick what alerts you. The app respects those picks instead of deciding for you.",
   },
   {
     title: "Hide-by-default when you want.",
-    body: "Turn No-Spoilers on and scores, headlines, and outcomes blur across every screen — push previews included. Watch on delay. Reveal one moment at a time.",
+    body: "Turn No-Spoilers on and scores, headlines, and outcomes blur across every screen. Push notification previews stay vague. Reveal one moment at a time.",
   },
 ];
 
@@ -28,7 +28,7 @@ export function DifferentiatorPillars() {
     >
       <SectionHeader
         eyebrow="Why it feels different"
-        title="Three things every other sports app gets wrong."
+        title="Three things this app does on purpose."
       />
 
       <div className="mt-10 space-y-6 md:space-y-8">

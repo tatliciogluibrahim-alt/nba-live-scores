@@ -103,14 +103,12 @@ export const viewport: Viewport = {
   initialScale: 1,
   minimumScale: 1,
   viewportFit: "cover",
-  // Theme color shifts with prefers-color-scheme so the iOS status bar
-  // chrome matches the chassis on both modes. Light cream by default,
-  // warm dark when the system is in dark mode.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f1ead8" },
-    { media: "(prefers-color-scheme: dark)", color: "#1d1812" },
-  ],
-  colorScheme: "light dark",
+  // Light cream is the default — we don't auto-flip with
+  // prefers-color-scheme. Users who pick Dark in Alerts & Notifications
+  // get warm dark; everyone else gets cream regardless of OS setting.
+  // Keeps the brand identity stable on first install.
+  themeColor: "#f1ead8",
+  colorScheme: "light",
 };
 
 export default function RootLayout({

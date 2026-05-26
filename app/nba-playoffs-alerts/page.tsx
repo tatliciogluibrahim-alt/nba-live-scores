@@ -20,12 +20,12 @@ export default function NBAPlayoffsAlertsPage() {
     <ContentPageShell
       eyebrow="NBA Playoffs"
       headline="Calm alerts for the playoffs."
-      intro="Tipoff, key breaks, close finishes, final, series-wrap. Pushes for the moments that matter — not every regular-season foul call."
+      intro="Tipoff, key breaks, close finishes, final, series-wrap. Pushes for the moments that matter."
     >
       <P>
         Most sports apps treat playoff games the same way they treat
-        regular-season games: a steady drip of generic notifications.
-        We treat playoff basketball as the moment it is.
+        regular-season games — a steady drip of generic notifications.
+        This app treats them as the moment they are.
       </P>
 
       <H2>What you can alert on</H2>

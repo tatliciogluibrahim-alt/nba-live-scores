@@ -7,19 +7,19 @@
 const STEPS = [
   {
     title: "Follow",
-    body: "Pick teams, countries, series, and tournaments you actually care about. That's your sports circle.",
+    body: "Pick the teams, countries, series, and tournaments you care about. That's your sports circle.",
   },
   {
     title: "Alert",
-    body: "Turn alerts on per follow. Three tiers — Quiet, Companion, All moments. Default to whatever fits your day.",
+    body: "Turn alerts on per follow. Three levels: Quiet, Companion, All moments. Pick one and adjust later.",
   },
   {
     title: "Pin",
-    body: "Pin one specific game to Watching. It becomes your tracking surface for that day. Pin ≠ Alert.",
+    body: "Pin a specific game to Watching. It becomes your tracking screen for that night. Pin is separate from Alert.",
   },
   {
     title: "No-Spoilers",
-    body: "Hide scores, headlines, and outcomes across every screen. Reveal one at a time. Watch on delay without leaks.",
+    body: "Hide scores, headlines, and outcomes across every screen. Reveal one at a time. Good for watching on delay.",
   },
 ];
 
@@ -31,7 +31,7 @@ export function HowItWorksCapsule() {
     >
       <SectionHeader
         eyebrow="How it works"
-        title="Four concepts. That's the whole product."
+        title="Four ideas, and that's it."
       />
 
       <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">

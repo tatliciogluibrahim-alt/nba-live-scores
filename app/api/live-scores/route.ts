@@ -356,10 +356,26 @@ function cleanGameContext(headline?: string) {
 function normalizeSeriesSummary(summary?: string) {
   if (!summary) return "";
 
-  return summary
+  let s = summary
     .replace("lead series", "leads series")
     .replace("Lead series", "Leads series")
     .toUpperCase();
+
+  // Canonicalize team abbreviations inside the summary string. ESPN
+  // sometimes returns the team abbreviation ("NY") in seriesSummary
+  // even when the team's canonical code is "NYK" — this was the bug
+  // that caused /series/CLE-NYK to display "Cleveland won 4-0" when
+  // really New York swept. We rewrite all known alias codes inside
+  // the summary so every downstream consumer (parser, display, push
+  // dispatcher) sees the canonical code.
+  for (const [alias, canonical] of Object.entries(TEAM_ABBR_ALIASES)) {
+    // Use word boundary so "NY" doesn't accidentally match inside
+    // longer codes that happen to start with NY.
+    const re = new RegExp(`\\b${alias}\\b`, "g");
+    s = s.replace(re, canonical);
+  }
+
+  return s;
 }
 
 // ESPN abbreviation → app-canonical abbreviation. The app's team

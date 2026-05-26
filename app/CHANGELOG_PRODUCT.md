@@ -2,6 +2,112 @@
 
 ---
 
+## Post-9-20 QA Fixes — Series Data, Light Default, BrandMark, Lock-Screen Mock — 2026-05-26
+
+Five bugs caught in user QA after the Phase 9–20 mega-push. Build + lint
++ typecheck clean. All fixes are surgical — no structural changes.
+
+### NYK vs CLE series — alias + status bug
+
+The series detail page was reading "Cleveland won 4-0" (wrong winner)
+and "Series in progress" (wrong status) for the wrapped Knicks/Cavaliers
+conf finals. Both bugs traced back to ESPN sending `seriesSummary`
+as "NY WINS SERIES 4-0" while the team abbreviation is canonicalised
+to "NYK".
+
+- `app/api/live-scores/route.ts` — `normalizeSeriesSummary` now
+  canonicalises team codes inside the summary string itself (NY → NYK),
+  matching what `canonicalAbbreviation` already does for team objects.
+  Every downstream consumer (parsers, recap headlines, share copy)
+  sees one consistent code.
+- `app/nba/lib/series.ts` — `parseSeriesWins` is now defensively
+  alias-aware. Adds a small `SUMMARY_ALIASES` map and a
+  `teamMatches(parsed, abbr)` helper so the parser correctly
+  attributes wins even if some caller passes through an
+  un-canonicalised string. Previously the `(winner.includes(abbrB))`
+  short-circuit was falsely assigning the higher win count to the
+  losing team when one code was a substring of another.
+- `app/companion/series/series-data.ts` — `buildSafeStake` now returns
+  "Series wrapped." when `series.status === "complete"`. Previously
+  fell through to "Series in progress." which contradicted the "Final"
+  pill and the "NYK won 4-0" spoilery line. Verified: /series/CLE-NYK
+  now reads "Series wrapped." + "NYK WINS SERIES 4-0" + "NYK won the
+  series 4–0." with the seven-dot strip showing four filled NYK dots.
+
+### Light mode is the default; dark mode is opt-in only
+
+The Phase 19 auto-detect via `@media (prefers-color-scheme: dark)`
+flipped the cream chassis on every system-dark phone — losing the
+brand identity on first install.
+
+- `app/globals.css` — removed the `@media (prefers-color-scheme: dark)`
+  block entirely. Dark mode now fires only when the user sets
+  `<html data-theme="dark">` via the ThemeSelector.
+- `app/layout.tsx` — viewport `themeColor` is now a single cream value
+  (`#f1ead8`) instead of a per-scheme array. `colorScheme: "light"`
+  (was `"light dark"`).
+- `app/companion/settings/ThemeSelector.tsx` — collapsed from three
+  options (System / Light / Dark) to two (Light / Dark). "System" is
+  gone because the OS preference no longer drives the chassis.
+
+### BrandMark identity stayed inverted in dark mode
+
+The `BrandMark` SVG used `var(--ink)` for the chip + `var(--cream)`
+for the scoreboard pill. In dark mode those tokens invert — the chip
+became cream and the pill became dark, creating the "lighter border"
+effect the user reported on the logo.
+
+- `app/companion/frame/BrandMark.tsx` — uses *literal* color values
+  (`#1a1612`, `#f1ead8`, `#b85a2a`) for chip, pill, and live pip.
+  Brand identity is now constant across both themes.
+
+### Lock-screen notification mockup was inverted in dark mode
+
+The `LockScreenPushMock` in `NotificationPreview` used `--ink` + `--cream`
+tokens for the dark notification tile. Same inversion problem as the
+BrandMark — in dark mode the mockup rendered as a cream tile with
+poor-contrast cream text.
+
+- `app/companion/settings/NotificationPreview.tsx` — `LockScreenPushMock`
+  uses literal colors (`#2b2520`, `#f1ead8`) so the mockup always reads
+  as an iOS lock-screen push, regardless of the app's theme.
+
+### BrandBar / CrumbBar hardcoded cream backdrop in dark mode
+
+Found during the same QA. Both sticky-nav components used
+`rgba(241, 234, 216, 0.85)` directly, which didn't flip with the theme
+and punched a cream-light hole through dark pages.
+
+- `app/globals.css` — new `--bar-blur-bg` token (cream in light, warm-
+  dark in dark).
+- `app/companion/frame/BrandBar.tsx` + `CrumbBar.tsx` — both swapped
+  to `var(--bar-blur-bg)`.
+
+### Smaller copy improvements alongside
+
+- `app/lib/brief/compose-brief.ts` — `worthKnowing` regex tightened:
+  was capturing the first `(\w+)` of the summary, which would emit
+  "SERIES can sweep..." for a "SERIES TIED 3-3" line. Now matches the
+  proper `LEADS SERIES n-m` pattern and only emits attributed lines.
+- Added Game-7 elimination clause + close-it phrasing to match the
+  stake deriver.
+
+### Build / lint / typecheck
+
+- `npm run lint` → clean
+- `npx tsc --noEmit` → clean
+- `npm run build` → ✓
+
+### What's NOT in this fix
+
+- The Phase 19 theme bootstrap script in `app/layout.tsx` doesn't
+  execute in Next 16 + Turbopack *dev* mode (a React 19 caution).
+  Production builds inject it correctly into static HTML, so the
+  flash-prevention works in production. In dev the user can still
+  click Dark in Alerts & Notifications to toggle live.
+
+---
+
 ## Phases 9–20 — Friend Beta Gate, Desktop Landing, SEO, Content, Polish — 2026-05-26
 
 The biggest single push to date. Turns the app from a mobile-only PWA

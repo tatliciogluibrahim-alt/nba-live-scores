@@ -221,14 +221,25 @@ export function composeBrief({
   for (const g of todayGames) {
     const summary = g.seriesSummary ?? "";
     if (!subscriber.includeScores) continue; // stake reveals state
-    if (/3\s*-\s*0/.test(summary)) {
-      const lead = summary.match(/(\w+)/);
-      if (lead) worthKnowing.push(`${lead[1]} can sweep with a win tonight.`);
-    } else if (/3\s*-\s*1/.test(summary)) {
-      const lead = summary.match(/(\w+)/);
-      if (lead) worthKnowing.push(`${lead[1]} can close the series tonight.`);
-    } else if (/3\s*-\s*2/.test(summary)) {
-      worthKnowing.push("Elimination game for one side.");
+    // Use the LEADS/WINS pattern to capture the leading team's code
+    // explicitly rather than grabbing the first word — the loose
+    // `(\w+)` would say "SERIES can sweep..." for a "SERIES TIED" line.
+    const leadsMatch = summary.match(
+      /(\w+)\s+LEADS?\s+SERIES\s+(\d+)\s*-\s*(\d+)/i
+    );
+    if (leadsMatch) {
+      const leader = leadsMatch[1];
+      const hi = parseInt(leadsMatch[2], 10);
+      const lo = parseInt(leadsMatch[3], 10);
+      if (hi === 3 && lo === 0) {
+        worthKnowing.push(`${leader} can sweep with a win tonight.`);
+      } else if (hi === 3 && lo === 1) {
+        worthKnowing.push(`${leader} can close the series tonight.`);
+      } else if (hi === 3 && lo === 2) {
+        worthKnowing.push(
+          `${leader} can close it. The trailing side faces elimination.`
+        );
+      }
     } else if (/TIED\s+3\s*-\s*3/i.test(summary)) {
       worthKnowing.push("Game 7. Winner takes the series.");
     }

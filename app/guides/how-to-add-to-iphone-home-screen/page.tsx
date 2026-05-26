@@ -20,27 +20,29 @@ export default function AddToIPhonePage() {
     <ContentPageShell
       eyebrow="Guide"
       headline="Add to iPhone home screen."
-      intro="Three taps. After install, No Noise Scores opens in full-screen and can send push notifications like a real app."
+      intro="Three taps. After install, the app opens full-screen and can send push notifications like a regular app."
     >
       <P>
-        No Noise Scores is a Progressive Web App. That means it lives in
-        your browser, but once you Add to Home Screen, it behaves like a
-        native iOS app — full screen, no Safari bars, app drawer icon,
-        push notifications.
+        No Noise Scores is a Progressive Web App — once you add it to
+        your home screen it behaves like a regular iOS app: full screen,
+        app drawer icon, push notifications.
       </P>
       <P>
-        This works on every iPhone running iOS 16.4 or later (released
-        2023). Push notifications are the reason iOS-specific
-        instructions matter — on iPhone, web push only works for
-        installed PWAs.
+        Works on iOS 16.4 or later (released 2023). Push notifications
+        are why install matters on iPhone — Apple only lets web apps
+        send pushes after they&apos;re installed.
       </P>
 
-      <H2>Step 1 — Open in Safari</H2>
+      <H2>Step 1 — Open in your browser</H2>
       <P>
         Open{" "}
         <strong style={{ color: "var(--ink)" }}>nonoisescores.app</strong>{" "}
-        in Safari. Chrome or Firefox won&apos;t work for this — iOS only
-        allows PWA install from Safari.
+        in a browser on your phone.
+      </P>
+      <P>
+        On iPhone you have to use Safari for this — Chrome or Firefox
+        won&apos;t work. That&apos;s an Apple rule for web apps, not us.
+        On Android, Chrome works.
       </P>
 
       <H2>Step 2 — Tap the Share button</H2>

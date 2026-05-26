@@ -3,52 +3,50 @@
 import { useEffect, useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
 
-// ThemeSelector — three-option pill row in Alerts & Notifications.
-// "System" follows the OS dark-mode setting; "Light" pins cream;
-// "Dark" pins warm dark.
+// ThemeSelector — two-option pill row in Alerts & Notifications.
+// Light is the default. Dark is opt-in only — we don't follow the
+// OS setting because we want the brand identity (cream chassis) to
+// land consistently for every new user.
 //
-// We write the chosen value to localStorage under `no-noise-theme`.
-// The inline boot script in `app/layout.tsx` reads that key before
-// paint and applies `data-theme` on <html>, which our `:root[data-
-// theme="dark"]` block consumes. "System" means no `data-theme` attr —
-// the `@media (prefers-color-scheme: dark)` block takes over.
-//
-// Persistence and the bootloader avoid a flash. The dark variant is
-// warm dark, not pure black — preserving the cream identity.
+// We write "dark" to localStorage under `no-noise-theme` when the
+// user opts in; absence (or "light") means cream. The inline boot
+// script in `app/layout.tsx` reads the key before paint and applies
+// `data-theme="dark"` on <html>, which our :root[data-theme="dark"]
+// block consumes. The dark variant is warm dark, not pure black,
+// preserving the cream identity after sundown.
 
 const STORAGE_KEY = "no-noise-theme";
 
-type ThemeChoice = "system" | "light" | "dark";
-const OPTIONS: ThemeChoice[] = ["system", "light", "dark"];
+type ThemeChoice = "light" | "dark";
+const OPTIONS: ThemeChoice[] = ["light", "dark"];
 const LABELS: Record<ThemeChoice, string> = {
-  system: "System",
   light: "Light",
   dark: "Dark",
 };
 
 function readStored(): ThemeChoice {
-  if (typeof window === "undefined") return "system";
+  if (typeof window === "undefined") return "light";
   try {
     const v = window.localStorage.getItem(STORAGE_KEY);
-    if (v === "light" || v === "dark") return v;
+    if (v === "dark") return "dark";
   } catch {
     /* private mode etc. */
   }
-  return "system";
+  return "light";
 }
 
 function applyTheme(choice: ThemeChoice) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  if (choice === "system") {
+  if (choice === "light") {
     root.removeAttribute("data-theme");
   } else {
-    root.setAttribute("data-theme", choice);
+    root.setAttribute("data-theme", "dark");
   }
 }
 
 export function ThemeSelector() {
-  const [choice, setChoice] = useState<ThemeChoice>("system");
+  const [choice, setChoice] = useState<ThemeChoice>("light");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -66,10 +64,10 @@ export function ThemeSelector() {
     setChoice(next);
     applyTheme(next);
     try {
-      if (next === "system") {
+      if (next === "light") {
         window.localStorage.removeItem(STORAGE_KEY);
       } else {
-        window.localStorage.setItem(STORAGE_KEY, next);
+        window.localStorage.setItem(STORAGE_KEY, "dark");
       }
     } catch {
       /* ignore */
@@ -109,11 +107,9 @@ export function ThemeSelector() {
         className="mt-2 text-[11px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        {hydrated && choice === "system"
-          ? "Follows your device's dark mode setting."
-          : hydrated && choice === "dark"
-            ? "Warm dark — the cream identity, after sundown."
-            : "Cream chassis. The default daylight experience."}
+        {hydrated && choice === "dark"
+          ? "Warm dark — the cream identity, after sundown."
+          : "Cream chassis. The default daylight experience."}
       </p>
     </section>
   );

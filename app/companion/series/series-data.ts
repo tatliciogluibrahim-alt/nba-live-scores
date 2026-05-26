@@ -116,12 +116,18 @@ function buildSafeStake(series: SeriesInfo, nextGameNumber: number | null): stri
       ? `Game ${nextGameNumber} is live.`
       : "Game is live.";
   }
-  if (series.status === "upcoming" || series.status === "complete") {
-    if (series.status === "upcoming" && nextGameNumber) {
-      return `Game ${nextGameNumber} is next.`;
-    }
+  if (series.status === "upcoming" && nextGameNumber) {
+    return `Game ${nextGameNumber} is next.`;
   }
-  // Truly safe fallback.
+  // Wrapped series: a NS-safe "this is done" line. Saying "in progress"
+  // here misleads the user — it was the source of the "ongoing but
+  // also Cleveland won 4-0" contradiction on the NYK/CLE page.
+  if (series.status === "complete") {
+    return "Series wrapped.";
+  }
+  // Truly safe fallback for the rare middle-window state where we have
+  // no live, no upcoming, AND no parsed wins (e.g. a series we know
+  // exists from `seriesMemory` but no games are currently in the feed).
   return "Series in progress.";
 }
 

@@ -26,7 +26,7 @@ export function CrumbBar({
         // header pins below the iOS status bar / Dynamic Island. Backdrop
         // blur masks content that scrolls underneath.
         paddingTop: "max(env(safe-area-inset-top), 12px)",
-        background: "rgba(241, 234, 216, 0.85)",
+        background: "var(--bar-blur-bg)",
         backdropFilter: "blur(14px) saturate(140%)",
         WebkitBackdropFilter: "blur(14px) saturate(140%)",
       }}

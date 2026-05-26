@@ -1,8 +1,35 @@
 import type { Game, SeriesInfo, Team } from "../types";
 import { getWinningTeam } from "./games";
 
+/** ESPN sometimes shortens canonical team codes inside seriesSummary
+ *  ("NY WINS SERIES" instead of "NYK WINS SERIES"). The API boundary in
+ *  /api/live-scores/route.ts already canonicalises these, but a defensive
+ *  alias map here keeps the parser correct if any caller passes through
+ *  an un-canonicalised string (snapshots, persisted memory, etc.).
+ *
+ *  Keep in sync with TEAM_ABBR_ALIASES in app/api/live-scores/route.ts. */
+const SUMMARY_ALIASES: Record<string, string> = {
+  NY: "NYK",
+};
+
+function canonicalize(code: string): string {
+  const upper = code.toUpperCase();
+  return SUMMARY_ALIASES[upper] ?? upper;
+}
+
+function teamMatches(parsed: string, abbr: string): boolean {
+  const a = canonicalize(parsed);
+  const b = canonicalize(abbr);
+  return a === b;
+}
+
 /** Parse the authoritative series record from ESPN's seriesSummary string.
- * Handles: "PHI WINS SERIES 4-3", "DEN LEADS SERIES 3-1", "SERIES TIED 2-2". */
+ * Handles: "PHI WINS SERIES 4-3", "DEN LEADS SERIES 3-1", "SERIES TIED 2-2".
+ *
+ * Tricky case: when one team's abbreviation is a substring of another
+ * (NY vs NYK) or when ESPN's summary uses the short code while the
+ * Game.team objects carry the canonical code. We canonicalise both sides
+ * before comparing so the parser is robust to either format. */
 export function parseSeriesWins(
   summary: string,
   abbrA: string,
@@ -15,10 +42,13 @@ export function parseSeriesWins(
     const winner = winsMatch[1];
     const hi = parseInt(winsMatch[2]);
     const lo = parseInt(winsMatch[3]);
-    const aWon =
-      winner === abbrA.toUpperCase() ||
-      (!winner.includes(abbrB.toUpperCase()) && hi > lo);
-    return aWon ? { winsA: hi, winsB: lo } : { winsA: lo, winsB: hi };
+    if (teamMatches(winner, abbrA)) return { winsA: hi, winsB: lo };
+    if (teamMatches(winner, abbrB)) return { winsA: lo, winsB: hi };
+    // Neither matched — fall through to score-based heuristic. This
+    // should be vanishingly rare now that we canonicalise at the API.
+    return hi > lo
+      ? { winsA: hi, winsB: lo }
+      : { winsA: lo, winsB: hi };
   }
 
   const leadsMatch = s.match(/(\w+)\s+LEADS?\s+SERIES\s+(\d+)-(\d+)/);
@@ -26,8 +56,9 @@ export function parseSeriesWins(
     const leader = leadsMatch[1];
     const hi = parseInt(leadsMatch[2]);
     const lo = parseInt(leadsMatch[3]);
-    const aLeads = leader === abbrA.toUpperCase();
-    return aLeads ? { winsA: hi, winsB: lo } : { winsA: lo, winsB: hi };
+    if (teamMatches(leader, abbrA)) return { winsA: hi, winsB: lo };
+    if (teamMatches(leader, abbrB)) return { winsA: lo, winsB: hi };
+    return { winsA: lo, winsB: hi };
   }
 
   const tiedMatch = s.match(/SERIES\s+TIED\s+(\d+)-(\d+)/);

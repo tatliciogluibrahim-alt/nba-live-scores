@@ -130,17 +130,30 @@ export function LandingFooter() {
           className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t pt-6"
           style={{ borderColor: "rgba(241,234,216,0.15)" }}
         >
-          <p
-            className="text-[11px] uppercase"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontWeight: 600,
-              letterSpacing: "0.12em",
-              color: "var(--cream-on-dark-2, rgba(241,234,216,0.5))",
-            }}
-          >
-            nonoisescores.app · @nonoisescores
-          </p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <a
+              href="https://instagram.com/nonoisescores"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[12px] transition hover:underline"
+              style={{
+                color: "var(--cream-on-dark-1, rgba(241,234,216,0.9))",
+                fontWeight: 500,
+              }}
+            >
+              @nonoisescores on Instagram
+            </a>
+            <a
+              href="mailto:tatlicioglu.ibrahim@gmail.com"
+              className="text-[12px] transition hover:underline"
+              style={{
+                color: "var(--cream-on-dark-1, rgba(241,234,216,0.9))",
+                fontWeight: 500,
+              }}
+            >
+              tatlicioglu.ibrahim@gmail.com
+            </a>
+          </div>
           <p
             className="text-[11px]"
             style={{

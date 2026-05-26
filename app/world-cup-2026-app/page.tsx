@@ -20,14 +20,14 @@ export default function WorldCup2026Page() {
     <ContentPageShell
       eyebrow="FIFA World Cup 2026"
       headline="A calm companion for the World Cup."
-      intro="June 11, 2026 — Mexico City. Pick your country. We'll countdown, show your group, and ping you for kickoff and full-time. No score-feed."
+      intro="June 11, 2026 — Mexico City. Pick your country. Countdown, your group, kickoff and full-time pings."
     >
       <P>
         The World Cup is a 32-day event with 48 teams across the US,
-        Canada, and Mexico. Most football apps either treat it as a
+        Canada, and Mexico. Most football apps either treat it like
         regular-season schedule or drown you in a generic
-        soccer-everywhere feed. We built No Noise Scores to feel like a
-        deliberate, calm tournament companion.
+        soccer-everywhere feed. This one is the opposite: a calm
+        tournament companion built for this specific month.
       </P>
 
       <H2>What the World Cup pages do</H2>

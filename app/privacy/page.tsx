@@ -16,17 +16,15 @@ export default function PrivacyPage() {
   return (
     <ContentPageShell
       eyebrow="Privacy"
-      headline="Plain English. Short list."
-      intro="What we collect, what we don't, and why. Last updated May 2026."
+      headline="What we collect."
+      intro="Short list, plain English. Last updated May 2026."
     >
       <H2>The short version</H2>
       <P>
-        We store the bare minimum we need to make the app work. Most of
-        what you set in the app (follows, pinned games, No-Spoilers,
-        alert tiers) lives in your browser&apos;s localStorage — not on
-        our servers. We don&apos;t sell your data. We don&apos;t share
-        it with advertisers. We don&apos;t run ad networks. We
-        don&apos;t track you across other sites.
+        Most of what you set in the app — follows, pinned games,
+        No-Spoilers, alert levels — lives in your browser&apos;s
+        localStorage, not on a server. We don&apos;t sell data, share it
+        with advertisers, or track you across other sites.
       </P>
 
       <H2>What lives on your device</H2>
@@ -110,9 +108,11 @@ export default function PrivacyPage() {
 
       <H2>Contact</H2>
       <P>
-        Questions about anything on this page? Reach out via the{" "}
+        Questions about anything on this page? DM{" "}
         <a
-          href="/beta"
+          href="https://instagram.com/nonoisescores"
+          target="_blank"
+          rel="noreferrer"
           style={{
             color: "var(--ink)",
             textDecoration: "underline",
@@ -120,9 +120,21 @@ export default function PrivacyPage() {
             textUnderlineOffset: "3px",
           }}
         >
-          friend beta
+          @nonoisescores
         </a>{" "}
-        page.
+        or email{" "}
+        <a
+          href="mailto:tatlicioglu.ibrahim@gmail.com"
+          style={{
+            color: "var(--ink)",
+            textDecoration: "underline",
+            textDecorationThickness: "1px",
+            textUnderlineOffset: "3px",
+          }}
+        >
+          tatlicioglu.ibrahim@gmail.com
+        </a>
+        .
       </P>
     </ContentPageShell>
   );
