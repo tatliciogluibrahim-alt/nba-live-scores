@@ -521,12 +521,44 @@ function buildUpNext(
 
 // ── Quiet wrap ────────────────────────────────────────────────────────
 
+/** Granular day label for the Quiet Wrap eyebrow — supports today,
+ *  yesterday, and 2–N days back as weekday short names ("Sat", "Sun").
+ *  formatGameDay() only handled today/tomorrow/weekday, which left the
+ *  wrap reading "Yesterday" for games that were actually 2–3 days old. */
+function quietWrapDayLabel(date: string, now = new Date()): string {
+  const d = new Date(date);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const gameDay = new Date(d);
+  gameDay.setHours(0, 0, 0, 0);
+  const diffDays = Math.round(
+    (today.getTime() - gameDay.getTime()) / 86_400_000
+  );
+  if (diffDays <= 0) return "Earlier";
+  if (diffDays === 1) return "Yesterday";
+  return d.toLocaleDateString(undefined, { weekday: "short" });
+}
+
+/** Window for the Quiet Wrap — show finals from the last 3 calendar
+ *  days so series that wrapped a couple nights ago are still browsable
+ *  from Today instead of vanishing the moment ESPN drops them from the
+ *  current-week feed. ESPN's seriesGames covers up to 14 days back, so
+ *  this is purely a UI cap, not a data limit. */
+const QUIET_WRAP_WINDOW_DAYS = 3;
+
 function buildQuietWrap(
-  nba: NBAGame[],
-  follows: Follow[]
+  nbaRecent: NBAGame[],
+  follows: Follow[],
+  now = new Date()
 ): QuietWrapItem[] {
-  const finals = nba
-    .filter((g) => g.status === "final")
+  const cutoffMs = now.getTime() - QUIET_WRAP_WINDOW_DAYS * 86_400_000;
+
+  const finals = nbaRecent
+    .filter((g) => {
+      if (g.status !== "final") return false;
+      const gameMs = new Date(g.date).getTime();
+      return Number.isFinite(gameMs) && gameMs >= cutoffMs;
+    })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const followedTeams = new Set(
@@ -553,8 +585,7 @@ function buildQuietWrap(
     const gameNumberMatch = g.gameContext?.match(/Game\s+(\d)/i);
     const gameNumberLabel = gameNumberMatch ? `Game ${gameNumberMatch[1]}` : null;
 
-    const dayLabel =
-      formatGameDay(g.date) === "Tonight" ? "Earlier" : "Yesterday";
+    const dayLabel = quietWrapDayLabel(g.date, now);
     const eyebrow = gameNumberLabel
       ? `${dayLabel} · ${gameNumberLabel}`
       : dayLabel;
@@ -607,21 +638,30 @@ function buildReminder(follows: Follow[], now = new Date()): ReminderRow | null 
 
 export function buildTodayPayload({
   nba,
+  nbaRecent,
   wc,
   follows,
   pinned,
   now = new Date(),
 }: {
+  /** Current-week NBA games used for hero, You Follow chips, and
+   *  Up Next. */
   nba: NBAGame[];
+  /** Wider window of recent NBA games (last ~14 days). Used by Quiet
+   *  Wrap so games that wrapped 2–3 days ago stay browsable from
+   *  Today. Falls back to `nba` when the API doesn't surface
+   *  seriesGames (older deploy / failure). */
+  nbaRecent?: NBAGame[];
   wc: WCGameLite[];
   follows: Follow[];
   pinned: PinnedGame[];
   now?: Date;
 }): TodayPayload {
+  const recentForWrap = nbaRecent && nbaRecent.length > 0 ? nbaRecent : nba;
   const hero = pickHero(nba, wc, follows, pinned, now);
   const youFollow = buildYouFollow(nba, wc, follows, now);
   const upNext = buildUpNext(nba, wc, follows, pinned);
-  const quietWrap = buildQuietWrap(nba, follows);
+  const quietWrap = buildQuietWrap(recentForWrap, follows, now);
   const reminder = buildReminder(follows, now);
 
   const hasLive = nba.some((g) => g.status === "live") || wc.some((g) => g.status === "live");

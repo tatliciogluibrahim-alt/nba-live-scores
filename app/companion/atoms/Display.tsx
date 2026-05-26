@@ -8,9 +8,9 @@ import type { CSSProperties, ReactNode } from "react";
 export type DisplaySize = "xs" | "sm" | "md" | "lg" | "xl";
 
 // `xs` (1.15rem) is the card-level state size — used when a card needs a
-// touch of editorial weight without competing with page H1s. Added in
-// Stage 15B so the Stage 14F-5 "card heaviness" fix has a token to land
-// against. Don't drift `md` / `lg` down further; instead reach for `xs`.
+// touch of editorial weight without competing with page H1s. Added to
+// give the card-heaviness fix a token to land against. Don't drift
+// `md` / `lg` down further; instead reach for `xs`.
 //
 // Phase 8 polish: `lg` line-height bumped from 1.05 → 1.1 so two-line
 // page H1s (e.g. long country names like "Bosnia & Herzegovina" or

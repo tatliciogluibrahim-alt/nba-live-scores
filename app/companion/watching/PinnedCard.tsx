@@ -188,7 +188,7 @@ export function StalePinCard({ pin }: { pin: StalePin }) {
             className="mt-1 truncate text-[13px]"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
-            No longer in the live feed.
+            This game isn&apos;t in the live feed right now.
           </p>
           <p
             className="mt-0.5 text-[12px]"
@@ -200,7 +200,7 @@ export function StalePinCard({ pin }: { pin: StalePin }) {
         <button
           type="button"
           onClick={() => unpinGame(pin.id)}
-          aria-label="Unpin"
+          aria-label="Unpin this archived game"
           className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "transparent",

@@ -28,20 +28,37 @@ const EMPTY: TodayPayload = {
 const LIVE_INTERVAL_MS = 10_000;
 const IDLE_INTERVAL_MS = 30_000;
 
-type FetchedData = { nba: NBAGame[]; wc: WCGameLite[]; updatedAt: Date | null };
+type FetchedData = {
+  nba: NBAGame[];
+  /** Wider window (seriesGames from the live-scores API). Used by
+   *  Quiet Wrap so a game that wrapped 2–3 days ago is still
+   *  browsable from Today instead of vanishing the moment ESPN drops
+   *  it from the current-week feed. */
+  nbaRecent: NBAGame[];
+  wc: WCGameLite[];
+  updatedAt: Date | null;
+};
 
 function pageIsVisible(): boolean {
   return typeof document === "undefined" || document.visibilityState === "visible";
 }
 
-async function fetchNBA(): Promise<NBAGame[]> {
+async function fetchNBA(): Promise<{ games: NBAGame[]; recent: NBAGame[] }> {
   try {
     const res = await fetch("/api/live-scores", { cache: "no-store" });
-    if (!res.ok) return [];
-    const json = (await res.json()) as { games?: NBAGame[] };
-    return json.games ?? [];
+    if (!res.ok) return { games: [], recent: [] };
+    const json = (await res.json()) as {
+      games?: NBAGame[];
+      seriesGames?: NBAGame[];
+    };
+    const games = json.games ?? [];
+    // seriesGames covers -14 to +7 days; use it as the recent-finals
+    // surface so Quiet Wrap can show games that just wrapped even
+    // when they fall outside the current week boundary.
+    const recent = json.seriesGames ?? games;
+    return { games, recent };
   } catch {
-    return [];
+    return { games: [], recent: [] };
   }
 }
 
@@ -64,6 +81,7 @@ export function useTodayData() {
   const { pinned, hydrated: pinnedHydrated } = usePinned();
   const [data, setData] = useState<FetchedData>({
     nba: [],
+    nbaRecent: [],
     wc: [],
     updatedAt: null,
   });
@@ -74,9 +92,14 @@ export function useTodayData() {
     const mounted = { current: true };
 
     async function load() {
-      const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
+      const [nbaResult, wc] = await Promise.all([fetchNBA(), fetchWC()]);
       if (!mounted.current) return;
-      const next = { nba, wc, updatedAt: new Date() };
+      const next: FetchedData = {
+        nba: nbaResult.games,
+        nbaRecent: nbaResult.recent,
+        wc,
+        updatedAt: new Date(),
+      };
       dataRef.current = next;
       setData(next);
       setHasLoadedOnce(true);
@@ -123,6 +146,7 @@ export function useTodayData() {
     if (!hasLoadedOnce || !followsHydrated || !pinnedHydrated) return EMPTY;
     return buildTodayPayload({
       nba: data.nba,
+      nbaRecent: data.nbaRecent,
       wc: data.wc,
       follows,
       pinned,
@@ -132,6 +156,7 @@ export function useTodayData() {
     followsHydrated,
     pinnedHydrated,
     data.nba,
+    data.nbaRecent,
     data.wc,
     follows,
     pinned,
@@ -141,8 +166,13 @@ export function useTodayData() {
   // polling timer; the last write wins, which is fine because both
   // produce the same shape.
   const refetch = useCallback(async () => {
-    const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
-    const next: FetchedData = { nba, wc, updatedAt: new Date() };
+    const [nbaResult, wc] = await Promise.all([fetchNBA(), fetchWC()]);
+    const next: FetchedData = {
+      nba: nbaResult.games,
+      nbaRecent: nbaResult.recent,
+      wc,
+      updatedAt: new Date(),
+    };
     dataRef.current = next;
     setData(next);
     setHasLoadedOnce(true);

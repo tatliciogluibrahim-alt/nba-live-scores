@@ -50,7 +50,10 @@ export function WorthCheckingNow({ hero }: { hero: TodayHero }) {
           {/* Revealed view: full HeroMoment without the spoiler chrome. */}
           <Link
             href={hero.href}
-            aria-label={`Open ${hero.spoilerSubject ?? "live game"} detail`}
+            aria-label={`Open ${
+              hero.spoilerSubject ??
+              (hero.accent === "var(--wc)" ? "live match" : "live game")
+            } detail`}
             className="block"
           >
             <HeroMoment

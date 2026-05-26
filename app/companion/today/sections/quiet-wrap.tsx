@@ -7,14 +7,21 @@ import { useNoSpoilers } from "../../providers";
 import { SectionHeader } from "./section-header";
 import type { QuietWrapItem } from "../today-data";
 
-// One-line-each finals from yesterday / earlier. Replaces the old "Final"
-// section. When No-Spoilers is on, each row swaps to a NoSpoilerGameCard
-// with context-aware reveal copy.
+// One-line-each finals from the last 3 days. Phase 8b extended the
+// window from "today + yesterday" to a rolling 3-day surface so a
+// series that wrapped 2 nights ago is still browsable from Today
+// rather than vanishing the moment ESPN drops it from the
+// current-week feed. The eyebrow auto-formats per day ("Earlier",
+// "Yesterday", "Sat", "Fri") so the list reads as a calm timeline.
 //
-// Note: the share-as-image affordance was removed in Stage 14F-1 — the
-// calm companion direction shouldn't lean on social/share CTAs. The
-// QuietWrapShareModal component is left dormant in app/companion/share/
-// so it can be revived later without rebuilding from scratch.
+// When No-Spoilers is on, each row swaps to a NoSpoilerGameCard with
+// context-aware reveal copy.
+//
+// Note: the share-as-image affordance was removed in an earlier
+// polish pass — the calm companion direction shouldn't lean on
+// social/share CTAs. The QuietWrapShareModal component is left
+// dormant in app/companion/share/ so it can be revived later without
+// rebuilding from scratch.
 
 export function QuietWrap({ items }: { items: QuietWrapItem[] }) {
   const noSpoilers = useNoSpoilers();

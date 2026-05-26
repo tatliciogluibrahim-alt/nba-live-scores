@@ -227,6 +227,21 @@ function detectQ4Surge(game: Game): Highlight | null {
 }
 
 // ── Top performer ──────────────────────────────────────────────────────
+//
+// The most basketball-native moment in any single game is "X went off
+// for Y." We anchor the top highlight on the points leader and then
+// enrich based on whether their line is iconic:
+//
+//   • Triple-double (10+ in PTS, REB, AST) → eyebrow flips, body
+//     becomes the classic "P–R–A triple-double" line. The most
+//     celebrated single-game performance.
+//   • Double-double (10+ in PTS + one other ≥ 10) → flag in eyebrow,
+//     body shows both stats. Common but worth calling out.
+//   • Bigger PTS counts get a stronger eyebrow than a baseline
+//     "Top scorer" — a 40-point game reads differently than a 20.
+//
+// Falls back to the calm "Top scorer · NAME · N PTS" line when the
+// performance is solid but not noteworthy beyond the points.
 
 function deriveTopPerformer(game: Game): Highlight | null {
   const pts = pickLeader(game.leaders, /point/i);
@@ -235,9 +250,10 @@ function deriveTopPerformer(game: Game): Highlight | null {
   const ptsValue = leaderValueAsNumber(pts);
   if (ptsValue <= 0 || !isFinite(ptsValue)) return null;
 
-  // Try to add a second stat from the SAME player if they also led
-  // assists or rebounds and the secondary stat is "notable" enough to
-  // mention. Avoids "X had 31 PTS, 2 AST" which adds noise.
+  // Pull the SAME player's other stat lines so we can detect combos.
+  // ESPN's `leaders` array is one entry per category, so we filter by
+  // exact name match; if a different player led AST/REB, the points
+  // leader didn't necessarily have those numbers (so we won't claim).
   const samePlayer = game.leaders.filter((l) => l.name === pts.name);
   const ast = samePlayer.find((l) => /assist/i.test(l.label));
   const reb = samePlayer.find((l) => /rebound/i.test(l.label));
@@ -245,12 +261,48 @@ function deriveTopPerformer(game: Game): Highlight | null {
   const rebValue = reb ? leaderValueAsNumber(reb) : 0;
 
   const team = pts.team ? ` (${pts.team})` : "";
-  let body = `${pts.name}${team} · ${ptsValue} PTS`;
-  // "Notable" thresholds for a secondary stat to be worth showing.
+  const subject = `${pts.name}${team}`;
+
+  // Triple-double: the iconic NBA single-game line. 10+ across PTS,
+  // REB, AST by the same player. Read it back in the canonical
+  // "P–R–A" stat order fans expect.
+  if (ptsValue >= 10 && rebValue >= 10 && astValue >= 10) {
+    return {
+      eyebrow: "Triple-double",
+      body: `${subject} · ${ptsValue}–${rebValue}–${astValue}.`,
+      subjectName: pts.name,
+      spoilery: true,
+    };
+  }
+
+  // Double-double: 10+ PTS plus 10+ in either REB or AST. Worth
+  // flagging in the eyebrow but body stays focused on the headline
+  // number (points) with the second stat appended.
+  const isDoubleDouble = ptsValue >= 10 && (astValue >= 10 || rebValue >= 10);
+  if (isDoubleDouble) {
+    const second = rebValue >= 10 ? `${rebValue} REB` : `${astValue} AST`;
+    return {
+      eyebrow: "Double-double",
+      body: `${subject} · ${ptsValue} PTS, ${second}.`,
+      subjectName: pts.name,
+      spoilery: true,
+    };
+  }
+
+  // No double-double, but the performance might still earn a stronger
+  // eyebrow. 40+ is a recognised "went off" night; 30+ is solid; below
+  // that we let the body do the talking with the calm default eyebrow.
+  let eyebrow = "Top scorer";
+  if (ptsValue >= 40) eyebrow = "40-point night";
+  else if (ptsValue >= 30) eyebrow = "30-point night";
+
+  // Combo-line body when the second stat is notable but not a DD.
+  let body = `${subject} · ${ptsValue} PTS`;
   if (astValue >= 6) body += `, ${astValue} AST`;
   else if (rebValue >= 8) body += `, ${rebValue} REB`;
+  body += ".";
 
-  return { eyebrow: "Top scorer", body, subjectName: pts.name, spoilery: true };
+  return { eyebrow, body, subjectName: pts.name, spoilery: true };
 }
 
 function deriveSecondaryLeader(
@@ -344,49 +396,83 @@ function rebDominanceHighlight(
   };
 }
 
+/** Parse "made-attempted" strings the comparison feed sometimes
+ *  provides for shooting stats — e.g. "15-32" → {made: 15, att: 32}.
+ *  Returns null when the value isn't a hyphenated pair; the highlight
+ *  then falls back to percentage-only copy. */
+function parseMadeAttempted(
+  raw: string
+): { made: number; att: number } | null {
+  const m = raw.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (!m) return null;
+  const made = Number(m[1]);
+  const att = Number(m[2]);
+  if (!Number.isFinite(made) || !Number.isFinite(att) || att === 0) return null;
+  return { made, att };
+}
+
 function threePointOutlierHighlight(
   game: Game,
   comp: TeamComparisonStat[],
   isLive: boolean
 ): Highlight | null {
-  const stat = findStat(comp, /3P%|three/i);
-  if (!stat) return null;
-  const parsed = parseStat(stat);
-  if (!parsed) return null;
-  // Pick whichever team is at the extreme.
-  const hot = parsed.a >= 45 || parsed.h >= 45;
-  const cold = parsed.a <= 25 || parsed.h <= 25;
+  // Try to surface volume + percentage ("15-of-32, 47%") when the feed
+  // exposes a "3PT" attempts stat alongside the percentage. NBA fans
+  // talk about makes more than percentages — a 5-of-12, 42% night is
+  // a different vibe than 15-of-32, 47%. Falls back to %-only when
+  // volume isn't available.
+  const pctStat = findStat(comp, /3P%|3-Point %|three.*pct|three.*%/i);
+  const volStat = findStat(comp, /^3PT\b|3PM-3PA|3-Point Field Goals/i);
+  if (!pctStat) return null;
+  const pct = parseStat(pctStat);
+  if (!pct) return null;
+
+  const hot = pct.a >= 45 || pct.h >= 45;
+  const cold = pct.a <= 25 || pct.h <= 25;
   if (!hot && !cold) return null;
 
-  // Hot/cold are already present-tense adjectives — tense lives in the
-  // verb. "is hot from three" for live, "were hot from three" for final.
   const verb = isLive ? "is" : "was";
 
-  if (parsed.a >= 45 && parsed.a >= parsed.h) {
+  // Pick the team at the extreme; format the body with volume when we
+  // have it, percentage-only otherwise.
+  const buildBody = (
+    teamCode: string,
+    pctValue: number,
+    teamSide: "away" | "home",
+    mood: "hot" | "cold"
+  ): string => {
+    const vol = volStat ? parseMadeAttempted(volStat[teamSide]) : null;
+    const tail = vol
+      ? `(${vol.made}-of-${vol.att}, ${formatPercent(pctValue)})`
+      : `(${formatPercent(pctValue)})`;
+    return `${teamCode} ${verb} ${mood} from three ${tail}.`;
+  };
+
+  if (pct.a >= 45 && pct.a >= pct.h) {
     return {
       eyebrow: "From deep",
-      body: `${game.away.abbreviation} ${verb} hot from three (${formatPercent(parsed.a)}).`,
+      body: buildBody(game.away.abbreviation, pct.a, "away", "hot"),
       spoilery: true,
     };
   }
-  if (parsed.h >= 45) {
+  if (pct.h >= 45) {
     return {
       eyebrow: "From deep",
-      body: `${game.home.abbreviation} ${verb} hot from three (${formatPercent(parsed.h)}).`,
+      body: buildBody(game.home.abbreviation, pct.h, "home", "hot"),
       spoilery: true,
     };
   }
-  if (parsed.a <= 25 && parsed.a <= parsed.h) {
+  if (pct.a <= 25 && pct.a <= pct.h) {
     return {
       eyebrow: "From deep",
-      body: `${game.away.abbreviation} ${verb} cold from three (${formatPercent(parsed.a)}).`,
+      body: buildBody(game.away.abbreviation, pct.a, "away", "cold"),
       spoilery: true,
     };
   }
-  if (parsed.h <= 25) {
+  if (pct.h <= 25) {
     return {
       eyebrow: "From deep",
-      body: `${game.home.abbreviation} ${verb} cold from three (${formatPercent(parsed.h)}).`,
+      body: buildBody(game.home.abbreviation, pct.h, "home", "cold"),
       spoilery: true,
     };
   }

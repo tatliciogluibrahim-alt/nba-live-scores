@@ -166,11 +166,18 @@ export function FollowCard({ data }: { data: FollowCardData }) {
             onClick={handleAlertToggle}
             disabled={!canEnable}
             aria-label={`${follow.alertEnabled ? "Disable" : "Enable"} alerts for ${name}`}
+            // Disabled state used to rely on opacity alone, which read
+            // as just "slightly faded" rather than "you can't do this
+            // right now." The dashed border makes the affordance
+            // visibly different from an enabled button — same pattern
+            // the dashed Watch+Alerts shortcut uses on Following.
             className="mt-2 inline-flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
             style={{
               background: follow.alertEnabled ? "var(--cream-2)" : "transparent",
               borderColor: follow.alertEnabled ? "var(--ink)" : "var(--line)",
-              opacity: canEnable ? 1 : 0.72,
+              borderStyle: canEnable ? "solid" : "dashed",
+              opacity: canEnable ? 1 : 0.6,
+              cursor: canEnable ? "pointer" : "not-allowed",
             }}
           >
             <span

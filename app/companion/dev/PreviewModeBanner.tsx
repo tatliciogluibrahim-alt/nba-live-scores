@@ -45,6 +45,7 @@ export function PreviewModeBanner() {
   return (
     <div
       role="status"
+      aria-live="polite"
       aria-label="World Cup preview mode active"
       style={{
         // Inline at the top of the scroll container rather than sticky.
@@ -74,12 +75,15 @@ export function PreviewModeBanner() {
         type="button"
         onClick={handleExit}
         aria-label="Exit preview mode"
+        // Min-height bumped for tap target. Padding stays small so the
+        // banner doesn't bloat vertically — meets target via min-height.
         style={{
           color: "var(--cream)",
           background: "transparent",
           border: "1px solid var(--cream-on-dark-hairline)",
           borderRadius: 999,
-          padding: "2px 10px",
+          padding: "4px 12px",
+          minHeight: 32,
           fontFamily: "var(--font-mono)",
           fontSize: 10,
           fontWeight: 700,
