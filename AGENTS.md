@@ -77,7 +77,20 @@ Three things the app should never say:
 
 1. "Trending now." (Feed language.)
 2. "Top stories." (News-app language.)
-3. "Don't miss out." (FOMO language — the opposite of the brand.)
+3. "Don't miss out." (FOMO language. The opposite of the brand.)
+
+## Voice Rule
+
+Plain, simple, chill. Not presumptuous, not sensational.
+
+- Avoid em-dashes in user-facing copy. Use periods, commas, or
+  parentheses. Em-dashes are fine in code comments.
+- Avoid unnecessary adjectives ("a small paid tier" → "a paid tier";
+  "the calm sports companion" stays because it's the positioning).
+- Avoid second-guessing the user with phrases like "We don't just X,
+  we Y" or "Most apps get X wrong."
+- Avoid the marketing rhythm of em-dash-bracketed clauses. Each thought
+  gets its own sentence.
 
 Avoid:
 
@@ -126,30 +139,50 @@ When changing code:
 
 ## Current Phase
 
-Phases 1–8, A/B/C, and **9–20** are complete. The product is in a
-shippable state with a live desktop landing surface and a full SEO
-content layer. See `app/CHANGELOG_PRODUCT.md` for per-phase detail.
+Phases 1–8, A/B/C, **9–20**, the QA bug round, the polish batch,
+and the copy + tone sweep are all complete. The product is in a
+shippable state with a live desktop landing surface, a full SEO
+content layer, dynamic OG image generation, dark mode, a beta signup
+form, and copy that doesn't read like AI marketing. See
+`app/CHANGELOG_PRODUCT.md` for per-phase detail.
 
-Completed phases (most recent first):
+Completed (most recent first):
 
-- Phase C — No Noise Brief email infrastructure (subscriber store,
-  composer, renderer, Resend send wrapper, subscribe / unsubscribe /
-  cron routes, preview + signup + unsubscribed pages). Code complete;
-  send pipeline gated on domain email setup.
-- Phase B — Quiet Recap Card (premium final-game artifact: winner
-  headline, score, series state, "what mattered" bullets, optional
-  next-game line) + null-fallback + nextLine via allNBAGames.
-- Phase A — Explain the Stakes (deriveNBASeriesStake, StakesLine,
-  mounted on game detail + country detail).
-- Phase 8 — World Cup pre-kickoff readiness (extended brief band,
-  TournamentCountdown carries the country page across the 30-day
-  arc, kickoff-day Today hero, WC country notifications cron + path).
-- Phases 1–7 — Object-detail navigation, Today calmness, game detail
-  hierarchy, country detail polish, compact alerts, snapshot fallback,
-  small visual calibration.
+- **Copy + tone sweep** (May 2026). Em-dashes removed from all
+  user-facing surfaces. AI-marketing flourishes neutralized. Metadata
+  titles standardized to `Page | No Noise Scores`. NFL Sundays
+  language corrected on moments band. Status pills removed from NBA
+  and WC moment cards (kept for NFL "Coming Aug 2026"). HowItWorks
+  capsule rewritten for clarity. Contact info (Instagram +
+  tatlicioglu.ibrahim@gmail.com) added to footer, about, beta,
+  privacy. 3-free-alerts pricing transparency added to FAQ + per-
+  follow alert UI.
+- **Polish batch** (May 2026). Dynamic OG + Twitter share images via
+  Next.js `opengraph-image.tsx` (Node runtime, statically rendered).
+  Favicon SVG fixed to include dark chip backing. Loading shells
+  consistent across detail pages. Beta signup + structured feedback
+  form (KV-backed). Tournament series rows get inline
+  `MiniSeriesStrip`. NotificationPreview shows side-by-side
+  No-Spoilers variants per tier. `docs/SEO_SUBMISSION.md` written
+  with step-by-step for Google + Bing + AI search.
+- **QA bug round** (May 2026). NYK→NYK series alias parsing fixed
+  in `normalizeSeriesSummary` + `parseSeriesWins`. "Series in
+  progress" → "Series wrapped." for complete status. Light mode
+  default (dropped `prefers-color-scheme: dark` auto-flip). BrandMark
+  uses literal colors so identity doesn't invert in dark mode.
+  Lock-screen notification mockup uses literal colors. BrandBar +
+  CrumbBar use `--bar-blur-bg` token.
+- **Phases 9–20** mega-push. Friend Beta Gate, web route split, desktop
+  landing shell, SEO foundation, core content pages, feature pages,
+  guide pages, comparison + niche capture, Following = Sports Circle
+  framing, Watching deepening, dark mode (warm dark), retention
+  plumbing (per-follow test push).
+- **Phases A/B/C**. Stakes, Quiet Recap Card, Brief email
+  infrastructure (send gated on domain email).
+- **Phase 8**. World Cup pre-kickoff readiness.
+- **Phases 1–7**. Foundation work.
 
-**Next:** Phases 21–23+ — see `docs/ROADMAP.md` for the full sequenced
-plan.
+**Next:** Phases 21–23+. See `docs/ROADMAP.md`.
 
 - **Phase 21** — Brief launch (gated on domain email).
 - **Phase 22** — NFL season build (August 2026).
@@ -160,14 +193,26 @@ Each phase is its own go/no-go unit. Do not jump ahead.
 
 Do not do yet:
 
-- Brief send pipeline (Phase 21 — blocked on domain email setup)
-- NFL full build (Phase 22 — August 2026)
-- iOS native wrap
-- Account system
-- Monetization UI
-- Large refactor
-- New backend
-- Path B follow-schema refactor (wait for 3rd moment)
+- Brief send pipeline (Phase 21. Blocked on domain email setup).
+- NFL full build (Phase 22. August 2026).
+- iOS native wrap.
+- Account system.
+- Monetization UI beyond the 3-free-alerts model already in copy.
+- Large refactor.
+- New backend.
+- Path B follow-schema refactor (wait for 3rd moment).
+
+## Free vs. paid model (in copy already)
+
+- **Free**: unlimited follows, alerts on the first 3 follows, all
+  features, no ads.
+- **Paid (later)**: unlimited alerts. Justified to users as helping
+  cover the cost of the notification backend.
+
+Copy is already in `app/companion/landing/faq-data.ts` + alert
+controls UI. The paid tier itself hasn't been built yet. When you
+build it, the user-facing language stays as-is (no marketing
+inflation).
 
 ## NBA Rules
 

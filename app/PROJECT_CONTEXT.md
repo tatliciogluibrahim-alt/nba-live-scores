@@ -379,12 +379,69 @@ Phases 9–20 shipped as one mega-push (May 2026):
   personality, summary language).
 - Phase 18 — Watching deepening (responsive grid on wider widths,
   cockpit-framed empty state copy).
-- Phase 19 — Dark mode (warm dark, not generic dark): tokens flip via
-  `prefers-color-scheme` + manual override in Alerts & Notifications;
-  theme bootstrap script in layout to avoid flash; iOS theme-color
-  responds per scheme.
+- Phase 19 — Dark mode (warm dark, not generic dark). Tokens flip via
+  manual override in Alerts & Notifications (the auto-detect was
+  removed later — light is now the default unless the user opts in).
 - Phase 20 — Retention plumbing: per-follow "Send a test alert" button
   inside the expanded row.
+
+After Phases 9–20 shipped, three more passes landed:
+
+**QA bug round (May 2026)**
+
+- NYK→NYK series alias bug fixed. ESPN sends `"NY WINS SERIES 4-0"`
+  but the canonical abbreviation is `NYK`. `normalizeSeriesSummary`
+  in /api/live-scores/route.ts now rewrites the string itself.
+  `parseSeriesWins` in app/nba/lib/series.ts is now defensively
+  alias-aware.
+- `buildSafeStake` in series-data.ts returns "Series wrapped." for
+  complete series (was incorrectly saying "Series in progress.").
+- Light mode is now the default. Dropped the
+  `prefers-color-scheme: dark` auto-flip. Dark mode is opt-in only via
+  Alerts & Notifications. ThemeSelector collapsed from System / Light
+  / Dark to just Light / Dark.
+- BrandMark uses literal colors so brand identity doesn't invert in
+  dark mode. Lock-screen notification mockup also uses literal colors.
+- BrandBar + CrumbBar use a new `--bar-blur-bg` token that flips with
+  the chassis (cream in light, warm-dark in dark).
+
+**Polish batch (May 2026)**
+
+- Dynamic OG image via `app/opengraph-image.tsx` + `twitter-image.tsx`
+  (Node runtime, statically prerendered at build).
+- Favicon SVG rewritten to include the dark chip backing so it reads
+  on dark browser tabs too.
+- Loading-shell consistency audit complete across detail pages.
+- Beta signup form on `/beta` (KV-backed via
+  `app/lib/beta/subscriber-store.ts`). Structured feedback form on
+  `/beta/feedback` (4 fields: working / broken / missing / vibe).
+  Both rate-limited via the existing request-guards pattern.
+- Inline `MiniSeriesStrip` on the tournament page series rows.
+- NotificationPreview shows the No-Spoilers variant per tier
+  side-by-side with the regular alert.
+- `docs/SEO_SUBMISSION.md` written. Step-by-step for Google Search
+  Console, Bing Webmaster Tools, AI-search discovery, IndexNow.
+- `docs/PERFORMANCE.md` baseline.
+
+**Copy + tone sweep (May 2026)**
+
+- Em-dashes removed from all user-facing surfaces. (Code comments
+  keep them.)
+- AI-marketing flourishes neutralized. "Three things every other
+  sports app gets wrong" → "Three things this app does on purpose."
+  "Four concepts. That's the whole product." → "Four ideas. That's
+  the app."
+- Metadata titles standardized to `Page | No Noise Scores`.
+- NFL Sundays line corrected (was claiming "no regular season
+  coverage," but NFL has a regular season and we cover it Sundays).
+- Status pills on the moments band: removed for NBA + WC, kept for
+  NFL "Coming Aug 2026."
+- HowItWorks capsule rewritten for clarity and directness.
+- Contact info (Instagram @nonoisescores +
+  tatlicioglu.ibrahim@gmail.com) added to landing footer, about,
+  beta, privacy.
+- 3-free-alerts model surfaced honestly in the FAQ and in-app at
+  the "slots full" moment.
 
 **Next:** Phases 21–23+. See `docs/ROADMAP.md`.
 

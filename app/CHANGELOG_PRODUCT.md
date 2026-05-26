@@ -2,6 +2,102 @@
 
 ---
 
+## Polish Batch + Copy/Tone Sweep — 2026-05-26
+
+After the post-9-20 QA fixes, two more sweeps landed before friend
+beta:
+
+### Polish batch (10 items from the "what else can we do" list)
+
+1. **Dynamic OG + Twitter share images.** New `app/opengraph-image.tsx`
+   + `app/twitter-image.tsx`. Cream chassis, BrandMark glyph,
+   editorial headline. Statically prerendered at build (Node runtime,
+   not Edge, to avoid Vercel's 1 MB Hobby-tier Edge bundle limit).
+2. **Favicon for dark browser chrome.** Rewrote `public/favicon.svg`
+   to include the dark ink chip backing. Was just a dark pill before
+   (invisible on dark tabs).
+3. **Apple touch icon** verified — the BrandMark glyph self-provides
+   its dark backdrop so it reads on any wallpaper.
+4. **Loading-shell consistency audit.** Clean across detail pages.
+5. **LCP audit.** Local dev FCP 92ms, transfer size 94KB. Wrote
+   `docs/PERFORMANCE.md` with baselines + Core Web Vitals targets +
+   monitoring plan.
+6. **Server-side game scrollback** confirmed already shipped (60-day
+   snapshot TTL exceeds 30-day target).
+7. **Beta signup + feedback infrastructure.** New
+   `app/lib/beta/subscriber-store.ts` (KV-backed). New API routes
+   `/api/beta/signup` + `/api/beta/feedback`. New `BetaSignupForm`
+   on `/beta`. New `BetaFeedbackForm` on `/beta/feedback` (noindex)
+   with structured fields: working / broken / missing / vibe.
+   Extended `request-guards.ts` with new rate-limit kinds.
+8. **Tournament page polish.** Added inline `MiniSeriesStrip` under
+   each NBA playoff series row on /tournament/nba-playoffs-2026.
+   7-dot strip, spoiler-safe (filled vs. dashed; no winner attribution
+   per dot).
+10. **Lockscreen mock No-Spoilers variant.** Each preset preview card
+    in `NotificationPreview` now shows both the regular alert AND the
+    NS variant. Suppressed alerts (close-game under NS) render as a
+    flat callout.
+17. **SEO submission guide.** `docs/SEO_SUBMISSION.md` with step-by-
+    step for Google Search Console + Bing + IndexNow + AI search.
+
+### Copy + tone sweep
+
+After the polish batch, a full voice pass across every user-facing
+surface:
+
+- **Em-dashes removed** from all user-facing copy. 160 instances
+  across 14 content files. Replaced with periods, commas, or
+  parentheses depending on context. Code comments keep em-dashes.
+- **AI-marketing flourishes neutralized.** "Three things every other
+  sports app gets wrong" → "Three things this app does on purpose."
+  "Four concepts. That's the whole product." → "Four ideas. That's
+  the app." "Plain answers." → "Common questions."
+- **HowItWorksCapsule bodies rewritten** for clarity. Each tile now
+  reads action-first, outcome-clear.
+- **NFL Sundays language corrected.** The moments band previously
+  said "we don't cover regular-season filler" — incorrect because NFL
+  is a Sunday-anchored regular season. Reframed as "The events that
+  pull you to the screen. NBA Playoffs, the World Cup, NFL Sundays."
+- **Moments band status pills** removed for NBA and WC. Kept for NFL
+  "Coming Aug 2026." Made `status` optional in `MomentEntry` type.
+- **Metadata titles** standardized to `Page | No Noise Scores`. The
+  three pages with broken sentence-fragment titles after the em-dash
+  sweep were rewritten.
+- **Contact info added** to the landing footer, /about, /beta,
+  /privacy: Instagram @nonoisescores +
+  tatlicioglu.ibrahim@gmail.com.
+
+### 3-free-alerts pricing model in copy
+
+Surfaced honestly:
+
+- FAQ "Is it free?" answer rewritten to explain: free for most
+  people, alerts on first 3 follows on the house, paid tier later
+  for unlimited (helps cover the notification backend cost).
+- In-app: when alert slots are full, message now reads "Alert slots
+  are full (3 of 3 on the free plan). Turn one off to enable this.
+  Unlimited alerts will land in a paid tier later." Same in
+  PerFollowAlerts and FollowCard.
+
+### Brand identity additions
+
+- Hero on the desktop landing now includes the BrandMark glyph + "No
+  Noise Scores" wordmark lockup at the top of the left column.
+- Phone preview mockup on the landing now shows the bottom tab bar
+  (Today active, Following, Watching) with the same icons as the
+  real app. Makes the 3-tab IA visible in 5 seconds.
+
+### Build / lint / typecheck
+
+- `npm run lint` → clean
+- `npx tsc --noEmit` → clean
+- `npm run build` → ✓
+- `/opengraph-image` and `/twitter-image` are statically prerendered
+  (no edge bundle issues, no runtime cost).
+
+---
+
 ## Post-9-20 QA Fixes — Series Data, Light Default, BrandMark, Lock-Screen Mock — 2026-05-26
 
 Five bugs caught in user QA after the Phase 9–20 mega-push. Build + lint

@@ -2,7 +2,8 @@
 
 This file lists the work ahead, sequenced.
 
-**Phases 1–8, A/B/C, and 9–20 are complete** (see
+**Phases 1–8, A/B/C, 9–20, the QA bug round, the polish batch, and
+the copy + tone sweep are all complete** (see
 `app/CHANGELOG_PRODUCT.md` for per-phase detail).
 
 Each phase below is one go/no-go unit. Do not jump ahead.
