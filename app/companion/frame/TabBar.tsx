@@ -102,7 +102,9 @@ export function TabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t"
+      // Mobile-only. At md+ the DesktopSidebarNav takes over as the
+      // primary nav surface (Phase 22.5-D).
+      className="fixed inset-x-0 bottom-0 z-40 border-t md:hidden"
       style={{
         background: "var(--cream)",
         borderColor: "var(--line)",

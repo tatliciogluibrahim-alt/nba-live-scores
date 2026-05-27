@@ -9,9 +9,9 @@ export const metadata = {
 
 export default function WatchingPage() {
   return (
-    <CompanionFrame>
+    <CompanionFrame desktopNav="watching">
       <BrandBar />
-      <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+      <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-3xl md:px-8 md:pt-6">
         <WatchingClient />
       </main>
     </CompanionFrame>

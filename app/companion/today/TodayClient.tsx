@@ -46,7 +46,7 @@ export function TodayClient() {
 
   return (
     <PullToRefresh onRefresh={refetch}>
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-5xl md:px-8 md:pt-6">
       {/* ── Header: "Today" + time + passive No-Spoilers indicator ─── */}
       <header className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-baseline gap-2">
@@ -127,22 +127,42 @@ export function TodayClient() {
       {/* Loading shell — keep the page shape, fill with calm placeholder */}
       {!hydrated ? <LoadingShell /> : null}
 
-      {/* North Star content (with No-Spoilers variant baked into sections) */}
+      {/* North Star content (with No-Spoilers variant baked into sections).
+          Mobile: single-column stack, YouFollow inline between hero and
+          UpNext (current behavior). Desktop (md+): YouFollow moves to a
+          sticky right rail so the eye stays on the live hero + what's
+          next, and the circle is always visible. Phase 22.5-D. */}
       {hydrated ? (
-        <div className="space-y-5">
-          {payload.hero ? <WorthCheckingNow hero={payload.hero} /> : null}
+        <div className="md:grid md:grid-cols-[minmax(0,1fr)_280px] md:gap-6">
+          <div className="space-y-5">
+            {payload.hero ? <WorthCheckingNow hero={payload.hero} /> : null}
 
-          <YouFollow items={payload.youFollow} />
+            {/* YouFollow appears here on mobile only — at md+ the sticky
+                aside in the right rail takes over. */}
+            <div className="md:hidden">
+              <YouFollow items={payload.youFollow} />
+            </div>
 
-          <UpNext items={payload.upNext} />
+            <UpNext items={payload.upNext} />
 
-          <QuietWrap items={payload.quietWrap} />
+            <QuietWrap items={payload.quietWrap} />
 
-          {payload.reminder ? <ReminderRow reminder={payload.reminder} /> : null}
+            {payload.reminder ? <ReminderRow reminder={payload.reminder} /> : null}
 
-          {/* Quiet-day payoff: when nothing's live, nothing's next, nothing
-              just wrapped — and the reminder isn't already filling the page. */}
-          {payload.isQuietDay && !payload.reminder ? <CalmCard /> : null}
+            {/* Quiet-day payoff: when nothing's live, nothing's next, nothing
+                just wrapped — and the reminder isn't already filling the page. */}
+            {payload.isQuietDay && !payload.reminder ? <CalmCard /> : null}
+          </div>
+
+          {/* Desktop-only sticky right rail. Renders YouFollow so the
+              user's sports circle is always in view while they scan
+              hero / up-next. The sticky offset is small (16px) so the
+              rail tracks the scroll without crowding the top edge. */}
+          <aside className="hidden md:block">
+            <div className="sticky top-4">
+              <YouFollow items={payload.youFollow} />
+            </div>
+          </aside>
         </div>
       ) : null}
     </main>

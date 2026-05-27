@@ -19,7 +19,7 @@ export const metadata = {
 
 export default function AppPage() {
   return (
-    <CompanionFrame>
+    <CompanionFrame desktopNav="today">
       <BrandBar />
       <TodayClient />
     </CompanionFrame>

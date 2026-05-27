@@ -12,7 +12,12 @@ import { BrandMark } from "./BrandMark";
 export function BrandBar({ trailing }: { trailing?: ReactNode }) {
   return (
     <header
-      className="sticky top-0 z-30 flex items-center justify-between px-4 pb-2"
+      // Mobile-only. The desktop sidebar (Phase 22.5-D) carries the
+      // brand lockup at the top of the rail, so the top strip is
+      // redundant at md+. Detail/content pages don't pass desktopNav
+      // to CompanionFrame and keep this bar visible — that's fine,
+      // those screens stay mobile-shaped on desktop intentionally.
+      className="sticky top-0 z-30 flex items-center justify-between px-4 pb-2 md:hidden"
       style={{
         // Safe-area-top moved from CompanionFrame to here so the sticky
         // header pins below the iOS status bar / Dynamic Island. Backdrop

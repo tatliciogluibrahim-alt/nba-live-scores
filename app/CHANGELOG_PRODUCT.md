@@ -2,6 +2,43 @@
 
 ---
 
+## Phase 22.5-D (first PR) — Desktop Bespoke Lean — 2026-05-27
+
+`/app`, `/following`, and `/watching` are no longer a narrow column
+with huge dead margins on a 1440px screen. First lean PR per
+`docs/DESKTOP_BESPOKE_PLAN.md`.
+
+- `app/companion/frame/DesktopSidebarNav.tsx` — new. Left rail at
+  md+ with brand lockup at the top, Today / Following / Watching as
+  primary nav, Settings tucked at the bottom. Hidden below md.
+- `app/companion/frame/CompanionFrame.tsx` — accepts a new
+  `desktopNav?: "today" | "following" | "watching"` prop. When set,
+  renders the rail and offsets the main column right by 220px on
+  md+. Detail / content pages omit the prop and keep the mobile-
+  shaped layout on desktop (intentional — those screens look fine
+  narrow).
+- `app/companion/frame/TabBar.tsx` — added `md:hidden`. Bottom nav
+  is mobile-only now.
+- `app/companion/frame/BrandBar.tsx` — added `md:hidden`. Top brand
+  strip is mobile-only; the sidebar carries brand on desktop.
+- `app/companion/today/TodayClient.tsx` — main widens to
+  `md:max-w-5xl`. North-Star content becomes a 2-column grid on md+
+  with `YouFollow` as a sticky right rail (`md:sticky md:top-4`) so
+  the user's sports circle is always visible while they scan hero +
+  what's next. Mobile order untouched (`YouFollow` still inline).
+- `/app`, `/following`, `/watching` page wrappers pass `desktopNav`
+  and widen to `md:max-w-3xl` / `md:max-w-5xl` so content fills the
+  newly-available space.
+
+Scope intentionally limited. Follow-up PRs will deepen game detail
+with a right sidebar (series strip + related games), add live-game
+pips to the top header lockup, and 3-column Following at lg+. The
+goal of this PR is a recognizable, functional desktop product
+without inventing new mental models — same data, same product, just
+laid out for the viewport.
+
+---
+
 ## Phase 21C-G7 — Game 7 Override Notification — 2026-05-27
 
 Smallest possible retention play. When a followed series reaches its

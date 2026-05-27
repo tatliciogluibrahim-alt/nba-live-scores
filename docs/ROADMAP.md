@@ -147,9 +147,20 @@ Remaining within Phase 22.5:
   22.5-3/4 as alternating sessions (Swift one weekend, responsive
   web the next). Lean scope: make `/app` desktop-aware with a
   responsive grid, drop the bottom nav at md+, add a left sidebar.
-  ~1 weekend for the minimum viable layout PR; further surfaces
-  deepen iteratively. Decided 2026-05-27. Full plan in
-  `docs/DESKTOP_BESPOKE_PLAN.md`.
+  Decided 2026-05-27. Full plan in `docs/DESKTOP_BESPOKE_PLAN.md`.
+  - **First PR shipped 2026-05-27.** `DesktopSidebarNav` (left
+    rail with brand + Today/Following/Watching + Settings) +
+    `CompanionFrame` accepts `desktopNav` prop + `TabBar` and
+    `BrandBar` go `md:hidden` + Today main column widens to
+    `md:max-w-5xl` and switches to a 2-column grid with `YouFollow`
+    as a sticky right rail on md+. Following and Watching pages
+    widen their max-w too. Detail / content / `/` landing pages
+    untouched — they stay mobile-shaped on desktop intentionally.
+  - **Follow-up surfaces (not shipped yet):** game detail right
+    sidebar with series strip / related games; Following 3-column
+    deepening; live-game pips in a top header lockup; keyboard
+    shortcuts for power users. Will iterate based on real desktop
+    usage data once the lean ship is live.
 - **22.5-5** — App Store submission (screenshots, metadata, privacy
   policy entries, first rejection + resubmit). ~1 weekend + 1-2
   weeks waiting. Runs after 22.5-3 + 22.5-4 are ship-ready.
