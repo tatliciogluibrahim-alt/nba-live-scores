@@ -186,8 +186,8 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
 
 /** Events whose copy reveals closeness or comeback drama. These get
  *  suppressed for subscriptions where noSpoilers is true, even if the
- *  user picked the "All moments" tier — they opted into both, both
- *  should be respected. (Codex QA #1.) */
+ *  user picked the "Close games" tier (internal key: "all") — they
+ *  opted into both, both should be respected. (Codex QA #1.) */
 const SPOILERY_EVENTS = new Set<PushEvent["type"]>(["close-game", "comeback"]);
 
 function subscriptionWantsEvent(

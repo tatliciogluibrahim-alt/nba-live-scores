@@ -245,14 +245,16 @@ export function composeBrief({
     }
   }
 
-  // Alerts summary.
+  // Alerts summary. Tier labels mirror PRESETS in state/types.ts (kept
+  // in sync manually rather than imported to keep this composer free
+  // of client-only types).
   const enabledFollows = follows.filter((f) => f.alertEnabled);
   const tiers = enabledFollows.slice(0, 5).map((f) => {
     const label =
       f.alertTier === "all"
-        ? "All moments"
+        ? "Close games"
         : f.alertTier === "companion"
-          ? "Companion"
+          ? "Standard"
           : "Quiet";
     return `${f.id} · ${label}`;
   });

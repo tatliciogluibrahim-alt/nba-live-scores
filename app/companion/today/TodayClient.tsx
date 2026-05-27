@@ -17,6 +17,7 @@ import { UpNext } from "./sections/up-next";
 import { QuietWrap } from "./sections/quiet-wrap";
 import { ReminderRow } from "./sections/reminder-row";
 import { CalmCard } from "./sections/calm-card";
+import { CalmEndCard } from "./sections/calm-end-card";
 
 // Today composition. One screen, three states layered on the same shape:
 //   1. North Star — live hero + follows + up next + finals + reminder
@@ -92,6 +93,17 @@ export function TodayClient() {
 
       {/* Daily Brief — calm sentence + optional routing CTA */}
       {brief ? <BriefCard brief={brief} /> : null}
+
+      {/* Calm Ending — series wrapped or season wrapped. Sits above the
+          install/notifications cards so the user sees the acknowledgment
+          first when they open Today the morning after a clinch. The card
+          internally suppresses itself if the user has dismissed this
+          specific moment id. */}
+      {hydrated && payload.closing ? (
+        <div className="mb-4">
+          <CalmEndCard moment={payload.closing} />
+        </div>
+      ) : null}
 
       {/* Install for game alerts — Phase 9 friend-beta gate. Sits above
           EnableNotificationsCard because on iOS, install is a prerequisite

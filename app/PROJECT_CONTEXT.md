@@ -443,6 +443,40 @@ After Phases 9–20 shipped, three more passes landed:
 - 3-free-alerts model surfaced honestly in the FAQ and in-app at
   the "slots full" moment.
 
+**Phase 21B — Calm Endings + Calendar (May 2026)**
+
+A small post-launch batch picked from an LLM-driven ideation pass
+(see `docs/IDEATION_BRIEFING.md`). Three features, all extending
+existing primitives:
+
+- **CalmEndCard on Today.** One component, two configurations.
+  Series Closure (when a followed series wraps within the last 3
+  days). Tournament Wind-Down (when the NBA Finals wrap within the
+  last 7 days AND the slate is otherwise quiet). Dismissible per
+  stable moment id via localStorage (cap 50 entries). Lives in
+  `app/companion/today/sections/calm-end-card.tsx` with the data
+  layer addition in `today-data.ts` (`ClosingMoment` type +
+  `pickClosing` function).
+- **Add to Calendar.** iCal export on every upcoming game detail
+  page (NBA + WC). Spoiler-safe SUMMARY under No-Spoilers
+  ("Knicks game" instead of the matchup). Pure generator in
+  `app/lib/calendar/ics.ts`; button in
+  `app/companion/calendar/AddToCalendarButton.tsx`. Wired into
+  `NBALiveCompanion` and `WCGameDetail`.
+- **Push fixes.** PushSyncEffect now persists the sync hash only on
+  HTTP 2xx (fixes iOS PWA suspend drops). End-of-quarter detection
+  now consumes the live-scores `statusText` field ("End Q1" / "End
+  Q2" halftime / "End Q3") with new `eoq{1,2,3}Fired` dedupe flags
+  on `CachedGameState`, so eoq-N fires when the quarter ends, not
+  when the next quarter starts.
+
+The remaining ideas from the ideation pass are sorted into Ship /
+Hold / Skip / Reconsider sections in `docs/ROADMAP.md`. Top
+"ship-next" candidates: Sports Circle Export Card, First Three
+Alerts Preview, WC Country Landing Pages, Comparison Pages, Pick
+Your Moment onboarding (skippable), Multi-Device Follow Sync, Calm
+Guides expansion.
+
 **Next:** Phases 21–23+. See `docs/ROADMAP.md`.
 
 - Phase 21 — Brief launch (when domain email is sorted).

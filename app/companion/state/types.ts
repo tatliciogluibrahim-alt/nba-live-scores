@@ -86,14 +86,21 @@ export const MAX_FREE_ALERT_SLOTS = 3;
 // ── Copy contract for presets (HANDOFF.md §5) ─────────────────────────
 // Three tiers, escalating in volume. Each follow owns its own alert level.
 // prefs.defaultAlertTier only seeds newly-added follows. Copy is deliberately
-// sport-neutral. The push body itself
-// mints sport-specific titles in the dispatcher ("Tipoff" / "Kickoff"
-// / "End of Q3" / "Halftime") based on the game's source league.
+// sport-neutral. The push body itself mints sport-specific titles in the
+// dispatcher ("Tipoff" / "Kickoff" / "End of Q3" / "Halftime") based on
+// the game's source league.
+//
+// Renamed 2026-05-26: "Companion" → "Standard", "All moments" → "Close
+// games." Internal keys (quiet / companion / all) stay for back-compat
+// with stored follows. The previous labels misled users into thinking
+// "All moments" produced more than it did; in practice the only events
+// that distinguished it from Companion were close-game and comeback,
+// both of which rarely fire. Honest labels match the actual matrix.
 export const PRESETS: Record<
   AlertPreset,
   { label: string; detail: string }
 > = {
   quiet: { label: "Quiet", detail: "Start and final only." },
-  companion: { label: "Companion", detail: "Start, key breaks, final." },
-  all: { label: "All moments", detail: "Key swings and close finishes." },
+  companion: { label: "Standard", detail: "Start, quarter breaks, final." },
+  all: { label: "Close games", detail: "Adds close finishes and comebacks." },
 };

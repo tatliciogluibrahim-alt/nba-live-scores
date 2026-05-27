@@ -2,9 +2,9 @@
 
 This file lists the work ahead, sequenced.
 
-**Phases 1–8, A/B/C, 9–20, the QA bug round, the polish batch, and
-the copy + tone sweep are all complete** (see
-`app/CHANGELOG_PRODUCT.md` for per-phase detail).
+**Phases 1–8, A/B/C, 9–20, the QA bug round, the polish batch, the
+copy + tone sweep, and Phase 21B (Calm Endings + Calendar) are all
+complete** (see `app/CHANGELOG_PRODUCT.md` for per-phase detail).
 
 Each phase below is one go/no-go unit. Do not jump ahead.
 
@@ -33,6 +33,99 @@ alternatives, do not let copy drift.
    `/about`, `/privacy`, `/changelog`, `/beta`.
 
 `/app` is the canonical "open the app on any device" entry.
+
+---
+
+## ✅ Phase 21B — Calm Endings + Calendar — SHIPPED (May 2026)
+
+Mini-batch shipped after the post-launch ideation pass (see
+`docs/IDEATION_BRIEFING.md` for the briefing, and the chat history
+for the LLM outputs that produced these picks).
+
+- **CalmEndCard** — single component, two configurations. Series
+  Closure (when a followed series wraps) and Tournament Wind-Down
+  (when the NBA Finals wrap and the slate is quiet). Dismissible per
+  moment id via localStorage.
+- **Add to Calendar** — iCal (.ics) export on every upcoming game
+  detail page (NBA + WC). Spoiler-safe titles under No-Spoilers
+  ("Knicks game" not "Knicks vs Pacers · Game 4").
+- **Push fixes** — PushSyncEffect now persists the synced hash only
+  after the server acks (fixes silent iOS PWA suspend drops).
+  End-of-quarter detector now fires when the quarter ends, not when
+  the next one starts.
+
+---
+
+## Phase 21B follow-ups — sorted from ideation pass
+
+The ideation pass produced ~20 ideas across two LLMs. Categorized
+below by ship-readiness. Do not pick anything from the **Skip**
+section without re-justifying it against the wedge.
+
+### Ship next (in order)
+
+1. **Sports Circle Export Card.** Generate a static OG image of a
+   user's follows (logos + flags + BrandMark, no scores). Share
+   action on Following screen. Word-of-mouth without a feed.
+2. **First Three Alerts Preview.** Quiet "Alerts active on these 3"
+   label in the follow picker + alert-tier UI. Makes the 3-free-
+   alerts model legible without selling the paid tier yet.
+3. **WC Country Landing Pages.** Static `/wc/usa`, `/wc/brazil`,
+   etc. Country header + standings + next fixture + path to final.
+   "Follow [country]" CTA. Biggest single SEO play before WC kickoff
+   on June 11.
+4. **Comparison Pages.** `/compare/no-noise-scores-vs-espn` and
+   `/compare/no-noise-scores-vs-thescore`. Two-column factual tables,
+   no attack copy.
+5. **Pick Your Moment onboarding (skippable).** One screen before the
+   follow picker. Two cards: NBA Playoffs / World Cup. Tap seeds
+   first three follows. "Skip, show me everything" link bottom-right.
+6. **Multi-Device Follow Sync.** 6-digit code, 10-min TTL, KV-backed.
+   No accounts. Solves "I got a new phone."
+7. **Calm Guides expansion.** `/guides/how-nba-playoffs-work`,
+   `/guides/world-cup-format-explained`,
+   `/guides/what-is-a-series-clinch`. Plain explanations, no takes.
+
+### Hold (blocked or strategic)
+
+- **Score widget for pinned games.** Blocked on iOS native ship.
+  When the App Store guardrail loosens, this is the strongest native
+  unlock to build first.
+- **No-Spoilers Pro as the paid pitch.** Hold for when the paid tier
+  ships. Replaces the "help cover backend cost" framing with "more
+  control over what you see."
+- **Quiet Hours Trust Meter.** Blocked on actual quiet-hours
+  enforcement (cron-side work not started).
+- **Public Sports Circle Page.** Strategic risk. Ship the export
+  card first. If the export card alone produces meaningful word-of-
+  mouth, the public page is unnecessary. If it doesn't, revisit.
+
+### Skip (wedge-corroding or low value)
+
+These were proposed but explicitly rejected. Do not revisit without
+strong evidence the wedge has changed.
+
+- **Quiet Streak counter.** Habit-app energy. Counter-to-brand even
+  when buried in Settings.
+- **Series Memory ("you checked 3 of 4 games").** Same issue.
+- **Sponsored moments.** Brand risk. Friend-beta indie product has
+  zero leverage with sponsors; they will demand placements that
+  violate the wedge.
+- **Paid beta before paid features.** Premature monetization. Charge
+  when the value is real, not before.
+- **Editorial recaps written by the product.** Quality risk. One
+  bad summary breaks the premium feel. Skip until/unless curated.
+- **Friend Beta Invite Code.** Already implemented via Phase 9
+  Friend Beta Gate. Don't double-build.
+
+### Reconsider (low priority, low confidence)
+
+- **Pre-Game Pin Reminder.** Edges toward "don't miss out" energy.
+  Hold for now.
+- **Recap First Mode.** Reorder Today modules under No-Spoilers.
+  A/B-able. Test only if D7 retention is the bottleneck.
+- **Moment Health Dashboard.** Build only if YOU (operator) need it.
+  Not a user feature.
 
 ---
 

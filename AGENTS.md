@@ -140,14 +140,27 @@ When changing code:
 ## Current Phase
 
 Phases 1–8, A/B/C, **9–20**, the QA bug round, the polish batch,
-and the copy + tone sweep are all complete. The product is in a
-shippable state with a live desktop landing surface, a full SEO
-content layer, dynamic OG image generation, dark mode, a beta signup
-form, and copy that doesn't read like AI marketing. See
+the copy + tone sweep, and **Phase 21B (Calm Endings + Calendar)**
+are all complete. The product is in a shippable state with a live
+desktop landing surface, a full SEO content layer, dynamic OG image
+generation, dark mode, a beta signup form, calendar export on game
+detail pages, and Series Closure + Wind-Down cards on Today. See
 `app/CHANGELOG_PRODUCT.md` for per-phase detail.
 
 Completed (most recent first):
 
+- **Phase 21B — Calm Endings + Calendar** (May 2026). Three
+  features. (1) CalmEndCard on Today — single component, two
+  configurations (Series Closure when a followed series wraps,
+  Tournament Wind-Down when NBA Finals wrap and slate is quiet).
+  Dismissible per moment id via localStorage. (2) Add to Calendar
+  on every upcoming game detail page (NBA + WC) — iCal export with
+  spoiler-safe titles under No-Spoilers. (3) Push fixes — sync hash
+  now persists only on server-ack (fixes iOS PWA silent drops), and
+  end-of-quarter detection now fires when the quarter ends, not at
+  the next quarter's tip. Picked from an LLM ideation pass; the
+  remaining ideas are sorted Ship/Hold/Skip/Reconsider in
+  `docs/ROADMAP.md`.
 - **Copy + tone sweep** (May 2026). Em-dashes removed from all
   user-facing surfaces. AI-marketing flourishes neutralized. Metadata
   titles standardized to `Page | No Noise Scores`. NFL Sundays

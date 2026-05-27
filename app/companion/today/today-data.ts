@@ -123,6 +123,50 @@ export type ReminderRow = {
   href?: string;
 };
 
+// ── Closing moment ────────────────────────────────────────────────────
+// A "calm ending" card. Two variants share one shape: a series the user
+// follows just wrapped, OR the NBA Finals just wrapped and the slate is
+// otherwise quiet (the "wind-down" case). The card has no urgency. It
+// acknowledges, sums up, and offers at most one next action.
+//
+// Dismissal lives in localStorage on the client (see
+// use-closing-dismissed.ts). The data layer always computes the moment
+// if it qualifies; the view layer suppresses it if dismissed.
+
+export type ClosingMomentDot = {
+  /** 1..N — only includes games actually played. */
+  number: number;
+  awayCode: string;
+  homeCode: string;
+  /** Abbreviation of the winning team. Spoilery — view layer gates on
+   *  No-Spoilers. */
+  winnerCode: string;
+};
+
+export type ClosingMoment = {
+  /** Stable id for dismiss tracking. Series: "series:<sorted-key>".
+   *  Tournament: "tournament:nba-<year>". */
+  id: string;
+  kind: "series" | "tournament";
+  /** "SERIES WRAPPED" or "SEASON WRAPPED" eyebrow. Always safe. */
+  eyebrow: string;
+  /** Calm headline. Safe under No-Spoilers. */
+  headline: string;
+  /** Optional detail line. Safe under No-Spoilers. */
+  detail?: string;
+  /** Game-by-game dots for the series variant. Empty for tournament. */
+  dots: ClosingMomentDot[];
+  /** Spoilery summary line (e.g. "OKC took it in 6."). Only shown when
+   *  No-Spoilers is off. */
+  spoilerSummary?: string;
+  /** At most one CTA. */
+  primary?: { label: string; href: string };
+  /** When set, the CTA is "Follow [code]" — view passes through to the
+   *  follow toggle. Null when no follow action is appropriate (user
+   *  already follows everyone, or tournament variant). */
+  followSuggestion?: { kind: "team"; id: string; label: string };
+};
+
 export type TodayPayload = {
   hero: TodayHero | null;
   youFollow: YouFollowItem[];
@@ -138,6 +182,12 @@ export type TodayPayload = {
   /** Headline count for the recap copy. Always finals.length when
    *  slateComplete is true; 0 otherwise. */
   finalsCount: number;
+  /** A "calm ending" card the user might see today. At most one. Either
+   *  a followed series just wrapped, or the NBA Finals just wrapped and
+   *  the slate is otherwise quiet. Dismissal is client-side
+   *  (localStorage), so the data layer always returns the moment when
+   *  it qualifies — the view layer suppresses if dismissed. */
+  closing: ClosingMoment | null;
 };
 
 // ── Pure helpers ──────────────────────────────────────────────────────
@@ -637,6 +687,206 @@ function buildReminder(follows: Follow[], now = new Date()): ReminderRow | null 
   };
 }
 
+// ── Closing moment ────────────────────────────────────────────────────
+// Detect a single "calm ending" the Today screen should surface. Two
+// shapes, one card:
+//
+//   • Series wrapped — a playoff series the user follows (directly via
+//     a series follow, or indirectly via following one of the teams)
+//     ended within the last ~3 days. Includes a per-game dot strip.
+//   • Tournament wrapped — the NBA Finals ended within the last ~7 days
+//     AND the user has no active live/upcoming content. Acknowledges
+//     the off-season honestly. No CTA.
+//
+// Series takes priority. Only one closing moment renders at a time.
+
+const SERIES_CLOSE_WINDOW_DAYS = 3;
+const TOURNAMENT_CLOSE_WINDOW_DAYS = 7;
+
+/** Parse "OKC WINS SERIES 4-2" / "Cleveland wins series 4-1" patterns
+ *  out of the API's seriesSummary. Returns the winner abbreviation and
+ *  the series margin (high-low). Null when the line doesn't indicate a
+ *  series clinch. */
+function parseSeriesClinch(
+  summary: string
+): { winnerCode: string; high: number; low: number } | null {
+  if (!summary) return null;
+  // Common shapes: "OKC WINS SERIES 4-2", "Oklahoma City wins series 4-2",
+  // sometimes uppercase, sometimes title-case. Accept both.
+  const m = summary.match(/([A-Z]{2,4}|[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+wins?\s+series\s+(\d)\s*[–-]\s*(\d)/i);
+  if (!m) return null;
+  const high = Number(m[2]);
+  const low = Number(m[3]);
+  if (!Number.isFinite(high) || !Number.isFinite(low)) return null;
+  return { winnerCode: m[1].toUpperCase().slice(0, 3), high, low };
+}
+
+/** Pull all games belonging to a series (sorted-abbr key, e.g.
+ *  "CLE-NYK") out of the given list, sorted by date. */
+function gamesInSeries(games: NBAGame[], seriesKey: string): NBAGame[] {
+  const [a, b] = seriesKey.split("-");
+  if (!a || !b) return [];
+  return games
+    .filter(
+      (g) =>
+        (g.away.abbreviation === a && g.home.abbreviation === b) ||
+        (g.away.abbreviation === b && g.home.abbreviation === a)
+    )
+    .sort((x, y) => new Date(x.date).getTime() - new Date(y.date).getTime());
+}
+
+function followedSeriesKeys(follows: Follow[]): Set<string> {
+  const out = new Set<string>();
+  for (const f of follows) {
+    if (f.kind === "series") {
+      // Normalize to sorted-abbr key so a "NYK-CLE" follow matches a
+      // "CLE-NYK" series.
+      out.add(f.id.split("-").sort().join("-"));
+    }
+  }
+  return out;
+}
+
+function followedTeamIds(follows: Follow[]): Set<string> {
+  const out = new Set<string>();
+  for (const f of follows) {
+    if (f.kind === "team") out.add(f.id);
+  }
+  return out;
+}
+
+function buildClosingDots(seriesGames: NBAGame[]): ClosingMomentDot[] {
+  return seriesGames
+    .filter((g) => g.status === "final")
+    .map<ClosingMomentDot>((g, idx) => {
+      const homeWon = g.home.score > g.away.score;
+      return {
+        number: idx + 1,
+        awayCode: g.away.abbreviation,
+        homeCode: g.home.abbreviation,
+        winnerCode: homeWon ? g.home.abbreviation : g.away.abbreviation,
+      };
+    });
+}
+
+function pickClosing(
+  nbaRecent: NBAGame[],
+  follows: Follow[],
+  hasLive: boolean,
+  hasUpcoming: boolean,
+  now = new Date()
+): ClosingMoment | null {
+  const seriesWindowMs = now.getTime() - SERIES_CLOSE_WINDOW_DAYS * 86_400_000;
+  const tournamentWindowMs =
+    now.getTime() - TOURNAMENT_CLOSE_WINDOW_DAYS * 86_400_000;
+
+  const followedSeries = followedSeriesKeys(follows);
+  const followedTeams = followedTeamIds(follows);
+
+  // ── Series variant ──
+  // Find any final game whose seriesSummary indicates a clinch, within
+  // the last SERIES_CLOSE_WINDOW_DAYS, that the user follows (either by
+  // series id OR by following a team in it). Pick the most recent.
+  const clinches = nbaRecent
+    .filter((g) => {
+      if (g.status !== "final") return false;
+      const gameMs = new Date(g.date).getTime();
+      if (!Number.isFinite(gameMs) || gameMs < seriesWindowMs) return false;
+      return parseSeriesClinch(g.seriesSummary) !== null;
+    })
+    .map((g) => {
+      const seriesKey = [g.away.abbreviation, g.home.abbreviation]
+        .sort()
+        .join("-");
+      const clinch = parseSeriesClinch(g.seriesSummary)!;
+      return { g, seriesKey, clinch };
+    })
+    // Followed (by series OR by team in the series) only.
+    .filter(({ g, seriesKey }) => {
+      if (followedSeries.has(seriesKey)) return true;
+      if (followedTeams.has(g.away.abbreviation)) return true;
+      if (followedTeams.has(g.home.abbreviation)) return true;
+      return false;
+    })
+    // Most recent clinch first.
+    .sort((a, b) => new Date(b.g.date).getTime() - new Date(a.g.date).getTime());
+
+  if (clinches.length > 0) {
+    const { g, seriesKey, clinch } = clinches[0];
+    const seriesGames = gamesInSeries(nbaRecent, seriesKey);
+    const dots = buildClosingDots(seriesGames);
+    const totalGames = clinch.high + clinch.low;
+
+    // CTA: suggest following the winner if the user doesn't already.
+    const winnerCode = clinch.winnerCode;
+    const userFollowsWinner = followedTeams.has(winnerCode);
+    const followSuggestion = userFollowsWinner
+      ? undefined
+      : { kind: "team" as const, id: winnerCode, label: winnerCode };
+
+    const nextRoundHint =
+      g.seriesRound === "NBA Finals"
+        ? "Season wrapped."
+        : g.seriesRound === "Conf Finals"
+          ? "Finals are next."
+          : g.seriesRound === "Second Round"
+            ? "Conference Finals are next."
+            : g.seriesRound === "First Round"
+              ? "Second round is next."
+              : undefined;
+
+    return {
+      id: `series:${seriesKey}`,
+      kind: "series",
+      eyebrow: "Series wrapped",
+      headline: `${g.away.abbreviation} · ${g.home.abbreviation}`,
+      detail:
+        nextRoundHint
+          ? `${totalGames} games. ${nextRoundHint}`
+          : `${totalGames} games.`,
+      dots,
+      spoilerSummary: `${winnerCode} took it in ${totalGames}.`,
+      followSuggestion,
+      primary: followSuggestion
+        ? { label: `Follow ${followSuggestion.label}`, href: "/following" }
+        : undefined,
+    };
+  }
+
+  // ── Tournament variant (NBA Finals wind-down) ──
+  // Show only when:
+  //   • An "NBA Finals" series clinched within the last
+  //     TOURNAMENT_CLOSE_WINDOW_DAYS.
+  //   • Nothing live or upcoming on Today.
+  // No CTA. No upsell. Acknowledgment only.
+  if (!hasLive && !hasUpcoming) {
+    const finalsClinch = nbaRecent
+      .filter((g) => {
+        if (g.status !== "final") return false;
+        if (g.seriesRound !== "NBA Finals") return false;
+        const gameMs = new Date(g.date).getTime();
+        if (!Number.isFinite(gameMs) || gameMs < tournamentWindowMs) return false;
+        return parseSeriesClinch(g.seriesSummary) !== null;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+    if (finalsClinch) {
+      // Year stamp for stable dismiss id across multiple seasons.
+      const year = new Date(finalsClinch.date).getFullYear();
+      return {
+        id: `tournament:nba-${year}`,
+        kind: "tournament",
+        eyebrow: "Season wrapped",
+        headline: "The playoffs are over.",
+        detail: "We'll be back when the next moment matters.",
+        dots: [],
+      };
+    }
+  }
+
+  return null;
+}
+
 // ── Top-level builder ─────────────────────────────────────────────────
 
 export function buildTodayPayload({
@@ -669,6 +919,7 @@ export function buildTodayPayload({
 
   const hasLive = nba.some((g) => g.status === "live") || wc.some((g) => g.status === "live");
   const hasUpcoming = upNext.length > 0;
+  const closing = pickClosing(recentForWrap, follows, hasLive, hasUpcoming, now);
   // Quiet Wrap intentionally shows both today's "Earlier" finals AND
   // yesterday's finals for context, but the Quiet Recap moment is
   // strictly about *tonight's* slate. Count only games that finished
@@ -693,5 +944,6 @@ export function buildTodayPayload({
     isQuietDay,
     slateComplete,
     finalsCount,
+    closing,
   };
 }

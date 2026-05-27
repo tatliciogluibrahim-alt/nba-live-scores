@@ -21,6 +21,7 @@ const EMPTY: TodayPayload = {
   isQuietDay: true,
   slateComplete: false,
   finalsCount: 0,
+  closing: null,
 };
 
 // Polling cadence per STRATEGY.md: 10s when a live game is on the surface,

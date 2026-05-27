@@ -2,6 +2,94 @@
 
 ---
 
+## Phase 21B — Calm Endings + Calendar — 2026-05-26 (late)
+
+Three small features shipped after the post-launch ideation pass. All
+three honor the wedge by extending existing primitives rather than
+adding new mental models. None required new infrastructure.
+
+### 1. CalmEndCard — Series Closure + Tournament Wind-Down
+
+A single new Today component that surfaces an "honest ending" when one
+arrives. Two configurations, one component:
+
+- **Series Closure.** When a playoff series the user follows wraps
+  (either via a series follow or a team follow), Today gets a calm
+  card the morning after. Eyebrow `Series wrapped`. Headline = the
+  matchup chip. Detail = "[N] games. [Next round name] is next."
+  Per-game dot strip with winner attribution gated on No-Spoilers.
+  Optional CTA "Follow [winner]" when the user doesn't already
+  follow the advancing team.
+- **Tournament Wind-Down.** When the NBA Finals wrap within the last
+  7 days AND the slate is otherwise quiet (no live, no upcoming),
+  Today surfaces a single acknowledgment card: "The playoffs are
+  over. We'll be back when the next moment matters." No CTA, no
+  upsell. The brand-defining moment.
+
+Series takes priority. Only one closing moment renders at a time.
+Dismissal is client-side (localStorage, keyed by stable moment id).
+Once dismissed, the card never re-renders for that moment. New
+series and new seasons get fresh ids.
+
+Files:
+
+- `app/companion/today/today-data.ts` — added `ClosingMoment` type,
+  `pickClosing()` function, `closing` field on `TodayPayload`.
+- `app/companion/today/sections/calm-end-card.tsx` — new component.
+- `app/companion/today/sections/use-closing-dismissed.ts` — dismissal
+  hook with localStorage backing (cap 50 entries).
+- `app/companion/today/TodayClient.tsx` — wired between Brief and
+  install/notifications cards.
+- `app/companion/today/use-today-data.ts` — EMPTY payload updated.
+
+### 2. Add to Calendar
+
+A spoiler-safe iCal (.ics) export button on every upcoming game
+detail page (NBA + WC). One tap downloads a calendar file the user
+imports into Apple Calendar, Google Calendar, or Outlook.
+
+Spoiler-safety: under No-Spoilers, the calendar SUMMARY reads
+"<followed team> game" instead of the matchup. If we don't know who
+the user follows in this game, the fallback is generic ("NBA game",
+"World Cup game"). The DESCRIPTION never includes scores or
+matchup-revealing context, even when No-Spoilers is off — calendar
+text leaks into Spotlight, Siri summaries, and lock-screen reminders
+that we don't fully control.
+
+Files:
+
+- `app/lib/calendar/ics.ts` — pure iCal generator with RFC 5545
+  escaping and per-sport duration (NBA 2h30m, WC 2h).
+- `app/companion/calendar/AddToCalendarButton.tsx` — single-tap
+  download button. Transient "Added" confirmation for 2s.
+- `app/companion/game/NBALiveCompanion.tsx` — wired below pin
+  controls, upcoming-only.
+- `app/companion/game/WCGameDetail.tsx` — same.
+
+### 3. Push fix (committed earlier this evening)
+
+The PushSyncEffect was persisting the "synced" hash *before* the
+POST resolved, so iOS PWA suspensions silently dropped follow-sync
+requests. Fixed: hash now persists only on HTTP 2xx, with a
+localStorage backing instead of an in-memory ref. Also fixed the
+related end-of-quarter detection so halftime alerts fire when Q2
+ends, not when Q3 starts.
+
+Files: `app/companion/push/PushSyncEffect.tsx`,
+`app/companion/push/use-push-subscription.ts`,
+`app/lib/push/event-detector.ts`,
+`app/lib/push/state-cache.ts`,
+`app/api/cron/scan-nba/route.ts`.
+
+### Ideation context
+
+This batch was the "obvious next ship" subset of an LLM-driven
+ideation pass (`docs/IDEATION_BRIEFING.md`). The remaining ideas are
+sorted into Ship / Hold / Skip / Reconsider in `docs/ROADMAP.md`
+under the Phase 21B section. None violate the wedge.
+
+---
+
 ## Polish Batch + Copy/Tone Sweep — 2026-05-26
 
 After the post-9-20 QA fixes, two more sweeps landed before friend

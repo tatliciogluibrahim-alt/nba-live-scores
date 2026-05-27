@@ -10,6 +10,7 @@ import { WatchLine } from "../watch/WatchLine";
 import { useNoSpoilers } from "../providers";
 import type { Game } from "../../nba/types";
 import { PinControls } from "./PinControls";
+import { AddToCalendarButton } from "../calendar/AddToCalendarButton";
 import { deriveHero, deriveSeriesContext, deriveSeriesDots } from "./nba-moments";
 import { HighlightsStack } from "./HighlightsStack";
 import { PeriodScoreLine } from "./PeriodScoreLine";
@@ -47,6 +48,21 @@ export function NBALiveCompanion({
 
   const { detail, lastFetched } = useNBADetail(game.id, isLive);
 
+  // Merge fresh leaders from /api/nba-game-detail over the live-scores
+  // snapshot. The scoreboard endpoint's `leaders` field tends to lag
+  // mid-game; the summary endpoint stays fresher. This is what makes
+  // HighlightsStack and deriveNBARecap show "SGA · 30 PTS, 6 AST"
+  // during live play instead of falling back to the generic team-stat
+  // line ("OKC leading the glass"). Also retroactively upgrades any
+  // past game the user opens (ESPN keeps summary data warm for weeks,
+  // covering the playoff window cleanly).
+  //
+  // Plain derivation, not useMemo — React Compiler handles memoization
+  // automatically and the lint rule blocks manual hooks here.
+  const freshLeaders = detail?.leaders ?? [];
+  const gameWithFreshLeaders =
+    freshLeaders.length > 0 ? { ...game, leaders: freshLeaders } : game;
+
   const status = isLive ? "live" : isUpcoming ? "upcoming" : "final";
   const statusLabel = isLive && game.statusText
     ? game.statusText.toUpperCase()
@@ -74,7 +90,9 @@ export function NBALiveCompanion({
   // with a delayed/missing boxscore would render an empty Recap slot
   // (HeroMoment + HighlightsStack are both hidden on finals).
   const recap =
-    game.status === "final" ? deriveNBARecap(game, allNBAGames) : null;
+    game.status === "final"
+      ? deriveNBARecap(gameWithFreshLeaders, allNBAGames)
+      : null;
   const hasRecap = Boolean(recap);
 
   // Pull broadcasts from the detail endpoint when present; fall back to
@@ -255,7 +273,7 @@ export function NBALiveCompanion({
           as live commentary, which the recap shape isn't for. */}
       {isUpcoming || game.status === "final" ? null : (
         <div className="mt-5">
-          <HighlightsStack game={game} />
+          <HighlightsStack game={gameWithFreshLeaders} />
         </div>
       )}
 
@@ -270,6 +288,27 @@ export function NBALiveCompanion({
         subject={subject}
         className="mt-5"
       />
+
+      {/* Add to Calendar — only renders for upcoming games (the
+          button checks internally). Sits below pin controls because pin
+          is the primary "I'm watching" intent; calendar is the quiet
+          fallback for "I want to remember without enabling alerts." */}
+      {isUpcoming ? (
+        <div className="mt-3 flex justify-center">
+          <AddToCalendarButton
+            game={{
+              id: game.id,
+              start: game.date,
+              sport: "NBA",
+              matchup: subject,
+              awayCode: game.away.abbreviation,
+              homeCode: game.home.abbreviation,
+              location: game.broadcasts?.[0],
+              context: game.gameContext || undefined,
+            }}
+          />
+        </div>
+      ) : null}
     </main>
   );
 }
