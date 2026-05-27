@@ -114,10 +114,37 @@ surfaces, NFL-specific event taxonomy. Spec in `docs/nfl-design.md`.
 
 ---
 
-## Phase 22.5 — iOS Native via Capacitor (proposed)
+## ✅ Phase 22.5-1/2 — iOS Native via Capacitor — IN PROGRESS (May 2026)
+
+Two parts shipped 2026-05-27.
+
+- **22.5-1 (proof of life).** Capacitor 8 wrapper around the PWA,
+  AppDelegate push bridge, CapacitorPushBootstrap, server-side
+  APNs sender (JWT via jose, HTTP/2 via undici Agent), iOS token
+  storage, admin test endpoint. Verified end-to-end: real APNs
+  push lands on a real iPhone lock screen. Total cost so far: $99
+  Apple Developer Program. Zero contractor spend.
+- **22.5-2 (dispatcher integration).** Extended `ios-token-store`
+  to track per-token alerts + noSpoilers (same shape as web push
+  subs). Updated `/api/push/register-ios` to accept the sync
+  payload. `CapacitorPushBootstrap` re-syncs follow changes
+  post-registration. Dispatcher now has two parallel fan-out loops
+  (web push + APNs) sharing matcher logic via `subscriberWantsEvent`
+  over a generic `SubscriberPreferences` type. Per-transport dedupe
+  keys so a user with both web + native installs gets both pings.
+
+Remaining within Phase 22.5:
+
+- **22.5-3** — Live Activity for pinned games (lock-screen + Dynamic
+  Island, real-time score updates via APNs background push). Native
+  Swift code in a new SPM target. ~2-3 weekends.
+- **22.5-4** — Home screen widget (small + medium). ~1-2 weekends.
+- **22.5-5** — App Store submission (screenshots, metadata, privacy
+  policy entries, first rejection + resubmit). ~1 weekend + 1-2
+  weeks waiting.
 
 Promoted from "Phase 23+ unsequenced" to a real near-term phase
-following a strategic conversation 2026-05-26. Full plan in
+following the strategic conversation 2026-05-26. Full plan in
 `docs/IOS_NATIVE_PLAN.md`.
 
 **Why now:** Live Activity for pinned games is the single feature
@@ -320,6 +347,27 @@ Sketched but unsequenced. Re-evaluate after Phase 22.
 
 iOS Live Activities / native wrap previously sat here unsequenced.
 Promoted to Phase 22.5 above (see `docs/IOS_NATIVE_PLAN.md`).
+
+---
+
+## Follow-ups captured during Phase 22.5
+
+Small or strategic items that surfaced mid-build. None blocking.
+
+- **Logo: more cream, less black.** BrandMark currently leans heavy
+  on dark ink. User flagged it as "too much black." Aesthetic
+  decision — needs side-by-side variants with user picking. Hold
+  for a focused session.
+- **Desktop bespoke.** Once iOS native ships and gets to a good
+  place, redesign the desktop landing surface to be bespoke for
+  desktop instead of a responsive scale-up of mobile. The audience
+  is real: people in offices checking scores during the workday.
+  Also an SEO + organic-discovery driver. Phase 23+ candidate.
+- **Real visual QA pass across mobile + desktop.** Code-level
+  audits are good but they miss visual regressions. Worth a
+  dedicated session of clicking through every screen on both
+  devices once the iOS native polish work settles. Phase 22.5-final
+  candidate.
 
 ---
 

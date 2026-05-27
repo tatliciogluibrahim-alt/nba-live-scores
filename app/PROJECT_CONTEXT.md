@@ -492,32 +492,68 @@ Alerts Preview, WC Country Landing Pages, Comparison Pages, Pick
 Your Moment onboarding (skippable), Multi-Device Follow Sync, Calm
 Guides expansion.
 
+**Phase 22.5 — iOS Native via Capacitor (in progress, May 2026)**
+
+Promoted from "Phase 23+ unsequenced" and partially shipped on
+2026-05-27. Originally budgeted at ~$2,500 contractor + $99/year.
+Actually shipped DIY with Claude pairing for $99/year total. Full
+plan in `docs/IOS_NATIVE_PLAN.md`.
+
+- **22.5-1 (proof of life) — SHIPPED.** Capacitor 8 wrapper around
+  the production PWA. AppDelegate push bridge methods.
+  CapacitorPushBootstrap component (registers device, posts token
+  to server). APNs sender with `jose` (ES256 JWT) and `undici` HTTP/2
+  Agent. iOS token KV store, register endpoint, admin curl-able
+  test endpoint. Real APNs push verified end-to-end on a real
+  iPhone 15 Pro Max lock screen.
+- **22.5-2 (dispatcher integration) — SHIPPED.** ios-token-store
+  extended to track per-token alerts + noSpoilers (same shape as
+  web push subs). Dispatcher matcher logic abstracted as
+  `subscriberWantsEvent` over a generic `SubscriberPreferences`
+  type. APNs fan-out loop runs alongside the web push loop; both
+  share matching, both honor No-Spoilers, both honor per-follow
+  tiers. Per-transport dedupe namespaces so dual-installed users
+  get pinged on both surfaces without claim collision.
+- **22.5-3 (Live Activity) — PENDING.** Native Swift code for the
+  lock-screen / Dynamic Island real-time score updates on pinned
+  games. New SPM target, ~2-3 weekends.
+- **22.5-4 (Home screen widget) — PENDING.** Small + medium widget
+  showing pinned game score or next followed game countdown.
+  ~1-2 weekends.
+- **22.5-5 (App Store ship) — PENDING.** Screenshots, metadata,
+  privacy policy entries, first rejection round, resubmit.
+
 **Strategic discussions captured 2026-05-26:**
 
 - **Retention playbook** (`docs/RETENTION_PLAYBOOK.md`).
   Retention-specialist ideation pass. Eight high-leverage plays
-  sorted by impact, top three are Push Permission Recovery,
-  Series Closure Follow Suggestion, and Game 7 Override
-  Notification. One specialist proposal — strict activation-
-  threshold gating — was deliberately softened to instrumentation-
-  only (prescriptive gating risks confused exits more than it
-  activates). These become Phase 21C.
-- **iOS Native plan** (`docs/IOS_NATIVE_PLAN.md`). Capacitor +
-  Live Activities + APNs + Widget. Promoted from "Phase 23+
-  unsequenced" to **Phase 22.5** in the proposed roadmap. Budget
-  ~$2,500 one-time (contractor) + $99/year (Apple Dev Program).
-  Window: June-August 2026 between WC kickoff and NFL season
-  build. The Live Activity for pinned games is the single feature
-  most likely to differentiate this product from ESPN on iOS, and
-  shipping it before the marketing phase strengthens the Show HN
-  pitch.
+  sorted by impact. Push Permission Recovery Card shipped as
+  Phase 21C-1. Series Closure Follow Suggestion, Game 7 Override,
+  Dead Zone Bridge still open. One specialist proposal — strict
+  activation-threshold gating — was deliberately softened to
+  instrumentation-only.
+- **iOS Native plan** (`docs/IOS_NATIVE_PLAN.md`). Originally
+  budgeted with contractor. Shipped DIY instead — see above.
 
-**Next:** Phases 21–23+. See `docs/ROADMAP.md`.
+**Captured during Phase 22.5 (small, not blocking):**
 
+- Logo feels too dark; user wants more cream-leaning BrandMark.
+  Aesthetic call — needs side-by-side variants in a focused session.
+- Desktop bespoke redesign — Phase 23+ candidate. Real audience:
+  people in offices checking scores during the workday.
+- Real visual QA pass across mobile + desktop — once iOS native
+  settles. Code-level audits caught a title-format inconsistency
+  but won't catch visual regressions.
+
+**Next:** Phase 22.5 continuation, then 21, 22, 23+. See
+`docs/ROADMAP.md`.
+
+- Phase 22.5 — finish Live Activity, Widget, App Store ship.
 - Phase 21 — Brief launch (when domain email is sorted).
 - Phase 22 — NFL season build (August 2026).
 - Phase 23+ — Sports Circle visual prototype, Path B refactor,
-  multi-device push relay, No-Spoilers Pro, iOS Live Activities.
+  multi-device push relay (simpler post-iOS-native), No-Spoilers
+  Pro, desktop bespoke redesign.
 
 Each phase is its own go/no-go unit. Do not jump ahead.
 
@@ -525,7 +561,7 @@ Still on hold:
 
 - Brief send pipeline (Phase 21 — blocked on DNS / Resend domain auth)
 - Monetization UI
-- iOS native wrap
+- App Store submission (Phase 22.5-5 — pending Live Activity + Widget)
 - Whole-app refactor
 - New backend / account system
 - Path B follow-schema refactor (wait for 3rd moment)

@@ -2,6 +2,88 @@
 
 ---
 
+## Phase 22.5-1 + 22.5-2 — iOS Native (APNs) — 2026-05-27
+
+iOS native ship via Capacitor 8. Two parts in one day:
+
+### 22.5-1 (proof of life)
+
+- Capacitor 8 iOS wrapper around the production PWA at
+  `nonoisescores.app/app`. Bundle ID `com.nonoisescores.app`.
+- `ios/App/App/AppDelegate.swift` extended with the two
+  UIApplicationDelegate methods that bridge APNs callbacks into
+  Capacitor's NotificationCenter (standard Capacitor 8 install step,
+  easy to miss).
+- `app/companion/push/CapacitorPushBootstrap.tsx` — invisible
+  globally-mounted effect. Detects Capacitor.getPlatform() === "ios",
+  requests permission, attaches push lifecycle listeners, calls
+  register(), POSTs the resulting APNs token to
+  `/api/push/register-ios`.
+- `app/lib/push/apns-sender.ts` — JWT-signed APNs sender. Uses `jose`
+  for ES256 signing (cached 50min). Uses `undici` with `allowH2: true`
+  for HTTP/2 — APNs requires HTTP/2 and Node's native fetch silently
+  fails on HTTP/1.1.
+- `app/lib/push/ios-token-store.ts` — KV-backed token storage.
+- `app/api/push/register-ios/route.ts` — client → server token
+  registration endpoint.
+- `app/api/admin/test-apns/route.ts` — admin curl-able test endpoint.
+
+Verified end-to-end: a real APNs push lands on a real iPhone lock
+screen via `curl /api/admin/test-apns`.
+
+Cost so far: $99 Apple Developer Program. Zero contractor spend.
+
+### 22.5-2 (dispatcher integration)
+
+- Extended `ios-token-store` from a flat set to per-token records
+  carrying `alerts` + `noSpoilers` (same shape as web push subs).
+  Backward compatible with v1 proof-of-life tokens.
+- Extended `/api/push/register-ios` to accept the sync payload.
+- `CapacitorPushBootstrap` now sends follows + noSpoilers and
+  re-syncs when they change (mirrors PushSyncEffect's hash-based
+  dedupe).
+- Dispatcher refactored: matcher logic extracted as
+  `subscriberWantsEvent` over a shared `SubscriberPreferences` type.
+  Web push and APNs share the four-kind follow matrix (team /
+  country / series / tournament), the per-follow tier filter
+  (Quiet / Standard / Close games), and No-Spoilers gating. Only
+  the transport differs.
+- Per-transport dedupe namespaces (`apns:<token-prefix>` vs raw
+  endpoint URL) so a user with both an iOS install and a web PWA
+  install gets both pings without dedupe collision.
+- 5 new ops-metrics counters for the APNs path so the admin
+  dashboard can compare delivery health by transport.
+
+Result: a user who installs the iOS native build and grants
+notifications now gets game events delivered via APNs through the
+same dispatcher pipeline that has been driving web push.
+
+### Side-quest fixes shipped same day
+
+- **FirstRunStrip step 3 label fix.** Title was "Pick what gets
+  alerts" but the underlying gate was push-permission-decision
+  (notifPromptDismissed). Renamed to "Turn on notifications" so the
+  title matches what flips the gate.
+- **PWA install prompts hidden on Capacitor native.** Added
+  `isCapacitorNative()` detector in `app/companion/dev/native-detect.ts`.
+  InstallPromptCard bails when running inside the wrapper.
+- **All page titles normalized.** 13 page metadata strings still
+  used em-dashes ("Watching — No Noise Scores"). Normalized to the
+  canonical "Page | No Noise Scores" per the May 2026 Copy + Tone
+  sweep.
+
+### Strategic notes captured
+
+- **Logo feels too dark** — user wants more cream-leaning BrandMark.
+  Hold for a focused aesthetic session with side-by-side variants.
+- **Desktop bespoke** — once iOS native settles, redesign the
+  desktop landing for the workday-checking-scores audience. SEO +
+  organic-discovery angle. Phase 23+ candidate.
+- **Visual QA pass** — code audits caught the title inconsistency
+  but won't catch visual regressions. Phase 22.5-final candidate.
+
+---
+
 ## Phase 21B-2 Calendar export — REVERTED 2026-05-27
 
 The Add to Calendar feature shipped in Phase 21B-2 was removed less

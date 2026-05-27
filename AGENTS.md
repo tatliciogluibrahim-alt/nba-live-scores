@@ -201,22 +201,34 @@ Completed (most recent first):
 - **Phase 8**. World Cup pre-kickoff readiness.
 - **Phases 1–7**. Foundation work.
 
-**Next:** Phases 21C, 21, 22, 22.5, 23+. See `docs/ROADMAP.md`.
+**Next:** Phases 21C, 21, 22.5 (in progress), 22, 23+. See
+`docs/ROADMAP.md`.
 
-- **Phase 21C** — Retention plays (push permission recovery, Series
-  Closure follow suggestion, Game 7 override, Dead Zone Bridge,
-  activation instrumentation, delivery loop). Full detail in
-  `docs/RETENTION_PLAYBOOK.md`.
+- **Phase 21C** — Retention plays (push permission recovery card
+  shipped 2026-05-26; Series Closure follow suggestion, Game 7
+  override, Dead Zone Bridge, activation instrumentation, delivery
+  loop still open). Full detail in `docs/RETENTION_PLAYBOOK.md`.
 - **Phase 21** — Brief launch (gated on domain email).
-- **Phase 22** — NFL season build (August 2026).
-- **Phase 22.5** — iOS Native via Capacitor (proposed). Live
-  Activity + Widget + APNs. Window: June through early August.
-  Budget ~$2,500 one-time + $99/year. Full plan in
+- **Phase 22.5** — **iOS Native via Capacitor — IN PROGRESS.**
+  Proof-of-life (22.5-1) and dispatcher integration (22.5-2) both
+  shipped 2026-05-27. Real APNs push verified on physical iPhone.
+  Remaining: Live Activity (22.5-3), Widget (22.5-4), App Store
+  ship (22.5-5). DIY approach with Claude pairing — total cost so
+  far is just $99/year Apple Developer Program. Full plan in
   `docs/IOS_NATIVE_PLAN.md`.
+- **Phase 22** — NFL season build (August 2026).
 - **Phase 23+** — Beyond: Sports Circle prototype, multi-device push
   (simpler post-iOS-native), No-Spoilers Pro as the paid pitch,
   Path B follow-schema refactor, family/shared follows, Champions
-  League knockouts.
+  League knockouts, **desktop bespoke redesign** (real audience:
+  office workers checking scores).
+
+Captured during Phase 22.5 (small, not blocking):
+
+- Logo feels too dark; user wants more cream. Aesthetic call —
+  needs side-by-side variants.
+- Real visual QA pass across mobile + desktop once iOS native
+  settles. Code audit ≠ visual QA.
 
 Each phase is its own go/no-go unit. Do not jump ahead.
 
