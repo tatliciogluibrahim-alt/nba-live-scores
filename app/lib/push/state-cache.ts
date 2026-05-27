@@ -28,6 +28,14 @@ export type CachedGameState = {
   /** Whether we've already fired a comeback push for this game.
    *  Once true, never fires again for this game. */
   comebackFired: boolean;
+  /** Per-quarter end-of-quarter dedupe flags. Set the first time we
+   *  fire eoq-N for this game, by either path (statusText "End Qn"
+   *  OR period increment). Prevents the two detection paths from
+   *  double-firing for the same quarter. Optional in the type so
+   *  pre-existing cache entries without these fields keep working. */
+  eoq1Fired?: boolean;
+  eoq2Fired?: boolean;
+  eoq3Fired?: boolean;
   updatedAt: number;
 };
 

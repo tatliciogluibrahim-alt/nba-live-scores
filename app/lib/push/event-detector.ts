@@ -62,6 +62,11 @@ export type FreshGameState = {
    *  parses this into a number before passing it in. Null when not
    *  parseable (halftime, end of period, etc). */
   secondsRemaining: number | null;
+  /** The human-readable status string from /api/live-scores, e.g.
+   *  "Q2 · 4:31", "End Q1", "End Q2" (halftime), "End Q3", "Final".
+   *  Used by the end-of-quarter detector to fire as soon as the
+   *  current quarter wraps, not when the next one starts. */
+  statusText: string;
 };
 
 const CLOSE_GAME_PERIOD = 4;
@@ -91,6 +96,20 @@ const STATUS_RANK: Record<FreshGameState["status"], number> = {
   live: 1,
   final: 2,
 };
+
+/** Parse the live-scores statusText for an end-of-quarter marker.
+ *  Returns 1, 2, or 3 when the current quarter has wrapped (statusText
+ *  reads "End Q1", "End Q2" which the live-scores route uses for
+ *  halftime, or "End Q3"). Returns null otherwise (in-progress,
+ *  upcoming, final, Q4 wrapping → final, OT). We deliberately don't
+ *  fire on End Q4 because that's the "final" event's territory. */
+function parseEndOfQuarterFromStatus(statusText: string): 1 | 2 | 3 | null {
+  const trimmed = statusText.trim();
+  if (trimmed === "End Q1") return 1;
+  if (trimmed === "End Q2") return 2;
+  if (trimmed === "End Q3") return 3;
+  return null;
+}
 
 export function detectEvents(
   prev: CachedGameState | null,
@@ -168,11 +187,49 @@ export function detectEvents(
     events.push({ ...baseInfo, type: "tipoff" });
   }
 
-  // Transition 2: live game, period incremented by exactly +1
+  // End-of-quarter dedupe flags. Both detection paths below consult
+  // and update these so a quarter never fires twice. Pre-existing
+  // cache entries from before this field was added read as undefined,
+  // treated as false.
+  const eoq1AlreadyFired = prev?.eoq1Fired === true;
+  const eoq2AlreadyFired = prev?.eoq2Fired === true;
+  const eoq3AlreadyFired = prev?.eoq3Fired === true;
+  let nextEoq1Fired = eoq1AlreadyFired;
+  let nextEoq2Fired = eoq2AlreadyFired;
+  let nextEoq3Fired = eoq3AlreadyFired;
+
+  // Transition 2a: live game, statusText reports the current quarter
+  // just wrapped. Fires the moment the clock hits 0:00 (and through
+  // halftime for "End Q2"). This is the user-expected timing — "tell
+  // me when the quarter ends," not "tell me when the next quarter
+  // starts." The previous tick must also have been live (we don't
+  // mint eoq events on the very first observation of a game).
+  if (prev?.status === "live" && next.status === "live") {
+    const eoqFromStatus = parseEndOfQuarterFromStatus(next.statusText);
+    if (eoqFromStatus === 1 && !eoq1AlreadyFired) {
+      events.push({ ...baseInfo, type: "eoq-1" });
+      nextEoq1Fired = true;
+    } else if (eoqFromStatus === 2 && !eoq2AlreadyFired) {
+      events.push({ ...baseInfo, type: "eoq-2" });
+      nextEoq2Fired = true;
+    } else if (eoqFromStatus === 3 && !eoq3AlreadyFired) {
+      events.push({ ...baseInfo, type: "eoq-3" });
+      nextEoq3Fired = true;
+    }
+  }
+
+  // Transition 2b: live game, period incremented by exactly +1
   // (1→2, 2→3, 3→4). The strict equality blocks the multi-period
   // jump case (e.g. 2→4) from minting a single wrong eoq event —
   // upstream blips of that shape are routed through the period-
   // suspicious branch above and don't reach here.
+  //
+  // This is the fallback path. The cron runs every ~5 minutes and
+  // the "End Qn" window is only ~2-3 minutes between Q1 and Q2 (and
+  // similar between Q3 and Q4), so we may miss that observation tick
+  // and only see the period-increment afterwards. In that case 2a
+  // didn't fire and 2b mints the event. The dedupe flags guarantee
+  // we never fire eoq-N twice no matter which path triggered first.
   if (
     prev?.status === "live" &&
     next.status === "live" &&
@@ -181,9 +238,16 @@ export function detectEvents(
     next.period <= 4
   ) {
     const justEnded = next.period - 1;
-    if (justEnded === 1) events.push({ ...baseInfo, type: "eoq-1" });
-    else if (justEnded === 2) events.push({ ...baseInfo, type: "eoq-2" });
-    else if (justEnded === 3) events.push({ ...baseInfo, type: "eoq-3" });
+    if (justEnded === 1 && !nextEoq1Fired) {
+      events.push({ ...baseInfo, type: "eoq-1" });
+      nextEoq1Fired = true;
+    } else if (justEnded === 2 && !nextEoq2Fired) {
+      events.push({ ...baseInfo, type: "eoq-2" });
+      nextEoq2Fired = true;
+    } else if (justEnded === 3 && !nextEoq3Fired) {
+      events.push({ ...baseInfo, type: "eoq-3" });
+      nextEoq3Fired = true;
+    }
   }
 
   // Transition 3: live → final → final event.
@@ -237,6 +301,9 @@ export function detectEvents(
     maxLead,
     closeGameFired: nextCloseGameFired,
     comebackFired: nextComebackFired,
+    eoq1Fired: nextEoq1Fired,
+    eoq2Fired: nextEoq2Fired,
+    eoq3Fired: nextEoq3Fired,
     updatedAt: Date.now(),
   };
 

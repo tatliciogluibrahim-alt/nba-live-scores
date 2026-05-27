@@ -88,6 +88,11 @@ function toFresh(game: NormalizedGame): FreshGameState {
     awayScore: game.away.score,
     homeScore: game.home.score,
     secondsRemaining: game.remaining,
+    // statusText carries the "End Q1" / "End Q2" / "End Q3" markers
+    // that the event detector now uses to fire eoq-N the moment a
+    // quarter wraps. Without this field the detector falls back to
+    // period-increment, which fires when the next quarter starts.
+    statusText: game.statusText,
   };
 }
 
