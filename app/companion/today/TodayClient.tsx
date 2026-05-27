@@ -8,6 +8,7 @@ import { useTodayData } from "./use-today-data";
 import { deriveDailyBrief } from "./daily-brief";
 import { BriefCard } from "./BriefCard";
 import { EnableNotificationsCard } from "./EnableNotificationsCard";
+import { PushPermissionRecoveryCard } from "./PushPermissionRecoveryCard";
 import { InstallPromptCard } from "./InstallPromptCard";
 import { FirstRunStrip } from "./FirstRunStrip";
 import { QuietRecap } from "./QuietRecap";
@@ -116,6 +117,12 @@ export function TodayClient() {
           with the Brief itself. Internally bails if permission is
           already decided or the user dismissed. */}
       <EnableNotificationsCard />
+
+      {/* Push Permission Recovery — Phase 21C. Renders only when
+          permission is "denied" AND the user has follows worth
+          recovering. Mutually exclusive with EnableNotificationsCard
+          (that one renders for "default"). One dismissal is permanent. */}
+      <PushPermissionRecoveryCard />
 
       {/* Loading shell — keep the page shape, fill with calm placeholder */}
       {!hydrated ? <LoadingShell /> : null}

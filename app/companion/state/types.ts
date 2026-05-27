@@ -66,6 +66,13 @@ export type UserPrefs = {
    *  keeps the card from re-rendering on every session — we never
    *  re-prompt for install automatically. */
   installPromptDismissed?: boolean;
+  /** True when the user has dismissed the push-permission recovery
+   *  card on Today (Phase 21C). Distinct from `notifPromptDismissed`
+   *  because that one gates the *initial* enable card (permission is
+   *  "default"); this one gates the *recovery* card shown when
+   *  permission is "denied" and the user has follows worth recovering.
+   *  One dismissal is permanent. */
+  pushRecoveryDismissed?: boolean;
 };
 
 // ── Defaults ──────────────────────────────────────────────────────────

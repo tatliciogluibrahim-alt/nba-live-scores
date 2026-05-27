@@ -86,6 +86,11 @@ type PrefsCtx = {
   dismissFirstRun: () => void;
   /** Dismiss the PWA install prompt card on Today. One-way flag. */
   dismissInstallPrompt: () => void;
+  /** Dismiss the push-permission recovery card on Today. One-way
+   *  flag. Distinct from `dismissNotifPrompt`: that one gates the
+   *  initial Enable card (permission "default"). This one gates the
+   *  Phase 21C recovery card (permission "denied"). */
+  dismissPushRecovery: () => void;
   hydrated: boolean;
 };
 
@@ -348,6 +353,15 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const dismissPushRecovery = useCallback(() => {
+    setPrefs((prev) => {
+      if (prev.pushRecoveryDismissed) return prev;
+      const next: UserPrefs = { ...prev, pushRecoveryDismissed: true };
+      writeJSON(STORAGE_KEYS.prefs, next);
+      return next;
+    });
+  }, []);
+
   // ── Memoize context values to avoid downstream re-renders ──────────
   const followsValue = useMemo<FollowsCtx>(
     () => ({
@@ -395,6 +409,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       dismissNotifPrompt,
       dismissFirstRun,
       dismissInstallPrompt,
+      dismissPushRecovery,
       hydrated,
     }),
     [
@@ -407,6 +422,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       dismissNotifPrompt,
       dismissFirstRun,
       dismissInstallPrompt,
+      dismissPushRecovery,
       hydrated,
     ]
   );
