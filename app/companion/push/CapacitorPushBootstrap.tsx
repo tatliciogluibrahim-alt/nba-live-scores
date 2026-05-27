@@ -1,72 +1,132 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useFollows, useUserPrefs } from "../providers";
 
 // CapacitorPushBootstrap — invisible component, mounted globally
 // alongside PushSyncEffect.
 //
-// Phase 22.5-1 proof of life. When the PWA is running inside the
-// Capacitor iOS native wrapper, this:
+// Phase 22.5-1 (proof of life): registers device with APNs and POSTs
+// the token to /api/push/register-ios.
 //
-//   1. Detects native iOS via Capacitor.getPlatform()
-//   2. Requests notification permission (Apple's system dialog)
-//   3. Registers the device with APNs
-//   4. POSTs the resulting APNs token to /api/push/register-ios
+// Phase 22.5-2 (dispatcher integration): also sends the user's current
+// follows + noSpoilers alongside the token so the server-side
+// dispatcher can match events the same way it does for web push
+// subscribers. Re-POSTs when follows / noSpoilers change.
+//
+// Flow on native iOS:
+//   1. Detect Capacitor.getPlatform() === "ios"
+//   2. Request notification permission (Apple's system dialog)
+//   3. Wire push lifecycle listeners
+//   4. Call PushNotifications.register() → APNs token arrives async
+//   5. POST { token, alerts, noSpoilers } to /api/push/register-ios
+//   6. Whenever alerts/noSpoilers change after that, POST again with
+//      the same token but updated sync state. Server upserts.
 //
 // On web (regular PWA), this component is a no-op — the dynamic
 // import of @capacitor/core resolves but Capacitor.getPlatform()
 // returns "web" and we bail. Web users keep using VAPID web push
 // via PushSyncEffect + use-push-subscription.
 //
-// On Android native (future), the platform check could be relaxed
-// to include "android" and the same APNs flow gets replaced by FCM.
-// Out of scope for Phase 22.5-1.
-//
-// Dynamic imports are used to avoid pulling the Capacitor SDK into
-// the web bundle. When the browser doesn't have the Capacitor
-// runtime injected (i.e., not running inside a Capacitor wrapper),
-// the import still resolves but the platform check bails early.
-//
-// Listeners are attached BEFORE register() is called so we don't
-// miss the registration event. They stay attached for the lifetime
-// of the app (single global mount, never unmounted), so we don't
-// bother with cleanup.
+// Dynamic imports keep the @capacitor/* SDK out of the web bundle.
 
 const REGISTER_ENDPOINT = "/api/push/register-ios";
 
+type SyncPayload = {
+  alerts: Array<{ kind: string; id: string; tier: string }>;
+  noSpoilers: boolean;
+};
+
+async function postRegister(token: string, sync: SyncPayload): Promise<boolean> {
+  try {
+    const res = await fetch(REGISTER_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token,
+        alerts: sync.alerts,
+        noSpoilers: sync.noSpoilers,
+      }),
+    });
+    if (!res.ok) {
+      console.warn(
+        "[CapacitorPush] register-ios non-OK:",
+        res.status,
+        await res.text().catch(() => "")
+      );
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[CapacitorPush] register-ios failed:", err);
+    return false;
+  }
+}
+
+function buildSync(
+  follows: ReturnType<typeof useFollows>["follows"],
+  noSpoilers: boolean
+): SyncPayload {
+  return {
+    alerts: follows
+      .filter((f) => f.alertEnabled)
+      .map((f) => ({ kind: f.kind, id: f.id, tier: f.alertTier })),
+    noSpoilers,
+  };
+}
+
+function hashSync(sync: SyncPayload): string {
+  return (
+    (sync.noSpoilers ? "1" : "0") +
+    "|" +
+    sync.alerts
+      .map((a) => `${a.kind}:${a.id}:${a.tier}`)
+      .sort()
+      .join(",")
+  );
+}
+
 export function CapacitorPushBootstrap() {
+  const { follows, hydrated: followsHydrated } = useFollows();
+  const { prefs, hydrated: prefsHydrated } = useUserPrefs();
+
+  // Refs to keep the listener closure looking at fresh state without
+  // re-running the bootstrap effect when state changes.
+  const tokenRef = useRef<string | null>(null);
+  const lastHashRef = useRef<string | null>(null);
+  const followsRef = useRef(follows);
+  const noSpoilersRef = useRef(prefs.noSpoilers);
+  // Sync refs to latest state inside an effect. React 19 disallows
+  // writing to refs during render (the more permissive pattern used
+  // pre-19 trips the react-hooks/refs rule).
+  useEffect(() => {
+    followsRef.current = follows;
+    noSpoilersRef.current = prefs.noSpoilers;
+  }, [follows, prefs.noSpoilers]);
+
+  // Bootstrap effect: runs once. Wires permission, listeners,
+  // register(). The "registration" listener is the one that captures
+  // the token into tokenRef and fires the initial POST.
   useEffect(() => {
     let cancelled = false;
 
     async function bootstrap() {
-      // Dynamic import: avoids breaking the web-only build when
-      // Capacitor isn't available. The @capacitor/core package is
-      // present in node_modules but only meaningful inside the
-      // native wrapper.
       const coreMod = await import("@capacitor/core").catch(() => null);
       if (cancelled || !coreMod) return;
-
       const { Capacitor } = coreMod;
 
-      // Bail early on anything that isn't iOS native. Web push is
-      // handled by the existing PushSyncEffect via VAPID.
+      // Bail on anything that isn't iOS native.
       if (Capacitor.getPlatform() !== "ios") return;
 
       const pushMod = await import(
         "@capacitor/push-notifications"
       ).catch(() => null);
       if (cancelled || !pushMod) return;
-
       const { PushNotifications } = pushMod;
 
-      // Step 1: check current permission state. If already granted,
-      // skip the prompt and go straight to register. If "prompt" /
-      // "prompt-with-rationale", show the system dialog. If denied,
-      // bail (Apple won't let us re-prompt — user has to go to
-      // Settings).
+      // Permission check + prompt if needed.
       const status = await PushNotifications.checkPermissions();
       if (cancelled) return;
-
       console.log("[CapacitorPush] permission status:", status.receive);
 
       let granted = status.receive === "granted";
@@ -82,45 +142,27 @@ export function CapacitorPushBootstrap() {
         return;
       }
 
-      // Step 2: wire listeners BEFORE register(). The registration
-      // event fires asynchronously after register() — if we attach
-      // the listener after, we can miss the first event.
+      // Listeners attached BEFORE register() so we don't miss events.
       await PushNotifications.addListener("registration", async (token) => {
         console.log("[CapacitorPush] APNs token:", token.value);
-        try {
-          const res = await fetch(REGISTER_ENDPOINT, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: token.value }),
-          });
-          if (!res.ok) {
-            console.warn(
-              "[CapacitorPush] register-ios non-OK:",
-              res.status,
-              await res.text().catch(() => "")
-            );
-            return;
-          }
+        tokenRef.current = token.value;
+        // First POST with current sync state. Subsequent sync changes
+        // are handled by the second effect below.
+        const sync = buildSync(followsRef.current, noSpoilersRef.current);
+        const ok = await postRegister(token.value, sync);
+        if (ok) {
+          lastHashRef.current = hashSync(sync);
           console.log("[CapacitorPush] register-ios saved");
-        } catch (err) {
-          console.error("[CapacitorPush] register-ios failed:", err);
         }
       });
 
       await PushNotifications.addListener("registrationError", (err) => {
-        // Common cause: provisioning profile missing the push
-        // entitlement, sandbox/production env mismatch, network down.
-        // Inspect the error in Xcode's console for the full body.
         console.error("[CapacitorPush] registrationError:", err);
       });
 
       await PushNotifications.addListener(
         "pushNotificationReceived",
         (notification) => {
-          // Foreground delivery (app open at the time the push lands).
-          // Currently we just log — iOS shows the system banner by
-          // default per our PushNotifications.presentationOptions
-          // config in capacitor.config.ts.
           console.log("[CapacitorPush] received:", notification);
         }
       );
@@ -128,14 +170,10 @@ export function CapacitorPushBootstrap() {
       await PushNotifications.addListener(
         "pushNotificationActionPerformed",
         (action) => {
-          // User tapped the notification. Useful later when we route
-          // taps to specific game detail pages via the push payload.
           console.log("[CapacitorPush] tap:", action);
         }
       );
 
-      // Step 3: ask iOS for an APNs token. The token arrives via the
-      // "registration" listener above (async, usually within 1-2s).
       try {
         await PushNotifications.register();
         console.log("[CapacitorPush] register() called");
@@ -150,6 +188,33 @@ export function CapacitorPushBootstrap() {
       cancelled = true;
     };
   }, []);
+
+  // Sync effect: when alerts/noSpoilers change AFTER initial
+  // registration, re-POST with the same token. Mirrors what
+  // PushSyncEffect does for web push subscriptions.
+  useEffect(() => {
+    if (!followsHydrated || !prefsHydrated) return;
+    const token = tokenRef.current;
+    if (!token) return; // not registered yet — initial POST handles first sync
+
+    const sync = buildSync(follows, prefs.noSpoilers);
+    const hash = hashSync(sync);
+    if (lastHashRef.current === hash) return;
+
+    let cancelled = false;
+    (async () => {
+      const ok = await postRegister(token, sync);
+      if (cancelled) return;
+      if (ok) {
+        lastHashRef.current = hash;
+        console.log("[CapacitorPush] sync re-posted");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [follows, prefs.noSpoilers, followsHydrated, prefsHydrated]);
 
   return null;
 }

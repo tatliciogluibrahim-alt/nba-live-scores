@@ -24,7 +24,14 @@ export type OpsCounter =
   | "dispatch.gone"
   | "dispatch.payload-too-large"
   | "dispatch.failed"
-  | "dispatch.claim-failed";
+  | "dispatch.claim-failed"
+  // APNs transport (Phase 22.5-2). Parallel set of counters so the
+  // admin dashboard can compare web push vs native delivery health.
+  | "dispatch.apns.delivered"
+  | "dispatch.apns.deduped"
+  | "dispatch.apns.gone"
+  | "dispatch.apns.failed"
+  | "dispatch.apns.claim-failed";
 
 function todayBucket(): string {
   const d = new Date();
@@ -67,6 +74,11 @@ const COUNTER_NAMES: OpsCounter[] = [
   "dispatch.payload-too-large",
   "dispatch.failed",
   "dispatch.claim-failed",
+  "dispatch.apns.delivered",
+  "dispatch.apns.deduped",
+  "dispatch.apns.gone",
+  "dispatch.apns.failed",
+  "dispatch.apns.claim-failed",
 ];
 
 /** Read all counters for a given bucket (default: today). Missing

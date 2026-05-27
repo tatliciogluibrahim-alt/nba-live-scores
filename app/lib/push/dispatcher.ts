@@ -23,8 +23,14 @@ import {
   listSubscriptions,
   removeSubscription,
   upsertSubscription,
-  type StoredSubscription,
 } from "./subscription-store";
+import {
+  listIosTokens,
+  removeIosToken,
+  touchIosToken,
+} from "./ios-token-store";
+import { sendApnsPush } from "./apns-sender";
+import type { SyncedAlert } from "./sync-validation";
 import type { EventType, PushEvent } from "./event-detector";
 import { incrCounter } from "./ops-metrics";
 
@@ -72,7 +78,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
 
   for (const event of events) {
     const eventTag = `${event.gameId}:${event.type}`;
-    const matching = subs.filter((s) => subscriptionWantsEvent(s, event));
+    const matching = subs.filter((s) => subscriberWantsEvent(s, event));
 
     for (const sub of matching) {
       // Per-(sub, event) processing is wrapped so one catastrophic
@@ -181,6 +187,110 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
     }
   }
 
+  // ── APNs fan-out (Phase 22.5-2) ────────────────────────────────────
+  // Same matching logic as web push above, different transport. iOS
+  // tokens registered via the Capacitor wrapper land in
+  // ios-token-store; we iterate them here and send via sendApnsPush.
+  // The dedupe key uses a token-prefix scheme distinct from web push
+  // endpoint URLs, so a user with both an iOS install and a web PWA
+  // install gets the push on both surfaces (one per transport).
+  const iosTokens = await listIosTokens();
+  for (const event of events) {
+    const eventTag = `${event.gameId}:${event.type}`;
+    const matching = iosTokens.filter((t) => subscriberWantsEvent(t, event));
+
+    for (const ios of matching) {
+      try {
+        // Token-scoped dedupe key. Distinct from web push endpoint
+        // claims so an event can fan out to BOTH a web sub and an
+        // iOS token belonging to the same user.
+        const claimKey = `apns:${ios.token.slice(0, 16)}`;
+        let claimed = false;
+        try {
+          claimed = await claimDelivery(eventTag, claimKey);
+        } catch (err) {
+          console.warn("dispatch.apns: claimDelivery threw, skipping", {
+            eventTag,
+            err: err instanceof Error ? err.message : String(err),
+          });
+          deliveries.push({
+            endpoint: `apns:${ios.token.slice(0, 8)}…`,
+            delivered: false,
+            reason: "claim-failed",
+          });
+          await incrCounter("dispatch.apns.claim-failed");
+          continue;
+        }
+
+        if (!claimed) {
+          deliveries.push({
+            endpoint: `apns:${ios.token.slice(0, 8)}…`,
+            delivered: false,
+            reason: "deduped",
+          });
+          await incrCounter("dispatch.apns.deduped");
+          continue;
+        }
+
+        const payload = buildPayload(event, ios.noSpoilers);
+        const result = await sendApnsPush({
+          deviceToken: ios.token,
+          title: payload.title,
+          body: payload.body,
+          // Sandbox while the build is installed via Xcode debug.
+          // Flip to false when shipping TestFlight / App Store.
+          sandbox: true,
+        });
+
+        if (result.ok) {
+          await touchIosToken(ios.token);
+          deliveries.push({
+            endpoint: `apns:${ios.token.slice(0, 8)}…`,
+            delivered: true,
+          });
+          await incrCounter("dispatch.apns.delivered");
+        } else if (result.status === 410) {
+          // Apple: token has been invalidated (app uninstalled,
+          // token rotated). Permanent — drop from store.
+          await removeIosToken(ios.token);
+          pruned += 1;
+          deliveries.push({
+            endpoint: `apns:${ios.token.slice(0, 8)}…`,
+            delivered: false,
+            reason: "gone",
+          });
+          await incrCounter("dispatch.apns.gone");
+        } else {
+          // Transient or non-410 error. Release the dedupe claim so
+          // the next cron tick can retry.
+          await releaseDelivery(eventTag, claimKey);
+          deliveries.push({
+            endpoint: `apns:${ios.token.slice(0, 8)}…`,
+            delivered: false,
+            reason: `apns-failed-${result.status}`,
+          });
+          await incrCounter("dispatch.apns.failed");
+          console.warn("dispatch.apns: send failed", {
+            eventTag,
+            status: result.status,
+            body: result.body,
+            error: result.error,
+          });
+        }
+      } catch (err) {
+        console.error("dispatch.apns: unexpected per-token error", {
+          eventTag,
+          err: err instanceof Error ? err.message : String(err),
+        });
+        deliveries.push({
+          endpoint: `apns:${ios.token.slice(0, 8)}…`,
+          delivered: false,
+          reason: "unexpected",
+        });
+      }
+    }
+  }
+
   return { deliveries, pruned };
 }
 
@@ -190,8 +300,20 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
  *  opted into both, both should be respected. (Codex QA #1.) */
 const SPOILERY_EVENTS = new Set<PushEvent["type"]>(["close-game", "comeback"]);
 
-function subscriptionWantsEvent(
-  sub: StoredSubscription,
+/** The shared shape both web push subscriptions and iOS APNs tokens
+ *  expose to the dispatcher's matcher. Both stores normalize their
+ *  records into something with these two fields. */
+type SubscriberPreferences = {
+  alerts: SyncedAlert[];
+  noSpoilers: boolean;
+};
+
+/** Transport-neutral matcher. Returns true when the subscriber's
+ *  alerts + noSpoilers combination matches the event. Same logic
+ *  whether the subscriber is a web push endpoint or an APNs token —
+ *  the differences live in the delivery layer, not the matching. */
+function subscriberWantsEvent(
+  sub: SubscriberPreferences,
   event: PushEvent
 ): boolean {
   // No-Spoilers gate. The user explicitly opted into hiding closeness

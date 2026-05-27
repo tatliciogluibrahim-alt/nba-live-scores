@@ -56,9 +56,9 @@ export async function POST(req: Request) {
   }
 
   const results = await Promise.all(
-    tokens.map(async (token) => {
+    tokens.map(async (entry) => {
       const result = await sendApnsPush({
-        deviceToken: token,
+        deviceToken: entry.token,
         title: "Test push",
         body: "APNs is wired correctly. If you see this on your lock screen, the pipeline works.",
         sandbox: true,
@@ -68,11 +68,13 @@ export async function POST(req: Request) {
       // valid (app uninstalled, token rotated, etc.). Cull them
       // from the store so the next test isn't polluted.
       if (result.status === 410) {
-        await removeIosToken(token);
+        await removeIosToken(entry.token);
       }
 
       return {
-        token: `${token.slice(0, 8)}…${token.slice(-4)}`,
+        token: `${entry.token.slice(0, 8)}…${entry.token.slice(-4)}`,
+        alertCount: entry.alerts.length,
+        noSpoilers: entry.noSpoilers,
         ok: result.ok,
         status: result.status,
         error: result.error,

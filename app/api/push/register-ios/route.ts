@@ -1,23 +1,23 @@
 // POST /api/push/register-ios
 //
 // Client (the Capacitor iOS app) calls this with the APNs device
-// token it received from the push plugin. Server stores the token in
-// KV so the dispatcher can fan out events to it later.
+// token plus the user's current alert state. Server stores the token
+// in KV so the dispatcher can fan out events to it later.
+//
+// Backward compatibility: the Phase 22.5-1 proof-of-life version
+// only accepted { token }. The endpoint still accepts that shape —
+// alerts default to empty, noSpoilers to false. Tokens registered
+// without alerts won't receive any events, but they're persisted
+// and will get full functionality the next time the device re-syncs.
 //
 // This endpoint is unauthenticated for the same reason
 // /api/push/subscribe is unauthenticated — the device token IS the
 // credential. Apple controls token generation, so an attacker can't
 // fabricate one without compromising someone else's app install.
-//
-// Token validation is loose by design: APNs hex tokens are 64+
-// characters (older format) or longer with iOS 13+, so we accept
-// anything that looks like a hex string of plausible length. Bad
-// tokens just fail later when we try to use them — no harm in
-// storing one and getting a 400 BadDeviceToken from Apple on
-// delivery.
 
 import { NextResponse } from "next/server";
-import { addIosToken } from "../../../lib/push/ios-token-store";
+import { upsertIosToken } from "../../../lib/push/ios-token-store";
+import { validateSyncPayload } from "../../../lib/push/sync-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,7 +25,13 @@ export const dynamic = "force-dynamic";
 const TOKEN_PATTERN = /^[a-f0-9]+$/i;
 const TOKEN_MIN_LENGTH = 32; // permissive; real tokens are usually 64+
 
-type Body = { token?: unknown };
+type Body = {
+  token?: unknown;
+  // Optional sync payload — same shape /api/push/subscribe accepts.
+  // alerts: SyncedAlert[], noSpoilers: boolean.
+  alerts?: unknown;
+  noSpoilers?: unknown;
+};
 
 export async function POST(req: Request) {
   let body: Body;
@@ -43,9 +49,24 @@ export async function POST(req: Request) {
     );
   }
 
+  // validateSyncPayload tolerates missing/empty fields by returning a
+  // safe default (empty alerts, noSpoilers=false). Keeps backward
+  // compatibility with the Phase 22.5-1 proof-of-life payload shape
+  // that only sent { token }.
+  const sync = validateSyncPayload(body);
+
   try {
-    await addIosToken(token);
-    return NextResponse.json({ ok: true });
+    const stored = await upsertIosToken({
+      token,
+      alerts: sync.alerts,
+      noSpoilers: sync.noSpoilers,
+    });
+    return NextResponse.json({
+      ok: true,
+      tokenPrefix: token.slice(0, 8),
+      alertCount: stored.alerts.length,
+      noSpoilers: stored.noSpoilers,
+    });
   } catch (err) {
     console.error("register-ios error", err);
     return NextResponse.json({ error: "Storage failed" }, { status: 500 });
