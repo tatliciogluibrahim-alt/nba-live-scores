@@ -31,6 +31,16 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
     return <LoadingShell />;
   }
 
+  // Placeholder seriesKey — one side is "TBD" because the matchup is
+  // forward-projected (e.g. NBA Finals showing NYK-TBD while the West
+  // conf finals is still in progress). Route to a dedicated waiting
+  // view instead of the generic "series not in feed" 404 — the user
+  // followed a link from the tournament page, the URL is intentional,
+  // and we know exactly why no data is available.
+  if (/(^|-)TBD(-|$)/.test(seriesKey)) {
+    return <SeriesAwaitingOpponent seriesKey={seriesKey} />;
+  }
+
   if (!payload) {
     return <SeriesNotFound seriesKey={seriesKey} />;
   }
@@ -170,6 +180,83 @@ function LoadingShell() {
         style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
       />
       <span className="sr-only">Loading series</span>
+    </main>
+  );
+}
+
+/** Placeholder series page — one side is "TBD" because the other
+ *  conference / region is still working through its bracket. Shows
+ *  the determined team plus a friendly "Waiting on the other side."
+ *  Doesn't expose Follow controls because the seriesKey itself will
+ *  change once both teams are known (a "NYK-TBD" follow would never
+ *  match the actual matchup). Calm CTAs route to the parent
+ *  tournament + Today so the user has somewhere to go.
+ */
+function SeriesAwaitingOpponent({ seriesKey }: { seriesKey: string }) {
+  const [rawA, rawB] = seriesKey.split("-");
+  const determined = rawA === "TBD" ? rawB : rawA;
+
+  return (
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+      <Eyebrow>Series</Eyebrow>
+      <Display as="h1" size="lg" className="mt-2">
+        {determined} · ?
+      </Display>
+      <p
+        className="mt-1 text-[13px]"
+        style={{ color: "var(--mute-1)", fontWeight: 500 }}
+      >
+        {determined} are in. The other side hasn&apos;t been decided yet.
+      </p>
+
+      <section
+        className="mt-4 rounded-[14px] border px-4 py-4"
+        style={{
+          background: "var(--paper)",
+          borderColor: "var(--line)",
+          borderLeft: "3px solid var(--nba)",
+        }}
+      >
+        <Eyebrow color="var(--nba)">Waiting on the other side</Eyebrow>
+        <p
+          className="mt-2 text-[14px] leading-snug"
+          style={{ color: "var(--ink)", fontWeight: 600 }}
+        >
+          Matchup, schedule, and series tracking unlock once the other
+          side&apos;s series wraps.
+        </p>
+        <p
+          className="mt-2 text-[12px] leading-snug"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          Follow the tournament to get pinged when the matchup is set.
+        </p>
+      </section>
+
+      <div className="mt-4 flex items-center gap-2">
+        <Link
+          href="/tournament/nba-playoffs-2025"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          style={{
+            background: "transparent",
+            color: "var(--ink)",
+            border: "1px solid var(--line)",
+          }}
+        >
+          NBA Playoffs
+        </Link>
+        <Link
+          href="/"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          style={{
+            background: "var(--ink)",
+            color: "var(--cream)",
+            border: "1px solid var(--ink)",
+          }}
+        >
+          Open Today
+        </Link>
+      </div>
     </main>
   );
 }

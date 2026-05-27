@@ -15,6 +15,15 @@ export async function generateMetadata({
   const { id } = await params;
   const [a, b] = id.split("-");
   if (a && b) {
+    // TBD placeholder (one side not yet decided — Finals before the
+    // other conference wraps). Render a friendlier title than
+    // "TEAM vs TBD" which reads like a data glitch.
+    if (a === "TBD" || b === "TBD") {
+      const determined = a === "TBD" ? b : a;
+      return {
+        title: `${determined.toUpperCase()} · waiting on the other side | No Noise Scores`,
+      };
+    }
     return {
       title: `${a.toUpperCase()} vs ${b.toUpperCase()} · NBA | No Noise Scores`,
     };

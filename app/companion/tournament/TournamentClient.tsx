@@ -257,56 +257,83 @@ function NBAPlayoffsBody() {
       // reflects current state.
       seen.set(key, g);
     }
-    return Array.from(seen.entries()).map(([key, g]) => {
-      const [rawA, rawB] = key.split("-");
+    return (
+      Array.from(seen.entries())
+        .map(([key, g]) => {
+          const [rawA, rawB] = key.split("-");
 
-      // Apply override repairs. If a team is listed in this row but
-      // has already lost a wrapped series (per the override map),
-      // swap them for the team that actually advanced.
-      const a = overrides.get(rawA) ?? rawA;
-      const b = overrides.get(rawB) ?? rawB;
+          const isWrapped = /WINS\s+SERIES/i.test(g.seriesSummary);
 
-      const round =
-        g.seriesRound ||
-        (/conf/i.test(g.gameContext) ? "Conference Finals" : "Playoff Series");
-      const conf = g.seriesConference
-        ? `${round} · ${g.seriesConference}`
-        : round;
-      const isWrapped = /WINS\s+SERIES/i.test(g.seriesSummary);
+          // Apply override repairs. If a team is listed in this row
+          // but has already lost a wrapped series (per the override
+          // map), swap them for the team that actually advanced.
+          //
+          // Critical exception: WRAPPED rows are the source of truth
+          // that ESTABLISHED an override. Re-substituting them
+          // produces "X vs X" duplicates — e.g. if NYK beat IND, the
+          // override map has IND → NYK, and naively re-running it on
+          // this same row turns "NYK vs IND" into "NYK vs NYK". Only
+          // forward-projected (non-wrapped) rows need repair.
+          const a = isWrapped ? rawA : (overrides.get(rawA) ?? rawA);
+          const b = isWrapped ? rawB : (overrides.get(rawB) ?? rawB);
 
-      // Pull win counts out of the summary so we can render an inline
-      // 7-dot strip for the series. Both `WINS SERIES` and `LEADS
-      // SERIES` patterns expose the hi-lo numbers. `TIED` is symmetric.
-      // Numbers default to 0-0 when nothing matches (rare).
-      let winsTotal = 0;
-      const wm =
-        g.seriesSummary.match(/WINS?\s+SERIES\s+(\d+)\s*-\s*(\d+)/i) ||
-        g.seriesSummary.match(/LEADS?\s+SERIES\s+(\d+)\s*-\s*(\d+)/i);
-      const tm = g.seriesSummary.match(/TIED\s+(\d+)\s*-\s*(\d+)/i);
-      if (wm) winsTotal = Number(wm[1]) + Number(wm[2]);
-      else if (tm) winsTotal = Number(tm[1]) + Number(tm[2]);
+          const round =
+            g.seriesRound ||
+            (/conf/i.test(g.gameContext)
+              ? "Conference Finals"
+              : "Playoff Series");
+          const conf = g.seriesConference
+            ? `${round} · ${g.seriesConference}`
+            : round;
 
-      // Re-key after overrides so de-duplication post-substitution
-      // works correctly. e.g. if both "NYK vs ___" and "CLE vs ___"
-      // existed (shouldn't happen, but defensively), we'd end up
-      // with one row after the substitution. The key recomputation
-      // uses the already-substituted a/b.
-      const finalKey = buildSeriesKey(a, b);
+          // Pull win counts out of the summary so we can render an
+          // inline 7-dot strip for the series. Both `WINS SERIES` and
+          // `LEADS SERIES` patterns expose the hi-lo numbers. `TIED`
+          // is symmetric. Numbers default to 0-0 when nothing matches.
+          let winsTotal = 0;
+          const wm =
+            g.seriesSummary.match(/WINS?\s+SERIES\s+(\d+)\s*-\s*(\d+)/i) ||
+            g.seriesSummary.match(/LEADS?\s+SERIES\s+(\d+)\s*-\s*(\d+)/i);
+          const tm = g.seriesSummary.match(/TIED\s+(\d+)\s*-\s*(\d+)/i);
+          if (wm) winsTotal = Number(wm[1]) + Number(wm[2]);
+          else if (tm) winsTotal = Number(tm[1]) + Number(tm[2]);
 
-      return {
-        id: finalKey,
-        a,
-        b,
-        // Track which sides are placeholders so the chip renderer
-        // can lay them out cleanly instead of cramming "SPURS/THUNDER"
-        // into a 9×9 avatar pill.
-        aIsTbd: isPlaceholderAbbr(a),
-        bIsTbd: isPlaceholderAbbr(b),
-        label: conf,
-        wrapped: isWrapped,
-        gamesPlayed: Math.min(7, winsTotal),
-      };
-    });
+          // Normalize compound placeholder abbrs (e.g. "OKC/MIN" for a
+          // forward-projected opponent slot) to literal "TBD" in the
+          // routing key. Otherwise /series/NYK-OKC%2FMIN would 404 on
+          // the detail page because no game in the feed has that key.
+          // The chip + title renderers below already substitute "TBD"
+          // for the visible text via aIsTbd / bIsTbd, so this only
+          // changes the URL.
+          const normA = isPlaceholderAbbr(a) ? "TBD" : a;
+          const normB = isPlaceholderAbbr(b) ? "TBD" : b;
+          const finalKey = buildSeriesKey(normA, normB);
+
+          return {
+            id: finalKey,
+            a,
+            b,
+            // Track which sides are placeholders so the chip renderer
+            // can lay them out cleanly instead of cramming
+            // "SPURS/THUNDER" into a 9×9 avatar pill.
+            aIsTbd: isPlaceholderAbbr(a),
+            bIsTbd: isPlaceholderAbbr(b),
+            label: conf,
+            wrapped: isWrapped,
+            gamesPlayed: Math.min(7, winsTotal),
+          };
+        })
+        // Defensive filter: drop any row where both sides resolved to
+        // the same team. Shouldn't happen now that wrapped rows skip
+        // override substitution, but a future data anomaly (or a
+        // dataset where ESPN listed an exhibition with both home and
+        // away spelled the same way) would still produce a confusing
+        // "NYK vs NYK" row. Cheaper to filter than to debug later.
+        // Also drop rows where BOTH sides are placeholders — there's
+        // nothing to render usefully and the routing key would be
+        // "TBD-TBD" which the series page can't handle either.
+        .filter((s) => s.a !== s.b && !(s.aIsTbd && s.bIsTbd))
+    );
   }, [games]);
 
   if (!hydrated) {
