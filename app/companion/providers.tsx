@@ -27,6 +27,7 @@ import {
   writeJSON,
 } from "./state/storage";
 import { PushSyncEffect } from "./push/PushSyncEffect";
+import { CapacitorPushBootstrap } from "./push/CapacitorPushBootstrap";
 
 // ─── Follows ──────────────────────────────────────────────────────────
 type FollowsCtx = {
@@ -434,6 +435,11 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
           {/* Stage C: keeps the server-side subscription in sync with
               per-follow alert changes while the app is open. Renders nothing. */}
           <PushSyncEffect />
+          {/* Phase 22.5-1: when the PWA runs inside the Capacitor iOS
+              wrapper, requests APNs permission, registers the device,
+              and POSTs the resulting token to /api/push/register-ios.
+              No-op on web (Capacitor.getPlatform() returns "web"). */}
+          <CapacitorPushBootstrap />
           {children}
         </PrefsContext.Provider>
       </PinnedContext.Provider>
