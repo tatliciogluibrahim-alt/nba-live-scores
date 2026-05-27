@@ -244,19 +244,27 @@ Do not do yet:
 - New backend.
 - Path B follow-schema refactor (wait for 3rd moment).
 
-## Alert tier labels (renamed 2026-05-26)
+## Alert tier labels
 
-Internal keys (`quiet | companion | all`) are unchanged. User-facing
-labels were renamed for honesty about what each tier actually
-fires. Reference: `app/companion/state/types.ts` PRESETS.
+Internal keys (`quiet | companion | all`) are unchanged. Reference:
+`app/companion/state/types.ts` PRESETS.
 
 - **Quiet** (key: `quiet`) — Start and final only.
-- **Standard** (key: `companion`) — Start, quarter breaks, final.
+- **Companion** (key: `companion`) — Start, quarter breaks, final.
 - **Close games** (key: `all`) — Adds close finishes and comebacks.
 
-When writing copy or comments that mention tiers, use the new
-labels. Internal types still reference the old keys for back-compat
-with stored follows.
+Rename history:
+- 2026-05-26: "Companion" → "Standard", "All moments" → "Close games"
+  for clarity about what each tier produces.
+- 2026-05-27: Reverted "Standard" → "Companion" because the word ties
+  to the locked positioning ("calm sports **companion**") and reads
+  more brand-aligned than "Standard" (which felt like SaaS pricing
+  language). The "All moments" → "Close games" rename stays — that
+  was the more important semantic correction.
+
+When writing copy or comments that mention tiers, use the current
+labels (Quiet / Companion / Close games). Internal types still
+reference the same keys for back-compat with stored follows.
 
 ## Marketing Phase trigger
 

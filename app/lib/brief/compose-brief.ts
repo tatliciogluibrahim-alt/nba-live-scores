@@ -254,7 +254,7 @@ export function composeBrief({
       f.alertTier === "all"
         ? "Close games"
         : f.alertTier === "companion"
-          ? "Standard"
+          ? "Companion"
           : "Quiet";
     return `${f.id} · ${label}`;
   });

@@ -97,17 +97,23 @@ export const MAX_FREE_ALERT_SLOTS = 3;
 // dispatcher ("Tipoff" / "Kickoff" / "End of Q3" / "Halftime") based on
 // the game's source league.
 //
-// Renamed 2026-05-26: "Companion" → "Standard", "All moments" → "Close
-// games." Internal keys (quiet / companion / all) stay for back-compat
-// with stored follows. The previous labels misled users into thinking
-// "All moments" produced more than it did; in practice the only events
-// that distinguished it from Companion were close-game and comeback,
-// both of which rarely fire. Honest labels match the actual matrix.
+// Rename history:
+//   2026-05-26: "Companion" → "Standard", "All moments" → "Close games."
+//   2026-05-27: Reverted "Standard" → "Companion." "Standard" read like
+//     a SaaS pricing tier; "Companion" ties directly to the locked
+//     positioning ("calm sports companion for the moments that matter")
+//     and is the stronger brand-tied word in the whole app. The
+//     "All moments" → "Close games" rename stays — that was the more
+//     important semantic correction (the old label misled users into
+//     thinking the tier produced more than it did).
+//
+// Internal keys (quiet / companion / all) unchanged across both renames
+// so stored follows keep their tier without migration.
 export const PRESETS: Record<
   AlertPreset,
   { label: string; detail: string }
 > = {
   quiet: { label: "Quiet", detail: "Start and final only." },
-  companion: { label: "Standard", detail: "Start, quarter breaks, final." },
+  companion: { label: "Companion", detail: "Start, quarter breaks, final." },
   all: { label: "Close games", detail: "Adds close finishes and comebacks." },
 };
