@@ -12,7 +12,8 @@
     "ios:open": "cap open ios",
     "vapid:gen": "node scripts/generate-vapid-keys.mjs",
     "splash:gen": "node scripts/generate-startup-images.mjs",
-    "icons:maskable": "node scripts/generate-maskable-icons.mjs"
+    "icons:maskable": "node scripts/generate-maskable-icons.mjs",
+    "icons:regen": "node scripts/regenerate-icons.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.3.1",
