@@ -3,7 +3,7 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { SeriesClient } from "../../companion/series/SeriesClient";
 
 export const metadata = {
-  title: "Series — No Noise Scores",
+  title: "Series | No Noise Scores",
 };
 
 export default async function SeriesPage({

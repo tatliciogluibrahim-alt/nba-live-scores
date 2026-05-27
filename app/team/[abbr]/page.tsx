@@ -3,7 +3,7 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { TeamClient } from "../../companion/team/TeamClient";
 
 export const metadata = {
-  title: "Team — No Noise Scores",
+  title: "Team | No Noise Scores",
 };
 
 export default async function TeamPage({

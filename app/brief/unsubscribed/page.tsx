@@ -5,7 +5,7 @@ import { Display } from "../../companion/atoms/Display";
 import { Eyebrow } from "../../companion/atoms/Eyebrow";
 
 export const metadata = {
-  title: "Brief · Unsubscribed — No Noise Scores",
+  title: "Brief · Unsubscribed | No Noise Scores",
 };
 
 export default async function BriefUnsubscribedPage({

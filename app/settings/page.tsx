@@ -3,7 +3,8 @@ import { CrumbBar } from "../companion/frame/CrumbBar";
 import { SettingsClient } from "../companion/settings/SettingsClient";
 
 export const metadata = {
-  robots: { index: false, follow: false },  title: "Alerts & Notifications — No Noise Scores",
+  robots: { index: false, follow: false },
+  title: "Alerts & Notifications | No Noise Scores",
 };
 
 export default function SettingsPage() {

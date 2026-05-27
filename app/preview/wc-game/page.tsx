@@ -9,7 +9,7 @@ import { WCGamePreviewClient } from "./WCGamePreviewClient";
 // app's nav; reachable directly at /preview/wc-game.
 
 export const metadata = {
-  title: "Preview: WC game — No Noise Scores",
+  title: "Preview: WC game | No Noise Scores",
 };
 
 export default function WCPreviewPage() {

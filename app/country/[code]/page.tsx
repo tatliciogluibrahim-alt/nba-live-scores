@@ -4,7 +4,7 @@ import { CountryClient } from "../../companion/country/CountryClient";
 import { getTournament } from "../../companion/following/data/tournaments";
 
 export const metadata = {
-  title: "Country — No Noise Scores",
+  title: "Country | No Noise Scores",
 };
 
 // Country detail back-crumb is contextual. Default is /following (where

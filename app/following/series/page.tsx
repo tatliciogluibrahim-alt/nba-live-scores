@@ -3,7 +3,8 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { SeriesPicker } from "../../companion/following/picker/SeriesPicker";
 
 export const metadata = {
-  robots: { index: false, follow: false },  title: "Follow a series — No Noise Scores",
+  robots: { index: false, follow: false },
+  title: "Follow a series | No Noise Scores",
 };
 
 export default function FollowSeriesPage() {

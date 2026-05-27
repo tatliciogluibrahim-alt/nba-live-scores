@@ -3,7 +3,7 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { TournamentClient } from "../../companion/tournament/TournamentClient";
 
 export const metadata = {
-  title: "Tournament — No Noise Scores",
+  title: "Tournament | No Noise Scores",
 };
 
 export default async function TournamentPage({

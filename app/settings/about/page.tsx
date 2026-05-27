@@ -3,7 +3,8 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { AboutClient } from "../../companion/settings/AboutClient";
 
 export const metadata = {
-  robots: { index: false, follow: false },  title: "How this works — No Noise Scores",
+  robots: { index: false, follow: false },
+  title: "How this works | No Noise Scores",
 };
 
 export default function AboutPage() {

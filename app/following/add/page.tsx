@@ -3,7 +3,8 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { FollowingAdd } from "../../companion/following/FollowingAdd";
 
 export const metadata = {
-  robots: { index: false, follow: false },  title: "Follow more — No Noise Scores",
+  robots: { index: false, follow: false },
+  title: "Follow more | No Noise Scores",
 };
 
 export default function FollowingAddPage() {

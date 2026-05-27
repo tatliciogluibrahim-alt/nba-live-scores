@@ -3,7 +3,8 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { BriefSubscribeClient } from "../../companion/brief/BriefSubscribeClient";
 
 export const metadata = {
-  robots: { index: false, follow: false },  title: "Brief · Subscribe — No Noise Scores",
+  robots: { index: false, follow: false },
+  title: "Brief · Subscribe | No Noise Scores",
 };
 
 export default function BriefSubscribePage() {

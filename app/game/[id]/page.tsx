@@ -3,7 +3,7 @@ import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { GameDetailClient } from "../../companion/game/GameDetailClient";
 
 export const metadata = {
-  title: "Game — No Noise Scores",
+  title: "Game | No Noise Scores",
 };
 
 export default async function GamePage({
