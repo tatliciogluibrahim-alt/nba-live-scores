@@ -209,26 +209,30 @@ Completed (most recent first):
   override, Dead Zone Bridge, activation instrumentation, delivery
   loop still open). Full detail in `docs/RETENTION_PLAYBOOK.md`.
 - **Phase 21** — Brief launch (gated on domain email).
-- **Phase 22.5** — **iOS Native via Capacitor — IN PROGRESS.**
+- **Phase 22.5** — **iOS Native via Capacitor + Desktop Bespoke — IN PROGRESS.**
   Proof-of-life (22.5-1) and dispatcher integration (22.5-2) both
   shipped 2026-05-27. Real APNs push verified on physical iPhone.
   Remaining: Live Activity (22.5-3), Widget (22.5-4), App Store
-  ship (22.5-5). DIY approach with Claude pairing — total cost so
-  far is just $99/year Apple Developer Program. Full plan in
-  `docs/IOS_NATIVE_PLAN.md`.
+  ship (22.5-5). Desktop bespoke (22.5-D) runs in parallel as
+  alternating sessions per the 2026-05-27 decision (Swift one
+  weekend, responsive web the next). DIY approach with Claude
+  pairing — total cost so far is just $99/year Apple Developer
+  Program. Plans in `docs/IOS_NATIVE_PLAN.md` and
+  `docs/DESKTOP_BESPOKE_PLAN.md`.
 - **Phase 22** — NFL season build (August 2026).
 - **Phase 23+** — Beyond: Sports Circle prototype, multi-device push
   (simpler post-iOS-native), No-Spoilers Pro as the paid pitch,
   Path B follow-schema refactor, family/shared follows, Champions
-  League knockouts, **desktop bespoke redesign** (real audience:
-  office workers checking scores).
+  League knockouts.
 
 Captured during Phase 22.5 (small, not blocking):
 
-- Logo feels too dark; user wants more cream. Aesthetic call —
-  needs side-by-side variants.
+- Logo: user reviewed cream-leaning variants at /dev/brand-preview
+  on 2026-05-27 and chose to keep the current dark-chip mark.
+  Preview page can be deleted now.
 - Real visual QA pass across mobile + desktop once iOS native
-  settles. Code audit ≠ visual QA.
+  settles. Code audit ≠ visual QA. See
+  `docs/QA_FINDINGS_2026-05-27.md` for the manual checklist.
 
 Each phase is its own go/no-go unit. Do not jump ahead.
 

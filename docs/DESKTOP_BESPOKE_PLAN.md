@@ -158,25 +158,35 @@ initial scaffold ships.
 
 ## When to start
 
-Three honest options:
+**Decided 2026-05-27: Option B — parallel with iOS native.**
 
-**Option A — wait until iOS native ships completely.** Desktop is
-audience #1 (office workers). iOS native is primary install path.
-Don't split focus.
+Both efforts pace differently (Swift / native is heavy
+single-thread Swift work; desktop is responsive web work in the
+codebase the user already knows). Different brain modes makes
+rotation cheap.
 
-**Option B — do it in parallel with iOS native.** Native is heavy
-Swift work; desktop is responsive web work. Different brain modes.
-Could rotate sessions: weekend A = Swift, weekend B = desktop.
+Sequencing inside Phase 22.5:
+- 22.5-3: iOS Live Activity (Swift, ~2-3 weekends)
+- 22.5-4: iOS Home Screen Widget (Swift, ~1-2 weekends)
+- 22.5-D: Desktop bespoke lean ship — runs in parallel with one
+  of the above as alternating sessions. Roughly ~1 weekend of
+  focused work for the "minimum viable desktop layout" PR; further
+  surfaces deepen iteratively.
+- 22.5-5: App Store submission once 22.5-3 + 22.5-4 are
+  ship-ready.
 
-**Option C — ship it right now.** Skip the rest of Phase 22.5
-(Live Activity, Widget) and do desktop first. Risk: pulls attention
-from what's already 60% built.
+Considered and rejected:
+- **A — wait until iOS native ships completely.** Splits focus
+  the wrong way. Desktop work is fundamentally easier and could
+  ship while waiting on App Store review cycles.
+- **C — ship desktop right now, skip rest of iOS native.**
+  Pulls focus from already-60%-built work. Native is the
+  marketing hero feature.
 
-My honest pick: **B.** It paces well, both efforts reach maturity
-around the same time, and the dual surfaces complement each other
-when the marketing phase eventually triggers (Show HN screenshots
-show off BOTH the iOS Live Activity AND the calm desktop view —
-that's a much stronger pitch than either alone).
+The dual-surface story also helps when the marketing phase
+eventually triggers — Show HN screenshots showing BOTH the iOS
+Live Activity AND a calm desktop view is a much stronger pitch
+than either alone.
 
 ---
 

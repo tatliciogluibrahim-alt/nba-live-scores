@@ -139,9 +139,16 @@ Remaining within Phase 22.5:
   Island, real-time score updates via APNs background push). Native
   Swift code in a new SPM target. ~2-3 weekends.
 - **22.5-4** — Home screen widget (small + medium). ~1-2 weekends.
+- **22.5-D** — **Desktop bespoke (lean)** — runs in parallel with
+  22.5-3/4 as alternating sessions (Swift one weekend, responsive
+  web the next). Lean scope: make `/app` desktop-aware with a
+  responsive grid, drop the bottom nav at md+, add a left sidebar.
+  ~1 weekend for the minimum viable layout PR; further surfaces
+  deepen iteratively. Decided 2026-05-27. Full plan in
+  `docs/DESKTOP_BESPOKE_PLAN.md`.
 - **22.5-5** — App Store submission (screenshots, metadata, privacy
   policy entries, first rejection + resubmit). ~1 weekend + 1-2
-  weeks waiting.
+  weeks waiting. Runs after 22.5-3 + 22.5-4 are ship-ready.
 
 Promoted from "Phase 23+ unsequenced" to a real near-term phase
 following the strategic conversation 2026-05-26. Full plan in
