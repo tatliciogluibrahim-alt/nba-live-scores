@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import type { GroupRow } from "./country-data";
 
@@ -7,6 +8,16 @@ import type { GroupRow } from "./country-data";
 // render points / GP / GA — that would require a standings layer that
 // isn't wired yet and would risk leaking results when it lands. Once
 // real standings ship, this strip is the right surface to add them to.
+//
+// Group-mate rows are clickable (Phase 22.5 polish): tapping a row
+// other than the currently-selected country routes to that country's
+// detail page. The currently-selected row stays non-interactive (it
+// IS the page you're on). Carries `?from=<tournament-id>` so the
+// destination's back-crumb resolves to the tournament, not Following.
+// That lets a user browse "Türkiye → United States → Australia"
+// inside Group D without bouncing through Following each time.
+
+const WC_TOURNAMENT_ID = "fifa-world-cup-2026";
 
 export function GroupStrip({
   group,
@@ -39,16 +50,8 @@ export function GroupStrip({
       >
         {rows.map((row, idx) => {
           const isLast = idx === rows.length - 1;
-          return (
-            <li
-              key={row.code}
-              className="flex items-center gap-3 px-3 py-2.5"
-              style={{
-                borderBottom: isLast ? "none" : "1px solid var(--line)",
-                background: row.isSelected ? "var(--cream-2)" : "transparent",
-              }}
-              aria-current={row.isSelected ? "true" : undefined}
-            >
+          const rowChrome = (
+            <>
               <span aria-hidden className="text-[22px] leading-none">
                 {row.flag}
               </span>
@@ -73,6 +76,41 @@ export function GroupStrip({
               >
                 {row.code}
               </span>
+            </>
+          );
+
+          const baseStyle = {
+            borderBottom: isLast ? "none" : "1px solid var(--line)",
+            background: row.isSelected ? "var(--cream-2)" : "transparent",
+            minHeight: 44,
+          };
+
+          // Selected row is the current country — non-interactive.
+          if (row.isSelected) {
+            return (
+              <li
+                key={row.code}
+                className="flex items-center gap-3 px-3 py-2.5"
+                style={baseStyle}
+                aria-current="true"
+              >
+                {rowChrome}
+              </li>
+            );
+          }
+
+          // Group-mate row — Link with from=<tournament-id> so the
+          // destination's CrumbBar shows "World Cup" instead of
+          // bouncing back through Following.
+          return (
+            <li key={row.code} style={baseStyle}>
+              <Link
+                href={`/country/${row.code}?from=${WC_TOURNAMENT_ID}`}
+                className="flex items-center gap-3 px-3 py-2.5 transition active:scale-[0.99]"
+                aria-label={`Open ${row.name}`}
+              >
+                {rowChrome}
+              </Link>
             </li>
           );
         })}

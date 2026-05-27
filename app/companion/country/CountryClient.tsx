@@ -58,31 +58,12 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
       <CountryHeader country={country} />
 
-      {alertStateLabel ? (
-        <div className="mt-2 flex items-center gap-2 px-1">
-          <span
-            aria-hidden
-            className="h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{
-              background: followed?.alertEnabled
-                ? "var(--wc)"
-                : "var(--mute-2)",
-            }}
-          />
-          <span
-            className="text-[11px] uppercase"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontWeight: 600,
-              letterSpacing: "0.1em",
-              color: "var(--mute-1)",
-            }}
-            aria-label={`Alert state for ${country.name}: ${alertStateLabel}`}
-          >
-            {alertStateLabel}
-          </span>
-        </div>
-      ) : null}
+      {/* The user's per-follow alert state used to render here as a
+          loud "CLOSE GAMES" pill right under the header. That looked
+          like a tournament category, not a personal setting — user
+          flagged it as "feels misplaced." Moved down to sit right
+          above the CountryPresetSection where it reads as commentary
+          on the alert controls below. */}
 
       {/* ── Tournament countdown — pre-kickoff only ─────────────────── */}
       {/* Hide the countdown entirely once the tournament has actually
@@ -146,6 +127,22 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
       {/* ── Group strip ──────────────────────────────────────────────── */}
       <div className="mt-5">
         <GroupStrip group={country.group} rows={groupRows} />
+        {/* Tournament link — gives the user a way back to the full
+            World Cup view (all 12 groups) regardless of how they
+            entered this country page. Pre-fix, a user who came in
+            from Following had no path to the tournament without
+            going back to Following first and finding the tournament
+            follow. */}
+        <div className="mt-2 flex justify-center">
+          <Link
+            href="/tournament/fifa-world-cup-2026"
+            className="inline-flex min-h-[36px] items-center gap-1.5 text-[12px] underline underline-offset-4 decoration-dotted"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            aria-label="View all World Cup 2026 groups"
+          >
+            View all groups →
+          </Link>
+        </div>
       </div>
 
       {/* ── Possible-path timeline ───────────────────────────────────── */}
@@ -167,6 +164,27 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
 
       {/* ── Alerts / follow / preset ─────────────────────────────────── */}
       <div className="mt-5">
+        {/* Personal alert state line — sits above the preset section
+            so it reads as "your current setting" instead of looking
+            like a tournament category. Plain text, no chip, no dot.
+            Only renders when the user follows this country. */}
+        {alertStateLabel ? (
+          <p
+            className="mb-2 px-1 text-[12px]"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            aria-label={`Your alert tier for ${country.name}: ${alertStateLabel}`}
+          >
+            Your alerts:{" "}
+            <span
+              style={{
+                color: followed?.alertEnabled ? "var(--ink)" : "var(--mute-1)",
+                fontWeight: 600,
+              }}
+            >
+              {alertStateLabel}
+            </span>
+          </p>
+        ) : null}
         <CountryPresetSection
           countryCode={country.id}
           countryName={country.name}
