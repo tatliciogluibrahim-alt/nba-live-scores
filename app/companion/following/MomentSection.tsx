@@ -24,7 +24,12 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
 
   return (
     <section
-      className="overflow-hidden rounded-[14px] border"
+      // Anchor target for Pick Your Moment's scroll-into-view links
+      // (Phase 21C-3). Stable, predictable per moment id so the
+      // PickYourMoment component can deep-link without coupling to
+      // the section's internal structure.
+      id={`moment-${moment.id}`}
+      className="overflow-hidden rounded-[14px] border scroll-mt-4"
       style={{
         background: "var(--paper)",
         borderColor: "var(--line)",

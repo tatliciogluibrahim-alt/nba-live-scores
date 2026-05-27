@@ -1,6 +1,7 @@
 import { Display } from "../atoms/Display";
 import { FOLLOW_MOMENTS } from "./FollowChoice";
 import { MomentSection } from "./MomentSection";
+import { PickYourMomentGate } from "./PickYourMoment";
 
 // /following/add — moment-grouped follow picker. NBA Playoffs and
 // FIFA World Cup 2026 each get their own section with a granularity
@@ -13,6 +14,12 @@ import { MomentSection } from "./MomentSection";
 // NBA Playoffs *and* Knicks, the redundancy wasn't visible, and a
 // future NFL Playoffs would have meant "Team" had two unrelated
 // meanings. Moment-first sidesteps both.
+//
+// Phase 21C-3: PickYourMomentGate wraps the moment list so genuinely
+// new users (zero follows) see a two-card guided opening before the
+// full moment-grouped picker. Returning users with any follows see
+// nothing different — the gate falls through immediately. Either way
+// there's an always-visible skip link.
 //
 // Schema is unchanged — the underlying Follow record is still
 // { kind: team/country/series/tournament, id }. See Phase 11 design
@@ -31,11 +38,13 @@ export function FollowingAdd() {
         Pick a moment, then how much of it. We surface only what you follow.
       </p>
 
-      <div className="space-y-3">
-        {FOLLOW_MOMENTS.map((moment) => (
-          <MomentSection key={moment.id} moment={moment} />
-        ))}
-      </div>
+      <PickYourMomentGate>
+        <div className="space-y-3">
+          {FOLLOW_MOMENTS.map((moment) => (
+            <MomentSection key={moment.id} moment={moment} />
+          ))}
+        </div>
+      </PickYourMomentGate>
     </main>
   );
 }

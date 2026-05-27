@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { WC_COUNTRIES } from "./companion/following/data/countries";
 
 // sitemap.ts — public-facing routes for crawlers.
 //
@@ -40,9 +41,22 @@ const PUBLIC_ROUTES: Array<{ path: string; priority: number }> = [
   { path: "/world-cup-2026-app", priority: 0.7 },
 ];
 
+// WC country landing pages (Phase 21C-2). 48 static pages, one per
+// country in the World Cup 2026. Priority 0.6 — lower than the
+// canonical content pages above, higher than zero because they're
+// real indexable content with tournament-specific keywords. The
+// tournament-tied search surge starts ~7-10 days before kickoff
+// (June 11), so these need to be in the sitemap well before then
+// for Google to crawl and index in time.
+const WC_COUNTRY_ROUTES: Array<{ path: string; priority: number }> =
+  WC_COUNTRIES.map((c) => ({
+    path: `/wc/${c.id.toLowerCase()}`,
+    priority: 0.6,
+  }));
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
-  return PUBLIC_ROUTES.map(({ path, priority }) => ({
+  return [...PUBLIC_ROUTES, ...WC_COUNTRY_ROUTES].map(({ path, priority }) => ({
     url: `${SITE}${path}`,
     lastModified: now,
     changeFrequency: "weekly" as const,
