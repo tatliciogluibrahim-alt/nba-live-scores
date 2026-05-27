@@ -1,23 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { useFollows, usePinned, useUserPrefs } from "../providers";
 
-// First-run onboarding strip — three calm steps shown on Today until
+// First-run onboarding strip — calm checklist shown on Today until
 // the user is set up.
 //
 // Renders only when:
 //   • all three state slices have hydrated from localStorage
 //   • the user hasn't explicitly dismissed the strip
-//   • at least one of the three steps is still incomplete (so a
-//     fully-set-up user never sees the strip flash on cold launch)
+//   • the two required setup steps (follow + notif decision) are
+//     still incomplete. Pin is shown as an informational third step
+//     but does NOT gate dismissal — pinning is a feature people use
+//     situationally, not a setup prerequisite. Gating on pin caused
+//     the strip to re-appear for returning users who pinned a game,
+//     watched it finish, and unpinned. They aren't new users, they
+//     just don't have anything pinned right now. The pin step still
+//     shows when the strip is visible (educational), but pin status
+//     doesn't decide whether the strip renders.
+//
+// Auto-persistence: once both gating steps complete, we set
+// `firstRunDismissed = true` so the strip stays hidden even if the
+// user later unfollows everything or some weird state change happens.
+// Once onboarded, the user is treated as a returning user forever.
 //
 // Each card shows its own status — completed cards show a ✓ and a
-// confirming line, pending cards show a CTA. The strip auto-retires
-// once all three are done so we don't keep three checkmarks lingering
-// on Today forever.
+// confirming line, pending cards show a CTA.
 
 type StepProps = {
   index: number;
@@ -39,11 +49,6 @@ export function FirstRunStrip() {
   const { pinned, hydrated: pinnedHydrated } = usePinned();
   const { prefs, dismissFirstRun, hydrated: prefsHydrated } = useUserPrefs();
 
-  // Hydration gate — we never want to flash the strip for a returning
-  // user whose state hasn't loaded from localStorage yet.
-  if (!followsHydrated || !pinnedHydrated || !prefsHydrated) return null;
-  if (prefs.firstRunDismissed) return null;
-
   const followDone = follows.length > 0;
   const pinDone = pinned.length > 0;
   // "notif done" means the user has made a decision either way —
@@ -52,7 +57,43 @@ export function FirstRunStrip() {
   // gate is consistent with EnableNotificationsCard.
   const notifDone = Boolean(prefs.notifPromptDismissed);
 
-  if (followDone && pinDone && notifDone) return null;
+  // Auto-persistence: once both gating steps are complete, set
+  // firstRunDismissed in prefs so the strip stays hidden forever even
+  // if the user later unfollows everything or unpins. Prevents the
+  // strip from "re-prompting" a returning user just because their
+  // current state happens to lack a follow or a pin. Pin is NOT a
+  // gating step (see file header comment for why) — it's
+  // informational only when the strip is visible.
+  const onboardingComplete = followDone && notifDone;
+  useEffect(() => {
+    if (
+      followsHydrated &&
+      pinnedHydrated &&
+      prefsHydrated &&
+      onboardingComplete &&
+      !prefs.firstRunDismissed
+    ) {
+      dismissFirstRun();
+    }
+  }, [
+    followsHydrated,
+    pinnedHydrated,
+    prefsHydrated,
+    onboardingComplete,
+    prefs.firstRunDismissed,
+    dismissFirstRun,
+  ]);
+
+  // Hydration gate — we never want to flash the strip for a returning
+  // user whose state hasn't loaded from localStorage yet.
+  if (!followsHydrated || !pinnedHydrated || !prefsHydrated) return null;
+  if (prefs.firstRunDismissed) return null;
+
+  // The actual show condition. Drop pin from the gate — pinning is a
+  // feature, not a setup step. A returning user who completed
+  // onboarding then unpinned everything would otherwise get the strip
+  // back, which is the reported bug.
+  if (onboardingComplete) return null;
 
   return (
     <section
