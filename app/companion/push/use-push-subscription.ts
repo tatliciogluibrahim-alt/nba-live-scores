@@ -106,11 +106,13 @@ export function usePushSubscription(): {
   unsubscribe: () => Promise<void>;
   /** Push the current per-follow alerts + noSpoilers to the server without
    *  re-creating the subscription. Called whenever any of those change
-   *  while already subscribed. No-op if not subscribed yet. */
+   *  while already subscribed. No-op if not subscribed yet. Returns true
+   *  if the server acknowledged the sync (HTTP 2xx), false otherwise —
+   *  callers can use this to know whether to retry on next open. */
   syncFollows: (sync: {
     alerts: AlertSyncItem[];
     noSpoilers: boolean;
-  }) => Promise<void>;
+  }) => Promise<boolean>;
   /** Fire a test push via the server. Optional delay lets the caller
    *  close the app before delivery so they can confirm closed-app push. */
   sendTest: (opts?: { delayMs?: number }) => Promise<{ ok: boolean; error?: string }>;
@@ -262,11 +264,11 @@ export function usePushSubscription(): {
     async (sync: {
       alerts: AlertSyncItem[];
       noSpoilers: boolean;
-    }): Promise<void> => {
+    }): Promise<boolean> => {
       const local = readLocal();
-      if (!local) return; // not subscribed → nothing to sync
+      if (!local) return false; // not subscribed → nothing to sync
       try {
-        await fetch("/api/push/subscribe", {
+        const res = await fetch("/api/push/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -275,8 +277,12 @@ export function usePushSubscription(): {
             noSpoilers: sync.noSpoilers,
           }),
         });
+        return res.ok;
       } catch {
-        /* sync is best-effort — will retry next time the user opens */
+        // Sync is best-effort. The caller decides whether to retry — in
+        // practice PushSyncEffect won't persist the "synced" hash unless
+        // we return true, so it will retry on the next open / next change.
+        return false;
       }
     },
     []
