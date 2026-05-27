@@ -18,6 +18,17 @@
 // option.
 
 import { SignJWT, importPKCS8 } from "jose";
+import { Agent, fetch as undiciFetch } from "undici";
+
+// APNs requires HTTP/2. Node's native fetch (powered by undici)
+// negotiates HTTP/1.1 by default — the TLS handshake to
+// api.sandbox.push.apple.com succeeds but the request hangs or fails
+// with a generic "fetch failed" because Apple won't accept HTTP/1.1.
+// Switching to an undici Agent with allowH2: true forces the dispatcher
+// to negotiate HTTP/2 via ALPN, which Apple accepts.
+//
+// Single agent reused across calls — cheap, reuses TLS sessions.
+const apnsAgent = new Agent({ allowH2: true });
 
 const JWT_VALIDITY_MS = 50 * 60 * 1000; // 50 minutes, max is 60
 
@@ -193,7 +204,10 @@ export async function sendApnsPush(opts: {
   };
 
   try {
-    const res = await fetch(url, {
+    // Route through the HTTP/2-enabled undici Agent. Apple's APNs
+    // servers won't accept HTTP/1.1 connections — that's why this
+    // failed with a generic "fetch failed" using Node's native fetch.
+    const res = await undiciFetch(url, {
       method: "POST",
       headers: {
         authorization: `bearer ${jwt}`,
@@ -203,6 +217,7 @@ export async function sendApnsPush(opts: {
         "content-type": "application/json",
       },
       body: JSON.stringify(payload),
+      dispatcher: apnsAgent,
     });
 
     if (res.ok) {
@@ -216,10 +231,17 @@ export async function sendApnsPush(opts: {
     const text = await res.text().catch(() => "");
     return { ok: false, status: res.status, body: text };
   } catch (err) {
+    // Include the cause chain — undici nests the real network error
+    // inside err.cause on connection failures.
+    const msg = err instanceof Error ? err.message : "fetch failed";
+    const cause =
+      err instanceof Error && err.cause instanceof Error
+        ? ` (cause: ${err.cause.message})`
+        : "";
     return {
       ok: false,
       status: 0,
-      error: err instanceof Error ? err.message : "fetch failed",
+      error: msg + cause,
     };
   }
 }
