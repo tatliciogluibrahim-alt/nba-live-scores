@@ -668,7 +668,10 @@ function buildQuietWrap(
   const cap = followedTeams.size === 0 ? 1 : 3;
 
   return [...personal, ...everyone].slice(0, cap).map<QuietWrapItem>((g) => {
-    const matchup = `${g.away.abbreviation} · ${g.home.abbreviation}`;
+    // Use "vs" to match the Up Next + game-detail pattern. Earlier
+    // this was "·" which read as a series-context chip but the
+    // Quiet Wrap card is a final-score line, not a series label.
+    const matchup = `${g.away.abbreviation} vs ${g.home.abbreviation}`;
     const scoreLine = `${g.away.score} – ${g.home.score}`;
 
     // Pull "Game N" out of the API gameContext when present. Lets two
@@ -712,8 +715,16 @@ function buildReminder(follows: Follow[], now = new Date()): ReminderRow | null 
 
   const country = follows.find((f) => f.kind === "country");
   if (country) {
+    // Use the human country name in sentence copy, not the
+    // ESPN/FIFA code. "TUR kick off in 15 days" reads like log
+    // output; "Türkiye kick off in 15 days" reads like a person
+    // wrote it. Per AGENTS.md voice rule: plain, simple, chill.
+    // Falls back to the code if the directory doesn't recognize it
+    // (rare — would mean a typo or a country we don't track).
+    const entry = getCountry(country.id);
+    const name = entry?.name ?? country.id;
     return {
-      text: `${country.id} kick off in ${days} day${days === 1 ? "" : "s"}.`,
+      text: `${name} kick off in ${days} day${days === 1 ? "" : "s"}.`,
       detail: "Group draw is set. Match times confirm in June.",
       href: `/country/${country.id}`,
     };

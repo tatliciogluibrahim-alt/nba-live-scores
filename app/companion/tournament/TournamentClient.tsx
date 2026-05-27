@@ -58,6 +58,47 @@ function isSeriesCandidate(g: ApiGame): boolean {
   );
 }
 
+/** ESPN uses compound strings like "SPURS/THUNDER" or "Spurs/Thunder"
+ *  for placeholder games where one side is "winner of an upcoming
+ *  series." Treat anything with a slash as a placeholder. Also handles
+ *  the obvious "TBD" / empty cases. */
+function isPlaceholderAbbr(code: string): boolean {
+  if (!code) return true;
+  if (code === "TBD") return true;
+  if (code.includes("/")) return true;
+  return false;
+}
+
+/** Build a map of `loserAbbr → winnerAbbr` from every wrapped series
+ *  in the data set. Lets us repair forward-projected rows where ESPN
+ *  hasn't updated a placeholder yet (the NYK-in-Finals bug: ESPN's
+ *  Finals game still listed NYK as the East rep even after CLE
+ *  clinched the conf finals 4-X. We cross-reference our own wrapped-
+ *  series data and substitute the actual winner). */
+function buildWinnerOverrides(
+  games: ApiGame[]
+): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const g of games) {
+    // "OKC WINS SERIES 4-2" / "Oklahoma City wins series 4-2" — accept
+    // upper or mixed case; only the leading token is the abbreviation
+    // in our data (ESPN normalizes this in live-scores).
+    const m = g.seriesSummary?.match(/([A-Z]{2,4})\s+WINS?\s+SERIES/i);
+    if (!m) continue;
+    const winner = m[1].toUpperCase();
+    const loser =
+      winner === g.away.abbreviation
+        ? g.home.abbreviation
+        : winner === g.home.abbreviation
+          ? g.away.abbreviation
+          : null;
+    if (loser && !isPlaceholderAbbr(loser)) {
+      out.set(loser, winner);
+    }
+  }
+  return out;
+}
+
 export function TournamentClient({ tournamentId }: { tournamentId: string }) {
   const tournament = getTournament(tournamentId);
 
@@ -202,6 +243,12 @@ function NBAPlayoffsBody() {
   }, []);
 
   const series = useMemo(() => {
+    // First pass: build the loser→winner override map across the
+    // whole data set. Used below to repair forward-projected rows
+    // (e.g. NYK still listed in the Finals after CLE clinched the
+    // East Conf Finals — substitute CLE for NYK).
+    const overrides = buildWinnerOverrides(games);
+
     const seen = new Map<string, ApiGame>();
     for (const g of games) {
       if (!isSeriesCandidate(g)) continue;
@@ -211,7 +258,14 @@ function NBAPlayoffsBody() {
       seen.set(key, g);
     }
     return Array.from(seen.entries()).map(([key, g]) => {
-      const [a, b] = key.split("-");
+      const [rawA, rawB] = key.split("-");
+
+      // Apply override repairs. If a team is listed in this row but
+      // has already lost a wrapped series (per the override map),
+      // swap them for the team that actually advanced.
+      const a = overrides.get(rawA) ?? rawA;
+      const b = overrides.get(rawB) ?? rawB;
+
       const round =
         g.seriesRound ||
         (/conf/i.test(g.gameContext) ? "Conference Finals" : "Playoff Series");
@@ -232,10 +286,22 @@ function NBAPlayoffsBody() {
       if (wm) winsTotal = Number(wm[1]) + Number(wm[2]);
       else if (tm) winsTotal = Number(tm[1]) + Number(tm[2]);
 
+      // Re-key after overrides so de-duplication post-substitution
+      // works correctly. e.g. if both "NYK vs ___" and "CLE vs ___"
+      // existed (shouldn't happen, but defensively), we'd end up
+      // with one row after the substitution. The key recomputation
+      // uses the already-substituted a/b.
+      const finalKey = buildSeriesKey(a, b);
+
       return {
-        id: key,
+        id: finalKey,
         a,
         b,
+        // Track which sides are placeholders so the chip renderer
+        // can lay them out cleanly instead of cramming "SPURS/THUNDER"
+        // into a 9×9 avatar pill.
+        aIsTbd: isPlaceholderAbbr(a),
+        bIsTbd: isPlaceholderAbbr(b),
         label: conf,
         wrapped: isWrapped,
         gamesPlayed: Math.min(7, winsTotal),
@@ -298,11 +364,26 @@ function NBAPlayoffsBody() {
         </span>
       </div>
       <ul className="space-y-2">
-        {series.map((s) => (
+        {series.map((s) => {
+          // Render team labels cleanly when one side is a placeholder.
+          // ESPN sometimes emits compound strings like "SPURS/THUNDER"
+          // which look bad crammed into the 9×9 avatar chip. Substitute
+          // "TBD" for the chip; keep the title row honest by showing
+          // the determined team + "TBD".
+          const chipA = s.aIsTbd ? "TBD" : s.a;
+          const chipB = s.bIsTbd ? "TBD" : s.b;
+          const titleA = s.aIsTbd ? "TBD" : s.a;
+          const titleB = s.bIsTbd ? "TBD" : s.b;
+          const ariaLabel =
+            s.aIsTbd || s.bIsTbd
+              ? `Open ${titleA} vs ${titleB} series (matchup not yet decided)`
+              : `Open ${titleA} vs ${titleB} series`;
+
+          return (
           <li key={s.id}>
             <Link
               href={`/series/${s.id}`}
-              aria-label={`Open ${s.a} vs ${s.b} series`}
+              aria-label={ariaLabel}
               className="flex min-h-[64px] items-center gap-3 rounded-[14px] border px-3 py-3 transition active:scale-[0.99]"
               style={{
                 background: "var(--paper)",
@@ -323,11 +404,23 @@ function NBAPlayoffsBody() {
                 }}
               >
                 <span className="block">
-                  <span className="block" style={{ lineHeight: 1.1 }}>
-                    {s.a}
+                  <span
+                    className="block"
+                    style={{
+                      lineHeight: 1.1,
+                      color: s.aIsTbd ? "var(--mute-1)" : undefined,
+                    }}
+                  >
+                    {chipA}
                   </span>
-                  <span className="block" style={{ lineHeight: 1.1 }}>
-                    {s.b}
+                  <span
+                    className="block"
+                    style={{
+                      lineHeight: 1.1,
+                      color: s.bIsTbd ? "var(--mute-1)" : undefined,
+                    }}
+                  >
+                    {chipB}
                   </span>
                 </span>
               </span>
@@ -340,7 +433,7 @@ function NBAPlayoffsBody() {
                     letterSpacing: "-0.005em",
                   }}
                 >
-                  {s.a} vs {s.b}
+                  {titleA} vs {titleB}
                 </p>
                 <p
                   className="mt-0.5 truncate text-[12px]"
@@ -368,7 +461,8 @@ function NBAPlayoffsBody() {
               </svg>
             </Link>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </section>
   );

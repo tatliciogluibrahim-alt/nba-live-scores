@@ -117,7 +117,13 @@ export function deriveDailyBrief({
     // ── Upcoming pins. The "pinned for later" copy that was the
     // original buggy default. Only fires when at least one pin is
     // actually upcoming.
-    if (summary.upcoming > 0 && !firstUpNextPinned) {
+    //
+    // Dedupe: when the upcoming pin is ALSO the first Up Next card,
+    // we drop the CTA (avoids two tap targets pointing at the same
+    // game) but keep the sentence — that's a specific calm signal at
+    // the top of the screen, much better than falling through to the
+    // generic "Your follows are set." default.
+    if (summary.upcoming > 0) {
       const text =
         summary.upcoming === 1 && summary.total === 1
           ? "One game pinned for later."
@@ -126,6 +132,9 @@ export function deriveDailyBrief({
             : // Mixed (e.g. 1 upcoming + 1 final). Lead with the
               // actionable upcoming count without burying the rest.
               `${summary.upcoming} of ${summary.total} pinned games coming up.`;
+      if (firstUpNextPinned) {
+        return { text };
+      }
       return {
         text,
         cta: { label: "Open Watching", href: "/watching" },

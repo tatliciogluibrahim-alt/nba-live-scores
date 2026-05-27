@@ -1,11 +1,30 @@
+import type { Metadata } from "next";
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
 import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { CountryClient } from "../../companion/country/CountryClient";
+import { getCountry } from "../../companion/following/data/countries";
 import { getTournament } from "../../companion/following/data/tournaments";
 
-export const metadata = {
-  title: "Country | No Noise Scores",
-};
+// Dynamic per-country title. `/country/USA` → "USA · World Cup 2026 |
+// No Noise Scores" (or the country's full name when the directory
+// recognizes the code). Falls back to a generic "Country" title for
+// codes we don't know. Helps browser tabs, share previews, and
+// browser history all stay distinguishable when the user has multiple
+// country pages open.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ code: string }>;
+}): Promise<Metadata> {
+  const { code } = await params;
+  const entry = getCountry(code.toUpperCase());
+  if (!entry) {
+    return { title: "Country | No Noise Scores" };
+  }
+  return {
+    title: `${entry.name} · World Cup 2026 | No Noise Scores`,
+  };
+}
 
 // Country detail back-crumb is contextual. Default is /following (where
 // most users land from), but when the link carries `?from=<tournamentId>`

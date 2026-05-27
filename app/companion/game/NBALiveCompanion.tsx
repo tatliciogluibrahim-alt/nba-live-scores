@@ -210,13 +210,18 @@ export function NBALiveCompanion({
         ariaSubject={subject}
       />
 
-      {/* ── Hero moment band (live + upcoming + recap-less finals) ─────── */}
+      {/* ── Hero moment band (live + recap-less finals only) ───────────── */}
       {/* Finals normally hand the editorial slot to QuietRecapCard
           below — having both HeroMoment ("Final.") and the recap card
           stacked read as two cards saying the same thing. But when the
           boxscore feed is delayed (recap === null), we keep the slim
-          HeroMoment so the page isn't empty under the scoreboard. */}
-      {game.status === "final" && hasRecap ? null : (
+          HeroMoment so the page isn't empty under the scoreboard.
+          Upcoming games used to render a "Preview" hero that
+          restated the tip time already in the header — pure
+          repetition. Dropped: the Stakes line above carries the
+          narrative for upcoming games, the header has the date, and
+          WatchLine below has the channel. No need to repeat. */}
+      {isUpcoming ? null : game.status === "final" && hasRecap ? null : (
         <div className="mt-4">
           <HeroMoment
             eyebrow={hero.eyebrow}

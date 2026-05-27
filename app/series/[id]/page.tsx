@@ -1,10 +1,26 @@
+import type { Metadata } from "next";
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
 import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { SeriesClient } from "../../companion/series/SeriesClient";
 
-export const metadata = {
-  title: "Series | No Noise Scores",
-};
+// Dynamic per-series title. Series ids are `${abbrA}-${abbrB}`
+// (sorted), so `/series/CLE-NYK` becomes "CLE vs NYK · NBA | No Noise
+// Scores". Falls back to generic "Series" if the id can't be parsed
+// (rare — would mean a malformed URL).
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const [a, b] = id.split("-");
+  if (a && b) {
+    return {
+      title: `${a.toUpperCase()} vs ${b.toUpperCase()} · NBA | No Noise Scores`,
+    };
+  }
+  return { title: "Series | No Noise Scores" };
+}
 
 export default async function SeriesPage({
   params,
