@@ -82,6 +82,25 @@ function IconPin() {
   );
 }
 
+function IconBook() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+    </svg>
+  );
+}
+
 function IconGear() {
   return (
     <svg
@@ -101,15 +120,23 @@ function IconGear() {
   );
 }
 
+// Today links to `/app` (not `/`) because `/` does UA sniffing and
+// serves the marketing LandingShell on desktop. The desktop sidebar
+// only renders at md+, where any link to `/` would punt the user out
+// of the app and back to the marketing site. `/app` is the explicit
+// "open the app on any device" route that always renders Today.
 const ENTRIES: Entry[] = [
-  { id: "today", href: "/", label: "Today", Icon: IconSun },
+  { id: "today", href: "/app", label: "Today", Icon: IconSun },
   { id: "following", href: "/following", label: "Following", Icon: IconHeart },
   { id: "watching", href: "/watching", label: "Watching", Icon: IconPin },
 ];
 
 function isActive(pathname: string | null, href: string) {
   if (!pathname) return false;
-  if (href === "/") return pathname === "/" || pathname === "/app";
+  // Today is the only entry that has two valid pathnames — `/app`
+  // (the canonical app route) and `/` (the mobile UA branch that
+  // also renders TodayClient). Both should highlight Today.
+  if (href === "/app") return pathname === "/app" || pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -125,9 +152,12 @@ export function DesktopSidebarNav({ active }: { active?: Tab }) {
         borderColor: "var(--line)",
       }}
     >
-      {/* Brand lockup */}
+      {/* Brand lockup — links to /app, not /, for the same reason as
+          the Today nav entry (root path serves the marketing landing
+          on desktop UA, and we want clicks inside the app shell to
+          stay in the app shell). */}
       <Link
-        href="/"
+        href="/app"
         prefetch
         className="flex items-center gap-2 px-5 pb-5 pt-6"
         aria-label="No Noise Scores — Today"
@@ -171,8 +201,23 @@ export function DesktopSidebarNav({ active }: { active?: Tab }) {
         </ul>
       </nav>
 
-      {/* Settings tucked at bottom of the rail */}
-      <div className="px-3 pb-5">
+      {/* Secondary nav — How it works for first-time / curious visitors,
+          Settings for everyone. Both sit at the bottom of the rail so
+          they read as "supporting" rather than primary actions. */}
+      <div className="px-3 pb-5 space-y-1">
+        <Link
+          href="/how-it-works"
+          prefetch
+          aria-current={pathname === "/how-it-works" ? "page" : undefined}
+          className="flex items-center gap-3 rounded-[10px] px-3 py-2 text-[13px] transition"
+          style={{
+            color: pathname === "/how-it-works" ? "var(--ink)" : "var(--mute-1)",
+            fontWeight: pathname === "/how-it-works" ? 700 : 500,
+          }}
+        >
+          <IconBook />
+          <span>How it works</span>
+        </Link>
         <Link
           href="/settings"
           prefetch
