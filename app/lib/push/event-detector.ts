@@ -47,6 +47,14 @@ export type PushEvent = {
    *  decoration ("Quarter wrapped"). */
   awayScore: number;
   homeScore: number;
+  /** True when this is a Game 7 tipoff (NBA only). The dispatcher
+   *  uses this to swap in stakes-aware copy ("Game 7 · OKC vs MIN /
+   *  Series on the line.") in place of the generic tipoff body.
+   *  Tipoff is already in every tier (quiet/companion/all), so this
+   *  flag is purely about copy — Quiet users were already going to
+   *  get the ping. Fires once per series maximum (same dedupe used
+   *  for normal tipoff covers this). */
+  isGame7?: boolean;
 };
 
 export type FreshGameState = {
@@ -67,6 +75,12 @@ export type FreshGameState = {
    *  Used by the end-of-quarter detector to fire as soon as the
    *  current quarter wraps, not when the next one starts. */
   statusText: string;
+  /** The game context label from the live-scores feed, e.g.
+   *  "Game 4", "Game 7". Used to detect Game 7 tipoffs so the
+   *  dispatcher can swap in stakes-aware copy (see Phase 21C-G7,
+   *  retention playbook). Optional because not every feed carries
+   *  it. */
+  gameContext?: string;
 };
 
 const CLOSE_GAME_PERIOD = 4;
@@ -184,7 +198,18 @@ export function detectEvents(
   // state (cron started after tipoff), we don't fire — better to miss a
   // late-join push than fan out a tipoff push 30 minutes after tipoff.
   if (prev?.status === "upcoming" && next.status === "live") {
-    events.push({ ...baseInfo, type: "tipoff" });
+    // Detect Game 7 from the gameContext label. ESPN labels playoff
+    // games as "Game 1" … "Game 7" — when we see Game 7, set the
+    // isGame7 flag so the dispatcher swaps in stakes-aware copy
+    // ("Game 7 · OKC vs MIN / Series on the line.") rather than the
+    // generic tipoff body. Tipoff is already in every tier so Quiet
+    // followers already get pinged; this is purely about the words.
+    const isGame7 = /\bGame\s*7\b/i.test(next.gameContext ?? "");
+    events.push({
+      ...baseInfo,
+      type: "tipoff",
+      ...(isGame7 ? { isGame7: true } : {}),
+    });
   }
 
   // End-of-quarter dedupe flags. Both detection paths below consult

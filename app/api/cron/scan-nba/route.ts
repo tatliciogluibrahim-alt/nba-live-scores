@@ -43,6 +43,10 @@ type NormalizedGame = {
   remaining: number | null;
   home: { abbreviation: string; score: number };
   away: { abbreviation: string; score: number };
+  /** Series context label from ESPN (e.g. "Game 7", "Game 4"). Used
+   *  by the event detector to flag Game 7 tipoffs for the dispatcher
+   *  override. Optional because not all games carry it. */
+  gameContext?: string;
 };
 
 type LiveScoresResponse = {
@@ -93,6 +97,9 @@ function toFresh(game: NormalizedGame): FreshGameState {
     // quarter wraps. Without this field the detector falls back to
     // period-increment, which fires when the next quarter starts.
     statusText: game.statusText,
+    // gameContext carries the "Game N" label so the detector can flag
+    // Game 7 tipoffs for the dispatcher override (Phase 21C).
+    gameContext: game.gameContext,
   };
 }
 

@@ -2,6 +2,34 @@
 
 ---
 
+## Phase 21C-G7 — Game 7 Override Notification — 2026-05-27
+
+Smallest possible retention play. When a followed series reaches its
+Game 7, the tipoff push now leans into the moment.
+
+- `app/lib/push/event-detector.ts` — new `isGame7?: boolean` on
+  `PushEvent`. Set when the tipoff transition fires AND ESPN's
+  `gameContext` label matches `/\bGame\s*7\b/i`. New `gameContext?`
+  field on `FreshGameState` carries the label through.
+- `app/api/cron/scan-nba/route.ts` — passes `gameContext` from the
+  normalized `/api/live-scores` payload into `FreshGameState`. Already
+  parsed upstream; just needed wiring through the cron entrypoint.
+- `app/lib/push/dispatcher.ts` — `buildPayload` swaps in stakes-aware
+  copy when `event.isGame7` is true. Title: `Game 7 · OKC vs MIN`.
+  Body: `Series on the line. Tap to follow along.` Same dedupe slot
+  as a normal tipoff (`${gameId}:tipoff`), so fires once per series
+  maximum.
+
+No tier-filter bypass needed: tipoff is already in every preset
+(Quiet / Companion / Close games), so Quiet followers were already
+getting the ping. The override is purely about the words.
+
+Rolled out across both web push and APNs through the shared
+dispatcher — iOS native users get the Game 7 copy too, on the same
+delivery loop.
+
+---
+
 ## Phase 22.5-1 + 22.5-2 — iOS Native (APNs) — 2026-05-27
 
 iOS native ship via Capacitor 8. Two parts in one day:

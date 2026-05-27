@@ -392,6 +392,21 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
   // only by the time we reach buildPayload.
   switch (event.type) {
     case "tipoff":
+      // Phase 21C-G7 — Game 7 override. When ESPN's gameContext flags
+      // this as Game 7 of a series, swap the title + body to lean into
+      // the stakes. Same delivery path, different copy. Score is 0-0
+      // at tipoff so we omit it whether or not No-Spoilers is on; the
+      // body just sets the moment. Tipoff is already in every tier
+      // (quiet/companion/all) so no tier-filter override is needed —
+      // the matcher already lets Quiet followers through.
+      if (event.isGame7) {
+        return {
+          title: `Game 7 · ${matchup}`,
+          body: "Series on the line. Tap to follow along.",
+          url: `/game/${event.gameId}`,
+          tag: `${event.gameId}:tipoff`,
+        };
+      }
       // At tipoff the score is 0-0; nothing useful to include either way.
       return {
         title: `Tipoff · ${matchup}`,

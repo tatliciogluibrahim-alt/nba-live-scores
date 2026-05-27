@@ -82,10 +82,14 @@ Captured from a retention-specialist ideation pass. Full detail in
    card also surfaces their OTHER active follows. "You still have
    [team] in your circle. [Next game date]." Same screen, redirect
    the emotional investment.
-3. **Game 7 override notification.** When a followed series reaches
-   Game 7, fire a single push to all subscribers regardless of
-   alert tier. Even Quiet. Body: "Game 7 tonight. [A] vs [B]." No
-   score, no urgency language. Fires once per series maximum.
+3. **Game 7 override notification.** ✅ Shipped (Phase 21C-G7,
+   May 2026). Event detector flags Game 7 tipoffs from ESPN's
+   `gameContext` label and the dispatcher swaps in stakes-aware
+   copy: title `Game 7 · [A] vs [B]`, body `Series on the line.
+   Tap to follow along.` Tipoff is already in every tier so Quiet
+   followers were already getting pinged — the override is purely
+   about leaning into the moment with the words. Same dedupe slot
+   as a normal tipoff, so fires once per series maximum.
 4. **Dead Zone Bridge Card.** Persistent off-season card variant
    in `pickClosing()`. "Nothing in your circle right now. NFL
    starts [date]. Your teams: [list]."
