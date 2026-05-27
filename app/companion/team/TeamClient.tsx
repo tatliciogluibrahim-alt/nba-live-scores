@@ -141,6 +141,16 @@ export function TeamClient({ teamAbbr }: { teamAbbr: string }) {
       seriesGame.away.abbreviation === teamAbbr
         ? seriesGame.home.abbreviation
         : seriesGame.away.abbreviation;
+    // Guard against placeholder / compound opponent strings (ESPN
+    // sometimes emits "OKC/MIN" for an undecided next-round opponent
+    // and "TBD" for the canonical placeholder). Linking to
+    // /series/${TEAM}-OKC%2FMIN would 404 on the detail page, and
+    // showing the user "Current series · NYK vs OKC/MIN" is worse
+    // than showing nothing. Treat as "no current series" — the user
+    // can navigate via the tournament page.
+    if (!opponent || opponent === "TBD" || opponent.includes("/")) {
+      return null;
+    }
     return {
       key: buildSeriesKey(teamAbbr, opponent),
       opponent,

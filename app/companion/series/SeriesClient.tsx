@@ -194,19 +194,26 @@ function LoadingShell() {
  */
 function SeriesAwaitingOpponent({ seriesKey }: { seriesKey: string }) {
   const [rawA, rawB] = seriesKey.split("-");
-  const determined = rawA === "TBD" ? rawB : rawA;
+  const bothTbd = rawA === "TBD" && rawB === "TBD";
+  const determined = bothTbd
+    ? null
+    : rawA === "TBD"
+      ? rawB
+      : rawA;
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
       <Eyebrow>Series</Eyebrow>
       <Display as="h1" size="lg" className="mt-2">
-        {determined} · ?
+        {determined ? `${determined} · ?` : "Matchup pending"}
       </Display>
       <p
         className="mt-1 text-[13px]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        {determined} are in. The other side hasn&apos;t been decided yet.
+        {determined
+          ? `${determined} are in. The other side hasn't been decided yet.`
+          : "Neither side has been decided yet."}
       </p>
 
       <section

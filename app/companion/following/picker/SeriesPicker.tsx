@@ -27,6 +27,14 @@ function buildSeriesKey(a: string, b: string): string {
 function isSeriesCandidate(g: ApiGame): boolean {
   if (!g.away.abbreviation || !g.home.abbreviation) return false;
   if (g.away.abbreviation === "TBD" || g.home.abbreviation === "TBD") return false;
+  // Reject compound placeholder abbreviations like "OKC/MIN" that
+  // ESPN emits for forward-projected next-round opponents. If we
+  // surface them in the picker, the user can pick one and we'd
+  // persist a malformed follow id (e.g. "NYK-OKC/MIN") that would
+  // never match the eventual real matchup.
+  if (g.away.abbreviation.includes("/") || g.home.abbreviation.includes("/")) {
+    return false;
+  }
   return Boolean(
     g.seriesRound ||
       g.seriesConference ||
