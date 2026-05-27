@@ -24,12 +24,21 @@ const JWT_VALIDITY_MS = 50 * 60 * 1000; // 50 minutes, max is 60
 let cachedJwt: { token: string; expiresAt: number } | null = null;
 
 /** Normalize a .p8 / PEM private key coming from a Vercel-style env
- *  var. Common corruption modes that this handles:
+ *  var. Vercel's UI throws "the value has return characters" if you
+ *  paste a multi-line PEM directly, so the recommended pattern is to
+ *  base64-encode the entire .p8 file on the client and paste the
+ *  single-line base64. We accept either format here.
  *
- *   1. Escaped newlines: "-----BEGIN...\nMIGT\n-----END..." gets
+ *  Common corruption modes handled:
+ *
+ *   1. Base64-encoded whole-file: when we detect no PEM markers in
+ *      the raw value AND it base64-decodes to something that DOES
+ *      have PEM markers, use the decoded form. This is the
+ *      recommended Vercel storage format.
+ *   2. Escaped newlines: "-----BEGIN...\nMIGT\n-----END..." gets
  *      stored as literal `\n` sequences, not real newlines. We unescape.
- *   2. Surrounding whitespace / BOM from copy-paste.
- *   3. Missing PEM armor: someone pasted just the base64 body. We
+ *   3. Surrounding whitespace / BOM from copy-paste.
+ *   4. Missing PEM armor on a base64 BODY (no headers, no envelope):
  *      add the -----BEGIN/END PRIVATE KEY----- envelope and chunk
  *      the base64 into 64-char lines per RFC 7468.
  *
@@ -46,8 +55,29 @@ function normalizeApnsPrivateKey(raw: string): string {
   if (key.includes("\\n") && !key.includes("\n")) {
     key = key.replace(/\\n/g, "\n");
   }
-  // If missing PEM armor, add it. Apple always includes it in the
-  // downloaded file, but a hand-stripped paste might not.
+  // Base64-encoded whole-file case. The cleanest way to store a
+  // multi-line PEM in Vercel is to base64-encode the entire file on
+  // the client (`base64 -i AuthKey_*.p8 | pbcopy`). The stored value
+  // is a single line of base64 with no special characters, which
+  // Vercel never complains about. Server-side, we detect this by:
+  //   • No PEM markers in the raw value
+  //   • Looks like base64 (no whitespace, valid alphabet)
+  //   • Decodes to something that DOES contain PEM markers
+  if (!key.includes("-----BEGIN") && /^[A-Za-z0-9+/=\r\n]+$/.test(key)) {
+    try {
+      const decoded = Buffer.from(key.replace(/\s+/g, ""), "base64").toString(
+        "utf8"
+      );
+      if (decoded.includes("-----BEGIN")) {
+        key = decoded.trim();
+      }
+    } catch {
+      // Fall through to the bare-body branch below.
+    }
+  }
+  // Bare-base64-body case (no headers, no envelope). Apple always
+  // includes the armor in the .p8 download, but a hand-stripped
+  // paste might not.
   if (!key.includes("-----BEGIN")) {
     const base64 = key.replace(/\s+/g, "");
     const chunks = base64.match(/.{1,64}/g) ?? [base64];
