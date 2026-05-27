@@ -131,7 +131,12 @@ export function FirstRunStrip() {
         <Step
           index={3}
           done={notifDone}
-          title="Pick what gets alerts"
+          // Title used to read "Pick what gets alerts" but that gated
+          // on prefs.notifPromptDismissed — the *push permission
+          // decision* flag, not the per-follow alert tier. Users who
+          // picked tiers expected the step to complete and it didn't.
+          // Renamed so the title matches what actually flips the gate.
+          title="Turn on notifications"
           pendingDetail=""
           doneDetail="Choice saved."
           href="/settings"
