@@ -2,6 +2,30 @@
 
 ---
 
+## Phase 21B-2 Calendar export — REVERTED 2026-05-27
+
+The Add to Calendar feature shipped in Phase 21B-2 was removed less
+than 24 hours after it landed. Reasons:
+
+- Visual jank. The `📅` emoji + chip pattern didn't fit the cream
+  chassis — looked like a SaaS feature dropped into an editorial UI.
+- Unclear value prop. No signal that anyone would actually use it.
+  PWA users open the app to check scores; the calendar handoff
+  duplicated the "remember the game is on" job that follow-alerts
+  already do.
+- Adding a feature is cheap. Maintaining one that nobody uses is
+  expensive. Cleaner to delete now than to keep it lingering as
+  background visual debt.
+
+Files deleted: `app/lib/calendar/ics.ts`,
+`app/companion/calendar/AddToCalendarButton.tsx`. Removed from
+`NBALiveCompanion.tsx` and `WCGameDetail.tsx`.
+
+The historical Phase 21B-2 entry below is kept for record. The
+feature shipped, then got removed.
+
+---
+
 ## Phase 21B — Calm Endings + Calendar — 2026-05-26 (late)
 
 Three small features shipped after the post-launch ideation pass. All

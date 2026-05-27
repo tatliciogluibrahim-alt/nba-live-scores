@@ -457,12 +457,13 @@ existing primitives:
   `app/companion/today/sections/calm-end-card.tsx` with the data
   layer addition in `today-data.ts` (`ClosingMoment` type +
   `pickClosing` function).
-- **Add to Calendar.** iCal export on every upcoming game detail
-  page (NBA + WC). Spoiler-safe SUMMARY under No-Spoilers
-  ("Knicks game" instead of the matchup). Pure generator in
-  `app/lib/calendar/ics.ts`; button in
-  `app/companion/calendar/AddToCalendarButton.tsx`. Wired into
-  `NBALiveCompanion` and `WCGameDetail`.
+- **Add to Calendar (REVERTED 2026-05-27).** Originally shipped as
+  part of Phase 21B-2 — iCal export with spoiler-safe titles. Pulled
+  less than 24 hours later because the visual treatment didn't fit
+  the cream chassis and the value prop overlapped with follow-alerts
+  (both solved "remember the game is on"). Files deleted, button
+  removed from NBA + WC game detail. The historical decision and
+  lessons are in `app/CHANGELOG_PRODUCT.md`.
 - **Push fixes.** PushSyncEffect now persists the sync hash only on
   HTTP 2xx (fixes iOS PWA suspend drops). End-of-quarter detection
   now consumes the live-scores `statusText` field ("End Q1" / "End

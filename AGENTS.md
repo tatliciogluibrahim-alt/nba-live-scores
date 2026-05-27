@@ -140,32 +140,33 @@ When changing code:
 ## Current Phase
 
 Phases 1–8, A/B/C, **9–20**, the QA bug round, the polish batch,
-the copy + tone sweep, and **Phase 21B (Calm Endings + Calendar)**
-are all complete. The product is in a shippable state with a live
-desktop landing surface, a full SEO content layer, dynamic OG image
-generation, dark mode, a beta signup form, calendar export on game
-detail pages, and Series Closure + Wind-Down cards on Today. See
+the copy + tone sweep, and **Phase 21B (Calm Endings + Tier
+Honesty)** are all complete. The product is in a shippable state
+with a live desktop landing surface, a full SEO content layer,
+dynamic OG image generation, dark mode, a beta signup form, and
+Series Closure + Wind-Down cards on Today. See
 `app/CHANGELOG_PRODUCT.md` for per-phase detail.
 
 Completed (most recent first):
 
-- **Phase 21B — Calm Endings + Calendar + Tier Honesty** (May
-  2026). Five features. (1) CalmEndCard on Today — single
-  component, two configurations (Series Closure when a followed
-  series wraps, Tournament Wind-Down when NBA Finals wrap and slate
-  is quiet). Dismissible per moment id via localStorage. (2) Add to
-  Calendar on every upcoming game detail page (NBA + WC) — iCal
-  export with spoiler-safe titles under No-Spoilers. (3) Tier
-  rename: "Companion" → "Standard", "All moments" → "Close games."
-  Internal keys unchanged. (4) Live highlights upgrade — fresh
-  `leaders` from `/api/nba-game-detail` merged in, so live games
-  show "SGA · 30 PTS, 6 AST" instead of falling back to team-stat
-  lines. Retroactively applies to past games inside ESPN's
-  retention window. (5) Push fixes — sync hash persists only on
-  server-ack, end-of-quarter detection fires at the buzzer not at
-  the next quarter's tip. Picked from an LLM ideation pass; the
-  remaining ideas are sorted Ship/Hold/Skip/Reconsider in
-  `docs/ROADMAP.md`.
+- **Phase 21B — Calm Endings + Tier Honesty** (May 2026). Four
+  features (originally five — see Add to Calendar note below).
+  (1) CalmEndCard on Today — single component, two configurations
+  (Series Closure when a followed series wraps, Tournament
+  Wind-Down when NBA Finals wrap and slate is quiet). Dismissible
+  per moment id via localStorage. (2) Tier rename: "Companion" →
+  "Standard", "All moments" → "Close games." Internal keys
+  unchanged. (3) Live highlights upgrade — fresh `leaders` from
+  `/api/nba-game-detail` merged in, so live games show "SGA · 30
+  PTS, 6 AST" instead of falling back to team-stat lines.
+  Retroactively applies to past games inside ESPN's retention
+  window. (4) Push fixes — sync hash persists only on server-ack,
+  end-of-quarter detection fires at the buzzer not at the next
+  quarter's tip. Picked from an LLM ideation pass; the remaining
+  ideas are sorted Ship/Hold/Skip/Reconsider in `docs/ROADMAP.md`.
+  **Add to Calendar (originally Phase 21B-2) reverted 2026-05-27**
+  — visual didn't fit, value prop overlapped with follow-alerts.
+  Files deleted, button removed. See CHANGELOG for details.
 - **Copy + tone sweep** (May 2026). Em-dashes removed from all
   user-facing surfaces. AI-marketing flourishes neutralized. Metadata
   titles standardized to `Page | No Noise Scores`. NFL Sundays

@@ -22,6 +22,14 @@ const EMPTY: TodayPayload = {
   slateComplete: false,
   finalsCount: 0,
   closing: null,
+  pinnedSummary: {
+    total: 0,
+    live: 0,
+    upcoming: 0,
+    final: 0,
+    unresolved: 0,
+    primary: null,
+  },
 };
 
 // Polling cadence per STRATEGY.md: 10s when a live game is on the surface,

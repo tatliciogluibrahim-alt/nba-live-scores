@@ -10,7 +10,6 @@ import { WatchLine } from "../watch/WatchLine";
 import { useNoSpoilers } from "../providers";
 import type { Game } from "../../nba/types";
 import { PinControls } from "./PinControls";
-import { AddToCalendarButton } from "../calendar/AddToCalendarButton";
 import { deriveHero, deriveSeriesContext, deriveSeriesDots } from "./nba-moments";
 import { HighlightsStack } from "./HighlightsStack";
 import { PeriodScoreLine } from "./PeriodScoreLine";
@@ -288,27 +287,6 @@ export function NBALiveCompanion({
         subject={subject}
         className="mt-5"
       />
-
-      {/* Add to Calendar — only renders for upcoming games (the
-          button checks internally). Sits below pin controls because pin
-          is the primary "I'm watching" intent; calendar is the quiet
-          fallback for "I want to remember without enabling alerts." */}
-      {isUpcoming ? (
-        <div className="mt-3 flex justify-center">
-          <AddToCalendarButton
-            game={{
-              id: game.id,
-              start: game.date,
-              sport: "NBA",
-              matchup: subject,
-              awayCode: game.away.abbreviation,
-              homeCode: game.home.abbreviation,
-              location: game.broadcasts?.[0],
-              context: game.gameContext || undefined,
-            }}
-          />
-        </div>
-      ) : null}
     </main>
   );
 }

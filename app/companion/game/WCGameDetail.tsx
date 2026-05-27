@@ -9,7 +9,6 @@ import { Spoiler } from "../spoiler/Spoiler";
 import { WatchLine } from "../watch/WatchLine";
 import type { WCGameLite, WCMatchEventLite } from "../today/today-data";
 import { PinControls } from "./PinControls";
-import { AddToCalendarButton } from "../calendar/AddToCalendarButton";
 
 // World Cup game detail. Mirrors NBALiveCompanion's structure (H1 →
 // ScoreModule → HeroMoment → WatchLine → Highlights → PinControls) but
@@ -211,25 +210,6 @@ export function WCGameDetail({
         subject={subject}
         className="mt-5"
       />
-
-      {/* Add to calendar — upcoming WC matches only. Title is spoiler-
-          safe under No-Spoilers ("USA game" instead of the opponent). */}
-      {isUpcoming ? (
-        <div className="mt-3 flex justify-center">
-          <AddToCalendarButton
-            game={{
-              id: game.id,
-              start: game.date,
-              sport: "World Cup",
-              matchup: subject,
-              awayCode: game.away.abbreviation,
-              homeCode: game.home.abbreviation,
-              location: game.broadcasts?.[0],
-              context: game.stage || undefined,
-            }}
-          />
-        </div>
-      ) : null}
     </main>
   );
 }

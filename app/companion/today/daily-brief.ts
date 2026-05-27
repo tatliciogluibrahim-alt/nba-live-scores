@@ -84,39 +84,91 @@ export function deriveDailyBrief({
     return { text: "Scores hidden. Schedules stay visible." };
   }
 
-  // 2 ─ Pinned games. Don't announce a pinned game when the same game
-  // is already visible directly below as the first Up Next card — that
-  // duplication is the noise this branch is here to avoid. When the
-  // pinned game IS hidden, prefer the live variant if the hero is the
-  // pinned live game; otherwise show the calm "pinned for later" copy.
-  if (pinned.length > 0) {
+  // 2 ─ Pinned games. Branch by the actual status of each pinned game
+  // via payload.pinnedSummary. Pre-fix this branch said "pinned for
+  // later" for any pin regardless of status, so a wrapped game from
+  // last night would mis-classify as upcoming. The summary buckets
+  // each pin by live / upcoming / final / unresolved and the brief
+  // picks copy + CTA from there.
+  //
+  // Dedupe: when the first Up Next card is also a pin, skip the brief
+  // (avoid telling the user about a card that's already on screen).
+  // Only applies when the pin is upcoming — a wrapped pin and a
+  // separate upcoming Up Next card are different things and both
+  // earn their slot.
+  const summary = payload.pinnedSummary;
+  if (pinned.length > 0 && summary.total > 0) {
     const firstUpNextPinned = payload.upNext[0]?.pinned === true;
-    if (!firstUpNextPinned) {
-      // pickHero already prefers a pinned live game over any other live
-      // game, so `hero.pinned === true && hero.live === true` is the
-      // single signal that at least one pinned game is currently live.
-      const pinnedIsLive =
-        payload.hero?.pinned === true && payload.hero?.live === true;
-      if (pinnedIsLive) {
-        return {
-          text:
-            pinned.length === 1
-              ? "One pinned game is live."
-              : `${pinned.length} pinned games — one is live.`,
-          cta: { label: "Open Watching", href: "/watching" },
-        };
-      }
+
+    // ── Live pins win first. Most urgent state.
+    if (summary.live > 0) {
+      const text =
+        summary.total === 1
+          ? "One pinned game is live."
+          : summary.live === summary.total
+            ? `${summary.live} pinned games live now.`
+            : `${summary.total} pinned games — ${summary.live === 1 ? "one is" : `${summary.live} are`} live.`;
       return {
-        text:
-          pinned.length === 1
-            ? "One game pinned for later."
-            : `${pinned.length} games pinned for later.`,
+        text,
         cta: { label: "Open Watching", href: "/watching" },
       };
     }
-    // Pinned game is the first Up Next card — fall through so a
-    // lower-priority Brief (live follow, tournament countdown, etc.)
-    // can fill the slot instead of repeating the user back to themselves.
+
+    // ── Upcoming pins. The "pinned for later" copy that was the
+    // original buggy default. Only fires when at least one pin is
+    // actually upcoming.
+    if (summary.upcoming > 0 && !firstUpNextPinned) {
+      const text =
+        summary.upcoming === 1 && summary.total === 1
+          ? "One game pinned for later."
+          : summary.upcoming === summary.total
+            ? `${summary.upcoming} games pinned for later.`
+            : // Mixed (e.g. 1 upcoming + 1 final). Lead with the
+              // actionable upcoming count without burying the rest.
+              `${summary.upcoming} of ${summary.total} pinned games coming up.`;
+      return {
+        text,
+        cta: { label: "Open Watching", href: "/watching" },
+      };
+    }
+
+    // ── All-final case (no live, no upcoming, ≥1 final). This is
+    // the wrapped-pin path that pre-fix never existed.
+    if (summary.final > 0 && summary.upcoming === 0) {
+      const text =
+        summary.total === 1
+          ? "Your pinned game wrapped."
+          : `${summary.final} pinned games wrapped.`;
+      // Single wrapped pin gets a direct deep link to its recap.
+      // Multiple wrapped pins route through Watching where the user
+      // can pick.
+      const href =
+        summary.total === 1 && summary.primary
+          ? summary.primary.href
+          : "/watching";
+      return {
+        text,
+        cta: { label: "View recap", href },
+      };
+    }
+
+    // ── All-unresolved case (no live, no upcoming, no final). The
+    // pin(s) aren't in any feed window — they may still resolve via
+    // the snapshot fallback on Watching, so route there.
+    if (summary.unresolved > 0 && summary.live === 0 && summary.upcoming === 0 && summary.final === 0) {
+      return {
+        text:
+          summary.unresolved === 1
+            ? "Pinned game unavailable."
+            : `${summary.unresolved} pinned games unavailable.`,
+        cta: { label: "Open Watching", href: "/watching" },
+      };
+    }
+
+    // Upcoming pin already visible as the first Up Next card — fall
+    // through so a lower-priority Brief (tournament countdown, etc.)
+    // can take this slot instead of repeating the same card to the
+    // user. Original dedupe behavior preserved.
   }
 
   // 3 ─ Followed games live / today.

@@ -123,6 +123,40 @@ export type ReminderRow = {
   href?: string;
 };
 
+// ── Pinned game summary ───────────────────────────────────────────────
+// Status-bucketed summary of the user's pinned games. The daily brief
+// uses this to pick the right copy + CTA per state — without it, the
+// brief defaults to "pinned for later" even when the pinned game is
+// final (the original bug).
+//
+// "primary" is the pinned game the brief CTA should point at when one
+// pin earns a deep link instead of /watching. Priority: live first
+// (most actionable), then upcoming (next-up matters), then final
+// (recap is the moment), then unresolved (let Watching handle the
+// stale-pin unpin flow).
+
+export type PinnedStatusBucket = "live" | "upcoming" | "final" | "unresolved";
+
+export type PinnedSummary = {
+  total: number;
+  live: number;
+  upcoming: number;
+  final: number;
+  /** Pins whose game wasn't found in the current week NBA feed, the
+   *  recent-games feed, or the WC feed. The Watching page's snapshot
+   *  fallback can still rescue these — but for the brief, they're an
+   *  "unavailable" signal. */
+  unresolved: number;
+  /** A representative pin for the brief's CTA. Null when no pins. */
+  primary: {
+    gameId: string;
+    status: PinnedStatusBucket;
+    /** Always /game/{id} when the pin resolved; /watching for
+     *  unresolved pins (Watching handles unpin / snapshot fallback). */
+    href: string;
+  } | null;
+};
+
 // ── Closing moment ────────────────────────────────────────────────────
 // A "calm ending" card. Two variants share one shape: a series the user
 // follows just wrapped, OR the NBA Finals just wrapped and the slate is
@@ -188,6 +222,11 @@ export type TodayPayload = {
    *  (localStorage), so the data layer always returns the moment when
    *  it qualifies — the view layer suppresses if dismissed. */
   closing: ClosingMoment | null;
+  /** Status-bucketed view of the user's pinned games. The daily brief
+   *  uses this to disambiguate "pinned for later" (upcoming) from
+   *  "wrapped" (final) — pre-fix, the brief said "later" for any pin
+   *  regardless of actual status. */
+  pinnedSummary: PinnedSummary;
 };
 
 // ── Pure helpers ──────────────────────────────────────────────────────
@@ -887,6 +926,130 @@ function pickClosing(
   return null;
 }
 
+// ── Pinned summary ────────────────────────────────────────────────────
+// Resolve each pinned game ID against the current-week NBA feed, the
+// recent-games (seriesGames) feed, and the WC feed. Bucket each pin
+// by its actual game.status, count them, and pick a "primary" for the
+// brief CTA.
+//
+// Resolution order matters:
+//   • nba (current week, freshest scores)
+//   • nbaRecent (seriesGames, covers ~14 days back)
+//   • wc
+//   • unresolved (none of the above — could still be snapshot-resolvable
+//     on Watching, but the brief treats them as unavailable)
+//
+// Within a single status bucket, "primary" prefers the newest pin —
+// most recent intent reads as the user's current focus.
+//
+// Priority across buckets (for primary selection):
+//   live > upcoming > final > unresolved
+// This matches the daily brief's headline priority — a user with one
+// live + one wrapped pin most wants to see the live one.
+
+function buildPinnedSummary(
+  nba: NBAGame[],
+  nbaRecent: NBAGame[],
+  wc: WCGameLite[],
+  pinned: PinnedGame[]
+): PinnedSummary {
+  if (pinned.length === 0) {
+    return {
+      total: 0,
+      live: 0,
+      upcoming: 0,
+      final: 0,
+      unresolved: 0,
+      primary: null,
+    };
+  }
+
+  // Build lookup maps once. NBA first (fresher) so duplicate IDs
+  // between feeds prefer the current-week version.
+  const nbaById = new Map<string, NBAGame>();
+  for (const g of nbaRecent) nbaById.set(g.id, g);
+  for (const g of nba) nbaById.set(g.id, g);
+  const wcById = new Map(wc.map((g) => [g.id, g]));
+
+  type Resolved = {
+    gameId: string;
+    pinnedAt: number;
+    status: PinnedStatusBucket;
+  };
+
+  const resolved: Resolved[] = [];
+
+  for (const pin of pinned) {
+    const nbaGame = nbaById.get(pin.gameId);
+    if (nbaGame) {
+      resolved.push({
+        gameId: pin.gameId,
+        pinnedAt: pin.pinnedAt,
+        // game.status is already "live" | "upcoming" | "final" — same
+        // shape as PinnedStatusBucket minus "unresolved", so the cast
+        // is safe.
+        status: nbaGame.status,
+      });
+      continue;
+    }
+    const wcGame = wcById.get(pin.gameId);
+    if (wcGame) {
+      resolved.push({
+        gameId: pin.gameId,
+        pinnedAt: pin.pinnedAt,
+        status: wcGame.status,
+      });
+      continue;
+    }
+    resolved.push({
+      gameId: pin.gameId,
+      pinnedAt: pin.pinnedAt,
+      status: "unresolved",
+    });
+  }
+
+  const live = resolved.filter((r) => r.status === "live").length;
+  const upcoming = resolved.filter((r) => r.status === "upcoming").length;
+  const final = resolved.filter((r) => r.status === "final").length;
+  const unresolved = resolved.filter((r) => r.status === "unresolved").length;
+
+  // Primary pick: walk priority order, return the newest pin in the
+  // highest-priority bucket that has members.
+  const priority: PinnedStatusBucket[] = [
+    "live",
+    "upcoming",
+    "final",
+    "unresolved",
+  ];
+  let primary: PinnedSummary["primary"] = null;
+  for (const bucket of priority) {
+    const inBucket = resolved
+      .filter((r) => r.status === bucket)
+      .sort((a, b) => b.pinnedAt - a.pinnedAt);
+    if (inBucket.length > 0) {
+      const top = inBucket[0];
+      primary = {
+        gameId: top.gameId,
+        status: top.status,
+        href:
+          top.status === "unresolved"
+            ? "/watching"
+            : `/game/${top.gameId}`,
+      };
+      break;
+    }
+  }
+
+  return {
+    total: pinned.length,
+    live,
+    upcoming,
+    final,
+    unresolved,
+    primary,
+  };
+}
+
 // ── Top-level builder ─────────────────────────────────────────────────
 
 export function buildTodayPayload({
@@ -920,6 +1083,7 @@ export function buildTodayPayload({
   const hasLive = nba.some((g) => g.status === "live") || wc.some((g) => g.status === "live");
   const hasUpcoming = upNext.length > 0;
   const closing = pickClosing(recentForWrap, follows, hasLive, hasUpcoming, now);
+  const pinnedSummary = buildPinnedSummary(nba, recentForWrap, wc, pinned);
   // Quiet Wrap intentionally shows both today's "Earlier" finals AND
   // yesterday's finals for context, but the Quiet Recap moment is
   // strictly about *tonight's* slate. Count only games that finished
@@ -945,5 +1109,6 @@ export function buildTodayPayload({
     slateComplete,
     finalsCount,
     closing,
+    pinnedSummary,
   };
 }

@@ -8,18 +8,35 @@ import { LiveRoom } from "./LiveRoom";
 import type { PinnedItem, WatchingPayload } from "./watching-data";
 
 // List of pinned games. Live first, then upcoming, then final. Stale pins
-// (games we can't resolve from the feed) appear at the bottom with their
-// own unpin action so the list never feels broken.
+// (games we can't resolve from the feed or snapshots) appear at the
+// bottom with their own unpin action so the list never feels broken.
 
 /** State-aware summary sentence under the "Watching." display.
- *  Live > upcoming > final priority — never reveals winners or margins,
- *  just timing-of-tracking copy. Safe under No-Spoilers. */
-function buildWatchingSummary(items: PinnedItem[]): string {
-  if (items.length === 0) return "One game pinned.";
-
+ *  Live > upcoming > final > unresolved priority — never reveals
+ *  winners or margins, just timing-of-tracking copy. Safe under
+ *  No-Spoilers. Mirrors the status buckets used by the Today brief
+ *  via PinnedSummary so the two surfaces always agree. */
+function buildWatchingSummary(
+  items: PinnedItem[],
+  staleCount: number
+): string {
   const live = items.filter((i) => i.status === "live").length;
   const upcoming = items.filter((i) => i.status === "upcoming").length;
   const final = items.filter((i) => i.status === "final").length;
+
+  if (items.length === 0) {
+    // No resolved pinned items — everything is either still loading or
+    // truly unresolved. If we have stale pins, surface the
+    // unavailable copy (lets the user know they can unpin from below).
+    // Without any stale pins either, the page shouldn't even be
+    // rendering — fall back to neutral copy as a defensive default.
+    if (staleCount > 0) {
+      return staleCount === 1
+        ? "Pinned game unavailable."
+        : `${staleCount} pinned games unavailable.`;
+    }
+    return "One game pinned.";
+  }
 
   if (live > 0) {
     return live === 1 ? "Live now." : `${live} games live.`;
@@ -66,7 +83,7 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
             style={{ background: "var(--live)" }}
           />
         ) : null}
-        <span>{buildWatchingSummary(items)}</span>
+        <span>{buildWatchingSummary(items, stalePins.length)}</span>
       </p>
 
       {/* ── Live Room dock (Stage 15E) — only when ≥2 live pins ─────── */}

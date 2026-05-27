@@ -3,8 +3,10 @@
 This file lists the work ahead, sequenced.
 
 **Phases 1–8, A/B/C, 9–20, the QA bug round, the polish batch, the
-copy + tone sweep, and Phase 21B (Calm Endings + Calendar) are all
-complete** (see `app/CHANGELOG_PRODUCT.md` for per-phase detail).
+copy + tone sweep, and Phase 21B (Calm Endings + Tier Honesty) are
+all complete** (see `app/CHANGELOG_PRODUCT.md` for per-phase
+detail). The Add to Calendar feature shipped briefly as part of
+Phase 21B-2 then was reverted on 2026-05-27.
 
 Each phase below is one go/no-go unit. Do not jump ahead.
 
@@ -36,7 +38,7 @@ alternatives, do not let copy drift.
 
 ---
 
-## ✅ Phase 21B — Calm Endings + Calendar + Tier Honesty — SHIPPED (May 2026)
+## ✅ Phase 21B — Calm Endings + Tier Honesty — SHIPPED (May 2026)
 
 Mini-batch shipped after the post-launch ideation pass (see
 `docs/IDEATION_BRIEFING.md` for the briefing, and the chat history
@@ -46,9 +48,11 @@ for the LLM outputs that produced these picks).
   Closure (when a followed series wraps) and Tournament Wind-Down
   (when the NBA Finals wrap and the slate is quiet). Dismissible per
   moment id via localStorage.
-- **Add to Calendar** — iCal (.ics) export on every upcoming game
-  detail page (NBA + WC). Spoiler-safe titles under No-Spoilers
-  ("Knicks game" not "Knicks vs Pacers · Game 4").
+- ~~**Add to Calendar**~~ — iCal export, **reverted 2026-05-27**.
+  Visual treatment didn't fit the cream chassis. Value prop
+  overlapped with follow-alerts. Files deleted, button removed
+  from NBA + WC game detail. Kept in changelog as a reverted entry
+  for record.
 - **Tier rename** — "Companion" → "Standard", "All moments" →
   "Close games." Internal keys (`quiet | companion | all`) unchanged.
 - **Live highlights upgrade** — HighlightsStack + Recap Card now
