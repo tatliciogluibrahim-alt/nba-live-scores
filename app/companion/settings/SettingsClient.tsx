@@ -3,8 +3,23 @@
 import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { NoSpoilersToggle } from "./NoSpoilersToggle";
-import { ReminderSelector } from "./ReminderSelector";
-import { QuietHoursSelector } from "./QuietHoursSelector";
+// ReminderSelector + QuietHoursSelector are intentionally NOT mounted
+// yet. Both UIs exist and write to localStorage, but the server side
+// that would honor them isn't built:
+//
+//   - ReminderSelector → needs `/api/cron/pre-game-reminders` cron
+//     that scans upcoming games and fires reminders N minutes before
+//     tipoff per the user's `remindBeforeMinutes`.
+//   - QuietHoursSelector → needs the dispatcher to read `quietHours`
+//     on each subscription and skip delivery during the configured
+//     window.
+//
+// Shipping either picker now leaves a non-functional setting in the
+// app, which leaks trust. Re-import + remount each when its server-
+// side path lands.
+//
+// import { ReminderSelector } from "./ReminderSelector";
+// import { QuietHoursSelector } from "./QuietHoursSelector";
 import { PerFollowAlerts } from "./PerFollowAlerts";
 import { WatchGuidanceBlock } from "./WatchGuidanceBlock";
 import { NotificationPreview } from "./NotificationPreview";
@@ -30,7 +45,7 @@ export function SettingsClient() {
             className="text-[14px] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            No-Spoilers, notifications, quiet hours.
+            No-Spoilers, notifications, theme.
           </p>
         </div>
         {/* Optional reading for the curious user. The page explains the
@@ -51,8 +66,10 @@ export function SettingsClient() {
       <div className="space-y-5">
         <NoSpoilersToggle />
         <PerFollowAlerts />
-        <ReminderSelector />
-        <QuietHoursSelector />
+        {/* <ReminderSelector />  Hidden until the pre-game reminder
+            cron ships. */}
+        {/* <QuietHoursSelector />  Hidden until the dispatcher honors
+            quietHours per subscription. */}
         <ThemeSelector />
         <PushSubscriptionPanel />
         <NotificationPreview />

@@ -57,6 +57,34 @@ At a glance:
 
 ---
 
+## Marketing Phase (parallel to Phase 21 once friend beta lands)
+
+**Goal:** Take the app from friend beta to public via $0-spend organic
+channels.
+
+**Triggered by:** the user saying "let's start the marketing phase" or
+similar (see `AGENTS.md > Marketing Phase trigger`).
+
+**Reads:** `docs/LAUNCH_PLAN.md` (strategy), `docs/LAUNCH_PROMPT.md`
+(executable five-phase runbook).
+
+**Produces:**
+
+- KPI instrumentation in `app/` (installs, push grants, D7 retention).
+- Seven launch-post drafts in `docs/marketing/`.
+- Outreach list (18 personalized cold-pitch targets).
+- Portfolio case study draft.
+- Hour-by-hour launch day checklist.
+
+**Risk:** Low for the artifacts, medium for the launch itself (Show HN
+is one-shot, timing matters).
+
+**Don't run prematurely.** Wait for friend beta validation (50+
+installs, D7 above 25%) before triggering. The plan explicitly says
+"don't burn the Show HN card before you're ready."
+
+---
+
 ## Phase 21 — Brief Launch (gated on domain email)
 
 **Goal:** turn the dark-but-ready Brief infrastructure into a live

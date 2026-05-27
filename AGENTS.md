@@ -202,6 +202,33 @@ Do not do yet:
 - New backend.
 - Path B follow-schema refactor (wait for 3rd moment).
 
+## Marketing Phase trigger
+
+If the user says any of the following (case-insensitive), open
+`docs/LAUNCH_PROMPT.md` and execute it:
+
+- "let's start the marketing phase"
+- "let's do marketing"
+- "marketing time"
+- "start the launch"
+- "begin the launch plan"
+- "run the marketing prompt"
+
+The prompt is a five-phase runbook that produces:
+
+1. KPI instrumentation (code work in `app/`)
+2. Seven launch-post drafts in `docs/marketing/`
+3. An outreach list in `docs/marketing/outreach-list.md`
+4. A portfolio case study in `docs/marketing/portfolio-case-study.md`
+5. A launch day checklist in `docs/marketing/LAUNCH_DAY_CHECKLIST.md`
+
+Strategy lives in `docs/LAUNCH_PLAN.md`. Output directory is
+`docs/marketing/` (currently has only a README).
+
+Do not run the marketing phase prematurely. Wait for the explicit
+trigger. Until then, marketing artifacts stay un-generated and
+`docs/marketing/` stays empty (except for its README).
+
 ## Free vs. paid model (in copy already)
 
 - **Free**: unlimited follows, alerts on the first 3 follows, all
