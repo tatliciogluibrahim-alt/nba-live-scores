@@ -3,14 +3,18 @@
 import { useEffect, useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { useUserPrefs } from "../providers";
+import { isCapacitorNative } from "../dev/native-detect";
 
 // Install for game alerts — Phase 9 friend-beta gate.
 //
 // One dismissible "Add to Home Screen" affordance on Today. Renders only
 // when:
 //   • the user is hydrated
+//   • the app isn't running inside the Capacitor native wrapper (Phase
+//     22.5 — when iOS native ships, this card is nonsensical because
+//     the user already has the App Store install)
 //   • the app isn't already running standalone (we wouldn't ask an
-//     already-installed user to install)
+//     already-installed PWA user to install)
 //   • the user hasn't already dismissed the card
 //   • we have something useful to say — either the Android Chrome
 //     beforeinstallprompt fired, OR we detect iOS Safari (where there's
@@ -39,7 +43,12 @@ export function InstallPromptCard() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Already running as an installed app — never show.
+    // Running inside the Capacitor native wrapper — never show.
+    // The native app IS the installed app; offering "Add to Home
+    // Screen" inside it would be confusing nonsense.
+    if (isCapacitorNative()) return;
+
+    // Already running as an installed PWA — never show.
     const standalone =
       window.matchMedia?.("(display-mode: standalone)").matches ||
       // iOS legacy detector
