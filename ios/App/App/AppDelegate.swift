@@ -46,4 +46,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+    // MARK: - Push Notifications (Capacitor bridge)
+    //
+    // The @capacitor/push-notifications plugin needs these two methods
+    // forwarded from iOS's UIApplicationDelegate into Capacitor's
+    // NotificationCenter so the JS-side "registration" /
+    // "registrationError" events fire. Without these, calling
+    // PushNotifications.register() from JS triggers iOS to talk to
+    // APNs, but the response never makes it back to the JS layer —
+    // it just looks like silence. Added 2026-05-27 during Phase 22.5-1
+    // APNs proof-of-life when the JS bootstrap was stuck after
+    // register() with no token and no error.
+    //
+    // Reference: https://capacitorjs.com/docs/apis/push-notifications
+
+    func application(_ application: UIApplication,
+                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications,
+                                        object: deviceToken)
+    }
+
+    func application(_ application: UIApplication,
+                     didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications,
+                                        object: error)
+    }
+
 }
