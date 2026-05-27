@@ -149,15 +149,20 @@ detail pages, and Series Closure + Wind-Down cards on Today. See
 
 Completed (most recent first):
 
-- **Phase 21B — Calm Endings + Calendar** (May 2026). Three
-  features. (1) CalmEndCard on Today — single component, two
-  configurations (Series Closure when a followed series wraps,
-  Tournament Wind-Down when NBA Finals wrap and slate is quiet).
-  Dismissible per moment id via localStorage. (2) Add to Calendar
-  on every upcoming game detail page (NBA + WC) — iCal export with
-  spoiler-safe titles under No-Spoilers. (3) Push fixes — sync hash
-  now persists only on server-ack (fixes iOS PWA silent drops), and
-  end-of-quarter detection now fires when the quarter ends, not at
+- **Phase 21B — Calm Endings + Calendar + Tier Honesty** (May
+  2026). Five features. (1) CalmEndCard on Today — single
+  component, two configurations (Series Closure when a followed
+  series wraps, Tournament Wind-Down when NBA Finals wrap and slate
+  is quiet). Dismissible per moment id via localStorage. (2) Add to
+  Calendar on every upcoming game detail page (NBA + WC) — iCal
+  export with spoiler-safe titles under No-Spoilers. (3) Tier
+  rename: "Companion" → "Standard", "All moments" → "Close games."
+  Internal keys unchanged. (4) Live highlights upgrade — fresh
+  `leaders` from `/api/nba-game-detail` merged in, so live games
+  show "SGA · 30 PTS, 6 AST" instead of falling back to team-stat
+  lines. Retroactively applies to past games inside ESPN's
+  retention window. (5) Push fixes — sync hash persists only on
+  server-ack, end-of-quarter detection fires at the buzzer not at
   the next quarter's tip. Picked from an LLM ideation pass; the
   remaining ideas are sorted Ship/Hold/Skip/Reconsider in
   `docs/ROADMAP.md`.
@@ -195,12 +200,22 @@ Completed (most recent first):
 - **Phase 8**. World Cup pre-kickoff readiness.
 - **Phases 1–7**. Foundation work.
 
-**Next:** Phases 21–23+. See `docs/ROADMAP.md`.
+**Next:** Phases 21C, 21, 22, 22.5, 23+. See `docs/ROADMAP.md`.
 
+- **Phase 21C** — Retention plays (push permission recovery, Series
+  Closure follow suggestion, Game 7 override, Dead Zone Bridge,
+  activation instrumentation, delivery loop). Full detail in
+  `docs/RETENTION_PLAYBOOK.md`.
 - **Phase 21** — Brief launch (gated on domain email).
 - **Phase 22** — NFL season build (August 2026).
-- **Phase 23+** — Beyond: Sports Circle prototype, multi-device push,
-  No-Spoilers Pro, Path B follow-schema refactor, iOS Live Activities.
+- **Phase 22.5** — iOS Native via Capacitor (proposed). Live
+  Activity + Widget + APNs. Window: June through early August.
+  Budget ~$2,500 one-time + $99/year. Full plan in
+  `docs/IOS_NATIVE_PLAN.md`.
+- **Phase 23+** — Beyond: Sports Circle prototype, multi-device push
+  (simpler post-iOS-native), No-Spoilers Pro as the paid pitch,
+  Path B follow-schema refactor, family/shared follows, Champions
+  League knockouts.
 
 Each phase is its own go/no-go unit. Do not jump ahead.
 
@@ -208,12 +223,27 @@ Do not do yet:
 
 - Brief send pipeline (Phase 21. Blocked on domain email setup).
 - NFL full build (Phase 22. August 2026).
-- iOS native wrap.
+- iOS native wrap (Phase 22.5, contractor needed — see
+  `docs/IOS_NATIVE_PLAN.md`).
 - Account system.
 - Monetization UI beyond the 3-free-alerts model already in copy.
 - Large refactor.
 - New backend.
 - Path B follow-schema refactor (wait for 3rd moment).
+
+## Alert tier labels (renamed 2026-05-26)
+
+Internal keys (`quiet | companion | all`) are unchanged. User-facing
+labels were renamed for honesty about what each tier actually
+fires. Reference: `app/companion/state/types.ts` PRESETS.
+
+- **Quiet** (key: `quiet`) — Start and final only.
+- **Standard** (key: `companion`) — Start, quarter breaks, final.
+- **Close games** (key: `all`) — Adds close finishes and comebacks.
+
+When writing copy or comments that mention tiers, use the new
+labels. Internal types still reference the old keys for back-compat
+with stored follows.
 
 ## Marketing Phase trigger
 

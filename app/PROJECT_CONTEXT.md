@@ -469,6 +469,20 @@ existing primitives:
   Q2" halftime / "End Q3") with new `eoq{1,2,3}Fired` dedupe flags
   on `CachedGameState`, so eoq-N fires when the quarter ends, not
   when the next quarter starts.
+- **Alert tier rename.** "Companion" → "Standard" ("Start, quarter
+  breaks, final."), "All moments" → "Close games" ("Adds close
+  finishes and comebacks."). Internal keys (`quiet | companion |
+  all`) unchanged so stored follows keep their tier without
+  migration. Source of truth: `PRESETS` in
+  `app/companion/state/types.ts`.
+- **Live highlights upgrade.** `useNBADetail` now surfaces
+  `leaders` from the ESPN summary endpoint alongside plays and
+  broadcasts. `NBALiveCompanion` merges those over the stale
+  scoreboard snapshot before passing to `HighlightsStack` and
+  `deriveNBARecap`. Result: "SGA · 30 PTS, 6 AST" surfaces during
+  live play instead of falling back to team-stat lines. Works
+  retroactively on any past game inside ESPN's retention window
+  (covers the full playoff bracket).
 
 The remaining ideas from the ideation pass are sorted into Ship /
 Hold / Skip / Reconsider sections in `docs/ROADMAP.md`. Top
@@ -476,6 +490,26 @@ Hold / Skip / Reconsider sections in `docs/ROADMAP.md`. Top
 Alerts Preview, WC Country Landing Pages, Comparison Pages, Pick
 Your Moment onboarding (skippable), Multi-Device Follow Sync, Calm
 Guides expansion.
+
+**Strategic discussions captured 2026-05-26:**
+
+- **Retention playbook** (`docs/RETENTION_PLAYBOOK.md`).
+  Retention-specialist ideation pass. Eight high-leverage plays
+  sorted by impact, top three are Push Permission Recovery,
+  Series Closure Follow Suggestion, and Game 7 Override
+  Notification. One specialist proposal — strict activation-
+  threshold gating — was deliberately softened to instrumentation-
+  only (prescriptive gating risks confused exits more than it
+  activates). These become Phase 21C.
+- **iOS Native plan** (`docs/IOS_NATIVE_PLAN.md`). Capacitor +
+  Live Activities + APNs + Widget. Promoted from "Phase 23+
+  unsequenced" to **Phase 22.5** in the proposed roadmap. Budget
+  ~$2,500 one-time (contractor) + $99/year (Apple Dev Program).
+  Window: June-August 2026 between WC kickoff and NFL season
+  build. The Live Activity for pinned games is the single feature
+  most likely to differentiate this product from ESPN on iOS, and
+  shipping it before the marketing phase strengthens the Show HN
+  pitch.
 
 **Next:** Phases 21–23+. See `docs/ROADMAP.md`.
 

@@ -36,7 +36,7 @@ alternatives, do not let copy drift.
 
 ---
 
-## ✅ Phase 21B — Calm Endings + Calendar — SHIPPED (May 2026)
+## ✅ Phase 21B — Calm Endings + Calendar + Tier Honesty — SHIPPED (May 2026)
 
 Mini-batch shipped after the post-launch ideation pass (see
 `docs/IDEATION_BRIEFING.md` for the briefing, and the chat history
@@ -49,10 +49,97 @@ for the LLM outputs that produced these picks).
 - **Add to Calendar** — iCal (.ics) export on every upcoming game
   detail page (NBA + WC). Spoiler-safe titles under No-Spoilers
   ("Knicks game" not "Knicks vs Pacers · Game 4").
+- **Tier rename** — "Companion" → "Standard", "All moments" →
+  "Close games." Internal keys (`quiet | companion | all`) unchanged.
+- **Live highlights upgrade** — HighlightsStack + Recap Card now
+  consume fresh `leaders` from `/api/nba-game-detail` instead of the
+  stale scoreboard snapshot. "SGA · 30 PTS, 6 AST" surfaces
+  mid-game. Retroactively applies to any past game inside ESPN's
+  retention window.
 - **Push fixes** — PushSyncEffect now persists the synced hash only
   after the server acks (fixes silent iOS PWA suspend drops).
   End-of-quarter detector now fires when the quarter ends, not when
   the next one starts.
+
+---
+
+## Phase 21C — Retention plays (next shippable batch)
+
+Captured from a retention-specialist ideation pass. Full detail in
+`docs/RETENTION_PLAYBOOK.md`. Sequenced by leverage:
+
+1. **Push permission recovery flow.** Seven days post-install, if
+   push is still off, surface a quiet Today card explaining how to
+   turn it on, with deep-link instructions per platform. One
+   dismissal is permanent. Relevance drops sharply once iOS native
+   ships.
+2. **Series Closure follow suggestion (extension).** Extend the
+   shipped CalmEndCard so when a user's team loses a series, the
+   card also surfaces their OTHER active follows. "You still have
+   [team] in your circle. [Next game date]." Same screen, redirect
+   the emotional investment.
+3. **Game 7 override notification.** When a followed series reaches
+   Game 7, fire a single push to all subscribers regardless of
+   alert tier. Even Quiet. Body: "Game 7 tonight. [A] vs [B]." No
+   score, no urgency language. Fires once per series maximum.
+4. **Dead Zone Bridge Card.** Persistent off-season card variant
+   in `pickClosing()`. "Nothing in your circle right now. NFL
+   starts [date]. Your teams: [list]."
+5. **Activation instrumentation (no UI gating).** Log
+   3-follows-plus-push-enabled as a milestone in
+   `app/lib/push/ops-metrics.ts`. No UI changes. Re-evaluate after
+   4-6 weeks of data whether prescriptive gating clears a real
+   retention bar.
+6. **Notification delivery loop.** Per-event-type open-rate
+   tracking. Cheap to instrument now, decisive later when tuning
+   the default tier matrix.
+7. **Sports Circle Export Card** (from Phase 21B follow-ups — also
+   high retention value via public commitment).
+8. **Multi-device follow sync** (from Phase 21B follow-ups — quiet
+   but durable retention driver).
+
+Re-engagement email lives in this list too but is blocked on Phase
+21 (Brief launch / domain email).
+
+---
+
+## Phase 22 — NFL Season Build (planned August 2026)
+
+Unchanged from earlier roadmap. Real NFL data, game detail
+surfaces, NFL-specific event taxonomy. Spec in `docs/nfl-design.md`.
+
+---
+
+## Phase 22.5 — iOS Native via Capacitor (proposed)
+
+Promoted from "Phase 23+ unsequenced" to a real near-term phase
+following a strategic conversation 2026-05-26. Full plan in
+`docs/IOS_NATIVE_PLAN.md`.
+
+**Why now:** Live Activity for pinned games is the single feature
+most likely to differentiate this product from ESPN on iOS.
+Shipping it before the marketing phase strengthens the Show HN
+pitch and unlocks several retention plays (Game 7 override
+delivery, push grant rate) that the PWA architecture can't fully
+deliver on iOS.
+
+**Window:** June through early August 2026 — between WC kickoff
+(June 11) and NFL season build start (~late August). ~3-5 calendar
+weeks with an iOS contractor.
+
+**Scope (minimum to ship + pass Apple 4.2 review):**
+- Capacitor shell wrapping the existing `/app` route
+- APNs push (replacing VAPID web push on iOS native only)
+- Live Activity for pinned games (lock screen + Dynamic Island)
+- Home screen widget (small + medium)
+
+**Budget:** ~$2,500 one-time (contractor) + $99/year (Apple Dev
+Program). Lean DIY path is $99 but realistic only with a 6-12 week
+calendar slot for Swift learning.
+
+**Sequence with marketing phase:** ship iOS native BEFORE
+triggering the launch. The Show HN headline becomes "Live
+Activities for the playoffs" instead of "calm sports PWA."
 
 ---
 
@@ -218,11 +305,17 @@ Sketched but unsequenced. Re-evaluate after Phase 22.
 
 - Sports Circle visual prototype (4-hr time-boxed exploration).
 - Path B follow-schema refactor (when a 3rd moment-tournament arrives).
-- Multi-device push relay (phone + laptop + iPad).
+- Multi-device push relay (phone + laptop + iPad). Becomes simpler
+  after the Phase 22.5 iOS Native ship.
 - No-Spoilers Pro (extended-window hide rules, per-team hide).
+  Reframed as the paid-tier pitch ("more control over what you see
+  and what you don't") rather than the original "help cover backend
+  cost" framing.
 - Family / shared follows.
-- iOS Live Activities / native wrap.
 - Champions League knockout rounds.
+
+iOS Live Activities / native wrap previously sat here unsequenced.
+Promoted to Phase 22.5 above (see `docs/IOS_NATIVE_PLAN.md`).
 
 ---
 

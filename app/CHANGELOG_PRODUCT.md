@@ -66,7 +66,48 @@ Files:
   controls, upcoming-only.
 - `app/companion/game/WCGameDetail.tsx` — same.
 
-### 3. Push fix (committed earlier this evening)
+### 3. Tier rename + leaders wire-through
+
+Two more small ships after a follow-up review of the alert tiers and
+the live-game highlights surface.
+
+**Alert tier rename.** The third tier ("All moments") was misleading
+users into thinking it produced a different volume than Companion.
+The actual matrix only adds close-game and comeback events, both of
+which fire rarely. Renamed for honesty:
+
+- Quiet → Quiet (unchanged)
+- Companion → **Standard** ("Start, quarter breaks, final.")
+- All moments → **Close games** ("Adds close finishes and comebacks.")
+
+Internal storage keys (`quiet | companion | all`) stay unchanged so
+existing follows keep their tier without migration. Files touched:
+`app/companion/state/types.ts` (PRESETS labels),
+`app/lib/brief/compose-brief.ts` (Brief alert summary),
+`app/companion/today/EnableNotificationsCard.tsx` (dev comment),
+`app/lib/push/dispatcher.ts` (dev comment).
+
+**Live-game highlights upgrade.** The HighlightsStack had a player-
+detection system that wasn't firing during live games because
+`game.leaders` was stale (from the scoreboard endpoint, which lags
+mid-game). Wired the fresher `leaders` field from
+`/api/nba-game-detail` through `useNBADetail` into a merged
+`gameWithFreshLeaders` object in `NBALiveCompanion`. Now mid-game
+highlights surface "SGA · 30 PTS, 6 AST" or "30-point night"
+instead of falling back to team-stat lines.
+
+**Retroactive scope.** The fix is "live retroactive" — any past
+game the user opens re-fetches detail from ESPN's summary endpoint,
+gets fresh leaders, and the Recap Card derivation upgrades
+automatically. Inside ESPN's retention window (multiple weeks,
+covering the playoff bracket), this works cleanly without rewriting
+snapshots.
+
+Files: `app/companion/game/use-nba-detail.ts` (added `leaders` to
+`NBADetail`), `app/companion/game/NBALiveCompanion.tsx` (merge +
+passthrough).
+
+### 4. Push fix (committed earlier this evening)
 
 The PushSyncEffect was persisting the "synced" hash *before* the
 POST resolved, so iOS PWA suspensions silently dropped follow-sync
@@ -81,12 +122,37 @@ Files: `app/companion/push/PushSyncEffect.tsx`,
 `app/lib/push/state-cache.ts`,
 `app/api/cron/scan-nba/route.ts`.
 
-### Ideation context
+### Ideation + strategy context
 
 This batch was the "obvious next ship" subset of an LLM-driven
 ideation pass (`docs/IDEATION_BRIEFING.md`). The remaining ideas are
 sorted into Ship / Hold / Skip / Reconsider in `docs/ROADMAP.md`
 under the Phase 21B section. None violate the wedge.
+
+Two additional strategic discussions landed during the same session
+and are captured in new files for future-you to reference:
+
+- **`docs/RETENTION_PLAYBOOK.md`** — A retention-specialist
+  ideation pass produced eight high-leverage plays sorted by
+  impact. The top three (Push permission recovery, Series Closure
+  follow suggestion, Game 7 override notification) are the
+  recommended Phase 21C starting points. One proposal — strict
+  activation-threshold gating — was deliberately softened to
+  instrumentation-only (prescriptive gating risks confused exits
+  more than it activates).
+- **`docs/IOS_NATIVE_PLAN.md`** — Honest budget and sequencing for
+  shipping iOS native via Capacitor. Bottom line: ~$2,500 one-time
+  + $99/year (Apple Dev Program) with a contractor for the native
+  Swift layer (Capacitor shell + APNs + Live Activity + widget).
+  The June-August window between WC kickoff and NFL season is the
+  natural slot. Live Activity for pinned games is the single
+  feature most likely to differentiate this product from ESPN on
+  iOS, and shipping it before the marketing phase strengthens the
+  Show HN pitch substantially.
+
+Neither commits the project to a specific direction. Both exist so
+the next strategic conversation starts from captured context, not
+from rederivation.
 
 ---
 
