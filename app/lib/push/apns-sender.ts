@@ -23,6 +23,42 @@ const JWT_VALIDITY_MS = 50 * 60 * 1000; // 50 minutes, max is 60
 
 let cachedJwt: { token: string; expiresAt: number } | null = null;
 
+/** Normalize a .p8 / PEM private key coming from a Vercel-style env
+ *  var. Common corruption modes that this handles:
+ *
+ *   1. Escaped newlines: "-----BEGIN...\nMIGT\n-----END..." gets
+ *      stored as literal `\n` sequences, not real newlines. We unescape.
+ *   2. Surrounding whitespace / BOM from copy-paste.
+ *   3. Missing PEM armor: someone pasted just the base64 body. We
+ *      add the -----BEGIN/END PRIVATE KEY----- envelope and chunk
+ *      the base64 into 64-char lines per RFC 7468.
+ *
+ *  After this normalization, jose's importPKCS8 can parse anything
+ *  Apple's .p8 download produces, no matter how the user pasted it. */
+function normalizeApnsPrivateKey(raw: string): string {
+  let key = raw.trim();
+  // Strip a UTF-8 BOM if pasted from a Windows text editor.
+  if (key.charCodeAt(0) === 0xfeff) key = key.slice(1);
+  // Unescape literal "\n" sequences. Vercel's env var input handles
+  // multi-line paste correctly *when* real newlines are sent, but
+  // some clipboards / scripts send them as the two-character string
+  // `\n` instead.
+  if (key.includes("\\n") && !key.includes("\n")) {
+    key = key.replace(/\\n/g, "\n");
+  }
+  // If missing PEM armor, add it. Apple always includes it in the
+  // downloaded file, but a hand-stripped paste might not.
+  if (!key.includes("-----BEGIN")) {
+    const base64 = key.replace(/\s+/g, "");
+    const chunks = base64.match(/.{1,64}/g) ?? [base64];
+    key =
+      "-----BEGIN PRIVATE KEY-----\n" +
+      chunks.join("\n") +
+      "\n-----END PRIVATE KEY-----";
+  }
+  return key;
+}
+
 async function getApnsJwt(): Promise<string> {
   const now = Date.now();
   if (cachedJwt && cachedJwt.expiresAt > now) {
@@ -31,15 +67,34 @@ async function getApnsJwt(): Promise<string> {
 
   const teamId = process.env.APNS_TEAM_ID;
   const keyId = process.env.APNS_KEY_ID;
-  const privateKeyPem = process.env.APNS_PRIVATE_KEY;
+  const rawKey = process.env.APNS_PRIVATE_KEY;
 
-  if (!teamId || !keyId || !privateKeyPem) {
+  if (!teamId || !keyId || !rawKey) {
     throw new Error(
       "APNs env vars missing. Set APNS_TEAM_ID, APNS_KEY_ID, APNS_PRIVATE_KEY."
     );
   }
 
-  const privateKey = await importPKCS8(privateKeyPem, "ES256");
+  const privateKeyPem = normalizeApnsPrivateKey(rawKey);
+
+  let privateKey;
+  try {
+    privateKey = await importPKCS8(privateKeyPem, "ES256");
+  } catch (err) {
+    // Give better diagnostics — without these the error is just
+    // "must be PKCS#8 formatted string" which doesn't say WHY.
+    const sample = privateKeyPem.slice(0, 30).replace(/\n/g, "\\n");
+    const looksLikePem = privateKeyPem.startsWith("-----BEGIN");
+    const hasNewlines = privateKeyPem.includes("\n");
+    throw new Error(
+      `APNS_PRIVATE_KEY failed to parse as PKCS#8. ` +
+        `length=${privateKeyPem.length}, ` +
+        `looksLikePem=${looksLikePem}, ` +
+        `hasNewlines=${hasNewlines}, ` +
+        `sample="${sample}…". ` +
+        `Original error: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
 
   const jwt = await new SignJWT({})
     .setProtectedHeader({ alg: "ES256", kid: keyId, typ: "JWT" })
