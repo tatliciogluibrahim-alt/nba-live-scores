@@ -88,7 +88,7 @@ function hashSync(sync: SyncPayload): string {
 
 export function CapacitorPushBootstrap() {
   const { follows, hydrated: followsHydrated } = useFollows();
-  const { prefs, hydrated: prefsHydrated } = useUserPrefs();
+  const { prefs, hydrated: prefsHydrated, dismissNotifPrompt } = useUserPrefs();
 
   // Refs to keep the listener closure looking at fresh state without
   // re-running the bootstrap effect when state changes.
@@ -96,13 +96,20 @@ export function CapacitorPushBootstrap() {
   const lastHashRef = useRef<string | null>(null);
   const followsRef = useRef(follows);
   const noSpoilersRef = useRef(prefs.noSpoilers);
+  // dismissNotifPromptRef so we can call the setter from inside the
+  // APNs registration listener without making it a bootstrap-effect
+  // dependency (which would re-run the whole bootstrap each time the
+  // callback identity changed). The setter is wrapped in useCallback
+  // so the ref rarely changes, but the ref pattern is the safe form.
+  const dismissNotifPromptRef = useRef(dismissNotifPrompt);
   // Sync refs to latest state inside an effect. React 19 disallows
   // writing to refs during render (the more permissive pattern used
   // pre-19 trips the react-hooks/refs rule).
   useEffect(() => {
     followsRef.current = follows;
     noSpoilersRef.current = prefs.noSpoilers;
-  }, [follows, prefs.noSpoilers]);
+    dismissNotifPromptRef.current = dismissNotifPrompt;
+  }, [follows, prefs.noSpoilers, dismissNotifPrompt]);
 
   // Bootstrap effect: runs once. Wires permission, listeners,
   // register(). The "registration" listener is the one that captures
@@ -136,6 +143,17 @@ export function CapacitorPushBootstrap() {
         granted = result.receive === "granted";
         console.log("[CapacitorPush] requestPermissions →", result.receive);
       }
+
+      // At this point the user has made an explicit decision (granted
+      // or denied via the system dialog, or they had a prior decision
+      // we just observed). Mark the FirstRunStrip notification step as
+      // complete either way — the strip's "notif done" flag means "the
+      // user made a choice," not "the user said yes." Matches what
+      // EnableNotificationsCard does on web (it dismisses on both
+      // grant and Not-now). Without this, native iOS users who allow
+      // notifications via the system dialog still see "Turn on
+      // notifications" as incomplete in the get-started strip.
+      dismissNotifPromptRef.current();
 
       if (!granted) {
         console.log("[CapacitorPush] permission not granted — bailing");

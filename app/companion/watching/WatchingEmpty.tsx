@@ -2,21 +2,20 @@ import Link from "next/link";
 import { Display } from "../atoms/Display";
 
 // Calm empty state. Pin language is deliberate (vs "watch") so users
-// understand this isn't a TV destination.
+// understand this isn't a TV destination. Title kept short + standard;
+// body explains the verb without trying to sell the room.
 
 export function WatchingEmpty() {
   return (
     <section>
       <Display as="h1" size="lg" className="mb-2">
-        Your live cockpit.
+        Your live games.
       </Display>
       <p
         className="mb-5 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Pin a specific game here when you want a focused tracking
-        surface for it. Pin is for one game tonight; Follow is for the
-        whole season.
+        Pin to track specific games.
       </p>
 
       <div className="space-y-2">
