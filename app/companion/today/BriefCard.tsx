@@ -3,57 +3,58 @@
 import Link from "next/link";
 import type { DailyBrief } from "./daily-brief";
 
-// BriefCard — the Daily Brief rendered as a routing surface.
+// Front Page headline (Concept A). The Daily Brief — the one calm
+// sentence summarizing today — is promoted from a small card to the
+// editorial LEAD of the screen: "one headline a day." It sits directly
+// on the cream (no card chrome), in display type, sized down for longer
+// copy so it never overflows.
 //
-// Stage 15D promoted the Brief from a bare <p> sentence to a real card
-// with an optional CTA chip. Visual weight is deliberately calm: same
-// paper background as everything else, no left rail, no display type.
-// What earns its place is the CTA — when the Brief knows "the one thing
-// to do," it offers a single ink-filled link to do it.
+// Conservative copy by design: this reuses the existing, already-tuned
+// brief text and CTA from deriveDailyBrief. We changed the presentation
+// (small sentence → big headline), not the words.
 //
-// When there's no CTA (No-Spoilers state, calm acknowledgements), the
-// card degrades to a styled sentence. No empty pill, no ghost button.
+// When the brief knows the one thing to do, a quiet accent link sits
+// beneath it — editorial, not a loud filled button. Calm/No-Spoilers
+// states render headline-only.
+
+// Length-based sizing keeps the drama for short "calm" briefs while
+// staying safe for the longer multi-pin / mixed-state sentences.
+function headlineSize(len: number): number {
+  if (len <= 22) return 40;
+  if (len <= 40) return 32;
+  return 26;
+}
 
 export function BriefCard({ brief }: { brief: DailyBrief }) {
-  // When the Brief has a CTA, it's *actionable* — it knows the one thing
-  // for the user to do right now. We mark that with a thin sport-coded
-  // left rail so the eye can distinguish "do this" briefs from "calm
-  // acknowledgement" briefs (No-Spoilers state, quiet days). Color is
-  // chosen by the CTA destination: WC accent when the route is a country
-  // page, NBA otherwise. Calm states get no rail and keep the paper card.
-  const hasCta = Boolean(brief.cta);
   const isWcRoute = brief.cta?.href.startsWith("/country") ?? false;
-  const railColor = isWcRoute ? "var(--wc)" : "var(--nba)";
+  const accent = isWcRoute ? "var(--wc)" : "var(--nba)";
+  const size = headlineSize(brief.text.length);
 
   return (
-    <article
-      className="mb-4 rounded-[14px] border px-4 py-3"
-      style={{
-        background: "var(--paper)",
-        borderColor: "var(--line)",
-        borderLeft: hasCta ? `3px solid ${railColor}` : `1px solid var(--line)`,
-      }}
-    >
-      <p
-        className="text-[14px] leading-snug"
-        style={{ color: "var(--ink)", fontWeight: 500 }}
+    <section className="mb-5">
+      <h2
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: size,
+          lineHeight: 1.04,
+          letterSpacing: "-0.02em",
+          color: "var(--ink)",
+          textWrap: "pretty",
+        }}
       >
         {brief.text}
-      </p>
+      </h2>
       {brief.cta ? (
         <Link
           href={brief.cta.href}
           aria-label={brief.cta.label}
-          className="mt-2.5 inline-flex min-h-[44px] items-center justify-center rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
-          style={{
-            background: "var(--ink)",
-            color: "var(--cream)",
-            border: "1px solid var(--ink)",
-          }}
+          className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+          style={{ color: accent }}
         >
           {brief.cta.label}
+          <span aria-hidden>→</span>
         </Link>
       ) : null}
-    </article>
+    </section>
   );
 }

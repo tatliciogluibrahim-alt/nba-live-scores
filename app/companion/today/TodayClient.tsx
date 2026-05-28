@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Display } from "../atoms/Display";
 import { PullToRefresh } from "../atoms/PullToRefresh";
 import { useFollows, useNoSpoilers, usePinned } from "../providers";
 import { useTodayData } from "./use-today-data";
@@ -47,38 +46,41 @@ export function TodayClient() {
   return (
     <PullToRefresh onRefresh={refetch}>
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-5xl md:px-8 md:pt-6">
-      {/* ── Header: "Today" + time + passive No-Spoilers indicator ─── */}
-      <header className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-baseline gap-2">
-          <Display as="h1" size="md">
-            Today
-          </Display>
-          {updatedAt ? (
-            <span
-              aria-label={`Updated at ${updatedAt.toLocaleTimeString(undefined, {
-                hour: "numeric",
-                minute: "2-digit",
-              })}`}
-              className="text-[11px] uppercase"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontWeight: 600,
-                letterSpacing: "0.12em",
-                color: "var(--mute-1)",
-              }}
-            >
-              {updatedAt.toLocaleTimeString(undefined, {
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </span>
-          ) : null}
-        </div>
+      {/* ── Masthead (Concept A): date eyebrow + passive No-Spoilers
+          state. The big "Today" title is gone — the Brief headline
+          below is now the page's dominant type ("one headline a day").
+          A stable sr-only h1 keeps the landmark regardless of brief
+          state. */}
+      <h1 className="sr-only">Today</h1>
+      <header className="mb-4 flex items-center justify-between gap-3">
+        <p
+          className="text-[11px] uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontWeight: 600,
+            letterSpacing: "0.12em",
+            color: "var(--mute-1)",
+          }}
+          aria-label={
+            updatedAt
+              ? `Today, updated ${updatedAt.toLocaleTimeString(undefined, {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}`
+              : "Today"
+          }
+        >
+          {updatedAt
+            ? updatedAt.toLocaleDateString(undefined, {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })
+            : "Today"}
+        </p>
 
         {/* Ambient No-Spoilers indicator — only shown when active.
-            Passive status display, not a toggle. The app shouldn't
-            ask the user to make a scores decision every time they
-            open Today. Configure it once in Alerts & Notifications. */}
+            Passive status display, not a toggle. */}
         <NoSpoilersAmbientDot />
       </header>
 
