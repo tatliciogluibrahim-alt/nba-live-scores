@@ -21,6 +21,7 @@ import { NoSpoilersToggle } from "./NoSpoilersToggle";
 // import { ReminderSelector } from "./ReminderSelector";
 // import { QuietHoursSelector } from "./QuietHoursSelector";
 import { PerFollowAlerts } from "./PerFollowAlerts";
+import { NoSpoilersProCard } from "./NoSpoilersProCard";
 import { WatchGuidanceBlock } from "./WatchGuidanceBlock";
 import { NotificationPreview } from "./NotificationPreview";
 import { PushSubscriptionPanel } from "./PushSubscriptionPanel";
@@ -66,6 +67,10 @@ export function SettingsClient() {
       <div className="space-y-5">
         <NoSpoilersToggle />
         <PerFollowAlerts />
+        {/* No-Spoilers Pro pitch sits right under the per-follow alert
+            controls — that's where the free 3-slot cap is felt, so the
+            "unlock unlimited" framing lands in context. */}
+        <NoSpoilersProCard />
         {/* <ReminderSelector />  Hidden until the pre-game reminder
             cron ships. */}
         {/* <QuietHoursSelector />  Hidden until the dispatcher honors
