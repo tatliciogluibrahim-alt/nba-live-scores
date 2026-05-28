@@ -1,6 +1,6 @@
 "use client";
 
-import { Display } from "../atoms/Display";
+import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { ScoreModule } from "../atoms/ScoreModule";
 import { HeroMoment } from "../moments/HeroMoment";
@@ -80,11 +80,26 @@ export function WCGameDetail({
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
-      <Display as="h1" size="lg">
-        {game.away.abbreviation} · {game.home.abbreviation}
-      </Display>
+      {/* Big editorial matchup — Bricolage 700, mute center dot, full
+          team names (Watching · Game handoff). */}
+      <h1
+        style={{
+          fontFamily: "var(--font-display)",
+          fontWeight: 700,
+          fontSize: 44,
+          lineHeight: 0.96,
+          letterSpacing: "-0.025em",
+          color: "var(--ink)",
+        }}
+      >
+        {game.away.abbreviation}
+        <span style={{ color: "var(--mute-1)", fontWeight: 400, padding: "0 6px" }}>
+          ·
+        </span>
+        {game.home.abbreviation}
+      </h1>
       <p
-        className="mt-1 text-[13px]"
+        className="mt-1.5 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {game.away.name} vs {game.home.name}
@@ -170,13 +185,6 @@ export function WCGameDetail({
         />
       </div>
 
-      {/* ── Where to watch ──────────────────────────────────────────── */}
-      {channel ? (
-        <div className="mt-4">
-          <WatchLine channel={channel} ariaSubject={subject} />
-        </div>
-      ) : null}
-
       {/* ── Highlights ──────────────────────────────────────────────── */}
       {!isUpcoming && derivedHighlights.length > 0 ? (
         <section className="mt-5">
@@ -215,14 +223,36 @@ export function WCGameDetail({
         </section>
       ) : null}
 
+      {/* ── Broadcast (bottom group: broadcast → pin → footnote) ──────── */}
+      {channel ? (
+        <div className="mt-5">
+          <WatchLine channel={channel} ariaSubject={subject} />
+        </div>
+      ) : null}
+
       {/* ── Pin / Watching ──────────────────────────────────────────── */}
       <PinControls
         pinned={pinned}
         onPin={onPin}
         onUnpin={onUnpin}
         subject={subject}
-        className="mt-5"
+        className="mt-3"
       />
+
+      {/* ── Footnote ──────────────────────────────────────────────────── */}
+      <p
+        className="mt-3 px-1 text-[13px] leading-relaxed"
+        style={{ color: "var(--mute-1)", fontWeight: 500 }}
+      >
+        Pinning keeps this game in Watching. Alerts come from follows.{" "}
+        <Link
+          href="/watching"
+          className="underline decoration-dotted underline-offset-4"
+          style={{ color: "var(--ink)", fontWeight: 600 }}
+        >
+          Open Watching →
+        </Link>
+      </p>
     </main>
   );
 }

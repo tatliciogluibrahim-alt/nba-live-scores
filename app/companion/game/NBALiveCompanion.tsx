@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Display } from "../atoms/Display";
+import Link from "next/link";
+import { Eyebrow } from "../atoms/Eyebrow";
 import { ScoreModule } from "../atoms/ScoreModule";
 import { HeroMoment } from "../moments/HeroMoment";
 import { SevenDotStrip } from "../series/SevenDotStrip";
 import { HIDDEN_CAPTIONS, isSpoilery } from "../spoiler/safe-text";
 import { RevealResultsButton } from "../spoiler/RevealResultsButton";
+import { Spoiler } from "../spoiler/Spoiler";
 import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import { WatchLine } from "../watch/WatchLine";
 import type { Game } from "../../nba/types";
@@ -17,7 +19,7 @@ import { PeriodScoreLine } from "./PeriodScoreLine";
 import { StakesLine } from "../stakes/StakesLine";
 import { deriveNBASeriesStake } from "../stakes/derive-stakes";
 import { QuietRecapCard } from "../recap/QuietRecapCard";
-import { deriveNBARecap } from "../recap/derive-recap";
+import { deriveNBARecap, type NBARecap } from "../recap/derive-recap";
 import { useNBADetail } from "./use-nba-detail";
 
 // NBA Live Companion — the deepened /game/[id] for NBA games. Moments-first,
@@ -51,6 +53,11 @@ export function NBALiveCompanion({
   const subject = game.matchup || `${game.away.abbreviation} vs ${game.home.abbreviation}`;
 
   const { detail, lastFetched } = useNBADetail(game.id, isLive);
+
+  // Final-state recap: collapsed to a one-line summary by default, with
+  // a "Read recap" expander that opens the full QuietRecapCard. Matches
+  // the calm "Recap" treatment in the Watching · Game handoff.
+  const [recapOpen, setRecapOpen] = useState(false);
 
   // Merge fresh leaders from /api/nba-game-detail over the live-scores
   // snapshot. The scoreboard endpoint's `leaders` field tends to lag
@@ -130,12 +137,28 @@ export function NBALiveCompanion({
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-4xl md:pt-2">
       <div className="md:grid md:grid-cols-[minmax(0,1fr)_300px] md:gap-6 md:items-start">
         <div>
-      {/* ── Page H1 — only display-type instance on the screen ─────────── */}
-      <Display as="h1" size="lg">
-        {game.away.abbreviation} · {game.home.abbreviation}
-      </Display>
+      {/* ── Page H1 — big editorial matchup (Watching · Game handoff).
+          Our display face (Bricolage 700), not the handoff's Archivo
+          Black 900 — keeps the brand type while taking the scale + the
+          mute center dot + full-team-name subtitle. */}
+      <h1
+        style={{
+          fontFamily: "var(--font-display)",
+          fontWeight: 700,
+          fontSize: 44,
+          lineHeight: 0.96,
+          letterSpacing: "-0.025em",
+          color: "var(--ink)",
+        }}
+      >
+        {game.away.abbreviation}
+        <span style={{ color: "var(--mute-1)", fontWeight: 400, padding: "0 6px" }}>
+          ·
+        </span>
+        {game.home.abbreviation}
+      </h1>
       <p
-        className="mt-1 text-[13px]"
+        className="mt-1.5 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {game.away.name} vs {game.home.name}
@@ -269,26 +292,28 @@ export function NBALiveCompanion({
         </div>
       )}
 
-      {/* ── Watch (single canonical line) ───────────────────────────────── */}
-      {channel ? (
-        <div className="mt-4">
-          <WatchLine channel={channel} ariaSubject={subject} />
-        </div>
-      ) : null}
-
       {/* ── Quiet Recap Card (finals only) ──────────────────────────────── */}
       {/* The editorial finale: winner-named headline, big score, series
           state, up to 3 "what mattered" bullets, optional next-game
           line. Replaces the live HeroMoment + HighlightsStack for
           finals — having both stacked read as two cards saying the
           same thing. */}
-      {game.status === "final" && hasRecap ? (
+      {game.status === "final" && hasRecap && recap ? (
         <div className="mt-4">
-          <QuietRecapCard
-            game={game}
-            allNBAGames={allNBAGames}
-            recap={recap}
-          />
+          {recapOpen ? (
+            <QuietRecapCard
+              game={game}
+              allNBAGames={allNBAGames}
+              recap={recap}
+            />
+          ) : (
+            <RecapCollapsed
+              recap={recap}
+              gameId={game.id}
+              noSpoilers={noSpoilers}
+              onOpen={() => setRecapOpen(true)}
+            />
+          )}
         </div>
       ) : null}
 
@@ -311,14 +336,39 @@ export function NBALiveCompanion({
       {/* Series state lives in the consolidated Series block under the
           scoreboard now — no second card before the pin controls. */}
 
+      {/* ── Broadcast (single canonical line) ───────────────────────────
+          Moved to the bottom group (broadcast → pin → footnote) to match
+          the Watching · Game handoff sequence. */}
+      {channel ? (
+        <div className="mt-5">
+          <WatchLine channel={channel} ariaSubject={subject} />
+        </div>
+      ) : null}
+
       {/* ── Pin / Watching ──────────────────────────────────────────────── */}
       <PinControls
         pinned={pinned}
         onPin={onPin}
         onUnpin={onUnpin}
         subject={subject}
-        className="mt-5"
+        className="mt-3"
       />
+
+      {/* ── Footnote — the pin/follow distinction + a way back to the
+          Watching list (handoff footnote). */}
+      <p
+        className="mt-3 px-1 text-[13px] leading-relaxed"
+        style={{ color: "var(--mute-1)", fontWeight: 500 }}
+      >
+        Pinning keeps this game in Watching. Alerts come from follows.{" "}
+        <Link
+          href="/watching"
+          className="underline decoration-dotted underline-offset-4"
+          style={{ color: "var(--ink)", fontWeight: 600 }}
+        >
+          Open Watching →
+        </Link>
+      </p>
         </div>
 
         {/* ── Right rail (desktop md+ only) ──────────────────────────────
@@ -373,6 +423,69 @@ function FreshnessIndicator({ lastFetched }: { lastFetched: number }) {
     >
       {secondsAgo}s ago
     </span>
+  );
+}
+
+// ── Collapsed recap ─────────────────────────────────────────────────────
+// The calm default for a finished game: a "Recap" eyebrow + one-line
+// summary, with a "Read recap" link that expands the full QuietRecapCard.
+// The summary names the winner, so it's Spoiler-gated to the game's
+// shared reveal — tapping it (or "Reveal the result" above) shows it.
+
+function RecapCollapsed({
+  recap,
+  gameId,
+  noSpoilers,
+  onOpen,
+}: {
+  recap: NBARecap;
+  gameId: string;
+  noSpoilers: boolean;
+  onOpen: () => void;
+}) {
+  const subject = `${recap.awayCode} vs ${recap.homeCode}`;
+  const summary = recap.seriesLine
+    ? `${recap.headline} ${recap.seriesLine}`
+    : recap.headline;
+
+  return (
+    <section
+      className="rounded-[14px] border px-4 py-3"
+      style={{
+        background: "var(--paper)",
+        borderColor: "var(--line)",
+        borderLeft: "3px solid var(--nba)",
+      }}
+    >
+      <Eyebrow color="var(--nba)">Recap</Eyebrow>
+      <p
+        className="mt-1.5 text-[15px] leading-snug"
+        style={{ color: "var(--ink)", fontWeight: 600 }}
+      >
+        {noSpoilers && recap.headlineSpoilery ? (
+          <Spoiler ariaSubject={subject} gameId={gameId}>
+            {summary}
+          </Spoiler>
+        ) : (
+          summary
+        )}
+      </p>
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label="Read the full recap"
+        className="mt-2 inline-flex min-h-[36px] items-center text-[11px] uppercase"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          letterSpacing: "0.12em",
+          color: "var(--ink)",
+          borderBottom: "1px solid var(--line)",
+        }}
+      >
+        Read recap →
+      </button>
+    </section>
   );
 }
 
