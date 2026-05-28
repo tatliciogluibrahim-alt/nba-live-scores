@@ -285,21 +285,41 @@ export function composeBrief({
     const leadsMatch = summary.match(
       /(\w+)\s+LEADS?\s+SERIES\s+(\d+)\s*-\s*(\d+)/i
     );
+    // Round context — names the real consequence ("reach the Finals")
+    // instead of the generic "close the series."
+    const ctx = `${g.seriesRound} ${g.seriesConference} ${g.gameContext}`.toLowerCase();
+    const isFinals = /nba finals/.test(ctx);
+    const isConfFinals = !isFinals && /conference finals|conf finals/.test(ctx);
+    const clinchPhrase = isFinals
+      ? "win the title"
+      : isConfFinals
+        ? "reach the Finals"
+        : "close the series";
+
     if (leadsMatch) {
-      const leader = leadsMatch[1];
+      const leaderCode = leadsMatch[1].toUpperCase();
       const hi = parseInt(leadsMatch[2], 10);
-      const lo = parseInt(leadsMatch[3], 10);
-      if (hi === 3 && lo === 0) {
-        worthKnowing.push(`${leader} can sweep with a win tonight.`);
-      } else if (hi === 3 && lo === 1) {
-        worthKnowing.push(`${leader} can close the series tonight.`);
-      } else if (hi === 3 && lo === 2) {
+      // Name the trailing team explicitly rather than "the trailing side."
+      const away = g.away.abbreviation.toUpperCase();
+      const home = g.home.abbreviation.toUpperCase();
+      const trailCode =
+        leaderCode === away ? home : leaderCode === home ? away : home;
+      const leaderName = getTeam(leaderCode)?.name ?? leaderCode;
+      const trailName = getTeam(trailCode)?.name ?? trailCode;
+
+      if (hi === 3) {
         worthKnowing.push(
-          `${leader} can close it. The trailing side faces elimination.`
+          `${leaderName} can ${clinchPhrase} tonight. ${trailName} are eliminated with a loss.`
         );
       }
     } else if (/TIED\s+3\s*-\s*3/i.test(summary)) {
-      worthKnowing.push("Game 7. Winner takes the series.");
+      worthKnowing.push(
+        isFinals
+          ? "Game 7. The title is on the line."
+          : isConfFinals
+            ? "Game 7. The winner reaches the Finals."
+            : "Game 7. The winner takes the series."
+      );
     }
   }
 

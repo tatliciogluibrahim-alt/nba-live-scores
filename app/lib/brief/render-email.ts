@@ -262,24 +262,27 @@ function worthKnowingSection(payload: BriefPayload): string {
   const cd = payload.countdown;
   if (!cd && payload.worthKnowing.length === 0) return "";
 
-  // Anticipatory countdown — big accent numeral + label + sentence.
+  // Anticipatory countdown — big accent numeral + label on one line, then
+  // the sentence drops to its own line at the content-column left edge so
+  // it aligns with the stake line below and the section content above
+  // (rather than indenting past the numeral).
   const countdownHtml = cd
     ? `
       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td valign="top" style="font-family: ${BODY_FONT}; font-size: 32px; line-height: 1; font-weight: 800; color: ${C_WC}; letter-spacing: -0.8px;">
+          <td valign="bottom" style="font-family: ${BODY_FONT}; font-size: 32px; line-height: 1; font-weight: 800; color: ${C_WC}; letter-spacing: -0.8px;">
             ${String(cd.number)}
           </td>
-          <td valign="top" style="padding-left: 12px; padding-top: 2px;">
+          <td valign="bottom" style="padding-left: 12px;">
             <div class="mono" style="font-family: ${MONO_FONT}; font-size: 10.5px; color:${C_WC}; letter-spacing: 2.3px; text-transform: uppercase; font-weight: 600;">
               ${escape(cd.accentLabel)}
             </div>
-            <p style="margin: 8px 0 0 0; font-family: ${BODY_FONT}; font-size: 14.5px; line-height: 1.55; color: ${C_INK2};">
-              ${escape(cd.text)}
-            </p>
           </td>
         </tr>
-      </table>`
+      </table>
+      <p style="margin: 12px 0 0 0; font-family: ${BODY_FONT}; font-size: 14.5px; line-height: 1.55; color: ${C_INK2};">
+        ${escape(cd.text)}
+      </p>`
     : "";
 
   // Stake lines stack beneath the countdown (or stand alone).
