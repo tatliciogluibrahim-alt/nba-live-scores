@@ -7,6 +7,7 @@ import { Eyebrow } from "../atoms/Eyebrow";
 import { useFollows } from "../providers";
 import { PRESETS } from "../state/types";
 import { getTeam, teamDisplayName } from "../following/data/teams";
+import { buildSeriesKey } from "../../nba/lib/series-keys";
 
 // /team/[abbr] — first detail page for NBA team follows. Replaces
 // the Phase 1 fallback that left team rows in FollowCard
@@ -69,10 +70,6 @@ function formatGameTime(date: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function buildSeriesKey(a: string, b: string): string {
-  return [a, b].sort().join("-");
 }
 
 export function TeamClient({ teamAbbr }: { teamAbbr: string }) {

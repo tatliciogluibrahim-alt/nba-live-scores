@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useFollows } from "../../providers";
 import { teamDisplayName } from "../data/teams";
 import { PickerScreen, type PickerOption } from "./PickerScreen";
+import {
+  buildSeriesKey,
+  isPlaceholderAbbr,
+  hasSeriesContext,
+} from "../../../nba/lib/series-keys";
 
 // Pulls candidate series from the existing live-scores API. A "series" is
 // keyed by sorted team-abbr pair (e.g. "NYK-PHI"). We surface anything that
@@ -20,29 +25,15 @@ type ApiGame = {
   seriesRound: string;
 };
 
-function buildSeriesKey(a: string, b: string): string {
-  return [a, b].sort().join("-");
-}
-
+// The picker rejects ALL placeholder/compound abbreviations: letting a
+// "NYK vs OKC/MIN" projection through would let the user follow a
+// matchup that doesn't exist yet, persisting a dead follow id. Shared
+// series-key helpers live in app/nba/lib/series-keys.ts.
 function isSeriesCandidate(g: ApiGame): boolean {
-  if (!g.away.abbreviation || !g.home.abbreviation) return false;
-  if (g.away.abbreviation === "TBD" || g.home.abbreviation === "TBD") return false;
-  // Reject compound placeholder abbreviations like "OKC/MIN" that
-  // ESPN emits for forward-projected next-round opponents. If we
-  // surface them in the picker, the user can pick one and we'd
-  // persist a malformed follow id (e.g. "NYK-OKC/MIN") that would
-  // never match the eventual real matchup.
-  if (g.away.abbreviation.includes("/") || g.home.abbreviation.includes("/")) {
+  if (isPlaceholderAbbr(g.away.abbreviation) || isPlaceholderAbbr(g.home.abbreviation)) {
     return false;
   }
-  return Boolean(
-    g.seriesRound ||
-      g.seriesConference ||
-      g.seriesSummary ||
-      /playoff|series|first round|second round|conf|nba finals|game\s*[1-7]/i.test(
-        g.gameContext
-      )
-  );
+  return hasSeriesContext(g);
 }
 
 export function SeriesPicker() {

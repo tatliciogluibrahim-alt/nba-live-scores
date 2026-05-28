@@ -14,6 +14,12 @@ import {
   WC_COUNTRIES,
   type CountryEntry,
 } from "../following/data/countries";
+import {
+  buildSeriesKey,
+  isPlaceholderAbbr,
+  buildWinnerOverrides,
+  hasSeriesContext,
+} from "../../nba/lib/series-keys";
 
 // /tournament/[id] — first detail page for tournament follows.
 // Replaces the Phase 1 fallback that routed tournament chips to
@@ -41,62 +47,17 @@ type ApiGame = {
   gameContext: string;
 };
 
-function buildSeriesKey(a: string, b: string): string {
-  return [a, b].sort().join("-");
-}
-
+// Series-key helpers are shared across the tournament / team / picker /
+// wrapped-series surfaces — see app/nba/lib/series-keys.ts.
+//
+// Placeholder policy here is tournament-specific: we ALLOW one
+// placeholder side (so a forward-projected "NYK vs TBD" Finals row
+// still renders) and only reject a literal "TBD" team. The picker, by
+// contrast, rejects every placeholder. So we layer our own candidate
+// check on top of the shared hasSeriesContext.
 function isSeriesCandidate(g: ApiGame): boolean {
-  if (!g.away.abbreviation || !g.home.abbreviation) return false;
   if (g.away.abbreviation === "TBD" || g.home.abbreviation === "TBD") return false;
-  return Boolean(
-    g.seriesRound ||
-      g.seriesConference ||
-      g.seriesSummary ||
-      /playoff|series|first round|second round|conf|nba finals|game\s*[1-7]/i.test(
-        g.gameContext
-      )
-  );
-}
-
-/** ESPN uses compound strings like "SPURS/THUNDER" or "Spurs/Thunder"
- *  for placeholder games where one side is "winner of an upcoming
- *  series." Treat anything with a slash as a placeholder. Also handles
- *  the obvious "TBD" / empty cases. */
-function isPlaceholderAbbr(code: string): boolean {
-  if (!code) return true;
-  if (code === "TBD") return true;
-  if (code.includes("/")) return true;
-  return false;
-}
-
-/** Build a map of `loserAbbr → winnerAbbr` from every wrapped series
- *  in the data set. Lets us repair forward-projected rows where ESPN
- *  hasn't updated a placeholder yet (the NYK-in-Finals bug: ESPN's
- *  Finals game still listed NYK as the East rep even after CLE
- *  clinched the conf finals 4-X. We cross-reference our own wrapped-
- *  series data and substitute the actual winner). */
-function buildWinnerOverrides(
-  games: ApiGame[]
-): Map<string, string> {
-  const out = new Map<string, string>();
-  for (const g of games) {
-    // "OKC WINS SERIES 4-2" / "Oklahoma City wins series 4-2" — accept
-    // upper or mixed case; only the leading token is the abbreviation
-    // in our data (ESPN normalizes this in live-scores).
-    const m = g.seriesSummary?.match(/([A-Z]{2,4})\s+WINS?\s+SERIES/i);
-    if (!m) continue;
-    const winner = m[1].toUpperCase();
-    const loser =
-      winner === g.away.abbreviation
-        ? g.home.abbreviation
-        : winner === g.home.abbreviation
-          ? g.away.abbreviation
-          : null;
-    if (loser && !isPlaceholderAbbr(loser)) {
-      out.set(loser, winner);
-    }
-  }
-  return out;
+  return hasSeriesContext(g);
 }
 
 export function TournamentClient({ tournamentId }: { tournamentId: string }) {

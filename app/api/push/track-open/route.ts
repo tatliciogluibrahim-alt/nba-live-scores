@@ -16,23 +16,15 @@
 
 import { NextResponse } from "next/server";
 import { incrCounter } from "../../../lib/push/ops-metrics";
+import { EVENT_TYPES } from "../../../lib/push/event-detector";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Mirror of EventType in event-detector.ts. Kept as a local allowlist
-// so a malformed body can't mint arbitrary KV keys.
-const ALLOWED_EVENT_TYPES = new Set<string>([
-  "tipoff",
-  "eoq-1",
-  "eoq-2",
-  "eoq-3",
-  "close-game",
-  "comeback",
-  "final",
-  "wc-kickoff",
-  "wc-final",
-]);
+// Allowlist derived from the canonical event-type list so a malformed
+// body can't mint arbitrary KV keys, and so new event types are
+// covered automatically when EVENT_TYPES grows.
+const ALLOWED_EVENT_TYPES = new Set<string>(EVENT_TYPES);
 
 type Body = { eventType?: unknown };
 

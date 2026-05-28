@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { buildSeriesKey } from "../../nba/lib/series-keys";
 
 // Detect which playoff series have wrapped. A series is "wrapped" when
 // any final game in the last few weeks carries a "WINS SERIES" marker
@@ -22,14 +23,6 @@ type ApiGame = {
   away: { abbreviation: string };
   home: { abbreviation: string };
 };
-
-/** Match the series picker's id format: codes alphabetized + joined
- *  with a hyphen. e.g. NYK vs CLE → "CLE-NYK". Always pass team
- *  abbreviations that have been through the canonical-alias layer
- *  (the /api/live-scores route applies NY → NYK before returning). */
-function buildSeriesKey(a: string, b: string): string {
-  return [a, b].sort().join("-");
-}
 
 export function useWrappedSeries(): Set<string> {
   const [wrappedIds, setWrappedIds] = useState<Set<string>>(new Set());

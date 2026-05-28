@@ -11,6 +11,7 @@
 // and "yesterday" without unbounded KV growth.
 
 import { kv } from "@vercel/kv";
+import { EVENT_TYPES } from "./event-detector";
 
 const COUNTER_PREFIX = "nns:ops:counter:v1:";
 const BUCKET_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -42,20 +43,11 @@ export type OpsCounter =
   | `notif.sent.${string}`
   | `notif.open.${string}`;
 
-/** Event types that flow through the notification funnel. Mirrors
- *  EventType in event-detector.ts — kept as a local literal list so
- *  ops-metrics has no import cycle with the push layer. */
-const NOTIF_EVENT_TYPES = [
-  "tipoff",
-  "eoq-1",
-  "eoq-2",
-  "eoq-3",
-  "close-game",
-  "comeback",
-  "final",
-  "wc-kickoff",
-  "wc-final",
-] as const;
+/** Event types that flow through the notification funnel — the
+ *  canonical list from event-detector (single source of truth). Safe
+ *  import: event-detector is a pure leaf (→ state-cache → kv only), so
+ *  there's no cycle back into ops-metrics. */
+const NOTIF_EVENT_TYPES = EVENT_TYPES;
 
 function todayBucket(): string {
   const d = new Date();

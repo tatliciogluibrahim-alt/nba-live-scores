@@ -18,21 +18,26 @@
 
 import type { CachedGameState } from "./state-cache";
 
-export type EventType =
-  | "tipoff"
-  | "eoq-1"
-  | "eoq-2"
-  | "eoq-3"
-  | "close-game"
-  | "comeback"
-  | "final"
-  // World Cup events (Phase 8 — kickoff + final only for v1). The
-  // dispatcher uses these types to pick a country-follow matcher and a
-  // soccer-bespoke payload body. WC events carry country ISO codes
-  // (USA, BRA, ...) in the same awayCode/homeCode slots used by NBA
-  // team abbrs.
-  | "wc-kickoff"
-  | "wc-final";
+// Canonical event-type list — the single source of truth. The
+// dispatcher, preset matcher, ops-metrics funnel, and the push admin /
+// open-tracking routes all derive from this so the taxonomy is defined
+// in exactly one place. WC events (wc-kickoff / wc-final, Phase 8 v1)
+// carry country ISO codes (USA, BRA, ...) in the same awayCode/homeCode
+// slots NBA team abbrs use; the dispatcher branches on the wc- prefix
+// to pick a country-follow matcher and a soccer-bespoke payload body.
+export const EVENT_TYPES = [
+  "tipoff",
+  "eoq-1",
+  "eoq-2",
+  "eoq-3",
+  "close-game",
+  "comeback",
+  "final",
+  "wc-kickoff",
+  "wc-final",
+] as const;
+
+export type EventType = (typeof EVENT_TYPES)[number];
 
 export type PushEvent = {
   type: EventType;

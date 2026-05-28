@@ -15,7 +15,7 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { dispatchEvents } from "../../../../lib/push/dispatcher";
-import type { EventType, PushEvent } from "../../../../lib/push/event-detector";
+import { EVENT_TYPES, type EventType, type PushEvent } from "../../../../lib/push/event-detector";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,17 +35,7 @@ function isAuthorized(req: Request): boolean {
   return false;
 }
 
-const ALLOWED_TYPES: ReadonlySet<EventType> = new Set<EventType>([
-  "tipoff",
-  "eoq-1",
-  "eoq-2",
-  "eoq-3",
-  "close-game",
-  "comeback",
-  "final",
-  "wc-kickoff",
-  "wc-final",
-]);
+const ALLOWED_TYPES: ReadonlySet<EventType> = new Set<EventType>(EVENT_TYPES);
 
 function parseScoreParam(raw: string | null, fallback: number): number {
   if (!raw) return fallback;
