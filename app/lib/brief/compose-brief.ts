@@ -18,9 +18,24 @@ import type { Follow } from "../../companion/state/types";
 import type { BriefSubscriber } from "./subscriber-store";
 import { deriveNBARecap } from "../../companion/recap/derive-recap";
 import { getTeam } from "../../companion/following/data/teams";
-import { countryDisplayName } from "../../companion/following/data/countries";
+import {
+  countryDisplayName,
+  getCountry,
+  WC_COUNTRIES,
+} from "../../companion/following/data/countries";
 import { getTournament } from "../../companion/following/data/tournaments";
 import type { Game } from "../../nba/types";
+
+// First whistle of the World Cup. Defined locally so the composer stays
+// free of the big today-data module. Keep in sync with WC_KICKOFF there.
+const WC_KICKOFF = new Date("2026-06-11T19:00:00Z");
+
+/** "A, B, and C" — Oxford comma list for the countdown group-mates. */
+function listWithAnd(items: string[]): string {
+  if (items.length <= 1) return items.join("");
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
 
 // Human-readable label for a follow, for the "Your alerts" lines. The
 // raw follow id ("OKC", "USA", "OKC-SA", "nba-playoffs-2025") is a
@@ -78,6 +93,15 @@ export type BriefPayload = {
   /** Stake context lines for impending games — "Knicks can clinch
    *  tonight" etc. Drawn from the stakes deriver. */
   worthKnowing: string[];
+  /** Optional anticipatory countdown for "Worth knowing" — the World Cup
+   *  run-up. Renders as a big accent numeral + label + sentence. Only set
+   *  pre-kickoff for subscribers who follow a country or the tournament;
+   *  never the sole reason a brief sends. */
+  countdown?: {
+    number: number;
+    accentLabel: string; // "Days · World Cup"
+    text: string;
+  };
   /** Calm summary of the subscriber's follow + alert state. */
   alerts: {
     summary: string; // "2 teams · 1 country"
@@ -278,6 +302,35 @@ export function composeBrief({
     }
   }
 
+  // World Cup anticipation countdown (pre-kickoff). Rides along on briefs
+  // already sending for other reasons — never triggers a send on its own
+  // (shouldSendBrief ignores it), so it can't become a daily countdown
+  // nag. Shows the followed country's group when there is one.
+  let countdown: BriefPayload["countdown"];
+  const msToKickoff = WC_KICKOFF.getTime() - now.getTime();
+  const followsWorldCup =
+    follows.some((f) => f.kind === "country") ||
+    follows.some(
+      (f) => f.kind === "tournament" && f.id.startsWith("fifa-world-cup-")
+    );
+  if (msToKickoff > 0 && followsWorldCup) {
+    const days = Math.ceil(msToKickoff / 86_400_000);
+    const countryFollow = follows.find((f) => f.kind === "country");
+    const country = countryFollow ? getCountry(countryFollow.id) : null;
+    let text: string;
+    if (country) {
+      const mates = WC_COUNTRIES.filter(
+        (c) => c.group === country.group && c.id !== country.id
+      ).map((c) => c.name);
+      text = mates.length
+        ? `${country.name} in Group ${country.group} with ${listWithAnd(mates)}. First whistle June 11.`
+        : `${country.name} in Group ${country.group}. First whistle June 11.`;
+    } else {
+      text = "48 nations, 12 groups. First whistle June 11.";
+    }
+    countdown = { number: days, accentLabel: "Days · World Cup", text };
+  }
+
   // Alerts summary. Tier labels mirror PRESETS in state/types.ts (kept
   // in sync manually rather than imported to keep this composer free
   // of client-only types).
@@ -324,6 +377,7 @@ export function composeBrief({
     yesterday,
     today,
     worthKnowing,
+    countdown,
     alerts: {
       summary: summarizeFollowKinds(follows),
       enabled: enabledFollows.length,

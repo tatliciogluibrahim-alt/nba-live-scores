@@ -30,6 +30,7 @@ const C_HAIR = "#e9e0c9";
 const C_HAIR_STRONG = "#c8bd9f"; // link underlines
 const C_SLUG = "#ebe1c8"; // redaction slug fill
 const C_NBA = "#e55b2a";
+const C_WC = "#1e6b3c";
 
 const BODY_FONT =
   "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
@@ -261,18 +262,40 @@ function todaySection(payload: BriefPayload): string {
 // ── Worth knowing ──────────────────────────────────────────────────────
 
 function worthKnowingSection(payload: BriefPayload): string {
-  if (payload.worthKnowing.length === 0) return "";
+  const cd = payload.countdown;
+  if (!cd && payload.worthKnowing.length === 0) return "";
 
+  // Anticipatory countdown — big accent numeral + label + sentence.
+  const countdownHtml = cd
+    ? `
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td valign="top" style="font-family: ${BODY_FONT}; font-size: 32px; line-height: 1; font-weight: 800; color: ${C_WC}; letter-spacing: -0.8px;">
+            ${String(cd.number)}
+          </td>
+          <td valign="top" style="padding-left: 12px; padding-top: 2px;">
+            <div class="mono" style="font-family: ${MONO_FONT}; font-size: 10.5px; color:${C_WC}; letter-spacing: 2.3px; text-transform: uppercase; font-weight: 600;">
+              ${escape(cd.accentLabel)}
+            </div>
+            <p style="margin: 8px 0 0 0; font-family: ${BODY_FONT}; font-size: 14.5px; line-height: 1.55; color: ${C_INK2};">
+              ${escape(cd.text)}
+            </p>
+          </td>
+        </tr>
+      </table>`
+    : "";
+
+  // Stake lines stack beneath the countdown (or stand alone).
   const lines = payload.worthKnowing
     .map(
       (line, idx) => `
-      <p style="margin: ${idx > 0 ? "10px" : "0"} 0 0 0; font-family: ${BODY_FONT}; font-size: 14.5px; line-height: 1.55; color: ${C_INK2};">
+      <p style="margin: ${idx > 0 || cd ? "12px" : "0"} 0 0 0; font-family: ${BODY_FONT}; font-size: 14.5px; line-height: 1.55; color: ${C_INK2};">
         ${escape(line)}
       </p>`
     )
     .join("");
 
-  return hairline() + gutterRow(gutterLabel("Worth", undefined) + "<br>Knowing", lines);
+  return hairline() + gutterRow("Worth<br>Knowing", countdownHtml + lines);
 }
 
 // ── Your alerts ────────────────────────────────────────────────────────
