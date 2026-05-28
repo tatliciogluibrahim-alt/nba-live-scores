@@ -162,7 +162,7 @@ function deriveWinsFromFinalGames(games: Game[], abbrA: string, abbrB: string) {
   );
 }
 
-function prettifySeriesSummary(summary: string) {
+export function prettifySeriesSummary(summary: string) {
   const compact = summary.replace(/\s+/g, " ").trim();
   const upper = compact.toUpperCase();
 

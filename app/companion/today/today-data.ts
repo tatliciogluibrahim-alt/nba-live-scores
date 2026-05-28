@@ -5,6 +5,7 @@
 import type { Follow, PinnedGame } from "../state/types";
 import { getCountry } from "../following/data/countries";
 import { getTournament } from "../following/data/tournaments";
+import { prettifySeriesSummary } from "../../nba/lib/series";
 
 // ── Minimal shapes lifted from /api/live-scores + /api/world-cup ─────
 // We intentionally keep these decoupled from the legacy route types so
@@ -59,6 +60,10 @@ export type TodayHero = {
   eyebrow: string;
   headline: string;
   context?: string;
+  /** Series stake, humanized from seriesSummary ("OKC leads series 3-2").
+   *  Only set for playoff/series games. Drives the Front Page support
+   *  line under the deck. */
+  stake?: string;
   live: boolean;
   accent: "var(--nba)" | "var(--wc)";
   /** True when this hero is being surfaced because the user pinned the game. */
@@ -100,6 +105,9 @@ export type UpNextItem = {
   eyebrow: string;           // "NBA · Tonight" | "World Cup · Sat"
   headline: string;          // "Knicks vs Cavaliers"
   detail: string;            // "8:00 PM · MSG"
+  /** Series stake, humanized ("OKC leads series 3-2"). NBA series games
+   *  only; undefined for plain games and World Cup fixtures. */
+  stake?: string;
   watch?: { channel: string; stream?: string };
   href: string;
   spoilerSubject: string;
@@ -347,6 +355,9 @@ function pickHero(
       eyebrow: isPinned ? `Pinned · ${baseEyebrow}` : baseEyebrow,
       headline: deriveLiveHeadline(heroLive),
       context: heroLive.seriesSummary || undefined,
+      stake: heroLive.seriesSummary
+        ? prettifySeriesSummary(heroLive.seriesSummary)
+        : undefined,
       live: true,
       accent: "var(--nba)",
       pinned: isPinned,
@@ -369,6 +380,9 @@ function pickHero(
       eyebrow: "Next up · NBA",
       headline: `${todayFollowed.away.abbreviation} vs ${todayFollowed.home.abbreviation}`,
       context: `${formatGameDay(todayFollowed.date)} · ${formatGameTime(todayFollowed.date)}`,
+      stake: todayFollowed.seriesSummary
+        ? prettifySeriesSummary(todayFollowed.seriesSummary)
+        : undefined,
       live: false,
       accent: "var(--nba)",
       href: `/game/${todayFollowed.id}`,
@@ -557,6 +571,7 @@ function nbaToUpNext(g: NBAGame, pinned: boolean, personal: boolean): UpNextItem
     eyebrow: `NBA · ${formatGameDay(g.date)}`,
     headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     detail: `${formatGameTime(g.date)}${g.gameContext ? " · " + g.gameContext : ""}`,
+    stake: g.seriesSummary ? prettifySeriesSummary(g.seriesSummary) : undefined,
     watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
     href: `/game/${g.id}`,
     spoilerSubject: g.matchup,
@@ -1286,45 +1301,91 @@ function spellCount(n: number): string {
   return n >= 1 && n <= 9 ? HEADLINE_NUM[n] : String(n);
 }
 
-/** Build the lead deck from the hero (preferred) or the first up-next
- *  item. Returns null for non-game leads (WC countdown hero, quiet). */
-function leadDeck(payload: TodayPayload): TodayHeadlineDeck | null {
+/** The single lead game for the Front Page: a deck card plus its series
+ *  stake (when one exists). Deck and stake always describe the SAME game
+ *  so the support line can't drift from the card above it. */
+type LeadGame = { deck: TodayHeadlineDeck; stake?: string };
+
+/** Build the lead game from the live hero (preferred), then the first
+ *  up-next item, then any non-countdown hero. Returns null for non-game
+ *  leads (WC countdown, quiet day). */
+function leadGame(payload: TodayPayload): LeadGame | null {
   const hero = payload.hero;
-  if (hero && hero.kind !== "wc-countdown") {
+
+  // Live takes precedence — there is no up-next while a game is on.
+  // The deck's detail line is the live status ("Third quarter
+  // underway."), leaving the series record to the stake support line.
+  if (hero?.live && hero.kind !== "wc-countdown") {
     return {
-      matchup: hero.spoilerMatchup ?? hero.headline,
-      detail: hero.context ?? "",
-      broadcast: hero.watch?.channel,
-      accent: hero.accent,
-      href: hero.href,
+      deck: {
+        matchup: hero.spoilerMatchup ?? hero.headline,
+        detail: hero.headline,
+        broadcast: hero.watch?.channel,
+        accent: hero.accent,
+        href: hero.href,
+      },
+      stake: hero.stake,
     };
   }
+
+  // Upcoming — the up-next item already carries the "time · context"
+  // detail ("8:30 PM · Game 6") and the broadcast the deck wants.
   const up = payload.upNext[0];
   if (up) {
     return {
-      matchup: up.headline,
-      detail: up.detail,
-      broadcast: up.watch?.channel,
-      accent: up.source === "wc" ? "var(--wc)" : "var(--nba)",
-      href: up.href,
+      deck: {
+        matchup: up.headline,
+        detail: up.detail,
+        broadcast: up.watch?.channel,
+        accent: up.source === "wc" ? "var(--wc)" : "var(--nba)",
+        href: up.href,
+      },
+      stake: up.stake,
     };
   }
+
+  // Fallback: a non-live, non-countdown hero with no up-next backing.
+  if (hero && hero.kind !== "wc-countdown") {
+    return {
+      deck: {
+        matchup: hero.spoilerMatchup ?? hero.headline,
+        detail: hero.context ?? "",
+        broadcast: hero.watch?.channel,
+        accent: hero.accent,
+        href: hero.href,
+      },
+      stake: hero.stake,
+    };
+  }
+
   return null;
 }
 
+// NBA playoff games are evening events → "tonight"; World Cup games
+// skew daytime → "today". The headline is about the day you care about,
+// not a generic "up next" — the eyebrow carries the live/upcoming state.
+function whenWord(tone: "nba" | "wc"): string {
+  return tone === "wc" ? "today" : "tonight";
+}
+
 export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
-  const deck = leadDeck(payload);
+  const lead = leadGame(payload);
+  const deck = lead?.deck ?? null;
   const heroLive = payload.hero?.live === true;
   const heroTone: "nba" | "wc" =
     payload.hero?.accent === "var(--wc)" ? "wc" : "nba";
 
-  // Live takes the lead.
+  // Live takes the lead. Headline names the slate ("One game tonight.");
+  // the eyebrow says it's live.
   if (heroLive || payload.pinnedSummary.live > 0) {
     const lc = Math.max(payload.pinnedSummary.live, heroLive ? 1 : 0, 1);
+    const when = whenWord(heroTone);
     return {
       eyebrow: { label: "Live now", tone: heroTone },
-      headline: lc === 1 ? "One game live." : `${spellCount(lc)} games live.`,
-      support: payload.hero?.context,
+      headline: lc === 1 ? `One game ${when}.` : `${spellCount(lc)} games ${when}.`,
+      // Series stake ("OKC leads series 3-2") — only present for
+      // playoff/series games; plain games and World Cup get none.
+      support: lead?.stake,
       deck,
     };
   }
@@ -1334,9 +1395,12 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
     const n = payload.upNext.length;
     const tone: "nba" | "wc" =
       payload.upNext[0].source === "wc" ? "wc" : "nba";
+    const when = whenWord(tone);
     return {
       eyebrow: { label: "Up next", tone },
-      headline: n === 1 ? "One game up next." : `${spellCount(n)} games up next.`,
+      headline: n === 1 ? `One game ${when}.` : `${spellCount(n)} games ${when}.`,
+      // Stake when the lead game is a series game; otherwise undefined.
+      support: lead?.stake,
       deck,
     };
   }

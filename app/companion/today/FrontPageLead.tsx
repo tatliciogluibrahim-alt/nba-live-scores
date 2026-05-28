@@ -38,12 +38,28 @@ function chipPair(matchup: string): [string, string] | null {
   return null;
 }
 
+/** Split the deck detail into a time line and a context line. The deck
+ *  detail arrives as "8:30 PM · Game 6" (or a live status with no " · ").
+ *  The first segment is the time/status (top line); the broadcast and any
+ *  remaining segments stack below as "NBC · GAME 6". */
+function deckLines(
+  detail: string,
+  broadcast: string | undefined
+): { top: string; bottom: string } {
+  const parts = detail.split(" · ").map((p) => p.trim()).filter(Boolean);
+  const top = parts[0] ?? "";
+  const rest = parts.slice(1);
+  const bottom = [broadcast, ...rest].filter(Boolean).join(" · ");
+  return { top, bottom };
+}
+
 export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
   const eyebrowColor = TONE_COLOR[lead.eyebrow.tone];
   const size = headlineSize(lead.headline.length);
   const deck = lead.deck;
   const chips = deck ? chipPair(deck.matchup) : null;
   const chipBg = deck?.accent === "var(--wc)" ? "var(--wc-soft)" : "var(--nba-soft)";
+  const lines = deck ? deckLines(deck.detail, deck.broadcast) : null;
 
   return (
     <section className="mb-5">
@@ -59,12 +75,16 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
         {lead.eyebrow.label}
       </p>
 
+      {/* "Meet in the middle" weight: our display face (Bricolage) at
+          700, not the handoff mockup's heavier Archivo Black 900. Reads
+          editorial-bold without shouting. */}
       <h2
         style={{
           fontFamily: "var(--font-display)",
+          fontWeight: 700,
           fontSize: size,
-          lineHeight: 0.98,
-          letterSpacing: "-0.025em",
+          lineHeight: 1.0,
+          letterSpacing: "-0.02em",
           color: "var(--ink)",
           textWrap: "pretty",
         }}
@@ -109,9 +129,9 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
 
           <div className="flex-1" />
 
-          {deck.detail || deck.broadcast ? (
+          {lines && (lines.top || lines.bottom) ? (
             <div className="text-right">
-              {deck.detail ? (
+              {lines.top ? (
                 <div
                   style={{
                     fontFamily: "var(--font-mono)",
@@ -121,10 +141,10 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
-                  {deck.detail}
+                  {lines.top}
                 </div>
               ) : null}
-              {deck.broadcast ? (
+              {lines.bottom ? (
                 <div
                   className="mt-0.5 uppercase"
                   style={{
@@ -134,7 +154,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
                     color: "var(--mute-1)",
                   }}
                 >
-                  {deck.broadcast}
+                  {lines.bottom}
                 </div>
               ) : null}
             </div>

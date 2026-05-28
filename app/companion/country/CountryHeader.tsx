@@ -24,6 +24,7 @@ export function CountryHeader({ country }: { country: CountryEntry }) {
         className="mt-2"
         style={{
           fontFamily: "var(--font-display)",
+          fontWeight: 700,
           fontSize: size,
           lineHeight: 1.02,
           letterSpacing: "-0.02em",
