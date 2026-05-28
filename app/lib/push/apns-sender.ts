@@ -245,3 +245,125 @@ export async function sendApnsPush(opts: {
     };
   }
 }
+
+// ── Live Activity (ActivityKit) push ─────────────────────────────────
+//
+// Live Activities are updated/ended via APNs with the special
+// `liveactivity` push type and a topic suffix of `.push-type.liveactivity`.
+// The token here is the per-Activity *push token* the device hands us when
+// it starts the activity (NOT the device token used for alerts above).
+//
+// Payload shape (Apple's ActivityKit remote-push contract):
+//   aps: {
+//     timestamp,                      // seconds, when this update was made
+//     event: "start" | "update" | "end",
+//     "content-state": { ... },       // must match the Swift ContentState
+//     "attributes-type": "...",       // start only
+//     attributes: { ... },            // start only (push-to-start, iOS 17.2+)
+//     "stale-date": seconds,          // optional: when the UI goes stale
+//     "dismissal-date": seconds,      // end only: when to remove from LS
+//   }
+//
+// The Swift side (ContentState / ActivityAttributes) is defined in the
+// Widget Extension — see docs/LIVE_ACTIVITY_BUILD.md. Keep this shape and
+// that struct in lockstep.
+
+/** Decoded by the Swift `ContentState`. Flat + JSON-friendly. */
+export type LiveActivityContentState = {
+  awayCode: string;
+  awayScore: number;
+  homeCode: string;
+  homeScore: number;
+  /** Live status line, e.g. "Q3 · 4:21" or "Final". */
+  statusLine: string;
+  /** One-line stake / context, e.g. "OKC chasing the close-out." */
+  subline: string;
+  /** Sport accent hex, e.g. "#e55b2a". */
+  accentHex: string;
+};
+
+/** Set once when starting via push-to-start. Decoded by `ActivityAttributes`. */
+export type LiveActivityAttributes = {
+  matchup: string; // "OKC vs SA"
+  stage: string; // "NBA · Game 6"
+  sport: string; // "nba" | "wc" | "nfl"
+};
+
+export async function sendApnsLiveActivity(opts: {
+  /** The per-Activity push token from the device (hex). */
+  pushToken: string;
+  event: "start" | "update" | "end";
+  contentState: LiveActivityContentState;
+  /** Required for `event: "start"` (push-to-start). */
+  attributes?: LiveActivityAttributes;
+  /** epoch seconds — when the live UI should be treated as stale. */
+  staleDate?: number;
+  /** epoch seconds — when to remove the ended activity from the lock
+   *  screen. `end` only. Defaults to "soon" on the device if omitted. */
+  dismissalDate?: number;
+  /** 10 = immediate (use for score changes). 5 = throttled. Default 10. */
+  priority?: 5 | 10;
+  sandbox?: boolean;
+}): Promise<ApnsResult> {
+  const bundleId = process.env.APNS_BUNDLE_ID;
+  if (!bundleId) {
+    return { ok: false, status: 0, error: "APNS_BUNDLE_ID missing" };
+  }
+
+  let jwt: string;
+  try {
+    jwt = await getApnsJwt();
+  } catch (err) {
+    return {
+      ok: false,
+      status: 0,
+      error: err instanceof Error ? err.message : "JWT signing failed",
+    };
+  }
+
+  const host =
+    opts.sandbox !== false
+      ? "api.sandbox.push.apple.com"
+      : "api.push.apple.com";
+  const url = `https://${host}/3/device/${opts.pushToken}`;
+
+  const aps: Record<string, unknown> = {
+    timestamp: Math.floor(Date.now() / 1000),
+    event: opts.event,
+    "content-state": opts.contentState,
+  };
+  if (opts.event === "start" && opts.attributes) {
+    aps["attributes-type"] = "NoNoiseGameAttributes";
+    aps.attributes = opts.attributes;
+  }
+  if (opts.staleDate) aps["stale-date"] = opts.staleDate;
+  if (opts.event === "end" && opts.dismissalDate) {
+    aps["dismissal-date"] = opts.dismissalDate;
+  }
+
+  try {
+    const res = await undiciFetch(url, {
+      method: "POST",
+      headers: {
+        authorization: `bearer ${jwt}`,
+        "apns-topic": `${bundleId}.push-type.liveactivity`,
+        "apns-push-type": "liveactivity",
+        "apns-priority": String(opts.priority ?? 10),
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ aps }),
+      dispatcher: apnsAgent,
+    });
+
+    if (res.ok) return { ok: true, status: res.status };
+    const text = await res.text().catch(() => "");
+    return { ok: false, status: res.status, body: text };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "fetch failed";
+    const cause =
+      err instanceof Error && err.cause instanceof Error
+        ? ` (cause: ${err.cause.message})`
+        : "";
+    return { ok: false, status: 0, error: msg + cause };
+  }
+}
