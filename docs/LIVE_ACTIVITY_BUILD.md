@@ -13,13 +13,21 @@ Swift + Xcode** half that can only be done on a Mac with a device.
 
 ---
 
-## What's already done (TS / server — verified, build-green)
+## What's already done (TS / server + web client — verified, build-green)
 
+**Server:**
 - `app/lib/push/apns-sender.ts` → **`sendApnsLiveActivity({ pushToken, event, contentState, attributes?, … })`**. Sends the ActivityKit push (topic `<bundle>.push-type.liveactivity`, push-type `liveactivity`, `event: start|update|end`, `content-state`).
 - `app/lib/push/live-activity-store.ts` → KV store of per-game Activity push tokens (`registerActivityToken`, `listActivityTokensForGame`, `listActivityGameIds`, `removeActivityToken`, `clearActivityGame`).
 - `app/api/push/register-live-activity/route.ts` → the device POSTs `{ gameId, token }` here when it starts an activity; `{ token, end: true }` when it ends.
 
-**Contract to keep in lockstep:** the Swift `ContentState` / `ActivityAttributes` below must match `LiveActivityContentState` / `LiveActivityAttributes` in `apns-sender.ts`, and `attributes-type` must equal `"NoNoiseGameAttributes"`.
+**Web client glue (Phase 22.5-3 web half — shipped 2026-05-28):**
+- `app/companion/native/live-activity.ts` → typed bridge to the native plugin. `startLiveActivity(input)`, `endLiveActivity(gameId)`, `addLiveActivityPushTokenListener(cb)`. **Calls `registerPlugin("LiveActivity")`** — the Swift plugin MUST register under the jsName **`"LiveActivity"`** (see Step 5). Exports `LiveActivityStartInput` (mirror of the Swift start args) and `LIVE_ACTIVITY_SANDBOX` (flip to `false` for the TestFlight / App Store build).
+- `app/companion/native/LiveActivitySync.tsx` → invisible component mounted in `providers.tsx` beside `CapacitorPushBootstrap`. Native-only poll: a pinned game goes live → `startLiveActivity(...)` + forwards the per-Activity token to `register-live-activity`; the game ends / is unpinned → `endLiveActivity(gameId)` + deregisters. Guaranteed no-op on web / desktop PWA, and until the Swift plugin exists (so it's safe to deploy now).
+
+**Contract to keep in lockstep:**
+- The Swift `ContentState` / `ActivityAttributes` below must match `LiveActivityContentState` / `LiveActivityAttributes` in `apns-sender.ts`, and `attributes-type` must equal `"NoNoiseGameAttributes"`.
+- The Swift `start(_:)` arg names must match `LiveActivityStartInput` (gameId, matchup, stage, sport, awayCode, awayScore, homeCode, homeScore, statusLine, subline, accentHex).
+- The plugin must implement **`end({ gameId })`** (the web calls it on final/unpin) and emit the **`"pushToken"`** listener event as `{ gameId, token }`.
 
 ---
 
@@ -248,16 +256,40 @@ public class LiveActivityPlugin: CAPPlugin {
 }
 ```
 
-Register it (Capacitor 6/7 auto-discovers `@objc(...)CAPPlugin`; if not, add to the bridge). Then on the **web side**, when a pinned game goes live, call the plugin and POST the token:
+**Registration (Capacitor 7/8).** Auto-discovery of `@objc(...)CAPPlugin` is no longer reliable — declare the bridge explicitly so the jsName is exactly **`"LiveActivity"`** (what the web bridge calls `registerPlugin` with). Conform to `CAPBridgedPlugin`:
 
-```ts
-// pseudo — wherever pinned-live state is known (e.g. CapacitorPushBootstrap)
-const { id } = await LiveActivity.start({ gameId, matchup, stage, sport,
-  awayCode, awayScore, homeCode, homeScore, statusLine, subline, accentHex });
-LiveActivity.addListener("pushToken", ({ gameId, token }) =>
-  fetch("/api/push/register-live-activity", { method: "POST",
-    body: JSON.stringify({ gameId, token, sandbox: true }) }));
+```swift
+@objc(LiveActivityPlugin)
+public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "LiveActivityPlugin"
+    public let jsName = "LiveActivity"   // ← must match registerPlugin("LiveActivity")
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "end",   returnType: CAPPluginReturnPromise),
+    ]
+    // Keep started activities so end({ gameId }) can find the right one.
+    @available(iOS 16.2, *)
+    private var activities: [String: Activity<NoNoiseGameAttributes>] {
+        get { _activities as? [String: Activity<NoNoiseGameAttributes>] ?? [:] }
+        set { _activities = newValue }
+    }
+    private var _activities: Any = [String: Any]()
+    // ... start(_:) as above, but store `activity` in activities[gameId] ...
+
+    @available(iOS 16.2, *)
+    @objc func end(_ call: CAPPluginCall) {
+        guard let gameId = call.getString("gameId"),
+              let activity = activities[gameId] else { call.resolve(); return }
+        Task {
+            await activity.end(nil, dismissalPolicy: .default)
+            activities[gameId] = nil
+            call.resolve()
+        }
+    }
+}
 ```
+
+**Web side — DONE (shipped 2026-05-28), no pseudocode needed.** `app/companion/native/LiveActivitySync.tsx` already calls `startLiveActivity` / `endLiveActivity`, forwards the `pushToken` event to `/api/push/register-live-activity`, and deregisters on end. It's native-gated and inert until this Swift plugin exists. Once the plugin builds and runs, the existing web glue drives it with no further web work.
 
 ## Step 6 — Home Screen widget (small + medium)
 

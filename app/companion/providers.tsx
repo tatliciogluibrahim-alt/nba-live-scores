@@ -28,6 +28,7 @@ import {
 } from "./state/storage";
 import { PushSyncEffect } from "./push/PushSyncEffect";
 import { CapacitorPushBootstrap } from "./push/CapacitorPushBootstrap";
+import { LiveActivitySync } from "./native/LiveActivitySync";
 import { RevealProvider } from "./spoiler/reveal";
 
 // ─── Follows ──────────────────────────────────────────────────────────
@@ -461,6 +462,11 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
               and POSTs the resulting token to /api/push/register-ios.
               No-op on web (Capacitor.getPlatform() returns "web"). */}
           <CapacitorPushBootstrap />
+          {/* Phase 22.5-3 (web half): starts / ends ActivityKit Live
+              Activities for pinned-and-live games and registers their
+              per-Activity push tokens. Native-only — a guaranteed no-op
+              on web / desktop PWA (and until the Swift plugin ships). */}
+          <LiveActivitySync />
           {/* Session-scoped per-game reveal state for No-Spoilers mode.
               One reveal(gameId) un-hides a whole game's surfaces at once. */}
           <RevealProvider>{children}</RevealProvider>

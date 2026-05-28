@@ -223,8 +223,13 @@ Completed (most recent first):
 - **Phase 22.5** — **iOS Native via Capacitor + Desktop Bespoke — IN PROGRESS.**
   Proof-of-life (22.5-1) and dispatcher integration (22.5-2) both
   shipped 2026-05-27. Real APNs push verified on physical iPhone.
-  Remaining: Live Activity (22.5-3), Widget (22.5-4), App Store
-  ship (22.5-5). Desktop bespoke (22.5-D) runs in parallel as
+  Live Activity **web half** (22.5-3) shipped 2026-05-28:
+  `app/companion/native/live-activity.ts` (bridge) +
+  `LiveActivitySync.tsx` (lifecycle, mounted in providers) +
+  server half already built. Native-gated, inert until the Swift
+  plugin exists. Remaining: Live Activity **Swift plugin + Widget
+  Extension** (22.5-3/4, Xcode pairing — see
+  `docs/LIVE_ACTIVITY_BUILD.md`), App Store ship (22.5-5). Desktop bespoke (22.5-D) runs in parallel as
   alternating sessions per the 2026-05-27 decision (Swift one
   weekend, responsive web the next). DIY approach with Claude
   pairing — total cost so far is just $99/year Apple Developer
