@@ -13,7 +13,16 @@ export async function generateMetadata({
   const { id } = await params;
   const tournament = getTournament(id);
   const name = tournament?.name ?? "Tournament";
-  return { title: `${name} Groups | No Noise Scores` };
+  const isWorldCup = id.startsWith("fifa-world-cup-");
+  return {
+    title: `${name} groups | No Noise Scores`,
+    description: isWorldCup
+      ? "All 12 groups for the 2026 FIFA World Cup. 48 nations, group by group. Tap any team to open its page."
+      : `Every group in the ${name}. Tap any team to open its page.`,
+    alternates: {
+      canonical: `https://nonoisescores.app/tournament/${id}/groups`,
+    },
+  };
 }
 
 export default async function TournamentGroupsPage({
@@ -32,7 +41,7 @@ export default async function TournamentGroupsPage({
         backLabel={tournament?.name ?? "Tournament"}
         title="Groups"
       />
-      <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+      <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-4xl md:pt-2">
         <header className="px-1">
           <h1
             style={{
@@ -44,7 +53,7 @@ export default async function TournamentGroupsPage({
               color: "var(--ink)",
             }}
           >
-            All groups.
+            {isWorldCup ? "World Cup 2026 groups." : "All groups."}
           </h1>
           <p
             className="mt-2 text-[13px] leading-snug"

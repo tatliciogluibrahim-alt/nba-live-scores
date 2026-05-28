@@ -7,7 +7,7 @@ import {
 } from "../../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "Follow vs Pin",
+  title: "Follow vs Pin | No Noise Scores",
   description:
     "Follow is for teams, countries, series. Pin is for one specific game. Here's how they work together.",
   alternates: {
@@ -44,7 +44,7 @@ export default function FollowVsPinPage() {
             "A team / country / series / tournament",
             "A single game",
           ],
-          ["How many you can have", "Unlimited", "Multiple, but typically 1–3 at a time"],
+          ["How many you can have", "Unlimited", "Multiple, but typically 1 to 3 at a time"],
           ["Where it shows up", "Today, Following", "Watching"],
           ["Sends notifications?", "Yes, if alerts are enabled", "No. Pinning doesn't alert"],
           ["Disappears when?", "When you unfollow", "Automatically after the game ends"],
@@ -80,7 +80,7 @@ export default function FollowVsPinPage() {
       <P>
         After you add, the alert state is &quot;Alerts off&quot; by
         default. Tap the row to expand and pick a tier if you want push
-        notifications. Three tiers: Quiet, Companion, All moments.
+        notifications. Three tiers: Quiet, Companion, Close games.
       </P>
 
       <H2>How to pin</H2>

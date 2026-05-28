@@ -8,7 +8,7 @@ import {
 } from "../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "How No Noise Scores works",
+  title: "How No Noise Scores works | No Noise Scores",
   description:
     "Follow, Alert, Pin, No-Spoilers. The four ideas that make up the app.",
   alternates: { canonical: "https://nonoisescores.app/how-it-works" },
@@ -43,7 +43,7 @@ export default function HowItWorksPage() {
         items={[
           "Quiet. Start and final only.",
           "Companion. Start, key breaks, final.",
-          "All moments. Close finishes, comebacks, big runs.",
+          "Close games. Close finishes, comebacks, big runs.",
         ]}
       />
       <P>

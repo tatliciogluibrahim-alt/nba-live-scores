@@ -57,7 +57,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
     !noSpoilers && payload.spoileryStakeLine && payload.spoileryStakeLine !== payload.spoilerySummary;
 
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
       {/* ── Header context ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-3">
         <Eyebrow>{payload.headerEyebrow}</Eyebrow>
@@ -163,7 +163,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
 function LoadingShell() {
   return (
     <main
-      className="mx-auto max-w-md px-4 pb-4 pt-1"
+      className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl"
       aria-busy
       aria-live="polite"
     >
@@ -202,7 +202,7 @@ function SeriesAwaitingOpponent({ seriesKey }: { seriesKey: string }) {
       : rawA;
 
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
       <Eyebrow>Series</Eyebrow>
       <Display as="h1" size="lg" className="mt-2">
         {determined ? `${determined} · ?` : "Matchup pending"}
@@ -270,7 +270,7 @@ function SeriesAwaitingOpponent({ seriesKey }: { seriesKey: string }) {
 
 function SeriesNotFound({ seriesKey }: { seriesKey: string }) {
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
       <Eyebrow>Series</Eyebrow>
       <Display as="h1" size="lg" className="mt-2">
         Series not in the feed.

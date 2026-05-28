@@ -7,7 +7,7 @@ import {
 } from "../../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "Watch games later without spoilers",
+  title: "Watch games later without spoilers | No Noise Scores",
   description:
     "Recorded the game? Watch it on delay without seeing scores, headlines, or push previews. Here's how.",
   alternates: {
@@ -58,7 +58,7 @@ export default function WatchLaterGuide() {
         items={[
           "Open Today. You should see a small muted dot in the header indicating No-Spoilers is on.",
           "Tap into any game you've already played. Score should be blurred. Headline should be \"Game wrapped.\" not \"X took it.\"",
-          "Tap your team's series page. Series state should be \"Series context hidden.\" not \"NY leads 3–1.\"",
+          "Tap your team's series page. Series state should be \"Series context hidden.\" not \"NY leads 3-1.\"",
           "If you have alerts on, the next push you get should not name a score or winner.",
         ]}
       />

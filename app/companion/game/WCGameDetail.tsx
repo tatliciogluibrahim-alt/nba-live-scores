@@ -91,9 +91,89 @@ export function WCGameDetail({
   const matchEvents = relevantMatchEvents(game.events ?? []);
   const derivedHighlights = deriveWCHighlights(game, highlights);
 
+  // Reference material (match events + highlights). On desktop (md+)
+  // these move to a sticky right rail so the main column stays focused
+  // on the moment (scoreboard, hero, watch, pin). On mobile they render
+  // inline in their original positions (the rail is hidden, the inline
+  // copies show). Mirrors NBALiveCompanion's per-quarter / highlights
+  // rail. Pure presentational JSX, so double-mounting at md+ is free.
+  const matchEventsSection =
+    matchEvents.length > 0 ? (
+      <section>
+        <div className="mb-2 flex items-center gap-3">
+          <Eyebrow>Match events</Eyebrow>
+          <div className="h-px flex-1" style={{ background: "var(--line)" }} />
+        </div>
+        <ul className="space-y-2">
+          {matchEvents.map((event, index) => (
+            <li
+              key={`${event.minute}-${event.type}-${event.playerName}-${index}`}
+              className="rounded-[14px] border px-3 py-2.5"
+              style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+            >
+              {noSpoilers ? (
+                <p
+                  className="text-[13px]"
+                  style={{ color: "var(--ink)", fontWeight: 700 }}
+                >
+                  <Spoiler ariaSubject={subject} gameId={game.id}>
+                    {formatEventText(event, game)}
+                  </Spoiler>
+                </p>
+              ) : (
+                <MatchEventRow event={event} game={game} />
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    ) : null;
+
+  const highlightsSection =
+    !isUpcoming && derivedHighlights.length > 0 ? (
+      <section>
+        <div className="mb-2 flex items-center gap-3">
+          <Eyebrow>Highlights</Eyebrow>
+          <div className="h-px flex-1" style={{ background: "var(--line)" }} />
+        </div>
+        <ul className="space-y-2">
+          {derivedHighlights.map((h, i) => (
+            <li
+              key={i}
+              className="rounded-[14px] border px-3 py-3"
+              style={{
+                background: "var(--paper)",
+                borderColor: "var(--line)",
+              }}
+            >
+              <Eyebrow>{h.eyebrow}</Eyebrow>
+              <p
+                className="mt-1 text-[14px] leading-snug"
+                style={{
+                  color: "var(--ink)",
+                  fontWeight: 700,
+                  letterSpacing: "-0.005em",
+                }}
+              >
+                {h.spoilery && noSpoilers ? (
+                  <Spoiler ariaSubject={subject} gameId={game.id}>
+                    {h.body}
+                  </Spoiler>
+                ) : (
+                  h.body
+                )}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ) : null;
+
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-4xl md:pt-2">
      <GameSpoilerScope gameId={game.id} hidden={baseHidden}>
+      <div className="md:grid md:grid-cols-[minmax(0,1fr)_300px] md:gap-6 md:items-start">
+       <div>
       {/* Big editorial matchup — Bricolage 700, mute center dot, full
           team names (Watching · Game handoff). */}
       <h1
@@ -154,36 +234,9 @@ export function WCGameDetail({
         </div>
       ) : null}
 
-      {/* ── Match events: soccer-style scorers/cards by minute ───────── */}
-      {matchEvents.length > 0 ? (
-        <section className="mt-4">
-          <div className="mb-2 flex items-center gap-3">
-            <Eyebrow>Match events</Eyebrow>
-            <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-          </div>
-          <ul className="space-y-2">
-            {matchEvents.map((event, index) => (
-              <li
-                key={`${event.minute}-${event.type}-${event.playerName}-${index}`}
-                className="rounded-[14px] border px-3 py-2.5"
-                style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-              >
-                {noSpoilers ? (
-                  <p
-                    className="text-[13px]"
-                    style={{ color: "var(--ink)", fontWeight: 700 }}
-                  >
-                    <Spoiler ariaSubject={subject} gameId={game.id}>
-                      {formatEventText(event, game)}
-                    </Spoiler>
-                  </p>
-                ) : (
-                  <MatchEventRow event={event} game={game} />
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
+      {/* ── Match events (mobile inline; desktop → rail) ─────────────── */}
+      {matchEventsSection ? (
+        <div className="mt-4 md:hidden">{matchEventsSection}</div>
       ) : null}
 
       {/* ── Hero moment ──────────────────────────────────────────────── */}
@@ -199,42 +252,9 @@ export function WCGameDetail({
         />
       </div>
 
-      {/* ── Highlights ──────────────────────────────────────────────── */}
-      {!isUpcoming && derivedHighlights.length > 0 ? (
-        <section className="mt-5">
-          <div className="mb-2 flex items-center gap-3">
-            <Eyebrow>Highlights</Eyebrow>
-            <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-          </div>
-          <ul className="space-y-2">
-            {derivedHighlights.map((h, i) => (
-              <li
-                key={i}
-                className="rounded-[14px] border px-3 py-3"
-                style={{
-                  background: "var(--paper)",
-                  borderColor: "var(--line)",
-                }}
-              >
-                <Eyebrow>{h.eyebrow}</Eyebrow>
-                <p
-                  className="mt-1 text-[14px] leading-snug"
-                  style={{
-                    color: "var(--ink)",
-                    fontWeight: 700,
-                    letterSpacing: "-0.005em",
-                  }}
-                >
-                {h.spoilery && noSpoilers ? (
-                  <Spoiler ariaSubject={subject} gameId={game.id}>{h.body}</Spoiler>
-                ) : (
-                  h.body
-                )}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {/* ── Highlights (mobile inline; desktop → rail) ───────────────── */}
+      {highlightsSection ? (
+        <div className="mt-5 md:hidden">{highlightsSection}</div>
       ) : null}
 
       {/* ── Broadcast (bottom group: broadcast → pin → footnote) ──────── */}
@@ -252,6 +272,21 @@ export function WCGameDetail({
         subject={subject}
         className="mt-3"
       />
+       </div>
+
+       {/* ── Right rail (desktop md+ only) ────────────────────────────
+           Sticky reference column: match events + highlights. Hidden on
+           mobile (the inline copies above carry it there). Wrapper only
+           renders when there's something to show. */}
+       {matchEventsSection || highlightsSection ? (
+         <aside className="mt-5 hidden md:mt-0 md:block">
+           <div className="sticky top-4 space-y-4">
+             {matchEventsSection}
+             {highlightsSection}
+           </div>
+         </aside>
+       ) : null}
+      </div>
      </GameSpoilerScope>
     </main>
   );

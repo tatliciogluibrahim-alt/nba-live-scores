@@ -161,7 +161,7 @@ export function TeamClient({ teamAbbr }: { teamAbbr: string }) {
   }
 
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
       <TeamHeader team={team} />
       <AlertStatePill teamAbbr={teamAbbr} teamName={teamDisplayName(teamAbbr)} />
 
@@ -650,7 +650,7 @@ function TeamPresetSection({
 
 function TeamNotFound({ abbr }: { abbr: string }) {
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
       <Eyebrow>Team</Eyebrow>
       <Display as="h1" size="lg" className="mt-2">
         Team not in the directory.

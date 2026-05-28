@@ -6,7 +6,7 @@ import {
 } from "../../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "How to add No Noise Scores to your iPhone home screen",
+  title: "How to add No Noise Scores to your iPhone home screen | No Noise Scores",
   description:
     "Open Safari, tap Share, then Add to Home Screen. Push notifications work after install. Three taps.",
   alternates: {

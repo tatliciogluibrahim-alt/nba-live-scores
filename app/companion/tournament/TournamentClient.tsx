@@ -65,7 +65,7 @@ export function TournamentClient({ tournamentId }: { tournamentId: string }) {
   }
 
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
       <TournamentHeader tournament={tournament} />
       <AlertStatePill tournamentId={tournament.id} />
 
@@ -702,7 +702,7 @@ function TournamentPresetSection({
 
 function TournamentNotFound({ id }: { id: string }) {
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
       <Eyebrow>Tournament</Eyebrow>
       <Display as="h1" size="lg" className="mt-2">
         Tournament not in the directory.

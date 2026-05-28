@@ -55,7 +55,7 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
     : null;
 
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
       <CountryHeader country={country} />
 
       {/* The user's per-follow alert state used to render here as a
@@ -199,7 +199,7 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
 function LoadingShell() {
   return (
     <main
-      className="mx-auto max-w-md px-4 pb-4 pt-1"
+      className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl"
       aria-busy
       aria-live="polite"
     >
@@ -222,7 +222,7 @@ function LoadingShell() {
 
 function CountryNotFound({ countryCode }: { countryCode: string }) {
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
       <Eyebrow>Country</Eyebrow>
       <Display as="h1" size="lg" className="mt-2">
         Country not in the directory.

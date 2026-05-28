@@ -27,8 +27,8 @@ export default function NoSpoilersPage() {
         the lock screen. Night ruined.
       </P>
       <P>
-        No-Spoilers in this app tries to hold the contract end-to-end —
-        scores, push previews, share images, all of it.
+        No-Spoilers in this app tries to hold the contract end to end.
+        Scores, push previews, share images, all of it.
       </P>
 
       <H2>What gets hidden</H2>

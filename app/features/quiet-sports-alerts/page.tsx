@@ -38,7 +38,7 @@ export default function QuietSportsAlertsPage() {
         Start, key breaks, final. End-of-quarter, halftime, start of Q4,
         final score. Around 4-5 pushes per NBA game.
       </P>
-      <H3Inline>All moments</H3Inline>
+      <H3Inline>Close games</H3Inline>
       <P>
         Adds close-game and comeback alerts on top of Companion. Around
         6-8 pushes per dramatic game.
@@ -59,7 +59,7 @@ export default function QuietSportsAlertsPage() {
       <H2>Spoiler-safe push previews</H2>
       <P>
         Turn No-Spoilers on and every push body is rewritten to stay
-        vague. Instead of &quot;Knicks 78 – Cavs 65, end of Q3,&quot; you
+        vague. Instead of &quot;Knicks 78, Cavs 65, end of Q3,&quot; you
         get &quot;Quarter wrapped. Tap to check in.&quot; The buzz still
         tells you something changed. The content doesn&apos;t leak the
         state.

@@ -7,7 +7,7 @@ import {
 } from "../../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "No Noise Scores vs Apple Sports",
+  title: "No Noise Scores vs Apple Sports | No Noise Scores",
   description:
     "Apple Sports is fast and OS-integrated. No Noise Scores is calm and editorial. Here's where each wins.",
   alternates: {

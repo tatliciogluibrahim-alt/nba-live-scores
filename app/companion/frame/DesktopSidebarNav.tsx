@@ -184,11 +184,11 @@ export function DesktopSidebarNav({ active }: { active?: Tab }) {
                   href={href}
                   prefetch
                   aria-current={isCurrent ? "page" : undefined}
-                  className="flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[14px] transition"
+                  className="flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[14px] transition hover:bg-[var(--paper)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
                   style={{
                     color: isCurrent ? "var(--ink)" : "var(--mute-1)",
                     fontWeight: isCurrent ? 700 : 500,
-                    background: isCurrent ? "var(--paper)" : "transparent",
+                    background: isCurrent ? "var(--paper)" : undefined,
                     border: isCurrent
                       ? "1px solid var(--line)"
                       : "1px solid transparent",
@@ -260,7 +260,7 @@ export function DesktopSidebarNav({ active }: { active?: Tab }) {
           href="/how-it-works"
           prefetch
           aria-current={pathname === "/how-it-works" ? "page" : undefined}
-          className="flex items-center gap-3 rounded-[10px] px-3 py-2 text-[13px] transition"
+          className="flex items-center gap-3 rounded-[10px] px-3 py-2 text-[13px] transition hover:bg-[var(--paper)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
           style={{
             color: pathname === "/how-it-works" ? "var(--ink)" : "var(--mute-1)",
             fontWeight: pathname === "/how-it-works" ? 700 : 500,
@@ -273,7 +273,7 @@ export function DesktopSidebarNav({ active }: { active?: Tab }) {
           href="/settings"
           prefetch
           aria-current={pathname?.startsWith("/settings") ? "page" : undefined}
-          className="flex items-center gap-3 rounded-[10px] px-3 py-2 text-[13px] transition"
+          className="flex items-center gap-3 rounded-[10px] px-3 py-2 text-[13px] transition hover:bg-[var(--paper)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
           style={{
             color: pathname?.startsWith("/settings")
               ? "var(--ink)"

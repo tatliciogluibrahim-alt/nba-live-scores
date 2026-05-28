@@ -39,6 +39,9 @@ const PUBLIC_ROUTES: Array<{ path: string; priority: number }> = [
   { path: "/compare/espn-app-alternative", priority: 0.7 },
   { path: "/nba-playoffs-alerts", priority: 0.7 },
   { path: "/world-cup-2026-app", priority: 0.7 },
+
+  // Tournament structure (indexable group pages)
+  { path: "/tournament/fifa-world-cup-2026/groups", priority: 0.7 },
 ];
 
 // WC country landing pages (Phase 21C-2). 48 static pages, one per

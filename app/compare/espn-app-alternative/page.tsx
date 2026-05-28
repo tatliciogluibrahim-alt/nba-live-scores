@@ -7,7 +7,7 @@ import {
 } from "../../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "No Noise Scores vs ESPN app",
+  title: "No Noise Scores vs ESPN app | No Noise Scores",
   description:
     "ESPN is comprehensive and noisy. No Noise Scores is deliberately narrow and calm. Here's the honest comparison.",
   alternates: {

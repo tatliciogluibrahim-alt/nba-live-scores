@@ -255,7 +255,7 @@ function PhonePreview() {
                 fontVariantNumeric: "tabular-nums",
               }}
             >
-              98 – 89
+              98-89
             </span>
           </div>
         </div>

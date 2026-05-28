@@ -202,7 +202,7 @@ export function WCGroups({
     return (
       <section className="mt-5">
         <GroupsHeader count={`${groups.length} in total · A–L`} />
-        <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-3 md:gap-x-8">
           {groups.map((block) => (
             <GroupColumn
               key={block.letter}
