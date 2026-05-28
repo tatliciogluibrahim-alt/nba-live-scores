@@ -4,8 +4,9 @@ import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { ScoreModule } from "../atoms/ScoreModule";
 import { HeroMoment } from "../moments/HeroMoment";
-import { useNoSpoilers } from "../providers";
 import { Spoiler } from "../spoiler/Spoiler";
+import { RevealResultsButton } from "../spoiler/RevealResultsButton";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import { WatchLine } from "../watch/WatchLine";
 import type { WCGameLite, WCMatchEventLite } from "../today/today-data";
 import { PinControls } from "./PinControls";
@@ -42,7 +43,7 @@ export function WCGameDetail({
   onUnpin: () => void;
   highlights?: WCHighlight[];
 }) {
-  const noSpoilers = useNoSpoilers();
+  const noSpoilers = useEffectiveNoSpoilers(game.id);
   const isLive = game.status === "live";
   const isUpcoming = game.status === "upcoming";
   const subject = `${game.away.abbreviation} vs ${game.home.abbreviation}`;
@@ -107,10 +108,22 @@ export function WCGameDetail({
           statusLabel={statusLabel}
           contextLine={contextLine}
           spoilerSubject={subject}
+          gameId={game.id}
           size="lg"
           hideMatchup
         />
       </div>
+
+      {/* One reveal for the whole match — flips the score, match events,
+          and highlights at once. Finished/live games under No-Spoilers. */}
+      {!isUpcoming ? (
+        <div className="mt-3">
+          <RevealResultsButton
+            gameId={game.id}
+            kind={isLive ? "live" : "final"}
+          />
+        </div>
+      ) : null}
 
       {/* ── Match events: soccer-style scorers/cards by minute ───────── */}
       {matchEvents.length > 0 ? (
@@ -131,7 +144,7 @@ export function WCGameDetail({
                     className="text-[13px]"
                     style={{ color: "var(--ink)", fontWeight: 700 }}
                   >
-                    <Spoiler ariaSubject={subject}>
+                    <Spoiler ariaSubject={subject} gameId={game.id}>
                       {formatEventText(event, game)}
                     </Spoiler>
                   </p>
@@ -191,7 +204,7 @@ export function WCGameDetail({
                   }}
                 >
                 {h.spoilery && noSpoilers ? (
-                  <Spoiler ariaSubject={subject}>{h.body}</Spoiler>
+                  <Spoiler ariaSubject={subject} gameId={game.id}>{h.body}</Spoiler>
                 ) : (
                   h.body
                 )}

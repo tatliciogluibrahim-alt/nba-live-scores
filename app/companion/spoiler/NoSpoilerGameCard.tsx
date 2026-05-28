@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useNoSpoilers } from "../providers";
+import { useReveal } from "./reveal";
 
 // Score-hidden card with explicit, context-aware reveal copy:
 //   - 'live'   → "Tap to reveal score"
@@ -26,6 +27,7 @@ export function NoSpoilerGameCard({
   ariaSubject,
   details,
   revealed: revealedProp,
+  gameId,
   children,
 }: {
   kind?: NoSpoilerKind;
@@ -37,12 +39,16 @@ export function NoSpoilerGameCard({
   details?: ReactNode;
   /** When provided, overrides internal state (e.g. parent controls reveal). */
   revealed?: boolean;
+  /** When set, reveal is shared across all of this game's surfaces. */
+  gameId?: string;
   /** Children render in place of the hidden card when revealed. */
   children?: ReactNode;
 }) {
   const noSpoilers = useNoSpoilers();
+  const { isRevealed, reveal } = useReveal();
   const [internalRevealed, setInternalRevealed] = useState(false);
-  const revealed = revealedProp ?? internalRevealed;
+  const revealed =
+    revealedProp ?? (gameId ? isRevealed(gameId) : internalRevealed);
 
   if (!noSpoilers || revealed) {
     return <>{children}</>;
@@ -88,7 +94,7 @@ export function NoSpoilerGameCard({
 
       <button
         type="button"
-        onClick={() => setInternalRevealed(true)}
+        onClick={() => (gameId ? reveal(gameId) : setInternalRevealed(true))}
         aria-label={aria}
         className="no-noise-reveal-focus mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
         style={{

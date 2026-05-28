@@ -2,7 +2,7 @@
 
 import { Eyebrow } from "../atoms/Eyebrow";
 import { Spoiler } from "../spoiler/Spoiler";
-import { useNoSpoilers } from "../providers";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import type { Stake } from "./derive-stakes";
 
 // Compact stakes line. Eyebrow + sentence on a single calm row — no
@@ -18,14 +18,18 @@ import type { Stake } from "./derive-stakes";
 export function StakesLine({
   stake,
   ariaSubject,
+  revealId,
 }: {
   stake: Stake | null;
   /** Passed through to <Spoiler> for the screen-reader reveal hint
    *  (e.g. "Knicks vs Cavaliers"). Falls back to a generic label
    *  when not supplied. */
   ariaSubject?: string;
+  /** When set, ties the reveal to this game's shared per-game reveal so
+   *  one tap clears the whole game. Omit on non-game surfaces. */
+  revealId?: string;
 }) {
-  const noSpoilers = useNoSpoilers();
+  const noSpoilers = useEffectiveNoSpoilers(revealId);
   if (!stake) return null;
 
   const shouldRedact = noSpoilers && stake.spoilery;
@@ -39,7 +43,7 @@ export function StakesLine({
           style={{ color: "var(--ink)", fontWeight: 500 }}
         >
           {shouldRedact ? (
-            <Spoiler ariaSubject={ariaSubject ?? "game state"}>
+            <Spoiler ariaSubject={ariaSubject ?? "game state"} gameId={revealId}>
               {stake.line}
             </Spoiler>
           ) : (

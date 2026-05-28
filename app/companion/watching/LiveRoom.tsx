@@ -5,6 +5,7 @@ import { ScoreModule } from "../atoms/ScoreModule";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { safeText } from "../spoiler/safe-text";
 import { useNoSpoilers } from "../providers";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import type { PinnedItem, WatchingPayload } from "./watching-data";
 
 // LiveRoom — Stage 15E.
@@ -71,7 +72,7 @@ export function LiveRoom({ payload }: { payload: WatchingPayload }) {
 }
 
 function LiveRoomCard({ item }: { item: PinnedItem }) {
-  const noSpoilers = useNoSpoilers();
+  const noSpoilers = useEffectiveNoSpoilers(item.id);
   const detail = safeText(item.detailLine, noSpoilers);
   const [awayScore, homeScore] = parseScoreLine(item.scoreLine);
 
@@ -95,6 +96,7 @@ function LiveRoomCard({ item }: { item: PinnedItem }) {
         statusLabel={item.statusLabel}
         contextLine={detail || undefined}
         spoilerSubject={item.spoilerSubject}
+        gameId={item.id}
         size="md"
       />
     </Link>

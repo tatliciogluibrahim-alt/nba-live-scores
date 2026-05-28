@@ -2,7 +2,7 @@
 
 import { Eyebrow } from "../atoms/Eyebrow";
 import { Spoiler } from "../spoiler/Spoiler";
-import { useNoSpoilers } from "../providers";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import type { Game } from "../../nba/types";
 
 // Per-quarter scoring breakdown for an NBA game. Compact table — each
@@ -21,7 +21,7 @@ import type { Game } from "../../nba/types";
 // spoiler. The score itself is what the user opted to hide.
 
 export function PeriodScoreLine({ game }: { game: Game }) {
-  const noSpoilers = useNoSpoilers();
+  const noSpoilers = useEffectiveNoSpoilers(game.id);
   const away = game.periodScores?.away ?? [];
   const home = game.periodScores?.home ?? [];
 
@@ -107,6 +107,7 @@ export function PeriodScoreLine({ game }: { game: Game }) {
               periodCount={periodCount}
               spoilerSubject={subject}
               noSpoilers={noSpoilers}
+              gameId={game.id}
             />
             <TeamRow
               code={game.home.abbreviation}
@@ -115,6 +116,7 @@ export function PeriodScoreLine({ game }: { game: Game }) {
               periodCount={periodCount}
               spoilerSubject={subject}
               noSpoilers={noSpoilers}
+              gameId={game.id}
               isLast
             />
           </tbody>
@@ -131,6 +133,7 @@ function TeamRow({
   periodCount,
   spoilerSubject,
   noSpoilers,
+  gameId,
   isLast = false,
 }: {
   code: string;
@@ -139,6 +142,7 @@ function TeamRow({
   periodCount: number;
   spoilerSubject: string;
   noSpoilers: boolean;
+  gameId: string;
   isLast?: boolean;
 }) {
   // Pad to periodCount so the row always has the same number of cells
@@ -169,7 +173,9 @@ function TeamRow({
           {value == null ? (
             "—"
           ) : noSpoilers ? (
-            <Spoiler ariaSubject={spoilerSubject}>{value}</Spoiler>
+            <Spoiler ariaSubject={spoilerSubject} gameId={gameId}>
+              {value}
+            </Spoiler>
           ) : (
             value
           )}
@@ -183,7 +189,9 @@ function TeamRow({
         }}
       >
         {noSpoilers ? (
-          <Spoiler ariaSubject={spoilerSubject}>{total}</Spoiler>
+          <Spoiler ariaSubject={spoilerSubject} gameId={gameId}>
+            {total}
+          </Spoiler>
         ) : (
           total
         )}

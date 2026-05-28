@@ -6,8 +6,9 @@ import { ScoreModule } from "../atoms/ScoreModule";
 import { HeroMoment } from "../moments/HeroMoment";
 import { SevenDotStrip } from "../series/SevenDotStrip";
 import { HIDDEN_CAPTIONS, isSpoilery } from "../spoiler/safe-text";
+import { RevealResultsButton } from "../spoiler/RevealResultsButton";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import { WatchLine } from "../watch/WatchLine";
-import { useNoSpoilers } from "../providers";
 import type { Game } from "../../nba/types";
 import { PinControls } from "./PinControls";
 import { deriveHero, deriveSeriesContext, deriveSeriesDots } from "./nba-moments";
@@ -40,7 +41,11 @@ export function NBALiveCompanion({
   onPin: () => void;
   onUnpin: () => void;
 }) {
-  const noSpoilers = useNoSpoilers();
+  // Effective No-Spoilers for THIS game — the global toggle, minus a
+  // session reveal of this specific game. Every spoiler-gated branch
+  // below reads this, so a single RevealResultsButton (or a tap on the
+  // blurred score) flips them all at once.
+  const noSpoilers = useEffectiveNoSpoilers(game.id);
   const isLive = game.status === "live";
   const isUpcoming = game.status === "upcoming";
   const subject = game.matchup || `${game.away.abbreviation} vs ${game.home.abbreviation}`;
@@ -162,10 +167,24 @@ export function NBALiveCompanion({
           statusLabel={statusLabel}
           contextLine={contextLine}
           spoilerSubject={subject}
+          gameId={game.id}
           size="lg"
           hideMatchup
         />
       </div>
+
+      {/* One reveal for the whole game. Tapping it (or the blurred score
+          above) flips every spoiler-gated surface on this page — score,
+          series state, stakes, hero, highlights, per-quarter, recap — at
+          once. Only shows for finished/live games under No-Spoilers. */}
+      {!isUpcoming ? (
+        <div className="mt-3">
+          <RevealResultsButton
+            gameId={game.id}
+            kind={isLive ? "live" : "final"}
+          />
+        </div>
+      ) : null}
 
       {/* ── Series block — dots + spoilery context as one section ─────── */}
       {/* One canonical place for series state, sitting right under the
@@ -223,6 +242,7 @@ export function NBALiveCompanion({
       <StakesLine
         stake={deriveNBASeriesStake(game)}
         ariaSubject={subject}
+        revealId={game.id}
       />
 
       {/* ── Hero moment band (live + recap-less finals only) ───────────── */}

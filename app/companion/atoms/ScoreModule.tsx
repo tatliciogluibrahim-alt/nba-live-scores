@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { StatusPill, type StatusTone } from "./StatusPill";
 import { Spoiler } from "../spoiler/Spoiler";
-import { useNoSpoilers } from "../providers";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 
 // ScoreModule — the canonical scoreboard primitive. One component, three
 // sizes, used by every surface that needs to render a game state:
@@ -63,6 +63,10 @@ export type ScoreModuleProps = {
   /** Used by <Spoiler> for aria-label. */
   spoilerSubject?: string;
 
+  /** When set, the score's reveal is shared with every other surface for
+   *  this game (one tap reveals the whole game this session). */
+  gameId?: string;
+
   size?: ScoreModuleSize;
 
   /** Optional sport accent. Used as a 3px left rail. Reserve for the
@@ -103,6 +107,7 @@ export function ScoreModule({
   statusLabel,
   contextLine,
   spoilerSubject,
+  gameId,
   size = "md",
   accent,
   hideMatchup = false,
@@ -110,7 +115,7 @@ export function ScoreModule({
   className,
   style,
 }: ScoreModuleProps) {
-  const noSpoilers = useNoSpoilers();
+  const noSpoilers = useEffectiveNoSpoilers(gameId);
   const spec = SIZE[size];
   const tone = STATUS_TONE[status];
   const label = statusLabel ?? STATUS_FALLBACK_LABEL[status];
@@ -195,7 +200,7 @@ export function ScoreModule({
             letterSpacing: "-0.005em",
           }}
         >
-          <Spoiler ariaSubject={spoilerSubject}>
+          <Spoiler ariaSubject={spoilerSubject} gameId={gameId}>
             {awayScore} – {homeScore}
           </Spoiler>
         </p>

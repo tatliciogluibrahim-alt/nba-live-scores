@@ -3,7 +3,7 @@
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { Spoiler } from "../spoiler/Spoiler";
-import { useNoSpoilers } from "../providers";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import { deriveNBARecap, type NBARecap, type RecapBullet } from "./derive-recap";
 import type { Game } from "../../nba/types";
 
@@ -44,11 +44,11 @@ export function QuietRecapCard({
 }) {
   const recap = precomputed ?? deriveNBARecap(game, allNBAGames);
   if (!recap) return null;
-  return <RecapCardBody recap={recap} />;
+  return <RecapCardBody recap={recap} gameId={game.id} />;
 }
 
-function RecapCardBody({ recap }: { recap: NBARecap }) {
-  const noSpoilers = useNoSpoilers();
+function RecapCardBody({ recap, gameId }: { recap: NBARecap; gameId: string }) {
+  const noSpoilers = useEffectiveNoSpoilers(gameId);
   const subject = `${recap.awayCode} vs ${recap.homeCode}`;
 
   return (
@@ -71,7 +71,9 @@ function RecapCardBody({ recap }: { recap: NBARecap }) {
           style={{ letterSpacing: "-0.01em" }}
         >
           {noSpoilers && recap.headlineSpoilery ? (
-            <Spoiler ariaSubject={subject}>{recap.headline}</Spoiler>
+            <Spoiler ariaSubject={subject} gameId={gameId}>
+              {recap.headline}
+            </Spoiler>
           ) : (
             recap.headline
           )}
@@ -105,7 +107,7 @@ function RecapCardBody({ recap }: { recap: NBARecap }) {
           }}
         >
           {noSpoilers ? (
-            <Spoiler ariaSubject={subject}>
+            <Spoiler ariaSubject={subject} gameId={gameId}>
               {recap.awayScore} – {recap.homeScore}
             </Spoiler>
           ) : (
@@ -123,7 +125,9 @@ function RecapCardBody({ recap }: { recap: NBARecap }) {
             style={{ color: "var(--ink)", fontWeight: 500 }}
           >
             {noSpoilers ? (
-              <Spoiler ariaSubject={subject}>{recap.seriesLine}</Spoiler>
+              <Spoiler ariaSubject={subject} gameId={gameId}>
+                {recap.seriesLine}
+              </Spoiler>
             ) : (
               recap.seriesLine
             )}
@@ -145,6 +149,7 @@ function RecapCardBody({ recap }: { recap: NBARecap }) {
                 bullet={bullet}
                 ariaSubject={subject}
                 noSpoilers={noSpoilers}
+                gameId={gameId}
               />
             ))}
           </ul>
@@ -174,10 +179,12 @@ function BulletRow({
   bullet,
   ariaSubject,
   noSpoilers,
+  gameId,
 }: {
   bullet: RecapBullet;
   ariaSubject: string;
   noSpoilers: boolean;
+  gameId: string;
 }) {
   const redact = noSpoilers && bullet.spoilery;
   return (
@@ -194,7 +201,9 @@ function BulletRow({
         }}
       >
         {redact ? (
-          <Spoiler ariaSubject={ariaSubject}>{bullet.body}</Spoiler>
+          <Spoiler ariaSubject={ariaSubject} gameId={gameId}>
+            {bullet.body}
+          </Spoiler>
         ) : (
           bullet.body
         )}

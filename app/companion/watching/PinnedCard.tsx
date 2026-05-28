@@ -4,17 +4,20 @@ import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { ScoreModule } from "../atoms/ScoreModule";
 import { safeText } from "../spoiler/safe-text";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import { WatchLine } from "../watch/WatchLine";
-import { usePinned, useNoSpoilers } from "../providers";
+import { usePinned } from "../providers";
 import type { PinnedItem, StalePin } from "./watching-data";
 
-// One pinned game. Score is wrapped in <Spoiler> so No-Spoilers behavior is
-// automatic — schedule, watch, and the View game / Unpin actions always
-// stay visible.
+// One pinned game. The score is wrapped in <Spoiler> keyed to the game
+// id, so a single tap reveals the score AND the spoilery detail line on
+// this card — and that reveal carries through to the game detail page
+// this session. Schedule, watch, and the View game / Unpin actions
+// always stay visible.
 
 export function PinnedCard({ item }: { item: PinnedItem }) {
   const { unpinGame } = usePinned();
-  const noSpoilers = useNoSpoilers();
+  const noSpoilers = useEffectiveNoSpoilers(item.id);
 
   const isUpcoming = item.status === "upcoming";
   const detailToShow = safeText(item.detailLine, noSpoilers);
@@ -81,6 +84,7 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
             statusLabel={item.statusLabel}
             contextLine={detailToShow || undefined}
             spoilerSubject={item.spoilerSubject}
+            gameId={item.id}
             size="md"
             // The TeamChip row above the ScoreModule already carries
             // the matchup identity ("SA  vs  OKC"). Letting the score

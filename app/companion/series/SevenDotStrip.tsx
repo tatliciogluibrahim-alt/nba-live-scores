@@ -295,7 +295,7 @@ function PlayedGameDetail({
             letterSpacing: "-0.005em",
           }}
         >
-          <Spoiler ariaSubject={subject}>
+          <Spoiler ariaSubject={subject} gameId={dot.gameId}>
             {dot.awayCode} {scores[0]} – {scores[1]} {dot.homeCode}
           </Spoiler>
         </p>

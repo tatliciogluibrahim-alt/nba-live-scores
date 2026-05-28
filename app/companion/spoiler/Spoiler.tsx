@@ -3,10 +3,16 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useNoSpoilers } from "../providers";
+import { useReveal } from "./reveal";
 
 // Inline score wrapper. When No-Spoilers is on, blurs the wrapped content
 // behind a tap-to-reveal button. When No-Spoilers is off (or after reveal),
 // renders children inline as a plain span with tabular numerals.
+//
+// Reveal model: pass `gameId` to tie this blur to the shared per-game
+// reveal — one tap reveals every Spoiler (and every other spoiler-gated
+// surface) for that game at once. Without a `gameId` it falls back to
+// local per-instance reveal (used by surfaces not tied to a single game).
 //
 // For full game cards, prefer `NoSpoilerGameCard` which gives a more
 // considered hidden state with context-aware reveal copy.
@@ -14,13 +20,18 @@ import { useNoSpoilers } from "../providers";
 export function Spoiler({
   children,
   ariaSubject,
+  gameId,
 }: {
   children: ReactNode;
   /** Subject text used in aria-label, e.g. "Knicks vs Cavaliers". */
   ariaSubject?: string;
+  /** When set, reveal is shared across all of this game's surfaces. */
+  gameId?: string;
 }) {
   const noSpoilers = useNoSpoilers();
-  const [revealed, setRevealed] = useState(false);
+  const { isRevealed, reveal } = useReveal();
+  const [localRevealed, setLocalRevealed] = useState(false);
+  const revealed = gameId ? isRevealed(gameId) : localRevealed;
 
   if (!noSpoilers || revealed) {
     return (
@@ -39,7 +50,8 @@ export function Spoiler({
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        setRevealed(true);
+        if (gameId) reveal(gameId);
+        else setLocalRevealed(true);
       }}
       aria-label={label}
       className="no-noise-reveal-focus tabular-nums"

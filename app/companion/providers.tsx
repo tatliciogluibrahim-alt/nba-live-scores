@@ -28,6 +28,7 @@ import {
 } from "./state/storage";
 import { PushSyncEffect } from "./push/PushSyncEffect";
 import { CapacitorPushBootstrap } from "./push/CapacitorPushBootstrap";
+import { RevealProvider } from "./spoiler/reveal";
 
 // ─── Follows ──────────────────────────────────────────────────────────
 type FollowsCtx = {
@@ -440,7 +441,9 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
               and POSTs the resulting token to /api/push/register-ios.
               No-op on web (Capacitor.getPlatform() returns "web"). */}
           <CapacitorPushBootstrap />
-          {children}
+          {/* Session-scoped per-game reveal state for No-Spoilers mode.
+              One reveal(gameId) un-hides a whole game's surfaces at once. */}
+          <RevealProvider>{children}</RevealProvider>
         </PrefsContext.Provider>
       </PinnedContext.Provider>
     </FollowsContext.Provider>

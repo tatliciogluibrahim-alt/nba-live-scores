@@ -2,7 +2,7 @@
 
 import { Eyebrow } from "../atoms/Eyebrow";
 import { Spoiler } from "../spoiler/Spoiler";
-import { useNoSpoilers } from "../providers";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import type { Game, GameLeader, TeamComparisonStat } from "../../nba/types";
 
 // Game Highlights — up to 3 distilled lines about a game.
@@ -35,7 +35,7 @@ type Highlight = {
 };
 
 export function HighlightsStack({ game }: { game: Game }) {
-  const noSpoilers = useNoSpoilers();
+  const noSpoilers = useEffectiveNoSpoilers(game.id);
 
   const isFinal = game.status === "final";
   const isLive = game.status === "live";
@@ -85,7 +85,10 @@ export function HighlightsStack({ game }: { game: Game }) {
                 }}
               >
                 {h.spoilery && noSpoilers ? (
-                  <Spoiler ariaSubject={`${game.away.abbreviation} vs ${game.home.abbreviation}`}>
+                  <Spoiler
+                    ariaSubject={`${game.away.abbreviation} vs ${game.home.abbreviation}`}
+                    gameId={game.id}
+                  >
                     {h.body}
                   </Spoiler>
                 ) : (
