@@ -14,7 +14,7 @@ export default async function GamePage({
   const { id } = await params;
 
   return (
-    <CompanionFrame>
+    <CompanionFrame desktopNav="detail">
       <CrumbBar backHref="/watching" backLabel="Watching" title="Game" />
       <GameDetailClient gameId={id} />
     </CompanionFrame>

@@ -39,7 +39,7 @@ export default async function SeriesPage({
   const { id } = await params;
 
   return (
-    <CompanionFrame>
+    <CompanionFrame desktopNav="detail">
       <CrumbBar backHref="/following" backLabel="Following" title="Series" />
       <SeriesClient seriesKey={id} />
     </CompanionFrame>

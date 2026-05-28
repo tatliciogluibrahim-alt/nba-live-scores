@@ -27,12 +27,23 @@ export function CompanionFrame({
   children: ReactNode;
   /** Hide the bottom tab bar (e.g. modal-style screens). */
   hideTabBar?: boolean;
-  /** Active tab id for the desktop sidebar nav. When set, renders the
-   *  rail on md+ and offsets the main column. Omit on detail/content
-   *  pages that should keep the narrow column on desktop. */
-  desktopNav?: "today" | "following" | "watching";
+  /** Desktop sidebar mode. When set, renders the left rail on md+ and
+   *  offsets the main column. Pass "today" / "following" / "watching"
+   *  on the primary routes (the matching nav entry highlights). Pass
+   *  "detail" on detail screens (game / series / tournament / country
+   *  / team) so the rail stays present for navigation consistency,
+   *  with nothing highlighted. Omit entirely only on standalone
+   *  surfaces (marketing, onboarding) that shouldn't show app chrome. */
+  desktopNav?: "today" | "following" | "watching" | "detail";
 }) {
   const padClass = hideTabBar ? HIDE_BOTTOM_PAD : MOBILE_BOTTOM_PAD;
+  // "detail" renders the rail without a highlighted tab — pass through
+  // the literal tab ids only; the sidebar's own pathname check handles
+  // highlighting and correctly highlights nothing on detail routes.
+  const activeTab =
+    desktopNav === "today" || desktopNav === "following" || desktopNav === "watching"
+      ? desktopNav
+      : undefined;
   return (
     <div
       className={`relative min-h-[100svh] ${padClass}`}
@@ -42,7 +53,7 @@ export function CompanionFrame({
       }}
     >
       <PreviewModeBanner />
-      {desktopNav ? <DesktopSidebarNav active={desktopNav} /> : null}
+      {desktopNav ? <DesktopSidebarNav active={activeTab} /> : null}
       <div className={desktopNav ? "md:pl-[220px]" : ""}>{children}</div>
       {!hideTabBar ? <TabBar /> : null}
     </div>

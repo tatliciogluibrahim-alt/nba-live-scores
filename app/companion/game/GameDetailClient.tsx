@@ -10,6 +10,7 @@ import type { NBAGame, WCGameLite } from "../today/today-data";
 import type { Game } from "../../nba/types";
 import { NBALiveCompanion } from "./NBALiveCompanion";
 import { WCGameDetail } from "./WCGameDetail";
+import { GameKeyboardNav } from "./GameKeyboardNav";
 
 // /game/[id] router. Resolves the game id against NBA + WC feeds in
 // parallel, then hands off to the appropriate variant:
@@ -195,24 +196,30 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
 
   if (resolved.source === "nba") {
     return (
-      <NBALiveCompanion
-        game={resolved.game}
-        allNBAGames={resolved.allNBAGames}
-        pinned={pinned}
-        onPin={onPin}
-        onUnpin={onUnpin}
-      />
+      <>
+        <GameKeyboardNav gameId={gameId} />
+        <NBALiveCompanion
+          game={resolved.game}
+          allNBAGames={resolved.allNBAGames}
+          pinned={pinned}
+          onPin={onPin}
+          onUnpin={onUnpin}
+        />
+      </>
     );
   }
 
   if (resolved.source === "wc") {
     return (
-      <WCGameDetail
-        game={resolved.game}
-        pinned={pinned}
-        onPin={onPin}
-        onUnpin={onUnpin}
-      />
+      <>
+        <GameKeyboardNav gameId={gameId} />
+        <WCGameDetail
+          game={resolved.game}
+          pinned={pinned}
+          onPin={onPin}
+          onUnpin={onUnpin}
+        />
+      </>
     );
   }
 

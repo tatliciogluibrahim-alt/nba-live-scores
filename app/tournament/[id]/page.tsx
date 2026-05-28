@@ -29,7 +29,7 @@ export default async function TournamentPage({
   const { id } = await params;
 
   return (
-    <CompanionFrame>
+    <CompanionFrame desktopNav="detail">
       <CrumbBar
         backHref="/following"
         backLabel="Following"

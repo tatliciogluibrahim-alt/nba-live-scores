@@ -28,7 +28,7 @@ export default async function TeamPage({
   const upper = abbr.toUpperCase();
 
   return (
-    <CompanionFrame>
+    <CompanionFrame desktopNav="detail">
       <CrumbBar backHref="/following" backLabel="Following" title="Team" />
       <TeamClient teamAbbr={upper} />
     </CompanionFrame>

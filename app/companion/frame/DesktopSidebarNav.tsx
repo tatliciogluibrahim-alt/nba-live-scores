@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactElement } from "react";
 import { BrandMark } from "./BrandMark";
+import { useLivePinned } from "./use-live-pinned";
 
 // Desktop-only left sidebar nav. Mirrors the mobile TabBar (Today /
 // Following / Watching) but laid out as a vertical rail with the
@@ -142,6 +143,7 @@ function isActive(pathname: string | null, href: string) {
 
 export function DesktopSidebarNav({ active }: { active?: Tab }) {
   const pathname = usePathname();
+  const livePinned = useLivePinned();
 
   return (
     <aside
@@ -200,6 +202,55 @@ export function DesktopSidebarNav({ active }: { active?: Tab }) {
           })}
         </ul>
       </nav>
+
+      {/* Live now — pinned games currently in progress. Renders only
+          when at least one pinned game is live, so the rail stays calm
+          otherwise. Each pip links straight to that game's detail. The
+          breathing dot mirrors the live-status motif used elsewhere. */}
+      {livePinned.length > 0 ? (
+        <div className="px-3 pb-2">
+          <p
+            className="mb-1.5 px-3 text-[10px] uppercase"
+            style={{
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.12em",
+              color: "var(--mute-1)",
+              fontWeight: 600,
+            }}
+          >
+            Live now
+          </p>
+          <ul className="space-y-1">
+            {livePinned.map((pip) => (
+              <li key={pip.id}>
+                <Link
+                  href={`/game/${pip.id}`}
+                  prefetch
+                  aria-label={`Open live game ${pip.awayCode} vs ${pip.homeCode}`}
+                  className="flex items-center gap-2 rounded-[10px] px-3 py-2 text-[13px] transition"
+                  style={{
+                    color: "var(--ink)",
+                    fontWeight: 600,
+                    background: "var(--nba-soft)",
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    className="no-noise-live-fade h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ background: "var(--nba)" }}
+                  />
+                  <span
+                    className="truncate"
+                    style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.02em" }}
+                  >
+                    {pip.awayCode} · {pip.homeCode}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {/* Secondary nav — How it works for first-time / curious visitors,
           Settings for everyone. Both sit at the bottom of the rail so

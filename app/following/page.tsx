@@ -11,7 +11,7 @@ export default function FollowingPage() {
   return (
     <CompanionFrame desktopNav="following">
       <BrandBar />
-      <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-3xl md:px-8 md:pt-6">
+      <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-3xl md:px-8 md:pt-6 lg:max-w-5xl">
         <FollowingClient />
       </main>
     </CompanionFrame>

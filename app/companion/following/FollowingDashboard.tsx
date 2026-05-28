@@ -147,7 +147,11 @@ export function FollowingDashboard() {
         </p>
       ) : null}
 
-      <ul className="space-y-2">
+      {/* Mobile: single-column stack. md: two columns. lg+: three
+          columns. The follow cards are fixed-height self-contained
+          tiles, so they tile cleanly into a grid without layout
+          surgery. (Phase 22.5-D desktop.) */}
+      <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
           <li key={`${c.follow.kind}-${c.follow.id}`}>
             <FollowCard data={c} />

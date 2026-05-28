@@ -108,8 +108,23 @@ export function NBALiveCompanion({
     ? series.spoileryLine
     : "";
 
+  // Per-quarter + highlights are reference / secondary material. On
+  // desktop (md+) they move to a sticky right rail so the main column
+  // stays focused on the moment (scoreboard, series, stakes, hero,
+  // watch, recap, pin). On mobile the layout is unchanged — these
+  // render inline in their original positions (the rail is hidden and
+  // the inline copies show). The components are pure/presentational so
+  // double-mounting them at md+ is free of state concerns.
+  const periodScore = isUpcoming ? null : <PeriodScoreLine game={game} />;
+  const highlights =
+    isUpcoming || game.status === "final" ? null : (
+      <HighlightsStack game={gameWithFreshLeaders} />
+    );
+
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-4xl md:pt-2">
+      <div className="md:grid md:grid-cols-[minmax(0,1fr)_300px] md:gap-6 md:items-start">
+        <div>
       {/* ── Page H1 — only display-type instance on the screen ─────────── */}
       <Display as="h1" size="lg">
         {game.away.abbreviation} · {game.home.abbreviation}
@@ -257,29 +272,21 @@ export function NBALiveCompanion({
         </div>
       ) : null}
 
-      {/* ── Per-quarter scoring ─────────────────────────────────────────── */}
+      {/* ── Per-quarter scoring (mobile inline; desktop → rail) ─────────── */}
       {/* The basketball-native breakdown — each quarter's score by team.
           PeriodScoreLine returns null when periodScores is empty (pre-
           tipoff), so this slot stays clean for upcoming games. Renders
-          for both live and final — for finals the recap card above
-          covers the narrative; the per-quarter table below covers the
-          reference / box-score craving. */}
-      {isUpcoming ? null : (
-        <div className="mt-4">
-          <PeriodScoreLine game={game} />
-        </div>
-      )}
+          for both live and final. md:hidden — the desktop copy lives in
+          the right rail below. */}
+      {periodScore ? <div className="mt-4 md:hidden">{periodScore}</div> : null}
 
-      {/* ── Highlights (live only) ──────────────────────────────────────── */}
+      {/* ── Highlights (live only; mobile inline; desktop → rail) ───────── */}
       {/* For finals, the Recap Card carries the "what mattered" bullets.
           For live games, HighlightsStack stays — its present-tense
           "leading the glass, 22–11" / "is hot from three" copy reads
-          as live commentary, which the recap shape isn't for. */}
-      {isUpcoming || game.status === "final" ? null : (
-        <div className="mt-5">
-          <HighlightsStack game={gameWithFreshLeaders} />
-        </div>
-      )}
+          as live commentary, which the recap shape isn't for.
+          md:hidden — desktop copy lives in the right rail. */}
+      {highlights ? <div className="mt-5 md:hidden">{highlights}</div> : null}
 
       {/* Series state lives in the consolidated Series block under the
           scoreboard now — no second card before the pin controls. */}
@@ -292,6 +299,22 @@ export function NBALiveCompanion({
         subject={subject}
         className="mt-5"
       />
+        </div>
+
+        {/* ── Right rail (desktop md+ only) ──────────────────────────────
+            Sticky reference column: per-quarter scoring + live
+            highlights. Hidden on mobile (the inline copies above carry
+            it there). Only renders the wrapper when there's something
+            to show so an upcoming game doesn't leave an empty rail. */}
+        {periodScore || highlights ? (
+          <aside className="mt-5 hidden md:mt-0 md:block">
+            <div className="sticky top-4 space-y-4">
+              {periodScore}
+              {highlights}
+            </div>
+          </aside>
+        ) : null}
+      </div>
     </main>
   );
 }

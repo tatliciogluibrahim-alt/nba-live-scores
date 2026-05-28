@@ -74,7 +74,7 @@ export default async function CountryPage({
   const back = resolveBackTarget(from);
 
   return (
-    <CompanionFrame>
+    <CompanionFrame desktopNav="detail">
       <CrumbBar backHref={back.href} backLabel={back.label} title="Country" />
       <CountryClient countryCode={upper} />
     </CompanionFrame>
