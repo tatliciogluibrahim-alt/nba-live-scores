@@ -97,8 +97,8 @@ export function FollowCard({ data }: { data: FollowCardData }) {
 
   const identityText = (
     <div className="min-w-0 flex-1">
-      <div className="flex items-center gap-1.5">
-        <Eyebrow>{kindLabel}</Eyebrow>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <Eyebrow className="min-w-0 truncate">{kindLabel}</Eyebrow>
         {wrapped ? (
           // Calm "Wrapped" chip next to the kind label. Reads as a
           // status pip rather than a CTA — the user can keep the
@@ -177,7 +177,7 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           aria-expanded={expanded}
           aria-controls={`follow-${follow.kind}-${follow.id}-body`}
           aria-label={`${expanded ? "Hide" : "Show"} alert settings for ${name}`}
-          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase transition active:scale-[0.95]"
+          className="shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] uppercase transition active:scale-[0.95]"
           style={{
             // Demoted: this is a status, not the card's primary action.
             // Transparent (no filled chip) and muted, and the tier name

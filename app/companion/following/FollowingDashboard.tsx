@@ -152,11 +152,13 @@ export function FollowingDashboard() {
         </p>
       ) : null}
 
-      {/* Mobile: single-column stack. md: two columns. lg+: three
-          columns. The follow cards are fixed-height self-contained
-          tiles, so they tile cleanly into a grid without layout
-          surgery. (Phase 22.5-D desktop.) */}
-      <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+      {/* Mobile: single-column stack. md+: two columns. We cap at two —
+          the follow card is a wide horizontal row (identity chip +
+          title block + alert pill), and a third column squeezes it
+          narrow enough that the kind-label eyebrow collides with the
+          alert pill. Two columns gives every card room to breathe.
+          (Phase 22.5-D desktop.) */}
+      <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
         {cards.map((c) => (
           <li key={`${c.follow.kind}-${c.follow.id}`}>
             <FollowCard data={c} />
