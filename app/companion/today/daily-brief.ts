@@ -126,9 +126,9 @@ export function deriveDailyBrief({
     if (summary.upcoming > 0) {
       const text =
         summary.upcoming === 1 && summary.total === 1
-          ? "One game pinned for later."
+          ? "One game pinned, ready when you are."
           : summary.upcoming === summary.total
-            ? `${summary.upcoming} games pinned for later.`
+            ? `${summary.upcoming} games pinned, ready when you are.`
             : // Mixed (e.g. 1 upcoming + 1 final). Lead with the
               // actionable upcoming count without burying the rest.
               `${summary.upcoming} of ${summary.total} pinned games coming up.`;

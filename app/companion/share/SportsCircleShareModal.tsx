@@ -16,7 +16,16 @@ import type { Follow } from "../state/types";
 // canvas as a PNG. Inline styles only — Tailwind utilities serialize
 // unreliably through html-to-image.
 
-type CircleRow = { key: string; name: string; kindLabel: string };
+type CircleRow = { key: string; name: string; kindLabel: string; accent: string };
+
+// Map the identity's CSS-var accent to a literal hex. The share card
+// renders through html-to-image, which serializes CSS custom properties
+// unreliably — everything on the canvas must be a literal value.
+const ACCENT_HEX: Record<string, string> = {
+  "var(--nba)": "#e55b2a",
+  "var(--wc)": "#1e6b3c",
+  "var(--nfl)": "#1f3a6b",
+};
 
 function toRows(follows: Follow[]): CircleRow[] {
   return follows.map((f) => {
@@ -25,6 +34,7 @@ function toRows(follows: Follow[]): CircleRow[] {
       key: `${f.kind}-${f.id}`,
       name: identity.name,
       kindLabel: identity.kindLabel,
+      accent: ACCENT_HEX[identity.accent] ?? "#6b6147",
     };
   });
 }
@@ -104,7 +114,8 @@ export function SportsCircleShareModal({
             className="mt-1 text-[13px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            Who you follow. No scores, safe to share. Save the image.
+            A clean card of what you follow. No scores, so it&apos;s safe
+            to post anytime.
           </p>
 
           {/* Inline preview at 300×300 — scales to 1440×1440 via pixelRatio 2 */}
@@ -195,14 +206,15 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
           fontFamily: "Inter, system-ui, sans-serif",
         }}
       >
-        {/* Header — Stadium Panel mark + wordmark (matches Quiet Wrap card) */}
+        {/* Header — the current dark-chip BrandMark (ink square + cream
+            scoreboard pill + rust pip), inlined at 44px so it matches
+            exactly what the user sees in the app header. The old
+            broadcast-scorebug variant read as a different logo. */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <svg width="40" height="40" viewBox="0 0 100 100">
-            <rect x="14" y="20" width="72" height="28" rx="5.5" fill="#1a1612" />
-            <circle cx="78" cy="26" r="2.8" fill="#b85a2a" />
-            <rect x="14" y="56" width="20" height="22" rx="4" stroke="#1a1612" strokeWidth="2.4" fill="none" opacity="0.3" />
-            <rect x="40" y="56" width="20" height="22" rx="4" stroke="#1a1612" strokeWidth="2.4" fill="none" opacity="0.3" />
-            <rect x="66" y="56" width="20" height="22" rx="4" stroke="#1a1612" strokeWidth="2.4" fill="none" opacity="0.3" />
+          <svg width="44" height="44" viewBox="0 0 24 24">
+            <rect width="24" height="24" rx="5.5" fill="#1a1612" />
+            <rect x="3.5" y="8" width="17" height="8" rx="1.8" fill="#f1ead8" />
+            <circle cx="18.5" cy="10" r="1.2" fill="#b85a2a" />
           </svg>
           <span
             style={{
@@ -216,14 +228,16 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
           </span>
         </div>
 
-        {/* Editorial title */}
-        <div style={{ marginTop: 56 }}>
+        {/* Editorial title — bigger, more contrast (CD note #5). The
+            headline owns the top third and ties to the brand: "No
+            noise" is the product name made personal. */}
+        <div style={{ marginTop: 60 }}>
           <p
             style={{
               fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
               fontSize: 14,
               fontWeight: 700,
-              letterSpacing: "0.14em",
+              letterSpacing: "0.16em",
               textTransform: "uppercase",
               color: "#6b6147",
               margin: 0,
@@ -234,21 +248,23 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
           <h1
             style={{
               fontFamily: "'Archivo Black', system-ui, sans-serif",
-              fontSize: 52,
-              lineHeight: 1.05,
-              letterSpacing: "-0.01em",
-              margin: "8px 0 0",
+              fontSize: 64,
+              lineHeight: 1.0,
+              letterSpacing: "-0.02em",
+              margin: "10px 0 0",
               color: "#1a1612",
             }}
           >
-            What I follow.
+            My circle.
             <br />
-            Nothing else.
+            No noise.
           </h1>
         </div>
 
-        {/* Follows list */}
-        <div style={{ marginTop: 36, flex: 1 }}>
+        {/* Follows list — premium typographic rows. A small sport-coded
+            accent dot replaces emoji (orange NBA / green WC), name in
+            display weight, kind label in mono. */}
+        <div style={{ marginTop: 40, flex: 1 }}>
           {shown.length === 0 ? (
             <p style={{ fontSize: 18, fontWeight: 500, color: "#6b6147", margin: 0 }}>
               Nothing followed yet. A calm slate.
@@ -259,31 +275,42 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
                 key={row.key}
                 style={{
                   display: "flex",
-                  alignItems: "baseline",
+                  alignItems: "center",
                   justifyContent: "space-between",
-                  padding: "12px 0",
+                  padding: "13px 0",
                   borderBottom:
                     idx < shown.length - 1
                       ? "1px solid rgba(26, 22, 18, 0.14)"
                       : "none",
                 }}
               >
-                <span
-                  style={{
-                    fontSize: 22,
-                    fontWeight: 700,
-                    color: "#1a1612",
-                    letterSpacing: "-0.005em",
-                  }}
-                >
-                  {row.name}
+                <span style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 999,
+                      background: row.accent,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 700,
+                      color: "#1a1612",
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {row.name}
+                  </span>
                 </span>
                 <span
                   style={{
                     fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: 600,
-                    letterSpacing: "0.06em",
+                    letterSpacing: "0.08em",
                     textTransform: "uppercase",
                     color: "#6b6147",
                   }}
@@ -294,19 +321,20 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
             ))
           )}
           {overflow > 0 ? (
-            <p style={{ fontSize: 16, fontWeight: 600, color: "#6b6147", margin: "12px 0 0" }}>
+            <p style={{ fontSize: 16, fontWeight: 600, color: "#6b6147", margin: "14px 0 0" }}>
               + {overflow} more
             </p>
           ) : null}
         </div>
 
-        {/* Footer */}
+        {/* Footer — the URL is the CTA (ASO: people retype what they
+            remember, so it leads), the tagline closes. */}
         <div
           style={{
             marginTop: 24,
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "baseline",
             paddingTop: 20,
             borderTop: "1px solid rgba(26, 22, 18, 0.14)",
           }}
@@ -314,17 +342,25 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
           <span
             style={{
               fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
-              fontSize: 13,
+              fontSize: 15,
+              fontWeight: 700,
+              letterSpacing: "0.04em",
+              color: "#1a1612",
+            }}
+          >
+            nonoisescores.app
+          </span>
+          <span
+            style={{
+              fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
+              fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               color: "#6b6147",
             }}
           >
-            nonoisescores.app
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#6b6147" }}>
-            Follow what matters.
+            Follow what matters
           </span>
         </div>
       </div>

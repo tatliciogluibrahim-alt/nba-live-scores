@@ -200,49 +200,13 @@ const ShareCardCanvas = forwardRef<HTMLDivElement, ShareCardProps>(
             captures cleanly. Hex values inline (no CSS vars) so the
             export renders consistently. */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <svg width="40" height="40" viewBox="0 0 100 100">
-            <rect
-              x="14"
-              y="20"
-              width="72"
-              height="28"
-              rx="5.5"
-              fill="#1a1612"
-            />
-            <circle cx="78" cy="26" r="2.8" fill="#b85a2a" />
-            <rect
-              x="14"
-              y="56"
-              width="20"
-              height="22"
-              rx="4"
-              stroke="#1a1612"
-              strokeWidth="2.4"
-              fill="none"
-              opacity="0.3"
-            />
-            <rect
-              x="40"
-              y="56"
-              width="20"
-              height="22"
-              rx="4"
-              stroke="#1a1612"
-              strokeWidth="2.4"
-              fill="none"
-              opacity="0.3"
-            />
-            <rect
-              x="66"
-              y="56"
-              width="20"
-              height="22"
-              rx="4"
-              stroke="#1a1612"
-              strokeWidth="2.4"
-              fill="none"
-              opacity="0.3"
-            />
+          {/* Current dark-chip BrandMark, inlined to match the app header
+              (the old broadcast-scorebug variant read as a different
+              logo on a shared image). */}
+          <svg width="40" height="40" viewBox="0 0 24 24">
+            <rect width="24" height="24" rx="5.5" fill="#1a1612" />
+            <rect x="3.5" y="8" width="17" height="8" rx="1.8" fill="#f1ead8" />
+            <circle cx="18.5" cy="10" r="1.2" fill="#b85a2a" />
           </svg>
           <span
             style={{

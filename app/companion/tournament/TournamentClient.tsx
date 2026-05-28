@@ -144,8 +144,10 @@ function AlertStatePill({ tournamentId }: { tournamentId: string }) {
     (f) => f.kind === "tournament" && f.id === tournamentId
   );
   if (!followed) return null;
+  // "Alerts ·" prefix so the tier name reads as a setting, not a
+  // standalone jargon label. (CD note #3.)
   const label = followed.alertEnabled
-    ? PRESETS[followed.alertTier].label
+    ? `Alerts · ${PRESETS[followed.alertTier].label}`
     : "Alerts off";
 
   return (

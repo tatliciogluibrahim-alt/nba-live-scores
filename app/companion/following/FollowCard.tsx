@@ -179,14 +179,18 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           aria-label={`${expanded ? "Hide" : "Show"} alert settings for ${name}`}
           className="shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase transition active:scale-[0.95]"
           style={{
-            background: follow.alertEnabled ? "var(--cream-2)" : "transparent",
-            color: follow.alertEnabled ? "var(--ink)" : "var(--mute-1)",
+            // Demoted: this is a status, not the card's primary action.
+            // Transparent (no filled chip) and muted, and the tier name
+            // is prefixed with "Alerts ·" so "COMPANION" reads as a
+            // setting, not a mystery label. (CD note #3.)
+            background: "transparent",
+            color: "var(--mute-1)",
             border: `1px solid ${follow.alertEnabled ? "var(--line)" : "var(--mute-2)"}`,
-            fontWeight: 700,
-            letterSpacing: "0.06em",
+            fontWeight: 600,
+            letterSpacing: "0.08em",
           }}
         >
-          {follow.alertEnabled ? presetMeta.label : "Alerts off"}
+          {follow.alertEnabled ? `Alerts · ${presetMeta.label}` : "Alerts off"}
         </button>
       </div>
 
