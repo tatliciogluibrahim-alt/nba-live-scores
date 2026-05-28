@@ -24,6 +24,7 @@ import {
   WC_COUNTRIES,
 } from "../../companion/following/data/countries";
 import { getTournament } from "../../companion/following/data/tournaments";
+import { deriveSeriesStake } from "../../companion/stakes/series-stakes";
 import type { Game } from "../../nba/types";
 
 // First whistle of the World Cup. Defined locally so the composer stays
@@ -272,54 +273,15 @@ export function composeBrief({
       };
     });
 
-  // Worth knowing: stake context for today's games. We re-use the
-  // stake derivation to surface "X can close the series tonight" etc.
-  // Pulled inline rather than imported to avoid cross-app coupling.
+  // Worth knowing: stake context for today's games. Uses the SAME
+  // shared `deriveSeriesStake` the in-app StakesLine uses, so the copy
+  // can't drift between the app and the email. We only surface the
+  // "urgent" stakes (clinch / Game 7) here to keep the Brief calm.
   const worthKnowing: string[] = [];
-  for (const g of todayGames) {
-    const summary = g.seriesSummary ?? "";
-    if (!subscriber.includeScores) continue; // stake reveals state
-    // Use the LEADS/WINS pattern to capture the leading team's code
-    // explicitly rather than grabbing the first word — the loose
-    // `(\w+)` would say "SERIES can sweep..." for a "SERIES TIED" line.
-    const leadsMatch = summary.match(
-      /(\w+)\s+LEADS?\s+SERIES\s+(\d+)\s*-\s*(\d+)/i
-    );
-    // Round context — names the real consequence ("reach the Finals")
-    // instead of the generic "close the series."
-    const ctx = `${g.seriesRound} ${g.seriesConference} ${g.gameContext}`.toLowerCase();
-    const isFinals = /nba finals/.test(ctx);
-    const isConfFinals = !isFinals && /conference finals|conf finals/.test(ctx);
-    const clinchPhrase = isFinals
-      ? "win the title"
-      : isConfFinals
-        ? "reach the Finals"
-        : "close the series";
-
-    if (leadsMatch) {
-      const leaderCode = leadsMatch[1].toUpperCase();
-      const hi = parseInt(leadsMatch[2], 10);
-      // Name the trailing team explicitly rather than "the trailing side."
-      const away = g.away.abbreviation.toUpperCase();
-      const home = g.home.abbreviation.toUpperCase();
-      const trailCode =
-        leaderCode === away ? home : leaderCode === home ? away : home;
-      const leaderName = getTeam(leaderCode)?.name ?? leaderCode;
-      const trailName = getTeam(trailCode)?.name ?? trailCode;
-
-      if (hi === 3) {
-        worthKnowing.push(
-          `${leaderName} can ${clinchPhrase} tonight. ${trailName} are eliminated with a loss.`
-        );
-      }
-    } else if (/TIED\s+3\s*-\s*3/i.test(summary)) {
-      worthKnowing.push(
-        isFinals
-          ? "Game 7. The title is on the line."
-          : isConfFinals
-            ? "Game 7. The winner reaches the Finals."
-            : "Game 7. The winner takes the series."
-      );
+  if (subscriber.includeScores) {
+    for (const g of todayGames) {
+      const stake = deriveSeriesStake(g);
+      if (stake?.urgent) worthKnowing.push(stake.line);
     }
   }
 

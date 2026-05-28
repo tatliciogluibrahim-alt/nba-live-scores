@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { ScoreModule } from "../atoms/ScoreModule";
 import { HeroMoment } from "../moments/HeroMoment";
@@ -359,6 +358,9 @@ export function NBALiveCompanion({
       ) : null}
 
       {/* ── Pin / Watching ──────────────────────────────────────────────── */}
+      {/* PinControls already carries the "Pinning keeps this game in
+          Watching. Alerts come from follows. Open Watching →" footnote,
+          so we don't repeat it here. */}
       <PinControls
         pinned={pinned}
         onPin={onPin}
@@ -366,22 +368,6 @@ export function NBALiveCompanion({
         subject={subject}
         className="mt-3"
       />
-
-      {/* ── Footnote — the pin/follow distinction + a way back to the
-          Watching list (handoff footnote). */}
-      <p
-        className="mt-3 px-1 text-[13px] leading-relaxed"
-        style={{ color: "var(--mute-1)", fontWeight: 500 }}
-      >
-        Pinning keeps this game in Watching. Alerts come from follows.{" "}
-        <Link
-          href="/watching"
-          className="underline decoration-dotted underline-offset-4"
-          style={{ color: "var(--ink)", fontWeight: 600 }}
-        >
-          Open Watching →
-        </Link>
-      </p>
         </div>
 
         {/* ── Right rail (desktop md+ only) ──────────────────────────────

@@ -14,7 +14,11 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
 
   return (
     <section>
-      <SectionHeader label="Up next" />
+      {/* "Upcoming", not "Up next" — the Front Page lead eyebrow above
+          already says "Up next", so two identical labels (one accent,
+          one mute) read as a repeat. This is the full list; the deck up
+          top is just the lead game. */}
+      <SectionHeader label="Upcoming" />
       <ul className="space-y-2">
         {items.map((item) => {
           const accentColor =

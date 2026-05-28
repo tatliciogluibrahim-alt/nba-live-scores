@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { ScoreModule } from "../atoms/ScoreModule";
 import { HeroMoment } from "../moments/HeroMoment";
@@ -245,7 +244,7 @@ export function WCGameDetail({
         </div>
       ) : null}
 
-      {/* ── Pin / Watching ──────────────────────────────────────────── */}
+      {/* ── Pin / Watching (PinControls carries the footnote) ─────────── */}
       <PinControls
         pinned={pinned}
         onPin={onPin}
@@ -253,21 +252,6 @@ export function WCGameDetail({
         subject={subject}
         className="mt-3"
       />
-
-      {/* ── Footnote ──────────────────────────────────────────────────── */}
-      <p
-        className="mt-3 px-1 text-[13px] leading-relaxed"
-        style={{ color: "var(--mute-1)", fontWeight: 500 }}
-      >
-        Pinning keeps this game in Watching. Alerts come from follows.{" "}
-        <Link
-          href="/watching"
-          className="underline decoration-dotted underline-offset-4"
-          style={{ color: "var(--ink)", fontWeight: 600 }}
-        >
-          Open Watching →
-        </Link>
-      </p>
      </GameSpoilerScope>
     </main>
   );
