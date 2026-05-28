@@ -102,6 +102,7 @@ export function normalizeStoredFollows(value: unknown): Follow[] {
       id: id.trim(),
       alertEnabled: typeof item.alertEnabled === "boolean" ? item.alertEnabled : true,
       alertTier: tier,
+      hideSpoilers: item.hideSpoilers === true ? true : undefined,
       followedAt,
     }];
   });

@@ -94,6 +94,7 @@ export function FollowCard({ data }: { data: FollowCardData }) {
     alertSlotCap,
     setFollowAlertEnabled,
     setFollowAlertTier,
+    setFollowHideSpoilers,
     removeFollow,
   } = useFollows();
   const [expanded, setExpanded] = useState(false);
@@ -116,6 +117,15 @@ export function FollowCard({ data }: { data: FollowCardData }) {
   function handleRemove() {
     removeFollow(follow.kind, follow.id);
   }
+
+  function handleHideSpoilersToggle() {
+    setFollowHideSpoilers(follow.kind, follow.id, !follow.hideSpoilers);
+  }
+
+  // Per-follow No-Spoilers only makes sense for the kinds we can match to
+  // a game's participants (team / country / series). Tournament follows
+  // are too broad — that's what the global toggle is for.
+  const canSelectiveHide = follow.kind !== "tournament";
 
   const identityChip = (
     <span
@@ -298,6 +308,47 @@ export function FollowCard({ data }: { data: FollowCardData }) {
               />
             ) : null}
           </div>
+
+          {/* Per-follow No-Spoilers (the premium "selective" control).
+              The global toggle in Settings hides everything; this hides
+              only this follow's games, even with the global toggle off.
+              Tap-to-reveal still applies on each game. */}
+          {canSelectiveHide ? (
+            <div className="mt-3">
+              <Eyebrow>No-Spoilers</Eyebrow>
+              <button
+                type="button"
+                onClick={handleHideSpoilersToggle}
+                aria-label={`${follow.hideSpoilers ? "Stop hiding" : "Hide"} spoilers for ${name}`}
+                className="mt-2 inline-flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
+                style={{
+                  background: follow.hideSpoilers ? "var(--cream-2)" : "transparent",
+                  borderColor: follow.hideSpoilers ? "var(--ink)" : "var(--line)",
+                }}
+              >
+                <span
+                  className="text-[13px]"
+                  style={{ color: "var(--ink)", fontWeight: 700 }}
+                >
+                  {follow.hideSpoilers ? "Hiding spoilers" : "Spoilers shown"}
+                </span>
+                <span
+                  className="text-[11px]"
+                  style={{ color: "var(--mute-1)", fontWeight: 600 }}
+                >
+                  {follow.hideSpoilers ? "Tap to show" : "Tap to hide"}
+                </span>
+              </button>
+              <p
+                className="mt-2 text-[12px] leading-snug"
+                style={{ color: "var(--mute-1)", fontWeight: 500 }}
+              >
+                {follow.hideSpoilers
+                  ? `Scores and results for ${name} stay hidden until you reveal them.`
+                  : `Hide scores and results for ${name} until you tap to reveal.`}
+              </p>
+            </div>
+          ) : null}
 
           <button
             type="button"

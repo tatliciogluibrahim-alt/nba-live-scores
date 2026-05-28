@@ -299,14 +299,26 @@ trigger. Until then, marketing artifacts stay un-generated and
 
 ## Free vs. paid model (in copy already)
 
-- **Free**: unlimited follows, alerts on the first 3 follows, all
-  features, no ads.
-- **Paid (later)**: unlimited alerts. Justified to users as helping
-  cover the cost of the notification backend.
+- **Free**: unlimited follows, alerts on the first 3 follows, the
+  **global No-Spoilers toggle** (all-or-nothing), all features, no ads.
+- **Paid (later, "No-Spoilers Pro")**: **selective per-follow
+  No-Spoilers** (hide spoilers for only the teams/countries/series you
+  choose) plus unlimited alerts. Justified to users as helping cover the
+  cost of the notification backend.
+
+No-Spoilers model (locked 2026-05-28):
+- The **global** No-Spoilers toggle stays free forever. It hides
+  everything when on. Reveal is one tap per game, session-scoped (see
+  `app/companion/spoiler/reveal.tsx`).
+- **Selective** per-follow No-Spoilers is the premium pitch: a
+  `hideSpoilers` flag on each Follow hides only that follow's games,
+  even with the global toggle off. The per-follow control lives in the
+  FollowCard drawer. During the beta it's live for everyone; the
+  `NoSpoilersProCard` registers interest in the eventual paid tier.
 
 Copy is already in `app/companion/landing/faq-data.ts` + alert
-controls UI. The paid tier itself hasn't been built yet. When you
-build it, the user-facing language stays as-is (no marketing
+controls UI + `NoSpoilersProCard`. No checkout exists yet. When you
+build the paid flow, the user-facing language stays as-is (no marketing
 inflation).
 
 ## NBA Rules

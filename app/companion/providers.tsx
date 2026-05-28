@@ -40,6 +40,7 @@ type FollowsCtx = {
   removeFollow: (kind: FollowKind, id: string) => void;
   setFollowAlertEnabled: (kind: FollowKind, id: string, enabled: boolean) => void;
   setFollowAlertTier: (kind: FollowKind, id: string, preset: AlertPreset) => void;
+  setFollowHideSpoilers: (kind: FollowKind, id: string, value: boolean) => void;
   hydrated: boolean;
 };
 
@@ -258,6 +259,23 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     []
   );
 
+  // Per-follow No-Spoilers (selective). Storing `undefined` rather than
+  // `false` keeps the persisted follow shape clean for the common case.
+  const setFollowHideSpoilers = useCallback(
+    (kind: FollowKind, id: string, value: boolean) => {
+      setFollows((prev) => {
+        const next = prev.map((f) =>
+          f.kind === kind && f.id === id
+            ? { ...f, hideSpoilers: value ? true : undefined }
+            : f
+        );
+        writeJSON(STORAGE_KEYS.follows, next);
+        return next;
+      });
+    },
+    []
+  );
+
   // ── Pinned actions ─────────────────────────────────────────────────
   const isPinned = useCallback(
     (gameId: string) => pinned.some((p) => p.gameId === gameId),
@@ -375,6 +393,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       removeFollow,
       setFollowAlertEnabled,
       setFollowAlertTier,
+      setFollowHideSpoilers,
       hydrated,
     }),
     [
@@ -385,6 +404,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       removeFollow,
       setFollowAlertEnabled,
       setFollowAlertTier,
+      setFollowHideSpoilers,
       hydrated,
     ]
   );

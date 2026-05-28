@@ -1,0 +1,29 @@
+name: send-briefs-cron
+
+on:
+  schedule:
+    # Once a day. Time is UTC — 12:30 UTC is ~8:30am US Eastern (EDT) /
+    # 7:30am (EST). Adjust this single line to retime the morning Brief.
+    # We don't time-zone per subscriber yet, so this is operator's call.
+    - cron: '30 12 * * *'
+  workflow_dispatch:
+
+# Least-privilege: this workflow only curls an external endpoint. It
+# needs no repo write access. (Matches scan-nba / scan-wc.)
+permissions: {}
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger daily Brief send
+        run: |
+          # --retry handles transient 5xx so one bad run doesn't leave a
+          # noisy failed entry in the Actions history. The endpoint
+          # returns 200 even when individual sends fail (per-subscriber
+          # fault isolation), so a non-200 here means auth/route trouble.
+          curl -fsS \
+            --retry 3 --retry-delay 10 --retry-all-errors \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://nonoisescores.app/api/cron/send-briefs

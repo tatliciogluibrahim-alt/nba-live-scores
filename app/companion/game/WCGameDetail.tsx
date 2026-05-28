@@ -6,7 +6,12 @@ import { ScoreModule } from "../atoms/ScoreModule";
 import { HeroMoment } from "../moments/HeroMoment";
 import { Spoiler } from "../spoiler/Spoiler";
 import { RevealResultsButton } from "../spoiler/RevealResultsButton";
-import { useEffectiveNoSpoilers } from "../spoiler/reveal";
+import {
+  GameSpoilerScope,
+  useFollowHidesGame,
+  useReveal,
+} from "../spoiler/reveal";
+import { useNoSpoilers } from "../providers";
 import { WatchLine } from "../watch/WatchLine";
 import type { WCGameLite, WCMatchEventLite } from "../today/today-data";
 import { PinControls } from "./PinControls";
@@ -43,7 +48,16 @@ export function WCGameDetail({
   onUnpin: () => void;
   highlights?: WCHighlight[];
 }) {
-  const noSpoilers = useEffectiveNoSpoilers(game.id);
+  // Hidden when the global toggle is on OR a hide-spoilers country/series
+  // follow covers this match (selective), minus a session reveal. The
+  // GameSpoilerScope below shares the decision with every child.
+  const globalNoSpoilers = useNoSpoilers();
+  const followHidden = useFollowHidesGame({
+    countryCodes: [game.away.abbreviation, game.home.abbreviation],
+  });
+  const baseHidden = globalNoSpoilers || followHidden;
+  const { isRevealed } = useReveal();
+  const noSpoilers = baseHidden && !isRevealed(game.id);
   const isLive = game.status === "live";
   const isUpcoming = game.status === "upcoming";
   const subject = `${game.away.abbreviation} vs ${game.home.abbreviation}`;
@@ -80,6 +94,7 @@ export function WCGameDetail({
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+     <GameSpoilerScope gameId={game.id} hidden={baseHidden}>
       {/* Big editorial matchup — Bricolage 700, mute center dot, full
           team names (Watching · Game handoff). */}
       <h1
@@ -253,6 +268,7 @@ export function WCGameDetail({
           Open Watching →
         </Link>
       </p>
+     </GameSpoilerScope>
     </main>
   );
 }

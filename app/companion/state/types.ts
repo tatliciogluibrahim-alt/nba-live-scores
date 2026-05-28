@@ -17,6 +17,11 @@ export type Follow = {
   alertEnabled: boolean;
   /** Tier when alertEnabled === true. Ignored otherwise. */
   alertTier: AlertPreset;
+  /** Per-follow No-Spoilers (the premium "selective" pitch). When true,
+   *  any game this follow is part of is hidden behind the reveal gate,
+   *  even when the global No-Spoilers toggle is off. The global toggle
+   *  (free) hides everything; this hides only what you choose. */
+  hideSpoilers?: boolean;
   /** Stable creation timestamp. Used to deterministically pick which
    *  follows get the alert slots after a migration (oldest-first). */
   followedAt: number;

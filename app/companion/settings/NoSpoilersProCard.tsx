@@ -6,10 +6,13 @@ import { useFollows } from "../providers";
 
 // No-Spoilers Pro — the paid-tier surface (Phase 23+, soft launch).
 //
-// Positioning (locked, do not inflate): the global No-Spoilers mode is
-// and stays free. The free plan gives unlimited follows + alerts on
-// your first 3 follows. "No-Spoilers Pro" is the paid pitch: unlimited
-// alerts, framed honestly as helping cover the notification backend.
+// Positioning (locked, do not inflate): the GLOBAL No-Spoilers toggle is
+// and stays free. The free plan gives unlimited follows + alerts on your
+// first 3 follows. "No-Spoilers Pro" is the paid pitch: SELECTIVE
+// per-follow No-Spoilers (hide only the teams you choose) plus alerts on
+// every follow, framed honestly as helping cover the notification
+// backend. During the beta the per-follow control is live for everyone;
+// this card registers interest in the eventual paid tier.
 //
 // No checkout, no price yet — a calm "coming soon / I'd want this"
 // posture that matches the beta phase. Interest is stored locally
@@ -71,27 +74,30 @@ export function NoSpoilersProCard() {
           className="text-[14px] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 700 }}
         >
-          Alerts on every follow.
+          Hide spoilers for what you choose.
         </p>
         <p
           className="mt-1.5 text-[13px] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
+          The global No-Spoilers toggle stays free for everyone. No-Spoilers
+          Pro adds per-follow control: hide scores and results for just the
+          teams you pick, and turn on alerts for every follow.{" "}
           {slotsFull
             ? `You're using all ${alertSlotCap} free alert slots. `
             : `The free plan covers alerts on your first ${alertSlotCap} follows. `}
-          No-Spoilers Pro unlocks alerts on as many follows as you want.
           It helps cover the cost of running the notification backend. No
           ads either way.
         </p>
 
-        {/* No-Spoilers itself stays free — say so plainly so the name
-            doesn't imply the calm mode is going behind a paywall. */}
+        {/* The global calm mode stays free — say so plainly so the name
+            doesn't imply No-Spoilers is going behind a paywall. */}
         <p
           className="mt-2 text-[12px] leading-snug"
           style={{ color: "var(--mute-2)", fontWeight: 500 }}
         >
-          No-Spoilers mode stays free for everyone.
+          The global No-Spoilers toggle stays free. Pro is the per-follow
+          control on top.
         </p>
 
         {interested ? (

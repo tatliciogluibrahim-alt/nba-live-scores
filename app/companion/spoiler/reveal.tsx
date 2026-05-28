@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useNoSpoilers } from "../providers";
+import { useNoSpoilers, useFollows } from "../providers";
 
 // Per-game reveal state for No-Spoilers mode.
 //
@@ -70,14 +70,80 @@ export function useReveal(): RevealCtx {
   return { isRevealed: () => false, reveal: () => {} };
 }
 
-/** Effective No-Spoilers for a specific game: the global toggle is on
- *  AND this game hasn't been revealed yet this session. Pass no gameId to
- *  get the plain global value (back-compat for surfaces that aren't keyed
- *  to a single game). */
+// ── Per-game spoiler scope ────────────────────────────────────────────
+// A surface that knows a game's participants (the detail page, a pinned
+// card) computes "is this game hidden" ONCE — the global toggle OR a
+// participant being a hide-spoilers follow — and wraps its subtree in a
+// scope. Every useEffectiveNoSpoilers inside then reads that decision, so
+// per-follow selective hiding works without re-threading leaf components.
+
+type SpoilerScope = { gameId: string; hidden: boolean };
+const SpoilerScopeContext = createContext<SpoilerScope | null>(null);
+
+export function GameSpoilerScope({
+  gameId,
+  hidden,
+  children,
+}: {
+  gameId: string;
+  /** Pre-reveal hidden state for this game (global toggle OR follow match). */
+  hidden: boolean;
+  children: ReactNode;
+}) {
+  const value = useMemo<SpoilerScope>(
+    () => ({ gameId, hidden }),
+    [gameId, hidden]
+  );
+  return (
+    <SpoilerScopeContext.Provider value={value}>
+      {children}
+    </SpoilerScopeContext.Provider>
+  );
+}
+
+/** Effective No-Spoilers for a specific game. Inside a GameSpoilerScope
+ *  the scope's pre-reveal `hidden` decision wins (this is what makes
+ *  per-follow selective hiding work); otherwise it's the global toggle.
+ *  Either way a session reveal of the game clears it. Pass no gameId to
+ *  get the plain global value (back-compat for non-game surfaces). */
 export function useEffectiveNoSpoilers(gameId?: string): boolean {
   const noSpoilers = useNoSpoilers();
   const { isRevealed } = useReveal();
-  if (!noSpoilers) return false;
-  if (gameId && isRevealed(gameId)) return false;
+  const scope = useContext(SpoilerScopeContext);
+
+  const inScope = scope && (!gameId || scope.gameId === gameId);
+  const hidden = inScope ? scope.hidden : noSpoilers;
+  const effectiveId = gameId ?? scope?.gameId;
+
+  if (!hidden) return false;
+  if (effectiveId && isRevealed(effectiveId)) return false;
   return true;
+}
+
+/** Does any hide-spoilers follow cover this game? Drives the premium
+ *  "selective" behavior: a team / country / series follow with
+ *  hideSpoilers hides every game it's part of, even when the global
+ *  toggle is off. Tournament follows are intentionally NOT matched here
+ *  (too broad — that's what the global toggle is for). */
+export function useFollowHidesGame(participants: {
+  teamCodes?: string[];
+  countryCodes?: string[];
+}): boolean {
+  const { follows } = useFollows();
+  const teamCodes = participants.teamCodes ?? [];
+  const countryCodes = participants.countryCodes ?? [];
+
+  return follows.some((f) => {
+    if (!f.hideSpoilers) return false;
+    if (f.kind === "team") return teamCodes.includes(f.id);
+    if (f.kind === "country") return countryCodes.includes(f.id);
+    if (f.kind === "series") {
+      const [a, b] = f.id.split("-");
+      return (
+        (Boolean(a) && teamCodes.includes(a)) ||
+        (Boolean(b) && teamCodes.includes(b))
+      );
+    }
+    return false;
+  });
 }

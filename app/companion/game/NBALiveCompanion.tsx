@@ -9,7 +9,12 @@ import { SevenDotStrip } from "../series/SevenDotStrip";
 import { HIDDEN_CAPTIONS, isSpoilery } from "../spoiler/safe-text";
 import { RevealResultsButton } from "../spoiler/RevealResultsButton";
 import { Spoiler } from "../spoiler/Spoiler";
-import { useEffectiveNoSpoilers } from "../spoiler/reveal";
+import {
+  GameSpoilerScope,
+  useFollowHidesGame,
+  useReveal,
+} from "../spoiler/reveal";
+import { useNoSpoilers } from "../providers";
 import { WatchLine } from "../watch/WatchLine";
 import type { Game } from "../../nba/types";
 import { PinControls } from "./PinControls";
@@ -43,11 +48,18 @@ export function NBALiveCompanion({
   onPin: () => void;
   onUnpin: () => void;
 }) {
-  // Effective No-Spoilers for THIS game — the global toggle, minus a
-  // session reveal of this specific game. Every spoiler-gated branch
-  // below reads this, so a single RevealResultsButton (or a tap on the
-  // blurred score) flips them all at once.
-  const noSpoilers = useEffectiveNoSpoilers(game.id);
+  // Effective No-Spoilers for THIS game. Hidden when the global toggle is
+  // on OR a hide-spoilers follow covers this matchup (the premium
+  // "selective" path), minus a session reveal of this game. We wrap the
+  // page in a GameSpoilerScope below so every child reads the same
+  // decision, and one reveal flips them all.
+  const globalNoSpoilers = useNoSpoilers();
+  const followHidden = useFollowHidesGame({
+    teamCodes: [game.away.abbreviation, game.home.abbreviation],
+  });
+  const baseHidden = globalNoSpoilers || followHidden;
+  const { isRevealed } = useReveal();
+  const noSpoilers = baseHidden && !isRevealed(game.id);
   const isLive = game.status === "live";
   const isUpcoming = game.status === "upcoming";
   const subject = game.matchup || `${game.away.abbreviation} vs ${game.home.abbreviation}`;
@@ -135,6 +147,7 @@ export function NBALiveCompanion({
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-4xl md:pt-2">
+     <GameSpoilerScope gameId={game.id} hidden={baseHidden}>
       <div className="md:grid md:grid-cols-[minmax(0,1fr)_300px] md:gap-6 md:items-start">
         <div>
       {/* ── Page H1 — big editorial matchup (Watching · Game handoff).
@@ -385,6 +398,7 @@ export function NBALiveCompanion({
           </aside>
         ) : null}
       </div>
+     </GameSpoilerScope>
     </main>
   );
 }

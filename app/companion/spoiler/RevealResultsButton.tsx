@@ -1,7 +1,6 @@
 "use client";
 
-import { useNoSpoilers } from "../providers";
-import { useReveal } from "./reveal";
+import { useEffectiveNoSpoilers, useReveal } from "./reveal";
 
 // One prominent control that reveals an entire game's results at once.
 // Replaces the old per-component scatter (tap the score, tap each
@@ -23,10 +22,10 @@ export function RevealResultsButton({
   kind?: "live" | "final" | "series";
   className?: string;
 }) {
-  const noSpoilers = useNoSpoilers();
-  const { isRevealed, reveal } = useReveal();
+  const hidden = useEffectiveNoSpoilers(gameId);
+  const { reveal } = useReveal();
 
-  if (!noSpoilers || isRevealed(gameId)) return null;
+  if (!hidden) return null;
 
   return (
     <button
