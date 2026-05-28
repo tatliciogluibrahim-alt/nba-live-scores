@@ -8,10 +8,54 @@ import { useFollows } from "../providers";
 import { PresetRow } from "./PresetRow";
 
 // Single follow row on the Following dashboard. Body navigates to the
-// object's detail page (where one exists); the alert pill on the right
-// is a dedicated control that opens the alert/unfollow panel. Team and
+// object's detail page (where one exists); the bell on the right is a
+// dedicated control that opens the alert/unfollow panel. Team and
 // tournament don't have detail pages yet — those rows leave the body
 // non-interactive so taps don't dead-end on a broken URL.
+
+// Feather-style bell glyphs, matching the app's 2px stroke icon system
+// (TabBar, sidebar). On = open bell; off = struck bell. State is
+// expressed by the button's color (ink vs mute), not a fill swap.
+function BellOn() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
+function BellOff() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      <path d="M18.63 13A17.89 17.89 0 0 0 18 8" />
+      <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14" />
+      <path d="M18 8a6 6 0 0 0-9.33-5" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
 
 export type FollowCardData = {
   follow: Follow;
@@ -171,26 +215,28 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           </div>
         )}
 
+        {/* Alert control — a bell icon, not a text pill. A full tier
+            label on every row ("ALERTS · COMPANION") was loud and ate
+            half the card. The bell is the universal alerts glyph: solid
+            ink when on, a muted struck bell when off. The actual tier
+            lives in the drawer this opens (and in the aria-label), so
+            the card stays calm and the title/Wrapped chip get the room
+            back. */}
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
           aria-controls={`follow-${follow.kind}-${follow.id}-body`}
-          aria-label={`${expanded ? "Hide" : "Show"} alert settings for ${name}`}
-          className="shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] uppercase transition active:scale-[0.95]"
-          style={{
-            // Demoted: this is a status, not the card's primary action.
-            // Transparent (no filled chip) and muted, and the tier name
-            // is prefixed with "Alerts ·" so "COMPANION" reads as a
-            // setting, not a mystery label. (CD note #3.)
-            background: "transparent",
-            color: "var(--mute-1)",
-            border: `1px solid ${follow.alertEnabled ? "var(--line)" : "var(--mute-2)"}`,
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-          }}
+          aria-label={
+            follow.alertEnabled
+              ? `Alerts: ${presetMeta.label}. Tap to change.`
+              : "Alerts off. Tap to turn on."
+          }
+          title={follow.alertEnabled ? presetMeta.label : "Alerts off"}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full transition active:scale-[0.92]"
+          style={{ color: follow.alertEnabled ? "var(--ink)" : "var(--mute-2)" }}
         >
-          {follow.alertEnabled ? `Alerts · ${presetMeta.label}` : "Alerts off"}
+          {follow.alertEnabled ? <BellOn /> : <BellOff />}
         </button>
       </div>
 
