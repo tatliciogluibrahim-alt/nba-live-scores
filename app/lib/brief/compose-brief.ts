@@ -144,31 +144,32 @@ function formatGameTime(date: string): string {
 }
 
 function todayHeader(now = new Date()): string {
-  return now.toLocaleDateString(undefined, {
+  return now.toLocaleDateString("en-US", {
+    timeZone: SPORTS_TZ,
     weekday: "long",
     month: "short",
     day: "numeric",
   });
 }
 
+// Day windowing runs on the US Eastern "sports day", not UTC. NBA evening
+// games tip after midnight UTC (e.g. 8:30pm ET = 00:30 UTC next day), so
+// a UTC date comparison drops tonight's game from "Today" and last
+// night's from "Yesterday". Comparing the ET calendar date fixes it.
+const SPORTS_TZ = "America/New_York";
+
+/** ET calendar date as a sortable/comparable "YYYY-MM-DD" key. */
+function etDateKey(d: Date): string {
+  return d.toLocaleDateString("en-CA", { timeZone: SPORTS_TZ });
+}
+
 function isYesterday(dateStr: string, now = new Date()): boolean {
-  const d = new Date(dateStr);
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  return (
-    d.getFullYear() === yesterday.getFullYear() &&
-    d.getMonth() === yesterday.getMonth() &&
-    d.getDate() === yesterday.getDate()
-  );
+  const y = new Date(now.getTime() - 86_400_000);
+  return etDateKey(new Date(dateStr)) === etDateKey(y);
 }
 
 function isToday(dateStr: string, now = new Date()): boolean {
-  const d = new Date(dateStr);
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  );
+  return etDateKey(new Date(dateStr)) === etDateKey(now);
 }
 
 function summarizeFollowKinds(follows: Follow[]): string {
@@ -348,14 +349,18 @@ export function composeBrief({
   // Structured date parts for the masthead (the email renders weekday in
   // a gutter + "Month Day." as the headline + per-section sublabels). Short
   // month keeps the big headline on one line across every month.
-  const weekday = now.toLocaleDateString(undefined, { weekday: "long" });
-  const monthDay = now.toLocaleDateString(undefined, {
+  const weekday = now.toLocaleDateString("en-US", {
+    timeZone: SPORTS_TZ,
+    weekday: "long",
+  });
+  const monthDay = now.toLocaleDateString("en-US", {
+    timeZone: SPORTS_TZ,
     month: "short",
     day: "numeric",
   });
-  const yDate = new Date(now);
-  yDate.setDate(yDate.getDate() - 1);
-  const yesterdayMonthDay = yDate.toLocaleDateString(undefined, {
+  const yDate = new Date(now.getTime() - 86_400_000);
+  const yesterdayMonthDay = yDate.toLocaleDateString("en-US", {
+    timeZone: SPORTS_TZ,
     month: "short",
     day: "numeric",
   });

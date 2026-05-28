@@ -99,13 +99,10 @@ function mastheadHtml(payload: BriefPayload): string {
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
           <tr>
             <td align="left" valign="middle" width="32">
-              <!--[if !mso]><!-->
-              <svg width="24" height="24" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-                <rect x="0" y="0" width="28" height="28" rx="8" fill="${C_INK}"/>
-                <rect x="6" y="11" width="16" height="7" rx="3" fill="${C_PAPER}"/>
-                <circle cx="19" cy="14.5" r="2" fill="${C_NBA}"/>
-              </svg>
-              <!--<![endif]-->
+              <!-- Hosted PNG, not inline SVG: Gmail (web + iOS) strips
+                   inline <svg>, which left the desktop masthead with no
+                   mark. An <img> renders in every client. -->
+              <img src="${ORIGIN}/apple-touch-icon.png" width="24" height="24" alt="No Noise" style="display:block; width:24px; height:24px; border-radius:6px;" />
             </td>
             <td align="left" valign="middle" class="mono" style="font-family: ${MONO_FONT}; font-size:10.5px; color:${C_INK}; letter-spacing:2.4px; text-transform:uppercase; font-weight:700; padding-left:8px;">
               No Noise
