@@ -177,11 +177,19 @@ export type ClosingMomentDot = {
   winnerCode: string;
 };
 
+/** A single follow rendered as a chip in the "still in your circle"
+ *  list. The view links straight to that follow's detail page. */
+export type ClosingCircleItem = {
+  key: string;
+  label: string;
+  href: string;
+};
+
 export type ClosingMoment = {
   /** Stable id for dismiss tracking. Series: "series:<sorted-key>".
-   *  Tournament: "tournament:nba-<year>". */
+   *  Tournament: "tournament:nba-<year>". Dead zone: "deadzone:<day>". */
   id: string;
-  kind: "series" | "tournament";
+  kind: "series" | "tournament" | "deadzone";
   /** "SERIES WRAPPED" or "SEASON WRAPPED" eyebrow. Always safe. */
   eyebrow: string;
   /** Calm headline. Safe under No-Spoilers. */
@@ -199,6 +207,17 @@ export type ClosingMoment = {
    *  follow toggle. Null when no follow action is appropriate (user
    *  already follows everyone, or tournament variant). */
   followSuggestion?: { kind: "team"; id: string; label: string };
+  /** "Still in your circle" redirect. Populated in two cases:
+   *    • Series wrapped AND the user followed the LOSING team — we
+   *      surface their OTHER follows so the emotional investment has
+   *      somewhere to go (Phase 21C series-closure suggestion).
+   *    • Dead-zone bridge — the circle is quiet (nothing live/upcoming)
+   *      so we list what the user still follows as a reminder it'll
+   *      come back to life (Phase 21C dead-zone bridge).
+   *  Each item links to that follow's detail page. Empty/undefined when
+   *  there's nothing useful to redirect to. */
+  circleHeading?: string;
+  circle?: ClosingCircleItem[];
 };
 
 export type TodayPayload = {
@@ -805,6 +824,61 @@ function followedTeamIds(follows: Follow[]): Set<string> {
   return out;
 }
 
+/** Turn a Follow into a chip {label, href} for the CalmEndCard's
+ *  "still in your circle" list. Labels lean on the existing data
+ *  helpers (country / tournament names); teams + series fall back to
+ *  their codes, which is what the rest of the app shows in chips. */
+function followToCircleItem(f: Follow): ClosingCircleItem {
+  switch (f.kind) {
+    case "country": {
+      const country = getCountry(f.id);
+      return {
+        key: `country:${f.id}`,
+        label: country?.name ?? f.id,
+        href: `/country/${f.id}`,
+      };
+    }
+    case "tournament": {
+      const t = getTournament(f.id);
+      return {
+        key: `tournament:${f.id}`,
+        label: t?.name ?? f.id,
+        href: `/tournament/${f.id}`,
+      };
+    }
+    case "series":
+      return {
+        key: `series:${f.id}`,
+        label: f.id.replace("-", " vs "),
+        href: `/series/${f.id}`,
+      };
+    case "team":
+    default:
+      return {
+        key: `team:${f.id}`,
+        label: f.id,
+        href: `/team/${f.id}`,
+      };
+  }
+}
+
+/** Build the "still in your circle" list from the user's follows,
+ *  excluding any follow keys in `exclude` (e.g. the wrapped series and
+ *  the eliminated team the card is already about). Caps at 4 so the
+ *  card stays calm. Returns [] when there's nothing left to show. */
+function buildCircle(follows: Follow[], exclude: Set<string>): ClosingCircleItem[] {
+  const items: ClosingCircleItem[] = [];
+  const seen = new Set<string>();
+  for (const f of follows) {
+    const item = followToCircleItem(f);
+    if (exclude.has(item.key) || seen.has(item.key)) continue;
+    seen.add(item.key);
+    items.push(item);
+    if (items.length >= 4) break;
+  }
+  return items;
+}
+
 function buildClosingDots(seriesGames: NBAGame[]): ClosingMomentDot[] {
   return seriesGames
     .filter((g) => g.status === "final")
@@ -874,6 +948,22 @@ function pickClosing(
       ? undefined
       : { kind: "team" as const, id: winnerCode, label: winnerCode };
 
+    // Series-closure redirect (Phase 21C). When the user followed the
+    // LOSING team — the one that just got eliminated — surface their
+    // other follows so the emotional investment has somewhere to go.
+    // We exclude the wrapped series and the eliminated team itself.
+    const loserCode =
+      winnerCode === g.away.abbreviation
+        ? g.home.abbreviation
+        : g.away.abbreviation;
+    const userFollowsLoser = followedTeams.has(loserCode);
+    const circle = userFollowsLoser
+      ? buildCircle(
+          follows,
+          new Set([`team:${loserCode}`, `series:${seriesKey}`]),
+        )
+      : [];
+
     const nextRoundHint =
       g.seriesRound === "NBA Finals"
         ? "Season wrapped."
@@ -900,6 +990,8 @@ function pickClosing(
       primary: followSuggestion
         ? { label: `Follow ${followSuggestion.label}`, href: "/following" }
         : undefined,
+      circleHeading: circle.length > 0 ? "Still in your circle" : undefined,
+      circle: circle.length > 0 ? circle : undefined,
     };
   }
 
@@ -931,6 +1023,33 @@ function pickClosing(
         detail: "We'll be back when the next moment matters.",
         dots: [],
       };
+    }
+
+    // ── Dead-zone bridge (Phase 21C) ──
+    // The slate is quiet (nothing live or upcoming) and there was no
+    // recent Finals clinch to acknowledge — a genuine off-moment lull.
+    // Only surface when the user actually follows something, so the
+    // card has a circle to point back to. Lists their follows as chips
+    // and names the next moment on the calendar so the quiet feels
+    // intentional, not abandoned. Dismiss id is day-stamped so it can
+    // resurface on a later quiet day without nagging within one day.
+    if (follows.length > 0) {
+      const circle = buildCircle(follows, new Set());
+      if (circle.length > 0) {
+        const dayStamp = now.toISOString().slice(0, 10); // YYYY-MM-DD
+        return {
+          id: `deadzone:${dayStamp}`,
+          kind: "deadzone",
+          eyebrow: "Quiet stretch",
+          headline: "Your circle is quiet right now.",
+          // NFL is the next scheduled moment in the product (Sept).
+          // Phrase softly — no exact date we'd have to keep accurate.
+          detail: "Nothing live or coming up. NFL kicks off in September.",
+          dots: [],
+          circleHeading: "You still follow",
+          circle,
+        };
+      }
     }
   }
 

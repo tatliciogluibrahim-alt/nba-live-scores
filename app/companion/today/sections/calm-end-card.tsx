@@ -43,7 +43,13 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
         background: "var(--paper)",
         borderColor: "var(--line)",
       }}
-      aria-label={isSeries ? "Series wrapped" : "Season wrapped"}
+      aria-label={
+        moment.kind === "series"
+          ? "Series wrapped"
+          : moment.kind === "deadzone"
+            ? "Quiet stretch"
+            : "Season wrapped"
+      }
     >
       {/* Dismiss control. Calm × in the top-right, no harsh weight. */}
       <button
@@ -167,6 +173,49 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
         >
           {moment.primary.label}
         </Link>
+      ) : null}
+
+      {/* "Still in your circle" — Phase 21C. Redirects emotional
+          investment after a followed team is eliminated, and fills the
+          dead-zone bridge card. Calm chip list, each links to that
+          follow's detail page. Safe under No-Spoilers (names only, no
+          scores or outcomes). */}
+      {moment.circle && moment.circle.length > 0 ? (
+        <div className="mt-4">
+          {moment.circleHeading ? (
+            <p
+              className="mb-2"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "var(--mute-1)",
+              }}
+            >
+              {moment.circleHeading}
+            </p>
+          ) : null}
+          <ul className="flex flex-wrap gap-1.5">
+            {moment.circle.map((item) => (
+              <li key={item.key}>
+                <Link
+                  href={item.href}
+                  className="inline-flex items-center rounded-full border px-3 py-1.5 text-[12px] transition active:scale-[0.97]"
+                  style={{
+                    background: "var(--cream)",
+                    borderColor: "var(--line)",
+                    color: "var(--ink)",
+                    fontWeight: 600,
+                  }}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
     </section>
   );
