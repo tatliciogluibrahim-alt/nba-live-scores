@@ -1,0 +1,174 @@
+"use client";
+
+import Link from "next/link";
+import type { TodayHeadline } from "./today-data";
+
+// Front Page lead (Concept A). The editorial top of Today: an accent
+// eyebrow, a big punchy state headline ("One game up next."), and a
+// single condensed "deck" card for the lead game (chips · AT · chips —
+// time / broadcast), with an optional stake line beneath.
+//
+// The deck carries no score, so it's No-Spoilers-safe by construction.
+// The headline copy is real state-driven copy (deriveTodayHeadline),
+// not the old conversational brief sentence blown up large.
+
+const TONE_COLOR: Record<TodayHeadline["eyebrow"]["tone"], string> = {
+  nba: "var(--nba)",
+  wc: "var(--wc)",
+  mute: "var(--mute-1)",
+};
+
+// Headlines are short by design, so we can lean into the scale. Still
+// length-aware so a longer one ("Three games up next.") stays on the
+// rails.
+function headlineSize(len: number): number {
+  if (len <= 18) return 48;
+  if (len <= 30) return 38;
+  return 30;
+}
+
+/** Parse "OKC vs SA" → ["OKC","SA"] when both sides are short codes that
+ *  render cleanly as chips. Otherwise null (the matchup shows as text). */
+function chipPair(matchup: string): [string, string] | null {
+  const parts = matchup.split(/\s+vs\s+/i);
+  if (parts.length === 2) {
+    const [a, b] = parts.map((p) => p.trim());
+    if (a && b && a.length <= 4 && b.length <= 4) return [a, b];
+  }
+  return null;
+}
+
+export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
+  const eyebrowColor = TONE_COLOR[lead.eyebrow.tone];
+  const size = headlineSize(lead.headline.length);
+  const deck = lead.deck;
+  const chips = deck ? chipPair(deck.matchup) : null;
+  const chipBg = deck?.accent === "var(--wc)" ? "var(--wc-soft)" : "var(--nba-soft)";
+
+  return (
+    <section className="mb-5">
+      <p
+        className="mb-2 text-[11px] uppercase"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          letterSpacing: "0.12em",
+          color: eyebrowColor,
+        }}
+      >
+        {lead.eyebrow.label}
+      </p>
+
+      <h2
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: size,
+          lineHeight: 0.98,
+          letterSpacing: "-0.025em",
+          color: "var(--ink)",
+          textWrap: "pretty",
+        }}
+      >
+        {lead.headline}
+      </h2>
+
+      {deck ? (
+        <Link
+          href={deck.href}
+          aria-label={`Open ${deck.matchup}`}
+          className="mt-5 flex items-center gap-3 rounded-[14px] border px-4 py-3.5 transition active:scale-[0.99]"
+          style={{
+            background: "var(--cream-2)",
+            borderColor: "var(--line)",
+            borderLeft: `3px solid ${deck.accent}`,
+          }}
+        >
+          {chips ? (
+            <div className="flex items-center gap-2">
+              <DeckChip label={chips[0]} bg={chipBg} fg={deck.accent} />
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: "0.12em",
+                  color: "var(--mute-1)",
+                }}
+              >
+                AT
+              </span>
+              <DeckChip label={chips[1]} bg={chipBg} fg={deck.accent} />
+            </div>
+          ) : (
+            <span
+              className="truncate text-[15px]"
+              style={{ color: "var(--ink)", fontWeight: 700, letterSpacing: "-0.01em" }}
+            >
+              {deck.matchup}
+            </span>
+          )}
+
+          <div className="flex-1" />
+
+          {deck.detail || deck.broadcast ? (
+            <div className="text-right">
+              {deck.detail ? (
+                <div
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--ink)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {deck.detail}
+                </div>
+              ) : null}
+              {deck.broadcast ? (
+                <div
+                  className="mt-0.5 uppercase"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    letterSpacing: "0.12em",
+                    color: "var(--mute-1)",
+                  }}
+                >
+                  {deck.broadcast}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </Link>
+      ) : null}
+
+      {lead.support ? (
+        <p
+          className="mt-3.5 text-[14px] leading-snug"
+          style={{ color: "var(--ink-2)", fontWeight: 400 }}
+        >
+          {lead.support}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function DeckChip({ label, bg, fg }: { label: string; bg: string; fg: string }) {
+  return (
+    <span
+      aria-hidden
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-[7px]"
+      style={{
+        background: bg,
+        color: fg,
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: "0.04em",
+      }}
+    >
+      {label}
+    </span>
+  );
+}

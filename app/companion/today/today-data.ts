@@ -1242,3 +1242,110 @@ export function buildTodayPayload({
     pinnedSummary,
   };
 }
+
+// ── Front Page headline (Concept A) ────────────────────────────────────
+// The editorial lead of Today: a short, declarative headline ("One game
+// tonight." energy) + an accent eyebrow + a single condensed "deck" card
+// for the lead game. Distinct from the conversational Daily Brief — that
+// sentence reads fine small but weird blown up, so the headline is its
+// own punchy copy and the brief is no longer the hero.
+
+export type TodayHeadlineDeck = {
+  /** Matchup string, e.g. "OKC vs SA". View splits on " vs " into chips. */
+  matchup: string;
+  /** Time / status line, e.g. "8:30 PM · Game 6" or a live status. */
+  detail: string;
+  /** Broadcast channel, e.g. "NBC". */
+  broadcast?: string;
+  accent: "var(--nba)" | "var(--wc)";
+  href: string;
+};
+
+export type TodayHeadline = {
+  eyebrow: { label: string; tone: "nba" | "wc" | "mute" };
+  headline: string;
+  /** Optional support line under the deck (a stake, when we have one). */
+  support?: string;
+  /** The single lead game as a deck card. Null on quiet / countdown days. */
+  deck: TodayHeadlineDeck | null;
+};
+
+const HEADLINE_NUM = [
+  "Zero",
+  "One",
+  "Two",
+  "Three",
+  "Four",
+  "Five",
+  "Six",
+  "Seven",
+  "Eight",
+  "Nine",
+];
+function spellCount(n: number): string {
+  return n >= 1 && n <= 9 ? HEADLINE_NUM[n] : String(n);
+}
+
+/** Build the lead deck from the hero (preferred) or the first up-next
+ *  item. Returns null for non-game leads (WC countdown hero, quiet). */
+function leadDeck(payload: TodayPayload): TodayHeadlineDeck | null {
+  const hero = payload.hero;
+  if (hero && hero.kind !== "wc-countdown") {
+    return {
+      matchup: hero.spoilerMatchup ?? hero.headline,
+      detail: hero.context ?? "",
+      broadcast: hero.watch?.channel,
+      accent: hero.accent,
+      href: hero.href,
+    };
+  }
+  const up = payload.upNext[0];
+  if (up) {
+    return {
+      matchup: up.headline,
+      detail: up.detail,
+      broadcast: up.watch?.channel,
+      accent: up.source === "wc" ? "var(--wc)" : "var(--nba)",
+      href: up.href,
+    };
+  }
+  return null;
+}
+
+export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
+  const deck = leadDeck(payload);
+  const heroLive = payload.hero?.live === true;
+  const heroTone: "nba" | "wc" =
+    payload.hero?.accent === "var(--wc)" ? "wc" : "nba";
+
+  // Live takes the lead.
+  if (heroLive || payload.pinnedSummary.live > 0) {
+    const lc = Math.max(payload.pinnedSummary.live, heroLive ? 1 : 0, 1);
+    return {
+      eyebrow: { label: "Live now", tone: heroTone },
+      headline: lc === 1 ? "One game live." : `${spellCount(lc)} games live.`,
+      support: payload.hero?.context,
+      deck,
+    };
+  }
+
+  // Upcoming games on the slate.
+  if (payload.upNext.length > 0) {
+    const n = payload.upNext.length;
+    const tone: "nba" | "wc" =
+      payload.upNext[0].source === "wc" ? "wc" : "nba";
+    return {
+      eyebrow: { label: "Up next", tone },
+      headline: n === 1 ? "One game up next." : `${spellCount(n)} games up next.`,
+      deck,
+    };
+  }
+
+  // Nothing live or upcoming. Calm — the World Cup countdown and any
+  // wrapped recap render as their own quieter stories below.
+  return {
+    eyebrow: { label: "Today", tone: "mute" },
+    headline: payload.reminder ? "Quiet for now." : "All quiet.",
+    deck: null,
+  };
+}

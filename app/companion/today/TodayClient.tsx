@@ -3,16 +3,15 @@
 import Link from "next/link";
 import { PullToRefresh } from "../atoms/PullToRefresh";
 import { BrandMark } from "../frame/BrandMark";
-import { useFollows, useNoSpoilers, usePinned } from "../providers";
+import { useNoSpoilers } from "../providers";
 import { useTodayData } from "./use-today-data";
-import { deriveDailyBrief } from "./daily-brief";
-import { BriefCard } from "./BriefCard";
+import { deriveTodayHeadline } from "./today-data";
+import { FrontPageLead } from "./FrontPageLead";
 import { EnableNotificationsCard } from "./EnableNotificationsCard";
 import { PushPermissionRecoveryCard } from "./PushPermissionRecoveryCard";
 import { InstallPromptCard } from "./InstallPromptCard";
 import { FirstRunStrip } from "./FirstRunStrip";
 import { QuietRecap } from "./QuietRecap";
-import { WorthCheckingNow } from "./sections/worth-checking-now";
 import { YouFollow } from "./sections/you-follow";
 import { UpNext } from "./sections/up-next";
 import { QuietWrap } from "./sections/quiet-wrap";
@@ -31,18 +30,12 @@ import { CalmEndCard } from "./sections/calm-end-card";
 
 export function TodayClient() {
   const { payload, hydrated, updatedAt, refetch } = useTodayData();
-  const noSpoilers = useNoSpoilers();
-  const { follows } = useFollows();
-  const { pinned } = usePinned();
 
-  // Daily Brief — one calm sentence summarizing today's app state, plus
-  // an optional CTA so the Brief can route the user to the single most
-  // relevant surface. Under No-Spoilers, priority-1 returns the "Scores
-  // hidden..." line with no CTA, so the inline toggle + brief together
-  // replace the old standalone banner.
-  const brief = hydrated
-    ? deriveDailyBrief({ noSpoilers, follows, pinned, payload })
-    : null;
+  // Front Page lead (Concept A) — a punchy state headline + accent
+  // eyebrow + a single condensed deck card for the lead game. Replaces
+  // the conversational Daily Brief sentence as the editorial top of the
+  // screen, and absorbs the live hero (the deck IS the lead game).
+  const lead = hydrated ? deriveTodayHeadline(payload) : null;
 
   return (
     <PullToRefresh onRefresh={refetch}>
@@ -116,8 +109,8 @@ export function TodayClient() {
           interrupting the normal Today layout. Once-per-night. */}
       {hydrated ? <QuietRecap payload={payload} /> : null}
 
-      {/* Daily Brief — calm sentence + optional routing CTA */}
-      {brief ? <BriefCard brief={brief} /> : null}
+      {/* Front Page lead — state headline + lead-game deck */}
+      {lead ? <FrontPageLead lead={lead} /> : null}
 
       {/* Calm Ending — series wrapped or season wrapped. Sits above the
           install/notifications cards so the user sees the acknowledgment
@@ -159,7 +152,8 @@ export function TodayClient() {
       {hydrated ? (
         <div className="md:grid md:grid-cols-[minmax(0,1fr)_280px] md:gap-6">
           <div className="space-y-5">
-            {payload.hero ? <WorthCheckingNow hero={payload.hero} /> : null}
+            {/* The lead game is now the Front Page deck above; the old
+                WorthCheckingNow hero would just duplicate it. */}
 
             {/* YouFollow appears here on mobile only — at md+ the sticky
                 aside in the right rail takes over. */}
