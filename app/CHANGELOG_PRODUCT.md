@@ -433,7 +433,7 @@ surface:
   sweep were rewritten.
 - **Contact info added** to the landing footer, /about, /beta,
   /privacy: Instagram @nonoisescores +
-  tatlicioglu.ibrahim@gmail.com.
+  nonoisescores@gmail.com.
 
 ### 3-free-alerts pricing model in copy
 

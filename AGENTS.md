@@ -173,7 +173,7 @@ Completed (most recent first):
   language corrected on moments band. Status pills removed from NBA
   and WC moment cards (kept for NFL "Coming Aug 2026"). HowItWorks
   capsule rewritten for clarity. Contact info (Instagram +
-  tatlicioglu.ibrahim@gmail.com) added to footer, about, beta,
+  nonoisescores@gmail.com) added to footer, about, beta,
   privacy. 3-free-alerts pricing transparency added to FAQ + per-
   follow alert UI.
 - **Polish batch** (May 2026). Dynamic OG + Twitter share images via

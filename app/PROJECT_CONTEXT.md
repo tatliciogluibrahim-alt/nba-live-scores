@@ -438,7 +438,7 @@ After Phases 9–20 shipped, three more passes landed:
   NFL "Coming Aug 2026."
 - HowItWorks capsule rewritten for clarity and directness.
 - Contact info (Instagram @nonoisescores +
-  tatlicioglu.ibrahim@gmail.com) added to landing footer, about,
+  nonoisescores@gmail.com) added to landing footer, about,
   beta, privacy.
 - 3-free-alerts model surfaced honestly in the FAQ and in-app at
   the "slots full" moment.

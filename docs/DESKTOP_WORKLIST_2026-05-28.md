@@ -32,10 +32,10 @@ All P0 + the actionable P1 + all P2 text/SEM landed. tsc clean,
 - **P2.9–12** — DONE (em-dash/score-string fixes, "All moments"→"Close
   games" ×6 files, groups SEM: sitemap + meta + canonical + WC H1, title
   suffixes standardized).
-- **P2.13 contact email** — FLAGGED, not changed. `about` + footer use
-  `nonoisescores@gmail.com`; AGENTS.md references
-  `tatlicioglu.ibrahim@gmail.com`. Needs the owner to confirm which is
-  canonical before a sweep.
+- **P2.13 contact email** — RESOLVED. Owner confirmed
+  `nonoisescores@gmail.com` is canonical. Live pages were already on it
+  (no user-facing change needed); the 3 docs (AGENTS.md,
+  PROJECT_CONTEXT.md, CHANGELOG_PRODUCT.md) updated to match.
 - **P2.14 JSON-LD** — DEFERRED (lower priority, no risk to ship without).
 
 
