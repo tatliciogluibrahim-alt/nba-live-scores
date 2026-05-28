@@ -30,8 +30,30 @@ export function BriefCard({ brief }: { brief: DailyBrief }) {
   const accent = isWcRoute ? "var(--wc)" : "var(--nba)";
   const size = headlineSize(brief.text.length);
 
+  // Accent eyebrow above the headline (Concept A "TONIGHT · NBA WEST").
+  // Conservative + safe: derived from the brief's own route rather than
+  // a new copy system. WC routes flag the World Cup; a routed NBA brief
+  // ("Open Watching", a game/series link) is the day's lead, so "UP
+  // NEXT"; calm/No-Spoilers states (no CTA) read "TODAY" in mute.
+  const eyebrow = isWcRoute
+    ? { label: "World Cup", color: "var(--wc)" }
+    : brief.cta
+      ? { label: "Up next", color: "var(--nba)" }
+      : { label: "Today", color: "var(--mute-1)" };
+
   return (
     <section className="mb-5">
+      <p
+        className="mb-2 text-[11px] uppercase"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          letterSpacing: "0.12em",
+          color: eyebrow.color,
+        }}
+      >
+        {eyebrow.label}
+      </p>
       <h2
         style={{
           fontFamily: "var(--font-display)",

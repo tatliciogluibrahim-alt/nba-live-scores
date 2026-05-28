@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { PullToRefresh } from "../atoms/PullToRefresh";
+import { BrandMark } from "../frame/BrandMark";
 import { useFollows, useNoSpoilers, usePinned } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveDailyBrief } from "./daily-brief";
@@ -46,15 +47,19 @@ export function TodayClient() {
   return (
     <PullToRefresh onRefresh={refetch}>
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-5xl md:px-8 md:pt-6">
-      {/* ── Masthead (Concept A): date eyebrow + passive No-Spoilers
-          state. The big "Today" title is gone — the Brief headline
-          below is now the page's dominant type ("one headline a day").
-          A stable sr-only h1 keeps the landmark regardless of brief
-          state. */}
+      {/* ── Masthead (Concept A "Front Page"): date · No Noise wordmark ·
+          No-Spoilers state, with a full-width hairline beneath. The big
+          "Today" title is gone — the Brief headline below is the page's
+          dominant type ("one headline a day"). Stable sr-only h1 keeps
+          the landmark. The centered wordmark is mobile-only; on desktop
+          the sidebar already carries the brand. */}
       <h1 className="sr-only">Today</h1>
-      <header className="mb-4 flex items-center justify-between gap-3">
+      <header
+        className="-mx-4 mb-5 flex items-center justify-between gap-2 border-b px-4 pb-3"
+        style={{ borderColor: "var(--line)" }}
+      >
         <p
-          className="text-[11px] uppercase"
+          className="flex-1 text-[11px] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
             fontWeight: 600,
@@ -79,9 +84,26 @@ export function TodayClient() {
             : "Today"}
         </p>
 
+        <div className="flex shrink-0 items-center gap-2 md:hidden">
+          <BrandMark size={22} />
+          <span
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 15,
+              letterSpacing: "-0.01em",
+              color: "var(--ink)",
+            }}
+          >
+            No&nbsp;Noise
+          </span>
+        </div>
+
         {/* Ambient No-Spoilers indicator — only shown when active.
-            Passive status display, not a toggle. */}
-        <NoSpoilersAmbientDot />
+            Passive status display, not a per-visit toggle (set once in
+            Settings; tapping here goes there). */}
+        <div className="flex flex-1 justify-end">
+          <NoSpoilersAmbientDot />
+        </div>
       </header>
 
       {/* First-run onboarding — the 3-card checklist that shows
@@ -208,7 +230,7 @@ function NoSpoilersAmbientDot() {
           textTransform: "uppercase",
         }}
       >
-        Scores hidden
+        No-spoilers
       </span>
     </Link>
   );

@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { BrandBar } from "./companion/frame/BrandBar";
 import { CompanionFrame } from "./companion/frame/CompanionFrame";
 import { TodayClient } from "./companion/today/TodayClient";
 import { LandingShell } from "./companion/landing/LandingShell";
@@ -37,7 +36,7 @@ export default async function RootPage() {
   if (isMobile) {
     return (
       <CompanionFrame>
-        <BrandBar />
+        {/* No BrandBar — TodayClient renders its own Front Page masthead. */}
         <TodayClient />
       </CompanionFrame>
     );

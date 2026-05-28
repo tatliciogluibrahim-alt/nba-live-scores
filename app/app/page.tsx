@@ -1,4 +1,3 @@
-import { BrandBar } from "../companion/frame/BrandBar";
 import { CompanionFrame } from "../companion/frame/CompanionFrame";
 import { TodayClient } from "../companion/today/TodayClient";
 
@@ -20,7 +19,8 @@ export const metadata = {
 export default function AppPage() {
   return (
     <CompanionFrame desktopNav="today">
-      <BrandBar />
+      {/* No BrandBar — TodayClient renders its own Front Page masthead
+          (date · No Noise · No-Spoilers). */}
       <TodayClient />
     </CompanionFrame>
   );
