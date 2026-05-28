@@ -105,6 +105,14 @@ export type UpNextItem = {
   eyebrow: string;           // "NBA · Tonight" | "World Cup · Sat"
   headline: string;          // "Knicks vs Cavaliers"
   detail: string;            // "8:00 PM · MSG"
+  /** True when this game is on the current calendar day. The Front Page
+   *  headline counts only today's games ("One game tonight."), so a
+   *  future "Game 7 if necessary" in the list doesn't inflate the count. */
+  isToday: boolean;
+  /** Headline-ready day word for non-today games ("tomorrow",
+   *  "Saturday"). Used when nothing is on today and the headline leads
+   *  with the soonest upcoming day instead. */
+  dayWord: string;
   /** Series stake, humanized ("OKC leads series 3-2"). NBA series games
    *  only; undefined for plain games and World Cup fixtures. */
   stake?: string;
@@ -291,6 +299,34 @@ function formatGameTime(date: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+/** True when `date` falls on the same calendar day as `now`. */
+function isSameDay(date: string, now = new Date()): boolean {
+  const d = new Date(date);
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
+/** Headline-ready day word for a non-today game: "tomorrow" or a full
+ *  weekday ("Saturday"). Today returns "" — the headline uses the
+ *  tone-aware whenWord ("tonight"/"today") for same-day games instead. */
+function headlineDayWord(date: string, now = new Date()): string {
+  if (isSameDay(date, now)) return "";
+  const d = new Date(date);
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (
+    d.getFullYear() === tomorrow.getFullYear() &&
+    d.getMonth() === tomorrow.getMonth() &&
+    d.getDate() === tomorrow.getDate()
+  ) {
+    return "tomorrow";
+  }
+  return d.toLocaleDateString(undefined, { weekday: "long" });
 }
 
 function gameIncludesTeam(g: NBAGame, abbr: string): boolean {
@@ -571,6 +607,8 @@ function nbaToUpNext(g: NBAGame, pinned: boolean, personal: boolean): UpNextItem
     eyebrow: `NBA · ${formatGameDay(g.date)}`,
     headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     detail: `${formatGameTime(g.date)}${g.gameContext ? " · " + g.gameContext : ""}`,
+    isToday: isSameDay(g.date),
+    dayWord: headlineDayWord(g.date),
     stake: g.seriesSummary ? prettifySeriesSummary(g.seriesSummary) : undefined,
     watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
     href: `/game/${g.id}`,
@@ -587,6 +625,8 @@ function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): UpNextIt
     eyebrow: `World Cup · ${formatGameDay(g.date)}`,
     headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     detail: `${formatGameTime(g.date)}${g.stage ? " · " + g.stage : ""}`,
+    isToday: isSameDay(g.date),
+    dayWord: headlineDayWord(g.date),
     watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
     href: `/country/${g.away.abbreviation}`,
     spoilerSubject: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
@@ -1390,16 +1430,35 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
     };
   }
 
-  // Upcoming games on the slate.
+  // Upcoming games on the slate. The headline counts the games on the
+  // LEAD day only — today's games when any are on today, otherwise the
+  // soonest upcoming day. A future "Game 7 if necessary" shouldn't make
+  // "One game tonight." read "Two games tonight."
   if (payload.upNext.length > 0) {
-    const n = payload.upNext.length;
-    const tone: "nba" | "wc" =
-      payload.upNext[0].source === "wc" ? "wc" : "nba";
-    const when = whenWord(tone);
+    const todayItems = payload.upNext.filter((u) => u.isToday);
+
+    if (todayItems.length > 0) {
+      const n = todayItems.length;
+      const tone: "nba" | "wc" = todayItems[0].source === "wc" ? "wc" : "nba";
+      const when = whenWord(tone);
+      return {
+        eyebrow: { label: "Up next", tone },
+        headline:
+          n === 1 ? `One game ${when}.` : `${spellCount(n)} games ${when}.`,
+        support: lead?.stake,
+        deck,
+      };
+    }
+
+    // Nothing on today — lead with the soonest upcoming day and count
+    // only the games that share it ("One game Saturday.").
+    const lead0 = payload.upNext[0];
+    const day = lead0.dayWord;
+    const n = payload.upNext.filter((u) => u.dayWord === day).length;
+    const tone: "nba" | "wc" = lead0.source === "wc" ? "wc" : "nba";
     return {
       eyebrow: { label: "Up next", tone },
-      headline: n === 1 ? `One game ${when}.` : `${spellCount(n)} games ${when}.`,
-      // Stake when the lead game is a series game; otherwise undefined.
+      headline: n === 1 ? `One game ${day}.` : `${spellCount(n)} games ${day}.`,
       support: lead?.stake,
       deck,
     };

@@ -37,6 +37,8 @@ function upNextItem(over: Partial<TodayPayload["upNext"][number]> = {}) {
     eyebrow: "NBA · Tonight",
     headline: "OKC vs SA",
     detail: "8:30 PM · Game 6",
+    isToday: true,
+    dayWord: "",
     href: "/game/g1",
     spoilerSubject: "OKC vs SA",
     ...over,
@@ -84,6 +86,41 @@ describe("deriveTodayHeadline", () => {
   it("singular for one upcoming game", () => {
     const r = deriveTodayHeadline(base({ upNext: [upNextItem()] }));
     expect(r.headline).toBe("One game tonight.");
+  });
+
+  it("counts only TODAY's games, not a future 'Game 7 if necessary'", () => {
+    const r = deriveTodayHeadline(
+      base({
+        upNext: [
+          upNextItem(), // tonight
+          upNextItem({
+            id: "g2",
+            href: "/game/g2",
+            isToday: false,
+            dayWord: "Saturday",
+            detail: "8:00 PM · Game 7 if necessary",
+          }),
+        ],
+      })
+    );
+    expect(r.headline).toBe("One game tonight.");
+  });
+
+  it("leads with the soonest day when nothing is on today", () => {
+    const r = deriveTodayHeadline(
+      base({
+        upNext: [
+          upNextItem({ isToday: false, dayWord: "Saturday" }),
+          upNextItem({
+            id: "g2",
+            href: "/game/g2",
+            isToday: false,
+            dayWord: "Sunday",
+          }),
+        ],
+      })
+    );
+    expect(r.headline).toBe("One game Saturday.");
   });
 
   it("surfaces the series stake of an upcoming game as the support line", () => {

@@ -18,13 +18,14 @@ const TONE_COLOR: Record<TodayHeadline["eyebrow"]["tone"], string> = {
   mute: "var(--mute-1)",
 };
 
-// Headlines are short by design, so we can lean into the scale. Still
-// length-aware so a longer one ("Three games up next.") stays on the
-// rails.
+// Size the headline to sit on ONE line at a standard phone width.
+// Bricolage 700 runs ~0.55em average advance; we solve for the size that
+// keeps the string within ~350px and clamp so short headlines ("All
+// quiet.") stay bold without ballooning and the longest ("Three games
+// tonight.") stays readable.
 function headlineSize(len: number): number {
-  if (len <= 18) return 48;
-  if (len <= 30) return 38;
-  return 30;
+  const fit = Math.floor(350 / (Math.max(len, 1) * 0.55));
+  return Math.max(28, Math.min(46, fit));
 }
 
 /** Parse "OKC vs SA" → ["OKC","SA"] when both sides are short codes that
