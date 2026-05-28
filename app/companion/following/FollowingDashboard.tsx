@@ -77,8 +77,8 @@ function buildFollowSummary(follows: Follow[]): string {
 function GearIcon() {
   return (
     <svg
-      width="20"
-      height="20"
+      width="23"
+      height="23"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -153,8 +153,8 @@ export function FollowingDashboard() {
         className="mb-4 text-[12px] leading-snug"
         style={{ color: "var(--mute-2)", fontWeight: 500 }}
       >
-        Follows drive what you see and what you&apos;re alerted to.
-        Pinning a specific game is separate — that lives in Watching.
+        Follows drive what you see and your alerts. Pinning a single
+        game is separate, and lives in Watching.
       </p>
       {/* Alert-slot counter only renders when at least one follow is
           alert-enabled. With zero alerts the line read as "you haven't
@@ -213,12 +213,12 @@ export function FollowingDashboard() {
       >
         <Link
           href="/following/add"
-          aria-label="Follow more — NBA Playoffs or FIFA World Cup"
+          aria-label="Follow more (NBA Playoffs or FIFA World Cup)"
           className="flex min-h-[52px] items-center justify-center rounded-[14px] text-[12px] uppercase transition active:scale-[0.97]"
           style={{
-            background: "var(--ink)",
-            color: "var(--cream)",
-            border: "1px solid var(--ink)",
+            background: "transparent",
+            color: "var(--ink)",
+            border: "1px solid var(--line)",
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
             letterSpacing: "0.08em",

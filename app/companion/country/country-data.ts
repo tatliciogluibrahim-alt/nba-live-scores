@@ -85,27 +85,27 @@ function pathTemplate(group: string): PathTemplate[] {
     {
       key: "r32",
       label: "Round of 32",
-      detail: "If they finish in the top two of the group — or one of the best third-place finishers.",
+      detail: "If they finish in the top two of the group, or as one of the best third-place finishers.",
     },
     {
       key: "r16",
       label: "Round of 16",
-      detail: "Possible path — opponent set by the bracket draw after the group stage.",
+      detail: "Possible path. Opponent set by the bracket draw after the group stage.",
     },
     {
       key: "qf",
       label: "Quarterfinals",
-      detail: "Possible path — eight teams left.",
+      detail: "Possible path. Eight teams left.",
     },
     {
       key: "sf",
       label: "Semifinals",
-      detail: "Possible path — four teams left.",
+      detail: "Possible path. Four teams left.",
     },
     {
       key: "final",
       label: "Final",
-      detail: "Possible path — one match for the cup.",
+      detail: "Possible path. One match for the cup.",
     },
   ];
 }

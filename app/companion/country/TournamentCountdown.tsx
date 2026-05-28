@@ -71,17 +71,20 @@ export function TournamentCountdown({ country }: { country: CountryEntry }) {
   const state = computeCountdown();
   if (!state.show) return null;
 
-  // Three calm tiers of intensity. Each tier swaps both the headline
-  // verb and the detail line so the card reads as deliberately
-  // dialed-in to that moment, not the same template with a number
-  // substituted in.
+  // The calm 8–30 day band is deliberately spare: a single factual line
+  // ("15 days until first whistle. Group A draw is set.") with no
+  // headline. There's nothing to say yet beyond the countdown and the
+  // draw, so a "getting ready" headline just added redundancy. The
+  // tighter windows below still earn an eventful headline.
+  const isCalm = !state.starting && !state.imminent && !state.closeWeek;
+
   const headline = state.starting
     ? `${country.name} kicks off soon.`
     : state.imminent
       ? `${country.name}'s opener is tomorrow.`
       : state.closeWeek
         ? `${country.name} opens the tournament.`
-        : `${country.name} are getting ready.`;
+        : null;
 
   const detail = state.starting && state.hoursLabel
     ? `World Cup starts in ${state.hoursLabel}.`
@@ -122,39 +125,51 @@ export function TournamentCountdown({ country }: { country: CountryEntry }) {
               : "1px solid var(--line)",
         }}
       >
-        <div className="flex items-center gap-2">
-          {state.starting ? (
-            <span
-              aria-hidden
-              className="no-noise-live-fade h-1.5 w-1.5 rounded-full"
-              style={{ background: "var(--live)" }}
-            />
-          ) : null}
-          <Eyebrow
-            color={
-              state.imminent || state.closeWeek
-                ? "var(--wc)"
-                : "var(--mute-1)"
-            }
+        {/* The countdown chip duplicates the day count already in the
+            calm-tier detail line, so it only renders for the tighter,
+            more eventful windows. */}
+        {!isCalm ? (
+          <div className="flex items-center gap-2">
+            {state.starting ? (
+              <span
+                aria-hidden
+                className="no-noise-live-fade h-1.5 w-1.5 rounded-full"
+                style={{ background: "var(--live)" }}
+              />
+            ) : null}
+            <Eyebrow
+              color={
+                state.imminent || state.closeWeek
+                  ? "var(--wc)"
+                  : "var(--mute-1)"
+              }
+            >
+              {state.daysLabel}
+            </Eyebrow>
+          </div>
+        ) : null}
+
+        {headline ? (
+          <p
+            className="mt-2 text-[20px] leading-snug"
+            style={{
+              color: "var(--ink)",
+              fontFamily: "var(--font-display)",
+              letterSpacing: "-0.005em",
+            }}
           >
-            {state.daysLabel}
-          </Eyebrow>
-        </div>
+            {headline}
+          </p>
+        ) : null}
 
+        {/* Calm tier: this single line is the whole card, so it reads as
+            ink body copy rather than a muted sub-line. */}
         <p
-          className="mt-2 text-[20px] leading-snug"
+          className={isCalm ? "text-[15px] leading-snug" : "mt-2 text-[13px] leading-snug"}
           style={{
-            color: "var(--ink)",
-            fontFamily: "var(--font-display)",
-            letterSpacing: "-0.005em",
+            color: isCalm ? "var(--ink)" : "var(--mute-1)",
+            fontWeight: 500,
           }}
-        >
-          {headline}
-        </p>
-
-        <p
-          className="mt-2 text-[13px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {detail}
         </p>
