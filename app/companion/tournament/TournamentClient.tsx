@@ -102,22 +102,24 @@ function TournamentHeader({ tournament }: { tournament: TournamentEntry }) {
       }}
     >
       <div className="flex items-center gap-3">
+        {/* Brand letter-chip ("NBA" / "WC" / "NFL") in the tournament's
+            accent — matches the identity chip on the Following cards.
+            Replaces the emoji sport-ball, which read as placeholder art
+            against the otherwise custom visual system. */}
         <span
           aria-hidden
           className="grid h-12 w-12 shrink-0 place-items-center rounded-[12px]"
           style={{
             background: "var(--cream-2)",
-            fontSize: 28,
+            color: tournament.accent,
+            fontFamily: "var(--font-mono)",
+            fontSize: tournament.chip.length > 2 ? 15 : 17,
+            fontWeight: 700,
+            letterSpacing: "0.02em",
             lineHeight: 1,
           }}
         >
-          {tournament.id.startsWith("nba-playoffs-")
-            ? "🏀"
-            : tournament.id.startsWith("fifa-world-cup-")
-              ? "⚽"
-              : tournament.id.startsWith("nfl-season-")
-                ? "🏈"
-                : "🏆"}
+          {tournament.chip}
         </span>
         <div className="min-w-0 flex-1">
           <Eyebrow color={tournament.accent}>Tournament</Eyebrow>

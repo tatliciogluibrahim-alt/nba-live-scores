@@ -11,7 +11,6 @@ type MomentEntry = {
   detail: string;
   accent: string;
   soft: string;
-  icon: string;
   /** Optional status pill — only shown when set. NBA and WC don't need
    *  one (they're live or in the pre-window); NFL uses it for the
    *  ship date. */
@@ -26,7 +25,6 @@ const MOMENTS: MomentEntry[] = [
       "Series state, dot strips, recap cards, per-quarter scores, close-game alerts. Built for the postseason.",
     accent: "var(--nba)",
     soft: "var(--nba-soft)",
-    icon: "🏀",
   },
   {
     sport: "FIFA",
@@ -35,7 +33,6 @@ const MOMENTS: MomentEntry[] = [
       "Country pages with group, path-to-final, opener countdown, kickoff and full-time alerts. June 11, 2026 in Mexico City.",
     accent: "var(--wc)",
     soft: "var(--wc-soft)",
-    icon: "⚽",
   },
   {
     sport: "NFL",
@@ -44,7 +41,6 @@ const MOMENTS: MomentEntry[] = [
       "Sunday game tracking, drive-led highlights, possession state, weekly reminders. Lands ahead of the 2026 season opener.",
     accent: "var(--nfl, #6b7280)",
     soft: "var(--cream-2)",
-    icon: "🏈",
     status: "Coming Aug 2026",
   },
 ];
@@ -84,8 +80,21 @@ export function MomentsBand() {
               }}
             >
               <div className="mb-3 flex items-center justify-between">
-                <span aria-hidden style={{ fontSize: 32 }}>
-                  {m.icon}
+                {/* Letter-chip in the sport accent, matching the app's
+                    tournament + follow chips (replaces an emoji ball). */}
+                <span
+                  aria-hidden
+                  className="grid h-11 w-11 place-items-center rounded-[12px]"
+                  style={{
+                    background: "var(--paper)",
+                    color: m.accent,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: m.sport.length > 3 ? 13 : 15,
+                    fontWeight: 700,
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  {m.sport}
                 </span>
                 {m.status ? (
                   <span
@@ -102,19 +111,12 @@ export function MomentsBand() {
                   </span>
                 ) : null}
               </div>
-              <p
-                className="mb-1 text-[11px] uppercase"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontWeight: 700,
-                  letterSpacing: "0.12em",
-                  color: m.accent,
-                }}
-              >
-                {m.sport}
-              </p>
+              {/* The sport now lives in the accent letter-chip above,
+                  so the old accent eyebrow here would just repeat it
+                  ("NBA" chip + "NBA" eyebrow + "NBA Playoffs" title).
+                  Title leads straight from the chip. */}
               <h3
-                className="mb-2 leading-tight"
+                className="mt-3 mb-2 leading-tight"
                 style={{
                   fontFamily: "var(--font-display)",
                   fontSize: 26,
