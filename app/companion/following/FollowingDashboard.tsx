@@ -10,6 +10,7 @@ import type { Follow } from "../state/types";
 import { FollowCard, type FollowCardData } from "./FollowCard";
 import { useWrappedSeries } from "./use-wrapped-series";
 import { SportsCircleShareModal } from "../share/SportsCircleShareModal";
+import { SyncCircleModal } from "./SyncCircleModal";
 
 /** Detect "overlapping" follow combinations — these aren't bugs but
  *  they raise the "am I getting two notifications per event?" worry.
@@ -77,6 +78,7 @@ function buildFollowSummary(follows: Follow[]): string {
 export function FollowingDashboard() {
   const { follows, alertSlotCount, alertSlotCap } = useFollows();
   const [shareOpen, setShareOpen] = useState(false);
+  const [syncOpen, setSyncOpen] = useState(false);
   // Wrapped-series detection. Series follows whose underlying playoff
   // matchup is over render with a calm "Wrapped" chip — the user
   // still owns the follow (in case they want to look back at the
@@ -233,6 +235,31 @@ export function FollowingDashboard() {
             </span>
           </button>
         ) : null}
+
+        {/* Move your circle — share-code sync across devices (21C). No
+            accounts; a 24h code transfers follows. Always available so a
+            fresh device can pull a code even before it follows anything. */}
+        <button
+          type="button"
+          onClick={() => setSyncOpen(true)}
+          aria-label="Sync your follows across devices with a code"
+          className="mt-2 flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
+          style={{
+            background: "transparent",
+            borderColor: "var(--mute-2)",
+            color: "var(--ink)",
+          }}
+        >
+          <span className="text-[13px]" style={{ fontWeight: 600 }}>
+            Sync across devices
+          </span>
+          <span
+            className="text-[11px]"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            Move your follows with a code
+          </span>
+        </button>
       </div>
 
       {shareOpen ? (
@@ -240,6 +267,10 @@ export function FollowingDashboard() {
           follows={follows}
           onClose={() => setShareOpen(false)}
         />
+      ) : null}
+
+      {syncOpen ? (
+        <SyncCircleModal follows={follows} onClose={() => setSyncOpen(false)} />
       ) : null}
     </section>
   );
