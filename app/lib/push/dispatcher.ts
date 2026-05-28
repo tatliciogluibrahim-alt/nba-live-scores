@@ -114,7 +114,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           continue;
         }
 
-        const payload = buildPayload(event, sub.noSpoilers);
+        const payload = { ...buildPayload(event, sub.noSpoilers), eventType: event.type };
         let encoded: string;
         try {
           encoded = encodePushPayload(payload);
@@ -145,6 +145,9 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           });
           deliveries.push({ endpoint: sub.endpoint, delivered: true });
           await incrCounter("dispatch.delivered");
+          // Per-event-type sent counter — denominator for the open-rate
+          // the dashboard computes against notif.open.<type>. (21C.)
+          await incrCounter(`notif.sent.${event.type}`);
         } catch (err) {
           const statusCode = (err as { statusCode?: number })?.statusCode;
           if (statusCode === 404 || statusCode === 410) {

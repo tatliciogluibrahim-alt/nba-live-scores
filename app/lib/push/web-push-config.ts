@@ -52,6 +52,11 @@ export type PushPayload = {
   /** Group tag — newer notifications with the same tag replace older
    *  ones in the system tray. Useful for "score update" style pings. */
   tag?: string;
+  /** Event type ("tipoff" | "eoq-2" | "final" | ...). Stashed in the
+   *  notification data so the service worker can report an open back
+   *  to /api/push/track-open, keyed by type. Powers per-event-type
+   *  open-rate tracking (Phase 21C delivery loop). */
+  eventType?: string;
 };
 
 export function encodePushPayload(payload: PushPayload): string {

@@ -19,7 +19,7 @@
 // background-sync pushes are intentionally unsupported until there is
 // a product flow for them.
 
-const SW_VERSION = '1.1.0';
+const SW_VERSION = '1.2.0';
 const APP_ICON = '/app-icon-192.png';
 
 // Two named caches, both versioned. Static cache: fingerprinted Next.js
@@ -175,7 +175,23 @@ async function navigationStrategy(req) {
 // otherwise open the app at the URL we stashed in `data.url` (or '/').
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+  const data = event.notification.data || {};
+  const targetUrl = data.url || '/';
+
+  // Open-rate tracking (Phase 21C). Fire-and-forget a beacon to record
+  // that a notification of this event type was opened. Best-effort —
+  // never blocks navigation, swallows all errors. The dashboard divides
+  // notif.open.<type> by notif.sent.<type> for a per-type open rate.
+  if (data.eventType) {
+    event.waitUntil(
+      fetch('/api/push/track-open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventType: data.eventType }),
+        keepalive: true,
+      }).catch(() => undefined)
+    );
+  }
 
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({
@@ -221,7 +237,11 @@ self.addEventListener('push', (event) => {
       icon: APP_ICON,
       badge: APP_ICON,
       tag: payload.tag,
-      data: { url: payload.url || '/', swVersion: SW_VERSION },
+      data: {
+        url: payload.url || '/',
+        eventType: payload.eventType || null,
+        swVersion: SW_VERSION,
+      },
     })
   );
 });

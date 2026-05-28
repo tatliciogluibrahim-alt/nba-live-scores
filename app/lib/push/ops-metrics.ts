@@ -31,7 +31,31 @@ export type OpsCounter =
   | "dispatch.apns.deduped"
   | "dispatch.apns.gone"
   | "dispatch.apns.failed"
-  | "dispatch.apns.claim-failed";
+  | "dispatch.apns.claim-failed"
+  // Per-event-type notification funnel (Phase 21C delivery loop).
+  // `notif.sent.<type>` increments on each successful web-push
+  // delivery; `notif.open.<type>` increments when the service worker
+  // reports a notificationclick. Dashboard divides open/sent for a
+  // per-type open rate. Template-literal members so the dynamic keys
+  // type-check; the concrete per-type names are enumerated in
+  // NOTIF_EVENT_TYPES below for readback.
+  | `notif.sent.${string}`
+  | `notif.open.${string}`;
+
+/** Event types that flow through the notification funnel. Mirrors
+ *  EventType in event-detector.ts — kept as a local literal list so
+ *  ops-metrics has no import cycle with the push layer. */
+const NOTIF_EVENT_TYPES = [
+  "tipoff",
+  "eoq-1",
+  "eoq-2",
+  "eoq-3",
+  "close-game",
+  "comeback",
+  "final",
+  "wc-kickoff",
+  "wc-final",
+] as const;
 
 function todayBucket(): string {
   const d = new Date();
@@ -79,6 +103,10 @@ const COUNTER_NAMES: OpsCounter[] = [
   "dispatch.apns.gone",
   "dispatch.apns.failed",
   "dispatch.apns.claim-failed",
+  // Per-event-type notification funnel (Phase 21C). sent + open for
+  // each event type, expanded from NOTIF_EVENT_TYPES.
+  ...NOTIF_EVENT_TYPES.map((t) => `notif.sent.${t}` as const),
+  ...NOTIF_EVENT_TYPES.map((t) => `notif.open.${t}` as const),
 ];
 
 /** Read all counters for a given bucket (default: today). Missing
