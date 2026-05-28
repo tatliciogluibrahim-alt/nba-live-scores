@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Display } from "../atoms/Display";
-import { Eyebrow } from "../atoms/Eyebrow";
 import { resolveFollowIdentity } from "../follow/identity";
 import { useFollows } from "../providers";
 import type { Follow } from "../state/types";
@@ -75,6 +74,25 @@ function buildFollowSummary(follows: Follow[]): string {
 // Following dashboard — vertical list of follow cards in the order they
 // were added. Footer has a "Follow more" link back to the choice set.
 
+function GearIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
 export function FollowingDashboard() {
   const { follows, alertSlotCount, alertSlotCap } = useFollows();
   const [shareOpen, setShareOpen] = useState(false);
@@ -100,9 +118,24 @@ export function FollowingDashboard() {
 
   return (
     <section>
-      <Display as="h1" size="lg" className="mb-2">
-        Your sports circle.
-      </Display>
+      {/* Title row + a settings gear. Global alerts/notifications/theme
+          live in Settings; per-follow alerts live on each card's bell.
+          The gear keeps the bottom action row focused on the circle
+          itself (Add / Share / Sync) without a jargon "Alerts &
+          Notifications" button competing with them. */}
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <Display as="h1" size="lg">
+          Your sports circle.
+        </Display>
+        <Link
+          href="/settings"
+          aria-label="Alerts & Notifications"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full transition active:scale-[0.95]"
+          style={{ color: "var(--mute-1)" }}
+        >
+          <GearIcon />
+        </Link>
+      </div>
       <p
         className="mb-2 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
@@ -166,101 +199,68 @@ export function FollowingDashboard() {
         ))}
       </ul>
 
-      <div className="mt-5">
-        <Eyebrow>Add</Eyebrow>
+      {/* Circle actions — Add / Share / Sync as a compact button row
+          (replaces the old stacked dashed rows). Add is the primary
+          filled action; Share + Sync are quiet outlines. Share only
+          appears once there's a circle to export; Sync is always
+          available so a fresh device can pull a code. Global alerts +
+          settings live behind the header gear, not here. */}
+      <div
+        className="mt-5 grid gap-2"
+        style={{
+          gridTemplateColumns: `repeat(${follows.length > 0 ? 3 : 2}, minmax(0, 1fr))`,
+        }}
+      >
         <Link
           href="/following/add"
-          className="mt-2 flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
-          style={{
-            background: "transparent",
-            borderColor: "var(--mute-2)",
-            color: "var(--ink)",
-          }}
           aria-label="Follow more — NBA Playoffs or FIFA World Cup"
-        >
-          <span className="text-[13px]" style={{ fontWeight: 600 }}>
-            Follow more
-          </span>
-          <span
-            className="text-[11px]"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-            NBA Playoffs · FIFA World Cup
-          </span>
-        </Link>
-
-        <Link
-          href="/settings"
-          className="mt-2 flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
+          className="flex min-h-[52px] items-center justify-center rounded-[14px] text-[12px] uppercase transition active:scale-[0.97]"
           style={{
-            background: "transparent",
-            borderColor: "var(--mute-2)",
-            color: "var(--ink)",
+            background: "var(--ink)",
+            color: "var(--cream)",
+            border: "1px solid var(--ink)",
+            fontFamily: "var(--font-mono)",
+            fontWeight: 700,
+            letterSpacing: "0.08em",
           }}
-          aria-label="Open Alerts & Notifications — reminders, quiet hours, per-follow alerts"
         >
-          <span className="text-[13px]" style={{ fontWeight: 600 }}>
-            Alerts & Notifications
-          </span>
-          <span
-            className="text-[11px]"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-            Reminders · Quiet hours · Alerts
-          </span>
+          Add
         </Link>
 
-        {/* Share your circle — public-commitment retention play (21C).
-            Only offered when there's actually a circle to show. Opens a
-            modal that exports a calm 720×720 card of the user's follows
-            (no scores, safe to share). */}
         {follows.length > 0 ? (
           <button
             type="button"
             onClick={() => setShareOpen(true)}
             aria-label="Share your sports circle as an image"
-            className="mt-2 flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
+            className="flex min-h-[52px] items-center justify-center rounded-[14px] text-[12px] uppercase transition active:scale-[0.97]"
             style={{
               background: "transparent",
-              borderColor: "var(--mute-2)",
               color: "var(--ink)",
+              border: "1px solid var(--line)",
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
             }}
           >
-            <span className="text-[13px]" style={{ fontWeight: 600 }}>
-              Share your circle
-            </span>
-            <span
-              className="text-[11px]"
-              style={{ color: "var(--mute-1)", fontWeight: 500 }}
-            >
-              Save a card of what you follow
-            </span>
+            Share
           </button>
         ) : null}
 
-        {/* Move your circle — share-code sync across devices (21C). No
-            accounts; a 24h code transfers follows. Always available so a
-            fresh device can pull a code even before it follows anything. */}
         <button
           type="button"
           onClick={() => setSyncOpen(true)}
           aria-label="Sync your follows across devices with a code"
-          className="mt-2 flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
+          className="flex min-h-[52px] items-center justify-center rounded-[14px] text-[12px] uppercase transition active:scale-[0.97]"
           style={{
             background: "transparent",
-            borderColor: "var(--mute-2)",
             color: "var(--ink)",
+            border: "1px solid var(--line)",
+            fontFamily: "var(--font-mono)",
+            fontWeight: 700,
+            letterSpacing: "0.08em",
           }}
         >
-          <span className="text-[13px]" style={{ fontWeight: 600 }}>
-            Sync across devices
-          </span>
-          <span
-            className="text-[11px]"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-            Move your follows with a code
-          </span>
+          Sync
         </button>
       </div>
 
