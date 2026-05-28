@@ -10,6 +10,7 @@ import { FrontPageLead } from "./FrontPageLead";
 import { EnableNotificationsCard } from "./EnableNotificationsCard";
 import { PushPermissionRecoveryCard } from "./PushPermissionRecoveryCard";
 import { InstallPromptCard } from "./InstallPromptCard";
+import { BriefPromptCard } from "./BriefPromptCard";
 import { FirstRunStrip } from "./FirstRunStrip";
 import { QuietRecap } from "./QuietRecap";
 import { YouFollow } from "./sections/you-follow";
@@ -170,6 +171,10 @@ export function TodayClient() {
             {/* Quiet-day payoff: when nothing's live, nothing's next, nothing
                 just wrapped — and the reminder isn't already filling the page. */}
             {payload.isQuietDay && !payload.reminder ? <CalmCard /> : null}
+
+            {/* One-time, dismissible nudge to the Daily Brief email. Sits
+                at the bottom so it never competes with the live slate. */}
+            <BriefPromptCard />
           </div>
 
           {/* Desktop-only sticky right rail. Renders YouFollow so the

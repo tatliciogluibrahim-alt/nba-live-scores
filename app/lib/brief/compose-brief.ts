@@ -17,7 +17,32 @@
 import type { Follow } from "../../companion/state/types";
 import type { BriefSubscriber } from "./subscriber-store";
 import { deriveNBARecap } from "../../companion/recap/derive-recap";
+import { getTeam } from "../../companion/following/data/teams";
+import { countryDisplayName } from "../../companion/following/data/countries";
+import { getTournament } from "../../companion/following/data/tournaments";
 import type { Game } from "../../nba/types";
+
+// Human-readable label for a follow, for the "Your alerts" lines. The
+// raw follow id ("OKC", "USA", "OKC-SA", "nba-playoffs-2025") is a
+// storage key, not something to show a subscriber. Resolves against the
+// static directories (all pure data — safe in the cron). Falls back to
+// the raw id if a lookup misses so a new/unknown id never blanks out.
+function followLabel(follow: Follow): string {
+  switch (follow.kind) {
+    case "team":
+      return getTeam(follow.id)?.name ?? follow.id;
+    case "country":
+      return countryDisplayName(follow.id);
+    case "series": {
+      const [a, b] = follow.id.split("-");
+      const an = a ? getTeam(a)?.name ?? a : a;
+      const bn = b ? getTeam(b)?.name ?? b : b;
+      return a && b ? `${an} vs ${bn}` : follow.id;
+    }
+    case "tournament":
+      return getTournament(follow.id)?.name ?? follow.id;
+  }
+}
 
 export type BriefGameRow = {
   source: "nba" | "wc";
@@ -38,6 +63,14 @@ export type BriefGameRow = {
 export type BriefPayload = {
   /** Display date in the brief header, e.g. "Tuesday · May 27". */
   dateLabel: string;
+  /** Long weekday for the masthead gutter, e.g. "Thursday". */
+  weekday: string;
+  /** Short month + day for the big masthead headline, e.g. "May 28". */
+  monthDay: string;
+  /** Short month + day for yesterday's section sublabel, e.g. "May 27". */
+  yesterdayMonthDay: string;
+  /** Sequential issue number for the masthead ("Your Brief · 142"). */
+  issueNumber: number;
   /** Yesterday's finals matching the user's follows. */
   yesterday: BriefGameRow[];
   /** Today's scheduled (or live) games matching the user's follows. */
@@ -256,11 +289,38 @@ export function composeBrief({
         : f.alertTier === "companion"
           ? "Companion"
           : "Quiet";
-    return `${f.id} · ${label}`;
+    return `${followLabel(f)} · ${label}`;
   });
+
+  // Structured date parts for the masthead (the email renders weekday in
+  // a gutter + "Month Day." as the headline + per-section sublabels). Short
+  // month keeps the big headline on one line across every month.
+  const weekday = now.toLocaleDateString(undefined, { weekday: "long" });
+  const monthDay = now.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+  const yDate = new Date(now);
+  yDate.setDate(yDate.getDate() - 1);
+  const yesterdayMonthDay = yDate.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+
+  // Vanity issue number — days since the Brief's first issue. Purely
+  // cosmetic ("Your Brief · 142"); deterministic from the date.
+  const BRIEF_EPOCH = Date.UTC(2026, 0, 1);
+  const issueNumber = Math.max(
+    1,
+    Math.floor((now.getTime() - BRIEF_EPOCH) / 86_400_000) + 1
+  );
 
   return {
     dateLabel: todayHeader(now),
+    weekday,
+    monthDay,
+    yesterdayMonthDay,
+    issueNumber,
     yesterday,
     today,
     worthKnowing,

@@ -22,6 +22,7 @@ import { NoSpoilersToggle } from "./NoSpoilersToggle";
 // import { QuietHoursSelector } from "./QuietHoursSelector";
 import { PerFollowAlerts } from "./PerFollowAlerts";
 import { NoSpoilersProCard } from "./NoSpoilersProCard";
+import { BriefSettingsRow } from "./BriefSettingsRow";
 import { WatchGuidanceBlock } from "./WatchGuidanceBlock";
 import { NotificationPreview } from "./NotificationPreview";
 import { PushSubscriptionPanel } from "./PushSubscriptionPanel";
@@ -75,6 +76,7 @@ export function SettingsClient() {
             cron ships. */}
         {/* <QuietHoursSelector />  Hidden until the dispatcher honors
             quietHours per subscription. */}
+        <BriefSettingsRow />
         <ThemeSelector />
         <PushSubscriptionPanel />
         <NotificationPreview />
