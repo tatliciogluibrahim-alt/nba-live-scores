@@ -2,6 +2,48 @@
 
 ---
 
+## Phase 21 Brief launch + No-Spoilers overhaul + Front Page polish — 2026-05-28
+
+A large session. Highlights:
+
+- **Phase 21 — Brief: SHIPPED.** The previously dark "blocked on
+  domain email" infrastructure is now a live product. Resend domain
+  verified via Vercel DNS, `RESEND_API_KEY` + `BRIEF_FROM` set,
+  daily `send-briefs-cron.yml` GitHub Action (12:30 UTC). Confirmed
+  delivering end-to-end. Email redesigned to **"The Margin"**
+  (editorial gutter layout, masthead lockup, WC countdown with green
+  numeral). Alert labels humanized (`nba-playoffs-2025` → "NBA
+  Playoffs"). Entry points added: a Settings "Daily Brief" row + a
+  dismissible Today card. Timezone fix: day windowing moved to the US
+  Eastern sports day (UTC was dropping evening games from "Today").
+  Smarter stakes copy (team-named, round-aware). Logo → hosted PNG
+  (Gmail strips inline SVG).
+- **No-Spoilers: one reveal per game.** Replaced the per-component
+  reveal scatter with a session-scoped `RevealProvider` — one tap
+  clears a whole game's surfaces (score, stakes, hero, highlights,
+  per-quarter, recap), and the reveal carries Watching → detail.
+- **No-Spoilers Pro = selective (repositioned).** Per-follow
+  `hideSpoilers` flag + FollowCard toggle + `GameSpoilerScope` so a
+  hide-spoilers follow hides its games even with the global toggle
+  off. Global toggle stays free forever; selective is the paid pitch.
+  AGENTS.md positioning updated.
+- **Today Front Page lead.** Direct state headline ("One game
+  tonight." / "today"), deck anatomy (time / NBC · Game 6), series
+  stake support line, Bricolage 700. Headline counts only today's
+  games (was inflating with a future "Game 7 if necessary").
+- **Game detail (Watching · Game) realigned** to the design handoff:
+  big editorial matchup title, broadcast → pin → footnote bottom
+  group, collapsible recap.
+- **WC tournament groups** → editorial preview + a dedicated
+  `/tournament/[id]/groups` full page (no emoji flags, standings-ready).
+- **Sports Circle prototype — explored, shelved.** Two design rounds
+  (lists/grids/posters, then seal/sentence/orbit) didn't beat the
+  existing typographic share card. Concluded the brand's equity is
+  editorial typography, not abstract marks. Revisit post-launch if
+  users actually want to share. Not on the critical path.
+
+---
+
 ## Phase 22.5-D (first PR) — Desktop Bespoke Lean — 2026-05-27
 
 `/app`, `/following`, and `/watching` are no longer a narrow column

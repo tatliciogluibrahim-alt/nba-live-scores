@@ -208,7 +208,18 @@ Completed (most recent first):
   shipped 2026-05-26; Series Closure follow suggestion, Game 7
   override, Dead Zone Bridge, activation instrumentation, delivery
   loop still open). Full detail in `docs/RETENTION_PLAYBOOK.md`.
-- **Phase 21** — Brief launch (gated on domain email).
+- **Phase 21** — Brief launch. **SHIPPED 2026-05-28.** Live and
+  auto-sending daily via `send-briefs-cron.yml` (Resend, domain
+  verified). "The Margin" email design; Settings + Today entry
+  points; ET sports-day windowing; team-named round-aware stakes.
+- **No-Spoilers Pro (selective)** — **UI + behavior SHIPPED
+  2026-05-28.** Per-follow `hideSpoilers` + one-tap per-game reveal
+  (`RevealProvider` / `GameSpoilerScope`). Global toggle free; selective
+  is the paid pitch. Only the paid gate/checkout remains.
+- **Sports Circle visual prototype** — **explored + shelved
+  2026-05-28.** Two design rounds didn't beat the existing share
+  card. Not on the critical path; revisit post-launch only if users
+  ask to share.
 - **Phase 22.5** — **iOS Native via Capacitor + Desktop Bespoke — IN PROGRESS.**
   Proof-of-life (22.5-1) and dispatcher integration (22.5-2) both
   shipped 2026-05-27. Real APNs push verified on physical iPhone.
@@ -238,7 +249,6 @@ Each phase is its own go/no-go unit. Do not jump ahead.
 
 Do not do yet:
 
-- Brief send pipeline (Phase 21. Blocked on domain email setup).
 - NFL full build (Phase 22. August 2026).
 - iOS native wrap (Phase 22.5, contractor needed — see
   `docs/IOS_NATIVE_PLAN.md`).

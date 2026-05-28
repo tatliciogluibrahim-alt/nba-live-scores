@@ -3,10 +3,22 @@
 This file lists the work ahead, sequenced.
 
 **Phases 1–8, A/B/C, 9–20, the QA bug round, the polish batch, the
-copy + tone sweep, and Phase 21B (Calm Endings + Tier Honesty) are
-all complete** (see `app/CHANGELOG_PRODUCT.md` for per-phase
-detail). The Add to Calendar feature shipped briefly as part of
-Phase 21B-2 then was reverted on 2026-05-27.
+copy + tone sweep, Phase 21B (Calm Endings + Tier Honesty), and
+Phase 21 (the Brief) are all complete** (see
+`app/CHANGELOG_PRODUCT.md` for per-phase detail). The Add to Calendar
+feature shipped briefly as part of Phase 21B-2 then was reverted on
+2026-05-27.
+
+**Update 2026-05-28:** Phase 21 (Brief) shipped — it's live and
+auto-sending daily. No-Spoilers Pro (selective per-follow) shipped
+its UI + behavior (the global toggle stays free; selective is the
+paid pitch — see the No-Spoilers model in AGENTS.md). The Sports
+Circle visual prototype was explored across two design rounds and
+**shelved** — the existing typographic share card is the answer;
+revisit only if users actually want to share. The remaining critical
+path to launch is **Phase 22.5-3 (Live Activity) + 22.5-4 (Widget) +
+22.5-5 (App Store submission)** — all native Swift — plus a manual
+visual QA pass.
 
 Each phase below is one go/no-go unit. Do not jump ahead.
 
@@ -318,20 +330,22 @@ installs, D7 above 25%) before triggering. The plan explicitly says
 
 ---
 
-## Phase 21 — Brief Launch (gated on domain email)
+## ✅ Phase 21 — Brief Launch — SHIPPED (2026-05-28)
 
-**Goal:** turn the dark-but-ready Brief infrastructure into a live
-product.
+Turned the dark-but-ready Brief infrastructure into a live product.
 
-- Vercel DNS verification with Resend (SPF / DKIM / DMARC).
-- `RESEND_API_KEY` + `BRIEF_FROM` env vars in production.
-- cron-job.org entry calling `/api/cron/send-briefs` ~8am local.
-- List-Unsubscribe header added.
-- Subtle entry point: "Get a calm morning recap →" on Quiet Recap Card
-  or `/about` footer.
-- Soft launch — 5 friends, iterate on tone for 2 weeks.
-
-**Risk:** Low (infrastructure ready). External dependency: DNS.
+- ✅ Resend domain verified via Vercel DNS (SPF / DKIM / DMARC, the
+  native Resend → Vercel integration).
+- ✅ `RESEND_API_KEY` + `BRIEF_FROM` env vars in production.
+- ✅ `.github/workflows/send-briefs-cron.yml` GitHub Action calls
+  `/api/cron/send-briefs` daily at 12:30 UTC (same machinery as
+  scan-nba). Verified delivering end-to-end.
+- ✅ Email redesigned to "The Margin" (editorial gutter layout) +
+  WC countdown + humanized alert labels + ET sports-day windowing +
+  team-named round-aware stakes + hosted-PNG logo.
+- ✅ Entry points: Settings "Daily Brief" row + dismissible Today card.
+- Remaining (not blocking): List-Unsubscribe header; soft-launch tone
+  iteration with friends; fail-the-Action-on-failed-send guard.
 
 ---
 
@@ -356,14 +370,20 @@ Spec: `docs/nfl-design.md`.
 
 Sketched but unsequenced. Re-evaluate after Phase 22.
 
-- Sports Circle visual prototype (4-hr time-boxed exploration).
+- ~~Sports Circle visual prototype~~ — **explored + shelved
+  (2026-05-28).** Two design rounds (lists/grids/posters, then
+  seal/sentence/orbit) both failed to beat the existing typographic
+  share card. The brand's equity is editorial typography + real
+  names, not abstract marks. The current share card is the answer.
+  Revisit only if real users ask to share. Not on the critical path.
+- ~~No-Spoilers Pro (per-team hide)~~ — **selective per-follow
+  No-Spoilers shipped its UI + behavior (2026-05-28).** Global toggle
+  stays free; selective per-follow `hideSpoilers` is the paid pitch.
+  Live for everyone during the beta; the paid gate/checkout is the
+  only remaining piece.
 - Path B follow-schema refactor (when a 3rd moment-tournament arrives).
 - Multi-device push relay (phone + laptop + iPad). Becomes simpler
   after the Phase 22.5 iOS Native ship.
-- No-Spoilers Pro (extended-window hide rules, per-team hide).
-  Reframed as the paid-tier pitch ("more control over what you see
-  and what you don't") rather than the original "help cover backend
-  cost" framing.
 - Family / shared follows.
 - Champions League knockout rounds.
 
