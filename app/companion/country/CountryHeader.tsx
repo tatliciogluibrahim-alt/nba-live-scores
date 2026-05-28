@@ -14,22 +14,12 @@ export function CountryHeader({ country }: { country: CountryEntry }) {
   const size = name.length <= 12 ? 40 : name.length <= 20 ? 32 : 26;
   return (
     <header className="px-1">
-      <div className="flex items-center gap-2">
-        <span
-          aria-hidden
-          className="grid h-6 w-6 shrink-0 place-items-center rounded-[7px]"
-          style={{
-            background: "var(--wc-soft)",
-            fontSize: 14,
-            lineHeight: 1,
-          }}
-        >
-          {country.flag}
-        </span>
-        <Eyebrow color="var(--wc)">
-          World Cup 2026 · Group {country.group}
-        </Eyebrow>
-      </div>
+      {/* No flag — the country page leads with the green group eyebrow
+          and the name as a big editorial headline (matches the Front
+          Page country mockup, which is flag-free). */}
+      <Eyebrow color="var(--wc)">
+        World Cup 2026 · Group {country.group}
+      </Eyebrow>
       <h1
         className="mt-2"
         style={{

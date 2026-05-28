@@ -36,6 +36,10 @@ export type GroupRow = {
   name: string;
   flag: string;
   isSelected: boolean;
+  /** Group standing, populated once games in the group have finished.
+   *  Undefined pre-tournament (the strip then shows just names + codes,
+   *  matching the calm pre-kickoff design). */
+  standing?: { played: number; points: number };
 };
 
 export type PathStage = {
@@ -167,6 +171,36 @@ function gameRowForCountry(
 
 // ── Public builder ────────────────────────────────────────────────────
 
+// Tally group standings (games played + points) from finished
+// group-stage games. Win = 3, draw = 1, loss = 0. Keyed by team code.
+// Empty until the tournament starts producing finals.
+function computeGroupStandings(
+  games: WCGameLite[],
+  group: string
+): Map<string, { played: number; points: number }> {
+  const table = new Map<string, { played: number; points: number }>();
+  const bump = (code: string, pts: number) => {
+    const cur = table.get(code) ?? { played: 0, points: 0 };
+    table.set(code, { played: cur.played + 1, points: cur.points + pts });
+  };
+  for (const g of games) {
+    if (g.group !== group || g.status !== "final") continue;
+    const h = g.home.abbreviation;
+    const a = g.away.abbreviation;
+    if (g.home.score > g.away.score) {
+      bump(h, 3);
+      bump(a, 0);
+    } else if (g.away.score > g.home.score) {
+      bump(a, 3);
+      bump(h, 0);
+    } else {
+      bump(h, 1);
+      bump(a, 1);
+    }
+  }
+  return table;
+}
+
 export function buildCountryPayload(
   code: string,
   games: WCGameLite[]
@@ -193,8 +227,15 @@ export function buildCountryPayload(
   const upcoming = fixtures.find((f) => f.status === "upcoming");
   const nextMatch = live ?? upcoming ?? null;
 
-  // Group strip — the four members of this country's group, in directory
-  // order, with the selected country flagged.
+  // Group standings — points + games played per team, tallied from
+  // finished group-stage games. Empty pre-tournament. Once games land,
+  // the strip shows standings and sorts by points.
+  const standings = computeGroupStandings(games, country.group);
+  const anyPlayed = Array.from(standings.values()).some((s) => s.played > 0);
+
+  // Group strip — the four members of this country's group, with the
+  // selected country flagged. Sorted by points once the tournament has
+  // started; directory order before then.
   const groupRows: GroupRow[] = WC_COUNTRIES
     .filter((c) => c.group === country.group)
     .map((c) => ({
@@ -202,7 +243,12 @@ export function buildCountryPayload(
       name: c.name,
       flag: c.flag,
       isSelected: c.id === country.id,
-    }));
+      standing: standings.get(c.id),
+    }))
+    .sort((a, b) => {
+      if (!anyPlayed) return 0; // keep directory order pre-tournament
+      return (b.standing?.points ?? 0) - (a.standing?.points ?? 0);
+    });
 
   // Path stages — pre-tournament default. Mark a stage `reached` if a
   // fixture in that stage exists. Group stage is always reachable.

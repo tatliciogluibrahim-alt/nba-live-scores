@@ -44,44 +44,61 @@ export function GroupStrip({
         </span>
       </div>
 
-      <ul
-        className="overflow-hidden rounded-[14px] border"
-        style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-      >
+      {/* Editorial typographic list — no flags. Big team name + mono
+          code; the followed country is highlighted in World Cup green.
+          Standings (GP · PTS) appear under the name once group games
+          finish; pre-kickoff it's just name + code (calm, matches the
+          Front Page country mockup). */}
+      <ul>
         {rows.map((row, idx) => {
           const isLast = idx === rows.length - 1;
+          const nameColor = row.isSelected ? "var(--wc)" : "var(--ink)";
+          const codeColor = row.isSelected ? "var(--wc)" : "var(--mute-1)";
+          const standing = row.standing;
+
           const rowChrome = (
-            <>
-              <span aria-hidden className="text-[22px] leading-none">
-                {row.flag}
-              </span>
+            <div className="flex w-full items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div
+                  className="truncate text-[18px] leading-tight"
+                  style={{
+                    color: nameColor,
+                    fontWeight: 700,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  {row.name}
+                </div>
+                {standing && standing.played > 0 ? (
+                  <div
+                    className="mt-0.5 text-[11px] uppercase"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      letterSpacing: "0.08em",
+                      color: "var(--mute-1)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {standing.played} GP · {standing.points} PTS
+                  </div>
+                ) : null}
+              </div>
               <span
-                className="min-w-0 flex-1 truncate text-[14px]"
-                style={{
-                  color: "var(--ink)",
-                  fontWeight: row.isSelected ? 800 : 600,
-                  letterSpacing: "-0.005em",
-                }}
-              >
-                {row.name}
-              </span>
-              <span
-                className="text-[11px] uppercase"
+                className="shrink-0 text-[11px] uppercase"
                 style={{
                   fontFamily: "var(--font-mono)",
                   letterSpacing: "0.06em",
-                  color: row.isSelected ? "var(--wc)" : "var(--mute-1)",
+                  color: codeColor,
                   fontWeight: 700,
                 }}
               >
                 {row.code}
               </span>
-            </>
+            </div>
           );
 
           const baseStyle = {
             borderBottom: isLast ? "none" : "1px solid var(--line)",
-            background: row.isSelected ? "var(--cream-2)" : "transparent",
             minHeight: 44,
           };
 
@@ -90,7 +107,7 @@ export function GroupStrip({
             return (
               <li
                 key={row.code}
-                className="flex items-center gap-3 px-3 py-2.5"
+                className="flex items-center py-3"
                 style={baseStyle}
                 aria-current="true"
               >
@@ -100,13 +117,13 @@ export function GroupStrip({
           }
 
           // Group-mate row — Link with from=<tournament-id> so the
-          // destination's CrumbBar shows "World Cup" instead of
-          // bouncing back through Following.
+          // destination's CrumbBar shows "World Cup" instead of bouncing
+          // back through Following.
           return (
             <li key={row.code} style={baseStyle}>
               <Link
                 href={`/country/${row.code}?from=${WC_TOURNAMENT_ID}`}
-                className="flex items-center gap-3 px-3 py-2.5 transition active:scale-[0.99]"
+                className="flex items-center py-3 transition active:scale-[0.99]"
                 aria-label={`Open ${row.name}`}
               >
                 {rowChrome}
