@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
+import { FEED_KEYS, readFeed, writeFeed } from "../hooks/feed-cache";
 import type { Game } from "../../nba/types";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 import {
@@ -28,8 +29,18 @@ async function fetchNBA(): Promise<NBAGame[]> {
   try {
     const res = await fetch("/api/live-scores", { cache: "no-store" });
     if (!res.ok) return [];
-    const json = (await res.json()) as { games?: NBAGame[] };
-    return json.games ?? [];
+    const json = (await res.json()) as {
+      games?: NBAGame[];
+      seriesGames?: NBAGame[];
+    };
+    const games = json.games ?? [];
+    // Write the same { games, recent } shape Today caches so neither
+    // hook clobbers the other's richer entry in the shared feed cache.
+    writeFeed(FEED_KEYS.liveScores, {
+      games,
+      recent: json.seriesGames ?? games,
+    });
+    return games;
   } catch {
     return [];
   }
@@ -42,7 +53,9 @@ async function fetchWC(): Promise<WCGameLite[]> {
     const res = await fetch(wcFeedUrl(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = (await res.json()) as { games?: WCGameLite[] };
-    return json.games ?? [];
+    const games = json.games ?? [];
+    writeFeed(FEED_KEYS.worldCup, games);
+    return games;
   } catch {
     return [];
   }
@@ -72,9 +85,20 @@ type Fetched = { nba: NBAGame[]; wc: WCGameLite[]; updatedAt: Date | null };
 
 export function useWatchingData() {
   const { pinned, hydrated: pinnedHydrated } = usePinned();
-  const [data, setData] = useState<Fetched>({ nba: [], wc: [], updatedAt: null });
+  // Seed from the shared feed cache so a tab switch paints the last-known
+  // slate instantly (the poll refreshes within its interval).
+  const [data, setData] = useState<Fetched>(() => {
+    const ls = readFeed<{ games: NBAGame[]; recent: NBAGame[] }>(
+      FEED_KEYS.liveScores
+    );
+    const wc = readFeed<WCGameLite[]>(FEED_KEYS.worldCup);
+    if (!ls && !wc) return { nba: [], wc: [], updatedAt: null };
+    return { nba: ls?.games ?? [], wc: wc ?? [], updatedAt: new Date() };
+  });
   const dataRef = useRef<Fetched>(data);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(
+    () => data.updatedAt !== null
+  );
   // Snapshot pins: cards resolved from KV snapshots for pinned games no
   // longer in either live feed. Kept separate from `data` so a snapshot
   // resolution doesn't get blown away by the next poll of the live feeds.

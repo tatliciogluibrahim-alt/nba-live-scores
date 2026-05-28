@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useFollows, usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
+import { FEED_KEYS, readFeed, writeFeed } from "../hooks/feed-cache";
 import {
   buildTodayPayload,
   type NBAGame,
@@ -62,7 +63,9 @@ async function fetchNBA(): Promise<{ games: NBAGame[]; recent: NBAGame[] }> {
     // surface so Quiet Wrap can show games that just wrapped even
     // when they fall outside the current week boundary.
     const recent = json.seriesGames ?? games;
-    return { games, recent };
+    const result = { games, recent };
+    writeFeed(FEED_KEYS.liveScores, result);
+    return result;
   } catch {
     return { games: [], recent: [] };
   }
@@ -76,23 +79,44 @@ async function fetchWC(): Promise<WCGameLite[]> {
     const res = await fetch(wcFeedUrl(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = (await res.json()) as { games?: WCGameLite[] };
-    return json.games ?? [];
+    const games = json.games ?? [];
+    writeFeed(FEED_KEYS.worldCup, games);
+    return games;
   } catch {
     return [];
   }
 }
 
+// Seed initial state from the shared feed cache so a tab switch paints
+// the last-known slate instantly instead of an empty shell. The poll
+// refreshes within its interval; if nothing's cached (fresh load) we
+// fall back to empty + loading shell as before.
+function seedData(): FetchedData {
+  const ls = readFeed<{ games: NBAGame[]; recent: NBAGame[] }>(
+    FEED_KEYS.liveScores
+  );
+  const wc = readFeed<WCGameLite[]>(FEED_KEYS.worldCup);
+  if (!ls && !wc) {
+    return { nba: [], nbaRecent: [], wc: [], updatedAt: null };
+  }
+  return {
+    nba: ls?.games ?? [],
+    nbaRecent: ls?.recent ?? [],
+    wc: wc ?? [],
+    updatedAt: new Date(),
+  };
+}
+
 export function useTodayData() {
   const { follows, hydrated: followsHydrated } = useFollows();
   const { pinned, hydrated: pinnedHydrated } = usePinned();
-  const [data, setData] = useState<FetchedData>({
-    nba: [],
-    nbaRecent: [],
-    wc: [],
-    updatedAt: null,
-  });
+  const [data, setData] = useState<FetchedData>(seedData);
   const dataRef = useRef<FetchedData>(data);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  // If we seeded from cache, treat the tab as already loaded so no
+  // loading shell flashes before the first poll lands.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(
+    () => data.updatedAt !== null
+  );
 
   // Single fetch+commit path shared by the poll loop and the manual
   // refetch. `isCancelled` guards the post-await setState (the poll

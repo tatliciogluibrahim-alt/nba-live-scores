@@ -19,6 +19,22 @@ can't be verified from a code-only environment.
 - **Today "Up next" → "Upcoming"** section label (de-duped the
   Front-Page eyebrow vs. section header repeat).
 
+## ✅ Applied 2026-05-28 (later same day) — verified build-green
+
+- **#1 sports-day timezone — FIXED.** `app/nba/lib/time.ts` now computes
+  every date part in `America/New_York` (the 5am rollover, `getLocalDateKey`,
+  `isSameScoreboardDay`, `isTomorrow`). Identical for an ET user, correct
+  for everyone else. Signatures unchanged. **Still wants your eyes on a
+  live slate to confirm "today" reads right.**
+- **#2 tab-switch feed cache — DONE.** New `app/companion/hooks/feed-cache.ts`
+  (seed-only, 45s max-age). `use-today-data` + `use-watching-data` write
+  the raw feed on each fetch and seed their initial state from it, so
+  Today↔Watching paints the last-known slate instantly instead of an
+  empty shell. The poll is untouched (still `no-store`), so live data is
+  never served stale. **Residual:** `use-live-pinned` (desktop sidebar)
+  still polls independently — it could read/write the same cache to fully
+  de-dupe, but it's a desktop-only nicety; left for later.
+
 ## 🔶 Recommended next — do together, with a device/live feed (don't blind-ship)
 
 Ordered by value. Each is real; none is a quick blind edit.

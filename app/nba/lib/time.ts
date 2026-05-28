@@ -54,37 +54,50 @@ export function formatCountdown(targetDate: string) {
   return `Tonight · ${formatGameTime(targetDate)}`;
 }
 
-export function getLocalDateKey(date: string) {
-  const gameDate = new Date(date);
-  const year = gameDate.getFullYear();
-  const month = String(gameDate.getMonth() + 1).padStart(2, "0");
-  const day = String(gameDate.getDate()).padStart(2, "0");
+// The "scoreboard day" is the US Eastern sports day, with a 5am ET
+// rollover so late games (which tip after midnight UTC / late ET) still
+// belong to the night they were played. We compute every date part in
+// America/New_York so the day math is correct regardless of the viewer's
+// device timezone (a PT or European user would otherwise see "today's
+// games" shift by a day at the wrong wall-clock moment). The algorithm
+// is unchanged from the original local-time version — only the parts are
+// now ET, so the behavior is identical for an ET user.
+const SPORTS_TZ = "America/New_York";
 
-  return `${year}-${month}-${day}`;
+/** ET calendar date as a comparable "YYYY-MM-DD" key (en-CA → ISO order). */
+function etDateKey(d: Date): string {
+  return d.toLocaleDateString("en-CA", { timeZone: SPORTS_TZ });
+}
+
+/** Hour of day (0–23) in ET. */
+function etHour(d: Date): number {
+  return Number(
+    d.toLocaleString("en-US", {
+      timeZone: SPORTS_TZ,
+      hour: "2-digit",
+      hour12: false,
+    })
+  );
+}
+
+export function getLocalDateKey(date: string) {
+  return etDateKey(new Date(date));
 }
 
 export function getScoreboardToday() {
   const now = new Date();
-  const scoreboardToday = new Date(now);
-
-  if (now.getHours() < 5) {
-    scoreboardToday.setDate(scoreboardToday.getDate() - 1);
-  }
-
-  return scoreboardToday;
+  // Before 5am ET, "today's" scoreboard is still last night's slate.
+  // Subtract a full 24h (DST-safe) rather than a calendar day.
+  return etHour(now) < 5 ? new Date(now.getTime() - 86_400_000) : now;
 }
 
 export function isSameScoreboardDay(gameDate: Date, scoreboardDate: Date) {
-  return (
-    gameDate.getFullYear() === scoreboardDate.getFullYear() &&
-    gameDate.getMonth() === scoreboardDate.getMonth() &&
-    gameDate.getDate() === scoreboardDate.getDate()
-  );
+  return etDateKey(gameDate) === etDateKey(scoreboardDate);
 }
 
 export function isTomorrow(date: Date) {
-  const scoreboardTomorrow = getScoreboardToday();
-  scoreboardTomorrow.setDate(scoreboardTomorrow.getDate() + 1);
-
+  const scoreboardTomorrow = new Date(
+    getScoreboardToday().getTime() + 86_400_000
+  );
   return isSameScoreboardDay(date, scoreboardTomorrow);
 }
