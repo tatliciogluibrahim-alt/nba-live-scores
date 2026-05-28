@@ -1,53 +1,48 @@
 "use client";
 
-import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import type { CountryEntry } from "../following/data/countries";
 
-// Country brand header — flag, name, group eyebrow. The follow/preset
-// controls live in a separate section below; the header is purely
-// identity.
+// Country brand header — Front Page treatment (Concept A): a small flag
+// chip + green group eyebrow, then the country name as a big editorial
+// headline. The flag stays (the country page is the one place real flag
+// imagery belongs); the boxed card is gone so the name leads. Follow /
+// preset controls live in a separate section below — this is identity.
 
 export function CountryHeader({ country }: { country: CountryEntry }) {
-  // WC pages are the one place in the app where leaning into sport accent
-  // pays off — soccer fans expect tournament identity. The flag chip
-  // swaps from the neutral --cream-2 tile to a confident --wc-soft tile
-  // with a --wc-tinted text shadow on the eyebrow, a slightly stronger
-  // 4px --wc rail (vs the standard 3px used by NBA cards) anchors the
-  // whole header as "World Cup territory" without changing the layout.
-  // The bump from 3px to 4px is small but reads as a clear signal that
-  // this isn't a generic detail page — same width as the bottom nav's
-  // active accent.
+  const name = country.name;
+  const size = name.length <= 12 ? 40 : name.length <= 20 ? 32 : 26;
   return (
-    <header
-      className="rounded-[14px] border px-3 py-3"
-      style={{
-        background: "var(--paper)",
-        borderColor: "var(--line)",
-        borderLeft: "4px solid var(--wc)",
-      }}
-    >
-      <div className="flex items-center gap-3">
+    <header className="px-1">
+      <div className="flex items-center gap-2">
         <span
           aria-hidden
-          className="grid h-12 w-12 shrink-0 place-items-center rounded-[12px]"
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-[7px]"
           style={{
             background: "var(--wc-soft)",
-            fontSize: 28,
+            fontSize: 14,
             lineHeight: 1,
           }}
         >
           {country.flag}
         </span>
-        <div className="min-w-0 flex-1">
-          <Eyebrow color="var(--wc)">
-            World Cup 2026 · Group {country.group}
-          </Eyebrow>
-          <Display as="h1" size="lg" className="mt-1">
-            {country.name}
-          </Display>
-        </div>
+        <Eyebrow color="var(--wc)">
+          World Cup 2026 · Group {country.group}
+        </Eyebrow>
       </div>
+      <h1
+        className="mt-2"
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: size,
+          lineHeight: 1.02,
+          letterSpacing: "-0.02em",
+          color: "var(--ink)",
+          textWrap: "pretty",
+        }}
+      >
+        {name}
+      </h1>
     </header>
   );
 }

@@ -92,28 +92,24 @@ export function TournamentClient({ tournamentId }: { tournamentId: string }) {
 // ── Header ──────────────────────────────────────────────────────────────
 
 function TournamentHeader({ tournament }: { tournament: TournamentEntry }) {
+  // Front Page treatment (Concept A): drop the boxed card, lead with a
+  // big editorial headline (the tournament name) under a small
+  // letter-chip + eyebrow. Length-sized so "FIFA World Cup 2026" and
+  // "NBA Playoffs" both sit right. Accent identity stays via the chip +
+  // eyebrow color.
+  const name = tournament.name;
+  const size = name.length <= 14 ? 38 : name.length <= 20 ? 32 : 28;
   return (
-    <header
-      className="rounded-[14px] border px-3 py-3"
-      style={{
-        background: "var(--paper)",
-        borderColor: "var(--line)",
-        borderLeft: `4px solid ${tournament.accent}`,
-      }}
-    >
-      <div className="flex items-center gap-3">
-        {/* Brand letter-chip ("NBA" / "WC" / "NFL") in the tournament's
-            accent — matches the identity chip on the Following cards.
-            Replaces the emoji sport-ball, which read as placeholder art
-            against the otherwise custom visual system. */}
+    <header className="px-1">
+      <div className="flex items-center gap-2">
         <span
           aria-hidden
-          className="grid h-12 w-12 shrink-0 place-items-center rounded-[12px]"
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-[7px]"
           style={{
             background: "var(--cream-2)",
             color: tournament.accent,
             fontFamily: "var(--font-mono)",
-            fontSize: tournament.chip.length > 2 ? 15 : 17,
+            fontSize: tournament.chip.length > 2 ? 9 : 11,
             fontWeight: 700,
             letterSpacing: "0.02em",
             lineHeight: 1,
@@ -121,19 +117,27 @@ function TournamentHeader({ tournament }: { tournament: TournamentEntry }) {
         >
           {tournament.chip}
         </span>
-        <div className="min-w-0 flex-1">
-          <Eyebrow color={tournament.accent}>Tournament</Eyebrow>
-          <Display as="h1" size="lg" className="mt-1">
-            {tournament.name}
-          </Display>
-          <p
-            className="mt-1 text-[12px] leading-snug"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-            {tournament.detail}
-          </p>
-        </div>
+        <Eyebrow color={tournament.accent}>Tournament</Eyebrow>
       </div>
+      <h1
+        className="mt-2"
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: size,
+          lineHeight: 1.02,
+          letterSpacing: "-0.02em",
+          color: "var(--ink)",
+          textWrap: "pretty",
+        }}
+      >
+        {name}
+      </h1>
+      <p
+        className="mt-2 text-[13px] leading-snug"
+        style={{ color: "var(--mute-1)", fontWeight: 500 }}
+      >
+        {tournament.detail}
+      </p>
     </header>
   );
 }
