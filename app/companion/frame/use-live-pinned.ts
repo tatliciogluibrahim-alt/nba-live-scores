@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
+import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 
 // Lightweight hook for the desktop sidebar's "Live now" pips. Returns
@@ -26,10 +27,6 @@ export type LivePinnedPip = {
   awayCode: string;
   homeCode: string;
 };
-
-function pageIsVisible(): boolean {
-  return typeof document === "undefined" || document.visibilityState === "visible";
-}
 
 async function fetchNBA(): Promise<NBAGame[]> {
   try {
@@ -65,80 +62,41 @@ export function useLivePinned(): LivePinnedPip[] {
     pinnedIdsRef.current = new Set(pinned.map((p) => p.gameId));
   }, [pinned]);
 
+  // Clear stale pips when the user unpins their last game. The poll is
+  // disabled at zero pins (see `enabled` below), so it won't clear them
+  // itself. Synchronize-with-external-state reset, not a render loop.
   useEffect(() => {
-    if (!hydrated) return;
     if (pinned.length === 0) {
-      // Clear any stale pips when the user unpins their last game.
-      // This is a synchronize-with-external-state reset (pinned list
-      // is the external source), not a derived-render loop — the
-      // effect only re-runs when pinned.length crosses 0, so there's
-      // no cascade. Safe to set directly here.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPips([]);
-      return;
     }
-    const mounted = { current: true };
+  }, [pinned.length]);
 
-    async function load() {
+  // Shared poll plumbing. Enabled only once hydrated AND something is
+  // pinned, so non-pinning users never trigger the fetch. Cadence reads
+  // hasLiveRef so it tightens to 15s while a pinned game is live.
+  useVisibilityPoll(
+    async (isCancelled) => {
       const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
-      if (!mounted.current) return;
+      if (isCancelled()) return;
       const ids = pinnedIdsRef.current;
       const next: LivePinnedPip[] = [];
       for (const g of nba) {
         if (g.status === "live" && ids.has(g.id)) {
-          next.push({
-            id: g.id,
-            awayCode: g.away.abbreviation,
-            homeCode: g.home.abbreviation,
-          });
+          next.push({ id: g.id, awayCode: g.away.abbreviation, homeCode: g.home.abbreviation });
         }
       }
       for (const g of wc) {
         if (g.status === "live" && ids.has(g.id)) {
-          next.push({
-            id: g.id,
-            awayCode: g.away.abbreviation,
-            homeCode: g.home.abbreviation,
-          });
+          next.push({ id: g.id, awayCode: g.away.abbreviation, homeCode: g.home.abbreviation });
         }
       }
       hasLiveRef.current = next.length > 0;
       setPips(next);
-    }
-
-    if (pageIsVisible()) load();
-
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    function schedule() {
-      clearTimeout(timeout);
-      const ms = hasLiveRef.current ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
-      timeout = setTimeout(async () => {
-        if (pageIsVisible()) await load();
-        schedule();
-      }, ms);
-    }
-    schedule();
-
-    function handleVisibilityChange() {
-      if (pageIsVisible()) {
-        load();
-        schedule();
-      }
-    }
-    if (typeof document !== "undefined") {
-      document.addEventListener("visibilitychange", handleVisibilityChange);
-    }
-
-    return () => {
-      mounted.current = false;
-      clearTimeout(timeout);
-      if (typeof document !== "undefined") {
-        document.removeEventListener("visibilitychange", handleVisibilityChange);
-      }
-    };
-    // pinned.length gates the effect (re-run when going from 0↔N pins);
-    // individual pin id changes are read via pinnedIdsRef inside load().
-  }, [hydrated, pinned.length]);
+    },
+    () => (hasLiveRef.current ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS),
+    hydrated && pinned.length > 0
+  );
 
   return pips;
 }

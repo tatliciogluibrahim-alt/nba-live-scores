@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useFollows, usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
+import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import {
   buildTodayPayload,
   type NBAGame,
@@ -47,10 +48,6 @@ type FetchedData = {
   wc: WCGameLite[];
   updatedAt: Date | null;
 };
-
-function pageIsVisible(): boolean {
-  return typeof document === "undefined" || document.visibilityState === "visible";
-}
 
 async function fetchNBA(): Promise<{ games: NBAGame[]; recent: NBAGame[] }> {
   try {
@@ -97,59 +94,34 @@ export function useTodayData() {
   const dataRef = useRef<FetchedData>(data);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  useEffect(() => {
-    const mounted = { current: true };
+  // Single fetch+commit path shared by the poll loop and the manual
+  // refetch. `isCancelled` guards the post-await setState (the poll
+  // passes the primitive's accessor; refetch passes a no-op since a
+  // user-initiated pull should always apply).
+  const loadInto = useCallback(async (isCancelled: () => boolean) => {
+    const [nbaResult, wc] = await Promise.all([fetchNBA(), fetchWC()]);
+    if (isCancelled()) return;
+    const next: FetchedData = {
+      nba: nbaResult.games,
+      nbaRecent: nbaResult.recent,
+      wc,
+      updatedAt: new Date(),
+    };
+    dataRef.current = next;
+    setData(next);
+    setHasLoadedOnce(true);
+  }, []);
 
-    async function load() {
-      const [nbaResult, wc] = await Promise.all([fetchNBA(), fetchWC()]);
-      if (!mounted.current) return;
-      const next: FetchedData = {
-        nba: nbaResult.games,
-        nbaRecent: nbaResult.recent,
-        wc,
-        updatedAt: new Date(),
-      };
-      dataRef.current = next;
-      setData(next);
-      setHasLoadedOnce(true);
-    }
-
-    if (pageIsVisible()) load();
-
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    function schedule() {
-      clearTimeout(timeout);
+  useVisibilityPoll(
+    (isCancelled) => loadInto(isCancelled),
+    () => {
       const current = dataRef.current;
       const hasLive =
-        mounted.current &&
-        (current.nba.some((g) => g.status === "live") ||
-          current.wc.some((g) => g.status === "live"));
-      const ms = hasLive ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
-      timeout = setTimeout(async () => {
-        if (pageIsVisible()) await load();
-        schedule();
-      }, ms);
+        current.nba.some((g) => g.status === "live") ||
+        current.wc.some((g) => g.status === "live");
+      return hasLive ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
     }
-    schedule();
-
-    function handleVisibilityChange() {
-      if (pageIsVisible()) {
-        load();
-        schedule();
-      }
-    }
-    if (typeof document !== "undefined") {
-      document.addEventListener("visibilitychange", handleVisibilityChange);
-    }
-
-    return () => {
-      mounted.current = false;
-      clearTimeout(timeout);
-      if (typeof document !== "undefined") {
-        document.removeEventListener("visibilitychange", handleVisibilityChange);
-      }
-    };
-  }, []);
+  );
 
   const payload = useMemo<TodayPayload>(() => {
     if (!hasLoadedOnce || !followsHydrated || !pinnedHydrated) return EMPTY;
@@ -173,19 +145,8 @@ export function useTodayData() {
 
   // Manual refetch — wired to PullToRefresh. Runs in parallel with the
   // polling timer; the last write wins, which is fine because both
-  // produce the same shape.
-  const refetch = useCallback(async () => {
-    const [nbaResult, wc] = await Promise.all([fetchNBA(), fetchWC()]);
-    const next: FetchedData = {
-      nba: nbaResult.games,
-      nbaRecent: nbaResult.recent,
-      wc,
-      updatedAt: new Date(),
-    };
-    dataRef.current = next;
-    setData(next);
-    setHasLoadedOnce(true);
-  }, []);
+  // produce the same shape. Never cancelled (a user pull should apply).
+  const refetch = useCallback(() => loadInto(() => false), [loadInto]);
 
   return {
     payload,

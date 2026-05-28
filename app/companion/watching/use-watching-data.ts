@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
+import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import type { Game } from "../../nba/types";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 import {
@@ -69,10 +70,6 @@ async function fetchSnapshot(id: string): Promise<Game | null> {
 
 type Fetched = { nba: NBAGame[]; wc: WCGameLite[]; updatedAt: Date | null };
 
-function pageIsVisible(): boolean {
-  return typeof document === "undefined" || document.visibilityState === "visible";
-}
-
 export function useWatchingData() {
   const { pinned, hydrated: pinnedHydrated } = usePinned();
   const [data, setData] = useState<Fetched>({ nba: [], wc: [], updatedAt: null });
@@ -83,54 +80,29 @@ export function useWatchingData() {
   // resolution doesn't get blown away by the next poll of the live feeds.
   const [snapshotItems, setSnapshotItems] = useState<PinnedItem[]>([]);
 
-  useEffect(() => {
-    const mounted = { current: true };
+  // Single fetch+commit path shared by the poll loop and refetch.
+  const loadInto = useCallback(async (isCancelled: () => boolean) => {
+    const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
+    if (isCancelled()) return;
+    const next = { nba, wc, updatedAt: new Date() };
+    dataRef.current = next;
+    setData(next);
+    setHasLoadedOnce(true);
+  }, []);
 
-    async function load() {
-      const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
-      if (!mounted.current) return;
-      const next = { nba, wc, updatedAt: new Date() };
-      dataRef.current = next;
-      setData(next);
-      setHasLoadedOnce(true);
-    }
-
-    if (pageIsVisible()) load();
-
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    function schedule() {
-      clearTimeout(timeout);
+  // Live-feed poll. The snapshot-resolution effect below is separate
+  // and untouched — it reacts to livePayload.stalePins, not to this
+  // timer.
+  useVisibilityPoll(
+    (isCancelled) => loadInto(isCancelled),
+    () => {
       const current = dataRef.current;
       const hasLive =
-        mounted.current &&
-        (current.nba.some((g) => g.status === "live") ||
-          current.wc.some((g) => g.status === "live"));
-      const ms = hasLive ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
-      timeout = setTimeout(async () => {
-        if (pageIsVisible()) await load();
-        schedule();
-      }, ms);
+        current.nba.some((g) => g.status === "live") ||
+        current.wc.some((g) => g.status === "live");
+      return hasLive ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
     }
-    schedule();
-
-    function handleVisibilityChange() {
-      if (pageIsVisible()) {
-        load();
-        schedule();
-      }
-    }
-    if (typeof document !== "undefined") {
-      document.addEventListener("visibilitychange", handleVisibilityChange);
-    }
-
-    return () => {
-      mounted.current = false;
-      clearTimeout(timeout);
-      if (typeof document !== "undefined") {
-        document.removeEventListener("visibilitychange", handleVisibilityChange);
-      }
-    };
-  }, []);
+  );
 
   const livePayload = useMemo<WatchingPayload>(() => {
     if (!hasLoadedOnce || !pinnedHydrated) return EMPTY;
@@ -198,14 +170,8 @@ export function useWatchingData() {
   }, [livePayload, snapshotItems, pinned]);
 
   // Manual refetch — wired to PullToRefresh. Runs alongside the polling
-  // timer; identical fetch path, last write wins.
-  const refetch = useCallback(async () => {
-    const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
-    const next: Fetched = { nba, wc, updatedAt: new Date() };
-    dataRef.current = next;
-    setData(next);
-    setHasLoadedOnce(true);
-  }, []);
+  // timer; identical fetch path, last write wins. Never cancelled.
+  const refetch = useCallback(() => loadInto(() => false), [loadInto]);
 
   return {
     payload,
