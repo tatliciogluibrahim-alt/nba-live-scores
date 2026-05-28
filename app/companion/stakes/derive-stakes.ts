@@ -166,15 +166,3 @@ export function deriveWCGroupStake(
   // surfacing a generic placeholder that misreads as a real take.
   return null;
 }
-
-// ── Today hero stake (for upcoming personal game) ─────────────────────
-//
-// One-liner that anchors why your followed game tonight matters.
-// Composes the series stake when the game has playoff context;
-// otherwise returns a calm structural line.
-
-export function deriveTodayHeroStake(game: Game | null): Stake | null {
-  if (!game) return null;
-  // Reuse the series deriver — it handles the spoilery-flag correctly.
-  return deriveNBASeriesStake(game);
-}
