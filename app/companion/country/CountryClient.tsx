@@ -135,7 +135,7 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
             follow. */}
         <div className="mt-2 flex justify-center">
           <Link
-            href="/tournament/fifa-world-cup-2026"
+            href="/tournament/fifa-world-cup-2026/groups"
             className="inline-flex min-h-[36px] items-center gap-1.5 text-[12px] underline underline-offset-4 decoration-dotted"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
             aria-label="View all World Cup 2026 groups"

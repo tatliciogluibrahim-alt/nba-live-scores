@@ -290,3 +290,53 @@ export function buildCountryPayload(
 export function tournamentHasStarted(games: WCGameLite[]): boolean {
   return games.some((g) => g.status === "live" || g.status === "final");
 }
+
+// ── All-groups builder (tournament Groups view) ───────────────────────
+// One block per group (A–L), each with its member rows. Reuses the same
+// standings tally as the single-country GroupStrip so the tournament
+// Groups page and the country page can never disagree. Rows sort by
+// points once any group game finishes; directory order before then.
+// `selectedCode` (the user's followed country, if any) flags its row so
+// the view can highlight it in World Cup green.
+
+export type GroupBlock = {
+  letter: string;
+  rows: GroupRow[];
+  /** True once any game in this group has finished — drives whether the
+   *  view shows standings vs. just names. */
+  anyPlayed: boolean;
+};
+
+export function buildAllGroups(
+  games: WCGameLite[],
+  selectedCode?: string
+): GroupBlock[] {
+  const sel = selectedCode?.toUpperCase();
+
+  const byGroup = new Map<string, CountryEntry[]>();
+  for (const c of WC_COUNTRIES) {
+    const arr = byGroup.get(c.group) ?? [];
+    arr.push(c);
+    byGroup.set(c.group, arr);
+  }
+
+  return Array.from(byGroup.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([letter, members]) => {
+      const standings = computeGroupStandings(games, letter);
+      const anyPlayed = Array.from(standings.values()).some((s) => s.played > 0);
+      const rows: GroupRow[] = members
+        .map((c) => ({
+          code: c.id,
+          name: c.name,
+          flag: c.flag,
+          isSelected: c.id === sel,
+          standing: standings.get(c.id),
+        }))
+        .sort((a, b) => {
+          if (!anyPlayed) return 0;
+          return (b.standing?.points ?? 0) - (a.standing?.points ?? 0);
+        });
+      return { letter, rows, anyPlayed };
+    });
+}

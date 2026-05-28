@@ -11,15 +11,12 @@ import {
   type TournamentEntry,
 } from "../following/data/tournaments";
 import {
-  WC_COUNTRIES,
-  type CountryEntry,
-} from "../following/data/countries";
-import {
   buildSeriesKey,
   isPlaceholderAbbr,
   buildWinnerOverrides,
   hasSeriesContext,
 } from "../../nba/lib/series-keys";
+import { WCGroups } from "./WCGroups";
 
 // /tournament/[id] — first detail page for tournament follows.
 // Replaces the Phase 1 fallback that routed tournament chips to
@@ -505,89 +502,11 @@ function MiniSeriesStrip({ gamesPlayed }: { gamesPlayed: number }) {
 // ── FIFA World Cup body ────────────────────────────────────────────────
 
 function FIFAWorldCupBody({ tournamentId }: { tournamentId: string }) {
-  // Group all 48 countries by their group letter (A–L). Render one
-  // small card per group with the four member countries.
-  const groups = useMemo(() => {
-    const byGroup = new Map<string, CountryEntry[]>();
-    for (const c of WC_COUNTRIES) {
-      const arr = byGroup.get(c.group) ?? [];
-      arr.push(c);
-      byGroup.set(c.group, arr);
-    }
-    return Array.from(byGroup.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([letter, members]) => ({ letter, members }));
-  }, []);
-
-  return (
-    <section className="mt-5">
-      <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>Groups</Eyebrow>
-        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-        <span
-          className="text-[10px] uppercase"
-          style={{
-            fontFamily: "var(--font-mono)",
-            letterSpacing: "0.08em",
-            color: "var(--mute-2)",
-            fontWeight: 600,
-          }}
-        >
-          {groups.length} groups
-        </span>
-      </div>
-      <ul className="space-y-2">
-        {groups.map(({ letter, members }) => (
-          <li
-            key={letter}
-            className="rounded-[14px] border px-3 py-3"
-            style={{
-              background: "var(--paper)",
-              borderColor: "var(--line)",
-              borderLeft: "3px solid var(--wc)",
-            }}
-          >
-            <div className="mb-2 flex items-center gap-2">
-              <Eyebrow color="var(--wc)">Group {letter}</Eyebrow>
-            </div>
-            <ul className="grid grid-cols-2 gap-1.5">
-              {members.map((country) => (
-                <li key={country.id}>
-                  <Link
-                    href={`/country/${country.id}?from=${tournamentId}`}
-                    aria-label={`Open ${country.name}`}
-                    className="flex min-h-[44px] items-center gap-2 rounded-[10px] border px-2 py-1.5 transition active:scale-[0.98]"
-                    style={{
-                      background: "transparent",
-                      borderColor: "var(--line)",
-                      color: "var(--ink)",
-                    }}
-                  >
-                    <span
-                      aria-hidden
-                      style={{ fontSize: 18, lineHeight: 1 }}
-                    >
-                      {country.flag}
-                    </span>
-                    <span
-                      className="min-w-0 flex-1 truncate text-[12px]"
-                      style={{
-                        color: "var(--ink)",
-                        fontWeight: 600,
-                        letterSpacing: "-0.005em",
-                      }}
-                    >
-                      {country.name}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+  // Editorial groups preview (no flags). Leads with the user's followed
+  // group, then one row of others, then "View all groups". The full
+  // 12-group grid lives at /tournament/[id]/groups. Standings surface
+  // once games finish — see WCGroups.
+  return <WCGroups tournamentId={tournamentId} mode="preview" />;
 }
 
 // ── Coming-soon body ───────────────────────────────────────────────────
