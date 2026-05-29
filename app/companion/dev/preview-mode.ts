@@ -69,3 +69,15 @@ export function clearWCPreview(): void {
     // Best-effort.
   }
 }
+
+/** Explicit enable. Used by the in-app dev toggle so the native app
+ *  (no URL bar) can enter the WC dress-rehearsal without the query
+ *  param. Sticky for the session, same as the URL trigger. */
+export function enableWCPreview(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(SESSION_KEY, "1");
+  } catch {
+    // Best-effort.
+  }
+}

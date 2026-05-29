@@ -628,7 +628,10 @@ function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): UpNextIt
     isToday: isSameDay(g.date),
     dayWord: headlineDayWord(g.date),
     watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
-    href: `/country/${g.away.abbreviation}`,
+    // Open the match detail (which supports WC games), consistent with
+    // NBA up-next. Was linking to the away country page, so tapping a
+    // fixture jumped to a country instead of the game.
+    href: `/game/${g.id}`,
     spoilerSubject: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
   };
 }
