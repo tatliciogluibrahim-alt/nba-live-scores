@@ -125,6 +125,15 @@ export function ScoreModule({
     typeof awayScore === "number" &&
     typeof homeScore === "number";
 
+  // Leader emphasis — the same "pulse" the lock-screen Live Activity uses:
+  // the team ahead reads at full ink, the trailing team dims back. On a tie
+  // (or before any points) both stay full. Final games emphasize the
+  // winner. Sits inside <Spoiler>, so it stays blurred when hidden.
+  const awayLeads = hasScores && (awayScore as number) > (homeScore as number);
+  const homeLeads = hasScores && (homeScore as number) > (awayScore as number);
+  const leadColor = "var(--ink)";
+  const trailColor = "var(--mute-1)";
+
   // Flash the score line when a live score changes. Track the combined
   // score key; fire on change, not on mount, and not when scores are
   // absent or the game isn't live.
@@ -201,7 +210,13 @@ export function ScoreModule({
           }}
         >
           <Spoiler ariaSubject={spoilerSubject} gameId={gameId}>
-            {awayScore} – {homeScore}
+            <span style={{ color: awayLeads || !homeLeads ? leadColor : trailColor }}>
+              {awayScore}
+            </span>
+            <span style={{ color: "var(--mute-1)" }}> – </span>
+            <span style={{ color: homeLeads || !awayLeads ? leadColor : trailColor }}>
+              {homeScore}
+            </span>
           </Spoiler>
         </p>
       ) : null}

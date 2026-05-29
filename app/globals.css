@@ -16,7 +16,10 @@
   --ink:      #1a1612;
   --ink-2:    #2b2520;
   --mute-1:   #6b6147;
-  --mute-2:   #a89c7a;
+  /* Darkened from #a89c7a (2.27:1, failed WCAG AA on cream) to #746747
+     (4.64:1, passes AA) while staying lighter than --mute-1 so the
+     secondary-text hierarchy holds. */
+  --mute-2:   #746747;
   --line:     rgba(26, 22, 18, 0.14);
 
   /* Sport accents — used as accent only, never the chassis */
@@ -108,7 +111,10 @@
   --ink:                       #f1ead8;
   --ink-2:                     #e5dcc1;
   --mute-1:                    #b0a585;
-  --mute-2:                    #756a52;
+  /* Lightened from #756a52 (3.31:1 on warm dark) to #8f8366 (~4.7:1) so
+     secondary text passes AA in opt-in dark mode too. Still clearly
+     dimmer than --mute-1. */
+  --mute-2:                    #8f8366;
   --line:                      rgba(241, 234, 216, 0.14);
 
   --nba:                       #f47743;

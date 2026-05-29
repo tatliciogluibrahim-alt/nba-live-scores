@@ -87,6 +87,38 @@ export function SettingsClient() {
         <WCPreviewToggle />
         <WatchGuidanceBlock />
       </div>
+
+      {/* Privacy + contact. Reachable in-app (required for App Review,
+          and just good manners). The native wrapper loads the live site,
+          so these resolve to the real pages / mail client. */}
+      <footer
+        className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-4 text-[12px]"
+        style={{ borderColor: "var(--line)", color: "var(--mute-1)", fontWeight: 500 }}
+      >
+        <Link
+          href="/privacy"
+          className="underline underline-offset-4 decoration-dotted"
+          style={{ color: "var(--mute-1)" }}
+        >
+          Privacy
+        </Link>
+        <a
+          href="mailto:nonoisescores@gmail.com"
+          className="underline underline-offset-4 decoration-dotted"
+          style={{ color: "var(--mute-1)" }}
+        >
+          nonoisescores@gmail.com
+        </a>
+        <a
+          href="https://instagram.com/nonoisescores"
+          target="_blank"
+          rel="noreferrer"
+          className="underline underline-offset-4 decoration-dotted"
+          style={{ color: "var(--mute-1)" }}
+        >
+          @nonoisescores
+        </a>
+      </footer>
     </main>
   );
 }

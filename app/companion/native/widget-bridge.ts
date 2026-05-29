@@ -80,9 +80,15 @@ function getPlugin(): WidgetBridgePlugin | null {
 /** Write the snapshot to the native widget store. No-op off-native. */
 export async function writeWidgetSnapshot(snapshot: WidgetSnapshot): Promise<void> {
   const p = getPlugin();
-  if (!p) return;
+  if (!p) {
+    console.log("[Widget] writeWidgetSnapshot — no plugin (off-native?)");
+    return;
+  }
   try {
     await p.setSnapshot({ json: JSON.stringify(snapshot) });
+    console.log(
+      `[Widget] setSnapshot OK — upcoming=${snapshot.upcoming.length} moment=${snapshot.moment ? "yes" : "no"} empty=${snapshot.empty}`
+    );
   } catch (err) {
     console.warn("[Widget] setSnapshot failed:", err);
   }
