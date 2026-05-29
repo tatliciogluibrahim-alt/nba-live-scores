@@ -29,6 +29,7 @@ import {
 import { PushSyncEffect } from "./push/PushSyncEffect";
 import { CapacitorPushBootstrap } from "./push/CapacitorPushBootstrap";
 import { LiveActivitySync } from "./native/LiveActivitySync";
+import { WidgetSync } from "./native/WidgetSync";
 import { RevealProvider } from "./spoiler/reveal";
 
 // ─── Follows ──────────────────────────────────────────────────────────
@@ -476,6 +477,11 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
               per-Activity push tokens. Native-only — a guaranteed no-op
               on web / desktop PWA (and until the Swift plugin ships). */}
           <LiveActivitySync />
+          {/* Phase 22.5-4 (web half): writes the upcoming-followed-games
+              + moment snapshot into the App Group so the home-screen
+              widget can render it. Native-only no-op until the Swift
+              WidgetBridge plugin + App Group ship. */}
+          <WidgetSync />
           {/* Session-scoped per-game reveal state for No-Spoilers mode.
               One reveal(gameId) un-hides a whole game's surfaces at once. */}
           <RevealProvider>{children}</RevealProvider>
