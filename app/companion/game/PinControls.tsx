@@ -70,7 +70,11 @@ export function PinControls({
         className="mt-2 flex flex-wrap items-baseline gap-x-2 text-[11px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        <span>Pinning keeps this game in Watching. Alerts come from follows.</span>
+        <span>
+          Pinning keeps this game in Watching and live-tracks it on your
+          lock screen when it starts (up to 3 at once). Alerts come from
+          follows.
+        </span>
         {pinned ? (
           <Link
             href="/watching"

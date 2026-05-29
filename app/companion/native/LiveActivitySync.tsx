@@ -39,6 +39,13 @@ import type { PinnedGame } from "../state/types";
 const LIVE_INTERVAL_MS = 15_000;
 const IDLE_INTERVAL_MS = 60_000;
 
+// Cap concurrent Live Activities. iOS allows several, but a calm app
+// shouldn't stack the lock screen — and it mirrors the "3" the user
+// already knows from the free alert slots. When more than 3 pinned
+// games are live at once, the soonest-pinned 3 get the Activity; the
+// rest are tracked in Watching + via push.
+const MAX_LIVE_ACTIVITIES = 3;
+
 // Sport accent hexes (AGENTS palette). Matches the apns-sender default
 // and the per-sport accents used across the app.
 const ACCENT_NBA = "#e55b2a";
@@ -176,10 +183,14 @@ export function LiveActivitySync() {
       const liveIds = new Set(liveItems.map((i) => i.id));
       hasLiveRef.current = liveItems.length > 0;
 
-      // Start activities for newly-live pins.
+      // Start activities for newly-live pins, capped at MAX. liveItems
+      // arrives in pinned order, so the first 3 win the lock screen.
       for (const item of liveItems) {
         if (startedRef.current.has(item.id) || inFlightRef.current.has(item.id)) {
           continue;
+        }
+        if (startedRef.current.size + inFlightRef.current.size >= MAX_LIVE_ACTIVITIES) {
+          break;
         }
         inFlightRef.current.add(item.id);
         const ok = await startLiveActivity(itemToStartInput(item));
