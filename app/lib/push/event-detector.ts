@@ -32,6 +32,7 @@ export const EVENT_TYPES = [
   "eoq-3",
   "close-game",
   "comeback",
+  "nba-highlight",
   "final",
   "wc-kickoff",
   "wc-halftime",
@@ -62,6 +63,11 @@ export type PushEvent = {
    *  get the ping. Fires once per series maximum (same dedupe used
    *  for normal tipoff covers this). */
   isGame7?: boolean;
+  /** Free-text note for events whose body isn't derivable from the
+   *  score alone — currently nba-highlight ("SGA · 30 PTS"). The
+   *  dispatcher renders it verbatim (No-Spoilers users get a calm
+   *  variant instead). */
+  note?: string;
 };
 
 export type FreshGameState = {

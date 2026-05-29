@@ -32,6 +32,14 @@ import {
   pushLiveActivityUpdates,
   type ActivityUpdateInput,
 } from "../../../lib/push/live-activity-update";
+import {
+  detectNBAHighlights,
+  type HighlightLeader,
+} from "../../../lib/push/nba-highlight-detector";
+import {
+  readFiredHighlights,
+  writeFiredHighlights,
+} from "../../../lib/push/highlight-state-cache";
 import { saveGameSnapshot } from "../../../lib/snapshots/game-snapshot";
 import type { Game } from "../../../nba/types";
 
@@ -204,6 +212,43 @@ export async function GET(req: Request) {
     }
   }
 
+  // Player-milestone highlights (Full Details tier). For each live game
+  // we fetch the per-game summary (leaders) and fire when a scorer
+  // crosses 30/40/50/60 PTS. One extra fetch per live game — cheap in
+  // the playoffs (1-2 live at once). Best-effort: any failure is logged
+  // and skipped so it never blocks the core scan.
+  let highlightCount = 0;
+  for (const game of games.filter((g) => g.status === "live")) {
+    try {
+      const res = await fetch(`${baseUrl}/api/nba-game-detail?id=${game.id}`, {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) continue;
+      const json = (await res.json()) as { leaders?: HighlightLeader[] };
+      const leaders = json.leaders ?? [];
+      if (leaders.length === 0) continue;
+      const firedKeys = await readFiredHighlights(game.id);
+      const { events, firedKeys: nextFired } = detectNBAHighlights({
+        gameId: game.id,
+        awayCode: game.away.abbreviation,
+        homeCode: game.home.abbreviation,
+        awayScore: game.away.score,
+        homeScore: game.home.score,
+        leaders,
+        firedKeys,
+      });
+      if (events.length > 0) {
+        allEvents.push(...events);
+        highlightCount += events.length;
+        await incrCounter("events.detected", events.length);
+        await writeFiredHighlights(game.id, nextFired);
+      }
+    } catch (err) {
+      console.error("scan-nba highlight error", { gameId: game.id, err });
+    }
+  }
+
   let dispatchResult: Awaited<ReturnType<typeof dispatchEvents>> | null = null;
   if (allEvents.length > 0) {
     try {
@@ -242,6 +287,7 @@ export async function GET(req: Request) {
     delivered: dispatchResult?.deliveries.filter((d) => d.delivered).length ?? 0,
     skipped: dispatchResult?.deliveries.filter((d) => !d.delivered).length ?? 0,
     pruned: dispatchResult?.pruned ?? 0,
+    highlights: highlightCount,
     liveActivity,
   });
 }

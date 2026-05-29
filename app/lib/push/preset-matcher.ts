@@ -6,6 +6,7 @@
 // eoq-1/2/3          ·       ✓        ✓
 // close-game         ·       ·        ✓
 // comeback           ·       ·        ✓
+// nba-highlight      ·       ·        ✓
 // final              ✓       ✓        ✓
 // wc-kickoff         ✓       ✓        ✓
 // wc-halftime        ·       ✓        ✓
@@ -31,6 +32,8 @@ const MATRIX: Record<EventType, ReadonlySet<AlertPreset>> = {
   "eoq-3": new Set<AlertPreset>(["companion", "all"]),
   "close-game": new Set<AlertPreset>(["all"]),
   comeback: new Set<AlertPreset>(["all"]),
+  // Player milestones (30/40/50 PTS) — the loud tier only.
+  "nba-highlight": new Set<AlertPreset>(["all"]),
   final: new Set<AlertPreset>(["quiet", "companion", "all"]),
   // World Cup — kickoff + final are bookend events (every tier).
   // Halftime maps to companion + all, matching the NBA eoq-2 pattern.

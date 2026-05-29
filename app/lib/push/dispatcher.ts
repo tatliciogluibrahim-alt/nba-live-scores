@@ -397,6 +397,10 @@ function dedupeTagFor(event: PushEvent): string {
   if (event.type === "wc-goal") {
     return `${event.gameId}:wc-goal:${event.awayScore}-${event.homeScore}`;
   }
+  if (event.type === "nba-highlight") {
+    // Distinct milestones / players in one game must each get through.
+    return `${event.gameId}:nba-highlight:${event.note ?? ""}`;
+  }
   return `${event.gameId}:${event.type}`;
 }
 
@@ -470,6 +474,18 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
         body: `${scoreLine(event)} · lead erased`,
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:comeback`,
+      };
+    case "nba-highlight":
+      // Player milestone (Full Details tier). `note` carries the line
+      // ("SGA · 34 PTS"). No-Spoilers users get a score-free nudge.
+      return {
+        title: `Highlight · ${matchup}`,
+        body: noSpoilers
+          ? "A big individual moment. Tap to check in."
+          : event.note ?? scoreLine(event),
+        url: `/game/${event.gameId}`,
+        // Milestone is encoded in note; tag on note keeps 30 vs 40 distinct.
+        tag: `${event.gameId}:highlight:${event.note ?? ""}`,
       };
     case "final":
       return {
