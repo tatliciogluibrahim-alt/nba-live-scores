@@ -530,8 +530,9 @@ function buildYouFollow(
         };
       }
       if (f.kind === "country") {
-        const countryData = getCountry(f.id);
-        const countryChip = countryData?.flag ?? f.id;
+        // Country code, not the flag emoji — flags were dropped from the
+        // sports circle (kept only on share cards).
+        const countryChip = f.id;
         const g = wc.find((x) => gameIncludesCountry(x, f.id));
         if (g) {
           return {

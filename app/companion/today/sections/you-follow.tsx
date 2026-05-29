@@ -7,8 +7,11 @@ import type { YouFollowItem } from "../today-data";
 // Compact horizontal row of personal follows + status pill. Empty state
 // (no follows yet) shows a single prompt linking to the Following setup.
 
+// Show up to 5 follow pills before collapsing the rest into "+N".
+const MAX_VISIBLE = 5;
+
 export function YouFollow({ items }: { items: YouFollowItem[] }) {
-  const visibleItems = items.slice(0, 3);
+  const visibleItems = items.slice(0, MAX_VISIBLE);
   const remainingCount = Math.max(0, items.length - visibleItems.length);
 
   if (items.length === 0) {
@@ -55,7 +58,7 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
   }
 
   // Compact chip row. Keep Today from becoming a ticker: show the first
-  // three follows, then route the rest through a quiet "+N" chip.
+  // five follows, then route the rest through a quiet "+N" chip.
   return (
     <section>
       <SectionHeader label="You follow" />
