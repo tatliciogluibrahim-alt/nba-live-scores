@@ -136,6 +136,10 @@ private struct SmallBody: View {
                     .foregroundStyle(wMute)
                     .lineLimit(1)
                     .padding(.top, 3)
+                if let b = g.broadcast, !b.isEmpty {
+                    BroadcastPill(text: b, accentHex: g.accentHex)
+                        .padding(.top, 4)
+                }
             } else if let m = snap.moment {
                 Text(m.text)
                     .font(.system(size: 16, weight: .bold))
@@ -195,11 +199,16 @@ private struct MediumBody: View {
                     .foregroundStyle(wInk)
                     .lineLimit(2)
                     .minimumScaleFactor(0.7)
-                Text(g.detail)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(wMute)
-                    .lineLimit(1)
-                    .padding(.top, 4)
+                HStack(spacing: 6) {
+                    Text(g.detail)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(wMute)
+                        .lineLimit(1)
+                    if let b = g.broadcast, !b.isEmpty {
+                        BroadcastPill(text: b, accentHex: g.accentHex)
+                    }
+                }
+                .padding(.top, 4)
             } else if let m = snap.moment {
                 Text(m.text)
                     .font(.system(size: 22, weight: .heavy))
@@ -243,6 +252,23 @@ private struct MediumBody: View {
                 }
             }
         }
+    }
+}
+
+// Small "where it's airing" pill, tinted with the sport accent.
+private struct BroadcastPill: View {
+    let text: String
+    let accentHex: String
+
+    var body: some View {
+        let accent = Color(hex: accentHex)
+        Text(text.uppercased())
+            .font(.system(size: 9, weight: .bold))
+            .tracking(0.5)
+            .foregroundStyle(accent)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(accent.opacity(0.14)))
     }
 }
 

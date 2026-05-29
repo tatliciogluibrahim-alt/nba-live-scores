@@ -6,12 +6,13 @@ import Foundation
 
 struct WidgetUpcoming: Codable, Hashable {
     var id: String
-    var sport: String      // "nba" | "wc" | "nfl"
-    var eyebrow: String    // "NBA · Sat"
-    var matchup: String    // "OKC vs SA"
-    var detail: String     // "8:00 PM · NBC"
-    var accentHex: String  // "#e55b2a"
-    var href: String       // "/game/123"
+    var sport: String        // "nba" | "wc" | "nfl"
+    var eyebrow: String      // "NBA · Sat"
+    var matchup: String      // "OKC vs SA"
+    var detail: String       // "8:00 PM · Game 7"
+    var broadcast: String?   // "NBC" — optional, shown as a pill
+    var accentHex: String    // "#e55b2a"
+    var href: String         // "/game/123"
 }
 
 struct WidgetMoment: Codable, Hashable {

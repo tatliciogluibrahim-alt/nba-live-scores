@@ -61,6 +61,7 @@ function itemToUpcoming(item: UpNextItem): WidgetUpcoming {
     eyebrow: item.eyebrow,
     matchup: item.headline,
     detail: item.detail,
+    broadcast: item.watch?.channel,
     accentHex: sport === "wc" ? ACCENT_WC : ACCENT_NBA,
     href: item.href,
   };

@@ -34,10 +34,19 @@ struct NoNoiseLiveActivity: Widget {
                         .foregroundStyle(darkInk)
                 }
                 DynamicIslandExpandedRegion(.center) {
-                    Text("\(context.state.awayScore) \u{2013} \(context.state.homeScore)")
-                        .font(.system(size: 24, weight: .heavy))
-                        .monospacedDigit()
-                        .foregroundStyle(darkInk)
+                    // Leader emphasis: the team that's ahead reads bright,
+                    // the trailing team dims. Instant "who's up".
+                    let away = context.state.awayScore
+                    let home = context.state.homeScore
+                    HStack(spacing: 5) {
+                        Text("\(away)")
+                            .foregroundStyle(away >= home ? darkInk : darkMute)
+                        Text("\u{2013}").foregroundStyle(darkMute)
+                        Text("\(home)")
+                            .foregroundStyle(home >= away ? darkInk : darkMute)
+                    }
+                    .font(.system(size: 24, weight: .heavy))
+                    .monospacedDigit()
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     Text(context.state.statusLine)
@@ -85,10 +94,14 @@ private struct LockScreenView: View {
                         .foregroundStyle(darkMute)
                 }
 
-                // Score columns
-                HStack(spacing: 16) {
-                    scoreColumn(attr.matchupAway, state.awayScore)
-                    scoreColumn(attr.matchupHome, state.homeScore)
+                // Scoreboard: team code over a big score, two columns.
+                // The leading team's score reads bright; the trailing
+                // team dims — a glanceable "who's up".
+                HStack(alignment: .top, spacing: 22) {
+                    teamBlock(attr.matchupAway, state.awayScore,
+                              leading: state.awayScore >= state.homeScore)
+                    teamBlock(attr.matchupHome, state.homeScore,
+                              leading: state.homeScore >= state.awayScore)
                 }
 
                 // Stake / context line
@@ -111,15 +124,17 @@ private struct LockScreenView: View {
         }
     }
 
-    private func scoreColumn(_ code: String, _ pts: Int) -> some View {
-        (Text(code + " ")
-            .font(.system(size: 26, weight: .heavy))
-            .foregroundStyle(darkInk)
-         +
-         Text("\(pts)")
-            .font(.system(size: 26, weight: .regular))
-            .foregroundStyle(darkMute))
-            .monospacedDigit()
+    private func teamBlock(_ code: String, _ pts: Int, leading: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(code)
+                .font(.system(size: 12, weight: .semibold))
+                .tracking(0.5)
+                .foregroundStyle(darkInk2)
+            Text("\(pts)")
+                .font(.system(size: 32, weight: .heavy))
+                .monospacedDigit()
+                .foregroundStyle(leading ? darkInk : darkMute)
+        }
     }
 }
 

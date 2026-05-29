@@ -33,8 +33,10 @@ export type WidgetUpcoming = {
   eyebrow: string;
   /** "OKC vs SA" */
   matchup: string;
-  /** "8:00 PM · NBC" */
+  /** "8:00 PM · Game 7" */
   detail: string;
+  /** Broadcast channel, e.g. "NBC". Optional — shown as a pill. */
+  broadcast?: string;
   /** Sport accent hex, e.g. "#e55b2a". */
   accentHex: string;
   /** Deep-link path into the app, e.g. "/game/123". */
