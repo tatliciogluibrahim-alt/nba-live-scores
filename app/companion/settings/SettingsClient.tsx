@@ -27,6 +27,7 @@ import { WatchGuidanceBlock } from "./WatchGuidanceBlock";
 import { NotificationPreview } from "./NotificationPreview";
 import { PushSubscriptionPanel } from "./PushSubscriptionPanel";
 import { ThemeSelector } from "./ThemeSelector";
+import { LiveActivityTester } from "./LiveActivityTester";
 
 // Alerts & Notifications — single calm settings-style screen.
 //
@@ -80,6 +81,8 @@ export function SettingsClient() {
         <ThemeSelector />
         <PushSubscriptionPanel />
         <NotificationPreview />
+        {/* DEV-ONLY: remove before App Store ship (Phase 22.5-5). */}
+        <LiveActivityTester />
         <WatchGuidanceBlock />
       </div>
     </main>
