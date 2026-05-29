@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { FOLLOW_MOMENTS } from "./FollowChoice";
 import { MomentSection } from "./MomentSection";
+import { EmptyStateSync } from "./EmptyStateSync";
 
 // Following — empty / onboarding. Moment-grouped picker (NBA Playoffs,
 // FIFA WC 2026) with the granularity ladder inside each section, plus
@@ -52,6 +53,10 @@ export function FollowingEmpty() {
           Notifications · No-Spoilers · Quiet hours
         </span>
       </Link>
+
+      {/* Restore an existing circle on a fresh device (e.g. the native
+          app, whose storage is separate from an installed PWA). */}
+      <EmptyStateSync />
     </section>
   );
 }
