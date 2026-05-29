@@ -33,12 +33,17 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func start(_ call: CAPPluginCall) {
+        print("🏀 [LiveActivity] start() called with gameId: \(call.getString("gameId") ?? "nil")")
+
         guard #available(iOS 16.2, *) else {
+            print("🏀 [LiveActivity] REJECTED: iOS 16.2+ required")
             call.reject("Live Activities require iOS 16.2+")
             return
         }
 
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+        let authInfo = ActivityAuthorizationInfo()
+        print("🏀 [LiveActivity] areActivitiesEnabled: \(authInfo.areActivitiesEnabled)")
+        guard authInfo.areActivitiesEnabled else {
             call.reject("Live Activities are disabled in Settings")
             return
         }

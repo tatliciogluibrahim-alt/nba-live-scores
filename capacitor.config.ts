@@ -10,12 +10,21 @@ const config: CapacitorConfig = {
   server: {
     // Points at the canonical /app route per AGENTS.md ("Two products,
     // one domain" — /app is the explicit cross-device entry into the
-    // PWA surface, not the marketing landing). Was previously pointing
-    // at the old preview deployment URL (nba-live-scores-three.vercel.app)
-    // which would serve the same code but isn't the stable production
-    // alias and risks breaking if that deployment is ever rotated.
+    // PWA surface, not the marketing landing).
     url: "https://nonoisescores.app/app",
     cleartext: false,
+    // Keep all same-origin navigation inside the WebView. Without this,
+    // tapping internal links opens Safari/Chrome instead of navigating
+    // in-app. Patterns are matched against the URL origin.
+    allowNavigation: ["nonoisescores.app"],
+  },
+  ios: {
+    // Match the app's cream background so the overscroll bounce area
+    // doesn't flash white/black behind the content.
+    backgroundColor: "#f1ead8",
+    // Disable the rubber-band bounce on scroll edges so pulling down
+    // doesn't reveal an awkward gap above the content.
+    scrollEnabled: true,
   },
   plugins: {
     PushNotifications: {

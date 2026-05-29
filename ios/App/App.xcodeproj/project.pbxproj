@@ -18,6 +18,7 @@
 		AABB00022FC9300100000002 /* NoNoiseGameAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00012FC9300100000001 /* NoNoiseGameAttributes.swift */; };
 		AABB00032FC9300100000003 /* NoNoiseGameAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00012FC9300100000001 /* NoNoiseGameAttributes.swift */; };
 		AABB00052FC9300100000005 /* LiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00042FC9300100000004 /* LiveActivityPlugin.swift */; };
+		AABB00072FC9300100000007 /* NoNoiseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00062FC9300100000006 /* NoNoiseViewController.swift */; };
 		D7CBDB0A2FC92F5D00F8A57D /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7CBDB092FC92F5D00F8A57D /* WidgetKit.framework */; };
 		D7CBDB0C2FC92F5D00F8A57D /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7CBDB0B2FC92F5D00F8A57D /* SwiftUI.framework */; };
 		D7CBDB1D2FC92F5E00F8A57D /* NoNoiseWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D7CBDB072FC92F5D00F8A57D /* NoNoiseWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -64,6 +65,7 @@
 		D7CBDB0B2FC92F5D00F8A57D /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		AABB00012FC9300100000001 /* NoNoiseGameAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoNoiseGameAttributes.swift; sourceTree = "<group>"; };
 		AABB00042FC9300100000004 /* LiveActivityPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityPlugin.swift; sourceTree = "<group>"; };
+		AABB00062FC9300100000006 /* NoNoiseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoNoiseViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -129,6 +131,7 @@
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				AABB00012FC9300100000001 /* NoNoiseGameAttributes.swift */,
 				AABB00042FC9300100000004 /* LiveActivityPlugin.swift */,
+				AABB00062FC9300100000006 /* NoNoiseViewController.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -266,6 +269,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				AABB00022FC9300100000002 /* NoNoiseGameAttributes.swift in Sources */,
 				AABB00052FC9300100000005 /* LiveActivityPlugin.swift in Sources */,
+				AABB00072FC9300100000007 /* NoNoiseViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
