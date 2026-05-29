@@ -21,8 +21,9 @@ private let wInk2  = Color(hex: "4a4030")
 private let wMute  = Color(hex: "6f6552")
 private let wLine  = Color(hex: "ddd2ba")
 
-// How many games the medium widget shows per page.
-private let PAGE = 3
+// The medium widget is a single-game editorial hero; the next button
+// pages one game at a time (a carousel of heroes — widgets can't scroll).
+private let PAGE = 1
 
 struct UpcomingEntry: TimelineEntry {
     let date: Date
@@ -145,89 +146,100 @@ private struct SmallBody: View {
     }
 }
 
-// Medium: a page of up to three games + a moment line. When the user
-// follows more than a page's worth, a "›" button advances through them
-// (interactive widget, iOS 17+).
+// Medium: a single-game editorial hero (matching the design
+// exploration). The "Next ›" button pages through the user's upcoming
+// games one at a time — a carousel of heroes, since widgets can't
+// scroll. Falls back to the moment line when nothing is upcoming.
 private struct MediumBody: View {
     let snap: WidgetSnapshot
     let startIndex: Int
 
     var body: some View {
         let count = snap.upcoming.count
-        // Clamp the paging offset to a valid page boundary (follows can
-        // shrink between the button tap and the reload).
-        let start = count > 0 ? min(max(0, startIndex), max(0, count - 1)) : 0
-        let window = Array(snap.upcoming.dropFirst(start).prefix(PAGE))
-        let canPage = count > PAGE
+        // Clamp the paging offset (follows can shrink between tap + reload).
+        let idx = count > 0 ? min(max(0, startIndex), count - 1) : 0
+        let game: WidgetUpcoming? = count > 0 ? snap.upcoming[idx] : nil
+        let canPage = count > 1
 
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Text("UPCOMING")
-                    .font(.system(size: 10, weight: .semibold))
-                    .tracking(1.2)
-                    .foregroundStyle(wMute)
-                if canPage {
-                    Text("\(start + 1)–\(min(start + window.count, count)) of \(count)")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(wInk2)
+            // Header: NN mark + eyebrow, with a "2 / 4" position on the right.
+            HStack(spacing: 8) {
+                NNMarkView().frame(width: 22, height: 22)
+                if let g = game {
+                    Text(g.eyebrow.uppercased())
+                        .font(.system(size: 11, weight: .semibold))
+                        .tracking(1.0)
+                        .foregroundStyle(Color(hex: g.accentHex))
+                        .lineLimit(1)
+                } else {
+                    Text("NO NOISE")
+                        .font(.system(size: 11, weight: .semibold))
+                        .tracking(1.2)
+                        .foregroundStyle(wMute)
                 }
                 Spacer()
                 if canPage {
-                    Button(intent: AdvanceUpcomingIntent()) {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(wInk)
-                            .frame(width: 22, height: 22)
-                            .background(Circle().fill(wCream).overlay(Circle().stroke(wLine, lineWidth: 1)))
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    NNMarkView().frame(width: 20, height: 20)
+                    Text("\(idx + 1) / \(count)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(wMute)
+                        .monospacedDigit()
                 }
             }
-            .padding(.bottom, 6)
 
-            if window.isEmpty, let m = snap.moment {
-                Spacer()
+            Spacer(minLength: 6)
+
+            // Hero: big matchup + detail, or the moment when nothing's up.
+            if let g = game {
+                Text(g.matchup)
+                    .font(.system(size: 27, weight: .heavy))
+                    .foregroundStyle(wInk)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+                Text(g.detail)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(wMute)
+                    .lineLimit(1)
+                    .padding(.top, 4)
+            } else if let m = snap.moment {
                 Text(m.text)
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(size: 22, weight: .heavy))
                     .foregroundStyle(wInk)
                     .lineLimit(3)
+                    .minimumScaleFactor(0.8)
                 if let d = m.detail {
                     Text(d)
-                        .font(.system(size: 12))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(wMute)
-                        .padding(.top, 2)
+                        .lineLimit(1)
+                        .padding(.top, 3)
                 }
-                Spacer()
-            } else {
-                ForEach(Array(window.enumerated()), id: \.element.id) { idx, g in
-                    if idx > 0 {
-                        Rectangle().fill(wLine).frame(height: 1).padding(.vertical, 5)
-                    }
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(Color(hex: g.accentHex))
-                            .frame(width: 6, height: 6)
-                        Text(g.matchup)
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(wInk)
-                            .lineLimit(1)
-                        Spacer(minLength: 6)
-                        Text(g.detail)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(wMute)
-                            .lineLimit(1)
-                    }
-                }
-                // Moment line only when it won't crowd a full page.
-                if let m = snap.moment, window.count < PAGE {
-                    Spacer(minLength: 4)
+            }
+
+            Spacer(minLength: 6)
+
+            // Footer: the moment line (when a game is shown) + Next button.
+            HStack(alignment: .center, spacing: 8) {
+                if game != nil, let m = snap.moment {
                     Text(m.text)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(wInk2)
                         .lineLimit(1)
-                        .padding(.top, 4)
+                }
+                Spacer(minLength: 4)
+                if canPage {
+                    Button(intent: AdvanceUpcomingIntent()) {
+                        HStack(spacing: 4) {
+                            Text("Next").font(.system(size: 11, weight: .bold))
+                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold))
+                        }
+                        .foregroundStyle(wInk)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule().fill(wCream).overlay(Capsule().stroke(wLine, lineWidth: 1))
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
