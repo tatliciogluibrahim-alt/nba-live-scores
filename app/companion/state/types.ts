@@ -78,6 +78,11 @@ export type UserPrefs = {
    *  permission is "denied" and the user has follows worth recovering.
    *  One dismissal is permanent. */
   pushRecoveryDismissed?: boolean;
+  /** True once the user has finished (or skipped) the first-run
+   *  onboarding flow shown to truly-fresh installs. Gates both the
+   *  onboarding overlay and the deferral of the boot-time push prompt
+   *  (so onboarding owns the notification ask). One-way; never re-shown. */
+  onboardingComplete?: boolean;
 };
 
 // ── Defaults ──────────────────────────────────────────────────────────

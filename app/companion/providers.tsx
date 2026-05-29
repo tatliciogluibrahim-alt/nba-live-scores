@@ -30,6 +30,7 @@ import { PushSyncEffect } from "./push/PushSyncEffect";
 import { CapacitorPushBootstrap } from "./push/CapacitorPushBootstrap";
 import { LiveActivitySync } from "./native/LiveActivitySync";
 import { WidgetSync } from "./native/WidgetSync";
+import { OnboardingFlow } from "./onboarding/OnboardingFlow";
 import { RevealProvider } from "./spoiler/reveal";
 
 // ─── Follows ──────────────────────────────────────────────────────────
@@ -96,6 +97,8 @@ type PrefsCtx = {
    *  initial Enable card (permission "default"). This one gates the
    *  Phase 21C recovery card (permission "denied"). */
   dismissPushRecovery: () => void;
+  /** Mark the first-run onboarding flow finished (or skipped). One-way. */
+  completeOnboarding: () => void;
   hydrated: boolean;
 };
 
@@ -393,6 +396,15 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const completeOnboarding = useCallback(() => {
+    setPrefs((prev) => {
+      if (prev.onboardingComplete) return prev;
+      const next: UserPrefs = { ...prev, onboardingComplete: true };
+      writeJSON(STORAGE_KEYS.prefs, next);
+      return next;
+    });
+  }, []);
+
   // ── Memoize context values to avoid downstream re-renders ──────────
   const followsValue = useMemo<FollowsCtx>(
     () => ({
@@ -443,6 +455,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       dismissFirstRun,
       dismissInstallPrompt,
       dismissPushRecovery,
+      completeOnboarding,
       hydrated,
     }),
     [
@@ -456,6 +469,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       dismissFirstRun,
       dismissInstallPrompt,
       dismissPushRecovery,
+      completeOnboarding,
       hydrated,
     ]
   );
@@ -482,6 +496,10 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
               widget can render it. Native-only no-op until the Swift
               WidgetBridge plugin + App Group ship. */}
           <WidgetSync />
+          {/* First-run onboarding overlay — shows once for truly-fresh
+              installs (no follows, onboarding not completed). Renders
+              above everything; no-op for returning users. */}
+          <OnboardingFlow />
           {/* Session-scoped per-game reveal state for No-Spoilers mode.
               One reveal(gameId) un-hides a whole game's surfaces at once. */}
           <RevealProvider>{children}</RevealProvider>

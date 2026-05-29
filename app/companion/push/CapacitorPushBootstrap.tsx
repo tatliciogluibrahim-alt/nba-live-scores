@@ -102,6 +102,16 @@ export function CapacitorPushBootstrap() {
   // callback identity changed). The setter is wrapped in useCallback
   // so the ref rarely changes, but the ref pattern is the safe form.
   const dismissNotifPromptRef = useRef(dismissNotifPrompt);
+  // True once we've successfully attached listeners + registered, so a
+  // re-run (e.g. when onboarding completes) doesn't double-attach.
+  const startedRef = useRef(false);
+  // Captured once on first hydration: was the user ALREADY onboarded?
+  // If yes (returning/legacy user) we auto-prompt at boot as before. If
+  // no (fresh install), we DON'T auto-prompt — the onboarding flow owns
+  // the notification ask — and we register on the re-run after they
+  // grant. This avoids the system dialog firing under the welcome
+  // screen, and avoids prompting a user who just tapped "Maybe later".
+  const wasOnboardedAtStartRef = useRef<boolean | null>(null);
   // Sync refs to latest state inside an effect. React 19 disallows
   // writing to refs during render (the more permissive pattern used
   // pre-19 trips the react-hooks/refs rule).
@@ -111,10 +121,16 @@ export function CapacitorPushBootstrap() {
     dismissNotifPromptRef.current = dismissNotifPrompt;
   }, [follows, prefs.noSpoilers, dismissNotifPrompt]);
 
-  // Bootstrap effect: runs once. Wires permission, listeners,
-  // register(). The "registration" listener is the one that captures
-  // the token into tokenRef and fires the initial POST.
+  // Bootstrap effect: wires permission, listeners, register(). Re-runs
+  // when onboarding completes so a fresh user who just granted in the
+  // onboarding flow gets registered. startedRef guards against double
+  // listener attachment.
   useEffect(() => {
+    if (!prefsHydrated) return;
+    if (wasOnboardedAtStartRef.current === null) {
+      wasOnboardedAtStartRef.current = !!prefs.onboardingComplete;
+    }
+    if (startedRef.current) return;
     let cancelled = false;
 
     async function bootstrap() {
@@ -137,10 +153,16 @@ export function CapacitorPushBootstrap() {
       console.log("[CapacitorPush] permission status:", status.receive);
 
       let granted = status.receive === "granted";
-      if (!granted && status.receive !== "denied") {
+      let decided = status.receive === "granted" || status.receive === "denied";
+      // Auto-prompt only for users who were already onboarded at start
+      // (the onboarding flow owns the ask for fresh installs). Undecided
+      // fresh users fall through without a dialog; the onboarding step 3
+      // prompts and this effect re-runs once they grant.
+      if (!decided && wasOnboardedAtStartRef.current) {
         const result = await PushNotifications.requestPermissions();
         if (cancelled) return;
         granted = result.receive === "granted";
+        decided = true;
         console.log("[CapacitorPush] requestPermissions →", result.receive);
       }
 
@@ -153,12 +175,21 @@ export function CapacitorPushBootstrap() {
       // grant and Not-now). Without this, native iOS users who allow
       // notifications via the system dialog still see "Turn on
       // notifications" as incomplete in the get-started strip.
-      dismissNotifPromptRef.current();
+      // Only when a real decision exists — a fresh, undecided user who
+      // hasn't reached onboarding yet keeps the prompt pending.
+      if (decided) dismissNotifPromptRef.current();
 
       if (!granted) {
-        console.log("[CapacitorPush] permission not granted — bailing");
+        if (!decided) {
+          console.log("[CapacitorPush] permission undecided — deferring to onboarding");
+        } else {
+          console.log("[CapacitorPush] permission not granted — bailing");
+        }
         return;
       }
+
+      // We're granted and about to wire up — guard re-runs.
+      startedRef.current = true;
 
       // Listeners attached BEFORE register() so we don't miss events.
       await PushNotifications.addListener("registration", async (token) => {
@@ -205,7 +236,10 @@ export function CapacitorPushBootstrap() {
     return () => {
       cancelled = true;
     };
-  }, []);
+    // Re-runs when onboarding completes so a fresh user who granted in
+    // the onboarding flow gets registered (startedRef guards dup work).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefsHydrated, prefs.onboardingComplete]);
 
   // Sync effect: when alerts/noSpoilers change AFTER initial
   // registration, re-POST with the same token. Mirrors what
