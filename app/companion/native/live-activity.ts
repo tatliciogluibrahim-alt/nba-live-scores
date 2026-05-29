@@ -115,14 +115,21 @@ export async function endLiveActivity(gameId: string): Promise<void> {
 export async function addLiveActivityPushTokenListener(
   cb: (data: LiveActivityPushTokenEvent) => void
 ): Promise<() => void> {
+  console.log("[LiveActivity] addPushTokenListener called");
   const plugin = await getPlugin();
-  if (!plugin) return () => {};
+  if (!plugin) {
+    console.log("[LiveActivity] addPushTokenListener: no plugin");
+    return () => {};
+  }
   try {
+    console.log("[LiveActivity] calling addListener('pushToken')...");
     const handle = await plugin.addListener("pushToken", cb);
+    console.log("[LiveActivity] addListener succeeded");
     return () => {
       void handle.remove();
     };
-  } catch {
+  } catch (err) {
+    console.warn("[LiveActivity] addListener failed:", err);
     return () => {};
   }
 }
