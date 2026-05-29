@@ -12,6 +12,7 @@ import {
 } from "../spoiler/reveal";
 import { useNoSpoilers } from "../providers";
 import { WatchLine } from "../watch/WatchLine";
+import Link from "next/link";
 import type { WCGameLite, WCMatchEventLite } from "../today/today-data";
 import { PinControls } from "./PinControls";
 
@@ -251,6 +252,42 @@ export function WCGameDetail({
           muted={game.status === "final"}
         />
       </div>
+
+      {/* ── Both countries — group context + jump into each country's
+          page. Gives an upcoming match (which has no events/highlights
+          yet) somewhere to go: group, path, and fixtures per side. ── */}
+      <section className="mt-5">
+        <div className="mb-2 flex items-center gap-3">
+          <Eyebrow color="var(--wc)">
+            {game.group ? `Group ${game.group}` : "World Cup"}
+          </Eyebrow>
+          <div className="h-px flex-1" style={{ background: "var(--line)" }} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[game.away, game.home].map((team) => (
+            <Link
+              key={team.abbreviation}
+              href={`/country/${team.abbreviation}`}
+              aria-label={`Open ${team.name}`}
+              className="rounded-[14px] border px-3 py-3 transition active:scale-[0.98]"
+              style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+            >
+              <p
+                className="text-[15px] leading-tight"
+                style={{ color: "var(--ink)", fontWeight: 700 }}
+              >
+                {team.name}
+              </p>
+              <p
+                className="mt-1 text-[11px]"
+                style={{ color: "var(--mute-1)", fontWeight: 500 }}
+              >
+                Group, path & matches →
+              </p>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* ── Highlights (mobile inline; desktop → rail) ───────────────── */}
       {highlightsSection ? (
