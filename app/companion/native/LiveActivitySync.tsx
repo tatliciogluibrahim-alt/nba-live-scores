@@ -183,6 +183,12 @@ export function LiveActivitySync() {
       const liveIds = new Set(liveItems.map((i) => i.id));
       hasLiveRef.current = liveItems.length > 0;
 
+      // Diagnostics for the Live Activity P0 — remove once verified.
+      console.log(
+        `[LiveActivitySync] poll nba=${nba.length} wc=${wc.length} pinned=${pinnedRef.current.length} live=${liveItems.length}`,
+        { pinnedIds: pinnedRef.current.map((p) => p.gameId), liveIds: [...liveIds] }
+      );
+
       // Start activities for newly-live pins, capped at MAX. liveItems
       // arrives in pinned order, so the first 3 win the lock screen.
       for (const item of liveItems) {
@@ -193,7 +199,9 @@ export function LiveActivitySync() {
           break;
         }
         inFlightRef.current.add(item.id);
+        console.log(`[LiveActivitySync] starting LA for ${item.id}`);
         const ok = await startLiveActivity(itemToStartInput(item));
+        console.log(`[LiveActivitySync] start ${item.id} → ${ok}`);
         inFlightRef.current.delete(item.id);
         if (isCancelled()) return;
         if (ok) startedRef.current.add(item.id);
