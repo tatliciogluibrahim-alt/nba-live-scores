@@ -74,12 +74,25 @@ struct NoNoiseUpcomingWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "NoNoiseUpcoming", provider: UpcomingProvider()) { entry in
             UpcomingWidgetView(entry: entry)
-                .widgetURL(URL(string: "https://nonoisescores.app/app"))
+                .widgetURL(widgetDeepLink(entry))
         }
         .configurationDisplayName("Upcoming")
         .description("Your next followed games and the moment ahead.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
+}
+
+// Deep-link the whole widget to the currently-shown game so a tap opens
+// that match's detail page (not just Today). Falls back to /app when
+// there's no game to show. The "›" advance button captures its own tap,
+// so paging still works without triggering this link.
+private func widgetDeepLink(_ entry: UpcomingEntry) -> URL? {
+    guard let snap = entry.snapshot, !snap.upcoming.isEmpty else {
+        return URL(string: "https://nonoisescores.app/app")
+    }
+    let idx = min(max(0, entry.startIndex), snap.upcoming.count - 1)
+    let href = snap.upcoming[idx].href // e.g. "/game/123"
+    return URL(string: "https://nonoisescores.app\(href)")
 }
 
 // MARK: - Views
