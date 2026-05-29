@@ -269,20 +269,22 @@ Internal keys (`quiet | companion | all`) are unchanged. Reference:
 `app/companion/state/types.ts` PRESETS.
 
 - **Quiet** (key: `quiet`) — Start and final only.
-- **Companion** (key: `companion`) — Start, quarter breaks, halftime (WC), final.
-- **Close games** (key: `all`) — Adds close finishes and comebacks.
+- **Companion** (key: `companion`) — Start, quarter breaks, halftime (WC),
+  scores (WC goals / NFL touchdowns when built), final.
+- **Full Details** (key: `all`) — Everything: scores, close finishes, comebacks.
 
 Rename history:
 - 2026-05-26: "Companion" → "Standard", "All moments" → "Close games"
   for clarity about what each tier produces.
 - 2026-05-27: Reverted "Standard" → "Companion" because the word ties
-  to the locked positioning ("calm sports **companion**") and reads
-  more brand-aligned than "Standard" (which felt like SaaS pricing
-  language). The "All moments" → "Close games" rename stays — that
-  was the more important semantic correction.
+  to the locked positioning ("calm sports **companion**").
+- 2026-05-29: "Close games" → "Full Details" — "Close games" implied the
+  tier only fired on close games, which isn't always true. "Full Details"
+  reads as the comprehensive tier. Soccer scores + NFL touchdowns belong
+  in **Companion**, not the top tier.
 
 When writing copy or comments that mention tiers, use the current
-labels (Quiet / Companion / Close games). Internal types still
+labels (Quiet / Companion / Full Details). Internal types still
 reference the same keys for back-compat with stored follows.
 
 ## Marketing Phase trigger

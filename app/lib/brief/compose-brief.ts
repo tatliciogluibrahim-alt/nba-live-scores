@@ -321,7 +321,7 @@ export function composeBrief({
   const tiers = enabledFollows.slice(0, 5).map((f) => {
     const label =
       f.alertTier === "all"
-        ? "Close games"
+        ? "Full Details"
         : f.alertTier === "companion"
           ? "Companion"
           : "Quiet";

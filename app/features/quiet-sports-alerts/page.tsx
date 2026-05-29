@@ -38,7 +38,7 @@ export default function QuietSportsAlertsPage() {
         Start, key breaks, final. End-of-quarter, halftime, start of Q4,
         final score. Around 4-5 pushes per NBA game.
       </P>
-      <H3Inline>Close games</H3Inline>
+      <H3Inline>Full Details</H3Inline>
       <P>
         Adds close-game and comeback alerts on top of Companion. Around
         6-8 pushes per dramatic game.

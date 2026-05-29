@@ -80,7 +80,7 @@ export default function FollowVsPinPage() {
       <P>
         After you add, the alert state is &quot;Alerts off&quot; by
         default. Tap the row to expand and pick a tier if you want push
-        notifications. Three tiers: Quiet, Companion, Close games.
+        notifications. Three tiers: Quiet, Companion, Full Details.
       </P>
 
       <H2>How to pin</H2>

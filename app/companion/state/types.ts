@@ -119,6 +119,6 @@ export const PRESETS: Record<
   { label: string; detail: string }
 > = {
   quiet: { label: "Quiet", detail: "Start and final only." },
-  companion: { label: "Companion", detail: "Start, quarter breaks, final." },
-  all: { label: "Close games", detail: "Adds close finishes and comebacks." },
+  companion: { label: "Companion", detail: "Start, quarter breaks, scores, final." },
+  all: { label: "Full Details", detail: "Everything: scores, close finishes, comebacks." },
 };

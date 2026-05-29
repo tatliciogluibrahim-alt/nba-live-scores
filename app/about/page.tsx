@@ -36,7 +36,7 @@ export default function AboutPage() {
       <BulletList
         items={[
           "Lets you follow teams, countries, series, and tournaments.",
-          "Sends per-follow alerts at three levels: Quiet, Companion, Close games.",
+          "Sends per-follow alerts at three levels: Quiet, Companion, Full Details.",
           "Lets you pin a specific game to Watching for the night.",
           "Hides scores, headlines, and outcomes across every screen when you want. Push notification previews stay vague.",
           "Shows a recap card after a game ends so you can catch up without a feed.",

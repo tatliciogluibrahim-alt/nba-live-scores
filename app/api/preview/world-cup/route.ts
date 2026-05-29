@@ -94,6 +94,59 @@ export function GET() {
       broadcasts: ["Telemundo"],
       watchLabel: "Telemundo",
     },
+    {
+      // GER vs JPN — second simultaneous live match, early minutes.
+      // Pressure-tests multiple concurrent lives across the surfaces.
+      id: "preview-wc-ger-jpn",
+      date: offsetIso(-25 * 60 * 1000),
+      status: "live",
+      statusText: "25'",
+      stage: "Group Stage",
+      group: "E",
+      home: { name: "Germany", abbreviation: "GER", score: 0 },
+      away: { name: "Japan", abbreviation: "JPN", score: 0 },
+      broadcasts: ["FS1"],
+      watchLabel: "FS1",
+    },
+    {
+      // NED vs MAR — third simultaneous live, near halftime.
+      id: "preview-wc-ned-mar",
+      date: offsetIso(-40 * 60 * 1000),
+      status: "live",
+      statusText: "40'",
+      stage: "Group Stage",
+      group: "F",
+      home: { name: "Morocco", abbreviation: "MAR", score: 1 },
+      away: { name: "Netherlands", abbreviation: "NED", score: 2 },
+      broadcasts: ["FOX"],
+      watchLabel: "FOX",
+    },
+    {
+      // ENG vs SUI — another fixture later tonight.
+      id: "preview-wc-eng-sui",
+      date: offsetIso(2 * 60 * 60 * 1000),
+      status: "upcoming",
+      statusText: "Upcoming",
+      stage: "Group Stage",
+      group: "B",
+      home: { name: "Switzerland", abbreviation: "SUI", score: 0 },
+      away: { name: "England", abbreviation: "ENG", score: 0 },
+      broadcasts: ["FOX"],
+      watchLabel: "FOX",
+    },
+    {
+      // KOR vs RSA — a second final from earlier today.
+      id: "preview-wc-kor-rsa",
+      date: offsetIso(-6 * 60 * 60 * 1000),
+      status: "final",
+      statusText: "Full time",
+      stage: "Group Stage",
+      group: "A",
+      home: { name: "South Africa", abbreviation: "RSA", score: 1 },
+      away: { name: "South Korea", abbreviation: "KOR", score: 3 },
+      broadcasts: ["Telemundo"],
+      watchLabel: "Telemundo",
+    },
   ];
 
   return NextResponse.json({ games });

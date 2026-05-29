@@ -43,7 +43,7 @@ export default function HowItWorksPage() {
         items={[
           "Quiet. Start and final only.",
           "Companion. Start, key breaks, final.",
-          "Close games. Close finishes, comebacks, big runs.",
+          "Full Details. Scores, close finishes, comebacks, big runs.",
         ]}
       />
       <P>

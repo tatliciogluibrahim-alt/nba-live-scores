@@ -59,9 +59,9 @@ export default function SportsCirclePage() {
 
       <H2>Alerts you keep on</H2>
       <P>
-        Three levels per follow: Quiet, Companion, Close games. Pick the
+        Three levels per follow: Quiet, Companion, Full Details. Pick the
         level that fits the team. Quiet for peripheral interests.
-        Companion for the team you watch. Close games for the playoff
+        Companion for the team you watch. Full Details for the playoff
         series you&apos;re living through.
       </P>
 

@@ -44,10 +44,10 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
       <div className="px-3 py-3">
         {/* Team identity marks — same chip style as Following tab, two
             across for the matchup. Gives the eye an anchor before the
-            score module below. Only rendered for NBA games (source=nba)
-            which have readable abbreviation marks; WC games use flags
-            elsewhere and the contextEyebrow already carries "World Cup". */}
-        {item.source === "nba" ? (
+            score module below. Shown for NBA and WC alike now that WC
+            uses readable country codes (flags were dropped from the
+            sports circle); the contextEyebrow still carries "World Cup". */}
+        {item.awayCode && item.homeCode ? (
           <div className="mb-3 flex items-center gap-2">
             <TeamChip code={item.awayCode} />
             <span

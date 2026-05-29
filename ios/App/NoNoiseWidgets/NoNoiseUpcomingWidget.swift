@@ -117,9 +117,10 @@ private struct SmallBody: View {
                 if let g {
                     Text(g.eyebrow.uppercased())
                         .font(.system(size: 10, weight: .semibold))
-                        .tracking(0.8)
+                        .tracking(0.5)
                         .foregroundStyle(Color(hex: g.accentHex))
                         .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
                 Spacer()
                 NNMarkView().frame(width: 20, height: 20)
