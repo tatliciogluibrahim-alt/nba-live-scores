@@ -1,8 +1,11 @@
 name: scan-nba-cron
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
+  # Scheduled trigger disabled 2026-05-29 — cron-job.org now drives this
+  # (GitHub Actions cron is unreliable: it delays and silently skips
+  # runs). Kept here, commented, so we can re-enable as a fallback.
+  # schedule:
+  #   - cron: '*/5 * * * *'
   workflow_dispatch:
 
 # Least-privilege: this workflow only curls an external endpoint. It

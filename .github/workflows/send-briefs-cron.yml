@@ -1,11 +1,12 @@
 name: send-briefs-cron
 
 on:
-  schedule:
-    # Once a day. Time is UTC — 12:30 UTC is ~8:30am US Eastern (EDT) /
-    # 7:30am (EST). Adjust this single line to retime the morning Brief.
-    # We don't time-zone per subscriber yet, so this is operator's call.
-    - cron: '30 12 * * *'
+  # Scheduled trigger disabled 2026-05-29 — cron-job.org now sends the
+  # Brief daily (8:30am ET). IMPORTANT: the brief has no "already sent
+  # today" guard, so running both schedulers would double-send. Leave
+  # this commented unless cron-job.org is down. Kept as a fallback.
+  # schedule:
+  #   - cron: '30 12 * * *'
   workflow_dispatch:
 
 # Least-privilege: this workflow only curls an external endpoint. It

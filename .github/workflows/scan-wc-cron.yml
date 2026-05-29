@@ -1,12 +1,11 @@
 name: scan-wc-cron
 
 on:
-  schedule:
-    # Same 5-minute cadence as the NBA cron. WC matches run ~95 minutes
-    # so a 5-minute window covers kickoff + final transitions without
-    # over-polling. If we add intra-match events later (halftime, goal)
-    # consider tightening this to 2 minutes during fixture windows.
-    - cron: '*/5 * * * *'
+  # Scheduled trigger disabled 2026-05-29 — cron-job.org now drives this
+  # (GitHub Actions cron is unreliable). Kept here, commented, as a
+  # fallback. cron-job.org runs WC at a tighter cadence during matches.
+  # schedule:
+  #   - cron: '*/5 * * * *'
   workflow_dispatch:
 
 # Least-privilege: this workflow only curls an external endpoint. It
