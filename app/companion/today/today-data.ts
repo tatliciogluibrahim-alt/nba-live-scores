@@ -53,7 +53,12 @@ export type WCMatchEventLite = {
 
 // ── Today payload shape ───────────────────────────────────────────────
 
-export type TodayHeroKind = "nba-live" | "nba-upcoming" | "wc-countdown" | null;
+export type TodayHeroKind =
+  | "nba-live"
+  | "wc-live"
+  | "nba-upcoming"
+  | "wc-countdown"
+  | null;
 
 export type TodayHero = {
   kind: NonNullable<TodayHeroKind>;
@@ -365,20 +370,51 @@ function pickHero(
   );
   const pinnedIds = new Set(pinned.map((p) => p.gameId));
 
-  const liveGames = nba.filter((g) => g.status === "live");
-  const live = [...liveGames].sort(
-    (a, b) => scoreClosenessRank(a) - scoreClosenessRank(b)
+  const followedCountries = new Set(
+    follows.filter((f) => f.kind === "country").map((f) => f.id)
   );
 
-  // Priority order for the hero spot:
-  //   1. A pinned live game — the strongest "I care about this" signal.
-  //   2. A followed-team live game.
-  //   3. Any live game (closest score first).
-  const pinnedLive = live.find((g) => pinnedIds.has(g.id));
-  const followedLive = live.find((g) =>
-    [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr))
+  const live = [...nba.filter((g) => g.status === "live")].sort(
+    (a, b) => scoreClosenessRank(a) - scoreClosenessRank(b)
   );
-  const heroLive = pinnedLive ?? followedLive ?? live[0];
+  const wcLive = wc.filter((g) => g.status === "live");
+
+  // Hero priority spans both sports. A live game (either sport) beats an
+  // upcoming one. Within "live", a pinned or followed match is the
+  // strongest "I care" signal; NBA wins ties only when neither side is
+  // explicitly cared-about. Without this, a live followed WC match
+  // (e.g. USA at the World Cup) never reached the hero — it was
+  // NBA-only before.
+  const nbaCared =
+    live.find((g) => pinnedIds.has(g.id)) ??
+    live.find((g) => [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr)));
+  const wcCared =
+    wcLive.find((g) => pinnedIds.has(g.id)) ??
+    wcLive.find((g) => [...followedCountries].some((c) => gameIncludesCountry(g, c)));
+
+  // Resolve to one live hero, preferring cared-about matches.
+  const heroLive = nbaCared ?? (wcCared ? null : live[0]);
+  const heroWcLive = !heroLive ? (wcCared ?? wcLive[0]) : null;
+
+  if (heroWcLive) {
+    const isPinned = pinnedIds.has(heroWcLive.id);
+    const stage = heroWcLive.stage ? `World Cup · ${heroWcLive.stage}` : "World Cup";
+    return {
+      kind: "wc-live",
+      eyebrow: isPinned ? `Pinned · ${stage}` : stage,
+      headline: deriveWCLiveHeadline(heroWcLive),
+      live: true,
+      accent: "var(--wc)",
+      pinned: isPinned,
+      href: `/game/${heroWcLive.id}`,
+      spoilerMatchup: `${heroWcLive.away.abbreviation} vs ${heroWcLive.home.abbreviation}`,
+      spoilerKind: "live",
+      spoilerSubject: `${heroWcLive.away.abbreviation} vs ${heroWcLive.home.abbreviation}`,
+      watch: heroWcLive.broadcasts[0]
+        ? { channel: heroWcLive.broadcasts[0] }
+        : undefined,
+    };
+  }
 
   if (heroLive) {
     const isPinned = pinnedIds.has(heroLive.id);
@@ -480,6 +516,18 @@ function deriveLiveHeadline(g: NBAGame): string {
   if (g.period === 3) return "Third quarter underway.";
   if (g.period === 2) return "Second quarter underway.";
   return "Game is live.";
+}
+
+// Soccer-bespoke live headline for the hero. Calm, score-free.
+function deriveWCLiveHeadline(g: WCGameLite): string {
+  const text = (g.statusText ?? "").toLowerCase();
+  if (text.includes("ht") || text.includes("half")) return "Halftime.";
+  const m = text.match(/(\d{1,3})/);
+  const min = m ? Number(m[1]) : null;
+  if (min != null && min >= 90) return "Stoppage time.";
+  if (min != null && min > 45) return "Second half underway.";
+  if (min != null && min >= 1) return "First half underway.";
+  return "Match is live.";
 }
 
 // ── You follow ────────────────────────────────────────────────────────

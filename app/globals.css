@@ -178,6 +178,12 @@ button,
 a {
   font: inherit;
   -webkit-tap-highlight-color: transparent;
+  /* Kill the iOS long-press callout (the "Share / Copy / Open" sheet)
+     on links + buttons inside the WKWebView. Long-pressing the tab bar
+     was triggering the native link-share menu, which broke the
+     app-feel. Text stays selectable — this only affects interactive
+     elements. */
+  -webkit-touch-callout: none;
 }
 
 button {

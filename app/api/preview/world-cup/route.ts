@@ -21,6 +21,16 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type FeedEvent = {
+  minute: string;
+  type: "goal" | "pen_goal" | "own_goal" | "red_card" | "yellow_card";
+  playerName: string;
+  assistName?: string;
+  // teamId matches the scoring side's abbreviation so the game-detail
+  // attribution (teamCodeForEvent) resolves it.
+  teamId?: string;
+};
+
 type FeedGame = {
   id: string;
   date: string;
@@ -32,6 +42,7 @@ type FeedGame = {
   away: { name: string; abbreviation: string; score: number };
   broadcasts: string[];
   watchLabel: string;
+  events?: FeedEvent[];
 };
 
 function offsetIso(ms: number): string {
@@ -52,6 +63,10 @@ export function GET() {
       away: { name: "Türkiye", abbreviation: "TUR", score: 1 },
       broadcasts: ["FOX"],
       watchLabel: "FOX",
+      events: [
+        { minute: "23'", type: "goal", playerName: "Güler", teamId: "TUR" },
+        { minute: "41'", type: "goal", playerName: "Pulisic", assistName: "Weah", teamId: "USA" },
+      ],
     },
     {
       // PAR vs AUS — same group, kickoff later tonight. Drives the
@@ -120,6 +135,11 @@ export function GET() {
       away: { name: "Netherlands", abbreviation: "NED", score: 2 },
       broadcasts: ["FOX"],
       watchLabel: "FOX",
+      events: [
+        { minute: "12'", type: "goal", playerName: "Gakpo", teamId: "NED" },
+        { minute: "31'", type: "goal", playerName: "En-Nesyri", teamId: "MAR" },
+        { minute: "38'", type: "goal", playerName: "Simons", assistName: "Frimpong", teamId: "NED" },
+      ],
     },
     {
       // ENG vs SUI — another fixture later tonight.
