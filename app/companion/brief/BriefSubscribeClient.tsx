@@ -65,9 +65,9 @@ export function BriefSubscribeClient() {
         className="mb-5 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        One calm email each morning. Only your followed games — what
-        wrapped yesterday, what&apos;s on tonight, and one sentence on
-        why each matters. No feeds, no roundups.
+        One no-noise email every morning on your followed games only.
+        Yesterday&apos;s scores, what&apos;s on tonight, and why each
+        matters. No feeds or roundups.
       </p>
 
       {status === "ok" ? (

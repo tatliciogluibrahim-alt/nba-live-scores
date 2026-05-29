@@ -44,7 +44,7 @@ export function BriefSettingsRow() {
               className="mt-0.5 text-[12px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Your follows, once a day.
+              Daily recap of results on your follows.
             </p>
           </div>
           <svg
