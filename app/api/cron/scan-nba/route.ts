@@ -28,8 +28,47 @@ import { detectEvents, type FreshGameState, type PushEvent } from "../../../lib/
 import { dispatchEvents } from "../../../lib/push/dispatcher";
 import { readCachedState, writeCachedState } from "../../../lib/push/state-cache";
 import { incrCounter } from "../../../lib/push/ops-metrics";
+import {
+  pushLiveActivityUpdates,
+  type ActivityUpdateInput,
+} from "../../../lib/push/live-activity-update";
 import { saveGameSnapshot } from "../../../lib/snapshots/game-snapshot";
 import type { Game } from "../../../nba/types";
+
+// NBA orange accent for the Live Activity (AGENTS palette).
+const ACCENT_NBA = "#e55b2a";
+
+/** Build the lock-screen status line: "Q3 · 4:21", "Final", etc. */
+function nbaStatusLine(g: NormalizedGame): string {
+  if (g.status === "final") return "Final";
+  if (g.status === "upcoming") return "Tipoff soon";
+  const period =
+    g.period <= 4 ? `Q${g.period}` : g.period === 5 ? "OT" : `${g.period - 4}OT`;
+  if (g.remaining == null) return period;
+  const m = Math.floor(g.remaining / 60);
+  const s = g.remaining % 60;
+  return `${period} · ${m}:${String(s).padStart(2, "0")}`;
+}
+
+/** Map a scoreboard game to a Live Activity content snapshot. */
+function toActivityInput(g: NormalizedGame): ActivityUpdateInput {
+  return {
+    gameId: g.id,
+    status: g.status,
+    contentState: {
+      awayCode: g.away.abbreviation,
+      awayScore: g.away.score,
+      homeCode: g.home.abbreviation,
+      homeScore: g.home.score,
+      statusLine: nbaStatusLine(g),
+      subline: "",
+      accentHex: ACCENT_NBA,
+    },
+    // Dedup on score + period + status (not the clock, which we don't
+    // push live) so identical ticks are no-ops.
+    sig: `${g.away.score}-${g.home.score}-${g.period}-${g.status}`,
+  };
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -184,6 +223,17 @@ export async function GET(req: Request) {
     }
   }
 
+  // Live Activity score updates — ride the same fetch. Pushes fresh
+  // scores to any device showing a pinned game's Live Activity and ends
+  // them at final. No-op (one KV read) when nobody has one open.
+  let liveActivity: Awaited<ReturnType<typeof pushLiveActivityUpdates>> | null =
+    null;
+  try {
+    liveActivity = await pushLiveActivityUpdates(games.map(toActivityInput));
+  } catch (err) {
+    console.error("scan-nba live-activity error", err);
+  }
+
   return NextResponse.json({
     ok: true,
     processed,
@@ -192,5 +242,6 @@ export async function GET(req: Request) {
     delivered: dispatchResult?.deliveries.filter((d) => d.delivered).length ?? 0,
     skipped: dispatchResult?.deliveries.filter((d) => !d.delivered).length ?? 0,
     pruned: dispatchResult?.pruned ?? 0,
+    liveActivity,
   });
 }

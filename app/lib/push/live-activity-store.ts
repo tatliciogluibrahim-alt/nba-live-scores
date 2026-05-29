@@ -20,6 +20,9 @@ import { kv } from "@vercel/kv";
 const GAMES_INDEX = "nns:la:games";
 const gameSetKey = (gameId: string) => `nns:la:game:${gameId}`;
 const tokenKey = (token: string) => `nns:la:tok:${token}`;
+// Last content-state signature we pushed for a game, so the scan loop
+// skips re-pushing identical updates every tick (APNs efficiency).
+const sigKey = (gameId: string) => `nns:la:sig:${gameId}`;
 
 export type StoredActivityToken = {
   token: string;
@@ -84,6 +87,18 @@ export async function clearActivityGame(gameId: string): Promise<void> {
   await Promise.all([
     ...(tokens ?? []).map((t) => kv.del(tokenKey(t))),
     kv.del(gameSetKey(gameId)),
+    kv.del(sigKey(gameId)),
     kv.srem(GAMES_INDEX, gameId),
   ]);
+}
+
+/** Last content-state signature pushed for a game (null if none yet). */
+export async function getActivitySig(gameId: string): Promise<string | null> {
+  return (await kv.get<string>(sigKey(gameId))) ?? null;
+}
+
+/** Remember the signature we just pushed, so the next identical tick
+ *  is a no-op. Self-expires in 6h as a safety net against orphaned keys. */
+export async function setActivitySig(gameId: string, sig: string): Promise<void> {
+  await kv.set(sigKey(gameId), sig, { ex: 6 * 60 * 60 });
 }

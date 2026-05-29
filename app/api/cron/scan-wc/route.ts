@@ -21,7 +21,14 @@ import {
   writeCachedWCState,
 } from "../../../lib/push/wc-state-cache";
 import { incrCounter } from "../../../lib/push/ops-metrics";
+import {
+  pushLiveActivityUpdates,
+  type ActivityUpdateInput,
+} from "../../../lib/push/live-activity-update";
 import type { PushEvent } from "../../../lib/push/event-detector";
+
+// World Cup green accent for the Live Activity (AGENTS palette).
+const ACCENT_WC = "#1e6b3c";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,6 +86,35 @@ function toFresh(game: FeedGame): FreshWCGameState {
     awayScore: game.away.score,
     homeScore: game.home.score,
     minute: parseMinute(game.statusText),
+  };
+}
+
+/** Lock-screen status line: "63'", "Halftime", "Full time", etc. */
+function wcStatusLine(game: FeedGame): string {
+  if (game.status === "final") return "Full time";
+  if (game.status === "upcoming") return "Kickoff soon";
+  if (game.statusText && /ht|half/i.test(game.statusText)) return "Halftime";
+  const min = parseMinute(game.statusText);
+  return min != null ? `${min}'` : game.statusText || "Live";
+}
+
+/** Map a WC feed game to a Live Activity content snapshot. */
+function toActivityInput(game: FeedGame): ActivityUpdateInput {
+  return {
+    gameId: game.id,
+    status: game.status,
+    contentState: {
+      awayCode: game.away.abbreviation,
+      awayScore: game.away.score,
+      homeCode: game.home.abbreviation,
+      homeScore: game.home.score,
+      statusLine: wcStatusLine(game),
+      subline: "",
+      accentHex: ACCENT_WC,
+    },
+    // Dedup on score + status (the minute advances every tick and we
+    // don't want a push a minute; goals + transitions are what matter).
+    sig: `${game.away.score}-${game.home.score}-${game.status}`,
   };
 }
 
@@ -153,6 +189,15 @@ export async function GET(req: Request) {
     }
   }
 
+  // Live Activity score updates for any pinned WC match on a device.
+  let liveActivity: Awaited<ReturnType<typeof pushLiveActivityUpdates>> | null =
+    null;
+  try {
+    liveActivity = await pushLiveActivityUpdates(games.map(toActivityInput));
+  } catch (err) {
+    console.error("scan-wc live-activity error", err);
+  }
+
   return NextResponse.json({
     ok: true,
     processed,
@@ -161,5 +206,6 @@ export async function GET(req: Request) {
     delivered: dispatchResult?.deliveries.filter((d) => d.delivered).length ?? 0,
     skipped: dispatchResult?.deliveries.filter((d) => !d.delivered).length ?? 0,
     pruned: dispatchResult?.pruned ?? 0,
+    liveActivity,
   });
 }
