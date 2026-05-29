@@ -89,9 +89,14 @@ export async function startLiveActivity(
   input: LiveActivityStartInput
 ): Promise<boolean> {
   const plugin = await getPlugin();
-  if (!plugin) return false;
+  if (!plugin) {
+    console.log("[LiveActivity] startLiveActivity: no plugin (off-native?)");
+    return false;
+  }
   try {
-    await plugin.start(input);
+    console.log(`[LiveActivity] dispatching start() to native for ${input.gameId}`);
+    const res = await plugin.start(input);
+    console.log(`[LiveActivity] native start() resolved:`, res);
     return true;
   } catch (err) {
     console.warn("[LiveActivity] start failed:", err);

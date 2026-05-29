@@ -125,7 +125,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
                 <span
                   style={{
                     color:
-                      winnerVisible && awayWon ? "var(--ink-1)" : undefined,
+                      winnerVisible && awayWon ? "var(--ink)" : undefined,
                     fontWeight: winnerVisible && awayWon ? 700 : 600,
                   }}
                 >
@@ -137,7 +137,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
                 <span
                   style={{
                     color:
-                      winnerVisible && !awayWon ? "var(--ink-1)" : undefined,
+                      winnerVisible && !awayWon ? "var(--ink)" : undefined,
                     fontWeight: winnerVisible && !awayWon ? 700 : 600,
                   }}
                 >
@@ -167,7 +167,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
           href={moment.primary.href}
           className="mt-4 inline-flex items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.97]"
           style={{
-            background: "var(--ink-1)",
+            background: "var(--ink)",
             color: "var(--paper)",
           }}
         >
