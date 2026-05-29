@@ -2,15 +2,15 @@
 // with the last cached state and emits zero or more push-worthy events.
 // Pure function — caller persists the new state afterwards.
 //
-// Event taxonomy (v2):
+// Event taxonomy (v3):
 //   • wc-kickoff  — status flipped upcoming → live
 //   • wc-halftime — minute crossed from ≤45 to >45 while live (second
 //                   half started). Fires once per game via halftimeFired.
+//   • wc-goal     — scoreline rose while live (any goal: open play, pen,
+//                   own goal). No scorer name (scoreboard feed only).
 //   • wc-final    — status flipped live → final
 //
 // Deferred:
-//   • wc-goal      — would require diffing penaltyHome/Away + scoreline
-//                    minute-by-minute against the feed's event list.
 //   • wc-comeback  — same problem space as the NBA version, plus soccer
 //                    margins read differently.
 //
@@ -95,6 +95,22 @@ export function detectWCEvents(
   ) {
     events.push({ ...baseInfo, type: "wc-halftime" });
     nextHalftimeFired = true;
+  }
+
+  // Goal: the scoreline rose while the match was live. We can't name the
+  // scorer from the scoreboard feed (that needs the per-match summary),
+  // so the dispatcher renders the new line ("Goal — USA 2, TUR 1"). Only
+  // fires when prev was already live, so the first observation of an
+  // in-progress match doesn't mint a phantom goal. Penalties / own goals
+  // all surface here since they move the scoreline.
+  const prevTotal = (prev?.awayScore ?? 0) + (prev?.homeScore ?? 0);
+  const nextTotal = stableNext.awayScore + stableNext.homeScore;
+  if (
+    prev?.status === "live" &&
+    stableNext.status === "live" &&
+    nextTotal > prevTotal
+  ) {
+    events.push({ ...baseInfo, type: "wc-goal" });
   }
 
   // Transition 3: live → final → full time.

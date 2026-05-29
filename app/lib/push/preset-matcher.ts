@@ -9,6 +9,7 @@
 // final              ✓       ✓        ✓
 // wc-kickoff         ✓       ✓        ✓
 // wc-halftime        ·       ✓        ✓
+// wc-goal            ·       ✓        ✓
 // wc-final           ✓       ✓        ✓
 //
 // If the user is following at "quiet" they get bookends only — game
@@ -35,6 +36,9 @@ const MATRIX: Record<EventType, ReadonlySet<AlertPreset>> = {
   // Halftime maps to companion + all, matching the NBA eoq-2 pattern.
   "wc-kickoff": new Set<AlertPreset>(["quiet", "companion", "all"]),
   "wc-halftime": new Set<AlertPreset>(["companion", "all"]),
+  // Goals land in Companion (+ Full Details) — per the tiering decision,
+  // soccer scores belong in the everyday "watch the team" tier.
+  "wc-goal": new Set<AlertPreset>(["companion", "all"]),
   "wc-final": new Set<AlertPreset>(["quiet", "companion", "all"]),
 };
 

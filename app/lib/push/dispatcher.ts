@@ -37,6 +37,7 @@ import { incrCounter } from "./ops-metrics";
 const WC_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   "wc-kickoff",
   "wc-halftime",
+  "wc-goal",
   "wc-final",
 ]);
 
@@ -78,7 +79,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
   const webpush = getWebPush();
 
   for (const event of events) {
-    const eventTag = `${event.gameId}:${event.type}`;
+    const eventTag = dedupeTagFor(event);
     const matching = subs.filter((s) => subscriberWantsEvent(s, event));
 
     for (const sub of matching) {
@@ -200,7 +201,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
   // install gets the push on both surfaces (one per transport).
   const iosTokens = await listIosTokens();
   for (const event of events) {
-    const eventTag = `${event.gameId}:${event.type}`;
+    const eventTag = dedupeTagFor(event);
     const matching = iosTokens.filter((t) => subscriberWantsEvent(t, event));
 
     for (const ios of matching) {
@@ -387,6 +388,18 @@ function scoreLine(event: PushEvent): string {
   return `${event.awayCode} ${event.awayScore} – ${event.homeScore} ${event.homeCode}`;
 }
 
+/** Dedupe tag for an event. Normally `${gameId}:${type}` (one push per
+ *  event per device), but goals can happen several times in one match,
+ *  so wc-goal folds the scoreline into the tag — each distinct scoreline
+ *  is its own dedupe slot, while a repeated identical tick is still
+ *  suppressed. */
+function dedupeTagFor(event: PushEvent): string {
+  if (event.type === "wc-goal") {
+    return `${event.gameId}:wc-goal:${event.awayScore}-${event.homeScore}`;
+  }
+  return `${event.gameId}:${event.type}`;
+}
+
 function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
   const matchup = `${event.awayCode} vs ${event.homeCode}`;
   // For No-Spoilers users the body must never contain a score, a
@@ -483,6 +496,18 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
           : `${scoreLine(event)} · Second half started`,
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:wc-halftime`,
+      };
+    case "wc-goal":
+      return {
+        title: `Goal · ${matchup}`,
+        body: noSpoilers
+          ? "Someone scored. Tap to check in."
+          : `${scoreLine(event)} · Goal`,
+        url: `/game/${event.gameId}`,
+        // Note: no per-goal tag suffix beyond the type — back-to-back
+        // goals are distinct events with distinct scorelines, but the
+        // dedupe layer keys on gameId:type:scoreline upstream.
+        tag: `${event.gameId}:wc-goal:${event.awayScore}-${event.homeScore}`,
       };
     case "wc-final":
       return {

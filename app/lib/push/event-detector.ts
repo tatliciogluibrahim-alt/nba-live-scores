@@ -35,6 +35,7 @@ export const EVENT_TYPES = [
   "final",
   "wc-kickoff",
   "wc-halftime",
+  "wc-goal",
   "wc-final",
 ] as const;
 
