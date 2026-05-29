@@ -5,6 +5,6 @@ import WidgetKit
 struct NoNoiseWidgetsBundle: WidgetBundle {
     var body: some Widget {
         NoNoiseLiveActivity()
-        // NoNoisePinnedWidget()   // Phase 22.5-4
+        NoNoiseUpcomingWidget()
     }
 }

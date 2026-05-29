@@ -21,10 +21,14 @@ class NoNoiseViewController: CAPBridgeViewController {
     }
 
     override open func capacitorDidLoad() {
-        print("🔌 [NoNoise] capacitorDidLoad — registering LiveActivityPlugin")
+        print("🔌 [NoNoise] capacitorDidLoad — registering plugins")
         let plugin = LiveActivityPlugin()
         bridge?.registerPluginInstance(plugin)
         print("🔌 [NoNoise] LiveActivityPlugin registered: \(plugin.jsName)")
+
+        let widgetPlugin = WidgetBridgePlugin()
+        bridge?.registerPluginInstance(widgetPlugin)
+        print("🔌 [NoNoise] WidgetBridgePlugin registered: \(widgetPlugin.jsName)")
 
         // Disable rubber-band bounce and paint the scroll area cream.
         if let wv = webView {
