@@ -30,6 +30,10 @@ struct WidgetSnapshot: Codable {
 enum WidgetStore {
     static let appGroup = "group.com.nonoisescores.app"
     static let snapshotKey = "widgetSnapshot"
+    // Paging offset for the medium widget's "next" button (interactive
+    // widget state, iOS 17+). Lives in the App Group so the AppIntent
+    // and the widget timeline share it.
+    static let indexKey = "widgetGameIndex"
 
     static func read() -> WidgetSnapshot? {
         guard
@@ -38,5 +42,13 @@ enum WidgetStore {
             let data = json.data(using: .utf8)
         else { return nil }
         return try? JSONDecoder().decode(WidgetSnapshot.self, from: data)
+    }
+
+    static func readIndex() -> Int {
+        UserDefaults(suiteName: appGroup)?.integer(forKey: indexKey) ?? 0
+    }
+
+    static func writeIndex(_ i: Int) {
+        UserDefaults(suiteName: appGroup)?.set(i, forKey: indexKey)
     }
 }

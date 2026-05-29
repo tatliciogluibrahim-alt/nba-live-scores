@@ -1,5 +1,6 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 // Home-screen widget: upcoming followed games + the moment line.
 // Reads the App Group snapshot the app writes (WidgetBridge plugin).
@@ -20,28 +21,51 @@ private let wInk2  = Color(hex: "4a4030")
 private let wMute  = Color(hex: "6f6552")
 private let wLine  = Color(hex: "ddd2ba")
 
+// How many games the medium widget shows per page.
+private let PAGE = 3
+
 struct UpcomingEntry: TimelineEntry {
     let date: Date
     let snapshot: WidgetSnapshot?
+    let startIndex: Int
 }
 
 struct UpcomingProvider: TimelineProvider {
     func placeholder(in context: Context) -> UpcomingEntry {
-        UpcomingEntry(date: Date(), snapshot: nil)
+        UpcomingEntry(date: Date(), snapshot: nil, startIndex: 0)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (UpcomingEntry) -> Void) {
-        completion(UpcomingEntry(date: Date(), snapshot: WidgetStore.read()))
+        completion(UpcomingEntry(date: Date(), snapshot: WidgetStore.read(), startIndex: WidgetStore.readIndex()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<UpcomingEntry>) -> Void) {
-        let entry = UpcomingEntry(date: Date(), snapshot: WidgetStore.read())
+        let entry = UpcomingEntry(
+            date: Date(),
+            snapshot: WidgetStore.read(),
+            startIndex: WidgetStore.readIndex()
+        )
         // Refresh a few times a day. The app also forces a reload via
         // WidgetCenter whenever it writes a new snapshot, so this is just
         // a backstop for day-rollover when the app hasn't been opened.
         let next = Calendar.current.date(byAdding: .hour, value: 3, to: Date())
             ?? Date().addingTimeInterval(3 * 3600)
         completion(Timeline(entries: [entry], policy: .after(next)))
+    }
+}
+
+// Interactive "next page" button (iOS 17+). Advances the medium widget's
+// paging offset by one page, wrapping at the end. WidgetKit reloads the
+// timeline automatically after the intent runs.
+struct AdvanceUpcomingIntent: AppIntent {
+    static var title: LocalizedStringResource = "Show more games"
+
+    func perform() async throws -> some IntentResult {
+        let count = WidgetStore.read()?.upcoming.count ?? 0
+        guard count > PAGE else { return .result() }
+        let next = WidgetStore.readIndex() + PAGE
+        WidgetStore.writeIndex(next >= count ? 0 : next)
+        return .result()
     }
 }
 
@@ -73,7 +97,7 @@ struct UpcomingWidgetView: View {
             if family == .systemSmall {
                 SmallBody(snap: snap)
             } else {
-                MediumBody(snap: snap)
+                MediumBody(snap: snap, startIndex: entry.startIndex)
             }
         } else {
             EmptyBody()
@@ -121,23 +145,49 @@ private struct SmallBody: View {
     }
 }
 
-// Medium: up to three games + a moment line.
+// Medium: a page of up to three games + a moment line. When the user
+// follows more than a page's worth, a "›" button advances through them
+// (interactive widget, iOS 17+).
 private struct MediumBody: View {
     let snap: WidgetSnapshot
+    let startIndex: Int
 
     var body: some View {
+        let count = snap.upcoming.count
+        // Clamp the paging offset to a valid page boundary (follows can
+        // shrink between the button tap and the reload).
+        let start = count > 0 ? min(max(0, startIndex), max(0, count - 1)) : 0
+        let window = Array(snap.upcoming.dropFirst(start).prefix(PAGE))
+        let canPage = count > PAGE
+
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
+            HStack(spacing: 6) {
                 Text("UPCOMING")
                     .font(.system(size: 10, weight: .semibold))
                     .tracking(1.2)
                     .foregroundStyle(wMute)
+                if canPage {
+                    Text("\(start + 1)–\(min(start + window.count, count)) of \(count)")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(wInk2)
+                }
                 Spacer()
-                NNMarkView().frame(width: 20, height: 20)
+                if canPage {
+                    Button(intent: AdvanceUpcomingIntent()) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(wInk)
+                            .frame(width: 22, height: 22)
+                            .background(Circle().fill(wCream).overlay(Circle().stroke(wLine, lineWidth: 1)))
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    NNMarkView().frame(width: 20, height: 20)
+                }
             }
             .padding(.bottom, 6)
 
-            if snap.upcoming.isEmpty, let m = snap.moment {
+            if window.isEmpty, let m = snap.moment {
                 Spacer()
                 Text(m.text)
                     .font(.system(size: 17, weight: .bold))
@@ -151,7 +201,7 @@ private struct MediumBody: View {
                 }
                 Spacer()
             } else {
-                ForEach(Array(snap.upcoming.prefix(3).enumerated()), id: \.element.id) { idx, g in
+                ForEach(Array(window.enumerated()), id: \.element.id) { idx, g in
                     if idx > 0 {
                         Rectangle().fill(wLine).frame(height: 1).padding(.vertical, 5)
                     }
@@ -170,7 +220,8 @@ private struct MediumBody: View {
                             .lineLimit(1)
                     }
                 }
-                if let m = snap.moment {
+                // Moment line only when it won't crowd a full page.
+                if let m = snap.moment, window.count < PAGE {
                     Spacer(minLength: 4)
                     Text(m.text)
                         .font(.system(size: 11, weight: .medium))

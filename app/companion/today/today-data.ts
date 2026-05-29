@@ -787,25 +787,27 @@ function buildReminder(follows: Follow[], now = new Date()): ReminderRow | null 
   const days = daysUntil(WC_KICKOFF, now);
   if (days <= 0 || days > 90) return null;
 
+  const dayWord = `${days} day${days === 1 ? "" : "s"}`;
+
   const country = follows.find((f) => f.kind === "country");
   if (country) {
-    // Use the human country name in sentence copy, not the
-    // ESPN/FIFA code. "TUR kick off in 15 days" reads like log
-    // output; "Türkiye kick off in 15 days" reads like a person
-    // wrote it. Per AGENTS.md voice rule: plain, simple, chill.
-    // Falls back to the code if the directory doesn't recognize it
-    // (rare — would mean a typo or a country we don't track).
+    // Lead with the World Cup (cleaner + grammatical — "United States
+    // kick off" read awkwardly), and carry the followed country in the
+    // secondary detail line so it still feels personal. The human
+    // country name, not the ESPN/FIFA code (per the voice rule). Falls
+    // back to the code if the directory doesn't recognize it.
     const entry = getCountry(country.id);
     const name = entry?.name ?? country.id;
+    const detail = entry ? `${name} · Group ${entry.group}` : name;
     return {
-      text: `${name} kick off in ${days} day${days === 1 ? "" : "s"}.`,
-      detail: "Group draw is set. Match times confirm in June.",
+      text: `World Cup kicks off in ${dayWord}.`,
+      detail,
       href: `/country/${country.id}`,
     };
   }
 
   return {
-    text: `World Cup kicks off in ${days} day${days === 1 ? "" : "s"}.`,
+    text: `World Cup kicks off in ${dayWord}.`,
     detail: "Pick a country in Following to make this personal.",
     href: "/following",
   };
