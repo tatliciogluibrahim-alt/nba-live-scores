@@ -50,7 +50,14 @@ export function TodayClient() {
       <h1 className="sr-only">Today</h1>
       <header
         className="-mx-4 mb-5 flex items-center justify-between gap-2 border-b px-4 pb-3"
-        style={{ borderColor: "var(--line)" }}
+        style={{
+          borderColor: "var(--line)",
+          // Reserve the iOS status-bar / Dynamic Island height so the
+          // date row doesn't collide with the clock + battery. BrandBar
+          // does the same on the other tabs; Today's custom masthead
+          // was missing it. 0 on web / non-notch devices.
+          paddingTop: "max(env(safe-area-inset-top), 10px)",
+        }}
       >
         <p
           className="flex-1 text-[11px] uppercase"
