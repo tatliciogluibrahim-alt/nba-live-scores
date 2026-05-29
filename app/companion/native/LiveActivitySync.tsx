@@ -126,13 +126,6 @@ void ACCENT_NFL;
 export function LiveActivitySync() {
   const { pinned, hydrated } = usePinned();
 
-  // Debug: log conditions on every render so we can see why the poll
-  // might not fire. Remove once Live Activity is verified working.
-  console.log(
-    `[LiveActivitySync] native=${isCapacitorNative()} hydrated=${hydrated} pinned=${pinned.length}`,
-    pinned.map((p) => p.gameId)
-  );
-
   // Stable refs the poll closure reads without re-subscribing.
   const pinnedRef = useRef<PinnedGame[]>(pinned);
   const startedRef = useRef<Set<string>>(new Set()); // gameIds with a live activity

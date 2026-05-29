@@ -1,51 +1,94 @@
 "use client";
 
 import { useState } from "react";
+import { registerPlugin } from "@capacitor/core";
 import { isCapacitorNative } from "../dev/native-detect";
-import { startLiveActivity, endLiveActivity } from "../native/live-activity";
 
-// DEV-ONLY: manual Live Activity trigger. Phase 22.5-3 verification.
+// DEV-ONLY: manual Live Activity trigger with full on-screen reporting.
+// Phase 22.5-3 verification.
 //
 // There's no reliable way to test the Live Activity render without a
-// genuinely-live, pinned NBA game in the real /api/live-scores feed.
-// During the offseason / between games there often isn't one, so this
-// button fires a mock Activity directly to confirm the native
-// ActivityKit pipeline (plugin → request → lock screen / Dynamic
-// Island) works on-device.
+// genuinely-live, pinned NBA game in the real feed, and during the
+// offseason there often isn't one. This button calls the native
+// LiveActivity plugin directly and prints every step on-screen (no
+// Xcode console needed), with a timeout so a hung native call surfaces
+// as a readable message instead of a silent spinner.
 //
-// Renders nothing off-native. REMOVE before App Store submission —
-// this is a developer affordance, not a user feature.
+// Renders nothing off-native. REMOVE before App Store submission.
 
 const TEST_GAME_ID = "dev-live-activity-test";
+const PLUGIN_NAME = "LiveActivity";
+const TIMEOUT_MS = 6000;
+
+type StartResult = { id: string };
+type LAPlugin = {
+  start(opts: Record<string, unknown>): Promise<StartResult>;
+  end(opts: { gameId: string }): Promise<void>;
+};
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
 
 export function LiveActivityTester() {
-  const [status, setStatus] = useState<string>("");
+  const [lines, setLines] = useState<string[]>([]);
 
-  // Off-native (web / desktop PWA) this is a no-op surface.
   if (!isCapacitorNative()) return null;
 
+  const log = (s: string) => setLines((prev) => [...prev, s]);
+
   async function handleStart() {
-    setStatus("starting…");
-    const ok = await startLiveActivity({
-      gameId: TEST_GAME_ID,
-      matchup: "OKC vs SA",
-      stage: "NBA · Game 6",
-      sport: "nba",
-      awayCode: "OKC",
-      awayScore: 88,
-      homeCode: "SA",
-      homeScore: 84,
-      statusLine: "Q4 · 4:21",
-      subline: "OKC leads series 3-2",
-      accentHex: "#e55b2a",
-    });
-    setStatus(ok ? "started — check your lock screen" : "failed (see Xcode console)");
+    setLines([]);
+    log("1. native=true, registering plugin…");
+    let plugin: LAPlugin;
+    try {
+      plugin = registerPlugin<LAPlugin>(PLUGIN_NAME);
+      log("2. registerPlugin returned a proxy");
+    } catch (e) {
+      log(`2. registerPlugin threw: ${String(e)}`);
+      return;
+    }
+
+    log("3. calling start()… (waiting up to 6s)");
+    try {
+      const res = await withTimeout(
+        plugin.start({
+          gameId: TEST_GAME_ID,
+          matchup: "OKC vs SA",
+          stage: "NBA · Game 6",
+          sport: "nba",
+          awayCode: "OKC",
+          awayScore: 88,
+          homeCode: "SA",
+          homeScore: 84,
+          statusLine: "Q4 · 4:21",
+          subline: "OKC leads series 3-2",
+          accentHex: "#e55b2a",
+        }),
+        TIMEOUT_MS
+      );
+      log(`4. ✅ start resolved: id=${res?.id ?? "(no id)"}`);
+      log("Check your lock screen / Dynamic Island.");
+    } catch (e) {
+      log(`4. ❌ start failed: ${String(e)}`);
+      log("If 'timed out', the native start() never called resolve/reject.");
+    }
   }
 
   async function handleEnd() {
-    setStatus("ending…");
-    await endLiveActivity(TEST_GAME_ID);
-    setStatus("ended");
+    setLines([]);
+    try {
+      const plugin = registerPlugin<LAPlugin>(PLUGIN_NAME);
+      await withTimeout(plugin.end({ gameId: TEST_GAME_ID }), TIMEOUT_MS);
+      log("ended ✅");
+    } catch (e) {
+      log(`end failed: ${String(e)}`);
+    }
   }
 
   return (
@@ -60,7 +103,7 @@ export function LiveActivityTester() {
         Dev · Live Activity test
       </p>
       <p className="mb-3 text-[13px]" style={{ color: "var(--mute-1)" }}>
-        Fires a mock Live Activity to verify the native render. Remove before ship.
+        Fires a mock Live Activity and reports each step below. Remove before ship.
       </p>
       <div className="flex gap-2">
         <button
@@ -78,10 +121,15 @@ export function LiveActivityTester() {
           End
         </button>
       </div>
-      {status ? (
-        <p className="mt-2 text-[12px]" style={{ color: "var(--mute-1)" }}>
-          {status}
-        </p>
+      {lines.length > 0 ? (
+        <div
+          className="mt-3 rounded-lg p-2 font-mono text-[11px] leading-relaxed"
+          style={{ background: "var(--cream)", color: "var(--ink)" }}
+        >
+          {lines.map((l, i) => (
+            <div key={i}>{l}</div>
+          ))}
+        </div>
       ) : null}
     </section>
   );
