@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useFollows, useUserPrefs } from "../providers";
 import { isCapacitorNative } from "../dev/native-detect";
 import { BrandMark } from "../frame/BrandMark";
+import { SportsBallLoader } from "../atoms/SportsBallLoader";
 
 // First-run onboarding — shown ONCE to truly-fresh installs (no follows
 // yet, hasn't completed onboarding). Three steps:
@@ -111,6 +112,9 @@ export function OnboardingFlow() {
       <div className="flex flex-1 flex-col justify-center px-6 pb-8">
         {step === 0 ? (
           <div>
+            <div className="mb-6">
+              <SportsBallLoader size={56} />
+            </div>
             <h1
               style={{
                 fontFamily: "var(--font-display)",
@@ -126,9 +130,8 @@ export function OnboardingFlow() {
               className="mt-4 text-[16px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Follow what matters. Skip the rest. No feeds, no ads, no
-              noise — just the games you care about, and the moments
-              inside them.
+              Follow what matters. Skip the rest. No feeds. No ads. No
+              noise. Just your teams, and the moments inside their games.
             </p>
           </div>
         ) : null}
@@ -150,8 +153,9 @@ export function OnboardingFlow() {
               className="mt-3 text-[15px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Follow a moment to start. You can add teams, countries, and
-              series — and tune alerts — anytime in Following.
+              Pick what you actually follow. Only those games show up
+              here. You can add teams, countries, and series later, and
+              set how loud each one gets.
             </p>
             <div className="mt-5 space-y-2">
               {[
@@ -217,15 +221,50 @@ export function OnboardingFlow() {
                 letterSpacing: "-0.02em",
               }}
             >
-              Get pinged for the moments.
+              Get a tap for the moments.
             </h1>
             <p
               className="mt-3 text-[15px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Turn on alerts to know when your games start, wrap, and turn.
-              Calm by default — you pick the level per follow. Nothing
-              else.
+              We&apos;ll let you know when your games start, wrap, and
+              swing. Calm by default. You set the level per follow, and
+              nothing else gets through.
+            </p>
+
+            {/* A peek at what an alert looks like — the lock-screen ping. */}
+            <div
+              className="mt-5 rounded-[16px] px-4 py-3"
+              style={{ background: "#14100c" }}
+            >
+              <div className="flex items-center gap-1.5">
+                <span
+                  aria-hidden
+                  className="inline-block h-[5px] w-[5px] rounded-full"
+                  style={{ background: "#e55b2a" }}
+                />
+                <span
+                  className="text-[10px] uppercase"
+                  style={{ color: "#8a7d62", fontWeight: 700, letterSpacing: "0.1em" }}
+                >
+                  NBA · Q4 · 4:21
+                </span>
+              </div>
+              <p
+                className="mt-1 text-[15px]"
+                style={{ color: "#efe6d2", fontWeight: 700 }}
+              >
+                One-possession game. OKC 96, SA 94.
+              </p>
+            </div>
+
+            {/* Widget discovery — not obvious you can do this. */}
+            <p
+              className="mt-4 text-[13px] leading-snug"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              Tip: touch and hold your home screen, then add the No Noise
+              widget to see your next games at a glance.
             </p>
           </div>
         ) : null}
