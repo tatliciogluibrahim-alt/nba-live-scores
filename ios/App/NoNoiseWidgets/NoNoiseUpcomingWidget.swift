@@ -315,10 +315,10 @@ private struct EmptyBody: View {
         VStack(alignment: .leading, spacing: 8) {
             NNMarkView().frame(width: 24, height: 24)
             Spacer()
-            Text("Follow a team to see what's next.")
+            Text("Follow a team, country, or tournament to see what's next.")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(wInk)
-                .lineLimit(3)
+                .lineLimit(4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

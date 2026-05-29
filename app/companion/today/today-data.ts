@@ -697,6 +697,18 @@ function buildUpNext(
   const followedCountries = new Set(
     follows.filter((f) => f.kind === "country").map((f) => f.id)
   );
+  const followedSeries = follows
+    .filter((f) => f.kind === "series")
+    .map((f) => f.id);
+  const tournamentIds = follows
+    .filter((f) => f.kind === "tournament")
+    .map((f) => f.id.toLowerCase());
+  // A tournament follow covers EVERY game in that tournament — following
+  // "NBA Playoffs" should fill the widget without also following a team.
+  const followsNbaTournament = tournamentIds.some((id) => id.includes("nba"));
+  const followsWcTournament = tournamentIds.some(
+    (id) => id.includes("fifa") || id.includes("world-cup")
+  );
   const pinnedIds = new Set(pinned.map((p) => p.gameId));
 
   const nbaUpcoming = nba
@@ -707,14 +719,31 @@ function buildUpNext(
     .filter((g) => g.status === "upcoming")
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  // "Personal" = a game the user explicitly follows: their team, their
+  // country, a series they follow (both teams in it), OR any game in a
+  // tournament they follow. Tournament/series support was missing, so a
+  // playoffs-only follower saw nothing surface as theirs.
+  const nbaIsPersonal = (g: NBAGame): boolean => {
+    if (followsNbaTournament) return true;
+    if ([...followedTeams].some((abbr) => gameIncludesTeam(g, abbr))) return true;
+    return followedSeries.some((sid) => {
+      const [a, b] = sid.split("-");
+      return !!a && !!b && gameIncludesTeam(g, a) && gameIncludesTeam(g, b);
+    });
+  };
+  const wcIsPersonal = (g: WCGameLite): boolean => {
+    if (followsWcTournament) return true;
+    return [...followedCountries].some((code) => gameIncludesCountry(g, code));
+  };
+
   // Personal-first ordering, then everyone else's up-next feed. Items are
   // tagged with `source` and `pinned` at construction so the UI never has
   // to guess.
   const personalNBA = nbaUpcoming
-    .filter((g) => [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr)))
+    .filter(nbaIsPersonal)
     .map((g) => nbaToUpNext(g, pinnedIds.has(g.id), true));
   const personalWC = wcUpcoming
-    .filter((g) => [...followedCountries].some((code) => gameIncludesCountry(g, code)))
+    .filter(wcIsPersonal)
     .map((g) => wcToUpNext(g, pinnedIds.has(g.id), true));
 
   const personalIds = new Set([...personalNBA, ...personalWC].map((i) => i.id));
