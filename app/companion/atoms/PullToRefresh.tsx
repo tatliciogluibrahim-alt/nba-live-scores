@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { SportsBallLoader } from "./SportsBallLoader";
 
 // PullToRefresh — Stage Phase-1.
 //
@@ -56,6 +57,17 @@ export function PullToRefresh({
   disabled?: boolean;
 }) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  // Respect the OS "reduce motion" setting — render the still ball
+  // instead of the tumbling morph.
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReducedMotion(mq.matches);
+    apply();
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
+  }, []);
   // Touch state lives in refs — we don't want a re-render on every move.
   const startYRef = useRef<number | null>(null);
   const lastTranslateRef = useRef<number>(0);
@@ -223,24 +235,25 @@ export function PullToRefresh({
               : "none",
         }}
       >
+        {/* The Sports Ball loader. During the pull it's a still ball
+            that grows + rotates with the gesture (mapped feedback);
+            once refreshing it tumbles + morphs basketball→soccer→
+            football. Seam color = the cream surface it sits on. */}
         <span
           aria-hidden
-          className={isRefreshing ? "no-noise-spin" : ""}
           style={{
-            width: 28,
-            height: 28,
-            borderRadius: "50%",
-            border: "2px solid var(--mute-2)",
-            borderTopColor: "var(--ink)",
-            // Idle/pulling: the arc is "wound up" — rotation tracks the
-            // pull progress so the user sees their gesture mapped to
-            // something visual.
+            display: "inline-flex",
             transform: isRefreshing
               ? undefined
-              : `rotate(${indicatorProgress * 360}deg)`,
+              : `scale(${0.6 + indicatorProgress * 0.4}) rotate(${indicatorProgress * 300}deg)`,
             transition: "transform 0.06s linear",
           }}
-        />
+        >
+          <SportsBallLoader
+            size={40}
+            animated={isRefreshing && !reducedMotion}
+          />
+        </span>
       </div>
 
       {/* Children translate downward as the user pulls. */}
