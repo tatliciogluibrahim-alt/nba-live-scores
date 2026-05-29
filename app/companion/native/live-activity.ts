@@ -1,5 +1,6 @@
 "use client";
 
+import { registerPlugin } from "@capacitor/core";
 import { isCapacitorNative } from "../dev/native-detect";
 
 // Web-side bridge to the native `LiveActivity` Capacitor plugin
@@ -60,23 +61,26 @@ type LiveActivityPlugin = {
   ): Promise<PluginListenerHandle> | PluginListenerHandle;
 };
 
-// Lazily resolved once. `null` whenever we're not on native (web, SSR)
-// or @capacitor/core can't be loaded — every public fn guards on it.
-let pluginPromise: Promise<LiveActivityPlugin | null> | null = null;
+// Resolved once on first access. `null` whenever we're not on native
+// (web, SSR). Uses a static import of @capacitor/core (the dynamic
+// import was silently failing in production Next.js builds because
+// webpack bundles the module into other chunks).
+let plugin: LiveActivityPlugin | null | undefined;
 
 async function getPlugin(): Promise<LiveActivityPlugin | null> {
-  if (!isCapacitorNative()) return null;
-  if (!pluginPromise) {
-    pluginPromise = (async () => {
-      try {
-        const core = await import("@capacitor/core");
-        return core.registerPlugin<LiveActivityPlugin>(PLUGIN_NAME);
-      } catch {
-        return null;
-      }
-    })();
+  if (plugin !== undefined) return plugin;
+  if (!isCapacitorNative()) {
+    plugin = null;
+    return null;
   }
-  return pluginPromise;
+  try {
+    plugin = registerPlugin<LiveActivityPlugin>(PLUGIN_NAME);
+    console.log("[LiveActivity] plugin registered via static import");
+    return plugin;
+  } catch {
+    plugin = null;
+    return null;
+  }
 }
 
 /** Start a Live Activity for a pinned, live game. Resolves true when the
