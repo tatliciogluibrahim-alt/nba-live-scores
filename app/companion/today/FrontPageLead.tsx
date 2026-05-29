@@ -65,11 +65,11 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
   return (
     <section className="mb-5">
       <p
-        className="mb-2 flex items-center gap-1.5 text-[11px] uppercase"
+        className="mb-2 flex items-center gap-1.5 text-[12.5px] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
-          letterSpacing: "0.12em",
+          letterSpacing: "0.1em",
           color: eyebrowColor,
         }}
       >

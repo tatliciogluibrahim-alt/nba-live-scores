@@ -84,6 +84,12 @@ export function ThemeSelector() {
       >
         {OPTIONS.map((opt) => {
           const active = hydrated && choice === opt;
+          const isLight = opt === "light";
+          // Each button previews the theme it selects, using literal
+          // colors (not tokens) so the swatch stays true regardless of
+          // the currently-applied theme. The selected option gets an
+          // orange ring. (Before: the active option always used a dark
+          // --ink fill, so "Light" sat in a dark box — backwards.)
           return (
             <button
               key={opt}
@@ -93,9 +99,10 @@ export function ThemeSelector() {
               onClick={() => pick(opt)}
               className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-2 text-[12px] font-semibold transition active:scale-[0.97]"
               style={{
-                background: active ? "var(--ink)" : "transparent",
-                color: active ? "var(--cream)" : "var(--ink)",
-                border: `1px solid ${active ? "var(--ink)" : "var(--line)"}`,
+                background: isLight ? "#faf5e8" : "#14100c",
+                color: isLight ? "#1a1612" : "#efe6d2",
+                border: `2px solid ${active ? "#e55b2a" : "transparent"}`,
+                boxShadow: active ? "none" : "inset 0 0 0 1px var(--line)",
               }}
             >
               {LABELS[opt]}

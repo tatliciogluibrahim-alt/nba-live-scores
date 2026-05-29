@@ -46,7 +46,10 @@ export function resolveFollowIdentity(follow: Follow): FollowIdentity {
         kindLabel: "Country · World Cup",
         name: countryDisplayName(follow.id),
         detail: country ? `Group ${country.group} · World Cup` : undefined,
-        chip: country?.flag ?? follow.id,
+        // Country code (e.g. USA, GER), not the flag emoji — flags were
+        // dropped from the sports circle per design feedback. Flags stay
+        // only on share cards.
+        chip: follow.id,
         accent: "var(--wc)",
       };
     }

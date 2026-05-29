@@ -10,12 +10,12 @@ export function ReminderRow({ reminder }: { reminder: ReminderRowData }) {
   const body = (
     <>
       <p
-        className="text-[10px] uppercase"
+        className="text-[12.5px] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontWeight: 600,
-          letterSpacing: "0.12em",
-          color: "var(--mute-1)",
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          color: "var(--ink)",
         }}
       >
         Reminder

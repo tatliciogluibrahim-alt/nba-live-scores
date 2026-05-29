@@ -13,7 +13,9 @@ export function CountryPicker() {
       id: c.id,
       primary: c.name,
       secondary: `Group ${c.group}`,
-      mark: c.flag,
+      // Country code (e.g. USA), not the flag emoji — flags dropped from
+      // the sports circle per design feedback.
+      mark: c.id,
       group: `Group ${c.group}`,
       searchKeys: [c.id, c.name],
     }));
