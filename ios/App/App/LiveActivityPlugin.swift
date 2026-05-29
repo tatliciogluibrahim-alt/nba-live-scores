@@ -119,7 +119,12 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         Task { [weak self] in
-            await activity.end(nil, dismissalPolicy: .default)
+            // .immediate removes the Activity from the lock screen /
+            // Dynamic Island right away. (.default would linger it for
+            // up to ~4h showing the final state — wrong for an explicit
+            // end / unpin.) When the server later drives a game-final
+            // state, it can push the final score first, then end.
+            await activity.end(nil, dismissalPolicy: .immediate)
             self?.activities[gameId] = nil
             call.resolve()
         }
