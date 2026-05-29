@@ -1323,6 +1323,9 @@ export type TodayHeadline = {
   support?: string;
   /** The single lead game as a deck card. Null on quiet / countdown days. */
   deck: TodayHeadlineDeck | null;
+  /** True when the lead is a live game. Drives the pulsing dot on the
+   *  Front Page deck so the user instantly sees something is happening. */
+  live: boolean;
 };
 
 const HEADLINE_NUM = [
@@ -1427,6 +1430,7 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
       // playoff/series games; plain games and World Cup get none.
       support: lead?.stake,
       deck,
+      live: true,
     };
   }
 
@@ -1447,6 +1451,7 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
           n === 1 ? `One game ${when}.` : `${spellCount(n)} games ${when}.`,
         support: lead?.stake,
         deck,
+        live: false,
       };
     }
 
@@ -1461,6 +1466,7 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
       headline: n === 1 ? `One game ${day}.` : `${spellCount(n)} games ${day}.`,
       support: lead?.stake,
       deck,
+      live: false,
     };
   }
 
@@ -1470,5 +1476,6 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
     eyebrow: { label: "Today", tone: "mute" },
     headline: payload.reminder ? "Quiet for now." : "All quiet.",
     deck: null,
+    live: false,
   };
 }

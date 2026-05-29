@@ -70,6 +70,9 @@ export type FollowCardData = {
    *  next to the kind label so the user knows alerts won't fire here
    *  going forward without taking the follow away. */
   wrapped?: boolean;
+  /** True when at least one game for this follow is currently live.
+   *  Renders a calm pulsing dot next to the kind label. */
+  isLive?: boolean;
 };
 
 // Detail route resolver. All four kinds now route to real detail
@@ -99,7 +102,7 @@ export function FollowCard({ data }: { data: FollowCardData }) {
   } = useFollows();
   const [expanded, setExpanded] = useState(false);
 
-  const { follow, kindLabel, identityMark, name, detail, accent, wrapped } =
+  const { follow, kindLabel, identityMark, name, detail, accent, wrapped, isLive } =
     data;
   const presetMeta = PRESETS[follow.alertTier];
   const slotsFull = alertSlotCount >= alertSlotCap;
@@ -153,7 +156,32 @@ export function FollowCard({ data }: { data: FollowCardData }) {
     <div className="min-w-0 flex-1">
       <div className="flex min-w-0 items-center gap-1.5">
         <Eyebrow className="min-w-0 truncate">{kindLabel}</Eyebrow>
-        {wrapped ? (
+        {isLive ? (
+          <span
+            aria-label="Live now"
+            className="inline-flex items-center gap-1 rounded-full"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--nba)",
+              background: "var(--nba-soft)",
+              border: "1px solid var(--nba)",
+              borderRadius: 999,
+              padding: "1px 6px",
+              lineHeight: 1.4,
+            }}
+          >
+            <span
+              aria-hidden
+              className="no-noise-live-fade inline-block h-[4px] w-[4px] rounded-full"
+              style={{ background: "var(--nba)" }}
+            />
+            Live
+          </span>
+        ) : wrapped ? (
           // Calm "Wrapped" chip next to the kind label. Reads as a
           // status pip rather than a CTA — the user can keep the
           // follow for posterity or unfollow it explicitly.
@@ -195,6 +223,19 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {detail}
+        </p>
+      ) : null}
+      {/* Inline "No alerts" nudge when alerts are off — more visible than
+          just the muted bell. The user's friend missed that their series
+          follow wasn't alerting because the muted bell was too subtle.
+          Only shows when alerts are off AND slots are full (the scenario
+          where the user can't easily fix it without freeing a slot). */}
+      {!follow.alertEnabled && slotsFull && !expanded ? (
+        <p
+          className="mt-0.5 truncate text-[11px]"
+          style={{ color: "var(--mute-2)", fontWeight: 600 }}
+        >
+          No alerts (slots full)
         </p>
       ) : null}
     </div>

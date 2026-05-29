@@ -80,6 +80,13 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
                 fontWeight: item.tone === "live" ? 700 : 600,
               }}
             >
+              {item.tone === "live" ? (
+                <span
+                  aria-hidden
+                  className="no-noise-live-fade mr-1 inline-block h-[5px] w-[5px] shrink-0 rounded-full"
+                  style={{ background: "var(--nba)" }}
+                />
+              ) : null}
               {item.chip}
             </Link>
           );

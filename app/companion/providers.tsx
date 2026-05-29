@@ -132,9 +132,18 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     const storedFollows = normalizeStoredFollows(
       readJSON<unknown>(STORAGE_KEYS.follows, [])
     );
-    const storedPinned = normalizeStoredPinned(
+    const rawPinned = normalizeStoredPinned(
       readJSON<unknown>(STORAGE_KEYS.pinned, [])
     );
+
+    // Auto-unpin stale games. Pins older than 24 hours are almost
+    // certainly finished games the user forgot to unpin. Cleaning them
+    // on hydration keeps the Watching tab tidy (user feedback 2026-05-28).
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    const storedPinned = rawPinned.filter(
+      (p) => Date.now() - p.pinnedAt < TWENTY_FOUR_HOURS
+    );
+
     const storedPrefs = normalizeStoredPrefs(
       readJSON<unknown>(STORAGE_KEYS.prefs, DEFAULT_PREFS)
     );

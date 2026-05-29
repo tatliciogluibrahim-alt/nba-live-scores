@@ -65,7 +65,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
   return (
     <section className="mb-5">
       <p
-        className="mb-2 text-[11px] uppercase"
+        className="mb-2 flex items-center gap-1.5 text-[11px] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
@@ -73,6 +73,13 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
           color: eyebrowColor,
         }}
       >
+        {lead.live ? (
+          <span
+            aria-hidden
+            className="no-noise-live-fade inline-block h-[6px] w-[6px] shrink-0 rounded-full"
+            style={{ background: eyebrowColor }}
+          />
+        ) : null}
         {lead.eyebrow.label}
       </p>
 
@@ -99,8 +106,8 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
           aria-label={`Open ${deck.matchup}`}
           className="mt-5 flex items-center gap-3 rounded-[14px] border px-4 py-3.5 transition active:scale-[0.99]"
           style={{
-            background: "var(--cream-2)",
-            borderColor: "var(--line)",
+            background: lead.live ? "var(--paper)" : "var(--cream-2)",
+            borderColor: lead.live ? deck.accent : "var(--line)",
             borderLeft: `3px solid ${deck.accent}`,
           }}
         >

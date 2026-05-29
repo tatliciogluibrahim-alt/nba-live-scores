@@ -8,6 +8,7 @@ import { useFollows } from "../providers";
 import type { Follow } from "../state/types";
 import { FollowCard, type FollowCardData } from "./FollowCard";
 import { useWrappedSeries } from "./use-wrapped-series";
+import { useLiveFollows, isFollowLive } from "./use-live-follows";
 import { SportsCircleShareModal } from "../share/SportsCircleShareModal";
 import { SyncCircleModal } from "./SyncCircleModal";
 
@@ -102,6 +103,7 @@ export function FollowingDashboard() {
   // still owns the follow (in case they want to look back at the
   // series detail), but the card signals it won't drive new alerts.
   const wrappedSeries = useWrappedSeries();
+  const liveFollows = useLiveFollows();
 
   const cards: FollowCardData[] = follows.map((f) => {
     const identity = resolveFollowIdentity(f);
@@ -113,6 +115,7 @@ export function FollowingDashboard() {
       detail: identity.detail,
       accent: identity.accent,
       wrapped: f.kind === "series" && wrappedSeries.has(f.id),
+      isLive: isFollowLive(f.kind, f.id, liveFollows),
     };
   });
 
