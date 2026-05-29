@@ -8,16 +8,13 @@
 // comeback           ·       ·        ✓
 // final              ✓       ✓        ✓
 // wc-kickoff         ✓       ✓        ✓
+// wc-halftime        ·       ✓        ✓
 // wc-final           ✓       ✓        ✓
 //
 // If the user is following at "quiet" they get bookends only — game
 // start and final, in either sport. At "companion" they also get the
-// per-quarter pulses (NBA). At "all" they get late-game drama
-// (close-game, comeback) on top of that.
-//
-// WC v1 only emits kickoff + final. When wc-halftime / wc-goal /
-// wc-red-card land they'll go in the companion / all tiers, mirroring
-// the NBA per-quarter pattern.
+// per-quarter pulses (NBA) and halftime (WC). At "all" they get
+// late-game drama (close-game, comeback) on top of that.
 //
 // "all" matches everything quiet / companion match plus the
 // closeness-revealing events. There's no "all but quieter than
@@ -34,11 +31,10 @@ const MATRIX: Record<EventType, ReadonlySet<AlertPreset>> = {
   "close-game": new Set<AlertPreset>(["all"]),
   comeback: new Set<AlertPreset>(["all"]),
   final: new Set<AlertPreset>(["quiet", "companion", "all"]),
-  // World Cup — v1 ships kickoff + final only, both treated as bookend
-  // events (every tier gets them). When/if we add wc-halftime or
-  // wc-goal, those map to companion+/all only, matching the NBA matrix
-  // shape.
+  // World Cup — kickoff + final are bookend events (every tier).
+  // Halftime maps to companion + all, matching the NBA eoq-2 pattern.
   "wc-kickoff": new Set<AlertPreset>(["quiet", "companion", "all"]),
+  "wc-halftime": new Set<AlertPreset>(["companion", "all"]),
   "wc-final": new Set<AlertPreset>(["quiet", "companion", "all"]),
 };
 

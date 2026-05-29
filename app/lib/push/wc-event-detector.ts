@@ -2,12 +2,13 @@
 // with the last cached state and emits zero or more push-worthy events.
 // Pure function — caller persists the new state afterwards.
 //
-// Event taxonomy (v1, deliberately small):
-//   • wc-kickoff — status flipped upcoming → live
-//   • wc-final   — status flipped live → final
+// Event taxonomy (v2):
+//   • wc-kickoff  — status flipped upcoming → live
+//   • wc-halftime — minute crossed from ≤45 to >45 while live (second
+//                   half started). Fires once per game via halftimeFired.
+//   • wc-final    — status flipped live → final
 //
 // Deferred:
-//   • wc-halftime  — needs reliable minute parsing.
 //   • wc-goal      — would require diffing penaltyHome/Away + scoreline
 //                    minute-by-minute against the feed's event list.
 //   • wc-comeback  — same problem space as the NBA version, plus soccer
@@ -72,7 +73,31 @@ export function detectWCEvents(
     events.push({ ...baseInfo, type: "wc-kickoff" });
   }
 
-  // Transition 2: live → final → full time.
+  // Transition 2: halftime / second half start.
+  // Soccer's first half runs minutes 1–45 (plus stoppage). The second
+  // half starts at minute 46+. We detect the crossing once: prev minute
+  // was ≤ 45 (or null, meaning we hadn't seen a minute yet) and next
+  // minute is > 45 while both ticks are live. Also fires when the
+  // previous minute was null/0 (first observation of a live game
+  // mid-second-half) AS LONG AS prev was already live — so a game that
+  // was live at minute 30 and we next see it at minute 48 fires, but a
+  // fresh upcoming→live at minute 48 doesn't (that's a kickoff only).
+  const halftimeAlreadyFired = prev?.halftimeFired === true;
+  let nextHalftimeFired = halftimeAlreadyFired;
+
+  if (
+    !halftimeAlreadyFired &&
+    prev?.status === "live" &&
+    stableNext.status === "live" &&
+    stableNext.minute != null &&
+    stableNext.minute > 45 &&
+    (prev.minute == null || prev.minute <= 45)
+  ) {
+    events.push({ ...baseInfo, type: "wc-halftime" });
+    nextHalftimeFired = true;
+  }
+
+  // Transition 3: live → final → full time.
   if (prev?.status === "live" && stableNext.status === "final") {
     events.push({ ...baseInfo, type: "wc-final" });
   }
@@ -85,6 +110,7 @@ export function detectWCEvents(
     awayScore: stableNext.awayScore,
     homeScore: stableNext.homeScore,
     minute: stableNext.minute,
+    halftimeFired: nextHalftimeFired,
     updatedAt: Date.now(),
   };
 

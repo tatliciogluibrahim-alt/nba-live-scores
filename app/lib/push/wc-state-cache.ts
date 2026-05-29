@@ -19,10 +19,12 @@ export type CachedWCGameState = {
   homeCode: string;
   awayScore: number;
   homeScore: number;
-  /** Best-effort minute marker from the feed (e.g. "45+2" → 47). Stored
-   *  for future halftime / late-game detection; the v1 detector only
-   *  uses status transitions. */
+  /** Best-effort minute marker from the feed (e.g. "45+2" → 47). Used
+   *  by the halftime detector to fire when the second half starts. */
   minute: number | null;
+  /** True once the wc-halftime event has fired for this game. Prevents
+   *  re-firing on subsequent scans as the minute progresses past 45. */
+  halftimeFired?: boolean;
   updatedAt: number;
 };
 

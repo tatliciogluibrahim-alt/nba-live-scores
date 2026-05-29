@@ -36,6 +36,7 @@ import { incrCounter } from "./ops-metrics";
 
 const WC_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   "wc-kickoff",
+  "wc-halftime",
   "wc-final",
 ]);
 
@@ -473,6 +474,15 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
         body: "The match is underway. Tap to follow along.",
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:wc-kickoff`,
+      };
+    case "wc-halftime":
+      return {
+        title: `Second half · ${matchup}`,
+        body: noSpoilers
+          ? "Second half underway. Tap to check in."
+          : `${scoreLine(event)} · Second half started`,
+        url: `/game/${event.gameId}`,
+        tag: `${event.gameId}:wc-halftime`,
       };
     case "wc-final":
       return {

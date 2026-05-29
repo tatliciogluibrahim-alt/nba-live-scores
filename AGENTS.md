@@ -269,7 +269,7 @@ Internal keys (`quiet | companion | all`) are unchanged. Reference:
 `app/companion/state/types.ts` PRESETS.
 
 - **Quiet** (key: `quiet`) — Start and final only.
-- **Companion** (key: `companion`) — Start, quarter breaks, final.
+- **Companion** (key: `companion`) — Start, quarter breaks, halftime (WC), final.
 - **Close games** (key: `all`) — Adds close finishes and comebacks.
 
 Rename history:
