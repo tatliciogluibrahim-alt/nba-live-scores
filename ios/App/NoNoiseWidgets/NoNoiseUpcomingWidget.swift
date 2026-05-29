@@ -96,7 +96,7 @@ struct UpcomingWidgetView: View {
         if let snap = entry.snapshot, !snap.empty,
            !(snap.upcoming.isEmpty && snap.moment == nil) {
             if family == .systemSmall {
-                SmallBody(snap: snap)
+                SmallBody(snap: snap, startIndex: entry.startIndex)
             } else {
                 MediumBody(snap: snap, startIndex: entry.startIndex)
             }
@@ -106,14 +106,21 @@ struct UpcomingWidgetView: View {
     }
 }
 
-// Small: the single soonest game.
+// Small: one game at a time. Shares the paging index with medium, and
+// gets a tiny "›" advance button so you can swap which game shows (it's
+// otherwise the soonest). Tapping the rest of the widget opens the app.
 private struct SmallBody: View {
     let snap: WidgetSnapshot
+    let startIndex: Int
 
     var body: some View {
-        let g = snap.upcoming.first
+        let count = snap.upcoming.count
+        let idx = count > 0 ? min(max(0, startIndex), count - 1) : 0
+        let g: WidgetUpcoming? = count > 0 ? snap.upcoming[idx] : nil
+        let canPage = count > 1
+
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
+            HStack(spacing: 4) {
                 if let g {
                     Text(g.eyebrow.uppercased())
                         .font(.system(size: 10, weight: .semibold))
@@ -123,7 +130,7 @@ private struct SmallBody: View {
                         .minimumScaleFactor(0.7)
                 }
                 Spacer()
-                NNMarkView().frame(width: 20, height: 20)
+                NNMarkView().frame(width: 18, height: 18)
             }
             Spacer()
             if let g {
@@ -137,10 +144,26 @@ private struct SmallBody: View {
                     .foregroundStyle(wMute)
                     .lineLimit(1)
                     .padding(.top, 3)
-                if let b = g.broadcast, !b.isEmpty {
-                    BroadcastPill(text: b, accentHex: g.accentHex)
-                        .padding(.top, 4)
+                HStack(spacing: 6) {
+                    if let b = g.broadcast, !b.isEmpty {
+                        BroadcastPill(text: b, accentHex: g.accentHex)
+                    }
+                    Spacer()
+                    if canPage {
+                        Button(intent: AdvanceUpcomingIntent()) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(wInk)
+                                .frame(width: 20, height: 20)
+                                .background(
+                                    Circle().fill(wCream)
+                                        .overlay(Circle().stroke(wLine, lineWidth: 1))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
+                .padding(.top, 5)
             } else if let m = snap.moment {
                 Text(m.text)
                     .font(.system(size: 16, weight: .bold))

@@ -32,6 +32,8 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
   // when one of your pins is in progress. Upcoming/final keep paper.
   const isLive = item.status === "live";
   const liveTint = item.source === "wc" ? "var(--wc-soft)" : "var(--nba-soft)";
+  // Chip text accent per sport — WC green, NBA orange.
+  const chipAccent = item.source === "wc" ? "var(--wc)" : "var(--nba)";
 
   return (
     <article
@@ -49,7 +51,7 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
             sports circle); the contextEyebrow still carries "World Cup". */}
         {item.awayCode && item.homeCode ? (
           <div className="mb-3 flex items-center gap-2">
-            <TeamChip code={item.awayCode} />
+            <TeamChip code={item.awayCode} accent={chipAccent} />
             <span
               style={{
                 fontFamily: "var(--font-mono)",
@@ -61,7 +63,7 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
             >
               vs
             </span>
-            <TeamChip code={item.homeCode} />
+            <TeamChip code={item.homeCode} accent={chipAccent} />
           </div>
         ) : null}
 
@@ -153,7 +155,7 @@ function parseScoreLine(line: string | null): [number | null, number | null] {
 // on the Following tab's FollowCard so the same team looks the same
 // across every surface.
 
-function TeamChip({ code }: { code: string }) {
+function TeamChip({ code, accent = "var(--nba)" }: { code: string; accent?: string }) {
   return (
     <span
       aria-hidden
@@ -164,7 +166,7 @@ function TeamChip({ code }: { code: string }) {
         fontSize: code.length > 3 ? 10 : 12,
         fontWeight: 700,
         letterSpacing: "0.02em",
-        color: "var(--nba)",
+        color: accent,
       }}
     >
       {code}
