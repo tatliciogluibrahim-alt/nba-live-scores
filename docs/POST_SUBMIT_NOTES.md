@@ -2,7 +2,12 @@
 
 Submitted to App Review on 2026-05-30.
 
-Build 7 → uploaded → selected → Add for Review → clicked.
+Build 8 → uploaded → selected → Add for Review → clicked.
+
+(Build 7 was the privacy-manifest + encryption-posture build. Build 8
+adds the drop of iPad / Mac (Designed for iPad) / Apple Vision from
+Supported Destinations, which caught us at the very last step when App
+Store Connect demanded 13" iPad screenshots.)
 
 Now waiting on Apple. Typical turnaround 24-48 hours.
 
