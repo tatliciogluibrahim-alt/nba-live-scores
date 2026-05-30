@@ -23,10 +23,9 @@ export default function SportsCirclePage() {
       intro="Follows, alerts, pinned games, and No-Spoilers as one connected system that personalizes the app without making it noisy."
     >
       <P>
-        Most sports apps treat personalization as a settings screen. Pick
-        a team, dismiss the dialog, get notified about every minor update
-        until you eventually mute the app. This one tries to do it
-        differently.
+        In most sports apps, personalization is a settings screen. You pick
+        a team, dismiss the dialog, then get notified about every minor
+        update until you mute the app. This one works differently.
       </P>
       <P>
         No Noise Scores treats your follows, alerts, and pinned games as

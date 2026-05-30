@@ -85,7 +85,7 @@ const TABS: Tab[] = [
     id: "watching",
     href: "/watching",
     label: "Watching",
-    ariaLabel: "Watching — pinned games",
+    ariaLabel: "Watching, pinned games",
     Icon: TabPin,
   },
 ];

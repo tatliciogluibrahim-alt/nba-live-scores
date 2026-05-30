@@ -7,7 +7,7 @@ import {
 } from "../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "World Cup 2026 app",
+  title: "World Cup 2026 app | No Noise Scores",
   description:
     "Pick your country. Countdown to kickoff. Group context. Path to the final. Kickoff and full-time alerts. June 11, 2026.",
   alternates: {
@@ -63,7 +63,7 @@ export default function WorldCup2026Page() {
         Watching the match on delay tonight? Turn No-Spoilers on. Group
         standings, scores, and recap cards stay blurred. The push you
         get at full-time will read &quot;Match wrapped. Tap when
-        you&apos;re ready.&quot;. No score, no winner.
+        you&apos;re ready.&quot; No score, no winner.
       </CalloutBox>
 
       <H2>How it&apos;s different from FotMob / SofaScore</H2>

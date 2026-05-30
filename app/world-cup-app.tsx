@@ -171,7 +171,7 @@ function generateICS(countryCode: string, game: WCGame): string {
     game.home.abbreviation === countryCode
       ? game.away.abbreviation
       : game.home.abbreviation;
-  const summary = `⚽ ${countryCode} vs ${opponent} — FIFA World Cup 2026`;
+  const summary = `⚽ ${countryCode} vs ${opponent} · FIFA World Cup 2026`;
   const desc = `${game.stage} · Watch on ${getWCWatchLabel(game)}\\nnonoisescores.app`;
   return [
     "BEGIN:VCALENDAR",
@@ -1866,7 +1866,7 @@ function CountryHub({
               className="mt-2 text-[0.6rem] font-bold"
               style={{ color: textColor }}
             >
-              Notifications blocked - the calendar file still downloaded.
+              Notifications blocked. The calendar file still downloaded.
             </p>
           )}
         </div>

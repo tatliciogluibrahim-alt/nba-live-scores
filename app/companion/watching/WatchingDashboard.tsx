@@ -129,7 +129,7 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
             borderColor: "var(--mute-2)",
             color: "var(--ink)",
           }}
-          aria-label="Pin more games — go to Following"
+          aria-label="Pin more games. Go to Following."
         >
           <span className="text-[13px]" style={{ fontWeight: 600 }}>
             Pin more games

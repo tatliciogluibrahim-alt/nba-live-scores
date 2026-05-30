@@ -82,7 +82,7 @@ export default function ChangelogPage() {
       <P>
         Bricolage Grotesque + Inter + JetBrains Mono shipped as the
         type system. Two-orange rule. Cream/paper visual system locked
-        in. Three-tier preset model (Quiet / Companion / All moments)
+        in. Three-tier preset model (Quiet / Companion / Full Details)
         for per-follow alerts. SevenDotStrip and PathTimeline as
         signature components.
       </P>

@@ -79,7 +79,7 @@ function LiveRoomCard({ item }: { item: PinnedItem }) {
   return (
     <Link
       href={item.href}
-      aria-label={`Open ${item.spoilerSubject} — live`}
+      aria-label={`Open ${item.spoilerSubject}, live`}
       className="block rounded-[14px] border px-3 py-3 transition active:scale-[0.99]"
       style={{
         background: "var(--paper)",

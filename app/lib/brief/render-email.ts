@@ -414,7 +414,7 @@ export function renderBriefText({
   if (payload.yesterday.length > 0) {
     lines.push("YESTERDAY");
     for (const row of payload.yesterday) {
-      const score = row.scoreLine ? ` — ${row.scoreLine}` : "";
+      const score = row.scoreLine ? ` · ${row.scoreLine}` : "";
       lines.push(`  ${row.matchup}${score}`);
       lines.push(`  ${row.context}`);
       for (const b of row.recapBlurbs ?? []) lines.push(`    · ${b}`);

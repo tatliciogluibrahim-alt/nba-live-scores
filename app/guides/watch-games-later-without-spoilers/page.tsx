@@ -80,7 +80,7 @@ export default function WatchLaterGuide() {
         Recap card that fires at the end of the night stays hidden too.
       </P>
       <P>
-        If you want to peek at the score. Tap the blurred number. It
+        Want to peek at the score? Tap the blurred number. It
         reveals just that one element, not the whole page. The blur
         comes back on the next visit unless you turn No-Spoilers off.
       </P>

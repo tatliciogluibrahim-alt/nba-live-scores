@@ -115,7 +115,7 @@ export function ThemeSelector() {
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {hydrated && choice === "dark"
-          ? "Warm dark — the cream identity, after sundown."
+          ? "Warm dark. The cream identity, after sundown."
           : "Cream chassis. The default daylight experience."}
       </p>
     </section>

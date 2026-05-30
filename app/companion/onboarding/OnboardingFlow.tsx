@@ -33,7 +33,7 @@ async function requestNotifications(): Promise<void> {
 }
 
 export function OnboardingFlow() {
-  const { prefs, completeOnboarding, hydrated } = useUserPrefs();
+  const { prefs, completeOnboarding, dismissNotifPrompt, hydrated } = useUserPrefs();
   const { follows, isFollowing, addFollow, removeFollow } = useFollows();
 
   const [phase, setPhase] = useState<"idle" | "active" | "done">("idle");
@@ -290,6 +290,9 @@ export function OnboardingFlow() {
               onClick={async () => {
                 setWorking(true);
                 await requestNotifications();
+                // Record the notification decision so the Today FirstRunStrip
+                // doesn't re-ask the same thing right after onboarding.
+                dismissNotifPrompt();
                 finish();
               }}
               className="w-full rounded-full py-3.5 text-[15px] font-semibold active:scale-[0.99]"
@@ -298,7 +301,12 @@ export function OnboardingFlow() {
               {working ? "Setting up…" : "Turn on alerts"}
             </button>
             <button
-              onClick={finish}
+              onClick={() => {
+                // "Maybe later" is still a notification decision — record it
+                // so Today doesn't immediately re-prompt for the same thing.
+                dismissNotifPrompt();
+                finish();
+              }}
               className="w-full py-2 text-[13px]"
               style={{ color: "var(--mute-1)", fontWeight: 600 }}
             >

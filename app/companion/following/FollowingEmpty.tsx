@@ -21,7 +21,7 @@ export function FollowingEmpty() {
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Pick a moment, then who in it. Only what you follow surfaces in
-        this app — everything else stays quiet.
+        this app. Everything else stays quiet.
       </p>
 
       <div className="space-y-3">

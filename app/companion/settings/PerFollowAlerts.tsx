@@ -311,7 +311,7 @@ function TestPushRow({ followName }: { followName: string }) {
       }
       setConfirmation("Test alert sent to this device.");
     } catch {
-      setConfirmation("Couldn't send — check notification permission.");
+      setConfirmation("Couldn't send. Check notification permission.");
     } finally {
       setBusy(false);
     }

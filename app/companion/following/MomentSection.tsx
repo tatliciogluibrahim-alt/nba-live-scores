@@ -139,14 +139,14 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
                     color: "var(--ink)",
                     borderTop: "1px solid var(--line)",
                   }}
-                  aria-label={`${moment.name} — ${g.title} (coming soon)`}
+                  aria-label={`${moment.name}: ${g.title} (coming soon)`}
                 >
                   {inner}
                 </div>
               ) : (
                 <Link
                   href={g.href}
-                  aria-label={`${moment.name} — ${g.title}`}
+                  aria-label={`${moment.name}: ${g.title}`}
                   className="flex min-h-[64px] items-center gap-3 px-4 py-3 transition active:scale-[0.99]"
                   style={{
                     background: "transparent",

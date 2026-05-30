@@ -7,7 +7,7 @@ import {
 } from "../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "NBA Playoffs alerts",
+  title: "NBA Playoffs alerts | No Noise Scores",
   description:
     "Follow your team through the playoffs. Tipoff, close-game, final, series-wrap pushes for the moments you want.",
   alternates: {
@@ -51,7 +51,7 @@ export default function NBAPlayoffsAlertsPage() {
         items={[
           "Quiet: Tipoff and Final only. Two pushes per game.",
           "Companion: Tipoff, end-of-Q, last quarter, Final. Around 4–5 per game.",
-          "All moments: adds close-game and comeback. Around 6–8 per dramatic game.",
+          "Full Details: adds close-game and comeback. Around 6–8 per dramatic game.",
         ]}
       />
 

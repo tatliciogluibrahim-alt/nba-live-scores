@@ -215,7 +215,7 @@ function NoSpoilersAmbientDot() {
   return (
     <Link
       href="/settings"
-      aria-label="Scores hidden — open Alerts & Notifications to change"
+      aria-label="Scores hidden. Open Alerts & Notifications to change."
       className="no-noise-reveal-focus inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 transition active:scale-[0.97]"
       style={{ color: "var(--mute-1)" }}
     >

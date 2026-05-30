@@ -35,7 +35,7 @@ export function CrumbBar({
         href={backHref}
         className="inline-flex min-h-[44px] items-center gap-1.5"
         style={{ color: "var(--mute-1)" }}
-        aria-label={`${backLabel} — back to previous screen`}
+        aria-label={`${backLabel}, back to previous screen`}
       >
         <svg
           width="14"

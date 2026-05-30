@@ -16,7 +16,7 @@ import { ImageResponse } from "next/og";
 // past Vercel's 1 MB Hobby-tier limit. Node has a 50 MB limit and
 // Vercel caches the rendered PNG, so the slightly slower cold start
 // only happens on the first request after deploy.
-export const alt = "No Noise Scores — the calm sports companion";
+export const alt = "No Noise Scores. The calm sports companion.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

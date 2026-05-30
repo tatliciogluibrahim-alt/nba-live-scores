@@ -189,7 +189,7 @@ export function EnableNotificationsCard() {
             className="mt-2 text-[11px] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            {PRESETS[tier].detail}.
+            {PRESETS[tier].detail}
           </p>
 
           <div className="mt-3 flex items-center gap-2">

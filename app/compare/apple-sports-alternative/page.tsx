@@ -63,7 +63,7 @@ export default function VsAppleSportsPage() {
           [
             "Per-follow alert tiers",
             "On/off per team",
-            "Three tiers per follow: Quiet, Companion, All moments",
+            "Three tiers per follow: Quiet, Companion, Full Details",
           ],
           [
             "Editorial voice",

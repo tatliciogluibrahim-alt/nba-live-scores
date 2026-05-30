@@ -44,7 +44,7 @@ export function PushSubscriptionPanel() {
         <PanelHeader />
         <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
           Push isn&apos;t supported in this browser. On iPhone, install the app to your home screen
-          first — Safari tabs can&apos;t receive push.
+          first. Safari tabs can&apos;t receive push.
         </p>
       </section>
     );
@@ -147,7 +147,7 @@ export function PushSubscriptionPanel() {
               }}
             >
               {working === "delayed-test"
-                ? "Queued — close the app…"
+                ? "Queued. Close the app…"
                 : "Send in 10s (close the app to test)"}
             </button>
             <button

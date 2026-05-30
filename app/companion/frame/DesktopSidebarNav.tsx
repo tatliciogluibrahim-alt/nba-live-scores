@@ -162,7 +162,7 @@ export function DesktopSidebarNav({ active }: { active?: Tab }) {
         href="/app"
         prefetch
         className="flex items-center gap-2 px-5 pb-5 pt-6"
-        aria-label="No Noise Scores — Today"
+        aria-label="No Noise Scores, Today"
       >
         <BrandMark size={26} />
         <span
