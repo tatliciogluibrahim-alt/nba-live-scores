@@ -67,7 +67,12 @@ type LiveActivityPlugin = {
 // webpack bundles the module into other chunks).
 let plugin: LiveActivityPlugin | null | undefined;
 
-async function getPlugin(): Promise<LiveActivityPlugin | null> {
+// SYNCHRONOUS by design. If this is `async`, callers do `await getPlugin()`,
+// and JS promise resolution unwraps the returned value as a thenable. The
+// Capacitor proxy intercepts ALL property access (including `.then`), so the
+// await dispatches a phantom `then` native call that hangs forever, silently
+// killing every LiveActivity method dispatch. Matches widget-bridge.ts.
+function getPlugin(): LiveActivityPlugin | null {
   if (plugin !== undefined) return plugin;
   if (!isCapacitorNative()) {
     plugin = null;
@@ -88,7 +93,7 @@ async function getPlugin(): Promise<LiveActivityPlugin | null> {
 export async function startLiveActivity(
   input: LiveActivityStartInput
 ): Promise<boolean> {
-  const plugin = await getPlugin();
+  const plugin = getPlugin();
   if (!plugin) {
     console.log("[LiveActivity] startLiveActivity: no plugin (off-native?)");
     return false;
@@ -106,7 +111,7 @@ export async function startLiveActivity(
 
 /** End the Live Activity for a game (final / unpinned). No-op off-native. */
 export async function endLiveActivity(gameId: string): Promise<void> {
-  const plugin = await getPlugin();
+  const plugin = getPlugin();
   if (!plugin) return;
   try {
     await plugin.end({ gameId });
@@ -121,7 +126,7 @@ export async function addLiveActivityPushTokenListener(
   cb: (data: LiveActivityPushTokenEvent) => void
 ): Promise<() => void> {
   console.log("[LiveActivity] addPushTokenListener called");
-  const plugin = await getPlugin();
+  const plugin = getPlugin();
   if (!plugin) {
     console.log("[LiveActivity] addPushTokenListener: no plugin");
     return () => {};

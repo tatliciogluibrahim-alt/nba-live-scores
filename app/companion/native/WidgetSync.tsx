@@ -90,7 +90,15 @@ export function WidgetSync() {
       pinned: pinnedRef.current,
     });
 
-    const upcoming = payload.upNext.slice(0, 3).map(itemToUpcoming);
+    // Widget respects follows strictly: only personal games (followed
+    // team / country / series / tournament) reach the home-screen tile.
+    // When the user has nothing personal, the widget falls back to the
+    // moment line (or its empty CTA). Cap at 5 so the medium widget can
+    // page through a couple more games before wrapping.
+    const upcoming = payload.upNext
+      .filter((item) => item.personal)
+      .slice(0, 5)
+      .map(itemToUpcoming);
     const moment = payload.reminder
       ? { text: payload.reminder.text, detail: payload.reminder.detail }
       : null;
