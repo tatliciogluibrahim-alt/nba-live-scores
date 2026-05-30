@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
+import { isCapacitorNative } from "../dev/native-detect";
 import { PRESETS, type AlertPreset } from "../state/types";
 
 // Notification Preview — Stage 15C.
@@ -241,8 +242,20 @@ function LockScreenPushMock({ preview }: { preview: PreviewExample }) {
 /** "Send me a test" — only enabled when the browser supports the
  *  Notification API and permission isn't denied. We never silently
  *  request permission: tap once → permission prompt → tap again to
- *  fire. Persists no state and never reaches the network. */
+ *  fire. Persists no state and never reaches the network.
+ *
+ *  Native iOS: the Web Notification API can't fire a real alert from
+ *  inside the Capacitor WKWebView, so we hide the test affordance
+ *  entirely. The preview cards still show what each tier looks like.
+ *  Real notifications run through APNs via CapacitorPushBootstrap and
+ *  don't need (or work with) this test path. The Settings panel above
+ *  already points native users at iOS Settings > No Noise Scores >
+ *  Notifications for managing the real subscription. */
 function TestPushButton({ preview }: { preview: PreviewExample }) {
+  // Native iOS: no test button. Real notifications come from APNs, not
+  // from the Web Notification API the button uses.
+  if (isCapacitorNative()) return null;
+
   const [status, setStatus] = useState<"idle" | "asked" | "sent" | "blocked" | "unsupported">(
     () => {
       if (typeof window === "undefined") return "idle";
