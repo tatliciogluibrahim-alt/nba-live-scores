@@ -36,6 +36,11 @@ import type { PinnedGame } from "../state/types";
 // deploy before the Swift plugin exists — it just does nothing until a
 // build that includes it runs.
 
+// Bump this each deploy so the Xcode console tells us at a glance whether
+// the device is running the current bundle vs a stale cached one. Look
+// for "BUILD=LA-v3" in the first [LiveActivitySync] poll line.
+const BUILD_TAG = "LA-v3";
+
 const LIVE_INTERVAL_MS = 15_000;
 const IDLE_INTERVAL_MS = 60_000;
 
@@ -185,7 +190,7 @@ export function LiveActivitySync() {
 
       // Diagnostics for the Live Activity P0 — remove once verified.
       console.log(
-        `[LiveActivitySync] poll nba=${nba.length} wc=${wc.length} pinned=${pinnedRef.current.length} live=${liveItems.length}`,
+        `[LiveActivitySync] poll BUILD=${BUILD_TAG} nba=${nba.length} wc=${wc.length} pinned=${pinnedRef.current.length} live=${liveItems.length}`,
         { pinnedIds: pinnedRef.current.map((p) => p.gameId), liveIds: [...liveIds] }
       );
 

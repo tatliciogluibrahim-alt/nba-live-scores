@@ -86,8 +86,9 @@ export async function writeWidgetSnapshot(snapshot: WidgetSnapshot): Promise<voi
   }
   try {
     await p.setSnapshot({ json: JSON.stringify(snapshot) });
+    // BUILD=W-v3 marker so we can spot a stale cached bundle on the device.
     console.log(
-      `[Widget] setSnapshot OK — upcoming=${snapshot.upcoming.length} moment=${snapshot.moment ? "yes" : "no"} empty=${snapshot.empty}`
+      `[Widget] setSnapshot OK BUILD=W-v3 upcoming=${snapshot.upcoming.length} moment=${snapshot.moment ? "yes" : "no"} empty=${snapshot.empty}`
     );
   } catch (err) {
     console.warn("[Widget] setSnapshot failed:", err);
