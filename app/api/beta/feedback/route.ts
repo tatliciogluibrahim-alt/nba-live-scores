@@ -59,7 +59,7 @@ export async function POST(req: Request) {
 
   if (!working && !broken && !missing && !vibe) {
     return NextResponse.json(
-      { error: "Tell us at least one thing — anything is fine." },
+      { error: "Tell us at least one thing. Anything is fine." },
       { status: 400 }
     );
   }

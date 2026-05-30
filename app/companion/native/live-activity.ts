@@ -24,13 +24,17 @@ const PLUGIN_NAME = "LiveActivity";
 // APNs environment for the per-Activity push token. Xcode debug
 // installs mint sandbox tokens; TestFlight / App Store builds mint
 // production tokens. The server routes to the matching APNs host via
-// the `sandbox` flag we store at register time. Flip this to `false`
-// for the TestFlight / App Store build.
+// the `sandbox` flag we store at register time.
+//
+// Flipped to `false` for the v1 TestFlight / App Store build. If you
+// need to debug Live Activity push from a Xcode debug install again,
+// flip back to `true` temporarily (and remember to flip it back before
+// the next Archive).
 //
 // (When the native plugin later reports its own aps-environment, this
 // constant can be replaced by that runtime value. Until then it's the
 // single source of truth and easy to find.)
-export const LIVE_ACTIVITY_SANDBOX = true;
+export const LIVE_ACTIVITY_SANDBOX = false;
 
 /** Mirror of the Swift `ContentState` + `ActivityAttributes` start args.
  *  Field names must match `LiveActivityPlugin.start` in Swift. */

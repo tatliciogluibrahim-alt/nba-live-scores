@@ -1,9 +1,13 @@
 // GET /api/preview/world-cup
 //
-// Public preview endpoint — returns a hardcoded "live match day"
+// Local preview endpoint — returns a hardcoded "live match day"
 // snapshot in the same shape as /api/world-cup. Used by the WC live-day
 // simulation harness so we can feel the day-of UX (Today brief, hero,
 // country detail, watching) without waiting for June 11.
+//
+// 404s in production builds so the mock data isn't reachable on
+// nonoisescores.app. The consumer toggle (WCPreviewToggle) was removed
+// in pre-ship cleanup; this gate is the second line of defense.
 //
 // Scenario: mid-tournament Group Stage match day, ~5:30 PM ET.
 //   • USA vs TUR (Group D)     — LIVE, 50' minute, 1–1
@@ -50,6 +54,12 @@ function offsetIso(ms: number): string {
 }
 
 export function GET() {
+  // Dev / preview only. 404 in production so real users can't hit a
+  // hardcoded WC payload at a public URL.
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const games: FeedGame[] = [
     {
       // USA vs TUR — live, 50th minute, 1–1. The hero of the preview.

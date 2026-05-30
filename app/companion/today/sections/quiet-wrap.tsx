@@ -60,7 +60,7 @@ function QuietRowRevealed({ item }: { item: QuietWrapItem }) {
   return (
     <Link
       href={item.href}
-      aria-label={`${item.matchup} final — ${item.scoreLine}`}
+      aria-label={`${item.matchup} final, ${item.scoreLine}`}
       className="block rounded-[14px] border px-3 py-3 transition active:scale-[0.99]"
       style={{
         background: "var(--paper)",
