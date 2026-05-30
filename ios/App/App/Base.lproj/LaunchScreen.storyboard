@@ -15,7 +15,7 @@
                     <imageView key="view" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Splash" id="snD-IY-ifK">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask"/>
-                        <!-- Brand cream #f1ead8 — matches manifest theme_color, capacitor.config bg, and the in-app --cream token. Prevents the white flash on cold launch before the apple-touch-startup-image kicks in. -->
+                        <!-- Brand cream #f1ead8. Matches manifest theme_color, capacitor.config bg, and the in-app cream token. Prevents the white flash on cold launch before the apple-touch-startup-image kicks in. -->
                         <color key="backgroundColor" red="0.94509803921568623" green="0.91764705882352937" blue="0.84705882352941175" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </imageView>
                 </viewController>
