@@ -26,7 +26,7 @@ import { useFollows } from "../providers";
 const INTEREST_KEY = "nns:nospoilers-pro-interest:v1";
 
 export function NoSpoilersProCard() {
-  const { alertSlotCount, alertSlotCap, hydrated } = useFollows();
+  const { alertSlotCap, hydrated } = useFollows();
   const [interested, setInterested] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -48,8 +48,6 @@ export function NoSpoilersProCard() {
 
   if (!ready || !hydrated) return null;
 
-  const slotsFull = alertSlotCount >= alertSlotCap;
-
   function markInterested() {
     setInterested(true);
     try {
@@ -62,7 +60,7 @@ export function NoSpoilersProCard() {
   return (
     <section>
       <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>No-Spoilers Pro</Eyebrow>
+        <Eyebrow>Future Pro Features</Eyebrow>
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />
       </div>
 
@@ -74,31 +72,16 @@ export function NoSpoilersProCard() {
           className="text-[14px] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 700 }}
         >
-          Hide spoilers for what you choose.
+          Coming later.
         </p>
-        <p
-          className="mt-1.5 text-[13px] leading-snug"
+        <ul
+          className="mt-2 space-y-1 text-[13px] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
-          The global No-Spoilers toggle stays free for everyone. No-Spoilers
-          Pro adds per-follow control: hide scores and results for just the
-          teams you pick, and turn on alerts for every follow.{" "}
-          {slotsFull
-            ? `You're using all ${alertSlotCap} free alert slots. `
-            : `The free plan covers alerts on your first ${alertSlotCap} follows. `}
-          It helps cover the cost of running the notification backend. No
-          ads either way.
-        </p>
-
-        {/* The global calm mode stays free — say so plainly so the name
-            doesn't imply No-Spoilers is going behind a paywall. */}
-        <p
-          className="mt-2 text-[12px] leading-snug"
-          style={{ color: "var(--mute-2)", fontWeight: 500 }}
-        >
-          The global No-Spoilers toggle stays free. Pro is the per-follow
-          control on top.
-        </p>
+          <li>• Alerts on every follow (free covers your first {alertSlotCap}).</li>
+          <li>• Selective No-Spoilers, per follow.</li>
+          <li>• No ads, either way.</li>
+        </ul>
 
         {interested ? (
           <p
@@ -111,7 +94,7 @@ export function NoSpoilersProCard() {
           <button
             type="button"
             onClick={markInterested}
-            aria-label="Register interest in No-Spoilers Pro"
+            aria-label="Register interest in future pro features"
             className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.97]"
             style={{
               background: "var(--ink)",

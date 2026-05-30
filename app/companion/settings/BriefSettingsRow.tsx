@@ -38,13 +38,13 @@ export function BriefSettingsRow() {
               className="text-[14px] leading-snug"
               style={{ color: "var(--ink)", fontWeight: 700 }}
             >
-              A calm morning email.
+              A daily morning email.
             </p>
             <p
               className="mt-0.5 text-[12px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Daily recap of results on your follows.
+              Get a recap of results based on your follows.
             </p>
           </div>
           <svg
