@@ -37,7 +37,12 @@ public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         defaults.set(json, forKey: Self.snapshotKey)
-        WidgetCenter.shared.reloadAllTimelines()
+        // Targeted reload of just the upcoming widget. Higher priority +
+        // less battery cost than reloadAllTimelines, which iOS often
+        // defers. Real-user symptom: tournament/series follow change
+        // didn't visibly update the widget until a SECOND change racked
+        // up enough reload requests for iOS to finally honor one.
+        WidgetCenter.shared.reloadTimelines(ofKind: "NoNoiseUpcoming")
         call.resolve()
     }
 }

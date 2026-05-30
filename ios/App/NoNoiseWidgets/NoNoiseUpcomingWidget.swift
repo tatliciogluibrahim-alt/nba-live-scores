@@ -46,11 +46,14 @@ struct UpcomingProvider: TimelineProvider {
             snapshot: WidgetStore.read(),
             startIndex: WidgetStore.readIndex()
         )
-        // Refresh a few times a day. The app also forces a reload via
-        // WidgetCenter whenever it writes a new snapshot, so this is just
-        // a backstop for day-rollover when the app hasn't been opened.
-        let next = Calendar.current.date(byAdding: .hour, value: 3, to: Date())
-            ?? Date().addingTimeInterval(3 * 3600)
+        // 15-minute auto-refresh. The app forces a targeted reload via
+        // WidgetCenter whenever it writes a new snapshot, but iOS often
+        // defers explicit reload requests for battery reasons. A tighter
+        // self-scheduled policy makes the widget feel responsive even
+        // when an explicit reload hint gets dropped. Cost is negligible:
+        // WidgetStore.read() is a UserDefaults read, no network.
+        let next = Calendar.current.date(byAdding: .minute, value: 15, to: Date())
+            ?? Date().addingTimeInterval(15 * 60)
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
 }
