@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
+import { isCapacitorNative } from "../dev/native-detect";
 import { useFollows, useUserPrefs } from "../providers";
 
 // Push Permission Recovery Card — Phase 21C.
@@ -113,6 +114,11 @@ export function PushPermissionRecoveryCard() {
 
   // Bail conditions — silent (no UI flash on render before hydration).
   if (!hydrated) return null;
+  // Native iOS: this card is Web-Push-specific (its iOS hint talks about
+  // installed PWAs, the recovery steps assume a browser permission
+  // store). On native, APNs is the source of truth and Capacitor has
+  // its own permission prompt flow. Hide entirely.
+  if (isCapacitorNative()) return null;
   if (permission === null || platform === null) return null;
   if (permission === "unsupported") return null;
   if (permission !== "denied") return null;

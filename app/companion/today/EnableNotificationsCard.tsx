@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isCapacitorNative } from "../dev/native-detect";
 import { useFollows, useUserPrefs } from "../providers";
 import { usePushSubscription } from "../push/use-push-subscription";
 import type { AlertPreset } from "../state/types";
@@ -64,6 +65,13 @@ export function EnableNotificationsCard() {
 
   // Bail conditions — silent (no UI flash).
   if (!hydrated) return null;
+  // Native iOS: notification permission is handled by Capacitor's
+  // CapacitorPushNotifications plugin (APNs), not by the Web Push
+  // permission API. Calling subscribe() here would either fail or wire
+  // up a stale Web Push subscription that never receives real pushes.
+  // The native permission prompt fires once on first launch through
+  // the iOS-native pipeline instead.
+  if (isCapacitorNative()) return null;
   if (permission === null) return null;
   if (permission === "unsupported") return null;
   if (permission !== "default") return null;

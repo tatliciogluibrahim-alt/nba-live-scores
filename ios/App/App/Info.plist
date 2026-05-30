@@ -54,5 +54,12 @@
 	</array>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<!-- Export-compliance: the app only uses standard iOS encryption
+	     (HTTPS + APNs). Declaring this once here means Apple won't
+	     prompt for export-compliance documentation on every TestFlight
+	     build. App Store Connect auto-resolves the "App Encryption
+	     Documentation" prompt when this key is present and false. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

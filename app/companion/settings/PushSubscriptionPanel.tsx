@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
+import { isCapacitorNative } from "../dev/native-detect";
 import { usePushSubscription } from "../push/use-push-subscription";
 
 // Stage B push panel — lives in Settings.
@@ -18,8 +19,28 @@ import { usePushSubscription } from "../push/use-push-subscription";
 // on Today's EnableNotificationsCard so a fresh install user sees it
 // without digging into Settings. The panel assumes the user is either
 // already past that step, or is here to disable / debug.
+//
+// Native iOS short-circuits the whole panel: push is handled by APNs
+// through Capacitor, not by Web Push, so the Web Push subscription
+// state is meaningless here. We point users to the iOS Settings path
+// instead of showing the misleading "browser doesn't support push" copy.
 
 export function PushSubscriptionPanel() {
+  // Native iOS: Web Push isn't available inside the Capacitor WKWebView
+  // by design. Notifications run through APNs and are managed at the OS
+  // level. Show a clear redirect to iOS Settings and skip every
+  // Web-Push-specific control.
+  if (isCapacitorNative()) {
+    return (
+      <section>
+        <PanelHeader />
+        <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+          Notifications run through iOS. To turn them on or off, open Settings, find No Noise Scores, and tap Notifications.
+        </p>
+      </section>
+    );
+  }
+
   const { status, subscribe, unsubscribe, sendTest } = usePushSubscription();
   const [working, setWorking] = useState<null | "subscribe" | "unsubscribe" | "test" | "delayed-test">(
     null

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App-target privacy manifest. Declares which "Required Reason
+	     APIs" the app uses and what tracking / data collection happens.
+	     Required by Apple since May 1, 2024 for any app touching the
+	     enumerated API categories. Without it, App Store uploads now
+	     surface warnings and reviewers can reject. -->
+
+	<!-- UserDefaults: read/write the App Group shared snapshot the
+	     widget + Live Activity bridge. Reason CA92.1 = "Access info
+	     from same app, per its documentation." -->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- We do not track users across apps or websites. No IDFA. -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<!-- No data collected by the app target itself. (Vercel
+	     Analytics + Speed Insights run inside the web layer and
+	     are first-party, anonymous, no identifiers.) -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+</dict>
+</plist>
