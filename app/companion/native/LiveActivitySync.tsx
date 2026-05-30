@@ -37,11 +37,6 @@ import type { PinnedGame } from "../state/types";
 // deploy before the Swift plugin exists — it just does nothing until a
 // build that includes it runs.
 
-// Bump this each deploy so the Xcode console tells us at a glance whether
-// the device is running the current bundle vs a stale cached one. Look
-// for "BUILD=LA-v3" in the first [LiveActivitySync] poll line.
-const BUILD_TAG = "LA-v6-stadium-panel";
-
 const LIVE_INTERVAL_MS = 15_000;
 const IDLE_INTERVAL_MS = 60_000;
 
@@ -199,7 +194,6 @@ export function LiveActivitySync() {
     const pinnedIds = new Set(pinned.map((p) => p.gameId));
     for (const gameId of Array.from(startedRef.current)) {
       if (pinnedIds.has(gameId)) continue;
-      console.log(`[LiveActivitySync] unpin detected, ending LA for ${gameId}`);
       void (async () => {
         await endLiveActivity(gameId);
         const token = tokensRef.current.get(gameId);
@@ -228,12 +222,6 @@ export function LiveActivitySync() {
       const liveIds = new Set(liveItems.map((i) => i.id));
       hasLiveRef.current = liveItems.length > 0;
 
-      // Diagnostics for the Live Activity P0 — remove once verified.
-      console.log(
-        `[LiveActivitySync] poll BUILD=${BUILD_TAG} nba=${nba.length} wc=${wc.length} pinned=${pinnedRef.current.length} live=${liveItems.length}`,
-        { pinnedIds: pinnedRef.current.map((p) => p.gameId), liveIds: [...liveIds] }
-      );
-
       // Start activities for newly-live pins, capped at MAX. liveItems
       // arrives in pinned order, so the first 3 win the lock screen.
       for (const item of liveItems) {
@@ -244,9 +232,7 @@ export function LiveActivitySync() {
           break;
         }
         inFlightRef.current.add(item.id);
-        console.log(`[LiveActivitySync] starting LA for ${item.id}`);
         const ok = await startLiveActivity(itemToStartInput(item));
-        console.log(`[LiveActivitySync] start ${item.id} → ${ok}`);
         inFlightRef.current.delete(item.id);
         if (isCancelled()) return;
         if (ok) startedRef.current.add(item.id);

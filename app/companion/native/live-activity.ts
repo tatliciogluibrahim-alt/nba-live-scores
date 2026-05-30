@@ -83,7 +83,6 @@ function getPlugin(): LiveActivityPlugin | null {
   }
   try {
     plugin = registerPlugin<LiveActivityPlugin>(PLUGIN_NAME);
-    console.log("[LiveActivity] plugin registered via static import");
     return plugin;
   } catch {
     plugin = null;
@@ -97,14 +96,9 @@ export async function startLiveActivity(
   input: LiveActivityStartInput
 ): Promise<boolean> {
   const plugin = getPlugin();
-  if (!plugin) {
-    console.log("[LiveActivity] startLiveActivity: no plugin (off-native?)");
-    return false;
-  }
+  if (!plugin) return false;
   try {
-    console.log(`[LiveActivity] dispatching start() to native for ${input.gameId}`);
-    const res = await plugin.start(input);
-    console.log(`[LiveActivity] native start() resolved:`, res);
+    await plugin.start(input);
     return true;
   } catch (err) {
     console.warn("[LiveActivity] start failed:", err);
@@ -128,16 +122,10 @@ export async function endLiveActivity(gameId: string): Promise<void> {
 export async function addLiveActivityPushTokenListener(
   cb: (data: LiveActivityPushTokenEvent) => void
 ): Promise<() => void> {
-  console.log("[LiveActivity] addPushTokenListener called");
   const plugin = getPlugin();
-  if (!plugin) {
-    console.log("[LiveActivity] addPushTokenListener: no plugin");
-    return () => {};
-  }
+  if (!plugin) return () => {};
   try {
-    console.log("[LiveActivity] calling addListener('pushToken')...");
     const handle = await plugin.addListener("pushToken", cb);
-    console.log("[LiveActivity] addListener succeeded");
     return () => {
       void handle.remove();
     };
