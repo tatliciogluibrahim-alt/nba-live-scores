@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { isCapacitorNative } from "../dev/native-detect";
 import { usePushSubscription } from "../push/use-push-subscription";
@@ -28,17 +28,10 @@ import { usePushSubscription } from "../push/use-push-subscription";
 export function PushSubscriptionPanel() {
   // Native iOS: Web Push isn't available inside the Capacitor WKWebView
   // by design. Notifications run through APNs and are managed at the OS
-  // level. Show a clear redirect to iOS Settings and skip every
-  // Web-Push-specific control.
+  // level. Render a native-aware sub-panel that confirms when push is on
+  // and offers a Turn On button when it isn't.
   if (isCapacitorNative()) {
-    return (
-      <section>
-        <PanelHeader />
-        <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
-          Notifications run through iOS. To turn them on or off, open Settings, find No Noise Scores, and tap Notifications.
-        </p>
-      </section>
-    );
+    return <NativePushPanel />;
   }
 
   const { status, subscribe, unsubscribe, sendTest } = usePushSubscription();
@@ -223,5 +216,171 @@ function PanelHeader() {
       <Eyebrow>Push on this device</Eyebrow>
       <div className="h-px flex-1" style={{ background: "var(--line)" }} />
     </div>
+  );
+}
+
+// Native-iOS variant of the push panel.
+//
+// Reads the real APNs permission state from Capacitor's
+// PushNotifications plugin and renders one of three states:
+//
+//   • Loading       — checking the OS for current permission state
+//   • Granted       — "Push notifications on." (positive confirmation)
+//   • Not granted   — "Turn on notifications" button
+//
+// When the user taps "Turn on":
+//   • If the OS state is "prompt" (never asked), we call
+//     requestPermissions() to fire the system dialog and then register
+//     to get a fresh APNs token.
+//   • If the OS state is "denied" (already declined once), iOS won't
+//     re-show the prompt programmatically — we open the iOS Settings
+//     URL scheme so the user can flip the toggle manually.
+//
+// Dynamic imports keep @capacitor/push-notifications out of the web
+// bundle. Same pattern as CapacitorPushBootstrap.
+type NativePermState =
+  | "loading"
+  | "granted"
+  | "prompt"
+  | "denied"
+  | "error";
+
+function NativePushPanel() {
+  const [perm, setPerm] = useState<NativePermState>("loading");
+  const [working, setWorking] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    try {
+      const mod = await import("@capacitor/push-notifications");
+      const status = await mod.PushNotifications.checkPermissions();
+      if (status.receive === "granted") setPerm("granted");
+      else if (status.receive === "denied") setPerm("denied");
+      else setPerm("prompt");
+    } catch (err) {
+      console.warn("[NativePush] checkPermissions failed:", err);
+      setPerm("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  async function handleTurnOn() {
+    setWorking(true);
+    setFeedback(null);
+    try {
+      const mod = await import("@capacitor/push-notifications");
+
+      // If the user already denied, requestPermissions() won't re-prompt.
+      // Send them to iOS Settings instead. Capacitor's WKWebView will
+      // honor the app-settings: scheme and open the system settings
+      // page for this app.
+      if (perm === "denied") {
+        // The simplest open-Settings path that works inside WKWebView.
+        // No extra plugin required.
+        window.location.href = "app-settings:";
+        setFeedback("Opening iOS Settings. Toggle Allow Notifications on.");
+        return;
+      }
+
+      const result = await mod.PushNotifications.requestPermissions();
+      if (result.receive === "granted") {
+        await mod.PushNotifications.register();
+        setPerm("granted");
+        setFeedback("Notifications are on. Real pushes will start landing on your lock screen.");
+      } else if (result.receive === "denied") {
+        setPerm("denied");
+        setFeedback(
+          "You declined the iOS prompt. To turn notifications on later, open iOS Settings, find No Noise Scores, and tap Notifications."
+        );
+      } else {
+        // "prompt" or "prompt-with-rationale" — the dialog was dismissed
+        // without a clear yes/no. Leave state as-is.
+        setFeedback("No change. Tap Turn on again when you're ready.");
+      }
+    } catch (err) {
+      console.warn("[NativePush] turn-on failed:", err);
+      setFeedback("Something went wrong reaching iOS. Try iOS Settings manually.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  if (perm === "loading") {
+    return (
+      <section>
+        <PanelHeader />
+        <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+          Checking…
+        </p>
+      </section>
+    );
+  }
+
+  if (perm === "granted") {
+    return (
+      <section>
+        <PanelHeader />
+        <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+          Push notifications on. Manage them anytime in iOS Settings.
+        </p>
+      </section>
+    );
+  }
+
+  if (perm === "error") {
+    return (
+      <section>
+        <PanelHeader />
+        <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+          Couldn&apos;t reach iOS for notification status. To check, open iOS Settings, find No Noise Scores, and tap Notifications.
+        </p>
+      </section>
+    );
+  }
+
+  // perm === "prompt" or "denied" — both render a Turn On button. The
+  // button's behavior branches inside handleTurnOn based on which one
+  // we're in.
+  const helpLine =
+    perm === "denied"
+      ? "Notifications are off. iOS won't re-prompt, so the button opens Settings."
+      : "Notifications aren't on yet. Tap below to allow them.";
+
+  return (
+    <section>
+      <PanelHeader />
+      <p
+        className="mb-3 text-[12px]"
+        style={{ color: "var(--mute-1)", fontWeight: 500 }}
+      >
+        {helpLine}
+      </p>
+      <button
+        type="button"
+        onClick={handleTurnOn}
+        disabled={working}
+        aria-label="Turn on notifications"
+        className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+        style={{
+          background: "var(--ink)",
+          color: "var(--cream)",
+          border: "1px solid var(--ink)",
+          opacity: working ? 0.7 : 1,
+        }}
+      >
+        {working ? "Working…" : "Turn on notifications"}
+      </button>
+      {feedback ? (
+        <p
+          className="mt-3 text-[12px]"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          {feedback}
+        </p>
+      ) : null}
+    </section>
   );
 }
