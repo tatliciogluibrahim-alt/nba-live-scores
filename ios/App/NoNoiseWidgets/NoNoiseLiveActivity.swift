@@ -30,7 +30,6 @@ import WidgetKit
 private let nnInk      = Color(hex: "efe6d2")   // leader text + numerals
 private let nnCream    = Color(hex: "d3c6a6")   // team codes
 private let nnMute     = Color(hex: "8a7d62")   // trailer text + captions
-private let nnFaint    = Color(hex: "6f6450")
 private let nnBg       = Color(hex: "1d1812")   // Live Activity surface
 private let nnHair     = Color.white.opacity(0.12)
 private let nnHairStr  = Color.white.opacity(0.22)
@@ -142,9 +141,14 @@ private struct CenterBug: View {
     var body: some View {
         VStack(spacing: compact ? 2 : 5) {
             HStack(spacing: 5) {
-                Circle()
-                    .fill(theme.accent)
-                    .frame(width: compact ? 4 : 5, height: compact ? 4 : 5)
+                // Pulsing live pip. .symbolEffect(.pulse, options: .repeating)
+                // is the ActivityKit-safe way to animate on the lock screen
+                // (iOS throttles arbitrary opacity animations, but it honors
+                // SF Symbol effects on live activities since iOS 17).
+                Image(systemName: "circle.fill")
+                    .font(.system(size: compact ? 4 : 5))
+                    .foregroundStyle(theme.accent)
+                    .symbolEffect(.pulse, options: .repeating)
                 Text("LIVE")
                     .font(.system(size: compact ? 8 : 9.5, weight: .semibold, design: .monospaced))
                     .tracking(1.6)
@@ -221,7 +225,10 @@ private struct ProgressRail: View {
 
 private struct StadiumPanelLockView: View {
     let state: NoNoiseGameAttributes.ContentState
-    private var theme: SportTheme { .from(state.sport) }
+    // sport lives on the attributes (set-once, never updates), not on
+    // ContentState. Threaded in from the ActivityConfiguration body.
+    let sport: String
+    private var theme: SportTheme { .from(sport) }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -260,10 +267,10 @@ private struct StadiumPanelLockView: View {
 struct NoNoiseLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: NoNoiseGameAttributes.self) { context in
-            StadiumPanelLockView(state: context.state)
+            StadiumPanelLockView(state: context.state, sport: context.attributes.sport)
         } dynamicIsland: { context in
             let s = context.state
-            let theme = SportTheme.from(s.sport)
+            let theme = SportTheme.from(context.attributes.sport)
             return DynamicIsland {
                 // Expanded — mirrors the lock tile: blocks bracket the
                 // center bug, with the rail below.
@@ -292,9 +299,13 @@ struct NoNoiseLiveActivity: Widget {
                         .padding(.top, 4)
                 }
             } compactLeading: {
-                // Pulsing accent pip. Live Activities throttle animation,
-                // so a static pip is acceptable per the design.
-                Circle().fill(theme.accent).frame(width: 7, height: 7)
+                // Pulsing accent pip via .symbolEffect, the only animation
+                // ActivityKit honors on the lock surface without battling
+                // the OS throttler.
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 7))
+                    .foregroundStyle(theme.accent)
+                    .symbolEffect(.pulse, options: .repeating)
             } compactTrailing: {
                 Text("\(s.homeScore)\u{2013}\(s.awayScore)")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
