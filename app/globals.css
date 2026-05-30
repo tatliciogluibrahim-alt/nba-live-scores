@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* Defensive cream paint. Locks the page background to brand cream from
+   the very first frame, before --background resolves, before React
+   hydrates, even if CSS variables fail to evaluate in the WebView.
+   Catches the "black screen on Capacitor TestFlight" case where the
+   WKWebView mounts but the React tree fails to paint. Users see cream
+   plus any error message instead of solid black. */
+html, body {
+  background-color: #f1ead8 !important;
+}
+
 :root {
   /* Surfaces — reconciled to HANDOFF.md / index.html tokens.
      Legacy screens (nba-app.tsx / world-cup-app.tsx / landing-page.tsx)

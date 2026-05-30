@@ -178,6 +178,16 @@ export default function RootLayout({
             __html: `(function(){try{var t=localStorage.getItem('no-noise-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t)}}catch(e){}})();`,
           }}
         />
+        {/* Black-screen catcher. If anything throws hard enough to
+            keep React from mounting, the user otherwise sees solid
+            black on Capacitor's TestFlight WebView. This handler
+            surfaces the error message in a cream panel so we can see
+            what actually broke. Inert until something errors. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){function s(m){try{var d=document.createElement('div');d.id='nns-fatal';d.style.cssText='position:fixed;inset:0;background:#f1ead8;color:#1a1612;padding:24px;padding-top:80px;font:14px ui-monospace,Menlo,monospace;z-index:99999;white-space:pre-wrap;overflow:auto;-webkit-overflow-scrolling:touch';d.textContent='No Noise — startup error\\n\\n'+m+'\\n\\nForce-close the app and reopen. If it persists, screenshot this screen.';document.body.appendChild(d)}catch(e){}}window.addEventListener('error',function(e){s((e.message||'unknown')+'\\nat '+(e.filename||'?')+':'+(e.lineno||'?'))});window.addEventListener('unhandledrejection',function(e){var r=e.reason;s('unhandled rejection: '+(r&&r.message||r||'unknown'))});})();`,
+          }}
+        />
       </head>
       <body>
         <CompanionProviders>{children}</CompanionProviders>
