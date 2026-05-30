@@ -323,3 +323,25 @@ private struct EmptyBody: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+// No Noise Scores brand glyph: dark chip + cream pill + rust pip.
+//
+// Previously lived in NoNoiseLiveActivity.swift; moved here when that
+// file was rewritten for the Stadium Panel so the upcoming widget's
+// brand mark doesn't go missing again. Color(hex: String) is declared
+// in NoNoiseGameAttributes.swift (member of this target).
+struct NNMarkView: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 7)
+                .fill(Color(hex: "1a1612"))
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color(hex: "faf5e8"))
+                .frame(width: 16, height: 7)
+            Circle()
+                .fill(Color(hex: "e55b2a"))
+                .frame(width: 4, height: 4)
+                .offset(x: 5, y: 0)
+        }
+    }
+}
