@@ -39,7 +39,7 @@ import type { PinnedGame } from "../state/types";
 // Bump this each deploy so the Xcode console tells us at a glance whether
 // the device is running the current bundle vs a stale cached one. Look
 // for "BUILD=LA-v3" in the first [LiveActivitySync] poll line.
-const BUILD_TAG = "LA-v4-sync-fix";
+const BUILD_TAG = "LA-v5-unpin-fix";
 
 const LIVE_INTERVAL_MS = 15_000;
 const IDLE_INTERVAL_MS = 60_000;
@@ -171,6 +171,30 @@ export function LiveActivitySync() {
       if (unsub) unsub();
     };
   }, []);
+
+  // Unpin cleanup. The visibility poll below is gated on pinned.length > 0,
+  // so the moment the user unpins the last game the poll disables — and
+  // its end-loop never gets to dismiss the activity for the game that
+  // just left pinned. This separate effect handles that: whenever the
+  // pinned set changes, end any tracked activity whose gameId is no
+  // longer pinned. Runs independently of the poll.
+  useEffect(() => {
+    if (!isCapacitorNative() || !hydrated) return;
+    const pinnedIds = new Set(pinned.map((p) => p.gameId));
+    for (const gameId of Array.from(startedRef.current)) {
+      if (pinnedIds.has(gameId)) continue;
+      console.log(`[LiveActivitySync] unpin detected, ending LA for ${gameId}`);
+      void (async () => {
+        await endLiveActivity(gameId);
+        const token = tokensRef.current.get(gameId);
+        if (token) {
+          await postDeregister(token);
+          tokensRef.current.delete(gameId);
+        }
+        startedRef.current.delete(gameId);
+      })();
+    }
+  }, [pinned, hydrated]);
 
   // Lifecycle poll. Disabled unless native + hydrated + something pinned,
   // so web users and pin-less users never fetch.
