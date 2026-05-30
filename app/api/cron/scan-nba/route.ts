@@ -41,6 +41,7 @@ import {
   writeFiredHighlights,
 } from "../../../lib/push/highlight-state-cache";
 import { saveGameSnapshot } from "../../../lib/snapshots/game-snapshot";
+import { computeLiveActivityProgress } from "../../../lib/push/live-activity-progress";
 import type { Game } from "../../../nba/types";
 
 // NBA orange accent for the Live Activity (AGENTS palette).
@@ -60,6 +61,7 @@ function nbaStatusLine(g: NormalizedGame): string {
 
 /** Map a scoreboard game to a Live Activity content snapshot. */
 function toActivityInput(g: NormalizedGame): ActivityUpdateInput {
+  const statusLine = nbaStatusLine(g);
   return {
     gameId: g.id,
     status: g.status,
@@ -68,9 +70,11 @@ function toActivityInput(g: NormalizedGame): ActivityUpdateInput {
       awayScore: g.away.score,
       homeCode: g.home.abbreviation,
       homeScore: g.home.score,
-      statusLine: nbaStatusLine(g),
+      statusLine,
       subline: "",
       accentHex: ACCENT_NBA,
+      // Stadium Panel progress rail.
+      progress: computeLiveActivityProgress("nba", statusLine, g.status),
     },
     // Dedup on score + period + status (not the clock, which we don't
     // push live) so identical ticks are no-ops.

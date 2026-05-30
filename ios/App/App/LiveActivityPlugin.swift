@@ -72,7 +72,11 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             homeScore: call.getInt("homeScore") ?? 0,
             statusLine: call.getString("statusLine") ?? "",
             subline: call.getString("subline") ?? "",
-            accentHex: call.getString("accentHex") ?? "#e55b2a"
+            accentHex: call.getString("accentHex") ?? "#e55b2a",
+            // Stadium Panel rail value; sent by LiveActivitySync via
+            // computeLiveActivityProgress() so the rail opens at the
+            // right point in the match instead of empty.
+            progress: call.getDouble("progress") ?? 0
         )
 
         do {

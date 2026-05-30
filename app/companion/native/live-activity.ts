@@ -46,6 +46,9 @@ export type LiveActivityStartInput = {
   statusLine: string; // "Q3 · 4:21"
   subline: string; // stake / context, may be ""
   accentHex: string; // "#e55b2a"
+  /** Stadium Panel progress rail, 0...1. Computed via
+   *  computeLiveActivityProgress() so the rail isn't empty at start. */
+  progress: number;
 };
 
 export type LiveActivityPushTokenEvent = { gameId: string; token: string };

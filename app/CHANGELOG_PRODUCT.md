@@ -2,6 +2,112 @@
 
 ---
 
+## Phase 22.5-3 LIVE — Live Activity bridge fix, Game Pulse, contrast, copy QA — 2026-05-29
+
+The day Live Activities started working on device, plus a wide pre-ship
+hardening sweep. Highlights:
+
+- **Phase 22.5-3: Live Activity working on iPhone.** Confirmed visually
+  on lock screen + Dynamic Island for a pinned WC preview game (TUR vs
+  USA, 50', 1–1 with leader emphasis). The fix was a Capacitor
+  footgun: `getPlugin()` in `app/companion/native/live-activity.ts`
+  was `async`, so every caller did `await getPlugin()` and JS Promise
+  resolution unwrapped the returned proxy as a thenable. The
+  registerPlugin proxy intercepts every property access including
+  `.then`, dispatching a phantom `then` native call that hung forever.
+  Made `getPlugin()` synchronous (matches the working
+  `widget-bridge.ts` pattern) and removed `await` from all three call
+  sites. Inline comment locks the rationale so future-me doesn't
+  re-async it. **Was the entire P0 blocker. Native plugin and Swift
+  scaffolding were correct the whole time.**
+- **Live Activity unpin cleanup.** Separate bug: when the user
+  unpinned the last live game, `pinned.length` flipped to 0 and the
+  `useVisibilityPoll` gate (`pinned.length > 0`) disabled the whole
+  poll — which is where the end-loop lived — so the activity for the
+  just-unpinned game lingered as a ghost on the lock screen. Added a
+  dedicated `useEffect` in `LiveActivitySync` keyed on `pinned` that
+  ends any tracked activity whose gameId is no longer pinned,
+  independent of the poll.
+- **Game Pulse leader emphasis in `ScoreModule`.** The lock-screen
+  "pulse" treatment is now consistent across Today, Watching, and
+  game detail (since all three already use `ScoreModule`). Leading
+  team renders at full `--ink`, trailing team dims to `--mute-1`,
+  ties show both bright. Wraps inside `<Spoiler>` so it stays blurred
+  when No-Spoilers is on. Establishes the cross-surface visual
+  vocabulary: **ink = ahead / won, mute = behind / lost.**
+- **Series closure winner color bug fixed.** `CalmEndCard` referenced
+  `var(--ink-1)` for the winning team in its per-game dot strip — a
+  token that **does not exist anywhere** in globals.css. Winners were
+  silently inheriting `--mute-1`, getting only bold weight and no
+  color emphasis. Replaced all three occurrences with `var(--ink)`,
+  which both repairs the bug and locks the leader/winner language to
+  the same `ScoreModule` family.
+- **WCAG AA contrast on cream.** `--mute-2` was 2.27:1 on cream (light
+  mode), 3.31:1 on warm dark (opt-in dark). Darkened light to
+  `#746747` (4.64:1, passes AA) while staying lighter than `--mute-1`
+  so the hierarchy holds. Lightened dark to `#8f8366` (~4.7:1).
+  `--mute-1` already passed at 5.11:1 (corrected the audit subagent's
+  non-gamma luminance math).
+- **Privacy + contact footer in Settings.** Calm bottom footer
+  (Privacy link, contact email, Instagram) so the privacy policy is
+  reachable inside the native wrapper — App Review requirement.
+- **Copy + flow QA pass.** 17 em-dashes removed from user-facing copy
+  (OG/Twitter alt, Brief email score line, WC calendar ICS, theme
+  selector, push panel, test-alert error, "Notifications blocked"
+  note, Following empty state, plus 9 aria-labels in Today / Watching
+  / MomentSection / CrumbBar / TabBar / DesktopSidebarNav). Three
+  remaining "All moments" leaks → "Full Details" (compare/apple,
+  nba-playoffs-alerts, changelog). Two metadata titles standardized
+  to `Page | No Noise Scores`. Double-period bug fixed on
+  EnableNotificationsCard. Sentence fragment fixed in the
+  watch-later guide. Softened a "Most sports apps treat
+  personalization…" passage away from the banned "most apps get X
+  wrong" pattern. Stale tier label fixed on AboutClient.
+- **Onboarding → FirstRunStrip overlap fixed.** OnboardingFlow now
+  calls `dismissNotifPrompt()` from its alert step ("Turn on alerts"
+  *or* "Maybe later"), so Today's FirstRunStrip doesn't re-ask the
+  same notification question right after onboarding. Top "Skip"
+  still leaves it undecided so the strip correctly nudges skippers.
+- **Widget tightened.** `WidgetSync` now filters `payload.upNext` to
+  personal games only (followed team / country / series / tournament)
+  and caps at 5 (was 3) so the medium widget pages through more.
+  Debounced the boot-time snapshot writes (400ms) so the chained
+  state hydrations don't fire `WidgetCenter.reloadAllTimelines()` in
+  a burst — addresses the user-felt app slowness.
+- **Pre-ship verification harness.** `BUILD=LA-v5-unpin-fix` and
+  `BUILD=W-v3` tags on the diagnostic logs so a glance at the Xcode
+  console says "yes the device is on current code" vs a stale cached
+  bundle. New dev endpoint
+  `POST /api/push/test-live-activity-update` that forces one
+  synthetic ContentState through `pushLiveActivityUpdates`, paired
+  with a "Push test update" button on `LiveActivityTester` keyed off
+  the first pinned gameId. Lets us verify the score-update push loop
+  pre-ship without waiting for real WC games in June 2026.
+
+Still open after this session:
+
+- **App Group container provisioning.** The
+  `CFPrefsPlistSource … kCFPreferencesAnyUser … only allowed for
+  System Containers` warning persists despite the App Groups
+  capability being checked on both targets in Xcode. Code path is
+  fully correct (plugin registered, jsName matches, entitlements
+  files agree). Resolution is operational: ↻ refresh on App Groups
+  in both targets → delete app from device → Clean Build Folder →
+  reinstall, which forces the provisioning profile to regenerate
+  with the entitlement actually attached.
+- **Phase 22.5 pre-ship cleanup.** Held intentionally until App
+  Group is verified, since stripping `LiveActivityTester`,
+  `WCPreviewToggle`, the BUILD tags, and the diagnostic
+  `console.log`s would blind further debugging. Also held: flipping
+  `LIVE_ACTIVITY_SANDBOX = true → false` for TestFlight / production
+  APNs.
+- **Live Activity visual refresh.** The lock-screen tile works but
+  feels light on hierarchy. A design pass for three variations is
+  out for ideation; one will land in `NoNoiseLiveActivity.swift`
+  before submission.
+
+---
+
 ## Phase 21 Brief launch + No-Spoilers overhaul + Front Page polish — 2026-05-28
 
 A large session. Highlights:

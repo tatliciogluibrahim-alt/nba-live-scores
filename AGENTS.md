@@ -149,6 +149,28 @@ Series Closure + Wind-Down cards on Today. See
 
 Completed (most recent first):
 
+- **Phase 22.5-3 — Live Activity working on iPhone** (2026-05-29).
+  Verified visually on lock screen + Dynamic Island. The blocker was
+  a Capacitor footgun: `getPlugin()` in
+  `app/companion/native/live-activity.ts` was `async`, so callers
+  awaited it; Promise resolution unwrapped the registerPlugin proxy
+  as a thenable and the proxy intercepted `.then` as a phantom
+  native method call that hung forever. Made `getPlugin()` sync (the
+  working widget-bridge.ts pattern). Also fixed an unpin ghost-tile
+  bug (visibility poll was disabling itself before its end-loop
+  could run; added a dedicated cleanup useEffect). Game Pulse leader
+  emphasis added to `ScoreModule` so Today / Watching / detail share
+  the lock-screen "ink = ahead / mute = behind" language. WCAG AA
+  contrast on `--mute-2`. Series-winner color bug fixed
+  (`var(--ink-1)` was undefined, winners silently inherited mute).
+  Privacy + contact footer in Settings for App Review reachability.
+  17 user-facing em-dashes removed. 3 "All moments" → "Full Details"
+  leaks in content pages. Onboarding now records the notification
+  decision so Today's FirstRunStrip doesn't re-ask. Widget
+  tightened: personal-only filter, slice(5), debounced boot writes.
+  Pre-ship verification harness:
+  `POST /api/push/test-live-activity-update` + a Settings button.
+  See CHANGELOG_PRODUCT.md (2026-05-29 entry) for full detail.
 - **Phase 21B — Calm Endings + Tier Honesty** (May 2026). Four
   features (originally five — see Add to Calendar note below).
   (1) CalmEndCard on Today — single component, two configurations

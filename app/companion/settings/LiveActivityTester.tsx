@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { registerPlugin } from "@capacitor/core";
 import { isCapacitorNative } from "../dev/native-detect";
+import { usePinned } from "../providers";
 
 // DEV-ONLY: manual Live Activity trigger with full on-screen reporting.
 // Phase 22.5-3 verification.
@@ -37,10 +38,48 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 
 export function LiveActivityTester() {
   const [lines, setLines] = useState<string[]>([]);
+  const [tick, setTick] = useState(0);
+  const { pinned } = usePinned();
+  const activeGameId = pinned[0]?.gameId ?? null;
 
   if (!isCapacitorNative()) return null;
 
   const log = (s: string) => setLines((prev) => [...prev, s]);
+
+  async function handlePushUpdate() {
+    if (!activeGameId) {
+      setLines(["No pinned game. Pin a live game in Watching first."]);
+      return;
+    }
+    setLines([]);
+    const nextTick = tick + 1;
+    setTick(nextTick);
+    log(`pushing test update to ${activeGameId} (tick ${nextTick})…`);
+    try {
+      const res = await fetch("/api/push/test-live-activity-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gameId: activeGameId, tick: nextTick }),
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        updated?: number;
+        ended?: number;
+        pruned?: number;
+        error?: string;
+      };
+      if (!res.ok || !json.ok) {
+        log(`❌ server: ${json.error ?? `HTTP ${res.status}`}`);
+        return;
+      }
+      log(
+        `✅ pushed. updated=${json.updated ?? 0} ended=${json.ended ?? 0} pruned=${json.pruned ?? 0}`
+      );
+      log("Check your lock screen — score should bump.");
+    } catch (e) {
+      log(`❌ fetch failed: ${String(e)}`);
+    }
+  }
 
   async function handleStart() {
     setLines([]);
@@ -67,8 +106,11 @@ export function LiveActivityTester() {
           homeCode: "SA",
           homeScore: 84,
           statusLine: "Q4 · 4:21",
-          subline: "OKC leads series 3-2",
+          subline: "WEST FINALS · G6",
           accentHex: "#e55b2a",
+          // Stadium Panel rail: Q4 · 4:21 of a 12-min quarter
+          // → ((3) + (12-4.35)/12) / 4 ≈ 0.91.
+          progress: 0.91,
         }),
         TIMEOUT_MS
       );
@@ -105,7 +147,7 @@ export function LiveActivityTester() {
       <p className="mb-3 text-[13px]" style={{ color: "var(--mute-1)" }}>
         Fires a mock Live Activity and reports each step below. Remove before ship.
       </p>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={handleStart}
           className="rounded-full px-4 py-2 text-[13px] font-semibold"
@@ -119,6 +161,18 @@ export function LiveActivityTester() {
           style={{ borderColor: "var(--line)", color: "var(--ink)" }}
         >
           End
+        </button>
+        <button
+          onClick={handlePushUpdate}
+          disabled={!activeGameId}
+          className="rounded-full border px-4 py-2 text-[13px] font-semibold"
+          style={{
+            borderColor: "var(--line)",
+            color: activeGameId ? "var(--ink)" : "var(--mute-1)",
+            opacity: activeGameId ? 1 : 0.6,
+          }}
+        >
+          Push test update
         </button>
       </div>
       {lines.length > 0 ? (

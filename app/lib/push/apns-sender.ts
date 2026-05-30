@@ -280,6 +280,11 @@ export type LiveActivityContentState = {
   subline: string;
   /** Sport accent hex, e.g. "#e55b2a". */
   accentHex: string;
+  /** Stadium Panel progress rail, 0...1. Computed by
+   *  computeLiveActivityProgress(sport, statusLine, status) on every
+   *  push. The Swift ContentState is non-optional — omitting this field
+   *  will fail Codable decode and the activity won't update. */
+  progress: number;
 };
 
 /** Set once when starting via push-to-start. Decoded by `ActivityAttributes`. */

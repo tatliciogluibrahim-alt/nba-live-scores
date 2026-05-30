@@ -26,6 +26,7 @@ import {
   type ActivityUpdateInput,
 } from "../../../lib/push/live-activity-update";
 import type { PushEvent } from "../../../lib/push/event-detector";
+import { computeLiveActivityProgress } from "../../../lib/push/live-activity-progress";
 
 // World Cup green accent for the Live Activity (AGENTS palette).
 const ACCENT_WC = "#1e6b3c";
@@ -100,6 +101,7 @@ function wcStatusLine(game: FeedGame): string {
 
 /** Map a WC feed game to a Live Activity content snapshot. */
 function toActivityInput(game: FeedGame): ActivityUpdateInput {
+  const statusLine = wcStatusLine(game);
   return {
     gameId: game.id,
     status: game.status,
@@ -108,9 +110,12 @@ function toActivityInput(game: FeedGame): ActivityUpdateInput {
       awayScore: game.away.score,
       homeCode: game.home.abbreviation,
       homeScore: game.home.score,
-      statusLine: wcStatusLine(game),
-      subline: "",
+      statusLine,
+      // Center-bug context line. Group / stage if available.
+      subline: (game.stage || game.group || "").toUpperCase(),
       accentHex: ACCENT_WC,
+      // Stadium Panel progress rail.
+      progress: computeLiveActivityProgress("wc", statusLine, game.status),
     },
     // Dedup on score + status (the minute advances every tick and we
     // don't want a push a minute; goals + transitions are what matter).

@@ -113,9 +113,24 @@ export function WidgetSync() {
   }, []);
 
   // Recompute + write whenever follows or pins change (cheap, native-only).
+  // DEBOUNCED: hydration races + chained state updates can fire follows/pinned
+  // many times in quick succession at boot — without this, each one triggers
+  // a fetchNBA + fetchWC + WidgetCenter.reloadAllTimelines round-trip and the
+  // app feels stuck. 400ms coalesces the burst into a single write.
+  const writeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!isCapacitorNative() || !hydrated) return;
-    void writeSnapshot();
+    if (writeTimeoutRef.current) clearTimeout(writeTimeoutRef.current);
+    writeTimeoutRef.current = setTimeout(() => {
+      writeTimeoutRef.current = null;
+      void writeSnapshot();
+    }, 400);
+    return () => {
+      if (writeTimeoutRef.current) {
+        clearTimeout(writeTimeoutRef.current);
+        writeTimeoutRef.current = null;
+      }
+    };
   }, [follows, pinned, hydrated, writeSnapshot]);
 
   // Slow refresh while the app is open so day-rollover / new fixtures

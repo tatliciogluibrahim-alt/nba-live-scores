@@ -16,9 +16,12 @@ paid pitch — see the No-Spoilers model in AGENTS.md). The Sports
 Circle visual prototype was explored across two design rounds and
 **shelved** — the existing typographic share card is the answer;
 revisit only if users actually want to share. The remaining critical
-path to launch is **Phase 22.5-3 (Live Activity) + 22.5-4 (Widget) +
-22.5-5 (App Store submission)** — all native Swift — plus a manual
-visual QA pass.
+path to launch is **Phase 22.5-4 (Widget App Group container fix) +
+pre-ship cleanup + 22.5-5 (App Store submission)** plus a manual
+visual QA pass. **Phase 22.5-3 (Live Activity) shipped 2026-05-29**
+and is verified working on a physical iPhone; remaining 22.5-4 work
+is operational (App Group entitlement attachment via a fresh
+reinstall), not new code.
 
 Each phase below is one go/no-go unit. Do not jump ahead.
 
@@ -151,10 +154,27 @@ Two parts shipped 2026-05-27.
 
 Remaining within Phase 22.5:
 
-- **22.5-3** — Live Activity for pinned games (lock-screen + Dynamic
-  Island, real-time score updates via APNs background push). Native
-  Swift code in a new SPM target. ~2-3 weekends.
-- **22.5-4** — Home screen widget (small + medium). ~1-2 weekends.
+- **22.5-3 — SHIPPED 2026-05-29.** Live Activity for pinned games on
+  lock screen + Dynamic Island, verified working on a physical iPhone
+  (TUR vs USA WC preview, 1–1 at 50' with leader emphasis). Real-time
+  score updates via APNs background push are wired through
+  `pushLiveActivityUpdates` from the scan-nba / scan-wc crons. Real
+  ESPN-driven verification waits for live games (June 2026); pre-ship
+  confidence available via the new
+  `POST /api/push/test-live-activity-update` dev endpoint + Settings
+  button. The blocker was a Capacitor JS-bridge footgun documented in
+  `app/CHANGELOG_PRODUCT.md` (2026-05-29 entry); the native plugin
+  was correct the whole time.
+- **22.5-4 — data path SHIPPED, container provisioning open.** The
+  WidgetKit extension renders the lock-screen-style "Upcoming"
+  hero, the app writes coherent snapshots via the WidgetBridge
+  plugin, and `WidgetSync` correctly maps follows → personal
+  upcoming + the WC moment line (`personal`-only filter, capped at
+  5, debounced 400ms). The remaining open is the App Group
+  `CFPrefsPlistSource` warning — Xcode capability is checked on
+  both targets but the provisioning profile isn't carrying the
+  entitlement yet. Resolution is operational (↻ refresh + delete app
+  + Clean Build Folder + reinstall).
 - **22.5-D** — **Desktop bespoke (lean)** — runs in parallel with
   22.5-3/4 as alternating sessions (Swift one weekend, responsive
   web the next). Lean scope: make `/app` desktop-aware with a

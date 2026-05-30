@@ -14,6 +14,32 @@ struct NoNoiseGameAttributes: ActivityAttributes {
         var statusLine: String   // "Q3 · 4:21" / "HT" / "Final"
         var subline: String      // stake / context line
         var accentHex: String    // "#e55b2a"
+        // Stadium Panel progress rail, 0...1. Driven by
+        // computeLiveActivityProgress() on the JS side. Decodes from JSON;
+        // older payloads without it fall back to 0 via the custom init.
+        var progress: Double
+
+        // Custom decode so a missing `progress` field falls back to 0.
+        // Prevents Codable decode failure if an old update push arrives
+        // before the server side has been deployed.
+        init(awayCode: String, awayScore: Int, homeCode: String, homeScore: Int,
+             statusLine: String, subline: String, accentHex: String, progress: Double) {
+            self.awayCode = awayCode; self.awayScore = awayScore
+            self.homeCode = homeCode; self.homeScore = homeScore
+            self.statusLine = statusLine; self.subline = subline
+            self.accentHex = accentHex; self.progress = progress
+        }
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            awayCode = try c.decode(String.self, forKey: .awayCode)
+            awayScore = try c.decode(Int.self, forKey: .awayScore)
+            homeCode = try c.decode(String.self, forKey: .homeCode)
+            homeScore = try c.decode(Int.self, forKey: .homeScore)
+            statusLine = try c.decode(String.self, forKey: .statusLine)
+            subline = try c.decode(String.self, forKey: .subline)
+            accentHex = try c.decode(String.self, forKey: .accentHex)
+            progress = (try? c.decode(Double.self, forKey: .progress)) ?? 0
+        }
     }
     // Set once at start, never changes:
     var matchup: String  // "OKC vs SA"
