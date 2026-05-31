@@ -163,7 +163,7 @@ const EDITORIAL_MOMENTS: EditorialMoment[] = [
     startKey: "2026-05-31",
     endKey: "2026-06-04",
     headline: "San Antonio is headed to the Finals.",
-    body: "Last night, San Antonio closed out Oklahoma City in Game 7. They advance to face New York in the Finals. Series tips Thursday.",
+    body: "Last night, San Antonio closed out Oklahoma City in Game 7. They advance to face New York in the Finals. Series tips Wednesday.",
     seriesContext: ["SA", "NYK"],
     appliesTo: followsNBA,
   },
