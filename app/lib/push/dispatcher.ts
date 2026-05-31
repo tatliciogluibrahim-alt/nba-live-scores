@@ -242,9 +242,18 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           deviceToken: ios.token,
           title: payload.title,
           body: payload.body,
-          // Sandbox while the build is installed via Xcode debug.
-          // Flip to false when shipping TestFlight / App Store.
-          sandbox: true,
+          // PRODUCTION. TestFlight + App Store builds get their device
+          // tokens from the production APNs endpoint
+          // (api.push.apple.com). Sending to sandbox
+          // (api.sandbox.push.apple.com) returns BadDeviceToken for
+          // these tokens and the push silently dies — which is exactly
+          // what happened during launch night when delivered=0 across
+          // every event despite the dispatcher iterating the right
+          // token rows with the right follows. Flipping this fixed the
+          // missing notifications end-to-end. If you ever need sandbox
+          // again for an Xcode debug build, gate this on an env var
+          // (e.g. APNS_USE_SANDBOX=true) rather than re-hardcoding.
+          sandbox: false,
         });
 
         if (result.ok) {
