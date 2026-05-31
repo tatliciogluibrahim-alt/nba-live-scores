@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { PullToRefresh } from "../atoms/PullToRefresh";
 import { BrandMark } from "../frame/BrandMark";
-import { useNoSpoilers } from "../providers";
+import { useFollows, useNoSpoilers } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveTodayHeadline } from "./today-data";
 import { FrontPageLead } from "./FrontPageLead";
@@ -31,6 +32,26 @@ import { CalmEndCard } from "./sections/calm-end-card";
 
 export function TodayClient() {
   const { payload, hydrated, updatedAt, refetch } = useTodayData();
+  const { follows, removeFollow } = useFollows();
+
+  // Auto-drop a dead series follow when its series wraps. The data layer
+  // sets payload.closing.autoDropFollow only for the SERIES follow (team
+  // follows are left alone so they can ride into the next round). Frees
+  // the alert slot automatically per the Finals-era alerts principles.
+  // Guarded by a ref so a re-render doesn't re-attempt after the follow
+  // is gone, and only fires if the follow still exists.
+  const droppedRef = useRef<Set<string>>(new Set());
+  const autoDrop = payload.closing?.autoDropFollow;
+  useEffect(() => {
+    if (!hydrated || !autoDrop) return;
+    if (droppedRef.current.has(autoDrop.id)) return;
+    const stillFollowed = follows.some(
+      (f) => f.kind === "series" && f.id === autoDrop.id
+    );
+    if (!stillFollowed) return;
+    droppedRef.current.add(autoDrop.id);
+    removeFollow("series", autoDrop.id);
+  }, [hydrated, autoDrop, follows, removeFollow]);
 
   // Front Page lead (Concept A) — a punchy state headline + accent
   // eyebrow + a single condensed deck card for the lead game. Replaces

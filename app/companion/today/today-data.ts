@@ -239,6 +239,12 @@ export type ClosingMoment = {
    *  there's nothing useful to redirect to. */
   circleHeading?: string;
   circle?: ClosingCircleItem[];
+  /** When set, the view layer auto-removes this follow on mount — the
+   *  series is over, so the series follow is dead weight taking an
+   *  alert slot. Only set for the SERIES follow (never a team follow:
+   *  the user may still want to follow a team into the next round).
+   *  Fully-automatic per the Finals-era alerts principles. */
+  autoDropFollow?: { kind: "series"; id: string };
 };
 
 export type TodayPayload = {
@@ -1130,6 +1136,12 @@ function pickClosing(
         : undefined,
       circleHeading: circle.length > 0 ? "Still in your circle" : undefined,
       circle: circle.length > 0 ? circle : undefined,
+      // Auto-drop the dead series follow (only if they follow the
+      // SERIES; team follows are left alone so they can ride into the
+      // next round). Frees the alert slot the moment the series wraps.
+      autoDropFollow: followedSeries.has(seriesKey)
+        ? { kind: "series", id: seriesKey }
+        : undefined,
     };
   }
 
