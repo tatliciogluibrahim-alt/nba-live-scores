@@ -252,10 +252,9 @@ function LockScreenPushMock({ preview }: { preview: PreviewExample }) {
  *  already points native users at iOS Settings > No Noise Scores >
  *  Notifications for managing the real subscription. */
 function TestPushButton({ preview }: { preview: PreviewExample }) {
-  // Native iOS: no test button. Real notifications come from APNs, not
-  // from the Web Notification API the button uses.
-  if (isCapacitorNative()) return null;
-
+  // Hook must run unconditionally (rules-of-hooks); the native bail-out
+  // happens after. Native iOS gets no test button — real notifications
+  // come from APNs, not the Web Notification API this button uses.
   const [status, setStatus] = useState<"idle" | "asked" | "sent" | "blocked" | "unsupported">(
     () => {
       if (typeof window === "undefined") return "idle";
@@ -265,6 +264,8 @@ function TestPushButton({ preview }: { preview: PreviewExample }) {
       return "idle";
     }
   );
+
+  if (isCapacitorNative()) return null;
 
   if (status === "unsupported") {
     return (

@@ -227,7 +227,6 @@ export function CapacitorPushBootstrap() {
     };
     // Re-runs when onboarding completes so a fresh user who granted in
     // the onboarding flow gets registered (startedRef guards dup work).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefsHydrated, prefs.onboardingComplete]);
 
   // Sync effect: when alerts/noSpoilers change AFTER initial

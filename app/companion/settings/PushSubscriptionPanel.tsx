@@ -32,15 +32,16 @@ import { usePushSubscription } from "../push/use-push-subscription";
 // state is meaningless here. We point users to the iOS Settings path
 // instead of showing the misleading "browser doesn't support push" copy.
 
+// Thin dispatcher so neither branch calls hooks conditionally (the web
+// panel's usePushSubscription/useState only mount when we render it).
+// Native iOS uses APNs via Capacitor, not Web Push, so it gets a
+// dedicated panel; everyone else gets the Web Push panel.
 export function PushSubscriptionPanel() {
-  // Native iOS: Web Push isn't available inside the Capacitor WKWebView
-  // by design. Notifications run through APNs and are managed at the OS
-  // level. Render a native-aware sub-panel that confirms when push is on
-  // and offers a Turn On button when it isn't.
-  if (isCapacitorNative()) {
-    return <NativePushPanel />;
-  }
+  if (isCapacitorNative()) return <NativePushPanel />;
+  return <WebPushPanel />;
+}
 
+function WebPushPanel() {
   const { status, subscribe, unsubscribe, sendTest } = usePushSubscription();
   const [working, setWorking] = useState<null | "subscribe" | "unsubscribe" | "test" | "delayed-test">(
     null
@@ -271,6 +272,11 @@ function NativePushPanel() {
   }, []);
 
   useEffect(() => {
+    // Sync UI state from the OS permission store on mount — the
+    // sanctioned external-store-sync use of an effect (same pattern as
+    // EnableNotificationsCard). setState lands after an await, not
+    // synchronously, so it can't cascade.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
 
@@ -416,6 +422,9 @@ function RegistrationDiagnostics() {
   }, []);
 
   useEffect(() => {
+    // Read the persisted registration state from localStorage on mount
+    // (external-store sync — the sanctioned effect-setState pattern).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     reread();
   }, [reread]);
 

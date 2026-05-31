@@ -41,10 +41,6 @@ export async function GET(req: Request) {
     );
   }
 
-  // Allow forcing sandbox for an Xcode debug build:
-  //   ?token=...&sandbox=1
-  const sandbox = url.searchParams.get("sandbox") === "1";
-
   const allTokens = await listIosTokens();
   const match = allTokens.find((t) => t.token.toLowerCase().startsWith(q));
   if (!match) {
