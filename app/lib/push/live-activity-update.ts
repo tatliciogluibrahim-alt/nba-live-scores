@@ -56,12 +56,24 @@ export type LiveActivityUpdateResult = {
 export async function pushLiveActivityUpdates(
   inputs: ActivityUpdateInput[]
 ): Promise<LiveActivityUpdateResult> {
-  const activeIds = await listActivityGameIds();
+  // Vercel KV auto-coerces purely-numeric strings to JS numbers when
+  // returning set members. NBA ESPN game IDs are all-digit (e.g.
+  // "401873203") so listActivityGameIds() hands back numbers for those,
+  // strings for non-numeric IDs (preview-wc-usa-tur etc.). We always
+  // stored gameIds as strings; the Map below is keyed by string. Coerce
+  // every active id back to string so the Map lookup actually matches.
+  //
+  // Diagnosed during launch night: the Live Activity for SA-OKC stayed
+  // frozen on the lock screen for the entire game because every cron
+  // tick hit byId.get(401873203 /* number */) and got undefined, so the
+  // `continue` skipped the push. Token was correct, sandbox was
+  // correct, score input was correct — the lookup was just typed wrong.
+  const activeIds = (await listActivityGameIds()).map((id) => String(id));
   if (activeIds.length === 0) {
     return { updated: 0, ended: 0, pruned: 0 };
   }
 
-  const byId = new Map(inputs.map((i) => [i.gameId, i]));
+  const byId = new Map(inputs.map((i) => [String(i.gameId), i]));
   let updated = 0;
   let ended = 0;
   let pruned = 0;
