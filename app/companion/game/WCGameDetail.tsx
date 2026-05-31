@@ -2,6 +2,7 @@
 
 import { Eyebrow } from "../atoms/Eyebrow";
 import { ScoreModule } from "../atoms/ScoreModule";
+import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
 import { HeroMoment } from "../moments/HeroMoment";
 import { Spoiler } from "../spoiler/Spoiler";
 import { RevealResultsButton } from "../spoiler/RevealResultsButton";
@@ -221,6 +222,22 @@ export function WCGameDetail({
           gameId={game.id}
           size="lg"
           hideMatchup
+          // Game Pulse rail — same lock-screen parity element as the NBA
+          // detail. WC uses the green accent + KICKOFF/90' rail. Live =
+          // minute progress; final = settled filled rail. Upcoming omits.
+          progress={
+            isUpcoming
+              ? undefined
+              : {
+                  value: computeLiveActivityProgress(
+                    "wc",
+                    game.statusText,
+                    status
+                  ),
+                  sport: "wc",
+                  accent: "var(--wc)",
+                }
+          }
         />
       </div>
 

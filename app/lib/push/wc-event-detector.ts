@@ -39,8 +39,10 @@ export type FreshWCGameState = {
   minute: number | null;
   /** True when the feed reports the halftime break (statusText matches
    *  /ht|half/). Drives the wc-halftime "break" event, distinct from the
-   *  minute-crosses-45 "second half resumed" event. */
-  isHalftime: boolean;
+   *  minute-crosses-45 "second half resumed" event. Optional: absent is
+   *  treated as false by the detector, so callers/tests that predate the
+   *  field stay valid. */
+  isHalftime?: boolean;
 };
 
 /** Status ranks — once a fixture has moved forward, we treat any
