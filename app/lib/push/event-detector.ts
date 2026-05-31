@@ -30,12 +30,20 @@ export const EVENT_TYPES = [
   "eoq-1",
   "eoq-2",
   "eoq-3",
+  // Second half begins (Q3 tips). Distinct from eoq-2/halftime: that
+  // fires when Q2 clock hits 0:00; this fires ~15 min later when play
+  // resumes. The "come back from your break" ping. Companion + Full.
+  "second-half-start",
   "close-game",
   "comeback",
   "nba-highlight",
   "final",
   "wc-kickoff",
   "wc-halftime",
+  // WC second half kickoff — the soccer analogue of second-half-start.
+  // Detected in scan-wc (separate detector). Declared here so the
+  // taxonomy, matrix, and dispatcher payload stay exhaustive.
+  "wc-second-half",
   "wc-goal",
   "wc-final",
 ] as const;
@@ -288,6 +296,29 @@ export function detectEvents(
     }
   }
 
+  // Transition 2c: second half started (Q3 tips). Fires on the live
+  // 2→3 period transition — ~15 min after halftime (eoq-2), a distinct
+  // "come back from your break" moment. Deduped via its own flag.
+  //
+  // No double-ping with halftime: eoq-2 fires when statusText is
+  // "End Q2" (period still 2). This fires when period becomes 3. The
+  // only overlap is the rare case where the cron misses halftime
+  // entirely and sees Q2-live → Q3-live in one tick, firing both the
+  // eoq-2 fallback and this. At a 1-minute cron over a ~15-minute
+  // halftime that effectively never happens.
+  const secondHalfFired = prev?.secondHalfStartFired === true;
+  let nextSecondHalfFired = secondHalfFired;
+  if (
+    prev?.status === "live" &&
+    next.status === "live" &&
+    next.period === 3 &&
+    prevPeriod === 2 &&
+    !secondHalfFired
+  ) {
+    events.push({ ...baseInfo, type: "second-half-start" });
+    nextSecondHalfFired = true;
+  }
+
   // Transition 3: live → final → final event.
   if (prev?.status === "live" && next.status === "final") {
     events.push({ ...baseInfo, type: "final" });
@@ -342,6 +373,7 @@ export function detectEvents(
     eoq1Fired: nextEoq1Fired,
     eoq2Fired: nextEoq2Fired,
     eoq3Fired: nextEoq3Fired,
+    secondHalfStartFired: nextSecondHalfFired,
     updatedAt: Date.now(),
   };
 

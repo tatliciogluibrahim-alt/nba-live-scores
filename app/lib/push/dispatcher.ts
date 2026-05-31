@@ -37,6 +37,7 @@ import { incrCounter } from "./ops-metrics";
 const WC_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   "wc-kickoff",
   "wc-halftime",
+  "wc-second-half",
   "wc-goal",
   "wc-final",
 ]);
@@ -479,6 +480,14 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:eoq`,
       };
+    case "second-half-start":
+      return {
+        title: "Second half",
+        subtitle: matchup,
+        body: noSpoilers ? "Third quarter underway." : scoreLine(event),
+        url: `/game/${event.gameId}`,
+        tag: `${event.gameId}:second-half`,
+      };
     case "close-game":
       return {
         title: "Q4 · close game",
@@ -530,6 +539,16 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
           : `${scoreLine(event)} · Second half started`,
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:wc-halftime`,
+      };
+    case "wc-second-half":
+      return {
+        title: "Second half",
+        subtitle: matchup,
+        body: noSpoilers
+          ? "Second half underway. Tap to check in."
+          : `${scoreLine(event)} · Second half started`,
+        url: `/game/${event.gameId}`,
+        tag: `${event.gameId}:wc-second-half`,
       };
     case "wc-goal":
       return {

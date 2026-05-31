@@ -30,6 +30,8 @@ const MATRIX: Record<EventType, ReadonlySet<AlertPreset>> = {
   "eoq-1": new Set<AlertPreset>(["companion", "all"]),
   "eoq-2": new Set<AlertPreset>(["companion", "all"]),
   "eoq-3": new Set<AlertPreset>(["companion", "all"]),
+  // Second half tip (NBA) — companion + all, matching the quarter pulses.
+  "second-half-start": new Set<AlertPreset>(["companion", "all"]),
   "close-game": new Set<AlertPreset>(["all"]),
   comeback: new Set<AlertPreset>(["all"]),
   // Player milestones (30/40/50 PTS) — the loud tier only.
@@ -39,6 +41,8 @@ const MATRIX: Record<EventType, ReadonlySet<AlertPreset>> = {
   // Halftime maps to companion + all, matching the NBA eoq-2 pattern.
   "wc-kickoff": new Set<AlertPreset>(["quiet", "companion", "all"]),
   "wc-halftime": new Set<AlertPreset>(["companion", "all"]),
+  // Second half kickoff (WC) — companion + all, mirrors NBA.
+  "wc-second-half": new Set<AlertPreset>(["companion", "all"]),
   // Goals land in Companion (+ Full Details) — per the tiering decision,
   // soccer scores belong in the everyday "watch the team" tier.
   "wc-goal": new Set<AlertPreset>(["companion", "all"]),

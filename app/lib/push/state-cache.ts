@@ -36,6 +36,10 @@ export type CachedGameState = {
   eoq1Fired?: boolean;
   eoq2Fired?: boolean;
   eoq3Fired?: boolean;
+  /** True once we've fired second-half-start (Q3 tipoff) for this
+   *  game. Distinct from eoq2Fired (halftime). Optional for back-compat
+   *  with pre-existing cache entries. */
+  secondHalfStartFired?: boolean;
   updatedAt: number;
 };
 
