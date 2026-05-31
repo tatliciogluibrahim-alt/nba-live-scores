@@ -543,3 +543,129 @@ preventable losses came from.
   launch-window debugging.
 - **Multi-agent pairing.** Writing-Claude + Design-Claude +
   Review-Claude consistently beat any single agent.
+
+---
+
+## APNs: the launch-night masterclass
+
+Push notifications on iOS look like one system. They're actually
+**four moving parts that all must align**, and any disagreement fails
+silently. The 2026-05-30 launch-night saga taught the whole stack at
+once. This is the section your future self looks at when you ship a
+mobile app and notifications go dark.
+
+### The four axes that must agree
+
+1. **The build's `aps-environment` entitlement** (in
+   `App.entitlements`): `development` or `production`. Determines the
+   APNs environment for every device token the build mints. TestFlight
+   does NOT change this — your archive entitlement is what ships.
+2. **The device token** itself. Bound at mint time to whichever
+   environment the build was signed for. A development-build token
+   only works against `api.sandbox.push.apple.com`. A production-build
+   token only works against `api.push.apple.com`.
+3. **The server's chosen APNs host** per push.
+4. **The `.p8` signing key's environment scope.** Apple lets you scope
+   a key to Sandbox, Production, or both — and you **can't change the
+   scope after creation**. A Sandbox-only key is rejected on production
+   with `403 BadEnvironmentKeyInToken` even when token + bundle id are
+   otherwise perfect.
+
+If any one of (1)/(2)/(3)/(4) disagrees with the others, push fails.
+The error often *misleads* about which axis is wrong.
+
+### Decoding Apple's reason bodies
+
+- **`400 BadDeviceToken`** — token belongs to the OTHER environment.
+  Try the other host with the same token.
+- **`403 BadEnvironmentKeyInToken`** — the **signing key** isn't valid
+  for this environment. The key's scope is wrong. Create a new key
+  with Sandbox & Production checked (rescoping isn't allowed).
+- **`403 ExpiredProviderToken`** — JWT is stale. Re-sign.
+- **`410 Unregistered`** — device uninstalled. Remove from store.
+- **`413 PayloadTooLarge`** — alert payloads cap at 4 KB.
+- **`400 TopicDisallowed`** — `apns-topic` doesn't match the App ID
+  the key is registered for. Check the bundle ID env var.
+
+**Read both environment responses side by side**. The pattern
+`production: 403 BadEnvironmentKeyInToken` + `sandbox: 400
+BadDeviceToken` is the Sandbox-scoped-key signature — the key works
+sandbox-side but your tokens are production tokens. Neither will
+deliver until you replace the key with a Sandbox & Production one.
+
+### The auto-fallback pattern (long-term fix)
+
+Hardcoding either environment breaks the moment the entitlement flips
+between dev / TestFlight / App Store. Instead: try the preferred
+host, and on a `400 BadDeviceToken` or `403 BadEnvironmentKeyInToken`,
+auto-retry the other host. Right for every build flavor with zero
+config.
+
+```ts
+const r1 = await apnsHttp(preferProd ? PROD_HOST : SANDBOX_HOST, ...);
+if (r1.ok || !isEnvironmentMismatch(r1.status, r1.body)) return r1;
+const r2 = await apnsHttp(preferProd ? SANDBOX_HOST : PROD_HOST, ...);
+return r2;
+```
+
+When the credentials are correct, this is a no-op on the happy path
+(first try wins). When environments mismatch, it transparently
+delivers. **Build this from day one.**
+
+### The diagnostic endpoint that saves the night
+
+The single most valuable thing built tonight was `/api/push/test-ios`
++ `/api/push/inspect`. The first fires a real APNs push to a chosen
+token and returns Apple's actual status + body for BOTH environments
+in one request. The second returns the server's full KV view of a
+device's row (alerts, noSpoilers, createdAt vs lastSeenAt).
+
+Together they isolate every failure axis in two HTTP calls:
+
+- `inspect` shows: token in KV? follows synced? lastSeenAt ===
+  updatedAt? (== updatedAt → zero deliveries ever; that's a server-
+  to-Apple delivery failure, not a registration failure)
+- `test-ios` shows: token length, bundle id match, env-vars present,
+  prod response + body, sandbox response + body
+
+Build these endpoints **before** you need them. Five minutes of code
+saves a night of guessing.
+
+### Notification format defaults that matter
+
+- **Always send `aps.subtitle`**. Without it, iOS's lock-screen
+  condensed view shows `Title / "from <App Name>" / Body` — the
+  attribution floats awkwardly between your two lines. With a
+  subtitle present, iOS uses *your* text in that slot and moves the
+  app name back to the header where it belongs. Split your copy as
+  `title = event` (e.g. "Final"), `subtitle = matchup`
+  (e.g. "SA vs OKC"), `body = score line`.
+- **Always send `apns-collapse-id`**. Without it, every push from your
+  app stacks in Notification Center. Five test pushes during debug =
+  five rows. Match the collapse id to your web push `tag` so semantic
+  duplicates collapse identically on both transports.
+
+### Mental decision tree when "no notifications"
+
+1. **Hit inspect.** `iosTokens.length === 0` for the user → registration
+   broken. `lastSeenAt === updatedAt` → delivery broken. Different
+   bugs, different fixes.
+2. **Hit test-ios.** One environment 200 + device receives push →
+   it's working; you were waiting on event timing. Both reject →
+   read the bodies.
+3. **Both reject with different bodies** → re-read the four-axis list
+   above; pattern-match. Confirm by going to **Apple Developer >
+   Certificates > Keys > View Key**: the environment is right there.
+4. **The fix is almost always credentials or scope**, not code. Code
+   passes the JWT through HTTP/2 to a URL. The 5-hour debug rabbit
+   holes were all credentials wearing code's mask.
+
+### The two-line summary of tonight
+
+> A `.p8` APNs key created with Sandbox scope produces zero visible
+> errors anywhere — in Xcode, in iOS Settings, in the app, in your
+> server logs — but rejects every production push with `403
+> BadEnvironmentKeyInToken`. The TestFlight build mints production
+> tokens. The mismatch is invisible without a diagnostic that probes
+> both environments and returns Apple's actual error body. **Build
+> that diagnostic first; debug second.**

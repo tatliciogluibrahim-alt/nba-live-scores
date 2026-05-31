@@ -45,6 +45,13 @@ export function getWebPush() {
 export type PushPayload = {
   /** Bold first line on the notification. */
   title: string;
+  /** Secondary heading (smaller than title, larger than body). On iOS
+   *  this slots between title and body — and crucially, when present it
+   *  REPLACES the "from <App Name>" attribution line that iOS otherwise
+   *  inserts in the same slot on the lock screen's condensed stack view.
+   *  Without a subtitle the app name floats awkwardly between our two
+   *  lines; with one, the attribution moves back to the header. */
+  subtitle?: string;
   /** Body text. Keep short — iOS truncates ~110 chars on lock screen. */
   body: string;
   /** Where the notification deep-links when tapped. Defaults to "/". */

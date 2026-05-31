@@ -241,7 +241,12 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
         const result = await sendApnsPush({
           deviceToken: ios.token,
           title: payload.title,
+          subtitle: payload.subtitle,
           body: payload.body,
+          // Pass through `tag` as the apns-collapse-id so a second
+          // update for the same event collapses on-device instead of
+          // stacking a row in Notification Center.
+          collapseId: payload.tag,
           // PRODUCTION. TestFlight + App Store builds get their device
           // tokens from the production APNs endpoint
           // (api.push.apple.com). Sending to sandbox
@@ -415,6 +420,16 @@ function dedupeTagFor(event: PushEvent): string {
 
 function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
   const matchup = `${event.awayCode} vs ${event.homeCode}`;
+  // Title / subtitle / body shape:
+  //   • title    — the EVENT ("Final", "End of Q3", "Halftime")
+  //   • subtitle — the MATCHUP ("SA vs OKC")
+  //   • body     — the SCORE or context line
+  // Why the split: iOS shows title (bold), then subtitle, then body in
+  // a clean three-line stack. When subtitle is OMITTED, iOS inserts
+  // "from <App Name>" in that middle slot (the awkward layout user
+  // feedback flagged on launch night). With subtitle present, the app
+  // attribution moves to the header where it belongs.
+  //
   // For No-Spoilers users the body must never contain a score, a
   // winner, or a closeness signal. They get a calm "something
   // happened, tap to check" body. The dispatcher already suppresses
@@ -423,99 +438,93 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
   switch (event.type) {
     case "tipoff":
       // Phase 21C-G7 — Game 7 override. When ESPN's gameContext flags
-      // this as Game 7 of a series, swap the title + body to lean into
-      // the stakes. Same delivery path, different copy. Score is 0-0
-      // at tipoff so we omit it whether or not No-Spoilers is on; the
-      // body just sets the moment. Tipoff is already in every tier
-      // (quiet/companion/all) so no tier-filter override is needed —
-      // the matcher already lets Quiet followers through.
+      // this as Game 7 of a series, lean into the stakes.
       if (event.isGame7) {
         return {
-          title: `Game 7 · ${matchup}`,
+          title: "Game 7",
+          subtitle: matchup,
           body: "Series on the line. Tap to follow along.",
           url: `/game/${event.gameId}`,
           tag: `${event.gameId}:tipoff`,
         };
       }
-      // At tipoff the score is 0-0; nothing useful to include either way.
       return {
-        title: `Tipoff · ${matchup}`,
+        title: "Tipoff",
+        subtitle: matchup,
         body: "Game's underway. Tap to follow along.",
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:tipoff`,
       };
     case "eoq-1":
       return {
-        title: `End of Q1 · ${matchup}`,
+        title: "End of Q1",
+        subtitle: matchup,
         body: noSpoilers ? "Quarter wrapped. Tap to check in." : scoreLine(event),
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:eoq`,
       };
     case "eoq-2":
       return {
-        title: `Halftime · ${matchup}`,
+        title: "Halftime",
+        subtitle: matchup,
         body: noSpoilers ? "Half done. Tap to check in." : scoreLine(event),
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:eoq`,
       };
     case "eoq-3":
       return {
-        title: `End of Q3 · ${matchup}`,
+        title: "End of Q3",
+        subtitle: matchup,
         body: noSpoilers ? "One quarter left." : scoreLine(event),
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:eoq`,
       };
     case "close-game":
-      // close-game is suppressed entirely for noSpoilers (see
-      // subscriptionWantsEvent), so we can assume scores are wanted here.
       return {
-        title: `Q4 · ${matchup}`,
+        title: "Q4 · close game",
+        subtitle: matchup,
         body: `${scoreLine(event)} · one possession`,
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:close`,
       };
     case "comeback":
-      // Like close-game: suppressed for noSpoilers users. Body leans
-      // into the drama because the "All moments" tier is explicitly
-      // asking for it.
       return {
-        title: `Comeback · ${matchup}`,
+        title: "Comeback",
+        subtitle: matchup,
         body: `${scoreLine(event)} · lead erased`,
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:comeback`,
       };
     case "nba-highlight":
-      // Player milestone (Full Details tier). `note` carries the line
-      // ("SGA · 34 PTS"). No-Spoilers users get a score-free nudge.
       return {
-        title: `Highlight · ${matchup}`,
+        title: "Highlight",
+        subtitle: matchup,
         body: noSpoilers
           ? "A big individual moment. Tap to check in."
           : event.note ?? scoreLine(event),
         url: `/game/${event.gameId}`,
-        // Milestone is encoded in note; tag on note keeps 30 vs 40 distinct.
         tag: `${event.gameId}:highlight:${event.note ?? ""}`,
       };
     case "final":
       return {
-        title: `Final · ${matchup}`,
+        title: "Final",
+        subtitle: matchup,
         body: noSpoilers ? "Game's done. Tap when you're ready." : scoreLine(event),
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:final`,
       };
     case "wc-kickoff":
-      // World Cup kickoff — soccer-bespoke verb ("Kickoff" not "Tipoff").
-      // Score is 0–0 at kickoff so we omit it whether or not No-Spoilers
-      // is on; the body just sets the moment.
       return {
-        title: `Kickoff · ${matchup}`,
+        title: "Kickoff",
+        subtitle: matchup,
         body: "The match is underway. Tap to follow along.",
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:wc-kickoff`,
       };
     case "wc-halftime":
       return {
-        title: `Second half · ${matchup}`,
+        title: "Second half",
+        subtitle: matchup,
         body: noSpoilers
           ? "Second half underway. Tap to check in."
           : `${scoreLine(event)} · Second half started`,
@@ -524,19 +533,18 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
       };
     case "wc-goal":
       return {
-        title: `Goal · ${matchup}`,
+        title: "Goal",
+        subtitle: matchup,
         body: noSpoilers
           ? "Someone scored. Tap to check in."
           : `${scoreLine(event)} · Goal`,
         url: `/game/${event.gameId}`,
-        // Note: no per-goal tag suffix beyond the type — back-to-back
-        // goals are distinct events with distinct scorelines, but the
-        // dedupe layer keys on gameId:type:scoreline upstream.
         tag: `${event.gameId}:wc-goal:${event.awayScore}-${event.homeScore}`,
       };
     case "wc-final":
       return {
-        title: `Full time · ${matchup}`,
+        title: "Full time",
+        subtitle: matchup,
         body: noSpoilers
           ? "Match wrapped. Tap when you're ready."
           : scoreLine(event),

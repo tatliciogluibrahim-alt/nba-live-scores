@@ -196,3 +196,108 @@ When the rejection email lands (it happens):
 - Read the reason carefully. Don't guess.
 - Most v1.0 rejections are metadata, not binary — easy fix.
 - Reply via Resolution Center, not new build, when possible.
+
+---
+
+## Launch-night APNs saga (2026-05-30 → 2026-05-31)
+
+Submitted Build 8. Got a friend on TestFlight. Pinned SA-OKC Game 7.
+**Got zero notifications and a frozen Live Activity** for the entire
+first three quarters. What happened.
+
+### The five-bug onion (in order discovered, not order of impact)
+
+1. **Silent registration POST failures.** WKWebView `fetch` failures
+   were swallowed in `console.warn` catch blocks, so the iOS APNs
+   token + Live Activity token never reached KV without us knowing.
+   **Fix:** retry with exponential backoff + persist last attempt to
+   localStorage + new Diagnostics box in Settings.
+2. **Dispatcher hardcoded `sandbox: true`** on `sendApnsPush`. Even
+   if registration had worked, every push was targeting sandbox
+   APNs which silently rejects production tokens. **Fix:** flipped
+   to `false`, then later replaced by auto-fallback.
+3. **Live Activity gameId string/number mismatch.** Vercel KV returns
+   purely-numeric strings as JS numbers when iterating a set member.
+   `byId.get(401873203)` (number from `listActivityGameIds`) never
+   matched `byId.set("401873203", input)` (string from live-scores).
+   Every score update silently skipped. **Fix:** `String()` coercion
+   on both sides of the lookup.
+4. **`/api/push/test-ios` returned `403 BadEnvironmentKeyInToken`**
+   on production *and* `400 BadDeviceToken` on sandbox simultaneously.
+   That cross-pattern proves the **signing key** is sandbox-scoped
+   while the tokens are production-scoped. Confirmed at
+   developer.apple.com → Keys → View Key: "Apple Push Notifications
+   service (APNs) — Team scoped (All topics) **[Sandbox]**". Apple
+   doesn't let you edit a key's environment after creation. **Fix:**
+   created a new key with **Sandbox & Production** checked, updated
+   `APNS_KEY_ID` and `APNS_PRIVATE_KEY` in Vercel, redeployed. First
+   `production: { ok: true, status: 200 }` and a notification landed
+   on the device.
+5. **Notification format awkwardness.** With just `title` + `body`,
+   iOS slots "from No Noise Scores" between them on the condensed
+   lock-screen view. **Fix:** added `aps.subtitle` to the dispatcher
+   payload (event as title, matchup as subtitle, score as body) +
+   `apns-collapse-id` so semantic duplicates replace each other.
+
+### The diagnostics built tonight (keep them)
+
+- **`/api/push/inspect?token=<prefix>`** — server's KV view of a
+  device: stored alerts, noSpoilers, createdAt vs lastSeenAt
+  (lastSeenAt === createdAt ⇒ zero successful deliveries ever, the
+  clearest "delivery is broken, registration is fine" signal).
+- **`/api/push/test-ios?token=<prefix>`** — fires a real APNs alert
+  to the matching device token AGAINST BOTH ENVIRONMENTS separately
+  (no auto-fallback) and returns Apple's status + reason body for
+  each. Also reports bundleIdMatches and which APNS_* env vars are
+  present. Two HTTP calls isolated the entire failure chain.
+- **Diagnostics box in Settings → Alerts & Notifications → PUSH ON
+  THIS DEVICE.** Reads localStorage state for the two registration
+  paths (APNs + Live Activity) and shows last attempt time + status
+  + token prefix + a "Re-register now" button that wires a one-shot
+  listener around `PushNotifications.register()`.
+
+Gate these behind `CRON_SECRET` before wider launch (the inspect/
+test-ios endpoints currently accept any well-formed query). They're
+safe enough to leave open for beta — tokens are device-held
+credentials that grant no useful capability on their own — but
+public exposure is the kind of thing a security review will flag.
+
+### The auto-fallback (the durable part of the fix)
+
+Both `sendApnsPush` and `sendApnsLiveActivity` now:
+
+1. Try the preferred environment (production unless `sandbox: true`).
+2. If Apple returns `400 BadDeviceToken` or
+   `403 BadEnvironmentKeyInToken` → retry the other environment.
+3. Return the winning environment in the result.
+
+Means future-you doesn't have to think about it: when the App Store
+build (production tokens) goes live, the same code path works without
+config changes. If you ever rebuild locally with development signing,
+that works too.
+
+### The entitlement (next archive, not blocking)
+
+`App.entitlements` still has `aps-environment: development`. TestFlight
+re-signs to production for distribution, so production tokens have
+been minted correctly all along — and your new key works in BOTH
+environments, so the fallback handles whichever side wins. Clean state
+on the next archive: flip the entitlement to `production` explicitly.
+
+### Time spent and the lesson
+
+Five hours from "no notifications" to "production push delivered."
+Four of those hours were spent on bugs 1–3, building diagnostics so
+bug 4 could be diagnosed in two HTTP calls. **Build the diagnostic
+that surfaces Apple's actual response before you start guessing.**
+Once `/api/push/test-ios` existed, the Sandbox-scoped-key bug was
+identified in the next message exchange.
+
+The single sentence to remember:
+
+> A `.p8` APNs key scoped to Sandbox only produces ZERO visible
+> errors anywhere — in Xcode, in iOS, in your app, in your server
+> logs — but rejects every production push with `403
+> BadEnvironmentKeyInToken`. Check the key's environment scope at
+> developer.apple.com → Keys → View Key. It's literally on the
+> screen.

@@ -190,8 +190,17 @@ export async function sendApnsPush(opts: {
   deviceToken: string;
   /** Lock-screen title line. Keep short (one or two words ideally). */
   title: string;
+  /** Optional secondary heading. When present, iOS uses this in place
+   *  of the awkward "from <App Name>" line it would otherwise show on
+   *  the condensed lock-screen stack view. */
+  subtitle?: string;
   /** Lock-screen body line. */
   body: string;
+  /** apns-collapse-id header — newer notifications with the same id
+   *  replace older ones in the Notification Center stack instead of
+   *  piling up. Match the dispatcher's `tag` shape so web and native
+   *  collapse identically. */
+  collapseId?: string;
   /** Whether to use APNs sandbox or production. Defaults to sandbox
    *  because this is being built against a Xcode debug install. Will
    *  flip when we ship to TestFlight. */
@@ -221,20 +230,35 @@ export async function sendApnsPush(opts: {
   // notification. `mutable-content: 1` lets us run a Notification
   // Service Extension later if we want to rewrite spoiler-safe bodies
   // on-device before display. Harmless to include now.
+  //
+  // `subtitle` is the iOS-native way to display a secondary heading;
+  // setting it also displaces the "from <App>" attribution iOS would
+  // otherwise insert between title and body on the lock screen.
+  const alert: Record<string, string> = {
+    title: opts.title,
+    body: opts.body,
+  };
+  if (opts.subtitle) alert.subtitle = opts.subtitle;
   const payload = {
     aps: {
-      alert: { title: opts.title, body: opts.body },
+      alert,
       sound: "default",
       "mutable-content": 1,
     },
   };
-  const headers = {
+  const headers: Record<string, string> = {
     authorization: `bearer ${jwt}`,
     "apns-topic": bundleId,
     "apns-push-type": "alert",
     "apns-priority": "10",
     "content-type": "application/json",
   };
+  // Collapse-id ensures repeated event updates (multiple score pings
+  // for the same game) replace the previous notification instead of
+  // stacking — Apple caps the header at 64 ASCII chars.
+  if (opts.collapseId) {
+    headers["apns-collapse-id"] = opts.collapseId.slice(0, 64);
+  }
   const path = `/3/device/${opts.deviceToken}`;
   const bodyJson = JSON.stringify(payload);
 
