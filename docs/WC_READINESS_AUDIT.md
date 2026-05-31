@@ -131,18 +131,23 @@ I did NOT change these — they're judgment calls you own:
 These are the real launch risks. None are code bugs; all need live data
 or external confirmation:
 
-1. **ESPN abbreviation ↔ FIFA code match. [highest risk]** Country
-   follows store FIFA 3-letter codes (USA, BRA, BIH...). Matching does
-   exact `event.awayCode === followId`. If ESPN's WC feed returns even
-   one abbreviation that differs from the FIFA code, that country's
-   followers get **no notifications and an empty widget, silently**.
-   The code already keeps a hand-maintained `TEAM_GROUP` FIFA-code map
-   in `app/api/world-cup/route.ts` (lines 9-22), which suggests ESPN's
-   abbreviations weren't fully trusted. **Action:** once ESPN publishes
-   the real bracket, pull `/api/world-cup` and diff every
-   `team.abbreviation` against the country directory. If any differ,
-   add an alias map in `normalizeTeam` (mirror the NBA
-   `TEAM_ABBR_ALIASES` pattern in `live-scores`).
+1. **ESPN abbreviation ↔ FIFA code match. ✅ VERIFIED CLOSED
+   (2026-05-31).** Diffed the app's 48 country codes
+   (`countries.ts`) against ESPN's live `fifa.world` teams endpoint:
+   **48/48 exact match, zero mismatches on either side** — including
+   every tricky one (TUR, CIV, COD, RSA, KSA, CPV, CUW, BIH). Also
+   confirmed the *scoreboard* endpoint (production's actual source)
+   returns the same abbreviations on real opening-day fixtures
+   (`MEX vs RSA`, `KOR vs CZE` on 2026-06-11 — which also matches the
+   app's Group A). The strict `event.awayCode === followId` match will
+   work for every team. **No alias map needed.** Re-run the diff if
+   ESPN reshuffles before kickoff, but as of now this is clean.
+
+   Reproduce:
+   ```
+   curl -s "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/teams?limit=500" \
+   | python3 -c "import sys,json; d=json.load(sys.stdin); print('\n'.join(sorted(t['team']['abbreviation'] for t in d['sports'][0]['leagues'][0]['teams'])))"
+   ```
 
 2. **cron-job.org has an ACTIVE scan-wc schedule.** The GitHub Actions
    schedule is commented out; cron-job.org drives it. You showed me the
