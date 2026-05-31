@@ -60,8 +60,25 @@ export function PushSyncEffect() {
     const alerts = follows
       .filter((f) => f.alertEnabled)
       .map((f) => ({ kind: f.kind, id: f.id, tier: f.alertTier }));
+
+    // Quiet Hours + reminder lead time are server-honored prefs (the
+    // dispatcher suppresses pushes in-window; the reminders cron fires
+    // N minutes before tipoff). They only mean anything server-side with
+    // the device's time zone, so we resolve and sync that too.
+    const timeZone = (() => {
+      try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+    const quietHours = prefs.quietHours;
+    const remindBeforeMinutes = prefs.remindBeforeMinutes;
+
     const hash =
       `${prefs.noSpoilers ? "1" : "0"}|` +
+      `${quietHours ? `${quietHours.start}-${quietHours.end}` : "none"}|` +
+      `${remindBeforeMinutes ?? "def"}|${timeZone ?? "notz"}|` +
       alerts.map((f) => `${f.kind}:${f.id}:${f.tier}`).sort().join(",");
 
     if (readLastHash() === hash) return;
@@ -73,6 +90,9 @@ export function PushSyncEffect() {
       const ok = await syncFollows({
         alerts,
         noSpoilers: prefs.noSpoilers,
+        quietHours,
+        remindBeforeMinutes,
+        timeZone,
       });
       if (cancelled) return;
       if (ok) {
@@ -91,6 +111,8 @@ export function PushSyncEffect() {
   }, [
     follows,
     prefs.noSpoilers,
+    prefs.quietHours,
+    prefs.remindBeforeMinutes,
     status.state,
     followsHydrated,
     prefsHydrated,

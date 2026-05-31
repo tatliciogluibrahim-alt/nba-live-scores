@@ -68,6 +68,9 @@ export async function POST(req: Request) {
       token,
       alerts: sync.alerts,
       noSpoilers: sync.noSpoilers,
+      quietHours: sync.quietHours,
+      remindBeforeMinutes: sync.remindBeforeMinutes,
+      timeZone: sync.timeZone,
     });
     return NextResponse.json({
       ok: true,

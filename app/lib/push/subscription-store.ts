@@ -28,6 +28,13 @@ export type StoredSubscription = {
    *  comeback) so the user's No-Spoilers contract holds even on the
    *  "All moments" tier. */
   noSpoilers: boolean;
+  /** Optional Quiet Hours window. When set (with timeZone), the
+   *  dispatcher + reminders cron skip delivery during it. */
+  quietHours?: { start: string; end: string };
+  /** Optional pre-game reminder lead time (minutes). */
+  remindBeforeMinutes?: number;
+  /** Optional device IANA time zone — needed to evaluate quietHours. */
+  timeZone?: string;
   /** When the device first registered. */
   createdAt: number;
   /** Last time we successfully delivered (or attempted) a push. */
@@ -102,6 +109,12 @@ function normalizeStored(
     follows: Array.isArray(row.follows) ? row.follows : undefined,
     alertPreset: row.alertPreset,
     noSpoilers: typeof row.noSpoilers === "boolean" ? row.noSpoilers : false,
+    quietHours: row.quietHours,
+    remindBeforeMinutes:
+      typeof row.remindBeforeMinutes === "number"
+        ? row.remindBeforeMinutes
+        : undefined,
+    timeZone: typeof row.timeZone === "string" ? row.timeZone : undefined,
     createdAt: typeof row.createdAt === "number" ? row.createdAt : Date.now(),
     lastSeenAt: typeof row.lastSeenAt === "number" ? row.lastSeenAt : Date.now(),
   };
@@ -126,12 +139,23 @@ export async function upsertSubscription(
   const noSpoilers = sync
     ? sync.noSpoilers
     : existing?.noSpoilers ?? false;
+  // Quiet-hours / reminder / tz prefs travel with the sync payload.
+  // When this upsert carries no sync (e.g. the dispatcher's post-delivery
+  // lastSeenAt refresh), preserve whatever was stored.
+  const quietHours = sync ? sync.quietHours : existing?.quietHours;
+  const remindBeforeMinutes = sync
+    ? sync.remindBeforeMinutes
+    : existing?.remindBeforeMinutes;
+  const timeZone = sync ? sync.timeZone : existing?.timeZone;
   const next: StoredSubscription = existing
     ? {
         ...existing,
         keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
         alerts,
         noSpoilers,
+        quietHours,
+        remindBeforeMinutes,
+        timeZone,
         lastSeenAt: now,
       }
     : {
@@ -139,6 +163,9 @@ export async function upsertSubscription(
         keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
         alerts,
         noSpoilers,
+        quietHours,
+        remindBeforeMinutes,
+        timeZone,
         createdAt: now,
         lastSeenAt: now,
       };

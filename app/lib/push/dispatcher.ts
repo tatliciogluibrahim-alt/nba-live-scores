@@ -31,6 +31,7 @@ import {
 } from "./ios-token-store";
 import { sendApnsPush } from "./apns-sender";
 import type { SyncedAlert } from "./sync-validation";
+import { isWithinQuietHours } from "./quiet-hours";
 import type { EventType, PushEvent } from "./event-detector";
 import { incrCounter } from "./ops-metrics";
 
@@ -78,12 +79,26 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
   const deliveries: DeliveryResult[] = [];
   let pruned = 0;
   const webpush = getWebPush();
+  // Evaluated once per batch — quiet hours are per-device local windows.
+  const nowMs = Date.now();
 
   for (const event of events) {
     const eventTag = dedupeTagFor(event);
     const matching = subs.filter((s) => subscriberWantsEvent(s, event));
 
     for (const sub of matching) {
+      // Quiet Hours: the user asked not to be disturbed in this window.
+      // Skip delivery entirely (they catch up in-app). The dedupe slot
+      // is intentionally NOT claimed, so a later event outside the
+      // window still gets through.
+      if (isWithinQuietHours(sub.quietHours, sub.timeZone, nowMs)) {
+        deliveries.push({
+          endpoint: sub.endpoint,
+          delivered: false,
+          reason: "quiet-hours",
+        });
+        continue;
+      }
       // Per-(sub, event) processing is wrapped so one catastrophic
       // failure (e.g. KV outage on claimDelivery) can't take down the
       // whole batch. Each sub records its own DeliveryResult.
@@ -206,6 +221,16 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
     const matching = iosTokens.filter((t) => subscriberWantsEvent(t, event));
 
     for (const ios of matching) {
+      // Quiet Hours (same rule as web): skip delivery in-window, leave
+      // the dedupe slot unclaimed so a later out-of-window event lands.
+      if (isWithinQuietHours(ios.quietHours, ios.timeZone, nowMs)) {
+        deliveries.push({
+          endpoint: `apns:${ios.token.slice(0, 8)}…`,
+          delivered: false,
+          reason: "quiet-hours",
+        });
+        continue;
+      }
       try {
         // Token-scoped dedupe key. Distinct from web push endpoint
         // claims so an event can fan out to BOTH a web sub and an

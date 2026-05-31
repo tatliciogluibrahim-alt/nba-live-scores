@@ -36,6 +36,9 @@ const REGISTER_ENDPOINT = "/api/push/register-ios";
 type SyncPayload = {
   alerts: Array<{ kind: string; id: string; tier: string }>;
   noSpoilers: boolean;
+  quietHours?: { start: string; end: string };
+  remindBeforeMinutes?: number;
+  timeZone?: string;
 };
 
 async function postRegister(token: string, sync: SyncPayload): Promise<boolean> {
@@ -47,26 +50,52 @@ async function postRegister(token: string, sync: SyncPayload): Promise<boolean> 
       token,
       alerts: sync.alerts,
       noSpoilers: sync.noSpoilers,
+      quietHours: sync.quietHours,
+      remindBeforeMinutes: sync.remindBeforeMinutes,
+      timeZone: sync.timeZone,
     },
   });
   return result.status === "ok";
 }
 
+function deviceTimeZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function buildSync(
   follows: ReturnType<typeof useFollows>["follows"],
-  noSpoilers: boolean
+  opts: {
+    noSpoilers: boolean;
+    quietHours?: { start: string; end: string };
+    remindBeforeMinutes?: number;
+  }
 ): SyncPayload {
   return {
     alerts: follows
       .filter((f) => f.alertEnabled)
       .map((f) => ({ kind: f.kind, id: f.id, tier: f.alertTier })),
-    noSpoilers,
+    noSpoilers: opts.noSpoilers,
+    quietHours: opts.quietHours,
+    remindBeforeMinutes: opts.remindBeforeMinutes,
+    timeZone: deviceTimeZone(),
   };
 }
 
 function hashSync(sync: SyncPayload): string {
   return (
     (sync.noSpoilers ? "1" : "0") +
+    "|" +
+    (sync.quietHours
+      ? `${sync.quietHours.start}-${sync.quietHours.end}`
+      : "none") +
+    "|" +
+    (sync.remindBeforeMinutes ?? "def") +
+    "|" +
+    (sync.timeZone ?? "notz") +
     "|" +
     sync.alerts
       .map((a) => `${a.kind}:${a.id}:${a.tier}`)
@@ -85,6 +114,8 @@ export function CapacitorPushBootstrap() {
   const lastHashRef = useRef<string | null>(null);
   const followsRef = useRef(follows);
   const noSpoilersRef = useRef(prefs.noSpoilers);
+  const quietHoursRef = useRef(prefs.quietHours);
+  const remindRef = useRef(prefs.remindBeforeMinutes);
   // dismissNotifPromptRef so we can call the setter from inside the
   // APNs registration listener without making it a bootstrap-effect
   // dependency (which would re-run the whole bootstrap each time the
@@ -107,8 +138,16 @@ export function CapacitorPushBootstrap() {
   useEffect(() => {
     followsRef.current = follows;
     noSpoilersRef.current = prefs.noSpoilers;
+    quietHoursRef.current = prefs.quietHours;
+    remindRef.current = prefs.remindBeforeMinutes;
     dismissNotifPromptRef.current = dismissNotifPrompt;
-  }, [follows, prefs.noSpoilers, dismissNotifPrompt]);
+  }, [
+    follows,
+    prefs.noSpoilers,
+    prefs.quietHours,
+    prefs.remindBeforeMinutes,
+    dismissNotifPrompt,
+  ]);
 
   // Bootstrap effect: wires permission, listeners, register(). Re-runs
   // when onboarding completes so a fresh user who just granted in the
@@ -186,7 +225,11 @@ export function CapacitorPushBootstrap() {
         tokenRef.current = token.value;
         // First POST with current sync state. Subsequent sync changes
         // are handled by the second effect below.
-        const sync = buildSync(followsRef.current, noSpoilersRef.current);
+        const sync = buildSync(followsRef.current, {
+          noSpoilers: noSpoilersRef.current,
+          quietHours: quietHoursRef.current,
+          remindBeforeMinutes: remindRef.current,
+        });
         const ok = await postRegister(token.value, sync);
         if (ok) {
           lastHashRef.current = hashSync(sync);
@@ -237,7 +280,11 @@ export function CapacitorPushBootstrap() {
     const token = tokenRef.current;
     if (!token) return; // not registered yet — initial POST handles first sync
 
-    const sync = buildSync(follows, prefs.noSpoilers);
+    const sync = buildSync(follows, {
+      noSpoilers: prefs.noSpoilers,
+      quietHours: prefs.quietHours,
+      remindBeforeMinutes: prefs.remindBeforeMinutes,
+    });
     const hash = hashSync(sync);
     if (lastHashRef.current === hash) return;
 
@@ -254,7 +301,14 @@ export function CapacitorPushBootstrap() {
     return () => {
       cancelled = true;
     };
-  }, [follows, prefs.noSpoilers, followsHydrated, prefsHydrated]);
+  }, [
+    follows,
+    prefs.noSpoilers,
+    prefs.quietHours,
+    prefs.remindBeforeMinutes,
+    followsHydrated,
+    prefsHydrated,
+  ]);
 
   return null;
 }

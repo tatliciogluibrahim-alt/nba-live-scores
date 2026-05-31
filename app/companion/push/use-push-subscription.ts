@@ -101,6 +101,9 @@ export function usePushSubscription(): {
   subscribe: (sync?: {
     alerts: AlertSyncItem[];
     noSpoilers: boolean;
+    quietHours?: { start: string; end: string };
+    remindBeforeMinutes?: number;
+    timeZone?: string;
   }) => Promise<StoredSub | null>;
   /** Tear down the subscription on this device, both server and browser. */
   unsubscribe: () => Promise<void>;
@@ -112,6 +115,9 @@ export function usePushSubscription(): {
   syncFollows: (sync: {
     alerts: AlertSyncItem[];
     noSpoilers: boolean;
+    quietHours?: { start: string; end: string };
+    remindBeforeMinutes?: number;
+    timeZone?: string;
   }) => Promise<boolean>;
   /** Fire a test push via the server. Optional delay lets the caller
    *  close the app before delivery so they can confirm closed-app push. */
@@ -179,7 +185,13 @@ export function usePushSubscription(): {
   }, []);
 
   const subscribe = useCallback(async (
-    sync?: { alerts: AlertSyncItem[]; noSpoilers: boolean }
+    sync?: {
+      alerts: AlertSyncItem[];
+      noSpoilers: boolean;
+      quietHours?: { start: string; end: string };
+      remindBeforeMinutes?: number;
+      timeZone?: string;
+    }
   ): Promise<StoredSub | null> => {
     if (typeof window === "undefined") return null;
     const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -209,6 +221,9 @@ export function usePushSubscription(): {
             subscription: stored,
             alerts: sync?.alerts ?? [],
             noSpoilers: sync?.noSpoilers ?? false,
+            quietHours: sync?.quietHours,
+            remindBeforeMinutes: sync?.remindBeforeMinutes,
+            timeZone: sync?.timeZone,
           }),
         });
       } catch {
@@ -264,6 +279,9 @@ export function usePushSubscription(): {
     async (sync: {
       alerts: AlertSyncItem[];
       noSpoilers: boolean;
+      quietHours?: { start: string; end: string };
+      remindBeforeMinutes?: number;
+      timeZone?: string;
     }): Promise<boolean> => {
       const local = readLocal();
       if (!local) return false; // not subscribed → nothing to sync
@@ -275,6 +293,9 @@ export function usePushSubscription(): {
             subscription: local,
             alerts: sync.alerts,
             noSpoilers: sync.noSpoilers,
+            quietHours: sync.quietHours,
+            remindBeforeMinutes: sync.remindBeforeMinutes,
+            timeZone: sync.timeZone,
           }),
         });
         return res.ok;

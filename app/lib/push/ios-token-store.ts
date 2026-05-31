@@ -34,6 +34,13 @@ export type StoredIosToken = {
    *  closeness-revealing events (close-game, comeback) and to swap
    *  push bodies for safe variants. */
   noSpoilers: boolean;
+  /** Optional Quiet Hours window. When set (with timeZone), the
+   *  dispatcher + reminders cron skip delivery during it. */
+  quietHours?: { start: string; end: string };
+  /** Optional pre-game reminder lead time (minutes). */
+  remindBeforeMinutes?: number;
+  /** Optional device IANA time zone — needed to evaluate quietHours. */
+  timeZone?: string;
   /** When the device first registered. */
   createdAt: number;
   /** Last update to the alerts / noSpoilers fields. */
@@ -68,6 +75,12 @@ function normalizeStored(
     token: raw.token ?? token,
     alerts: Array.isArray(raw.alerts) ? raw.alerts : [],
     noSpoilers: typeof raw.noSpoilers === "boolean" ? raw.noSpoilers : false,
+    quietHours: raw.quietHours,
+    remindBeforeMinutes:
+      typeof raw.remindBeforeMinutes === "number"
+        ? raw.remindBeforeMinutes
+        : undefined,
+    timeZone: typeof raw.timeZone === "string" ? raw.timeZone : undefined,
     createdAt: typeof raw.createdAt === "number" ? raw.createdAt : now,
     updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : now,
     lastSeenAt: typeof raw.lastSeenAt === "number" ? raw.lastSeenAt : now,
@@ -81,6 +94,9 @@ export async function upsertIosToken(input: {
   token: string;
   alerts?: SyncedAlert[];
   noSpoilers?: boolean;
+  quietHours?: { start: string; end: string };
+  remindBeforeMinutes?: number;
+  timeZone?: string;
 }): Promise<StoredIosToken> {
   const { token } = input;
   const key = tokenKey(token);
@@ -88,18 +104,30 @@ export async function upsertIosToken(input: {
   const existing = normalizeStored(token, raw);
   const now = Date.now();
 
-  const alerts =
-    input.alerts !== undefined ? input.alerts : existing?.alerts ?? [];
+  // A sync-bearing register call carries `alerts`; treat that as the
+  // signal that the device sent its full prefs, so quietHours / reminder
+  // / tz are taken from the input (even when undefined = "cleared").
+  // A bare touch (no alerts) preserves the stored prefs.
+  const syncing = input.alerts !== undefined;
+  const alerts = syncing ? input.alerts! : existing?.alerts ?? [];
   const noSpoilers =
     input.noSpoilers !== undefined
       ? input.noSpoilers
       : existing?.noSpoilers ?? false;
+  const quietHours = syncing ? input.quietHours : existing?.quietHours;
+  const remindBeforeMinutes = syncing
+    ? input.remindBeforeMinutes
+    : existing?.remindBeforeMinutes;
+  const timeZone = syncing ? input.timeZone : existing?.timeZone;
 
   const next: StoredIosToken = existing
     ? {
         ...existing,
         alerts,
         noSpoilers,
+        quietHours,
+        remindBeforeMinutes,
+        timeZone,
         updatedAt:
           input.alerts !== undefined || input.noSpoilers !== undefined
             ? now
@@ -110,6 +138,9 @@ export async function upsertIosToken(input: {
         token,
         alerts,
         noSpoilers,
+        quietHours,
+        remindBeforeMinutes,
+        timeZone,
         createdAt: now,
         updatedAt: now,
         lastSeenAt: now,

@@ -18,7 +18,45 @@ export type ValidSyncPayload = {
   /** No-Spoilers mode flag. Gates closeness-leaking events at the
    *  dispatcher (close-game, comeback) — see Codex QA #1. */
   noSpoilers: boolean;
+  /** Optional Quiet Hours window ("HH:MM" 24h). When set (with a
+   *  timeZone), the dispatcher + reminders cron suppress delivery while
+   *  the device's local time is inside it. */
+  quietHours?: { start: string; end: string };
+  /** Optional. Minutes before tipoff the reminders cron fires a pre-game
+   *  reminder. Omitted → cron uses its default (30). */
+  remindBeforeMinutes?: number;
+  /** Optional IANA time zone of the device (e.g. "America/New_York").
+   *  Required to evaluate quietHours correctly. */
+  timeZone?: string;
 };
+
+const HHMM_RE = /^(\d{1,2}):(\d{2})$/;
+
+function parseQuietHours(
+  raw: unknown
+): { start: string; end: string } | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const q = raw as { start?: unknown; end?: unknown };
+  if (typeof q.start !== "string" || typeof q.end !== "string") return undefined;
+  if (!HHMM_RE.test(q.start) || !HHMM_RE.test(q.end)) return undefined;
+  return { start: q.start, end: q.end };
+}
+
+function parseRemindBeforeMinutes(raw: unknown): number | undefined {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return undefined;
+  // Clamp to a sane band; the UI offers 15 / 30 / 60.
+  if (raw < 0 || raw > 180) return undefined;
+  return Math.round(raw);
+}
+
+function parseTimeZone(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  const tz = raw.trim();
+  // IANA names are short-ish (e.g. "America/Argentina/Buenos_Aires").
+  if (tz.length === 0 || tz.length > 64) return undefined;
+  if (!/^[A-Za-z0-9_+\-/]+$/.test(tz)) return undefined;
+  return tz;
+}
 
 const VALID_KINDS: ReadonlySet<FollowKind> = new Set([
   "team",
@@ -50,6 +88,9 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
     follows?: unknown;
     alertPreset?: unknown;
     noSpoilers?: unknown;
+    quietHours?: unknown;
+    remindBeforeMinutes?: unknown;
+    timeZone?: unknown;
   };
 
   const alertPreset: AlertPreset =
@@ -81,6 +122,9 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
   }
 
   const noSpoilers = raw.noSpoilers === true;
+  const quietHours = parseQuietHours(raw.quietHours);
+  const remindBeforeMinutes = parseRemindBeforeMinutes(raw.remindBeforeMinutes);
+  const timeZone = parseTimeZone(raw.timeZone);
 
-  return { alerts, noSpoilers };
+  return { alerts, noSpoilers, quietHours, remindBeforeMinutes, timeZone };
 }

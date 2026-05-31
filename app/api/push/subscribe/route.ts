@@ -27,6 +27,9 @@ export async function POST(req: Request) {
     follows?: unknown;
     alertPreset?: unknown;
     noSpoilers?: unknown;
+    quietHours?: unknown;
+    remindBeforeMinutes?: unknown;
+    timeZone?: unknown;
   };
   try {
     body = await req.json();
@@ -50,6 +53,9 @@ export async function POST(req: Request) {
     follows: body?.follows,
     alertPreset: body?.alertPreset,
     noSpoilers: body?.noSpoilers,
+    quietHours: body?.quietHours,
+    remindBeforeMinutes: body?.remindBeforeMinutes,
+    timeZone: body?.timeZone,
   });
 
   try {

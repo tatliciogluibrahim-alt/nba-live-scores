@@ -3,23 +3,13 @@
 import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { NoSpoilersToggle } from "./NoSpoilersToggle";
-// ReminderSelector + QuietHoursSelector are intentionally NOT mounted
-// yet. Both UIs exist and write to localStorage, but the server side
-// that would honor them isn't built:
-//
-//   - ReminderSelector → needs `/api/cron/pre-game-reminders` cron
-//     that scans upcoming games and fires reminders N minutes before
-//     tipoff per the user's `remindBeforeMinutes`.
-//   - QuietHoursSelector → needs the dispatcher to read `quietHours`
-//     on each subscription and skip delivery during the configured
-//     window.
-//
-// Shipping either picker now leaves a non-functional setting in the
-// app, which leaks trust. Re-import + remount each when its server-
-// side path lands.
-//
-// import { ReminderSelector } from "./ReminderSelector";
-// import { QuietHoursSelector } from "./QuietHoursSelector";
+// ReminderSelector + QuietHoursSelector are now LIVE (#14). The server
+// honors both: the reminders cron (/api/cron/reminders) fires N minutes
+// before tipoff per `remindBeforeMinutes`, and the dispatcher + reminders
+// cron skip delivery during the `quietHours` window (evaluated in the
+// device's synced time zone). Both prefs ride the push sync payload.
+import { ReminderSelector } from "./ReminderSelector";
+import { QuietHoursSelector } from "./QuietHoursSelector";
 // Per-follow alert editing lives on the Following page now — every
 // follow card already carries its own tier control, so the full editor
 // here just duplicated it. Settings keeps a compact read-only summary
@@ -73,11 +63,11 @@ export function SettingsClient() {
       <div className="space-y-5">
         <NoSpoilersToggle />
         <AlertsSummary />
-        {/* <ReminderSelector />  Hidden until the pre-game reminder
-            cron ships. */}
-        {/* <QuietHoursSelector />  Hidden until the dispatcher honors
-            quietHours per subscription. */}
         <PushSubscriptionPanel />
+        {/* Delivery-timing controls sit with the push channel they
+            govern. Both are now server-honored (#14). */}
+        <ReminderSelector />
+        <QuietHoursSelector />
         <BriefSettingsRow />
         <NotificationPreview />
         <ThemeSelector />
