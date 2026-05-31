@@ -595,6 +595,14 @@ function StatusLine({
     >
       {label}: {summary}{" "}
       <span style={{ color: "var(--mute-2)", fontWeight: 500 }}>· {when}</span>
+      {state.tokenPrefix ? (
+        <span
+          className="block font-mono text-[10px] select-all"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          token: {state.tokenPrefix}
+        </span>
+      ) : null}
       {state.detail ? (
         <span
           className="block text-[10px]"
