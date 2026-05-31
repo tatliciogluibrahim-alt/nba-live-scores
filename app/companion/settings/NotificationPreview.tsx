@@ -64,24 +64,45 @@ const PRESET_NS_PREVIEW: Record<AlertPreset, NSPreview> = {
 const PRESET_ORDER: AlertPreset[] = ["quiet", "companion", "all"];
 
 export function NotificationPreview() {
+  // Reference, not a primary control — collapsed by default behind a +
+  // so it doesn't dominate the Settings scroll. Expand to see the three
+  // tiers + their No-Spoilers variants.
+  const [open, setOpen] = useState(false);
+
   return (
     <section>
-      <div className="mb-2 flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3"
+      >
         <Eyebrow>What alerts look like</Eyebrow>
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-      </div>
-      <p
-        className="mb-3 text-[13px] leading-snug"
-        style={{ color: "var(--mute-1)", fontWeight: 500 }}
-      >
-        Three alert levels. No-Spoilers users never get scores on the lock screen.
-      </p>
+        <span
+          aria-hidden
+          className="shrink-0 text-[13px] leading-none"
+          style={{ color: "var(--mute-1)", fontWeight: 600, fontFamily: "var(--font-mono)" }}
+        >
+          {open ? "−" : "+"}
+        </span>
+      </button>
 
-      <div className="space-y-3">
-        {PRESET_ORDER.map((preset) => (
-          <PresetPreviewCard key={preset} preset={preset} />
-        ))}
-      </div>
+      {open ? (
+        <>
+          <p
+            className="mb-3 mt-2 text-[13px] leading-snug"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            Three alert levels. No-Spoilers users never get scores on the lock screen.
+          </p>
+          <div className="space-y-3">
+            {PRESET_ORDER.map((preset) => (
+              <PresetPreviewCard key={preset} preset={preset} />
+            ))}
+          </div>
+        </>
+      ) : null}
     </section>
   );
 }

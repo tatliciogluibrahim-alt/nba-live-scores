@@ -20,10 +20,13 @@ import { NoSpoilersToggle } from "./NoSpoilersToggle";
 //
 // import { ReminderSelector } from "./ReminderSelector";
 // import { QuietHoursSelector } from "./QuietHoursSelector";
-import { PerFollowAlerts } from "./PerFollowAlerts";
+// Per-follow alert editing lives on the Following page now — every
+// follow card already carries its own tier control, so the full editor
+// here just duplicated it. Settings keeps a compact read-only summary
+// (AlertsSummary) that links back to Following.
+import { AlertsSummary } from "./AlertsSummary";
 import { NoSpoilersProCard } from "./NoSpoilersProCard";
 import { BriefSettingsRow } from "./BriefSettingsRow";
-import { WatchGuidanceBlock } from "./WatchGuidanceBlock";
 import { NotificationPreview } from "./NotificationPreview";
 import { PushSubscriptionPanel } from "./PushSubscriptionPanel";
 import { ThemeSelector } from "./ThemeSelector";
@@ -62,25 +65,26 @@ export function SettingsClient() {
         </Link>
       </div>
 
-      {/* Per-follow alerts is the heart of this screen — push test
-          controls live below so they don't visually overpower the
-          alert-tier picker. No-Spoilers stays on top as a global mode. */}
+      {/* Ordering: preferences first (No-Spoilers global mode, then the
+          follow-alerts summary), then the delivery channels (push on this
+          device, daily Brief), then appearance, then the coming-later
+          teaser. "What alerts look like" is reference material, collapsed
+          behind a + so it doesn't dominate the scroll. */}
       <div className="space-y-5">
         <NoSpoilersToggle />
-        <PerFollowAlerts />
-        {/* No-Spoilers Pro pitch sits right under the per-follow alert
-            controls — that's where the free 3-slot cap is felt, so the
-            "unlock unlimited" framing lands in context. */}
-        <NoSpoilersProCard />
+        <AlertsSummary />
         {/* <ReminderSelector />  Hidden until the pre-game reminder
             cron ships. */}
         {/* <QuietHoursSelector />  Hidden until the dispatcher honors
             quietHours per subscription. */}
-        <BriefSettingsRow />
-        <ThemeSelector />
         <PushSubscriptionPanel />
+        <BriefSettingsRow />
         <NotificationPreview />
-        <WatchGuidanceBlock />
+        <ThemeSelector />
+        {/* No-Spoilers Pro teaser sits at the bottom — it's a "coming
+            later" note, not an action, so it doesn't compete with the
+            live controls above. */}
+        <NoSpoilersProCard />
       </div>
 
       {/* Privacy + contact. Reachable in-app (required for App Review,
