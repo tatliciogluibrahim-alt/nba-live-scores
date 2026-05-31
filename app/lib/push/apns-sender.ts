@@ -152,7 +152,35 @@ export type ApnsResult = {
   status: number;
   body?: string;
   error?: string;
+  /** Which host actually accepted (or was last tried). Lets callers
+   *  learn a token's true environment and cache it. */
+  environment?: "production" | "sandbox";
 };
+
+const PROD_HOST = "api.push.apple.com";
+const SANDBOX_HOST = "api.sandbox.push.apple.com";
+
+/** Apple reports an environment mismatch a few different ways depending
+ *  on whether it's the device token or the signing key that's scoped to
+ *  the wrong environment. Any of these means "try the other endpoint."
+ *
+ *   • 400 BadDeviceToken          — token minted for the other env
+ *   • 403 BadEnvironmentKeyInToken — .p8 auth key scoped to the other env
+ *
+ * The launch-night bug: the TestFlight build shipped with
+ * aps-environment=development, so it minted SANDBOX device tokens, but
+ * the dispatcher targeted production. Apple returned
+ * 403 BadEnvironmentKeyInToken. Rather than hardcode an environment that
+ * breaks the moment the entitlement flips for the App Store build, we
+ * try the preferred host and transparently retry the other on these
+ * errors. Correct for every build flavor with zero config. */
+function isEnvironmentMismatch(status: number, body: string | undefined): boolean {
+  if (status !== 400 && status !== 403) return false;
+  const b = body ?? "";
+  return (
+    b.includes("BadDeviceToken") || b.includes("BadEnvironmentKeyInToken")
+  );
+}
 
 /** Send a single APNs push. Returns success/failure with status code.
  *  Caller is responsible for handling 410 Gone (token has expired —
@@ -185,12 +213,6 @@ export async function sendApnsPush(opts: {
     };
   }
 
-  const host =
-    opts.sandbox !== false
-      ? "api.sandbox.push.apple.com"
-      : "api.push.apple.com";
-  const url = `https://${host}/3/device/${opts.deviceToken}`;
-
   // Standard APNs alert payload. `aps.alert` is the visible
   // notification. `mutable-content: 1` lets us run a Notification
   // Service Extension later if we want to rewrite spoiler-safe bodies
@@ -202,47 +224,55 @@ export async function sendApnsPush(opts: {
       "mutable-content": 1,
     },
   };
+  const headers = {
+    authorization: `bearer ${jwt}`,
+    "apns-topic": bundleId,
+    "apns-push-type": "alert",
+    "apns-priority": "10",
+    "content-type": "application/json",
+  };
+  const path = `/3/device/${opts.deviceToken}`;
+  const bodyJson = JSON.stringify(payload);
 
+  // Preferred environment first; auto-retry the other on a mismatch.
+  const preferProd = opts.sandbox === false;
+  const first = preferProd ? PROD_HOST : SANDBOX_HOST;
+  const second = preferProd ? SANDBOX_HOST : PROD_HOST;
+
+  const r1 = await apnsHttp(first, path, headers, bodyJson);
+  if (r1.ok || !isEnvironmentMismatch(r1.status, r1.body)) {
+    return { ...r1, environment: first === PROD_HOST ? "production" : "sandbox" };
+  }
+  // Environment mismatch — the token belongs to the other APNs env.
+  const r2 = await apnsHttp(second, path, headers, bodyJson);
+  return { ...r2, environment: second === PROD_HOST ? "production" : "sandbox" };
+}
+
+/** One HTTP/2 POST to a specific APNs host. No retry logic — the
+ *  callers layer environment fallback on top. */
+async function apnsHttp(
+  host: string,
+  path: string,
+  headers: Record<string, string>,
+  body: string
+): Promise<ApnsResult> {
   try {
-    // Route through the HTTP/2-enabled undici Agent. Apple's APNs
-    // servers won't accept HTTP/1.1 connections — that's why this
-    // failed with a generic "fetch failed" using Node's native fetch.
-    const res = await undiciFetch(url, {
+    const res = await undiciFetch(`https://${host}${path}`, {
       method: "POST",
-      headers: {
-        authorization: `bearer ${jwt}`,
-        "apns-topic": bundleId,
-        "apns-push-type": "alert",
-        "apns-priority": "10",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(payload),
+      headers,
+      body,
       dispatcher: apnsAgent,
     });
-
-    if (res.ok) {
-      return { ok: true, status: res.status };
-    }
-
-    // Apple returns JSON in the body explaining why on 4xx/5xx.
-    // Common cases: 400 BadDeviceToken, 403 ExpiredProviderToken,
-    // 410 Unregistered (token has been invalidated and should be
-    // removed from our store), 413 PayloadTooLarge.
+    if (res.ok) return { ok: true, status: res.status };
     const text = await res.text().catch(() => "");
     return { ok: false, status: res.status, body: text };
   } catch (err) {
-    // Include the cause chain — undici nests the real network error
-    // inside err.cause on connection failures.
     const msg = err instanceof Error ? err.message : "fetch failed";
     const cause =
       err instanceof Error && err.cause instanceof Error
         ? ` (cause: ${err.cause.message})`
         : "";
-    return {
-      ok: false,
-      status: 0,
-      error: msg + cause,
-    };
+    return { ok: false, status: 0, error: msg + cause };
   }
 }
 
@@ -326,12 +356,6 @@ export async function sendApnsLiveActivity(opts: {
     };
   }
 
-  const host =
-    opts.sandbox !== false
-      ? "api.sandbox.push.apple.com"
-      : "api.push.apple.com";
-  const url = `https://${host}/3/device/${opts.pushToken}`;
-
   const aps: Record<string, unknown> = {
     timestamp: Math.floor(Date.now() / 1000),
     event: opts.event,
@@ -346,29 +370,29 @@ export async function sendApnsLiveActivity(opts: {
     aps["dismissal-date"] = opts.dismissalDate;
   }
 
-  try {
-    const res = await undiciFetch(url, {
-      method: "POST",
-      headers: {
-        authorization: `bearer ${jwt}`,
-        "apns-topic": `${bundleId}.push-type.liveactivity`,
-        "apns-push-type": "liveactivity",
-        "apns-priority": String(opts.priority ?? 10),
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ aps }),
-      dispatcher: apnsAgent,
-    });
+  const headers = {
+    authorization: `bearer ${jwt}`,
+    "apns-topic": `${bundleId}.push-type.liveactivity`,
+    "apns-push-type": "liveactivity",
+    "apns-priority": String(opts.priority ?? 10),
+    "content-type": "application/json",
+  };
+  const path = `/3/device/${opts.pushToken}`;
+  const bodyJson = JSON.stringify({ aps });
 
-    if (res.ok) return { ok: true, status: res.status };
-    const text = await res.text().catch(() => "");
-    return { ok: false, status: res.status, body: text };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "fetch failed";
-    const cause =
-      err instanceof Error && err.cause instanceof Error
-        ? ` (cause: ${err.cause.message})`
-        : "";
-    return { ok: false, status: 0, error: msg + cause };
+  // Same environment auto-fallback as sendApnsPush. The per-Activity
+  // push token carries the build's APNs environment, so a build signed
+  // with aps-environment=development mints sandbox Live Activity tokens
+  // even on TestFlight — try the preferred host, retry the other on a
+  // mismatch.
+  const preferProd = opts.sandbox === false;
+  const first = preferProd ? PROD_HOST : SANDBOX_HOST;
+  const second = preferProd ? SANDBOX_HOST : PROD_HOST;
+
+  const r1 = await apnsHttp(first, path, headers, bodyJson);
+  if (r1.ok || !isEnvironmentMismatch(r1.status, r1.body)) {
+    return { ...r1, environment: first === PROD_HOST ? "production" : "sandbox" };
   }
+  const r2 = await apnsHttp(second, path, headers, bodyJson);
+  return { ...r2, environment: second === PROD_HOST ? "production" : "sandbox" };
 }
