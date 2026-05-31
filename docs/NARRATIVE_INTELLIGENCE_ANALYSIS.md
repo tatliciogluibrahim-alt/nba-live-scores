@@ -320,8 +320,30 @@ The shadow pilot is built and inert by default. Files:
 - Wired into `app/api/cron/send-briefs/route.ts` as `runNarrativeShadow`:
   generates + validates a candidate for the day's recent finals and
   **logs it** next to the template. Users see nothing.
-- Tests: `app/lib/narrative/narrative.test.ts` (significance + validation,
-  no network). 11 cases.
+- Tests: `app/lib/narrative/narrative.test.ts` (significance + validation
+  + the generate bail-path, no network). 12 cases.
+
+**Hardening shipped (2026-05-31, same session):**
+
+- `app/lib/narrative/generate.ts` — `generateValidated()`: generate →
+  validate → **retry once** on a validation failure → give up (null →
+  template). A null from the renderer (pilot off / no key) is treated as
+  non-retryable.
+- `app/lib/narrative/cache.ts` — KV cache, `nns:narrative:v1:<gameId>`,
+  60-day TTL. Only validated lines are cached, so a game is generated at
+  most once and reused across cron runs and previews. The one infra file
+  in the package; the pure core never imports it.
+- `app/lib/narrative/service.ts` — `getOrGenerateNarrative()`:
+  cache-first, then generate-with-retry, then cache the result. Always
+  degrades to text=null. The shadow pass and the admin preview both call
+  this.
+- `app/api/admin/narrative-preview/route.ts` — Bearer-protected
+  (`ADMIN_TOKEN`/`CRON_SECRET`) on-demand preview. `?id=<gameId>`
+  (+`&fresh=1` to bypass cache) resolves the game (live feed → snapshot),
+  enriches leaders, and returns the candidate line, its validation
+  verdict, the ranked signals, and the grounded-number set. Forces
+  `shadow` so it generates regardless of the pipeline flag. Renders to no
+  user surface.
 
 **To start the quiet pilot:** set `NARRATIVE_PILOT=shadow` and
 `ANTHROPIC_API_KEY` in the Vercel project env (optionally

@@ -36,9 +36,7 @@ import {
 import { sendBriefEmail } from "../../../lib/brief/send-email";
 import { buildGameFactsFromGame } from "../../../lib/brief/narrative-facts";
 import { narrativeMode } from "../../../lib/narrative/config";
-import { rankSignals } from "../../../lib/narrative/significance";
-import { narrate } from "../../../lib/narrative/render";
-import { validateNarrative } from "../../../lib/narrative/validate";
+import { getOrGenerateNarrative } from "../../../lib/narrative/service";
 import type { Game } from "../../../nba/types";
 
 export const runtime = "nodejs";
@@ -144,20 +142,17 @@ async function runNarrativeShadow(games: Game[]): Promise<void> {
     try {
       const facts = buildGameFactsFromGame(g);
       if (!facts) continue;
-      const signals = rankSignals(facts);
-      const text = await narrate(facts, signals, mode);
-      if (!text) {
-        console.log("[narrative:shadow] no candidate", { gameId: g.id, mode });
-        continue;
-      }
-      const verdict = validateNarrative(text, facts);
-      console.log("[narrative:shadow] candidate", {
+      // Cache-first + retry-once. Only validated lines are returned;
+      // a null candidate just means "template would render."
+      const outcome = await getOrGenerateNarrative(facts, mode);
+      console.log("[narrative:shadow]", {
         gameId: g.id,
         mode,
-        topSignal: signals[0]?.kind ?? null,
-        valid: verdict.ok,
-        reasons: verdict.reasons,
-        candidate: text,
+        source: outcome.source,
+        topSignal: outcome.topSignal,
+        attempts: outcome.attempts,
+        reasons: outcome.reasons,
+        candidate: outcome.text,
       });
     } catch (err) {
       console.warn("[narrative:shadow] error", {

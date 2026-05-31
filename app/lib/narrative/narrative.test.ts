@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { rankSignals } from "./significance";
 import { validateNarrative } from "./validate";
+import { generateValidated } from "./generate";
 import type { GameFacts } from "./types";
 
 function facts(overrides: Partial<GameFacts> = {}): GameFacts {
@@ -87,5 +88,14 @@ describe("validateNarrative", () => {
     const v = validateNarrative("An incredible night for San Antonio.", facts());
     expect(v.ok).toBe(false);
     expect(v.reasons.join(" ")).toMatch(/hype/);
+  });
+});
+
+describe("generateValidated", () => {
+  it("bails immediately when the pilot is off (no network call)", async () => {
+    const r = await generateValidated(facts(), rankSignals(facts()), "off");
+    expect(r.text).toBeNull();
+    expect(r.attempts).toBe(1);
+    expect(r.lastReasons).toContain("no-generation");
   });
 });
