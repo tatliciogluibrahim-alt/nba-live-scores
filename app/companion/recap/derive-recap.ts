@@ -76,12 +76,16 @@ function pickLeaderValue(
 
 /** "Brunson (NYK) · 32 PTS" / "Brunson · 32–10–10 triple-double" */
 function topPerformerBullet(game: Game): RecapBullet | null {
-  const pts = pickLeaderValue(game.leaders, /point/i);
+  // Match both long labels ("Points") and ESPN's abbreviated leader
+  // labels ("PTS"/"AST"/"REB"). The scoreboard and the per-game summary
+  // endpoints can return either form, so the recap stays correct
+  // whichever source fed the leaders.
+  const pts = pickLeaderValue(game.leaders, /point|pts/i);
   if (!pts) return null;
 
   const samePlayer = (game.leaders ?? []).filter((l) => l.name === pts.name);
-  const ast = samePlayer.find((l) => /assist/i.test(l.label));
-  const reb = samePlayer.find((l) => /rebound/i.test(l.label));
+  const ast = samePlayer.find((l) => /assist|ast/i.test(l.label));
+  const reb = samePlayer.find((l) => /rebound|reb/i.test(l.label));
   const astValue = ast ? parseInt(ast.value, 10) || 0 : 0;
   const rebValue = reb ? parseInt(reb.value, 10) || 0 : 0;
 

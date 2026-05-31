@@ -75,6 +75,50 @@ async function fetchNBA(baseUrl: string): Promise<Game[]> {
   }
 }
 
+// Enrich recent final games with true per-game leaders (stat lines like
+// "SGA · 30 PTS, 6 AST") from /api/nba-game-detail. The scoreboard feed's
+// `leaders` field carries season-average-category leaders, not the game
+// stat line, so the email recap was weaker than the in-app game-detail
+// recap — which already merges these (see NBALiveCompanion). This closes
+// that gap by doing the same merge once, on the shared games array,
+// before the per-subscriber loop. Best-effort: any failure leaves the
+// scoreboard leaders in place. Bounded to the last 48h of finals so it's
+// 1-2 extra fetches per run during the playoffs, not the whole window.
+async function enrichFinalLeaders(
+  games: Game[],
+  baseUrl: string
+): Promise<Game[]> {
+  const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+  const recentFinals = games.filter(
+    (g) => g.status === "final" && Date.parse(g.date) >= cutoff
+  );
+  if (recentFinals.length === 0) return games;
+
+  const leadersById = new Map<string, Game["leaders"]>();
+  await Promise.all(
+    recentFinals.map(async (g) => {
+      try {
+        const res = await fetch(
+          `${baseUrl}/api/nba-game-detail?id=${g.id}`,
+          { cache: "no-store", headers: { Accept: "application/json" } }
+        );
+        if (!res.ok) return;
+        const json = (await res.json()) as { leaders?: Game["leaders"] };
+        if (json.leaders && json.leaders.length > 0) {
+          leadersById.set(g.id, json.leaders);
+        }
+      } catch {
+        /* keep the scoreboard leaders already on the game */
+      }
+    })
+  );
+  if (leadersById.size === 0) return games;
+
+  return games.map((g) =>
+    leadersById.has(g.id) ? { ...g, leaders: leadersById.get(g.id)! } : g
+  );
+}
+
 export async function GET(req: Request) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -93,7 +137,7 @@ export async function GET(req: Request) {
   }
 
   const baseUrl = resolveBaseUrl(req);
-  const nba = await fetchNBA(baseUrl);
+  const nba = await enrichFinalLeaders(await fetchNBA(baseUrl), baseUrl);
 
   const results: Array<{
     email: string;
