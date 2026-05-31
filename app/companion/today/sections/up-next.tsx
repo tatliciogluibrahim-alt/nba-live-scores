@@ -64,9 +64,19 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
               >
                 {item.headline}
               </p>
+              {/* Scheduled time + non-spoilery series context (e.g.
+                  "8:00 PM · Game 7"). Given a touch more weight and
+                  tabular numerals so the schedule reads as the anchor of
+                  a calm upcoming card. NOT the series record (item.stake)
+                  — that reveals past results and would break No-Spoilers
+                  on this always-visible list. */}
               <p
                 className="mt-0.5 text-[12px]"
-                style={{ color: "var(--mute-1)", fontWeight: 500 }}
+                style={{
+                  color: "var(--ink-2)",
+                  fontWeight: 600,
+                  fontVariantNumeric: "tabular-nums",
+                }}
               >
                 {item.detail}
               </p>

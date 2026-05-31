@@ -463,12 +463,15 @@ function NBAPlayoffsBody() {
 }
 
 // ── Mini series strip ──────────────────────────────────────────────────
-// Inline 7-dot strip showing series progress for a row in the
-// tournament list. Spoiler-safe — filled dots = games played, dashed
-// dots = unplayed slots. No winner attribution per dot, no scores.
-// For the full interactive strip (with winner initials + game detail
-// expanders), see `app/companion/series/SevenDotStrip.tsx` on the
-// dedicated series detail page.
+// Inline 7-dot strip showing series progress for a tournament-list row.
+// Spoiler-safe (no winner attribution, no scores), but it follows the
+// SAME three-state visual rule as the full SevenDotStrip so the series
+// language is consistent across the app:
+//   • filled (ink)         = a completed game
+//   • solid outline        = the next scheduled game ("upcoming")
+//   • dashed outline       = a later / if-necessary game
+// The full interactive strip with winner initials lives in
+// `app/companion/series/SevenDotStrip.tsx` (series detail page).
 
 function MiniSeriesStrip({ gamesPlayed }: { gamesPlayed: number }) {
   const played = Math.max(0, Math.min(7, gamesPlayed));
@@ -478,7 +481,8 @@ function MiniSeriesStrip({ gamesPlayed }: { gamesPlayed: number }) {
       aria-label={`${played} of 7 games played`}
     >
       {Array.from({ length: 7 }).map((_, i) => {
-        const isPlayed = i < played;
+        const state =
+          i < played ? "played" : i === played ? "next" : "later";
         return (
           <span
             key={i}
@@ -487,10 +491,13 @@ function MiniSeriesStrip({ gamesPlayed }: { gamesPlayed: number }) {
             style={{
               width: 6,
               height: 6,
-              background: isPlayed ? "var(--ink)" : "transparent",
-              border: isPlayed
-                ? "1px solid var(--ink)"
-                : "1px dashed var(--mute-2)",
+              background: state === "played" ? "var(--ink)" : "transparent",
+              border:
+                state === "played"
+                  ? "1px solid var(--ink)"
+                  : state === "next"
+                    ? "1px solid var(--mute-2)" // scheduled → solid outline
+                    : "1px dashed var(--mute-2)", // later → dashed (if-necessary)
             }}
           />
         );
