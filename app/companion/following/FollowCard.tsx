@@ -321,13 +321,15 @@ export function FollowCard({ data }: { data: FollowCardData }) {
               className="text-[13px]"
               style={{ color: "var(--ink)", fontWeight: 700 }}
             >
-              {follow.alertEnabled ? "Getting alerts" : "Alerts off"}
+              {follow.alertEnabled
+                ? `${presetMeta.label} alerts on`
+                : "Alerts off"}
             </span>
             <span
               className="text-[11px]"
               style={{ color: "var(--mute-1)", fontWeight: 600 }}
             >
-              {follow.alertEnabled ? "Tap to disable" : canEnable ? "Tap to enable" : "Full"}
+              {follow.alertEnabled ? "Manage" : canEnable ? "Turn on" : "Full"}
             </span>
           </button>
           {!canEnable ? (

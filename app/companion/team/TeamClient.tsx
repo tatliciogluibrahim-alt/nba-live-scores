@@ -586,13 +586,15 @@ function TeamPresetSection({
               className="text-[13px]"
               style={{ color: "var(--ink)", fontWeight: 700 }}
             >
-              {existing.alertEnabled ? "Getting alerts" : "Alerts off"}
+              {existing.alertEnabled
+                ? `${PRESETS[existing.alertTier].label} alerts on`
+                : "Alerts off"}
             </span>
             <span
               className="text-[11px]"
               style={{ color: "var(--mute-1)", fontWeight: 600 }}
             >
-              {existing.alertEnabled ? "Tap to disable" : "Tap to enable"}
+              {existing.alertEnabled ? "Manage" : "Turn on"}
             </span>
           </button>
           <button

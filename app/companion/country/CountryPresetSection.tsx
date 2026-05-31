@@ -3,7 +3,7 @@
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PresetRow } from "../following/PresetRow";
 import { useFollows } from "../providers";
-import type { AlertPreset } from "../state/types";
+import { PRESETS, type AlertPreset } from "../state/types";
 
 // Country follow + preset block. Mirrors SeriesPresetSection in structure
 // but uses country-specific copy. Stage 11 cleanup could factor a shared
@@ -62,10 +62,12 @@ export function CountryPresetSection({
             }}
           >
             <span className="text-[13px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
-              {existing.alertEnabled ? "Getting alerts" : "Alerts off"}
+              {existing.alertEnabled
+                ? `${PRESETS[existing.alertTier].label} alerts on`
+                : "Alerts off"}
             </span>
             <span className="text-[11px]" style={{ color: "var(--mute-1)", fontWeight: 600 }}>
-              {existing.alertEnabled ? "Tap to disable" : "Tap to enable"}
+              {existing.alertEnabled ? "Manage" : "Turn on"}
             </span>
           </button>
           {existing.alertEnabled ? (

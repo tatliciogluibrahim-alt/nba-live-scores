@@ -3,7 +3,7 @@
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PresetRow } from "../following/PresetRow";
 import { useFollows } from "../providers";
-import type { AlertPreset } from "../state/types";
+import { PRESETS, type AlertPreset } from "../state/types";
 
 // Alert preset block for the series. If the user already follows this
 // series, surface the preset radio. If not, show a Follow button that
@@ -67,10 +67,12 @@ export function SeriesPresetSection({
             }}
           >
             <span className="text-[13px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
-              {existing.alertEnabled ? "Getting alerts" : "Alerts off"}
+              {existing.alertEnabled
+                ? `${PRESETS[existing.alertTier].label} alerts on`
+                : "Alerts off"}
             </span>
             <span className="text-[11px]" style={{ color: "var(--mute-1)", fontWeight: 600 }}>
-              {existing.alertEnabled ? "Tap to disable" : "Tap to enable"}
+              {existing.alertEnabled ? "Manage" : "Turn on"}
             </span>
           </button>
           {existing.alertEnabled ? (

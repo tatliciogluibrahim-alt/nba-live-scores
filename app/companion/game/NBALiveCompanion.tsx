@@ -485,8 +485,11 @@ function RecapCollapsed({
       className="rounded-[14px] border px-4 py-3"
       style={{
         background: "var(--paper)",
+        // Settled "saved receipt" feel: a quiet 1px hairline rail instead
+        // of the loud 3px accent. The game is over; the surface should
+        // read as an artifact, not a live alert. Identity stays in the
+        // small accent "Recap" eyebrow below.
         borderColor: "var(--line)",
-        borderLeft: "3px solid var(--nba)",
       }}
     >
       <Eyebrow color="var(--nba)">Recap</Eyebrow>
@@ -502,18 +505,14 @@ function RecapCollapsed({
           summary
         )}
       </p>
+      {/* Quiet link, not a loud CTA — the recap headline above is the
+          content; this just opens the rest. Mute, no border, no caps. */}
       <button
         type="button"
         onClick={onOpen}
         aria-label="Read the full recap"
-        className="mt-2 inline-flex min-h-[36px] items-center text-[11px] uppercase"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontWeight: 700,
-          letterSpacing: "0.12em",
-          color: "var(--ink)",
-          borderBottom: "1px solid var(--line)",
-        }}
+        className="mt-2 inline-flex min-h-[32px] items-center text-[12px]"
+        style={{ color: "var(--mute-1)", fontWeight: 600 }}
       >
         Read recap →
       </button>
