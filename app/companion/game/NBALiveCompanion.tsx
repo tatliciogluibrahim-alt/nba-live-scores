@@ -22,6 +22,7 @@ import { HighlightsStack } from "./HighlightsStack";
 import { PeriodScoreLine } from "./PeriodScoreLine";
 import { StakesLine } from "../stakes/StakesLine";
 import { deriveNBASeriesStake } from "../stakes/derive-stakes";
+import { getPrimarySeriesSnippet } from "../../lib/insights/context-snippets";
 import { QuietRecapCard } from "../recap/QuietRecapCard";
 import { deriveNBARecap, type NBARecap } from "../recap/derive-recap";
 import { useNBADetail } from "./use-nba-detail";
@@ -278,6 +279,18 @@ export function NBALiveCompanion({
         stake={deriveNBASeriesStake(game)}
         ariaSubject={subject}
         revealId={game.id}
+        // Editorial context (insights layer) — pre/post game only, never
+        // during live play (the live moment owns the screen then). Pulls
+        // from the curated snippet set; null for games without one, which
+        // is most of them.
+        contextSnippet={
+          isLive
+            ? null
+            : getPrimarySeriesSnippet(
+                game.away.abbreviation,
+                game.home.abbreviation
+              )
+        }
       />
 
       {/* ── Hero moment band (live + recap-less finals only) ───────────── */}
