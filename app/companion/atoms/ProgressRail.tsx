@@ -55,7 +55,12 @@ export function ProgressRail({
   style?: CSSProperties;
 }) {
   const rail = SPORT_RAIL[sport];
-  const clamped = Math.max(0, Math.min(1, progress));
+  // Defensive: Math.min/max don't neutralize NaN, which would yield a
+  // `width:"NaN%"`. No current caller can produce NaN (the progress math
+  // always returns a finite 0..1), but coerce it anyway so the rail can
+  // never render broken for a future caller.
+  const safe = Number.isFinite(progress) ? progress : 0;
+  const clamped = Math.max(0, Math.min(1, safe));
   const pct = `${clamped * 100}%`;
   const isFinal = status === "final";
 
