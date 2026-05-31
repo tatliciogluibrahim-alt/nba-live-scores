@@ -25,6 +25,7 @@ import {
 } from "../../companion/following/data/countries";
 import { getTournament } from "../../companion/following/data/tournaments";
 import { deriveSeriesStake } from "../../companion/stakes/series-stakes";
+import { getSeriesSnippets } from "../insights/context-snippets";
 import type { Game } from "../../nba/types";
 
 // First whistle of the World Cup. Defined locally so the composer stays
@@ -109,7 +110,85 @@ export type BriefPayload = {
     enabled: number; // # of follows with alertEnabled
     tiers: string[]; // ["Türkiye · Companion", "NBA Playoffs · All"]
   };
+  /** Editorial lede — a one-time, curated, moment-driven intro that
+   *  leads the brief above the sections. Used for Big Moments (Finals
+   *  matchup set, a championship clinched). Date-windowed and
+   *  follow-gated so it never becomes a recurring nag. Spoiler-gated:
+   *  only set when the subscriber has includeScores on, since it names
+   *  outcomes ("SA advanced to the Finals"). */
+  editorialLede?: {
+    headline: string; // "San Antonio is headed to the Finals."
+    body: string;     // the prose paragraph
+    context: string[]; // italic factual one-liners (the snippet layer)
+  };
 };
+
+// ── Editorial lede (curated Big Moments) ─────────────────────────────
+//
+// A hand-authored intro for a specific moment, shown to relevant
+// followers inside a tight date window. This is the calm-commentary
+// layer at the top of the brief. Add entries here for Finals, clinches,
+// Game 7 results — the handful of moments that deserve a lede. When the
+// window passes, the lede stops showing on its own.
+//
+// Voice: declarative, specific dates, no hype. The context lines come
+// from the shared context-snippets module so the Brief and the in-app
+// Stakes line never drift.
+type EditorialMoment = {
+  /** ET date window [start, end) the lede shows in, inclusive start. */
+  startKey: string; // "YYYY-MM-DD"
+  endKey: string;   // exclusive
+  headline: string;
+  body: string;
+  /** Series team codes to pull context snippets from (any order). */
+  seriesContext?: [string, string];
+  /** Predicate: does this subscriber's follow set qualify? */
+  appliesTo: (follows: Follow[]) => boolean;
+};
+
+const followsNBA = (follows: Follow[]): boolean =>
+  follows.some(
+    (f) =>
+      (f.kind === "tournament" && f.id.startsWith("nba-playoffs-")) ||
+      (f.kind === "team" && ["SA", "NYK", "OKC", "CLE"].includes(f.id)) ||
+      (f.kind === "series" &&
+        /\b(SA|NYK|OKC|CLE)\b/.test(f.id))
+  );
+
+const EDITORIAL_MOMENTS: EditorialMoment[] = [
+  {
+    // 2026 NBA Finals matchup set. Shows from the morning after SA's
+    // Game 7 through the day before Game 1 (Thursday). Founder: verify
+    // the Game 1 date and trim the window if it shifts.
+    startKey: "2026-05-31",
+    endKey: "2026-06-04",
+    headline: "San Antonio is headed to the Finals.",
+    body: "Last night, San Antonio closed out Oklahoma City in Game 7. They advance to face New York in the Finals. Series tips Thursday.",
+    seriesContext: ["SA", "NYK"],
+    appliesTo: followsNBA,
+  },
+];
+
+function deriveEditorialLede(
+  follows: Follow[],
+  includeScores: boolean,
+  now: Date
+): BriefPayload["editorialLede"] {
+  // Naming an outcome ("advanced to the Finals") is a spoiler. Respect
+  // the subscriber's No-Spoilers choice the same way every other section
+  // does.
+  if (!includeScores) return undefined;
+  const todayKey = etDateKey(now);
+  for (const m of EDITORIAL_MOMENTS) {
+    if (todayKey < m.startKey || todayKey >= m.endKey) continue;
+    if (!m.appliesTo(follows)) continue;
+    const context = m.seriesContext
+      ? getSeriesSnippets(m.seriesContext[0], m.seriesContext[1])?.snippets ?? []
+      : [];
+    return { headline: m.headline, body: m.body, context };
+  }
+  return undefined;
+}
 
 // ── Match predicates per follow kind ─────────────────────────────────
 
@@ -355,6 +434,12 @@ export function composeBrief({
     Math.floor((now.getTime() - BRIEF_EPOCH) / 86_400_000) + 1
   );
 
+  const editorialLede = deriveEditorialLede(
+    follows,
+    subscriber.includeScores,
+    now
+  );
+
   return {
     dateLabel: todayHeader(now),
     weekday,
@@ -370,6 +455,7 @@ export function composeBrief({
       enabled: enabledFollows.length,
       tiers,
     },
+    editorialLede,
   };
 }
 

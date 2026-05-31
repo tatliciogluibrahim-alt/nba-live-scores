@@ -96,6 +96,32 @@ export function BriefPreviewClient() {
         />
       ) : (
         <>
+          {payload.editorialLede ? (
+            <Section eyebrow="The Moment" emptyLabel="">
+              <p
+                className="text-[18px] leading-tight"
+                style={{ color: "var(--ink)", fontWeight: 800, letterSpacing: "-0.3px" }}
+              >
+                {payload.editorialLede.headline}
+              </p>
+              <p
+                className="mt-2 text-[14px] leading-snug"
+                style={{ color: "var(--ink-2)", fontWeight: 500 }}
+              >
+                {payload.editorialLede.body}
+              </p>
+              {payload.editorialLede.context.map((line, i) => (
+                <p
+                  key={i}
+                  className="mt-1.5 text-[13px] italic leading-snug"
+                  style={{ color: "var(--mute-1)", fontWeight: 500 }}
+                >
+                  {line}
+                </p>
+              ))}
+            </Section>
+          ) : null}
+
           <Section eyebrow="Yesterday" emptyLabel="Nothing from your follows wrapped yesterday.">
             {payload.yesterday.map((row) => (
               <GameRow key={row.href} {...row} />

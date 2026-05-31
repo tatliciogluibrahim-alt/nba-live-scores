@@ -84,6 +84,32 @@ function gutterRow(
     </tr>`;
 }
 
+/** Editorial lede — the curated Big-Moment intro. Renders directly
+ *  under the masthead when set (Finals matchup, a clinch). Headline in
+ *  display weight, a prose paragraph, then italic factual context
+ *  lines. Calm, no CTA. */
+function editorialLedeSection(payload: BriefPayload): string {
+  const lede = payload.editorialLede;
+  if (!lede) return "";
+  const context = lede.context
+    .map(
+      (line) =>
+        `<p style="margin: 6px 0 0 0; font-family: ${BODY_FONT}; font-size: 14px; line-height: 1.5; font-style: italic; color: ${C_MUTE};">${escape(
+          line
+        )}</p>`
+    )
+    .join("");
+  const content = `
+    <p style="margin: 0; font-family: ${BODY_FONT}; font-size: 19px; line-height: 1.25; font-weight: 800; letter-spacing: -0.3px; color: ${C_INK};">
+      ${escape(lede.headline)}
+    </p>
+    <p style="margin: 8px 0 0 0; font-family: ${BODY_FONT}; font-size: 15.5px; line-height: 1.5; color: ${C_INK2};">
+      ${escape(lede.body)}
+    </p>
+    ${context}`;
+  return hairline() + gutterRow("The<br>Moment", content);
+}
+
 /** Gutter label with a muted date sub-line beneath ("Yesterday / May 27"). */
 function gutterLabel(label: string, sub?: string): string {
   if (!sub) return escape(label);
@@ -385,6 +411,7 @@ export function renderBriefHtml({
     <td align="center" style="padding: 32px 12px 40px 12px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" bgcolor="${C_PAPER}" style="width:600px; max-width:100%; background-color:${C_PAPER};">
         ${mastheadHtml(payload)}
+        ${editorialLedeSection(payload)}
         ${yesterdaySection(payload)}
         ${todaySection(payload)}
         ${worthKnowingSection(payload)}
@@ -410,6 +437,14 @@ export function renderBriefText({
   lines.push(`NO NOISE · YOUR BRIEF · ${payload.issueNumber}`);
   lines.push(payload.dateLabel);
   lines.push("");
+
+  if (payload.editorialLede) {
+    lines.push("THE MOMENT");
+    lines.push(`  ${payload.editorialLede.headline}`);
+    lines.push(`  ${payload.editorialLede.body}`);
+    for (const c of payload.editorialLede.context) lines.push(`  ${c}`);
+    lines.push("");
+  }
 
   if (payload.yesterday.length > 0) {
     lines.push("YESTERDAY");
