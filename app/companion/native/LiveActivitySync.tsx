@@ -14,6 +14,7 @@ import {
   LIVE_ACTIVITY_SANDBOX,
   type LiveActivityStartInput,
 } from "./live-activity";
+import { postWithRetry } from "../push/register-state";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
 import type { PinnedGame } from "../state/types";
 
@@ -120,27 +121,24 @@ function itemToStartInput(item: PinnedItem): LiveActivityStartInput {
 }
 
 async function postRegister(gameId: string, token: string): Promise<void> {
-  try {
-    await fetch("/api/push/register-live-activity", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ gameId, token, sandbox: LIVE_ACTIVITY_SANDBOX }),
-    });
-  } catch (err) {
-    console.warn("[LiveActivity] register POST failed:", err);
-  }
+  await postWithRetry({
+    kind: "live-activity",
+    endpoint: "/api/push/register-live-activity",
+    token,
+    body: { gameId, token, sandbox: LIVE_ACTIVITY_SANDBOX },
+  });
 }
 
 async function postDeregister(token: string): Promise<void> {
-  try {
-    await fetch("/api/push/register-live-activity", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, end: true }),
-    });
-  } catch (err) {
-    console.warn("[LiveActivity] deregister POST failed:", err);
-  }
+  // Deregister is best-effort with retry; failure here doesn't leave the
+  // user stuck (the server prunes dead tokens on the next APNs 410).
+  await postWithRetry({
+    kind: "live-activity",
+    endpoint: "/api/push/register-live-activity",
+    token,
+    body: { token, end: true },
+    attempts: 2,
+  });
 }
 
 // Silence the unused NFL accent until NFL games can be pinned (Phase 22).

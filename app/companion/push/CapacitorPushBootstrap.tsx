@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useFollows, useUserPrefs } from "../providers";
+import { postWithRetry } from "./register-state";
 
 // CapacitorPushBootstrap — invisible component, mounted globally
 // alongside PushSyncEffect.
@@ -38,29 +39,17 @@ type SyncPayload = {
 };
 
 async function postRegister(token: string, sync: SyncPayload): Promise<boolean> {
-  try {
-    const res = await fetch(REGISTER_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        token,
-        alerts: sync.alerts,
-        noSpoilers: sync.noSpoilers,
-      }),
-    });
-    if (!res.ok) {
-      console.warn(
-        "[CapacitorPush] register-ios non-OK:",
-        res.status,
-        await res.text().catch(() => "")
-      );
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error("[CapacitorPush] register-ios failed:", err);
-    return false;
-  }
+  const result = await postWithRetry({
+    kind: "apns",
+    endpoint: REGISTER_ENDPOINT,
+    token,
+    body: {
+      token,
+      alerts: sync.alerts,
+      noSpoilers: sync.noSpoilers,
+    },
+  });
+  return result.status === "ok";
 }
 
 function buildSync(
