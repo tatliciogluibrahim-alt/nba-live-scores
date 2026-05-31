@@ -164,7 +164,11 @@ function formatSoccerStatus(
   if (desc.includes("extra time") || desc.includes("et extra")) return `ET ${clock}`;
   if (desc.includes("penalty") || desc.includes("pso")) return "Penalties";
 
-  return clock ? `${clock}'` : "Live";
+  // ESPN's soccer displayClock already carries the minute prime
+  // ("67'", "90'+6'"). Only add one if it's missing, so we never render
+  // a double prime ("67''") on the live status line / lock screen.
+  if (!clock) return "Live";
+  return clock.endsWith("'") ? clock : `${clock}'`;
 }
 
 function normalizeTeam(competitor?: ESPNCompetitor): WCTeam {
