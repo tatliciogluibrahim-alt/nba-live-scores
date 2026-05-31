@@ -58,15 +58,30 @@ export async function GET(req: Request) {
     );
   }
 
-  const result = await sendApnsPush({
+  // Try BOTH environments in isolation (no auto-fallback) so we can see
+  // exactly how each one responds. This is the disambiguating probe:
+  //   • both BadDeviceToken         → topic/bundle-id mismatch or stale token
+  //   • prod env-error, sandbox OK  → development-signed build (sandbox token)
+  //   • prod OK                     → production build, all good
+  const prodResult = await sendApnsPush({
     deviceToken: match.token,
     title: "Test push · No Noise Scores",
     body: "If you see this, APNs is wired end to end.",
-    sandbox,
+    sandbox: false,
+    noFallback: true,
+  });
+  const sandboxResult = await sendApnsPush({
+    deviceToken: match.token,
+    title: "Test push · No Noise Scores",
+    body: "If you see this, APNs is wired end to end.",
+    sandbox: true,
+    noFallback: true,
   });
 
-  // Surface the env-var presence (booleans only, never values) so a
-  // missing APNS_* config is obvious in the response.
+  // Bundle ID is NOT secret (it's in the app binary, the App Store
+  // listing, everywhere) — return the actual value so a topic mismatch
+  // is immediately visible. The .p8 / team / key IDs stay boolean-only.
+  const bundleId = process.env.APNS_BUNDLE_ID ?? null;
   const envPresent = {
     APNS_TEAM_ID: Boolean(process.env.APNS_TEAM_ID),
     APNS_KEY_ID: Boolean(process.env.APNS_KEY_ID),
@@ -74,16 +89,29 @@ export async function GET(req: Request) {
     APNS_BUNDLE_ID: Boolean(process.env.APNS_BUNDLE_ID),
   };
 
+  const anyOk = prodResult.ok || sandboxResult.ok;
   return NextResponse.json({
     sentTo: `${match.token.slice(0, 12)}…`,
-    targetedEndpoint: sandbox ? "sandbox" : "production",
-    apnsOk: result.ok,
-    apnsStatus: result.status,
-    apnsBody: result.body ?? null,
-    apnsError: result.error ?? null,
+    tokenLength: match.token.length,
+    expectedTokenLength: 64,
+    bundleIdConfigured: bundleId,
+    expectedBundleId: "com.nonoisescores.app",
+    bundleIdMatches: bundleId === "com.nonoisescores.app",
+    production: {
+      ok: prodResult.ok,
+      status: prodResult.status,
+      body: prodResult.body ?? null,
+      error: prodResult.error ?? null,
+    },
+    sandbox: {
+      ok: sandboxResult.ok,
+      status: sandboxResult.status,
+      body: sandboxResult.body ?? null,
+      error: sandboxResult.error ?? null,
+    },
     envPresent,
-    note: result.ok
-      ? "Push accepted by Apple. Check the device for the banner."
-      : "Apple rejected the push. See apnsBody / apnsError for why.",
+    note: anyOk
+      ? "One environment accepted the push. Check the device."
+      : "Both environments rejected. Compare the two bodies + bundleIdMatches above.",
   });
 }

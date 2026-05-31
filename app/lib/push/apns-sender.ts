@@ -196,6 +196,10 @@ export async function sendApnsPush(opts: {
    *  because this is being built against a Xcode debug install. Will
    *  flip when we ship to TestFlight. */
   sandbox?: boolean;
+  /** Diagnostics only: when true, do NOT auto-retry the other
+   *  environment. Lets the test endpoint see each environment's raw
+   *  result in isolation. */
+  noFallback?: boolean;
 }): Promise<ApnsResult> {
   const bundleId = process.env.APNS_BUNDLE_ID;
   if (!bundleId) {
@@ -240,7 +244,7 @@ export async function sendApnsPush(opts: {
   const second = preferProd ? SANDBOX_HOST : PROD_HOST;
 
   const r1 = await apnsHttp(first, path, headers, bodyJson);
-  if (r1.ok || !isEnvironmentMismatch(r1.status, r1.body)) {
+  if (opts.noFallback || r1.ok || !isEnvironmentMismatch(r1.status, r1.body)) {
     return { ...r1, environment: first === PROD_HOST ? "production" : "sandbox" };
   }
   // Environment mismatch — the token belongs to the other APNs env.
