@@ -62,6 +62,24 @@ param (`event ?? id`). The browser callers (`game-detail-drawer.tsx`,
 `use-nba-detail.ts`) already used `?event=` and were unaffected. This
 unblocks stat-line signals for the narrative layer.
 
+**Follow-through (2026-05-31): email recaps now use the same data.** The
+bug fix re-enabled push milestone highlights, but the morning Brief still
+built recaps from `/api/live-scores` leaders (season-average categories),
+not true game stat lines. `app/api/cron/send-briefs/route.ts` now runs
+`enrichFinalLeaders()` once on the shared games array before the
+subscriber loop: for each final game in the last 48h it fetches
+`/api/nba-game-detail` and merges the real `leaders`, mirroring exactly
+what `NBALiveCompanion` does in-app. Best-effort (falls back to
+scoreboard leaders on any failure), bounded to 1-2 fetches/run.
+`derive-recap.ts` leader matching was also broadened to handle both
+`Points` and `PTS`/`AST`/`REB` label forms. Net: push milestones and
+email recaps both surface "Brunson · 32 PTS, 8 AST." now.
+
+Note: **Stakes do not consume player leaders** — they parse
+`seriesSummary`, already shared between app and email via
+`series-stakes.ts`. There was nothing to wire there; they were never
+affected by the leaders bug.
+
 ---
 
 ## 2. Route fit (three options evaluated)
@@ -279,6 +297,44 @@ sauce, not a launched feature. Concretely:
 
 This keeps the pilot small, reversible, and invisible until it's
 earned its place. Nothing too crazy.
+
+### Pilot status — SHADOW SCAFFOLDING SHIPPED (2026-05-31)
+
+The shadow pilot is built and inert by default. Files:
+
+- `app/lib/narrative/types.ts` — `GameFacts` / `Signal` (pure, no imports).
+- `app/lib/narrative/significance.ts` — `rankSignals(facts)`, hand-tuned,
+  finals-only (game7 > clinch > 40pt-night > 30pt > nail-biter > blowout
+  > routine).
+- `app/lib/narrative/validate.ts` — `validateNarrative(text, facts)`:
+  every number must be in the facts' grounded set; rejects em-dashes,
+  exclamation points, hype words, over-length.
+- `app/lib/narrative/render.ts` — `narrate()`, the ONLY LLM call. Plain
+  `fetch` to the Anthropic Messages API (no SDK dependency). Returns
+  null when the pilot is off or no key is set, so it can never break a
+  surface.
+- `app/lib/narrative/config.ts` — `narrativeMode()` reads
+  `NARRATIVE_PILOT` (`off` default | `shadow` | `live`).
+- `app/lib/brief/narrative-facts.ts` — the NBA→`GameFacts` adapter
+  (the one file that knows the `Game` shape; keeps the core extractable).
+- Wired into `app/api/cron/send-briefs/route.ts` as `runNarrativeShadow`:
+  generates + validates a candidate for the day's recent finals and
+  **logs it** next to the template. Users see nothing.
+- Tests: `app/lib/narrative/narrative.test.ts` (significance + validation,
+  no network). 11 cases.
+
+**To start the quiet pilot:** set `NARRATIVE_PILOT=shadow` and
+`ANTHROPIC_API_KEY` in the Vercel project env (optionally
+`NARRATIVE_MODEL` to pin the exact Haiku id). The next daily brief run
+will log candidate lines in the cron output. Read them for a week. When
+they read consistently well, the **live cutover** (replacing
+`EDITORIAL_MOMENTS` / the recap blurb with the validated generation,
+template as fallback) is the next deliberate step — it is intentionally
+NOT wired yet, so `live` currently behaves like `shadow`.
+
+**Not built yet (next steps after shadow proves out):** the live render
+path into the Brief lede + game-detail recap; KV caching of the daily
+generation; the manual calibration set from §6.
 
 ---
 

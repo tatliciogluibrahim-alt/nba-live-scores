@@ -34,6 +34,11 @@ import {
   renderBriefText,
 } from "../../../lib/brief/render-email";
 import { sendBriefEmail } from "../../../lib/brief/send-email";
+import { buildGameFactsFromGame } from "../../../lib/brief/narrative-facts";
+import { narrativeMode } from "../../../lib/narrative/config";
+import { rankSignals } from "../../../lib/narrative/significance";
+import { narrate } from "../../../lib/narrative/render";
+import { validateNarrative } from "../../../lib/narrative/validate";
 import type { Game } from "../../../nba/types";
 
 export const runtime = "nodejs";
@@ -119,6 +124,50 @@ async function enrichFinalLeaders(
   );
 }
 
+// Narrative-intelligence SHADOW pass. Off by default. When
+// NARRATIVE_PILOT=shadow|live (and ANTHROPIC_API_KEY is set), generate a
+// calm one-line recap candidate for the day's recent finals, validate it
+// against the source facts, and log the result next to the deterministic
+// template. Users see NOTHING — this only writes to the cron log so the
+// operator can judge quality before any cutover. Best-effort; never
+// affects the email send. See docs/NARRATIVE_INTELLIGENCE_ANALYSIS.md §9.
+async function runNarrativeShadow(games: Game[]): Promise<void> {
+  const mode = narrativeMode();
+  if (mode === "off") return;
+
+  const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+  const finals = games
+    .filter((g) => g.status === "final" && Date.parse(g.date) >= cutoff)
+    .slice(0, 3);
+
+  for (const g of finals) {
+    try {
+      const facts = buildGameFactsFromGame(g);
+      if (!facts) continue;
+      const signals = rankSignals(facts);
+      const text = await narrate(facts, signals, mode);
+      if (!text) {
+        console.log("[narrative:shadow] no candidate", { gameId: g.id, mode });
+        continue;
+      }
+      const verdict = validateNarrative(text, facts);
+      console.log("[narrative:shadow] candidate", {
+        gameId: g.id,
+        mode,
+        topSignal: signals[0]?.kind ?? null,
+        valid: verdict.ok,
+        reasons: verdict.reasons,
+        candidate: text,
+      });
+    } catch (err) {
+      console.warn("[narrative:shadow] error", {
+        gameId: g.id,
+        err: err instanceof Error ? err.message : "unknown",
+      });
+    }
+  }
+}
+
 export async function GET(req: Request) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -138,6 +187,9 @@ export async function GET(req: Request) {
 
   const baseUrl = resolveBaseUrl(req);
   const nba = await enrichFinalLeaders(await fetchNBA(baseUrl), baseUrl);
+
+  // Quiet evaluation of the narrative pilot. No-op unless opted in.
+  await runNarrativeShadow(nba);
 
   const results: Array<{
     email: string;
