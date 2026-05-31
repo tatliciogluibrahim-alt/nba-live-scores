@@ -96,13 +96,25 @@ export function NoSpoilerGameCard({
         type="button"
         onClick={() => (gameId ? reveal(gameId) : setInternalRevealed(true))}
         aria-label={aria}
-        className="no-noise-reveal-focus mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+        className="no-noise-reveal-focus mt-2 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
         style={{
           background: "transparent",
           color: "var(--ink)",
           border: "1px solid var(--line)",
         }}
       >
+        <svg
+          aria-hidden
+          width="15"
+          height="11"
+          viewBox="0 0 24 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        >
+          <path d="M1.5 8S5.5 2 12 2s10.5 6 10.5 6-4 6-10.5 6S1.5 8 1.5 8Z" />
+          <circle cx="12" cy="8" r="2.6" />
+        </svg>
         {REVEAL_COPY[kind]}
       </button>
 

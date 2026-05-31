@@ -255,6 +255,10 @@ export type TodayPayload = {
   reminder: ReminderRow | null;
   /** When true, the parent renders the "Calm is a feature" card at the bottom. */
   isQuietDay: boolean;
+  /** When true, Today is in its resting state (design C): nothing live,
+   *  games coming up, nothing just-wrapped. The view shows the calm
+   *  "Quiet for now." lead + Next up list instead of the live hero. */
+  restingState: boolean;
   /** True when every game on today's slate has finished — no live, no
    *  upcoming, ≥1 final. The Quiet Recap full-screen moment uses this
    *  signal (Stage 15F) to render its end-of-night acknowledgement. */
@@ -1374,6 +1378,11 @@ export function buildTodayPayload({
   const hasTonightFinals = tonightFinals.length > 0;
   const hasFinals = quietWrap.length > 0;
   const isQuietDay = !hasLive && !hasUpcoming && !hasFinals;
+  // Resting state (design C): nothing live right now, but games are
+  // coming up and there's nothing just-wrapped to recap. Distinct from
+  // isQuietDay (the true nothing-at-all dead zone). Suppressed when a
+  // calm-ending card is showing, since that moment owns the screen.
+  const restingState = !hasLive && hasUpcoming && !hasFinals && !closing;
   // Slate complete: nothing live, nothing upcoming, but at least one
   // game finished tonight. Yesterday's finals don't trigger the recap.
   const slateComplete = !hasLive && !hasUpcoming && hasTonightFinals;
@@ -1386,6 +1395,7 @@ export function buildTodayPayload({
     quietWrap,
     reminder,
     isQuietDay,
+    restingState,
     slateComplete,
     finalsCount,
     closing,

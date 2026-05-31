@@ -8,6 +8,7 @@ import { useFollows, useNoSpoilers } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveTodayHeadline } from "./today-data";
 import { FrontPageLead } from "./FrontPageLead";
+import { RestingState } from "./RestingState";
 import { EnableNotificationsCard } from "./EnableNotificationsCard";
 import { PushPermissionRecoveryCard } from "./PushPermissionRecoveryCard";
 import { InstallPromptCard } from "./InstallPromptCard";
@@ -138,8 +139,15 @@ export function TodayClient() {
           interrupting the normal Today layout. Once-per-night. */}
       {hydrated ? <QuietRecap payload={payload} /> : null}
 
-      {/* Front Page lead — state headline + lead-game deck */}
-      {lead ? <FrontPageLead lead={lead} /> : null}
+      {/* Front Page lead — state headline + lead-game deck. On a RESTING
+          day (nothing live, games coming up) the calm "Quiet for now."
+          state (design C) takes over instead, folding in the Next-up
+          list. */}
+      {hydrated && payload.restingState ? (
+        <RestingState items={payload.upNext} />
+      ) : lead ? (
+        <FrontPageLead lead={lead} />
+      ) : null}
 
       {/* Calm Ending — series wrapped or season wrapped. Sits above the
           install/notifications cards so the user sees the acknowledgment
@@ -190,7 +198,12 @@ export function TodayClient() {
               <YouFollow items={payload.youFollow} />
             </div>
 
-            <UpNext items={payload.upNext} />
+            {/* On a resting day the Next-up list is shown inside
+                RestingState above, so skip the standalone section to
+                avoid a duplicate "Upcoming" list. */}
+            {!payload.restingState ? (
+              <UpNext items={payload.upNext} />
+            ) : null}
 
             <QuietWrap items={payload.quietWrap} />
 

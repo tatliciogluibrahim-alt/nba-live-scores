@@ -45,6 +45,11 @@ export function Spoiler({
     ? `Reveal ${ariaSubject} score, hidden by No-Spoilers mode`
     : "Reveal score, hidden by No-Spoilers mode";
 
+  // Frosted-blur treatment (design study A). The number is blurred (and
+  // aria-hidden), but a dotted baseline cue stays sharp so the cell
+  // reads as a deliberate, tappable hidden score — never as broken or
+  // mid-load. The blur lives on an inner span so the cue itself is
+  // unaffected.
   return (
     <button
       type="button"
@@ -64,13 +69,17 @@ export function Spoiler({
         font: "inherit",
         color: "inherit",
         cursor: "pointer",
-        filter: "blur(7px)",
         userSelect: "none",
-        opacity: 0.85,
+        borderBottom: "1px dotted var(--mute-2)",
         fontVariantNumeric: "tabular-nums",
       }}
     >
-      <span aria-hidden>{children}</span>
+      <span
+        aria-hidden
+        style={{ filter: "blur(7px)", opacity: 0.85, display: "inline-block" }}
+      >
+        {children}
+      </span>
     </button>
   );
 }

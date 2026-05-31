@@ -45,6 +45,11 @@ struct NoNoiseGameAttributes: ActivityAttributes {
     var matchup: String  // "OKC vs SA"
     var stage: String    // "NBA · Game 6"
     var sport: String    // "nba" | "wc" | "nfl"
+    // No-Spoilers: when true the views render the scores as a hidden
+    // slug. A static attribute (not ContentState), so server-pushed
+    // score updates never reveal it. Defaults false so older start
+    // calls (and the synthesized memberwise init) stay valid.
+    var redacted: Bool = false
 }
 
 // Convenience: split "OKC vs SA" into away / home codes.

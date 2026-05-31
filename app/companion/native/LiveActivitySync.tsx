@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePinned } from "../providers";
+import { usePinned, useUserPrefs, useFollows } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
+import { buildSeriesKey } from "../../nba/lib/series-keys";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import { isCapacitorNative } from "../dev/native-detect";
 import type { NBAGame, WCGameLite } from "../today/today-data";
@@ -93,7 +94,10 @@ function deriveSubline(item: PinnedItem): string {
     .trim();
 }
 
-function itemToStartInput(item: PinnedItem): LiveActivityStartInput {
+function itemToStartInput(
+  item: PinnedItem,
+  redacted: boolean
+): LiveActivityStartInput {
   const { away, home } = parseScore(item.scoreLine);
   const sport: LiveActivityStartInput["sport"] =
     item.source === "wc" ? "wc" : "nba";
@@ -117,7 +121,29 @@ function itemToStartInput(item: PinnedItem): LiveActivityStartInput {
     // Initial Stadium Panel rail value so the activity opens at the
     // right point in the match instead of starting at 0.
     progress: computeLiveActivityProgress(sport, item.detailLine, status),
+    redacted,
   };
+}
+
+// Decide whether a pinned game's Live Activity should hide its score.
+// Mirrors the in-app No-Spoilers decision: redact when the global mode
+// is on, or when a per-follow `hideSpoilers` covers either team / the
+// series. Set once at start (static attribute), so a server score update
+// can't reveal it. If the user wants pinning to override No-Spoilers,
+// that's a separate future choice — this keeps the lock screen
+// consistent with what the app shows.
+function gameIsHidden(
+  item: PinnedItem,
+  noSpoilers: boolean,
+  hideIds: Set<string>
+): boolean {
+  if (noSpoilers) return true;
+  if (hideIds.size === 0) return false;
+  const a = item.awayCode;
+  const h = item.homeCode;
+  if ((a && hideIds.has(a)) || (h && hideIds.has(h))) return true;
+  if (a && h && hideIds.has(buildSeriesKey(a, h))) return true;
+  return false;
 }
 
 async function postRegister(gameId: string, token: string): Promise<void> {
@@ -146,6 +172,8 @@ void ACCENT_NFL;
 
 export function LiveActivitySync() {
   const { pinned, hydrated } = usePinned();
+  const { prefs } = useUserPrefs();
+  const { follows } = useFollows();
 
   // Stable refs the poll closure reads without re-subscribing.
   const pinnedRef = useRef<PinnedGame[]>(pinned);
@@ -153,10 +181,21 @@ export function LiveActivitySync() {
   const inFlightRef = useRef<Set<string>>(new Set()); // start in progress
   const tokensRef = useRef<Map<string, string>>(new Map()); // gameId → push token
   const hasLiveRef = useRef(false);
+  // No-Spoilers state the start loop reads to decide redaction. Refs so
+  // a prefs/follows change doesn't re-subscribe the poll.
+  const noSpoilersRef = useRef(prefs.noSpoilers);
+  const hideIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     pinnedRef.current = pinned;
   }, [pinned]);
+
+  useEffect(() => {
+    noSpoilersRef.current = prefs.noSpoilers;
+    hideIdsRef.current = new Set(
+      follows.filter((f) => f.hideSpoilers).map((f) => f.id)
+    );
+  }, [prefs.noSpoilers, follows]);
 
   // Token listener — attach once. The native plugin streams the
   // per-Activity push token (it can rotate, so we always store + POST
@@ -230,7 +269,12 @@ export function LiveActivitySync() {
           break;
         }
         inFlightRef.current.add(item.id);
-        const ok = await startLiveActivity(itemToStartInput(item));
+        const redacted = gameIsHidden(
+          item,
+          noSpoilersRef.current,
+          hideIdsRef.current
+        );
+        const ok = await startLiveActivity(itemToStartInput(item, redacted));
         inFlightRef.current.delete(item.id);
         if (isCancelled()) return;
         if (ok) startedRef.current.add(item.id);

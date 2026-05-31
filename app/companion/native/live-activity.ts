@@ -53,6 +53,11 @@ export type LiveActivityStartInput = {
   /** Stadium Panel progress rail, 0...1. Computed via
    *  computeLiveActivityProgress() so the rail isn't empty at start. */
   progress: number;
+  /** No-Spoilers: when true, the lock-screen / Dynamic Island scores
+   *  render as a hidden slug instead of the numbers. Set ONCE at start
+   *  (it lives in the Activity's static attributes), so server-pushed
+   *  score updates can't un-redact it. */
+  redacted: boolean;
 };
 
 export type LiveActivityPushTokenEvent = { gameId: string; token: string };

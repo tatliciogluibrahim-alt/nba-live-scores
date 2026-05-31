@@ -103,21 +103,26 @@ private struct TeamBlock: View {
     let dim: Bool
     let align: HorizontalAlignment
     var compact: Bool = false
+    // No-Spoilers: hide the score numeral AND drop the leader/trailer
+    // dimming (the ink-vs-mute emphasis itself reveals who's ahead).
+    var redacted: Bool = false
+
+    private var effectiveDim: Bool { redacted ? false : dim }
 
     var body: some View {
         VStack(alignment: align, spacing: compact ? 3 : 7) {
             Text(code)
                 .font(.system(size: compact ? 10 : 12.5, weight: .semibold, design: .monospaced))
                 .tracking(1.2)
-                .foregroundStyle(dim ? nnMute : nnCream)
-            Text("\(score)")
+                .foregroundStyle(effectiveDim ? nnMute : nnCream)
+            Text(redacted ? "\u{2013}" : "\(score)")
                 .font(.system(
                     size: compact ? diNumFont(score) : numFont(score),
                     weight: .heavy,
                     design: .rounded
                 ))
                 .monospacedDigit()
-                .foregroundStyle(dim ? nnMute : nnInk)
+                .foregroundStyle(effectiveDim ? nnMute : nnInk)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
         }
@@ -225,9 +230,10 @@ private struct ProgressRail: View {
 
 private struct StadiumPanelLockView: View {
     let state: NoNoiseGameAttributes.ContentState
-    // sport lives on the attributes (set-once, never updates), not on
-    // ContentState. Threaded in from the ActivityConfiguration body.
+    // sport + redacted live on the attributes (set-once, never update),
+    // not on ContentState. Threaded in from the ActivityConfiguration body.
     let sport: String
+    var redacted: Bool = false
     private var theme: SportTheme { .from(sport) }
 
     var body: some View {
@@ -236,12 +242,14 @@ private struct StadiumPanelLockView: View {
                 TeamBlock(code: state.homeCode,
                           score: state.homeScore,
                           dim: state.dim(home: true),
-                          align: .leading)
+                          align: .leading,
+                          redacted: redacted)
                 CenterBug(state: state, theme: theme)
                 TeamBlock(code: state.awayCode,
                           score: state.awayScore,
                           dim: state.dim(home: false),
-                          align: .trailing)
+                          align: .trailing,
+                          redacted: redacted)
             }
             VStack(spacing: 7) {
                 ProgressRail(progress: state.progress, theme: theme)
@@ -267,10 +275,15 @@ private struct StadiumPanelLockView: View {
 struct NoNoiseLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: NoNoiseGameAttributes.self) { context in
-            StadiumPanelLockView(state: context.state, sport: context.attributes.sport)
+            StadiumPanelLockView(
+                state: context.state,
+                sport: context.attributes.sport,
+                redacted: context.attributes.redacted
+            )
         } dynamicIsland: { context in
             let s = context.state
             let theme = SportTheme.from(context.attributes.sport)
+            let redacted = context.attributes.redacted
             return DynamicIsland {
                 // Expanded — mirrors the lock tile: blocks bracket the
                 // center bug, with the rail below.
@@ -279,7 +292,8 @@ struct NoNoiseLiveActivity: Widget {
                               score: s.homeScore,
                               dim: s.dim(home: true),
                               align: .leading,
-                              compact: true)
+                              compact: true,
+                              redacted: redacted)
                         .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -287,7 +301,8 @@ struct NoNoiseLiveActivity: Widget {
                               score: s.awayScore,
                               dim: s.dim(home: false),
                               align: .trailing,
-                              compact: true)
+                              compact: true,
+                              redacted: redacted)
                         .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.center) {
@@ -307,12 +322,12 @@ struct NoNoiseLiveActivity: Widget {
                     .foregroundStyle(theme.accent)
                     .symbolEffect(.pulse, options: .repeating)
             } compactTrailing: {
-                Text("\(s.homeScore)\u{2013}\(s.awayScore)")
+                Text(redacted ? "\u{2022}\u{2022}\u{2022}" : "\(s.homeScore)\u{2013}\(s.awayScore)")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundStyle(nnInk)
             } minimal: {
-                Text("\(s.homeScore)\u{2013}\(s.awayScore)")
+                Text(redacted ? "\u{2022}\u{2022}\u{2022}" : "\(s.homeScore)\u{2013}\(s.awayScore)")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundStyle(nnInk)

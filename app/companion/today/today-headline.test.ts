@@ -13,6 +13,7 @@ function base(over: Partial<TodayPayload> = {}): TodayPayload {
     quietWrap: [],
     reminder: null,
     isQuietDay: true,
+    restingState: false,
     slateComplete: false,
     finalsCount: 0,
     closing: null,

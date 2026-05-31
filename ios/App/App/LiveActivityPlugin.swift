@@ -63,7 +63,10 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         let attrs = NoNoiseGameAttributes(
             matchup: matchup,
             stage: call.getString("stage") ?? "",
-            sport: call.getString("sport") ?? "nba"
+            sport: call.getString("sport") ?? "nba",
+            // No-Spoilers: hide the score on the lock screen / Dynamic
+            // Island when the pinned game is spoiler-hidden for the user.
+            redacted: call.getBool("redacted") ?? false
         )
         let state = NoNoiseGameAttributes.ContentState(
             awayCode: call.getString("awayCode") ?? "",

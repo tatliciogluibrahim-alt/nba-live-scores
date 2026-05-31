@@ -188,19 +188,21 @@ export function FollowingDashboard() {
         </p>
       ) : null}
 
-      {/* Mobile: single-column stack. md+: two columns. We cap at two —
-          the follow card is a wide horizontal row (identity chip +
-          title block + alert pill), and a third column squeezes it
-          narrow enough that the kind-label eyebrow collides with the
-          alert pill. Two columns gives every card room to breathe.
-          (Phase 22.5-D desktop.) */}
-      <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
-        {cards.map((c) => (
-          <li key={`${c.follow.kind}-${c.follow.id}`}>
-            <FollowCard data={c} />
-          </li>
-        ))}
-      </ul>
+      {/* Grouped by state (design study D, "By state"): Live now / In a
+          series / Coming up / Season over. The circle reads as "where
+          things stand," not a flat list. Each card keeps its full alert
+          controls (bell + tier + per-follow No-Spoilers) — the grouping
+          is purely an ordering over the same cards. Empty groups are
+          hidden. */}
+      <FollowGroups cards={cards} />
+      {cards.length === 0 ? (
+        <p
+          className="text-[13px] leading-snug"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          Nothing yet. Add a team, country, or series below.
+        </p>
+      ) : null}
 
       {/* Circle actions — Add / Share / Sync as a compact button row
           (replaces the old stacked dashed rows). Add is the primary
@@ -278,5 +280,97 @@ export function FollowingDashboard() {
         <SyncCircleModal follows={follows} onClose={() => setSyncOpen(false)} />
       ) : null}
     </section>
+  );
+}
+
+// ── Grouped-by-state rendering (design study D) ───────────────────────
+
+type StateKey = "live" | "series" | "next" | "over";
+
+function bucketOf(c: FollowCardData): StateKey {
+  if (c.isLive) return "live";
+  if (c.wrapped) return "over"; // wrapped series → "Season over"
+  if (c.follow.kind === "series") return "series";
+  return "next";
+}
+
+const GROUP_META: Array<{
+  key: StateKey;
+  label: string;
+  dot: string;
+  pulse: boolean;
+  hollow: boolean;
+}> = [
+  { key: "live", label: "Live now", dot: "var(--nba)", pulse: true, hollow: false },
+  { key: "series", label: "In a series", dot: "var(--nba)", pulse: false, hollow: false },
+  { key: "next", label: "Coming up", dot: "var(--wc)", pulse: false, hollow: false },
+  { key: "over", label: "Season over", dot: "transparent", pulse: false, hollow: true },
+];
+
+function FollowGroups({ cards }: { cards: FollowCardData[] }) {
+  const buckets: Record<StateKey, FollowCardData[]> = {
+    live: [],
+    series: [],
+    next: [],
+    over: [],
+  };
+  for (const c of cards) buckets[bucketOf(c)].push(c);
+
+  return (
+    <div className="space-y-6">
+      {GROUP_META.map((g) => {
+        const items = buckets[g.key];
+        if (items.length === 0) return null;
+        return (
+          <section key={g.key}>
+            <div
+              className="mb-3 flex items-baseline justify-between gap-3 border-b pb-2"
+              style={{ borderColor: "var(--ink)" }}
+            >
+              <span className="flex items-center gap-2.5">
+                <span
+                  aria-hidden
+                  className={`inline-block h-2 w-2 rounded-full ${
+                    g.pulse ? "no-noise-live-fade" : ""
+                  }`}
+                  style={{
+                    background: g.hollow ? "transparent" : g.dot,
+                    border: g.hollow ? "1.5px solid var(--mute-2)" : "none",
+                  }}
+                />
+                <span
+                  className="text-[11px] uppercase"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 700,
+                    letterSpacing: "0.16em",
+                    color: "var(--ink)",
+                  }}
+                >
+                  {g.label}
+                </span>
+              </span>
+              <span
+                className="text-[11px] tabular-nums"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 600,
+                  color: "var(--mute-1)",
+                }}
+              >
+                {items.length}
+              </span>
+            </div>
+            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              {items.map((c) => (
+                <li key={`${c.follow.kind}-${c.follow.id}`}>
+                  <FollowCard data={c} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
+    </div>
   );
 }

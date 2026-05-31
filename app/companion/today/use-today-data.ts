@@ -21,6 +21,7 @@ const EMPTY: TodayPayload = {
   quietWrap: [],
   reminder: null,
   isQuietDay: true,
+  restingState: false,
   slateComplete: false,
   finalsCount: 0,
   closing: null,
