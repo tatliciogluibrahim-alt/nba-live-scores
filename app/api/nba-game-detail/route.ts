@@ -384,7 +384,15 @@ function computePulse(data: ESPNSummaryResponse) {
 }
 
 export async function GET(request: NextRequest) {
-  const event = request.nextUrl.searchParams.get("event");
+  // Accept both `?event=` (browser callers: game-detail-drawer, use-nba-detail)
+  // and `?id=` (the scan-nba cron). They drifted apart and the cron's
+  // `?id=` silently hit the 400 branch below, so the player-milestone
+  // highlight path (30/40/50/60 PTS) never received leaders and never
+  // fired. Tolerating either param name fixes the cron without touching
+  // the working browser paths, and guards against future caller drift.
+  const event =
+    request.nextUrl.searchParams.get("event") ??
+    request.nextUrl.searchParams.get("id");
 
   if (!event) {
     return NextResponse.json(
