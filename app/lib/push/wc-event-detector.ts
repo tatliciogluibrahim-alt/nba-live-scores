@@ -99,20 +99,36 @@ export function detectWCEvents(
     nextHalftimeFired = true;
   }
 
-  // Transition 2b: second half RESUMED. Minute crosses from ≤45 (or
-  // null, e.g. coming out of the HT break) to >45 while live. Distinct
-  // ping from the break above — matches the product principle ("halftime
-  // and then start of second half"). Fires once via secondHalfFired.
+  // Transition 2b: second half RESUMED — the first live tick AFTER the
+  // halftime break (prev was halftime, now it isn't). Distinct ping from
+  // the break above, matching the product principle ("halftime and then
+  // start of second half"). Fires once via secondHalfFired.
+  //
+  // We deliberately key this on the halftime→live transition, NOT on a
+  // minute > 45 crossing. The feed represents first-half STOPPAGE time as
+  // "45+2", which parseMinute collapses to 47 — a naive minute>45 test
+  // would fire "second half" during first-half added time, before the
+  // break. The HT-transition signal is stoppage-proof and uses the same
+  // halftime detection the lock-screen status line already trusts.
+  //
+  // Fallback for feeds that never surface "HT" (straight 45+3 → 46'):
+  // if we never saw halftime but the clock is clearly in the second half
+  // (minute > 50, safely past any plausible first-half stoppage) and we
+  // saw the match live before, fire once. 50 not 45 so 45+N stoppage
+  // (which tops out well under 50 in practice) can't trip it.
   const secondHalfAlreadyFired = prev?.secondHalfFired === true;
   let nextSecondHalfFired = secondHalfAlreadyFired;
+  const cameOutOfHalftime =
+    prev?.isHalftime === true && !stableNext.isHalftime;
+  const clearlySecondHalf =
+    !stableNext.isHalftime &&
+    stableNext.minute != null &&
+    stableNext.minute > 50;
   if (
     !secondHalfAlreadyFired &&
     prev?.status === "live" &&
     stableNext.status === "live" &&
-    !stableNext.isHalftime &&
-    stableNext.minute != null &&
-    stableNext.minute > 45 &&
-    (prev.minute == null || prev.minute <= 45)
+    (cameOutOfHalftime || clearlySecondHalf)
   ) {
     events.push({ ...baseInfo, type: "wc-second-half" });
     nextSecondHalfFired = true;
