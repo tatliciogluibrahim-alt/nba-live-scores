@@ -7,6 +7,7 @@ import { safeText } from "../spoiler/safe-text";
 import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import { WatchLine } from "../watch/WatchLine";
 import { usePinned } from "../providers";
+import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
 import type { PinnedItem, StalePin } from "./watching-data";
 
 // One pinned game. The score is wrapped in <Spoiler> keyed to the game
@@ -95,6 +96,23 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
             // each other — same pattern the game-detail H1 + ScoreModule
             // already solves with hideMatchup.
             hideMatchup
+            // Game Pulse rail — same lock-screen parity element as the
+            // game-detail scoreboard, so a live pin reads as the expanded
+            // lock-screen tile. Structural (no score leak), so it's safe
+            // under No-Spoilers. Upcoming pins omit it.
+            progress={
+              isUpcoming
+                ? undefined
+                : {
+                    value: computeLiveActivityProgress(
+                      item.source === "wc" ? "wc" : "nba",
+                      item.detailLine ?? "",
+                      item.status
+                    ),
+                    sport: item.source === "wc" ? "wc" : "nba",
+                    accent: chipAccent,
+                  }
+            }
           />
         </div>
 

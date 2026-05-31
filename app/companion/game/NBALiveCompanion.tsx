@@ -23,6 +23,7 @@ import { PeriodScoreLine } from "./PeriodScoreLine";
 import { StakesLine } from "../stakes/StakesLine";
 import { deriveNBASeriesStake } from "../stakes/derive-stakes";
 import { getPrimarySeriesSnippet } from "../../lib/insights/context-snippets";
+import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
 import { QuietRecapCard } from "../recap/QuietRecapCard";
 import { deriveNBARecap, type NBARecap } from "../recap/derive-recap";
 import { useNBADetail } from "./use-nba-detail";
@@ -206,6 +207,24 @@ export function NBALiveCompanion({
           gameId={game.id}
           size="lg"
           hideMatchup
+          // Game Pulse rail — the lock-screen parity element. Live shows
+          // game-clock progress with a knob; final shows a settled,
+          // filled-to-FINAL rail (the "receipt" closure). Upcoming omits
+          // it (calm, nothing to progress). Same math the real lock
+          // screen uses, so the in-app rail matches the Live Activity.
+          progress={
+            isUpcoming
+              ? undefined
+              : {
+                  value: computeLiveActivityProgress(
+                    "nba",
+                    game.statusText,
+                    status
+                  ),
+                  sport: "nba",
+                  accent: "var(--nba)",
+                }
+          }
         />
       </div>
 

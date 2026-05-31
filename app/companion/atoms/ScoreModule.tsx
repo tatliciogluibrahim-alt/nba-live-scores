@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { StatusPill, type StatusTone } from "./StatusPill";
+import { ProgressRail, type RailSport } from "./ProgressRail";
 import { Spoiler } from "../spoiler/Spoiler";
 import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 
@@ -73,6 +74,13 @@ export type ScoreModuleProps = {
    *  cards explicitly granted accent in the design contract. */
   accent?: string;
 
+  /** Opt-in lock-screen progress rail (the Game Pulse element). When set
+   *  AND status is live or final, renders the period-aware rail under the
+   *  score row — the strongest signal an in-app card is the expanded
+   *  lock-screen tile. Omit on calm/upcoming surfaces. `value` is 0..1
+   *  from computeLiveActivityProgress(sport, statusLine, status). */
+  progress?: { value: number; sport: RailSport; accent: string };
+
   /** Hide the "CODE · CODE" matchup row. Use on surfaces where the page
    *  H1 already carries the matchup (game detail) — avoids the dupe. */
   hideMatchup?: boolean;
@@ -110,6 +118,7 @@ export function ScoreModule({
   gameId,
   size = "md",
   accent,
+  progress,
   hideMatchup = false,
   footer,
   className,
@@ -229,6 +238,20 @@ export function ScoreModule({
         >
           {contextLine}
         </p>
+      ) : null}
+
+      {/* Game Pulse rail — the lock-screen parity element. Live games
+          show progress + knob; final games show a settled filled rail.
+          Structural (not spoilery), so it renders even under No-Spoilers.
+          Upcoming surfaces simply omit the prop and stay calm. */}
+      {progress && (status === "live" || status === "final") ? (
+        <ProgressRail
+          className="mt-3"
+          progress={progress.value}
+          sport={progress.sport}
+          accent={progress.accent}
+          status={status}
+        />
       ) : null}
 
       {footer ? <div className="mt-2">{footer}</div> : null}
