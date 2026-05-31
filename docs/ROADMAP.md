@@ -386,6 +386,91 @@ Spec: `docs/nfl-design.md`.
 
 ---
 
+## Future Moments — candidate sports (captured, NOT committed)
+
+Captured from a strategic conversation 2026-05-31. The question was
+"what's the next sport to ingest after NFL?" These are ranked by fit
+with the wedge, not scheduled. **Do not build any of these until the
+moment is close** (the same "build ~3-4 weeks out" discipline used
+for WC and NFL).
+
+**The trigger is a moment, not a calendar gap.** We do not add a sport
+to fill downtime. We add it because it has a discrete, high-stakes
+moment people care about, and we light up ~3-4 weeks before that
+moment and go quiet the rest of the year. Downtime is the product
+working as intended, not a hole to fill. This is why "regular season"
+sports are a poor fit by default (see AGENTS.md Product Rule).
+
+### 1. MLB Playoffs — STRONG FIT (recommended next after NFL)
+
+**Window:** Wild Card ~early October 2026 → World Series late October.
+**Lead time:** ~3-4 weeks part-time. Scaffold data in September, right
+after the NFL build settles. Launch ~3 weeks before the Wild Card round.
+
+Why it's the obvious next one:
+
+- **Exact shape we already do well.** Ignore the 162-game regular
+  season, light up for October. Wild Card → Division Series →
+  Championship Series → World Series is structurally identical to the
+  NBA Playoffs bracket we've built around.
+- **Heavy machinery reuse.** Series strips, Series Closure cards,
+  best-of-N series logic, series-context plumbing, share cards. This
+  is mostly a data-source + event-detector job, not a new product.
+- **Slots into the positioning with no rewrite.** "NBA Playoffs,
+  World Cup, NFL, MLB Playoffs."
+
+**Sequencing caution:** NFL build is August, MLB playoffs are October.
+That's a tight fall crunch in the same quarter. If MLB becomes a
+fall-2026 commitment, do the **Path B follow-schema refactor**
+(currently parked, see Phase 23+) DURING the NFL build so it pays off
+twice. Deciding MLB now lets the NFL build share infrastructure.
+
+### 2. F1 — WEAK FIT (hold; diversification, not continuation)
+
+**Window:** 2026 season ~March → early December (title decider
+Nov-Dec). Note: 2026 is a major regulation-change year (new
+engine/chassis rules), so narrative interest is unusually high.
+
+Why it's a weaker fit:
+
+- **Season-shaped, not bracket-shaped.** 24 race weekends is closer to
+  a regular-season cadence than a discrete tournament. Only the title
+  fight at season's end is a clean "moment." Bumps against the
+  "no regular-season experiences" rule.
+- **Widens the brand rather than deepens it.** Motorsport fans are a
+  different audience from the team-sport, follow-a-bracket core. Not
+  wrong, but a pivot in identity, not a continuation.
+- Minimal machinery reuse (no series/bracket structure to lean on).
+
+**Verdict:** Hold unless we specifically decide to diversify the
+audience. Not a roadmap item yet.
+
+### 3. PGA / golf — WEAK FIT (hold; lowest priority)
+
+**Window (2026 majors):** US Open Jun 18-21, The Open Jul 16-19 (The
+Open overlaps WC final week). Masters + PGA Championship already past.
+Ryder Cup (the bigger moment) is 2027.
+
+Why it's a weaker fit:
+
+- **Continuous tour, not a bracket.** Only the four majors are
+  discrete moments, and they're spread across the calendar with no
+  connective structure.
+- **Audience overlap with the team-sport core is thin.**
+- Near-zero machinery reuse.
+
+**Verdict:** Hold. Lowest priority of the three. Revisit only if a
+golf-specific opportunity (e.g. a 2027 Ryder Cup push) justifies it.
+
+### Recommendation
+
+Don't ingest anything during the World Cup. Treat **MLB Playoffs as
+the planned post-NFL moment** (Phase 23-ish), scaffold in September,
+launch ~3 weeks before the Wild Card round. Park F1 and PGA as
+"diversify later" decisions, not roadmap commitments.
+
+---
+
 ## Phase 23+ — Beyond
 
 Sketched but unsequenced. Re-evaluate after Phase 22.
