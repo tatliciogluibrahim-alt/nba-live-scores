@@ -216,6 +216,23 @@ export async function GET(req: Request) {
     }
   }
 
+  // Fail LOUD when there are games but we processed NONE — every per-game
+  // state read/write threw, which in practice means KV is unreachable.
+  // A 200 here would look healthy on cron-job.org while no NBA alert ever
+  // fires (silent-success failure). A 500 trips the scheduler's alert.
+  if (games.length > 0 && processed === 0 && stateErrors > 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "all games failed state processing (KV unreachable?)",
+        processed,
+        stateErrors,
+        games: games.length,
+      },
+      { status: 500 }
+    );
+  }
+
   // Player-milestone highlights (Full Details tier). For each live game
   // we fetch the per-game summary (leaders) and fire when a scorer
   // crosses 30/40/50/60 PTS. One extra fetch per live game — cheap in

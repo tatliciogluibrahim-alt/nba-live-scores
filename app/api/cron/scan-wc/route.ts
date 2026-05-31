@@ -87,6 +87,9 @@ function toFresh(game: FeedGame): FreshWCGameState {
     awayScore: game.away.score,
     homeScore: game.home.score,
     minute: parseMinute(game.statusText),
+    // Same halftime-break test the lock-screen status line uses, so the
+    // detector and the Live Activity agree on what "halftime" means.
+    isHalftime: !!game.statusText && /ht|half/i.test(game.statusText),
   };
 }
 
@@ -173,6 +176,25 @@ export async function GET(req: Request) {
       console.error("scan-wc state error", { gameId: game.id, err });
       await incrCounter("cron.scan.error");
     }
+  }
+
+  // Fail LOUD when there are games but we processed NONE — that means
+  // every per-game state read/write threw, which in practice is KV being
+  // unreachable or misconfigured. Returning 200 here would let the cron
+  // look healthy on cron-job.org while no events are ever detected and
+  // no WC alert ever fires (the silent-success failure mode). A 500
+  // trips the scheduler's failure alert so the outage is visible.
+  if (games.length > 0 && processed === 0 && stateErrors > 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "all games failed state processing (KV unreachable?)",
+        processed,
+        stateErrors,
+        games: games.length,
+      },
+      { status: 500 }
+    );
   }
 
   let dispatchResult: Awaited<ReturnType<typeof dispatchEvents>> | null = null;

@@ -18,6 +18,7 @@
 import { NextResponse } from "next/server";
 import { upsertIosToken } from "../../../lib/push/ios-token-store";
 import { validateSyncPayload } from "../../../lib/push/sync-validation";
+import { rejectRateLimited } from "../../../lib/push/request-guards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,6 +35,13 @@ type Body = {
 };
 
 export async function POST(req: Request) {
+  // Per-IP rate limit. The token is the credential (no origin guard —
+  // the native app sends no browser Origin), but without a limit a
+  // script could flood the iOS token store with junk tokens, and the
+  // dispatcher iterates every stored token on each cron tick.
+  const rateLimited = await rejectRateLimited(req, "register-native");
+  if (rateLimited) return rateLimited;
+
   let body: Body;
   try {
     body = (await req.json()) as Body;

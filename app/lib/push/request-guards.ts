@@ -11,7 +11,8 @@ type PushRouteKind =
   | "test"
   | "brief-subscribe"
   | "beta-signup"
-  | "beta-feedback";
+  | "beta-feedback"
+  | "register-native";
 
 const LIMITS = {
   subscribe: { tokens: 20, window: "1 m" },
@@ -25,6 +26,12 @@ const LIMITS = {
   // Beta feedback: a tester filling out the form should never hit 10
   // submissions in a minute — anything more is a script.
   "beta-feedback": { tokens: 10, window: "1 m" },
+  // Native registration (APNs token + Live Activity token). The app
+  // re-registers on launch + on follow changes, so a real device may
+  // POST several times in a minute. 30/min/IP is generous for that and
+  // still stops a script from flooding the iOS token store (which the
+  // dispatcher iterates every cron tick — bloat slows every scan).
+  "register-native": { tokens: 30, window: "1 m" },
 } as const satisfies Record<PushRouteKind, { tokens: number; window: "1 m" }>;
 
 const rateLimiters: Record<PushRouteKind, Ratelimit> = {
@@ -72,6 +79,15 @@ const rateLimiters: Record<PushRouteKind, Ratelimit> = {
     ),
     analytics: false,
     prefix: "nns:beta:rate:feedback:v1",
+  }),
+  "register-native": new Ratelimit({
+    redis: kv,
+    limiter: Ratelimit.slidingWindow(
+      LIMITS["register-native"].tokens,
+      LIMITS["register-native"].window
+    ),
+    analytics: false,
+    prefix: "nns:push:rate:register-native:v1",
   }),
 };
 

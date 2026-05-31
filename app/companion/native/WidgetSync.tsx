@@ -31,25 +31,30 @@ const REFRESH_MS = 30 * 60 * 1000; // upcoming/moments don't change fast
 const ACCENT_NBA = "#e55b2a";
 const ACCENT_WC = "#1e6b3c";
 
-async function fetchNBA(): Promise<NBAGame[]> {
+// Return null on FAILURE (network/HTTP error) vs [] on a genuine empty
+// feed. The caller uses null to decide whether to skip the snapshot
+// write entirely — a transient fetch failure must NOT overwrite a
+// previously-good widget snapshot with an empty one (which would blank
+// the user's widget on a momentary network blip).
+async function fetchNBA(): Promise<NBAGame[] | null> {
   try {
     const res = await fetch("/api/live-scores", { cache: "no-store" });
-    if (!res.ok) return [];
+    if (!res.ok) return null;
     const json = (await res.json()) as { games?: NBAGame[] };
     return json.games ?? [];
   } catch {
-    return [];
+    return null;
   }
 }
 
-async function fetchWC(): Promise<WCGameLite[]> {
+async function fetchWC(): Promise<WCGameLite[] | null> {
   try {
     const res = await fetch(wcFeedUrl(), { cache: "no-store" });
-    if (!res.ok) return [];
+    if (!res.ok) return null;
     const json = (await res.json()) as { games?: WCGameLite[] };
     return json.games ?? [];
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -82,7 +87,17 @@ export function WidgetSync() {
   }, [pinned]);
 
   const writeSnapshot = useCallback(async () => {
-    const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
+    const [nbaRes, wcRes] = await Promise.all([fetchNBA(), fetchWC()]);
+
+    // If BOTH feeds failed (network blip / both endpoints down), skip the
+    // write entirely rather than overwriting a good snapshot with empty
+    // data. A blanked widget on a transient failure reads as broken.
+    // When at least one feed succeeded, proceed (treat the failed one as
+    // an empty list — partial data beats stale-everything).
+    if (nbaRes === null && wcRes === null) return;
+    const nba = nbaRes ?? [];
+    const wc = wcRes ?? [];
+
     const payload = buildTodayPayload({
       nba,
       wc,

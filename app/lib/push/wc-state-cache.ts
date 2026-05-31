@@ -22,9 +22,14 @@ export type CachedWCGameState = {
   /** Best-effort minute marker from the feed (e.g. "45+2" → 47). Used
    *  by the halftime detector to fire when the second half starts. */
   minute: number | null;
-  /** True once the wc-halftime event has fired for this game. Prevents
-   *  re-firing on subsequent scans as the minute progresses past 45. */
+  /** Whether the last observed tick was the halftime break. Lets the
+   *  detector fire wc-halftime only on the false→true crossing. */
+  isHalftime?: boolean;
+  /** True once the wc-halftime (break) event has fired for this game. */
   halftimeFired?: boolean;
+  /** True once the wc-second-half (resume, minute crosses 45) event has
+   *  fired. Distinct from halftimeFired so both moments ping once each. */
+  secondHalfFired?: boolean;
   updatedAt: number;
 };
 

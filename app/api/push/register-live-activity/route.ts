@@ -16,6 +16,7 @@ import {
   registerActivityToken,
   removeActivityToken,
 } from "../../../lib/push/live-activity-store";
+import { rejectRateLimited } from "../../../lib/push/request-guards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +32,11 @@ type Body = {
 };
 
 export async function POST(req: Request) {
+  // Per-IP rate limit — same posture as register-ios. Prevents flooding
+  // the live-activity token store (iterated each cron tick).
+  const rateLimited = await rejectRateLimited(req, "register-native");
+  if (rateLimited) return rateLimited;
+
   let body: Body;
   try {
     body = (await req.json()) as Body;

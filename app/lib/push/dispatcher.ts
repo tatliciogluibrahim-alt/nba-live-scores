@@ -532,11 +532,9 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
       };
     case "wc-halftime":
       return {
-        title: "Second half",
+        title: "Halftime",
         subtitle: matchup,
-        body: noSpoilers
-          ? "Second half underway. Tap to check in."
-          : `${scoreLine(event)} · Second half started`,
+        body: noSpoilers ? "Half done. Tap to check in." : scoreLine(event),
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:wc-halftime`,
       };

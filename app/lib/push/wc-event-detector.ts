@@ -2,13 +2,18 @@
 // with the last cached state and emits zero or more push-worthy events.
 // Pure function — caller persists the new state afterwards.
 //
-// Event taxonomy (v3):
-//   • wc-kickoff  — status flipped upcoming → live
-//   • wc-halftime — minute crossed from ≤45 to >45 while live (second
-//                   half started). Fires once per game via halftimeFired.
-//   • wc-goal     — scoreline rose while live (any goal: open play, pen,
-//                   own goal). No scorer name (scoreboard feed only).
-//   • wc-final    — status flipped live → final
+// Event taxonomy (v4):
+//   • wc-kickoff     — status flipped upcoming → live
+//   • wc-halftime    — the feed reports the halftime break (statusText
+//                      matches /ht|half/, surfaced as isHalftime). The
+//                      "play has stopped at 45'" moment. Once per game.
+//   • wc-second-half — minute crossed from ≤45 to >45 while live: play
+//                      has RESUMED. Distinct moment from the break above,
+//                      matching the product principle ("halftime AND then
+//                      start of second half"). Once per game.
+//   • wc-goal        — scoreline rose while live (any goal: open play,
+//                      pen, own goal). No scorer name (scoreboard feed).
+//   • wc-final       — status flipped live → final
 //
 // Deferred:
 //   • wc-comeback  — same problem space as the NBA version, plus soccer
@@ -32,6 +37,10 @@ export type FreshWCGameState = {
   /** Optional minute marker from the feed. Stored for future detectors;
    *  v1 only looks at status. Null when not parseable. */
   minute: number | null;
+  /** True when the feed reports the halftime break (statusText matches
+   *  /ht|half/). Drives the wc-halftime "break" event, distinct from the
+   *  minute-crosses-45 "second half resumed" event. */
+  isHalftime: boolean;
 };
 
 /** Status ranks — once a fixture has moved forward, we treat any
@@ -73,28 +82,40 @@ export function detectWCEvents(
     events.push({ ...baseInfo, type: "wc-kickoff" });
   }
 
-  // Transition 2: halftime / second half start.
-  // Soccer's first half runs minutes 1–45 (plus stoppage). The second
-  // half starts at minute 46+. We detect the crossing once: prev minute
-  // was ≤ 45 (or null, meaning we hadn't seen a minute yet) and next
-  // minute is > 45 while both ticks are live. Also fires when the
-  // previous minute was null/0 (first observation of a live game
-  // mid-second-half) AS LONG AS prev was already live — so a game that
-  // was live at minute 30 and we next see it at minute 48 fires, but a
-  // fresh upcoming→live at minute 48 doesn't (that's a kickoff only).
+  // Transition 2a: halftime BREAK. The feed reports the stoppage at 45'
+  // (statusText "HT" / "Halftime" → isHalftime). Fires once, only if we
+  // saw the match live beforehand (don't fire if the cron first joined
+  // mid-break). This is the "play has stopped" moment.
   const halftimeAlreadyFired = prev?.halftimeFired === true;
   let nextHalftimeFired = halftimeAlreadyFired;
-
   if (
     !halftimeAlreadyFired &&
     prev?.status === "live" &&
     stableNext.status === "live" &&
+    stableNext.isHalftime &&
+    !prev.isHalftime
+  ) {
+    events.push({ ...baseInfo, type: "wc-halftime" });
+    nextHalftimeFired = true;
+  }
+
+  // Transition 2b: second half RESUMED. Minute crosses from ≤45 (or
+  // null, e.g. coming out of the HT break) to >45 while live. Distinct
+  // ping from the break above — matches the product principle ("halftime
+  // and then start of second half"). Fires once via secondHalfFired.
+  const secondHalfAlreadyFired = prev?.secondHalfFired === true;
+  let nextSecondHalfFired = secondHalfAlreadyFired;
+  if (
+    !secondHalfAlreadyFired &&
+    prev?.status === "live" &&
+    stableNext.status === "live" &&
+    !stableNext.isHalftime &&
     stableNext.minute != null &&
     stableNext.minute > 45 &&
     (prev.minute == null || prev.minute <= 45)
   ) {
-    events.push({ ...baseInfo, type: "wc-halftime" });
-    nextHalftimeFired = true;
+    events.push({ ...baseInfo, type: "wc-second-half" });
+    nextSecondHalfFired = true;
   }
 
   // Goal: the scoreline rose while the match was live. We can't name the
@@ -126,7 +147,9 @@ export function detectWCEvents(
     awayScore: stableNext.awayScore,
     homeScore: stableNext.homeScore,
     minute: stableNext.minute,
+    isHalftime: stableNext.isHalftime,
     halftimeFired: nextHalftimeFired,
+    secondHalfFired: nextSecondHalfFired,
     updatedAt: Date.now(),
   };
 
