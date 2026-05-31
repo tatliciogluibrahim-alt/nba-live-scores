@@ -149,6 +149,48 @@ or external confirmation:
    | python3 -c "import sys,json; d=json.load(sys.stdin); print('\n'.join(sorted(t['team']['abbreviation'] for t in d['sports'][0]['leagues'][0]['teams'])))"
    ```
 
+---
+
+## Data source: why ESPN, and do NOT add a naive backup
+
+We tested whether a second free source could cross-reference the codes
+or serve as a live fallback. Conclusion: **stay single-source on ESPN.**
+
+**ESPN (`site.api.espn.com`, slug `fifa.world`)** is the right source.
+It uses canonical FIFA trigramme codes (AUT, BIH, CPV, CIV, COD, RSA,
+KSA...) and matched the app 48/48. ESPN powers ESPN.com — it's reliable.
+
+**TheSportsDB (free, no-auth — the obvious alternative) FAILS as a
+cross-reference. Do not wire it in.** Tested 2026-05-31:
+  - It uses its OWN non-standard team codes, not FIFA trigrammes:
+    Austria `AST` (not AUT), Bosnia `BOS` (not BIH), Cape Verde `CAP`
+    (not CPV). Using it as a fallback would silently break matching for
+    those countries — the exact failure we were preventing.
+  - Its free `search_all_teams.php` caps at 10 teams; its
+    `lookup_all_teams.php?id=4429` returned English lower-league clubs
+    (Oxford, Luton, Wycombe), not WC nations. Messy, unreliable.
+
+**The lesson (the real reason single-source is fine here):** every
+provider uses different team codes. ANY second source (TheSportsDB,
+football-data.org, API-Football) needs a code-mapping layer, or it
+breaks the strict `awayCode === followId` match. A naive "backup feed"
+makes things worse, not better.
+
+**If a live fallback is ever wanted** (ESPN outage resilience): the
+realistic keyed options are football-data.org (free tier, 10 req/min,
+TLA codes) or API-Football (richer, has lineups + assists). Both need
+an API key AND a per-source code map. Not worth it for beta: ESPN is
+reliable and the cron already degrades gracefully on an empty feed
+(no-op, recovers next tick).
+
+**Cheapest real insurance:** re-run the ESPN diff above the morning of
+June 11 to catch any last-minute code change. 2 seconds, one command.
+
+**Note for the deferred goal-assist feature:** API-Football is the
+source that carries scorer + assister per goal. When you build
+"Ronaldo, assisted by ..." it'd be a supplementary enrichment call
+layered on ESPN (keyed, low-volume), not a replacement.
+
 2. **cron-job.org has an ACTIVE scan-wc schedule.** The GitHub Actions
    schedule is commented out; cron-job.org drives it. You showed me the
    console earlier tonight and it listed "No Noise WC scan" alongside
