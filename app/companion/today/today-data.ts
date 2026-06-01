@@ -306,7 +306,14 @@ function formatGameDay(date: string, now = new Date()): string {
     return "Tomorrow";
   }
 
-  return d.toLocaleDateString(undefined, { weekday: "short" });
+  // A bare weekday ("Thu") only reads unambiguously within the current
+  // week. Beyond ~6 days a game would read as "this Thursday" when it's
+  // actually next week or further (e.g. a World Cup opener 10 days out).
+  // Past that horizon, show the date instead.
+  if (daysUntil(d, now) <= 6) {
+    return d.toLocaleDateString(undefined, { weekday: "short" });
+  }
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 function formatGameTime(date: string): string {
@@ -341,7 +348,12 @@ function headlineDayWord(date: string, now = new Date()): string {
   ) {
     return "tomorrow";
   }
-  return d.toLocaleDateString(undefined, { weekday: "long" });
+  // Same horizon rule as formatGameDay: weekday within the week, date
+  // beyond it, so a far-off game never reads as "this Saturday."
+  if (daysUntil(d, now) <= 6) {
+    return d.toLocaleDateString(undefined, { weekday: "long" });
+  }
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 function gameIncludesTeam(g: NBAGame, abbr: string): boolean {
@@ -710,14 +722,21 @@ function buildUpNext(
   const followedSeries = follows
     .filter((f) => f.kind === "series")
     .map((f) => f.id);
-  const tournamentIds = follows
-    .filter((f) => f.kind === "tournament")
-    .map((f) => f.id.toLowerCase());
   // A tournament follow covers EVERY game in that tournament — following
   // "NBA Playoffs" should fill the widget without also following a team.
-  const followsNbaTournament = tournamentIds.some((id) => id.includes("nba"));
-  const followsWcTournament = tournamentIds.some(
-    (id) => id.includes("fifa") || id.includes("world-cup")
+  // Resolve each followed tournament to its directory entry and key off
+  // its accent (the sport), not a fragile id substring — renaming an id
+  // (e.g. "nba-playoffs-2025" → "nba-playoffs-2026") must never silently
+  // stop matching games.
+  const followedTournaments = follows
+    .filter((f) => f.kind === "tournament")
+    .map((f) => getTournament(f.id))
+    .filter((t): t is NonNullable<typeof t> => Boolean(t));
+  const followsNbaTournament = followedTournaments.some(
+    (t) => t.accent === "var(--nba)"
+  );
+  const followsWcTournament = followedTournaments.some(
+    (t) => t.accent === "var(--wc)"
   );
   const pinnedIds = new Set(pinned.map((p) => p.gameId));
 

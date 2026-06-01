@@ -26,6 +26,9 @@ const SYSTEM_PROMPT = [
   "- Use ONLY the names and numbers present in the facts JSON. Never",
   "  invent or infer a statistic, score, or outcome.",
   "- If a number isn't in the facts, do not write a number.",
+  "- Be even-handed. A matchup has two sides; do not favor one team's",
+  "  storyline over the other. If you cite a fact for one team, give the",
+  "  other team equal footing when a comparable fact exists.",
   "- No second-guessing the reader, no 'don't miss', no 'trending'.",
   "Return only the line, no preamble.",
 ].join("\n");

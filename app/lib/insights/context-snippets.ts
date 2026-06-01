@@ -89,3 +89,17 @@ export function getPrimarySeriesSnippet(
 ): string | null {
   return getSeriesSnippets(teamA, teamB)?.snippets[0] ?? null;
 }
+
+/** All of a series' snippets joined into one balanced line. The curated
+ *  sets carry one fact per team ("NYK's first Finals since 1999. SA's
+ *  first since 2014."), so rendering only the first reads as taking a
+ *  side. Surfaces with room (game detail) use the full, even-handed
+ *  line. Returns null when there's no curated set. */
+export function getSeriesSnippetLine(
+  teamA: string,
+  teamB: string
+): string | null {
+  const set = getSeriesSnippets(teamA, teamB);
+  if (!set || set.snippets.length === 0) return null;
+  return set.snippets.join(" ");
+}

@@ -285,12 +285,16 @@ export function FollowingDashboard() {
 
 // ── Grouped-by-state rendering (design study D) ───────────────────────
 
-type StateKey = "live" | "series" | "next" | "over";
+// Buckets are ACTIVITY STATES, not follow kinds. "In a series" was a
+// kind, not a state — an upcoming series game belongs in "Coming up"
+// next to the tournament it's part of, not in a separate bucket (which
+// read as a contradiction: the series IS coming up). The card's eyebrow
+// ("SERIES · NBA PLAYOFFS") still shows it's a series.
+type StateKey = "live" | "next" | "over";
 
 function bucketOf(c: FollowCardData): StateKey {
   if (c.isLive) return "live";
   if (c.wrapped) return "over"; // wrapped series → "Season over"
-  if (c.follow.kind === "series") return "series";
   return "next";
 }
 
@@ -302,7 +306,6 @@ const GROUP_META: Array<{
   hollow: boolean;
 }> = [
   { key: "live", label: "Live now", dot: "var(--nba)", pulse: true, hollow: false },
-  { key: "series", label: "In a series", dot: "var(--nba)", pulse: false, hollow: false },
   { key: "next", label: "Coming up", dot: "var(--wc)", pulse: false, hollow: false },
   { key: "over", label: "Season over", dot: "transparent", pulse: false, hollow: true },
 ];
@@ -310,7 +313,6 @@ const GROUP_META: Array<{
 function FollowGroups({ cards }: { cards: FollowCardData[] }) {
   const buckets: Record<StateKey, FollowCardData[]> = {
     live: [],
-    series: [],
     next: [],
     over: [],
   };

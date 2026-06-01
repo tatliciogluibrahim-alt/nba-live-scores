@@ -366,10 +366,12 @@ private struct LargeBody: View {
                     .padding(.top, 10)
             }
 
-            // "Then this week" — the rest of the followed slate.
+            // The rest of the followed slate. Labeled "COMING UP" (not
+            // "this week") because these games can be weeks out — a World
+            // Cup opener showing here is not necessarily this week.
             if !more.isEmpty {
                 HStack(spacing: 12) {
-                    Text("THEN THIS WEEK")
+                    Text("COMING UP")
                         .font(.system(size: 9.5, weight: .semibold))
                         .tracking(1.4)
                         .foregroundStyle(wMute)

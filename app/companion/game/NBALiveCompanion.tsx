@@ -22,7 +22,7 @@ import { HighlightsStack } from "./HighlightsStack";
 import { PeriodScoreLine } from "./PeriodScoreLine";
 import { StakesLine } from "../stakes/StakesLine";
 import { deriveNBASeriesStake } from "../stakes/derive-stakes";
-import { getPrimarySeriesSnippet } from "../../lib/insights/context-snippets";
+import { getSeriesSnippetLine } from "../../lib/insights/context-snippets";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
 import { QuietRecapCard } from "../recap/QuietRecapCard";
 import { deriveNBARecap, type NBARecap } from "../recap/derive-recap";
@@ -305,7 +305,7 @@ export function NBALiveCompanion({
         contextSnippet={
           isLive
             ? null
-            : getPrimarySeriesSnippet(
+            : getSeriesSnippetLine(
                 game.away.abbreviation,
                 game.home.abbreviation
               )
