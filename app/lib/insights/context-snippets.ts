@@ -70,26 +70,6 @@ export function getSeriesSnippets(
   return SNIPPETS[seriesKey(teamA, teamB)] ?? null;
 }
 
-/** Look up the snippet set for a single team. */
-export function getTeamSnippets(teamCode: string): ContextSnippetSet | null {
-  return SNIPPETS[`team/${teamCode}`] ?? null;
-}
-
-/** Look up by an explicit pre-built key (`series/A-B`, `team/X`,
- *  `tournament/id`). Series keys must already be sorted. */
-export function getSnippetsByKey(key: string): ContextSnippetSet | null {
-  return SNIPPETS[key] ?? null;
-}
-
-/** First snippet for a series, or null. Convenience for single-line
- *  surfaces (the Stakes line appends just one). */
-export function getPrimarySeriesSnippet(
-  teamA: string,
-  teamB: string
-): string | null {
-  return getSeriesSnippets(teamA, teamB)?.snippets[0] ?? null;
-}
-
 /** All of a series' snippets joined into one balanced line. The curated
  *  sets carry one fact per team ("NYK's first Finals since 1999. SA's
  *  first since 2014."), so rendering only the first reads as taking a

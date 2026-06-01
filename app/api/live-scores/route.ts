@@ -597,7 +597,16 @@ async function fetchGamesForDate(date: string) {
 
     const data = (await response.json()) as ESPNScoreboardResponse;
 
-    return data.events ?? [];
+    // Defensive shape check. ESPN occasionally returns 200 with a
+    // payload that's missing `events` (transient edge issue, or a
+    // schema drift we haven't seen yet). The old `?? []` would silently
+    // return "no games today" — indistinguishable from a legitimate
+    // empty slate. Throw instead so this date counts as a failure in
+    // failedDates and the top-level GET can detect a total outage.
+    if (!Array.isArray(data?.events)) {
+      throw new Error(`ESPN response missing events array for ${date}`);
+    }
+    return data.events;
   } finally {
     clearTimeout(timeout);
   }
@@ -643,6 +652,32 @@ export async function GET() {
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
+    // Total ESPN outage detection: when EVERY requested date failed
+    // (and we did request dates), the upstream feed is down. Return 503
+    // so the cron scheduler (cron-job.org) sees the failure and retries
+    // + alerts. UI callers already handle non-2xx as "data unavailable"
+    // and keep the previous good snapshot, so the user-facing path
+    // degrades gracefully. A partial outage (some dates failed) still
+    // returns 200 — we have something to show, with `failedDates` for
+    // diagnostics.
+    if (
+      fetchDates.length > 0 &&
+      failedDates.length === fetchDates.length
+    ) {
+      return NextResponse.json(
+        {
+          games: [],
+          seriesGames: [],
+          count: 0,
+          seriesCount: 0,
+          failedDates,
+          error: "ESPN feed unavailable for all requested dates",
+          updatedAt: new Date().toISOString(),
+        },
+        { status: 503, headers: { "Cache-Control": "no-store, max-age=0" } }
+      );
+    }
+
     return NextResponse.json(
       {
         games,
@@ -670,7 +705,9 @@ export async function GET() {
         updatedAt: new Date().toISOString(),
       },
       {
-        status: 200,
+        // Top-level unexpected throw → 503 so the scheduler retries +
+        // alerts. UI callers degrade gracefully via the non-ok guard.
+        status: 503,
         headers: { "Cache-Control": "no-store, max-age=0" },
       }
     );

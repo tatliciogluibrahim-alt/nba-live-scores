@@ -33,6 +33,11 @@ export type OpsCounter =
   | "dispatch.apns.gone"
   | "dispatch.apns.failed"
   | "dispatch.apns.claim-failed"
+  // Operator alert: ≥3 sends attempted in one batch and 0 delivered.
+  // Most likely APNs is unreachable or the signing key flipped to the
+  // wrong environment (the launch-night bug). Distinct counter so the
+  // dashboard can raise an alert without parsing per-token failures.
+  | "dispatch.apns.total-failure"
   // Per-event-type notification funnel (Phase 21C delivery loop).
   // `notif.sent.<type>` increments on each successful web-push
   // delivery; `notif.open.<type>` increments when the service worker

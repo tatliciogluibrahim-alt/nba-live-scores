@@ -155,17 +155,57 @@ const followsNBA = (follows: Follow[]): boolean =>
         /\b(SA|NYK|OKC|CLE)\b/.test(f.id))
   );
 
+// Follows ANY World Cup surface. Used by the WC editorial moments below
+// so a user who only follows the WC (a country or the tournament itself)
+// still sees a calm pre-kickoff acknowledgment in their daily brief.
+const followsWC = (follows: Follow[]): boolean =>
+  follows.some(
+    (f) =>
+      (f.kind === "tournament" && f.id.startsWith("fifa-world-cup-")) ||
+      f.kind === "country"
+  );
+
 const EDITORIAL_MOMENTS: EditorialMoment[] = [
   {
     // 2026 NBA Finals matchup set. Shows from the morning after SA's
-    // Game 7 through the day before Game 1 (Thursday). Founder: verify
-    // the Game 1 date and trim the window if it shifts.
+    // Game 7 through the day before Game 1 (Wednesday June 3).
     startKey: "2026-05-31",
     endKey: "2026-06-04",
     headline: "San Antonio is headed to the Finals.",
     body: "Last night, San Antonio closed out Oklahoma City in Game 7. They advance to face New York in the Finals. Series tips Wednesday.",
     seriesContext: ["SA", "NYK"],
     appliesTo: followsNBA,
+  },
+  {
+    // The morning after Game 1, through the next several days. Calm
+    // factual acknowledgment that the Finals are running — no claims
+    // about who won (the daily recap handles per-game outcomes); the
+    // schedule is fact-only. Window ends June 11 so the WC kickoff
+    // moment below takes over for users who follow both sports.
+    startKey: "2026-06-04",
+    endKey: "2026-06-11",
+    headline: "The Finals are underway.",
+    body: "Series tipped Wednesday. Best-of-seven, first to four wins.",
+    seriesContext: ["SA", "NYK"],
+    appliesTo: followsNBA,
+  },
+  {
+    // WC pre-kickoff anticipation (the final week of buildup). Fires
+    // for WC followers only — NBA followers stay on the Finals moment
+    // above since the array is iterated in order.
+    startKey: "2026-06-04",
+    endKey: "2026-06-11",
+    headline: "The World Cup is days away.",
+    body: "First whistle Thursday, June 11. 48 nations across the next month.",
+    appliesTo: followsWC,
+  },
+  {
+    // Kickoff day + the opening weekend. Calm "it's here" beat.
+    startKey: "2026-06-11",
+    endKey: "2026-06-14",
+    headline: "The World Cup is here.",
+    body: "Opening match today. Group stage runs through the next two weeks.",
+    appliesTo: followsWC,
   },
 ];
 

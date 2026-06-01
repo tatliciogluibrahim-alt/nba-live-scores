@@ -24,36 +24,73 @@ import { useNoSpoilers, useFollows } from "../providers";
 // memory, not persisted — so closing/reopening the app re-hides results.
 // That matches the calm promise: you opt back into spoilers each session.
 
+// Sentinel for "fully revealed." A regulation game has 4 quarters (more
+// with OT). Any value at or beyond this means "all surfaces show the
+// score." revealStep() never reaches it; reveal() jumps to it.
+export const FULL_REVEAL = 999;
+
 type RevealCtx = {
+  /** True only when the game has been FULLY revealed (the existing
+   *  binary contract every score-bearing surface already keys off). */
   isRevealed: (gameId: string) => boolean;
+  /** Flip to fully revealed in one step (existing "Tap to reveal"
+   *  affordances on Spoiler / NoSpoilerGameCard). */
   reveal: (gameId: string) => void;
+  /** Catch-me-up: progressive per-quarter reveal. Each call increments
+   *  the level by 1 (Q1 → Q2 → Q3 → Q4). Surfaces that show the final
+   *  score keep checking isRevealed (still false during steps); the
+   *  catch-me-up component itself calls reveal() at Q4 to flip the
+   *  binary and cascade-unblur the rest of the page. */
+  revealStep: (gameId: string) => void;
+  /** Current reveal level (0 = none, 1..3 = mid-step, FULL_REVEAL =
+   *  done). Catch-me-up reads this to decide which quarter rows are
+   *  unlocked. Other surfaces don't need it. */
+  getRevealLevel: (gameId: string) => number;
 };
 
 const RevealContext = createContext<RevealCtx | null>(null);
 
 export function RevealProvider({ children }: { children: ReactNode }) {
-  const [revealed, setRevealed] = useState<ReadonlySet<string>>(
-    () => new Set()
+  // Per-game reveal level. 0 = hidden, 1..3 = catch-me-up in progress,
+  // FULL_REVEAL = fully revealed (treated exactly like the old binary).
+  const [levels, setLevels] = useState<ReadonlyMap<string, number>>(
+    () => new Map()
   );
 
   const reveal = useCallback((gameId: string) => {
     if (!gameId) return;
-    setRevealed((prev) => {
-      if (prev.has(gameId)) return prev;
-      const next = new Set(prev);
-      next.add(gameId);
+    setLevels((prev) => {
+      if (prev.get(gameId) === FULL_REVEAL) return prev;
+      const next = new Map(prev);
+      next.set(gameId, FULL_REVEAL);
+      return next;
+    });
+  }, []);
+
+  const revealStep = useCallback((gameId: string) => {
+    if (!gameId) return;
+    setLevels((prev) => {
+      const cur = prev.get(gameId) ?? 0;
+      if (cur >= FULL_REVEAL) return prev;
+      const next = new Map(prev);
+      next.set(gameId, cur + 1);
       return next;
     });
   }, []);
 
   const isRevealed = useCallback(
-    (gameId: string) => revealed.has(gameId),
-    [revealed]
+    (gameId: string) => (levels.get(gameId) ?? 0) >= FULL_REVEAL,
+    [levels]
+  );
+
+  const getRevealLevel = useCallback(
+    (gameId: string) => levels.get(gameId) ?? 0,
+    [levels]
   );
 
   const value = useMemo<RevealCtx>(
-    () => ({ isRevealed, reveal }),
-    [isRevealed, reveal]
+    () => ({ isRevealed, reveal, revealStep, getRevealLevel }),
+    [isRevealed, reveal, revealStep, getRevealLevel]
   );
 
   return (
@@ -67,7 +104,12 @@ export function RevealProvider({ children }: { children: ReactNode }) {
 export function useReveal(): RevealCtx {
   const ctx = useContext(RevealContext);
   if (ctx) return ctx;
-  return { isRevealed: () => false, reveal: () => {} };
+  return {
+    isRevealed: () => false,
+    reveal: () => {},
+    revealStep: () => {},
+    getRevealLevel: () => 0,
+  };
 }
 
 // ── Per-game spoiler scope ────────────────────────────────────────────

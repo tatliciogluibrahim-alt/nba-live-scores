@@ -26,7 +26,7 @@ export type StoredSubscription = {
   /** No-Spoilers mode flag from prefs. When true, the dispatcher
    *  suppresses any event whose copy leaks closeness (close-game,
    *  comeback) so the user's No-Spoilers contract holds even on the
-   *  "All moments" tier. */
+   *  "Full Details" tier. */
   noSpoilers: boolean;
   /** Optional Quiet Hours window. When set (with timeZone), the
    *  dispatcher + reminders cron skip delivery during it. */

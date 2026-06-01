@@ -216,6 +216,14 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
   // endpoint URLs, so a user with both an iOS install and a web PWA
   // install gets the push on both surfaces (one per transport).
   const iosTokens = await listIosTokens();
+  // Track APNs delivery health across the batch so a TOTAL outage (every
+  // attempted send failed) emits a distinct operator signal — not just
+  // per-token "apns.failed" lines that blur into normal noise. The
+  // counter incremented at the end of the loop lets the ops dashboard
+  // flag "APNs is down" the same way "ESPN is down" surfaces from the
+  // feed routes' 503s.
+  let apnsAttempted = 0;
+  let apnsDelivered = 0;
   for (const event of events) {
     const eventTag = dedupeTagFor(event);
     const matching = iosTokens.filter((t) => subscriberWantsEvent(t, event));
@@ -264,6 +272,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
         }
 
         const payload = buildPayload(event, ios.noSpoilers);
+        apnsAttempted += 1;
         const result = await sendApnsPush({
           deviceToken: ios.token,
           title: payload.title,
@@ -288,6 +297,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
         });
 
         if (result.ok) {
+          apnsDelivered += 1;
           await touchIosToken(ios.token);
           deliveries.push({
             endpoint: `apns:${ios.token.slice(0, 8)}…`,
@@ -336,6 +346,21 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
     }
   }
 
+  // APNs total-outage signal: at least 3 deliveries attempted and
+  // none succeeded. Most likely Apple's APNs endpoint is unreachable
+  // or the signing key has flipped environments (the launch-night bug).
+  // The dashboard reads this counter to alert before users notice.
+  // Threshold of 3 avoids noise from a single bad token in low-volume
+  // batches (friend-beta scale); raise it if false-positives appear.
+  if (apnsAttempted >= 3 && apnsDelivered === 0) {
+    await incrCounter("dispatch.apns.total-failure");
+    console.error("dispatch.apns: TOTAL FAILURE", {
+      attempted: apnsAttempted,
+      delivered: apnsDelivered,
+      events: events.length,
+    });
+  }
+
   return { deliveries, pruned };
 }
 
@@ -356,8 +381,9 @@ type SubscriberPreferences = {
 /** Transport-neutral matcher. Returns true when the subscriber's
  *  alerts + noSpoilers combination matches the event. Same logic
  *  whether the subscriber is a web push endpoint or an APNs token —
- *  the differences live in the delivery layer, not the matching. */
-function subscriberWantsEvent(
+ *  the differences live in the delivery layer, not the matching.
+ *  Exported for unit tests (dispatcher.test.ts). */
+export function subscriberWantsEvent(
   sub: SubscriberPreferences,
   event: PushEvent
 ): boolean {

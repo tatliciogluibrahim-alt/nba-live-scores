@@ -359,11 +359,18 @@ async function fetchForDate(date: string): Promise<ESPNEvent[]> {
       headers: { Accept: "application/json" },
       signal: controller.signal,
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      // Throw so Promise.allSettled records this date as rejected, so
+      // the GET handler can detect a total outage (every date failed →
+      // 503). Previously this swallowed the failure as `[]`, which
+      // looked identical to a legitimate empty slate.
+      throw new Error(`ESPN HTTP ${res.status} for ${date}`);
+    }
     const data = (await res.json()) as ESPNScoreboardResponse;
-    return data.events ?? [];
-  } catch {
-    return [];
+    if (!Array.isArray(data?.events)) {
+      throw new Error(`ESPN response missing events array for ${date}`);
+    }
+    return data.events;
   } finally {
     clearTimeout(t);
   }
@@ -373,6 +380,27 @@ export async function GET() {
   try {
     const dates = getDateWindow();
     const results = await Promise.allSettled(dates.map(fetchForDate));
+
+    // Total ESPN outage: every requested date failed. Return 503 so the
+    // scan-wc cron (cron-job.org) retries + alerts, instead of looking
+    // like a legit empty fixture day. UI callers handle non-2xx as
+    // "data unavailable" and keep the previous good snapshot.
+    const failedCount = results.filter((r) => r.status === "rejected").length;
+    if (dates.length > 0 && failedCount === dates.length) {
+      console.error(
+        "World Cup feed total outage",
+        results.find((r) => r.status === "rejected")
+      );
+      return NextResponse.json(
+        {
+          games: [],
+          count: 0,
+          error: "ESPN feed unavailable for all requested dates",
+          updatedAt: new Date().toISOString(),
+        },
+        { status: 503, headers: { "Cache-Control": "no-store, max-age=0" } }
+      );
+    }
 
     const events = results.flatMap((r) =>
       r.status === "fulfilled" ? r.value : []
@@ -401,7 +429,9 @@ export async function GET() {
         error: "Unable to fetch",
         updatedAt: new Date().toISOString(),
       },
-      { status: 200, headers: { "Cache-Control": "no-store, max-age=0" } }
+      // 503 so the scheduler retries + alerts on unexpected failures.
+      // UI callers degrade gracefully via the non-ok guard.
+      { status: 503, headers: { "Cache-Control": "no-store, max-age=0" } }
     );
   }
 }

@@ -38,7 +38,12 @@ import { sendApnsPush } from "../../../lib/push/apns-sender";
 import { claimDelivery } from "../../../lib/push/dedupe";
 import { isWithinQuietHours } from "../../../lib/push/quiet-hours";
 import type { SyncedAlert } from "../../../lib/push/sync-validation";
-import { buildSeriesKey } from "../../../nba/lib/series-keys";
+import {
+  gameMatchIds,
+  reminderFollowIds,
+  intersects,
+  type FeedGame,
+} from "./lib";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,14 +53,6 @@ const DEFAULT_REMIND_MINUTES = 30;
 // Don't bother considering games more than this far out — the largest
 // reminder lead time the UI offers is 60 min; the slack covers cron jitter.
 const MAX_LOOKAHEAD_MS = 185 * 60 * 1000;
-
-type FeedGame = {
-  id: string;
-  date: string;
-  status: "live" | "upcoming" | "final";
-  away?: { abbreviation?: string };
-  home?: { abbreviation?: string };
-};
 
 function isAuthorized(req: Request): boolean {
   const expected = process.env.CRON_SECRET;
@@ -82,35 +79,6 @@ async function fetchGames(url: string): Promise<FeedGame[]> {
   }
 }
 
-/** A game's matchable follow ids: both team/country codes plus the NBA
- *  series key. Country follows match the code; series follows match the
- *  key. */
-function gameMatchIds(game: FeedGame): Set<string> {
-  const ids = new Set<string>();
-  const a = game.away?.abbreviation;
-  const h = game.home?.abbreviation;
-  if (a) ids.add(a.toUpperCase());
-  if (h) ids.add(h.toUpperCase());
-  if (a && h) ids.add(buildSeriesKey(a, h));
-  return ids;
-}
-
-/** The subscriber's alert ids that can trigger a reminder (team /
- *  country / series — tournament excluded to avoid per-game spam). */
-function reminderFollowIds(alerts: SyncedAlert[]): Set<string> {
-  const ids = new Set<string>();
-  for (const a of alerts) {
-    if (a.kind === "team" || a.kind === "country" || a.kind === "series") {
-      ids.add(a.id.toUpperCase());
-    }
-  }
-  return ids;
-}
-
-function intersects(a: Set<string>, b: Set<string>): boolean {
-  for (const x of a) if (b.has(x)) return true;
-  return false;
-}
 
 type UpcomingGame = {
   id: string;
@@ -136,19 +104,37 @@ export async function GET(req: Request) {
   // reminder for SOMEONE (max lead time). Per-subscriber lead time is
   // checked below.
   const upcoming: UpcomingGame[] = [];
+  let skippedMalformed = 0;
   for (const game of [...nba, ...wc]) {
     if (game.status !== "upcoming") continue;
+    // Hard guard on the fields we actually need. A malformed feed row
+    // (missing id, abbreviation, or date) would otherwise build a
+    // reminder with "? vs ?" or feed `undefined` into the series-key
+    // builder. Skip + count it so partial feed drift is visible in
+    // logs instead of silently breaking matching.
+    const a = game.away?.abbreviation;
+    const h = game.home?.abbreviation;
+    if (!game.id || !a || !h || !game.date) {
+      skippedMalformed += 1;
+      continue;
+    }
     const tipoffMs = Date.parse(game.date);
-    if (!Number.isFinite(tipoffMs)) continue;
+    if (!Number.isFinite(tipoffMs)) {
+      skippedMalformed += 1;
+      continue;
+    }
     if (tipoffMs <= nowMs) continue; // already started
     if (tipoffMs - nowMs > MAX_LOOKAHEAD_MS) continue; // too far out
-    const a = game.away?.abbreviation ?? "?";
-    const h = game.home?.abbreviation ?? "?";
     upcoming.push({
       id: game.id,
       tipoffMs,
       title: `${a} vs ${h}`,
       ids: gameMatchIds(game),
+    });
+  }
+  if (skippedMalformed > 0) {
+    console.warn("reminders: skipped malformed feed rows", {
+      count: skippedMalformed,
     });
   }
 

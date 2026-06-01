@@ -27,6 +27,7 @@ import { computeLiveActivityProgress } from "../../lib/push/live-activity-progre
 import { QuietRecapCard } from "../recap/QuietRecapCard";
 import { deriveNBARecap, type NBARecap } from "../recap/derive-recap";
 import { useNBADetail } from "./use-nba-detail";
+import { CatchMeUpCard } from "../spoiler/CatchMeUpCard";
 
 // NBA Live Companion — the deepened /game/[id] for NBA games. Moments-first,
 // score body-level, watch info canonical, series context light + redacted
@@ -336,30 +337,63 @@ export function NBALiveCompanion({
         </div>
       )}
 
+      {/* ── Catch me up (finals + No-Spoilers + has quarterly data) ─────── */}
+      {/* Progressive Q1 → Q2 → Q3 → Q4 reveal. Replaces the "reveal
+          everything" affordance with a calm four-tap ritual when the
+          user has No-Spoilers on. Once Q4 is tapped, CatchMeUpCard
+          flips the game to fully revealed and stops rendering — the
+          recap section below takes over on the next pass. */}
+      {(() => {
+        const showCatchMeUp =
+          game.status === "final" &&
+          noSpoilers &&
+          (game.periodScores?.away?.length ?? 0) > 0;
+        if (!showCatchMeUp) return null;
+        return (
+          <div className="mt-4">
+            <CatchMeUpCard game={game} />
+          </div>
+        );
+      })()}
+
       {/* ── Quiet Recap Card (finals only) ──────────────────────────────── */}
       {/* The editorial finale: winner-named headline, big score, series
           state, up to 3 "what mattered" bullets, optional next-game
           line. Replaces the live HeroMoment + HighlightsStack for
           finals — having both stacked read as two cards saying the
-          same thing. */}
-      {game.status === "final" && hasRecap && recap ? (
-        <div className="mt-4">
-          {recapOpen ? (
-            <QuietRecapCard
-              game={game}
-              allNBAGames={allNBAGames}
-              recap={recap}
-            />
-          ) : (
-            <RecapCollapsed
-              recap={recap}
-              gameId={game.id}
-              noSpoilers={noSpoilers}
-              onOpen={() => setRecapOpen(true)}
-            />
-          )}
-        </div>
-      ) : null}
+          same thing.
+          When CatchMeUp is in progress (NS on + final + quarterly data),
+          this section is suppressed so the user sees one "what to do
+          next" affordance, not two. Once CatchMeUp completes Q4, it
+          calls reveal() and `noSpoilers` flips false here, so the recap
+          re-appears unblurred on the next render. */}
+      {(() => {
+        const catchMeUpActive =
+          game.status === "final" &&
+          noSpoilers &&
+          (game.periodScores?.away?.length ?? 0) > 0;
+        const showRecap =
+          game.status === "final" && hasRecap && recap && !catchMeUpActive;
+        if (!showRecap) return null;
+        return (
+          <div className="mt-4">
+            {recapOpen ? (
+              <QuietRecapCard
+                game={game}
+                allNBAGames={allNBAGames}
+                recap={recap}
+              />
+            ) : (
+              <RecapCollapsed
+                recap={recap}
+                gameId={game.id}
+                noSpoilers={noSpoilers}
+                onOpen={() => setRecapOpen(true)}
+              />
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Per-quarter scoring (mobile inline; desktop → rail) ─────────── */}
       {/* The basketball-native breakdown — each quarter's score by team.
