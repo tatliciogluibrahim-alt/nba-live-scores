@@ -765,46 +765,41 @@ function buildUpNext(
     return [...followedCountries].some((code) => gameIncludesCountry(g, code));
   };
 
-  // One chronological feed across BOTH sports. The order is, top to
-  // bottom:
-  //   1. pinned games (explicit user intent)
-  //   2. then personal (a followed team/country/series/tournament)
-  //   3. then soonest first
-  // Crucially, NBA and WC are merged before sorting — not "all NBA then
-  // all WC" — so the next 2 weeks read in true time order. The playoff
-  // games (Jun 3-10) sort ahead of the World Cup openers (Jun 11)
-  // because they happen first, not because of any sport priority.
-  type Candidate = {
-    date: number;
-    personal: boolean;
-    pinned: boolean;
-    item: UpNextItem;
-  };
+  // ONLY the user's followed games — never generic filler. "Follow what
+  // matters, skip the rest": if you don't follow it, it doesn't surface
+  // here (Today or the widget). A zero-follow user gets an empty list,
+  // which the onboarding / resting states handle.
+  //
+  // One chronological feed across BOTH sports:
+  //   1. pinned games first (explicit "this is the one I'm tracking")
+  //   2. then soonest first
+  // NBA and WC are merged BEFORE sorting — not "all NBA then all WC" — so
+  // the next 2 weeks read in true time order. The playoff games (Jun
+  // 3-10) sort ahead of the World Cup openers (Jun 11) because they
+  // happen first, not because of any sport priority.
+  type Candidate = { date: number; pinned: boolean; item: UpNextItem };
   const candidates: Candidate[] = [];
   for (const g of nbaUpcoming) {
+    if (!nbaIsPersonal(g)) continue;
     const pinned = pinnedIds.has(g.id);
-    const personal = nbaIsPersonal(g);
     candidates.push({
       date: new Date(g.date).getTime(),
-      personal,
       pinned,
-      item: nbaToUpNext(g, pinned, personal),
+      item: nbaToUpNext(g, pinned, true),
     });
   }
   for (const g of wcUpcoming) {
+    if (!wcIsPersonal(g)) continue;
     const pinned = pinnedIds.has(g.id);
-    const personal = wcIsPersonal(g);
     candidates.push({
       date: new Date(g.date).getTime(),
-      personal,
       pinned,
-      item: wcToUpNext(g, pinned, personal),
+      item: wcToUpNext(g, pinned, true),
     });
   }
 
   candidates.sort((a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-    if (a.personal !== b.personal) return a.personal ? -1 : 1;
     return a.date - b.date;
   });
 
