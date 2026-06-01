@@ -7,10 +7,13 @@ import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import { isCapacitorNative } from "../dev/native-detect";
 import {
   buildTodayPayload,
+  daysUntil,
+  WC_KICKOFF,
   type NBAGame,
   type WCGameLite,
   type UpNextItem,
 } from "../today/today-data";
+import { getTournament } from "../following/data/tournaments";
 import { writeWidgetSnapshot, type WidgetSnapshot, type WidgetUpcoming } from "./widget-bridge";
 
 // WidgetSync — invisible, mounted globally beside LiveActivitySync. The
@@ -114,9 +117,34 @@ export function WidgetSync() {
       .filter((item) => item.personal)
       .slice(0, 5)
       .map(itemToUpcoming);
-    const moment = payload.reminder
+    let moment: WidgetSnapshot["moment"] = payload.reminder
       ? { text: payload.reminder.text, detail: payload.reminder.detail }
       : null;
+
+    // Anticipation fallback: the user follows something, but nothing is
+    // scheduled in the feed window yet (e.g. they follow the World Cup a
+    // week before kickoff). Instead of a blank widget with a "follow
+    // something" CTA — which is wrong, they already did — show a calm
+    // countdown. Today that's the World Cup pre-kickoff; a WC tournament
+    // or country follow qualifies.
+    if (upcoming.length === 0 && !moment) {
+      const followsWc = followsRef.current.some(
+        (f) =>
+          (f.kind === "tournament" &&
+            getTournament(f.id)?.accent === "var(--wc)") ||
+          f.kind === "country"
+      );
+      if (followsWc) {
+        const days = daysUntil(WC_KICKOFF);
+        if (days > 0) {
+          moment = {
+            text: "FIFA World Cup 2026",
+            detail:
+              days === 1 ? "Kicks off tomorrow" : `Kicks off in ${days} days`,
+          };
+        }
+      }
+    }
 
     const snapshot: WidgetSnapshot = {
       generatedAt: Date.now(),

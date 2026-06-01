@@ -281,9 +281,9 @@ export type TodayPayload = {
 
 // ── Pure helpers ──────────────────────────────────────────────────────
 
-const WC_KICKOFF = new Date("2026-06-11T19:00:00Z");
+export const WC_KICKOFF = new Date("2026-06-11T19:00:00Z");
 
-function daysUntil(target: Date, now = new Date()): number {
+export function daysUntil(target: Date, now = new Date()): number {
   const ms = target.getTime() - now.getTime();
   return Math.max(0, Math.ceil(ms / 86_400_000));
 }
