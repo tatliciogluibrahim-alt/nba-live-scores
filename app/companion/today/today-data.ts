@@ -765,34 +765,50 @@ function buildUpNext(
     return [...followedCountries].some((code) => gameIncludesCountry(g, code));
   };
 
-  // Personal-first ordering, then everyone else's up-next feed. Items are
-  // tagged with `source` and `pinned` at construction so the UI never has
-  // to guess.
-  const personalNBA = nbaUpcoming
-    .filter(nbaIsPersonal)
-    .map((g) => nbaToUpNext(g, pinnedIds.has(g.id), true));
-  const personalWC = wcUpcoming
-    .filter(wcIsPersonal)
-    .map((g) => wcToUpNext(g, pinnedIds.has(g.id), true));
+  // One chronological feed across BOTH sports. The order is, top to
+  // bottom:
+  //   1. pinned games (explicit user intent)
+  //   2. then personal (a followed team/country/series/tournament)
+  //   3. then soonest first
+  // Crucially, NBA and WC are merged before sorting — not "all NBA then
+  // all WC" — so the next 2 weeks read in true time order. The playoff
+  // games (Jun 3-10) sort ahead of the World Cup openers (Jun 11)
+  // because they happen first, not because of any sport priority.
+  type Candidate = {
+    date: number;
+    personal: boolean;
+    pinned: boolean;
+    item: UpNextItem;
+  };
+  const candidates: Candidate[] = [];
+  for (const g of nbaUpcoming) {
+    const pinned = pinnedIds.has(g.id);
+    const personal = nbaIsPersonal(g);
+    candidates.push({
+      date: new Date(g.date).getTime(),
+      personal,
+      pinned,
+      item: nbaToUpNext(g, pinned, personal),
+    });
+  }
+  for (const g of wcUpcoming) {
+    const pinned = pinnedIds.has(g.id);
+    const personal = wcIsPersonal(g);
+    candidates.push({
+      date: new Date(g.date).getTime(),
+      personal,
+      pinned,
+      item: wcToUpNext(g, pinned, personal),
+    });
+  }
 
-  const personalIds = new Set([...personalNBA, ...personalWC].map((i) => i.id));
-  const everyoneNBA = nbaUpcoming
-    .map((g) => nbaToUpNext(g, pinnedIds.has(g.id), false))
-    .filter((i) => !personalIds.has(i.id));
-  const everyoneWC = wcUpcoming
-    .map((g) => wcToUpNext(g, pinnedIds.has(g.id), false))
-    .filter((i) => !personalIds.has(i.id));
-
-  // Pinned games beat unpinned within the merged list — explicit user
-  // intent ranks above follow-derived order. Stable sort preserves the
-  // personal-first ordering within each tier.
-  const merged = [...personalNBA, ...personalWC, ...everyoneNBA, ...everyoneWC];
-  merged.sort((a, b) => {
+  candidates.sort((a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-    return 0;
+    if (a.personal !== b.personal) return a.personal ? -1 : 1;
+    return a.date - b.date;
   });
 
-  return merged.slice(0, 5);
+  return candidates.slice(0, 5).map((c) => c.item);
 }
 
 // ── Quiet wrap ────────────────────────────────────────────────────────
@@ -1379,7 +1395,12 @@ export function buildTodayPayload({
   const recentForWrap = nbaRecent && nbaRecent.length > 0 ? nbaRecent : nba;
   const hero = pickHero(nba, wc, follows, pinned, now);
   const youFollow = buildYouFollow(nba, wc, follows, now);
-  const upNext = buildUpNext(nba, wc, follows, pinned);
+  // Up Next uses the WIDER window (seriesGames, ~2 weeks ahead), not the
+  // current calendar week. The full playoff slate runs past this week
+  // (e.g. Games 3-4 land next week), and they must appear before the
+  // World Cup openers. buildUpNext filters to status==="upcoming", so the
+  // wider window's past finals are dropped — only the forward games stay.
+  const upNext = buildUpNext(recentForWrap, wc, follows, pinned);
   const quietWrap = buildQuietWrap(recentForWrap, follows, now);
   const reminder = buildReminder(follows, now);
 

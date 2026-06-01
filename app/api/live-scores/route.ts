@@ -233,9 +233,12 @@ function getDateWindow(startOffset: number, endOffset: number) {
 }
 
 function getSeriesDates() {
-  // The score feed stays focused on the current week, but the Series Board needs
-  // recent finals too so completed playoff matchups do not vanish on Monday.
-  return getDateWindow(-14, 7);
+  // Recent finals (so completed playoff matchups don't vanish on Monday)
+  // AND the forward slate. The forward window is +14 so the full playoff
+  // run (Games 3-7 land beyond the current week) is fetched and can be
+  // ordered chronologically against the World Cup openers in Up Next.
+  // Matches the World Cup feed's forward reach.
+  return getDateWindow(-14, 14);
 }
 
 function getGameStatus(status?: ESPNStatus): "live" | "upcoming" | "final" {

@@ -39,12 +39,21 @@ const ACCENT_WC = "#1e6b3c";
 // write entirely — a transient fetch failure must NOT overwrite a
 // previously-good widget snapshot with an empty one (which would blank
 // the user's widget on a momentary network blip).
-async function fetchNBA(): Promise<NBAGame[] | null> {
+async function fetchNBA(): Promise<{
+  games: NBAGame[];
+  recent: NBAGame[];
+} | null> {
   try {
     const res = await fetch("/api/live-scores", { cache: "no-store" });
     if (!res.ok) return null;
-    const json = (await res.json()) as { games?: NBAGame[] };
-    return json.games ?? [];
+    const json = (await res.json()) as {
+      games?: NBAGame[];
+      seriesGames?: NBAGame[];
+    };
+    const games = json.games ?? [];
+    // seriesGames is the wider window (~2 weeks each way) — Up Next needs
+    // it so next week's playoff games are included before the WC openers.
+    return { games, recent: json.seriesGames ?? games };
   } catch {
     return null;
   }
@@ -98,11 +107,13 @@ export function WidgetSync() {
     // When at least one feed succeeded, proceed (treat the failed one as
     // an empty list — partial data beats stale-everything).
     if (nbaRes === null && wcRes === null) return;
-    const nba = nbaRes ?? [];
+    const nba = nbaRes?.games ?? [];
+    const nbaRecent = nbaRes?.recent ?? [];
     const wc = wcRes ?? [];
 
     const payload = buildTodayPayload({
       nba,
+      nbaRecent,
       wc,
       follows: followsRef.current,
       pinned: pinnedRef.current,
