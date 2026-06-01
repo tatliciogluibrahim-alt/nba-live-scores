@@ -297,10 +297,13 @@ private struct MediumBody: View {
     }
 }
 
-// Large: the featured game as a hero up top, then the rest of the
-// week as a quiet "Then this week" list (design study, 4×4). Shares the
-// same paging index as small/medium — the swap arrow reorders which
-// game is featured; the list shows the next few after it.
+// Large (4×4): the Next-up hero, bigger. One game — the soonest of the
+// user's follows — filling the canvas. Originally this was a hero + a
+// rotating "this week" list, but paging reshuffled games between the
+// hero slot and the list, and the same matchup (Game 1 + Game 2 of a
+// series) appeared twice — it read as chaos on a big tile. A single,
+// calm hero is the on-brand answer. The Next button still cycles your
+// follows; nothing reshuffles beneath it.
 private struct LargeBody: View {
     let snap: WidgetSnapshot
     let startIndex: Int
@@ -308,102 +311,79 @@ private struct LargeBody: View {
     var body: some View {
         let count = snap.upcoming.count
         let idx = count > 0 ? min(max(0, startIndex), count - 1) : 0
-        let hero: WidgetUpcoming? = count > 0 ? snap.upcoming[idx] : nil
+        let game: WidgetUpcoming? = count > 0 ? snap.upcoming[idx] : nil
         let canPage = count > 1
-        let moreCount = min(3, max(0, count - 1))
-        let more: [WidgetUpcoming] = moreCount > 0
-            ? (1...moreCount).map { snap.upcoming[(idx + $0) % count] }
-            : []
 
         VStack(alignment: .leading, spacing: 0) {
-            // Header — NN mark + eyebrow + position.
             HStack(spacing: 8) {
-                NNMarkView().frame(width: 22, height: 22)
-                if let g = hero {
+                NNMarkView().frame(width: 24, height: 24)
+                if let g = game {
                     Text(g.eyebrow.uppercased())
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .tracking(1.0)
                         .foregroundStyle(Color(hex: g.accentHex))
                         .lineLimit(1)
                 } else {
                     Text("NO NOISE")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .tracking(1.2)
                         .foregroundStyle(wMute)
                 }
                 Spacer()
                 if canPage {
                     Text("\(idx + 1) / \(count)")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(wMute)
                         .monospacedDigit()
                 }
             }
 
-            // Featured hero.
-            if let g = hero {
+            Spacer(minLength: 10)
+
+            if let g = game {
                 Text(g.matchup)
-                    .font(.system(size: 34, weight: .heavy))
+                    .font(.system(size: 44, weight: .heavy))
                     .foregroundStyle(wInk)
                     .lineLimit(2)
-                    .minimumScaleFactor(0.7)
-                    .padding(.top, 10)
-                HStack(spacing: 6) {
+                    .minimumScaleFactor(0.6)
+                HStack(spacing: 8) {
                     Text(g.detail)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(wMute)
                         .lineLimit(1)
                     if let b = g.broadcast, !b.isEmpty {
                         BroadcastPill(text: b, accentHex: g.accentHex)
                     }
                 }
-                .padding(.top, 5)
+                .padding(.top, 8)
             } else if let m = snap.moment {
                 Text(m.text)
-                    .font(.system(size: 24, weight: .heavy))
+                    .font(.system(size: 30, weight: .heavy))
                     .foregroundStyle(wInk)
                     .lineLimit(3)
-                    .padding(.top, 10)
-            }
-
-            // The rest of the followed slate. Labeled "COMING UP" (not
-            // "this week") because these games can be weeks out — a World
-            // Cup opener showing here is not necessarily this week.
-            if !more.isEmpty {
-                HStack(spacing: 12) {
-                    Text("COMING UP")
-                        .font(.system(size: 9.5, weight: .semibold))
-                        .tracking(1.4)
+                    .minimumScaleFactor(0.7)
+                if let d = m.detail {
+                    Text(d)
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(wMute)
-                    Rectangle().fill(wLine).frame(height: 1)
-                }
-                .padding(.top, 18)
-                .padding(.bottom, 2)
-
-                VStack(spacing: 0) {
-                    ForEach(Array(more.enumerated()), id: \.offset) { i, g in
-                        if i > 0 {
-                            Rectangle().fill(wLine).frame(height: 1)
-                        }
-                        UpcomingRow(g: g)
-                    }
+                        .lineLimit(1)
+                        .padding(.top, 4)
                 }
             }
 
-            Spacer(minLength: 6)
+            Spacer(minLength: 10)
 
-            // Footer — paging button (swap which game is featured).
             if canPage {
                 HStack {
                     Spacer()
                     Button(intent: AdvanceUpcomingIntent()) {
                         HStack(spacing: 4) {
-                            Text("Next").font(.system(size: 11, weight: .bold))
-                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold))
+                            Text("Next").font(.system(size: 12, weight: .bold))
+                            Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold))
                         }
                         .foregroundStyle(wInk)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
                         .background(
                             Capsule().fill(wCream).overlay(Capsule().stroke(wLine, lineWidth: 1))
                         )
@@ -412,49 +392,6 @@ private struct LargeBody: View {
                 }
             }
         }
-    }
-}
-
-// One row in the Large widget's "Then this week" list: sport-accent
-// dot + matchup on the left, broadcast + day/time on the right. The
-// day/time is derived from the existing eyebrow ("NBA · Sat") + detail
-// ("8:00 PM · Game 7") fields, so no new data plumbing is needed.
-private func rowWhen(_ g: WidgetUpcoming) -> String {
-    let day = (g.eyebrow.components(separatedBy: " · ").last ?? "")
-        .trimmingCharacters(in: .whitespaces)
-    let time = (g.detail.components(separatedBy: " · ").first ?? g.detail)
-        .trimmingCharacters(in: .whitespaces)
-    if day.isEmpty { return time }
-    if time.isEmpty { return day }
-    return "\(day) \(time)"
-}
-
-private struct UpcomingRow: View {
-    let g: WidgetUpcoming
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(Color(hex: g.accentHex))
-                .frame(width: 7, height: 7)
-            Text(g.matchup)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(wInk)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            Spacer(minLength: 6)
-            if let b = g.broadcast, !b.isEmpty {
-                Text(b.uppercased())
-                    .font(.system(size: 9, weight: .bold))
-                    .tracking(0.4)
-                    .foregroundStyle(wMute)
-            }
-            Text(rowWhen(g))
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(wInk2)
-                .lineLimit(1)
-        }
-        .padding(.vertical, 7)
     }
 }
 
