@@ -221,8 +221,3 @@ export async function countIosTokens(): Promise<number> {
   return (v2 ?? 0) + (legacy ?? 0);
 }
 
-/** Legacy helper retained for any callers still expecting the old
- *  flat add-token shape. Routes to upsertIosToken without alerts. */
-export async function addIosToken(token: string): Promise<void> {
-  await upsertIosToken({ token });
-}

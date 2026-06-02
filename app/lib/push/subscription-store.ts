@@ -43,6 +43,16 @@ export type StoredSubscription = {
 
 const SUBSCRIPTION_INDEX_KEY = "nns:push:subscriptions:v1";
 const SUBSCRIPTION_KEY_PREFIX = "nns:push:subscription:v1:";
+// Separate per-endpoint "liveness" key, written by the dispatcher
+// after a successful delivery. This used to be part of the full
+// subscription record, which made the dispatcher's post-delivery
+// refresh into a read-modify-write race against concurrent user
+// sync writes (a user could toggle an alert off, get pinged anyway
+// when the dispatcher's stale read overwrote the new alerts). Split
+// into its own key so the dispatcher's "alive" signal touches only
+// itself and never overwrites alert state. Value is the unix-ms
+// timestamp as a number.
+const SUBSCRIPTION_LAST_SEEN_KEY_PREFIX = "nns:push:sub:lastseen:v1:";
 // Reverse index: per team abbreviation, the set of endpoint URLs whose
 // alerts include that team. Originally built in Phase 2.4 to let the
 // dispatcher fanout selectively (only the team's followers) instead of
@@ -66,6 +76,30 @@ function subscriptionKey(endpoint: string): string {
 
 function teamIndexKey(teamCode: string): string {
   return `${TEAM_INDEX_KEY_PREFIX}${teamCode.toUpperCase()}`;
+}
+
+function lastSeenKey(endpoint: string): string {
+  const hash = createHash("sha256").update(endpoint).digest("hex");
+  return `${SUBSCRIPTION_LAST_SEEN_KEY_PREFIX}${hash}`;
+}
+
+/** Lightweight "alive" stamp. Writes a single timestamp to a
+ *  per-endpoint key that lives outside the main subscription record.
+ *  Safe to call from the dispatcher's per-delivery hot path — it can
+ *  never race with concurrent user sync writes because it doesn't
+ *  read the subscription at all. Best-effort: silently swallows KV
+ *  errors so a metrics-only stamp can't break a successful delivery.
+ */
+export async function touchSubscriptionLastSeen(
+  endpoint: string
+): Promise<void> {
+  try {
+    await kv.set(lastSeenKey(endpoint), Date.now());
+  } catch (err) {
+    console.warn("touchSubscriptionLastSeen failed", {
+      err: err instanceof Error ? err.message : "unknown",
+    });
+  }
 }
 
 /** Diff old vs new alerts, return added/removed team codes. Used to

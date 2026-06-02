@@ -22,7 +22,7 @@ import { claimDelivery, releaseDelivery } from "./dedupe";
 import {
   listSubscriptions,
   removeSubscription,
-  upsertSubscription,
+  touchSubscriptionLastSeen,
 } from "./subscription-store";
 import {
   listIosTokens,
@@ -34,6 +34,14 @@ import type { SyncedAlert } from "./sync-validation";
 import { isWithinQuietHours } from "./quiet-hours";
 import type { EventType, PushEvent } from "./event-detector";
 import { incrCounter } from "./ops-metrics";
+import { runChunked } from "./run-chunked";
+
+// Bounded fan-out limit for both web push and APNs per-event loops.
+// Cap of 10 keeps Upstash, the web-push services, and api.push.apple.com
+// from being hammered with hundreds of simultaneous in-flight requests,
+// while letting one slow endpoint stop blocking the other nine. See
+// run-chunked.ts for the rationale.
+const PUSH_FANOUT_CONCURRENCY = 10;
 
 const WC_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   "wc-kickoff",
@@ -86,7 +94,14 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
     const eventTag = dedupeTagFor(event);
     const matching = subs.filter((s) => subscriberWantsEvent(s, event));
 
-    for (const sub of matching) {
+    // Per-event fan-out. Each sub is processed in its own promise via
+    // runChunked, so within a chunk of 10 the slowest push-service
+    // round-trip doesn't block the other nine. Counters and arrays
+    // (`deliveries`, `pruned`) are mutated inside each promise — safe
+    // under single-threaded JS because each `+=`/`push` runs in one
+    // microtask tick. Original `continue`s became `return`s now that
+    // the body lives inside an async function instead of a for-loop.
+    await runChunked(matching, PUSH_FANOUT_CONCURRENCY, async (sub) => {
       // Quiet Hours: the user asked not to be disturbed in this window.
       // Skip delivery entirely (they catch up in-app). The dedupe slot
       // is intentionally NOT claimed, so a later event outside the
@@ -97,7 +112,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           delivered: false,
           reason: "quiet-hours",
         });
-        continue;
+        return;
       }
       // Per-(sub, event) processing is wrapped so one catastrophic
       // failure (e.g. KV outage on claimDelivery) can't take down the
@@ -119,7 +134,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
             reason: "claim-failed",
           });
           await incrCounter("dispatch.claim-failed");
-          continue;
+          return;
         }
 
         if (!claimed) {
@@ -129,7 +144,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
             reason: "deduped",
           });
           await incrCounter("dispatch.deduped");
-          continue;
+          return;
         }
 
         const payload = { ...buildPayload(event, sub.noSpoilers), eventType: event.type };
@@ -145,7 +160,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           await incrCounter("dispatch.payload-too-large");
           // Payload-too-large is a deterministic bug, not transient —
           // retrying won't help. Keep the dedupe slot claimed.
-          continue;
+          return;
         }
 
         try {
@@ -156,11 +171,15 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
             },
             encoded
           );
-          // Update lastSeenAt so we know this subscription is alive.
-          await upsertSubscription({
-            endpoint: sub.endpoint,
-            keys: sub.keys,
-          });
+          // Update the "alive" stamp so we know this subscription
+          // is still delivering. Previously this called
+          // upsertSubscription({ endpoint, keys }), which did a full
+          // read-modify-write of the subscription record — racing
+          // any concurrent /api/push/sync from the device. The race
+          // could re-apply an alert the user had just toggled off.
+          // touchSubscriptionLastSeen writes to a separate KV key
+          // and reads nothing, so there's nothing to lose.
+          await touchSubscriptionLastSeen(sub.endpoint);
           deliveries.push({ endpoint: sub.endpoint, delivered: true });
           await incrCounter("dispatch.delivered");
           // Per-event-type sent counter — denominator for the open-rate
@@ -194,7 +213,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
         }
       } catch (err) {
         // Final safety net — anything unexpected (e.g. upsertSubscription
-        // throwing) lands here so the loop can continue to the next sub.
+        // throwing) lands here so the chunk's other subs still finish.
         console.error("dispatch: unexpected per-sub error", {
           eventTag,
           err: err instanceof Error ? err.message : String(err),
@@ -205,7 +224,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           reason: "unexpected",
         });
       }
-    }
+    });
   }
 
   // ── APNs fan-out (Phase 22.5-2) ────────────────────────────────────
@@ -228,7 +247,12 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
     const eventTag = dedupeTagFor(event);
     const matching = iosTokens.filter((t) => subscriberWantsEvent(t, event));
 
-    for (const ios of matching) {
+    // Same fan-out shape as web push above. Per-token processing runs
+    // in chunks of 10 in parallel — Apple's HTTP/2 endpoint pools the
+    // connection (we already pass allowH2 in apns-sender) so this is
+    // safe and cuts the wall clock from N×~200ms to roughly the
+    // slowest single round-trip per chunk.
+    await runChunked(matching, PUSH_FANOUT_CONCURRENCY, async (ios) => {
       // Quiet Hours (same rule as web): skip delivery in-window, leave
       // the dedupe slot unclaimed so a later out-of-window event lands.
       if (isWithinQuietHours(ios.quietHours, ios.timeZone, nowMs)) {
@@ -237,7 +261,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           delivered: false,
           reason: "quiet-hours",
         });
-        continue;
+        return;
       }
       try {
         // Token-scoped dedupe key. Distinct from web push endpoint
@@ -258,7 +282,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
             reason: "claim-failed",
           });
           await incrCounter("dispatch.apns.claim-failed");
-          continue;
+          return;
         }
 
         if (!claimed) {
@@ -268,7 +292,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
             reason: "deduped",
           });
           await incrCounter("dispatch.apns.deduped");
-          continue;
+          return;
         }
 
         const payload = buildPayload(event, ios.noSpoilers);
@@ -343,7 +367,7 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           reason: "unexpected",
         });
       }
-    }
+    });
   }
 
   // APNs total-outage signal: at least 3 deliveries attempted and

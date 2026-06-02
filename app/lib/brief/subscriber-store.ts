@@ -44,6 +44,13 @@ function subscriberKey(email: string): string {
   return `${SUBSCRIBER_KEY_PREFIX}${emailHash(email)}`;
 }
 
+// Look up a subscriber record directly by its already-hashed key. Used
+// by listSubscribers, which now iterates the index of hashes instead
+// of raw emails (privacy hardening — see SUBSCRIBER_INDEX_KEY below).
+function subscriberKeyByHash(hash: string): string {
+  return `${SUBSCRIBER_KEY_PREFIX}${hash}`;
+}
+
 function unsubTokenKey(token: string): string {
   return `${UNSUB_TOKEN_PREFIX}${token}`;
 }
@@ -79,10 +86,21 @@ export async function upsertSubscriber(
     createdAt: existing?.createdAt ?? Date.now(),
   };
 
+  // Write the unsubscribe-token key FIRST. A subscriber whose unsub
+  // token isn't resolvable cannot be unsubscribed, which is a
+  // CAN-SPAM / GDPR problem. If this write throws we abort before
+  // creating the subscriber, so the half-written state never exists.
+  // (For an existing subscriber re-upserting with the same token, this
+  // is a harmless idempotent rewrite of the same value.)
+  await kv.set(unsubTokenKey(unsubscribeToken), email);
+
+  // Safe to write the subscriber and add to the index now. The index
+  // stores the SHA-256 of the email (not the email itself) so a leaked
+  // KV token can't surface the full mailing list via SMEMBERS. Matches
+  // the pattern in app/lib/beta/subscriber-store.ts.
   await Promise.all([
     kv.set(subscriberKey(email), next),
-    kv.sadd(SUBSCRIBER_INDEX_KEY, email),
-    kv.set(unsubTokenKey(unsubscribeToken), email),
+    kv.sadd(SUBSCRIBER_INDEX_KEY, emailHash(email)),
   ]);
   return next;
 }
@@ -108,15 +126,22 @@ export async function removeSubscriber(email: string): Promise<boolean> {
   await Promise.all([
     kv.del(subscriberKey(email)),
     kv.del(unsubTokenKey(existing.unsubscribeToken)),
-    kv.srem(SUBSCRIBER_INDEX_KEY, email),
+    // Index now stores hashes (privacy hardening). Hash on remove
+    // too so srem actually matches.
+    kv.srem(SUBSCRIBER_INDEX_KEY, emailHash(email)),
   ]);
   return true;
 }
 
 export async function listSubscribers(): Promise<BriefSubscriber[]> {
-  const emails = await kv.smembers<string[]>(SUBSCRIBER_INDEX_KEY);
-  if (emails.length === 0) return [];
-  const rows = await Promise.all(emails.map((e) => getSubscriber(e)));
+  // Index members are SHA-256 hashes of the email. Read each
+  // subscriber record by hash; the full email lives inside the
+  // record value, not in the index.
+  const hashes = await kv.smembers<string[]>(SUBSCRIBER_INDEX_KEY);
+  if (hashes.length === 0) return [];
+  const rows = await Promise.all(
+    hashes.map((h) => kv.get<BriefSubscriber>(subscriberKeyByHash(h)))
+  );
   return rows.filter((r): r is BriefSubscriber => Boolean(r));
 }
 

@@ -23,6 +23,18 @@ const tokenKey = (token: string) => `nns:la:tok:${token}`;
 // Last content-state signature we pushed for a game, so the scan loop
 // skips re-pushing identical updates every tick (APNs efficiency).
 const sigKey = (gameId: string) => `nns:la:sig:${gameId}`;
+// Hard TTL on every per-token and per-game key written by
+// registerActivityToken. Live Activities are inherently short-lived
+// (a single game session, typically 2–4 hours). Without a TTL,
+// tokens leaked when a game silently fell off the ESPN feed (a
+// postponed game, an upstream glitch) — clearActivityGame is the
+// only cleanup path and it requires either an `end` push or the
+// token set to be empty. 24 hours covers any realistic same-day
+// game window plus the 2-hour FINAL_LINGER period and is short
+// enough that orphan keys can't accumulate across days. Every
+// re-register call resets the TTL so a still-active Activity stays
+// alive past 24h if a game runs unusually long.
+const ACTIVITY_KEY_TTL_SECONDS = 24 * 60 * 60;
 
 export type StoredActivityToken = {
   token: string;
@@ -44,9 +56,21 @@ export async function registerActivityToken(input: {
     sandbox: input.sandbox ?? true,
     createdAt: Date.now(),
   };
+  // The token value gets its TTL inline via `ex`. The game-set key
+  // can't carry a TTL on `sadd` itself, so we chain an `expire` call
+  // after the `sadd` in the same micro-promise — this guarantees the
+  // expire runs AFTER the sadd has created/touched the key (with
+  // Promise.all, ordering across the array is concurrent and the
+  // expire could race ahead of the sadd, becoming a no-op on a
+  // fresh key). GAMES_INDEX is intentionally NOT TTL'd — it's the
+  // master "any active activity?" set and the per-game cleanup paths
+  // (clearActivityGame / removeActivityToken) handle its membership.
   await Promise.all([
-    kv.set(tokenKey(input.token), record),
-    kv.sadd(gameSetKey(input.gameId), input.token),
+    kv.set(tokenKey(input.token), record, { ex: ACTIVITY_KEY_TTL_SECONDS }),
+    (async () => {
+      await kv.sadd(gameSetKey(input.gameId), input.token);
+      await kv.expire(gameSetKey(input.gameId), ACTIVITY_KEY_TTL_SECONDS);
+    })(),
     kv.sadd(GAMES_INDEX, input.gameId),
   ]);
 }

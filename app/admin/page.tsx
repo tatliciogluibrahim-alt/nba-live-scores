@@ -1,9 +1,16 @@
 // Internal read-only admin stats. Mounted at /admin.
 //
-// No auth. Internal use only — do not link from any user-facing
-// surface. The page is server-rendered, fully self-contained (inline
-// styles), and force-dynamic so every load reflects the current KV
-// state.
+// Gated by ADMIN_TOKEN. The page accepts the token as either:
+//   • a Bearer header: `Authorization: Bearer <ADMIN_TOKEN>`
+//   • a query param:   `/admin?token=<ADMIN_TOKEN>`
+//
+// Without a valid token the page renders an "Unauthorized" view with
+// no data. Note: because this is a React Server Component (not a route
+// handler), the underlying HTTP response is technically 200 — the
+// access gate is enforced by rendering Unauthorized content instead of
+// the stats. A true 401 status would require either Next.js
+// middleware on /admin or converting this to a route handler; both
+// are bigger changes than the audit asked for.
 //
 // Data sources are existing KV helpers; no schema changes, no new
 // stores. Endpoints (web push / iOS tokens / Brief subscribers / Beta
@@ -11,6 +18,8 @@
 // own opaque identifier and the same person can appear in more than
 // one, so we never combine them into a "users" total.
 
+import { timingSafeEqual } from "node:crypto";
+import { headers } from "next/headers";
 import type { CSSProperties, ReactNode } from "react";
 import {
   listSubscriptions,
@@ -19,6 +28,36 @@ import {
 import { listIosTokens } from "../lib/push/ios-token-store";
 import { subscriberCount } from "../lib/brief/subscriber-store";
 import { betaSubscriberCount } from "../lib/beta/subscriber-store";
+
+// Constant-time compare to defeat timing oracles. Mirrors the same
+// pattern used in /api/admin/push/status. Returns false if either
+// side is missing or lengths differ.
+function tokenMatches(provided: string, expected: string): boolean {
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
+function isAuthorized(
+  authHeader: string | null,
+  queryToken: string | null
+): boolean {
+  const expected = process.env.ADMIN_TOKEN;
+  // If no ADMIN_TOKEN is configured in the environment, the page is
+  // unreachable. Fail closed.
+  if (!expected) return false;
+
+  let provided: string | null = null;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    provided = authHeader.slice("Bearer ".length).trim();
+  } else if (queryToken) {
+    provided = queryToken;
+  }
+  if (!provided) return false;
+
+  return tokenMatches(provided, expected);
+}
 
 // Always read live from KV. No ISR, no caching.
 export const dynamic = "force-dynamic";
@@ -56,7 +95,39 @@ function pct(n: number, total: number): string {
   return `${Math.round((n / total) * 100)}%`;
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  // Next.js 16 App Router: searchParams is a Promise that must be awaited.
+  searchParams: Promise<{ token?: string | string[] }>;
+}) {
+  // ── Auth gate ────────────────────────────────────────────────────
+  // Read the Bearer header and the ?token= query param; either path
+  // unlocks the page. Without a valid token we render an Unauthorized
+  // view and return early — none of the KV calls below run.
+  const [hdrs, params] = await Promise.all([headers(), searchParams]);
+  const rawToken = Array.isArray(params.token) ? params.token[0] : params.token;
+  const authed = isAuthorized(
+    hdrs.get("authorization"),
+    rawToken ?? null
+  );
+  if (!authed) {
+    return (
+      <div style={pageWrapStyle}>
+        <main style={mainStyle}>
+          <h1 style={h1Style}>401 Unauthorized</h1>
+          <p style={mutedStyle}>
+            This page requires an admin token. Pass it as
+            <code style={inlineCodeStyle}>?token=&lt;ADMIN_TOKEN&gt;</code>{" "}
+            or as an{" "}
+            <code style={inlineCodeStyle}>Authorization: Bearer</code>{" "}
+            header.
+          </p>
+        </main>
+      </div>
+    );
+  }
+
   // All reads run in parallel. Each one is independent.
   const [webCount, webSubs, iosTokens, briefCount, betaCount] = await Promise.all([
     subscriptionCount(),
@@ -436,4 +507,13 @@ const mutedSmallStyle: CSSProperties = {
   fontSize: 11,
   color: "#999",
   fontVariantNumeric: "tabular-nums",
+};
+
+const inlineCodeStyle: CSSProperties = {
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+  fontSize: 12,
+  background: "#f3f3f3",
+  padding: "1px 6px",
+  borderRadius: 4,
+  margin: "0 2px",
 };

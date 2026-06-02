@@ -157,50 +157,14 @@ const NYC_VENUES: Venue[] = [
   { name: "The Ship", address: "158 W 23rd St", neighborhood: "Chelsea", note: "British pub, best for European match times", mapUrl: "https://maps.google.com/?q=The+Ship+158+W+23rd+St+New+York+NY" },
 ];
 
-// ── ICS Calendar Generation ────────────────────────────────────────────────────
-function fmtICSDate(d: Date): string {
-  const iso = d.toISOString();
-  const noMillis = iso.substring(0, iso.indexOf("."));
-  return noMillis.replace(/[-:]/g, "") + "Z";
-}
-
-function generateICS(countryCode: string, game: WCGame): string {
-  const start = new Date(game.date);
-  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
-  const opponent =
-    game.home.abbreviation === countryCode
-      ? game.away.abbreviation
-      : game.home.abbreviation;
-  const summary = `⚽ ${countryCode} vs ${opponent} · FIFA World Cup 2026`;
-  const desc = `${game.stage} · Watch on ${getWCWatchLabel(game)}\\nnonoisescores.app`;
-  return [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//No Noise Scores//nonoisescores.app//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
-    "BEGIN:VEVENT",
-    `SUMMARY:${summary}`,
-    `DTSTART:${fmtICSDate(start)}`,
-    `DTEND:${fmtICSDate(end)}`,
-    `DESCRIPTION:${desc}`,
-    `LOCATION:${game.venue ?? "USA / Canada / Mexico"}`,
-    "STATUS:CONFIRMED",
-    `UID:wc2026-${game.id}@nonoisescores.app`,
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].join("\r\n");
-}
-
-function downloadICS(content: string, filename: string) {
-  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+// Add-to-Calendar (ICS) was a Phase 21B-2 feature that shipped, was
+// reverted on 2026-05-27 in the main app (value prop overlapped with
+// follow-alerts), and is now also stripped from this legacy shell.
+// The functions generateICS / downloadICS / fmtICSDate used to live
+// here. Their call sites (the "Save match" button in the match
+// drawer and the calendar-download branch of "Remind Me") have been
+// removed too — see handleSaveMatch removal and the simplified
+// handleRemind below.
 
 // ── Group Standings Calculation ────────────────────────────────────────────────
 type TeamStats = {
@@ -1133,11 +1097,8 @@ function VenueSheet({
     { label: "Status", value: statusLabel },
   ];
 
-  function handleSaveMatch() {
-    if (!selectedMatchCountry) return;
-    const ics = generateICS(selectedMatchCountry, game);
-    downloadICS(ics, `wc2026-${selectedMatchCountry.toLowerCase()}-${game.id}.ics`);
-  }
+  // handleSaveMatch + the "Save match" button were the per-game
+  // entry into the (reverted) Add-to-Calendar feature. Both removed.
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
@@ -1225,19 +1186,6 @@ function VenueSheet({
                   <p className="min-w-0 break-words text-[1rem] font-black leading-tight text-[#1a1208]">
                     {watchLabel}
                   </p>
-                  {selectedMatchCountry && game.status === "upcoming" && (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleSaveMatch();
-                      }}
-                      className="w-fit shrink-0 rounded-full px-3 py-1.5 text-[0.62rem] font-black uppercase tracking-wide text-white transition active:scale-95"
-                      style={{ background: accentColor }}
-                    >
-                      Save match
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -1737,10 +1685,9 @@ function CountryHub({
   const nextMatchText = nextGame ? formatDateTime(nextGame.date) : "Fixtures loading soon";
 
   async function handleRemind() {
-    if (nextGame) {
-      const ics = generateICS(selectedCountry, nextGame);
-      downloadICS(ics, `wc2026-${selectedCountry.toLowerCase()}.ics`);
-    }
+    // Add-to-Calendar (ICS download) used to fire here before the
+    // notification ask. Reverted with the rest of that feature; the
+    // reminder is now browser-notification-only.
     if ("Notification" in window && Notification.permission === "default") {
       const perm = await Notification.requestPermission();
       if (perm === "denied") setNotifDenied(true);
@@ -1831,7 +1778,7 @@ function CountryHub({
                 {flag} {nextGame ? `${name} next plays ${nextMatchText}` : `Save ${name} before fixtures land`}
               </p>
               <p className="mt-0.5 text-[0.62rem] font-semibold text-[#8a7a66]">
-                Calendar file plus browser notification when available
+                Browser notification when available
               </p>
             </div>
             {state === "idle" ? (
@@ -1866,7 +1813,7 @@ function CountryHub({
               className="mt-2 text-[0.6rem] font-bold"
               style={{ color: textColor }}
             >
-              Notifications blocked. The calendar file still downloaded.
+              Notifications blocked. Enable them in your browser to get reminders.
             </p>
           )}
         </div>

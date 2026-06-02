@@ -30,6 +30,13 @@ import {
   sendApnsLiveActivity,
   type LiveActivityContentState,
 } from "./apns-sender";
+import { runChunked } from "./run-chunked";
+
+// Per-game APNs fan-out concurrency. Same cap as the regular
+// dispatcher — Apple's HTTP/2 endpoint pools fine at 10 in flight
+// and the wall clock is now slowest-single-token instead of
+// sum-of-all-tokens per game. See run-chunked.ts.
+const LIVE_ACTIVITY_FANOUT_CONCURRENCY = 10;
 
 export type ActivityUpdateInput = {
   gameId: string;
@@ -101,26 +108,42 @@ export async function pushLiveActivityUpdates(
     }
 
     const nowSec = Math.floor(Date.now() / 1000);
-    for (const t of tokens) {
-      const res = await sendApnsLiveActivity({
-        pushToken: t.token,
-        event: isFinal ? "end" : "update",
-        contentState: input.contentState,
-        sandbox: t.sandbox,
-        staleDate: isFinal ? undefined : nowSec + STALE_AFTER_S,
-        dismissalDate: isFinal ? nowSec + FINAL_LINGER_S : undefined,
-        priority: 10,
-      });
-      if (res.ok) {
-        if (isFinal) ended += 1;
-        else updated += 1;
-      } else if (res.status === 410 || res.status === 400) {
-        await removeActivityToken(t.token);
-        pruned += 1;
+    // Per-token sends fan out in bounded chunks. Apple's HTTP/2
+    // endpoint is happy at this concurrency and the wall clock drops
+    // from N×round-trip to roughly one round-trip per chunk. The
+    // shared `updated`/`ended`/`pruned` counters are mutated inside
+    // each promise — safe under single-threaded JS because each `+=`
+    // runs in one microtask tick. Failures inside a single token's
+    // send are caught here so one bad token can't poison the chunk.
+    await runChunked(tokens, LIVE_ACTIVITY_FANOUT_CONCURRENCY, async (t) => {
+      try {
+        const res = await sendApnsLiveActivity({
+          pushToken: t.token,
+          event: isFinal ? "end" : "update",
+          contentState: input.contentState,
+          sandbox: t.sandbox,
+          staleDate: isFinal ? undefined : nowSec + STALE_AFTER_S,
+          dismissalDate: isFinal ? nowSec + FINAL_LINGER_S : undefined,
+          priority: 10,
+        });
+        if (res.ok) {
+          if (isFinal) ended += 1;
+          else updated += 1;
+        } else if (res.status === 410 || res.status === 400) {
+          await removeActivityToken(t.token);
+          pruned += 1;
+        }
+        // Other errors (network, 429, 5xx): leave the token in place
+        // and retry on the next tick.
+      } catch (err) {
+        // Catch-all so the chunk's other tokens still finish even if
+        // one token's send throws unexpectedly.
+        console.warn("live-activity: per-token send threw", {
+          gameId,
+          err: err instanceof Error ? err.message : String(err),
+        });
       }
-      // Other errors (network, 429, 5xx): leave the token in place and
-      // retry on the next tick.
-    }
+    });
 
     if (isFinal) {
       await clearActivityGame(gameId);

@@ -22,7 +22,8 @@
 //   • One subscriber's send errors → swallowed per-sub, loop
 //     continues. Same fault-isolation pattern as the push dispatcher.
 
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
+import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
 import { listSubscribers } from "../../../lib/brief/subscriber-store";
 import {
@@ -42,6 +43,52 @@ import type { Game } from "../../../nba/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+
+// Per-subscriber-per-day idempotency lock. Without this, a cron-job.org
+// retry (network blip, transient 5xx mid-batch) re-runs the loop and
+// every subscriber gets the same email twice. The key is hashed-email
+// + UTC date, claimed via NX so only the first send through the day
+// wins. 36h TTL gives a wide buffer for late retries spanning a
+// timezone boundary without re-locking next day's send.
+const BRIEF_SENT_TTL_SECONDS = 36 * 60 * 60;
+
+function utcDateKey(): string {
+  const d = new Date();
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}${m}${day}`;
+}
+
+function briefSentKey(email: string, dateKey: string): string {
+  const hash = createHash("sha256")
+    .update(email.trim().toLowerCase())
+    .digest("hex");
+  return `nns:brief:sent:v1:${hash}:${dateKey}`;
+}
+
+/** Try to claim today's send slot for this subscriber. Returns true
+ *  if this is the first attempt today (caller should send); false if
+ *  another attempt already claimed the slot (caller should skip).
+ *  Best-effort: on a KV error we err on the side of "let it send" so
+ *  Upstash transient failures don't black-hole the whole batch. */
+async function claimBriefSendOnce(
+  email: string,
+  dateKey: string
+): Promise<boolean> {
+  try {
+    const result = await kv.set(briefSentKey(email, dateKey), 1, {
+      ex: BRIEF_SENT_TTL_SECONDS,
+      nx: true,
+    });
+    return result === "OK";
+  } catch (err) {
+    console.warn("claimBriefSendOnce failed; sending anyway", {
+      err: err instanceof Error ? err.message : "unknown",
+    });
+    return true;
+  }
+}
 
 function isAuthorized(req: Request): boolean {
   const expected = process.env.CRON_SECRET;
@@ -193,8 +240,26 @@ export async function GET(req: Request) {
     reason?: string;
   }> = [];
 
+  const dateKey = utcDateKey();
+
   for (const sub of subscribers) {
     try {
+      // Idempotency gate. If this same subscriber already received
+      // today's brief (or another concurrent invocation is mid-send),
+      // skip silently — no compose, no send. Prevents double-emails
+      // on cron retry, which is the loudest possible failure for a
+      // "calm" product.
+      const claimed = await claimBriefSendOnce(sub.email, dateKey);
+      if (!claimed) {
+        results.push({
+          email: sub.email,
+          delivered: false,
+          skipped: true,
+          reason: "already-sent-today",
+        });
+        continue;
+      }
+
       const payload = composeBrief({ subscriber: sub, nba });
       if (!shouldSendBrief(payload)) {
         results.push({ email: sub.email, delivered: false, skipped: true });
