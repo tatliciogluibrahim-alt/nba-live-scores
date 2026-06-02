@@ -50,6 +50,14 @@ export function CompanionFrame({
       style={{
         background: "var(--cream)",
         color: "var(--ink)",
+        // Horizontal safe-area insets — in LANDSCAPE on a Dynamic-Island
+        // device, the island moves to the screen's left or right edge and
+        // overlaps content unless we pad. The `env()` value is 0 in
+        // portrait and ~50px in landscape, so this is invisible in normal
+        // use and only kicks in when rotated. Reported by a beta tester
+        // who saw the island clipping onboarding headlines in landscape.
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
       }}
     >
       <PreviewModeBanner />

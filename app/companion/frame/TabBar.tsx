@@ -109,6 +109,11 @@ export function TabBar() {
         background: "var(--cream)",
         borderColor: "var(--line)",
         paddingBottom: "max(env(safe-area-inset-bottom), 12px)",
+        // In landscape on Dynamic-Island devices, the island sits on
+        // the left or right edge — without these insets the tab bar's
+        // background and items run underneath it.
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
       }}
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-around px-4 pt-2">

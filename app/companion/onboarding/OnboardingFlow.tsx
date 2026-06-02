@@ -69,7 +69,17 @@ export function OnboardingFlow() {
   return (
     <div
       className="fixed inset-0 z-[60] flex flex-col"
-      style={{ background: "var(--cream)", color: "var(--ink)" }}
+      style={{
+        background: "var(--cream)",
+        color: "var(--ink)",
+        // In LANDSCAPE on a Dynamic-Island device, the island lives on
+        // the screen's left or right edge and was clipping "Build your
+        // circle." / the subtitle. env(safe-area-inset-left/right) is 0
+        // in portrait and ~50px in landscape, so this is invisible
+        // unless rotated. (Reported by a beta tester.)
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+      }}
       role="dialog"
       aria-modal="true"
       aria-label="Welcome to No Noise Scores"
