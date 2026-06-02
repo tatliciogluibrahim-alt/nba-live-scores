@@ -16,10 +16,25 @@ export function rankSignals(facts: GameFacts): Signal[] {
 
   const signals: Signal[] = [];
 
-  // Series stakes dominate when present and urgent.
-  if (facts.seriesUrgent && /\bgame\s*7\b/i.test(facts.seriesLine ?? "")) {
+  // Series stakes dominate when present. `seriesUrgent` reflects the
+  // PRE-game state (one team facing elimination, Game 7, etc.) and flips
+  // off the moment a series ends — so a finished clinching game would
+  // otherwise rank "routine". We also read the post-game seriesLine text
+  // for closure phrases ("wins/won the series", "took the series",
+  // "advance to", "eliminated", "series wrapped") and treat that as a
+  // clinch regardless of the urgency flag.
+  const seriesLine = facts.seriesLine ?? "";
+  const seriesClosed =
+    /\b(won|wins|win)\s+the\s+series\b/i.test(seriesLine) ||
+    /\btook\s+the\s+series\b/i.test(seriesLine) ||
+    /\badvanc(e|es|ed|ing)\b/i.test(seriesLine) ||
+    /\beliminat(e|es|ed|ing)\b/i.test(seriesLine) ||
+    /\bseries\s+(over|wrapped|complete)\b/i.test(seriesLine) ||
+    /\bsweep\b/i.test(seriesLine);
+
+  if (facts.seriesUrgent && /\bgame\s*7\b/i.test(seriesLine)) {
     signals.push({ kind: "game7", weight: 100, note: "Game 7 result" });
-  } else if (facts.seriesUrgent) {
+  } else if (facts.seriesUrgent || seriesClosed) {
     signals.push({ kind: "clinch", weight: 90, note: "series-deciding result" });
   }
 
