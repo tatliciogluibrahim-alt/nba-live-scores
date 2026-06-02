@@ -38,14 +38,25 @@ function resolveBackTarget(from: string | undefined): {
 } {
   if (!from) return { href: "/following", label: "Following" };
 
-  // Tournament context: from=fifa-world-cup-2026
-  const tournament = getTournament(from);
+  // Tournament context. Two flavors:
+  //   `from=<tournamentId>`         → condensed tournament detail page
+  //   `from=<tournamentId>:groups`  → full 12-group list (the WC groups
+  //                                    page). Carrying this one extra
+  //                                    bit means a user who entered
+  //                                    Country detail from the full
+  //                                    groups list gets back to where
+  //                                    they were, not the condensed
+  //                                    preview.
+  const [rawId, view] = from.split(":");
+  const tournament = getTournament(rawId);
   if (tournament) {
+    const isWC = tournament.id.startsWith("fifa-world-cup-");
+    const groupsView = view === "groups" && isWC;
     return {
-      href: `/tournament/${tournament.id}`,
-      label: tournament.id.startsWith("fifa-world-cup-")
-        ? "World Cup"
-        : tournament.name,
+      href: groupsView
+        ? `/tournament/${tournament.id}/groups`
+        : `/tournament/${tournament.id}`,
+      label: isWC ? "World Cup" : tournament.name,
     };
   }
 

@@ -10,6 +10,10 @@ import {
   WC_COUNTRIES,
   type CountryEntry,
 } from "../following/data/countries";
+import {
+  getCountryFixtures,
+  type WCStaticFixture,
+} from "../following/data/wc-fixtures";
 import type { WCGameLite } from "../today/today-data";
 
 // ── Shapes ────────────────────────────────────────────────────────────
@@ -29,6 +33,10 @@ export type CountryGameRow = {
   watch?: { channel: string; stream?: string };
   href: string;            // /game/{id}
   spoilerSubject: string;  // "Belgium vs Egypt"
+  /** ISO kickoff timestamp — internal sort key, never rendered. Both
+   *  feed-derived and static-curated rows stamp this so the merged
+   *  fixtures list sorts chronologically regardless of source. */
+  kickoffISO: string;
 };
 
 export type GroupRow = {
@@ -166,6 +174,43 @@ function gameRowForCountry(
     } vs ${
       isHome ? countryCode : opponent?.name ?? opponentCode
     }`,
+    kickoffISO: g.date,
+  };
+}
+
+// Build a CountryGameRow from a curated static fixture (wc-fixtures.ts).
+// Used when the ESPN feed doesn't yet include this match. Status is
+// always "upcoming" — once ESPN's window catches the match, the live
+// row replaces this one (matched by team-pair in buildCountryPayload).
+function staticRowForCountry(
+  sf: WCStaticFixture,
+  countryCode: string,
+  opponents: Map<string, CountryEntry>
+): CountryGameRow {
+  const isHome = sf.home === countryCode;
+  const opponentCode = isHome ? sf.away : sf.home;
+  const opponent = opponents.get(opponentCode);
+  return {
+    id: sf.id,
+    status: "upcoming",
+    opponentCode,
+    opponentName: opponent?.name ?? opponentCode,
+    opponentFlag: opponent?.flag ?? "",
+    dateLabel: formatDayLabel(sf.kickoff),
+    timeLabel: formatTimeLabel(sf.kickoff),
+    stage: `Group ${sf.group}`,
+    isHome,
+    scoreLine: null,
+    // No broadcast/href: static rows aren't deep-linkable to a /game/<id>
+    // detail (no feed row exists yet). The view degrades gracefully —
+    // tapping the row is a no-op until ESPN provides a real id.
+    href: "",
+    spoilerSubject: `${
+      isHome ? opponent?.name ?? opponentCode : countryCode
+    } vs ${
+      isHome ? countryCode : opponent?.name ?? opponentCode
+    }`,
+    kickoffISO: sf.kickoff,
   };
 }
 
@@ -217,10 +262,28 @@ export function buildCountryPayload(
   const involves = (g: WCGameLite) =>
     g.away.abbreviation === country.id || g.home.abbreviation === country.id;
 
-  const fixtures = games
+  const feedFixtures = games
     .filter(involves)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map((g) => gameRowForCountry(g, country.id, dirByCode));
+
+  // Merge the curated group-stage fixtures (wc-fixtures.ts) so a country
+  // always has all three group matches visible — even when ESPN's
+  // rolling window (~10 days forward) hasn't reached a match yet. Live
+  // / final / soon-upcoming rows from ESPN win; static rows fill the
+  // gaps. Match by sorted team-pair so opponent order doesn't matter.
+  const feedPairKeys = new Set(
+    feedFixtures.map((f) =>
+      [country.id, f.opponentCode].sort().join("-")
+    )
+  );
+  const staticRows: CountryGameRow[] = getCountryFixtures(country.id)
+    .filter((sf) => !feedPairKeys.has([sf.away, sf.home].sort().join("-")))
+    .map((sf) => staticRowForCountry(sf, country.id, dirByCode));
+
+  const fixtures = [...feedFixtures, ...staticRows].sort((a, b) =>
+    a.kickoffISO.localeCompare(b.kickoffISO)
+  );
 
   // Next match = soonest live or upcoming; otherwise null.
   const live = fixtures.find((f) => f.status === "live");

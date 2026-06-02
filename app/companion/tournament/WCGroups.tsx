@@ -69,11 +69,14 @@ function useWCGroups(selectedCode?: string): {
 
 function CountryRow({
   row,
-  tournamentId,
+  fromParam,
   isLast,
 }: {
   row: GroupRow;
-  tournamentId: string;
+  /** Value passed as `?from=...` on the country link. Encodes BOTH the
+   *  tournament id AND which view (`...:groups` from the full list) so
+   *  back-nav lands on the right surface. */
+  fromParam: string;
   isLast: boolean;
 }) {
   const nameColor = row.isSelected ? "var(--wc)" : "var(--ink)";
@@ -82,7 +85,7 @@ function CountryRow({
 
   return (
     <Link
-      href={`/country/${row.code}?from=${tournamentId}`}
+      href={`/country/${row.code}?from=${fromParam}`}
       aria-label={`Open ${row.name}`}
       className="flex items-center justify-between gap-2 py-2 transition active:scale-[0.99]"
       style={{ borderBottom: isLast ? "none" : "1px solid var(--line)" }}
@@ -129,10 +132,10 @@ function CountryRow({
 
 function GroupColumn({
   block,
-  tournamentId,
+  fromParam,
 }: {
   block: GroupBlock;
-  tournamentId: string;
+  fromParam: string;
 }) {
   const hasSelected = block.rows.some((r) => r.isSelected);
   return (
@@ -147,7 +150,7 @@ function GroupColumn({
           <CountryRow
             key={row.code}
             row={row}
-            tournamentId={tournamentId}
+            fromParam={fromParam}
             isLast={idx === block.rows.length - 1}
           />
         ))}
@@ -198,6 +201,14 @@ export function WCGroups({
     );
   }
 
+  // `fromParam` encodes BOTH the tournament id and which view the user
+  // is leaving from. Country detail's resolveBackTarget parses the
+  // `:groups` suffix and routes back to the full-groups page instead of
+  // the condensed tournament page — fixing the "lose your place after
+  // inspecting one country" friction.
+  const fromParam =
+    mode === "full" ? `${tournamentId}:groups` : tournamentId;
+
   if (mode === "full") {
     return (
       <section className="mt-5">
@@ -207,7 +218,7 @@ export function WCGroups({
             <GroupColumn
               key={block.letter}
               block={block}
-              tournamentId={tournamentId}
+              fromParam={fromParam}
             />
           ))}
         </div>
@@ -230,7 +241,7 @@ export function WCGroups({
 
       {followedBlock ? (
         <div className="mb-5">
-          <GroupColumn block={followedBlock} tournamentId={tournamentId} />
+          <GroupColumn block={followedBlock} fromParam={fromParam} />
         </div>
       ) : null}
 
@@ -239,7 +250,7 @@ export function WCGroups({
           <GroupColumn
             key={block.letter}
             block={block}
-            tournamentId={tournamentId}
+            fromParam={fromParam}
           />
         ))}
       </div>

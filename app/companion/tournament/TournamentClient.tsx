@@ -17,6 +17,7 @@ import {
   hasSeriesContext,
 } from "../../nba/lib/series-keys";
 import { WCGroups } from "./WCGroups";
+import { WC_KNOCKOUT_ROUNDS } from "../following/data/wc-fixtures";
 
 // /tournament/[id] — first detail page for tournament follows.
 // Replaces the Phase 1 fallback that routed tournament chips to
@@ -513,7 +514,77 @@ function FIFAWorldCupBody({ tournamentId }: { tournamentId: string }) {
   // group, then one row of others, then "View all groups". The full
   // 12-group grid lives at /tournament/[id]/groups. Standings surface
   // once games finish — see WCGroups.
-  return <WCGroups tournamentId={tournamentId} mode="preview" />;
+  return (
+    <>
+      <WCGroups tournamentId={tournamentId} mode="preview" />
+      <KnockoutBracket />
+    </>
+  );
+}
+
+// Static round dates — sit on the tournament detail under the groups
+// preview so a user can answer "when does the knockout phase happen?"
+// without leaving the page. Opponents aren't shown (they're decided by
+// group standings, unknown pre-tournament); only the round + date.
+// Sourced from wc-fixtures.ts so the values live next to group-stage
+// data and stay in one place.
+function KnockoutBracket() {
+  return (
+    <section className="mt-6">
+      <div className="mb-2 flex items-center gap-3">
+        <Eyebrow>Knockout rounds</Eyebrow>
+        <div
+          className="h-px flex-1"
+          style={{ background: "var(--line)" }}
+        />
+      </div>
+      <ul
+        className="rounded-[14px] border"
+        style={{
+          background: "var(--paper)",
+          borderColor: "var(--line)",
+        }}
+      >
+        {WC_KNOCKOUT_ROUNDS.map((r, i) => {
+          const d = new Date(r.kickoffISO);
+          const dateLabel = d.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          });
+          return (
+            <li
+              key={r.short}
+              className="flex items-baseline justify-between gap-3 px-4 py-3"
+              style={{
+                borderTop: i === 0 ? "none" : "1px solid var(--line)",
+              }}
+            >
+              <span
+                className="text-[14px]"
+                style={{
+                  color: "var(--ink)",
+                  fontWeight: 700,
+                  letterSpacing: "-0.005em",
+                }}
+              >
+                {r.label}
+              </span>
+              <span
+                className="shrink-0 text-[12px] tabular-nums"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 600,
+                  color: "var(--ink-2)",
+                }}
+              >
+                {dateLabel}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
 }
 
 // ── Coming-soon body ───────────────────────────────────────────────────

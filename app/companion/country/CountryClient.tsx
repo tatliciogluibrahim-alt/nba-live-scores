@@ -118,10 +118,90 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
             >
               {hasAnyFeed
                 ? `${country.name} doesn't have a match in the current window.`
-                : "Match times are still being confirmed. We'll surface the opener here."}
+                : `Match times come into view as June 11 approaches. We'll surface ${country.name}'s opener as soon as the fixture lands.`}
             </p>
           </section>
         )
+      ) : null}
+
+      {/* ── Group matches list ──────────────────────────────────────────
+          All three group-stage matches for this country, in order. The
+          curated wc-fixtures.ts schedule fills in matches outside the
+          ESPN feed's rolling window, so a soccer-novice user can always
+          answer "when does my country play?" without waiting. Once a
+          match is live or final, the row swaps to the feed-driven data
+          (live score, real broadcast). Spoiler-gated scores. */}
+      {fixtures.length > 0 ? (
+        <section className="mt-5">
+          <div className="mb-2 flex items-center gap-3">
+            <Eyebrow>Group matches</Eyebrow>
+            <div
+              className="h-px flex-1"
+              style={{ background: "var(--line)" }}
+            />
+          </div>
+          <ul
+            className="rounded-[14px] border"
+            style={{
+              background: "var(--paper)",
+              borderColor: "var(--line)",
+            }}
+          >
+            {fixtures.map((f, i) => {
+              const matchKey = `${f.id}-${i}`;
+              const opponentLabel = `${country.id} vs ${f.opponentCode}`;
+              return (
+                <li
+                  key={matchKey}
+                  className="flex items-baseline justify-between gap-3 px-4 py-3"
+                  style={{
+                    borderTop:
+                      i === 0 ? "none" : "1px solid var(--line)",
+                  }}
+                >
+                  <div className="min-w-0">
+                    <p
+                      className="text-[14px]"
+                      style={{
+                        color: "var(--ink)",
+                        fontWeight: 700,
+                        letterSpacing: "-0.005em",
+                      }}
+                    >
+                      {opponentLabel}
+                    </p>
+                    <p
+                      className="mt-0.5 text-[11px] uppercase"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontWeight: 600,
+                        letterSpacing: "0.12em",
+                        color: "var(--mute-1)",
+                      }}
+                    >
+                      {f.stage}
+                    </p>
+                  </div>
+                  <p
+                    className="shrink-0 text-right text-[12px] tabular-nums"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontWeight: 600,
+                      color:
+                        f.status === "live"
+                          ? "var(--live)"
+                          : "var(--ink-2)",
+                    }}
+                  >
+                    {f.status === "live"
+                      ? "Live now"
+                      : `${f.dateLabel} · ${f.timeLabel}`}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       ) : null}
 
       {/* ── Group strip ──────────────────────────────────────────────── */}

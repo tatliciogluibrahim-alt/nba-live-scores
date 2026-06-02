@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useFollows, useUserPrefs } from "../providers";
 import { isCapacitorNative } from "../dev/native-detect";
@@ -199,14 +198,20 @@ export function OnboardingFlow() {
                 );
               })}
             </div>
-            <Link
-              href="/following"
-              onClick={finish}
-              className="mt-4 inline-block text-[13px] underline underline-offset-4 decoration-dotted"
-              style={{ color: "var(--mute-1)", fontWeight: 600 }}
+            {/* Secondary "browse later" link. Previously this called
+                finish() and EJECTED users mid-onboarding — they'd land
+                on /following without ever seeing the alerts step, which
+                tanked the notification opt-in. Now it's an honest
+                "after onboarding" affordance: don't end the flow, just
+                acknowledge there's more to explore once the user is set
+                up. Quieter copy + smaller font de-emphasizes it next to
+                the primary Continue action. */}
+            <p
+              className="mt-4 text-[12px] leading-snug"
+              style={{ color: "var(--mute-2)", fontWeight: 500 }}
             >
-              See all moments in Following →
-            </Link>
+              You can browse all moments in Following after this.
+            </p>
           </div>
         ) : null}
 
@@ -221,14 +226,14 @@ export function OnboardingFlow() {
                 letterSpacing: "-0.02em",
               }}
             >
-              Get a tap for the moments.
+              Get quiet alerts for what you follow.
             </h1>
             <p
               className="mt-3 text-[15px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              We&apos;ll let you know when your games start, wrap, and
-              swing. Calm by default. You set the level per follow, and
+              Start, wraps, and one-possession swings for the games you
+              chose. Calm by default. You set the level per follow, and
               nothing else gets through.
             </p>
 
