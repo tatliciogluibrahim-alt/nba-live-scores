@@ -1,0 +1,439 @@
+// Internal read-only admin stats. Mounted at /admin.
+//
+// No auth. Internal use only — do not link from any user-facing
+// surface. The page is server-rendered, fully self-contained (inline
+// styles), and force-dynamic so every load reflects the current KV
+// state.
+//
+// Data sources are existing KV helpers; no schema changes, no new
+// stores. Endpoints (web push / iOS tokens / Brief subscribers / Beta
+// signups) are intentionally counted separately. Each store uses its
+// own opaque identifier and the same person can appear in more than
+// one, so we never combine them into a "users" total.
+
+import type { CSSProperties, ReactNode } from "react";
+import {
+  listSubscriptions,
+  subscriptionCount,
+} from "../lib/push/subscription-store";
+import { listIosTokens } from "../lib/push/ios-token-store";
+import { subscriberCount } from "../lib/brief/subscriber-store";
+import { betaSubscriberCount } from "../lib/beta/subscriber-store";
+
+// Always read live from KV. No ISR, no caching.
+export const dynamic = "force-dynamic";
+
+// Keep the page out of search and discovery. It's internal.
+export const metadata = {
+  title: "Admin · No Noise Scores",
+  robots: { index: false, follow: false },
+};
+
+type Sport = "NBA" | "World Cup" | "Tournament";
+
+type AlertLike = { kind: string; id: string; tier?: string };
+
+// Map a follow to its sport bucket. Today's product only has NBA team
+// follows + WC country follows + NBA / WC tournament follows + NBA
+// series follows, so the buckets are simple. When NFL ships in Aug
+// 2026 this will need an "NFL" bucket and the tournament prefix
+// matcher will need an "nfl-" branch.
+function sportFor(alert: AlertLike): Sport {
+  if (alert.kind === "team") return "NBA"; // only NBA has team follows today
+  if (alert.kind === "country") return "World Cup";
+  if (alert.kind === "series") return "NBA"; // playoff series
+  if (alert.kind === "tournament") {
+    const id = alert.id.toLowerCase();
+    if (id.startsWith("nba")) return "NBA";
+    if (id.includes("fifa") || id.includes("world-cup")) return "World Cup";
+    return "Tournament";
+  }
+  return "Tournament";
+}
+
+function pct(n: number, total: number): string {
+  if (total === 0) return "0%";
+  return `${Math.round((n / total) * 100)}%`;
+}
+
+export default async function AdminPage() {
+  // All reads run in parallel. Each one is independent.
+  const [webCount, webSubs, iosTokens, briefCount, betaCount] = await Promise.all([
+    subscriptionCount(),
+    listSubscriptions(),
+    listIosTokens(),
+    subscriberCount(),
+    betaSubscriberCount(),
+  ]);
+
+  // Both stores carry the same alerts[] + noSpoilers shape, so fold
+  // them into one population for the cross-cutting stats below. Each
+  // store is still reported on its own in the Endpoints section.
+  const pushRows: Array<{ alerts: AlertLike[]; noSpoilers: boolean }> = [
+    ...webSubs.map((s) => ({ alerts: s.alerts as AlertLike[], noSpoilers: s.noSpoilers })),
+    ...iosTokens.map((t) => ({ alerts: t.alerts as AlertLike[], noSpoilers: t.noSpoilers })),
+  ];
+  const pushRowCount = pushRows.length;
+
+  // Aggregations.
+  const tierCounts: Record<"quiet" | "companion" | "all", number> = {
+    quiet: 0,
+    companion: 0,
+    all: 0,
+  };
+  const sportTotals: Record<Sport, number> = {
+    NBA: 0,
+    "World Cup": 0,
+    Tournament: 0,
+  };
+  const followCounts = new Map<
+    string,
+    { kind: string; id: string; sport: Sport; count: number }
+  >();
+  let multiSportRows = 0;
+  let noSpoilersOn = 0;
+
+  for (const row of pushRows) {
+    if (row.noSpoilers) noSpoilersOn++;
+
+    const sportsThisRow = new Set<Sport>();
+    for (const a of row.alerts) {
+      const sport = sportFor(a);
+      sportsThisRow.add(sport);
+      sportTotals[sport]++;
+
+      if (a.tier === "quiet" || a.tier === "companion" || a.tier === "all") {
+        tierCounts[a.tier]++;
+      }
+
+      const key = `${a.kind}:${a.id}`;
+      const existing = followCounts.get(key);
+      if (existing) existing.count++;
+      else followCounts.set(key, { kind: a.kind, id: a.id, sport, count: 1 });
+    }
+    if (sportsThisRow.size >= 2) multiSportRows++;
+  }
+
+  const noSpoilersOff = pushRowCount - noSpoilersOn;
+  const totalAlerts = tierCounts.quiet + tierCounts.companion + tierCounts.all;
+  const top10 = [...followCounts.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  // Render. Inline styles only — no Tailwind, no global classes. The
+  // page renders the same regardless of any app CSS leaking in.
+  return (
+    <div style={pageWrapStyle}>
+      <main style={mainStyle}>
+        <header style={headerStyle}>
+          <h1 style={h1Style}>Admin</h1>
+          <div style={mutedSmallStyle}>
+            Read-only snapshot · {new Date().toUTCString()}
+          </div>
+        </header>
+
+        <Section title="Endpoints">
+          <div style={statGridStyle}>
+            <Stat label="Web push" value={webCount} />
+            <Stat label="iOS tokens" value={iosTokens.length} />
+            <Stat label="Brief subscribers" value={briefCount} />
+            <Stat label="Beta signups" value={betaCount} />
+          </div>
+          <p style={mutedStyle}>
+            Counted separately. Each store keys on its own opaque
+            identifier (push endpoint hash, APNs token, hashed email)
+            and the same person can appear in more than one. Do not
+            sum.
+          </p>
+        </Section>
+
+        <Section title="Follows by sport (push-enabled)">
+          <div style={statGridStyle}>
+            <Stat label="NBA follows" value={sportTotals.NBA} />
+            <Stat label="World Cup follows" value={sportTotals["World Cup"]} />
+            <Stat label="Other tournament follows" value={sportTotals.Tournament} />
+          </div>
+
+          <h3 style={h3Style}>Top 10 followed</h3>
+          {top10.length === 0 ? (
+            <p style={mutedStyle}>No follows yet.</p>
+          ) : (
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>#</th>
+                  <th style={thStyle}>Id</th>
+                  <th style={thStyle}>Kind</th>
+                  <th style={thStyle}>Sport</th>
+                  <th style={thNumStyle}>Followers</th>
+                </tr>
+              </thead>
+              <tbody>
+                {top10.map((row, i) => (
+                  <tr key={`${row.kind}:${row.id}`}>
+                    <td style={tdStyle}>{i + 1}</td>
+                    <td style={tdMonoStyle}>{row.id}</td>
+                    <td style={tdStyle}>{row.kind}</td>
+                    <td style={tdStyle}>{row.sport}</td>
+                    <td style={tdNumStyle}>{row.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <p style={mutedStyle}>
+            Counted across {pushRowCount.toLocaleString()} push-enabled
+            rows (web + iOS). Follows from users who haven&rsquo;t
+            enabled push are stored in localStorage only and don&rsquo;t
+            reach KV, so they are not counted here.
+          </p>
+        </Section>
+
+        <Section title="Alert tier distribution">
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Tier</th>
+                <th style={thNumStyle}>Count</th>
+                <th style={thNumStyle}>Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={tdStyle}>Quiet</td>
+                <td style={tdNumStyle}>{tierCounts.quiet.toLocaleString()}</td>
+                <td style={tdNumStyle}>{pct(tierCounts.quiet, totalAlerts)}</td>
+              </tr>
+              <tr>
+                <td style={tdStyle}>Companion</td>
+                <td style={tdNumStyle}>{tierCounts.companion.toLocaleString()}</td>
+                <td style={tdNumStyle}>{pct(tierCounts.companion, totalAlerts)}</td>
+              </tr>
+              <tr>
+                <td style={tdStyle}>Full Details</td>
+                <td style={tdNumStyle}>{tierCounts.all.toLocaleString()}</td>
+                <td style={tdNumStyle}>{pct(tierCounts.all, totalAlerts)}</td>
+              </tr>
+              <tr>
+                <td style={tdTotalStyle}>Total alerts</td>
+                <td style={tdNumTotalStyle}>{totalAlerts.toLocaleString()}</td>
+                <td style={tdNumTotalStyle}>&mdash;</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style={mutedStyle}>
+            Counted per follow, not per row. One row with three
+            alert-enabled follows counts three times.
+          </p>
+        </Section>
+
+        <Section title="No-Spoilers rate (global toggle)">
+          <div style={statGridStyle}>
+            <Stat
+              label="On"
+              value={noSpoilersOn}
+              sub={pct(noSpoilersOn, pushRowCount)}
+            />
+            <Stat
+              label="Off"
+              value={noSpoilersOff}
+              sub={pct(noSpoilersOff, pushRowCount)}
+            />
+            <Stat label="Push rows" value={pushRowCount} />
+          </div>
+          <p style={mutedStyle}>
+            The free global toggle only. Per-follow hideSpoilers (the
+            selective paid pitch) is not stored on push rows; it lives
+            only in Brief subscriber snapshots.
+          </p>
+        </Section>
+
+        <Section title="Multi-sport followers">
+          <div style={statGridStyle}>
+            <Stat
+              label="Push rows with 2+ sports"
+              value={multiSportRows}
+              sub={pct(multiSportRows, pushRowCount)}
+            />
+          </div>
+          <p style={mutedStyle}>
+            A row counts as multi-sport when its alerts span at least
+            two of NBA, World Cup, or Tournament.
+          </p>
+        </Section>
+      </main>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section style={sectionStyle}>
+      <h2 style={h2Style}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: number;
+  sub?: string;
+}) {
+  return (
+    <div style={statCardStyle}>
+      <div style={statLabelStyle}>{label}</div>
+      <div style={statValueStyle}>{value.toLocaleString()}</div>
+      {sub ? <div style={statSubStyle}>{sub}</div> : null}
+    </div>
+  );
+}
+
+// ── Inline styles ──────────────────────────────────────────────────
+// Plain, no branding. Self-contained so app-level CSS can't bleed in.
+
+const pageWrapStyle: CSSProperties = {
+  // Override the cream html/body background set globally so the admin
+  // page looks neutral.
+  background: "#fff",
+  minHeight: "100vh",
+  width: "100%",
+};
+
+const mainStyle: CSSProperties = {
+  maxWidth: 880,
+  margin: "0 auto",
+  padding: "32px 20px 64px",
+  fontFamily:
+    "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+  color: "#111",
+  lineHeight: 1.4,
+};
+
+const headerStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "baseline",
+  justifyContent: "space-between",
+  gap: 12,
+  flexWrap: "wrap",
+  borderBottom: "1px solid #e5e5e5",
+  paddingBottom: 12,
+  marginBottom: 24,
+};
+
+const h1Style: CSSProperties = {
+  fontSize: 22,
+  fontWeight: 700,
+  margin: 0,
+  letterSpacing: "-0.01em",
+};
+
+const h2Style: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  color: "#555",
+  margin: "0 0 12px 0",
+};
+
+const h3Style: CSSProperties = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: "#333",
+  margin: "20px 0 8px 0",
+};
+
+const sectionStyle: CSSProperties = { marginBottom: 36 };
+
+const statGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+  gap: 12,
+  marginBottom: 4,
+};
+
+const statCardStyle: CSSProperties = {
+  border: "1px solid #e5e5e5",
+  borderRadius: 8,
+  padding: "12px 14px",
+  background: "#fafafa",
+};
+
+const statLabelStyle: CSSProperties = {
+  fontSize: 11,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: "#666",
+  marginBottom: 4,
+};
+
+const statValueStyle: CSSProperties = {
+  fontSize: 26,
+  fontWeight: 700,
+  fontVariantNumeric: "tabular-nums",
+};
+
+const statSubStyle: CSSProperties = {
+  fontSize: 12,
+  color: "#666",
+  marginTop: 2,
+  fontVariantNumeric: "tabular-nums",
+};
+
+const tableStyle: CSSProperties = {
+  width: "100%",
+  borderCollapse: "collapse",
+  fontSize: 13,
+  marginTop: 4,
+};
+
+const thStyle: CSSProperties = {
+  textAlign: "left",
+  fontWeight: 600,
+  color: "#555",
+  fontSize: 11,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  borderBottom: "1px solid #e5e5e5",
+  padding: "8px 8px",
+};
+
+const thNumStyle: CSSProperties = { ...thStyle, textAlign: "right" };
+
+const tdStyle: CSSProperties = {
+  padding: "8px 8px",
+  borderBottom: "1px solid #f1f1f1",
+};
+
+const tdMonoStyle: CSSProperties = {
+  ...tdStyle,
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+  fontSize: 12,
+};
+
+const tdNumStyle: CSSProperties = {
+  ...tdStyle,
+  textAlign: "right",
+  fontVariantNumeric: "tabular-nums",
+};
+
+const tdTotalStyle: CSSProperties = { ...tdStyle, fontWeight: 600 };
+const tdNumTotalStyle: CSSProperties = { ...tdNumStyle, fontWeight: 600 };
+
+const mutedStyle: CSSProperties = {
+  fontSize: 12,
+  color: "#777",
+  marginTop: 12,
+  lineHeight: 1.5,
+};
+
+const mutedSmallStyle: CSSProperties = {
+  fontSize: 11,
+  color: "#999",
+  fontVariantNumeric: "tabular-nums",
+};
