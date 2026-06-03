@@ -83,6 +83,11 @@ export type UserPrefs = {
    *  onboarding overlay and the deferral of the boot-time push prompt
    *  (so onboarding owns the notification ask). One-way; never re-shown. */
   onboardingComplete?: boolean;
+  /** True once the user has interacted with the FirstFollowTierCard
+   *  (or completed onboarding, which already covers alerts in step 3).
+   *  Gates the one-time inline card that appears after the very first
+   *  follow to explain the three alert tiers. One-way; never re-shown. */
+  firstFollowEducated?: boolean;
 };
 
 // ── Defaults ──────────────────────────────────────────────────────────

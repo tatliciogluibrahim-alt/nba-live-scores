@@ -11,6 +11,7 @@ import { useWrappedSeries } from "./use-wrapped-series";
 import { useLiveFollows, isFollowLive } from "./use-live-follows";
 import { SportsCircleShareModal } from "../share/SportsCircleShareModal";
 import { SyncCircleModal } from "./SyncCircleModal";
+import { FirstFollowTierCard } from "../follow/FirstFollowTierCard";
 
 /** Detect "overlapping" follow combinations — these aren't bugs but
  *  they raise the "am I getting two notifications per event?" worry.
@@ -159,6 +160,14 @@ export function FollowingDashboard() {
         Follows drive what you see and your alerts. Pinning a single
         game is separate, and lives in Watching.
       </p>
+      {/* First-follow alert-tier education. Self-gates on
+          follows.length === 1 + !firstFollowEducated, so on every
+          subsequent visit it's a no-op. Sits above the slot counter
+          + the per-card grid so a user who just added their first
+          follow reads "here's what alerts can sound like" before
+          drilling into any one card. */}
+      <FirstFollowTierCard />
+
       {/* Alert-slot counter only renders when at least one follow is
           alert-enabled. With zero alerts the line read as "you haven't
           done anything" rather than a useful status; the full
@@ -204,69 +213,70 @@ export function FollowingDashboard() {
         </p>
       ) : null}
 
-      {/* Circle actions — Add / Share / Sync as a compact button row
-          (replaces the old stacked dashed rows). Add is the primary
-          filled action; Share + Sync are quiet outlines. Share only
-          appears once there's a circle to export; Sync is always
-          available so a fresh device can pull a code. Global alerts +
-          settings live behind the header gear, not here. */}
-      <div
-        className="mt-5 grid gap-2"
-        style={{
-          gridTemplateColumns: `repeat(${follows.length > 0 ? 3 : 2}, minmax(0, 1fr))`,
-        }}
-      >
+      {/* Circle actions — Add is the primary action; Share + Sync are
+          a quieter secondary row beneath. Used to be three equal-weight
+          outline buttons in a grid, which read as a utility toolbar
+          rather than an editorial page. Now Add gets the full-width
+          filled treatment used elsewhere ("Open game" on game detail,
+          "Looks good" on first-follow card), and Share + Sync sit
+          underneath as smaller outline pills — visible options, not
+          calls to action. Share still only appears once there's a
+          circle to export; Sync is always available so a fresh device
+          can pull a code. */}
+      <div className="mt-5 space-y-2">
         <Link
           href="/following/add"
           aria-label="Follow more (NBA Playoffs or FIFA World Cup)"
-          className="flex min-h-[52px] items-center justify-center rounded-[14px] text-[12px] uppercase transition active:scale-[0.97]"
+          className="flex min-h-[52px] w-full items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
           style={{
-            background: "transparent",
-            color: "var(--ink)",
-            border: "1px solid var(--line)",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            letterSpacing: "0.08em",
+            background: "var(--ink)",
+            color: "var(--cream)",
+            border: "1px solid var(--ink)",
           }}
         >
           Add
         </Link>
 
-        {follows.length > 0 ? (
+        {/* Secondary row. Match the existing outlined-pill style used
+            on the "Unfollow series" / "Unfollow country" buttons in
+            the preset sections — quieter, smaller min-height, ink
+            text on a transparent fill with a thin line border. */}
+        <div
+          className="grid gap-2"
+          style={{
+            gridTemplateColumns: `repeat(${follows.length > 0 ? 2 : 1}, minmax(0, 1fr))`,
+          }}
+        >
+          {follows.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShareOpen(true)}
+              aria-label="Share your sports circle as an image"
+              className="flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+              style={{
+                background: "transparent",
+                color: "var(--ink)",
+                border: "1px solid var(--line)",
+              }}
+            >
+              Share
+            </button>
+          ) : null}
+
           <button
             type="button"
-            onClick={() => setShareOpen(true)}
-            aria-label="Share your sports circle as an image"
-            className="flex min-h-[52px] items-center justify-center rounded-[14px] text-[12px] uppercase transition active:scale-[0.97]"
+            onClick={() => setSyncOpen(true)}
+            aria-label="Sync your follows across devices with a code"
+            className="flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--ink)",
               border: "1px solid var(--line)",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              letterSpacing: "0.08em",
             }}
           >
-            Share
+            Sync
           </button>
-        ) : null}
-
-        <button
-          type="button"
-          onClick={() => setSyncOpen(true)}
-          aria-label="Sync your follows across devices with a code"
-          className="flex min-h-[52px] items-center justify-center rounded-[14px] text-[12px] uppercase transition active:scale-[0.97]"
-          style={{
-            background: "transparent",
-            color: "var(--ink)",
-            border: "1px solid var(--line)",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-          }}
-        >
-          Sync
-        </button>
+        </div>
       </div>
 
       {shareOpen ? (

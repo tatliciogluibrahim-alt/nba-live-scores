@@ -14,6 +14,7 @@ import { PushPermissionRecoveryCard } from "./PushPermissionRecoveryCard";
 import { InstallPromptCard } from "./InstallPromptCard";
 import { BriefPromptCard } from "./BriefPromptCard";
 import { FirstRunStrip } from "./FirstRunStrip";
+import { FirstFollowTierCard } from "../follow/FirstFollowTierCard";
 import { QuietRecap } from "./QuietRecap";
 import { YouFollow } from "./sections/you-follow";
 import { UpNext } from "./sections/up-next";
@@ -133,6 +134,13 @@ export function TodayClient() {
           until the user has followed, pinned, and made a notification
           decision. Auto-retires when all three are done. */}
       {hydrated ? <FirstRunStrip /> : null}
+
+      {/* First-follow alert-tier education — sits below the strip
+          (so the user reads "you followed something" before the deep
+          explanation), above any other contextual card. The component
+          self-gates on follows.length === 1 + !firstFollowEducated,
+          so on every other render it's a no-op. */}
+      {hydrated ? <FirstFollowTierCard /> : null}
 
       {/* Quiet Recap — end-of-night moment when the slate is fully wrapped.
           Renders above the Brief because it's the one card that earns

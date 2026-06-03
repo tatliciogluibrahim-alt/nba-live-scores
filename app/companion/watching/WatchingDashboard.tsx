@@ -119,11 +119,14 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
 
       {/* Dashed prompt — nudges the user toward pinning more games when the
           list is thin (1–2 pins). At 3+ pins the user clearly knows what
-          they're doing; the prompt would just add visual weight. */}
+          they're doing; the prompt would just add visual weight.
+          Spacing intentionally tight (mt-2, was mt-3) so a single
+          pinned game + this prompt read as one intentional block
+          rather than two cards with a dead gap of cream between them. */}
       {items.length > 0 && items.length < 3 ? (
         <Link
           href="/following"
-          className="mt-3 flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
+          className="mt-2 flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
           style={{
             background: "transparent",
             borderColor: "var(--mute-2)",

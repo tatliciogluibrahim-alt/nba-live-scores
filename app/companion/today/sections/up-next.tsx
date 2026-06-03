@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Eyebrow } from "../../atoms/Eyebrow";
 import { WatchLine } from "../../watch/WatchLine";
-import { SectionHeader } from "./section-header";
 import type { UpNextItem } from "../today-data";
 
 // Vertical list of upcoming games. Up-next rows stay fully visible under
@@ -12,13 +11,44 @@ import type { UpNextItem } from "../today-data";
 export function UpNext({ items }: { items: UpNextItem[] }) {
   if (items.length === 0) return null;
 
+  // Pluralization for the sticky header count. "1 match" / "4 matches".
+  const countLabel = `${items.length} ${items.length === 1 ? "match" : "matches"}`;
+
   return (
     <section>
-      {/* "Upcoming", not "Up next" — the Front Page lead eyebrow above
-          already says "Up next", so two identical labels (one accent,
-          one mute) read as a repeat. This is the full list; the deck up
-          top is just the lead game. */}
-      <SectionHeader label="Upcoming" />
+      {/* Sticky section header. Used to be a plain SectionHeader; now
+          it sticks to the top of the viewport once the user scrolls
+          past the hero so they always know where they are in the
+          list. Style matches the existing SectionHeader exactly — same
+          Eyebrow component, same hairline divider — but with a soft
+          cream fill + light blur underneath so live content stays
+          legible as it slides beneath. Disappears cleanly when the
+          user scrolls back to top because position:sticky only
+          activates after the element's natural offset is passed; at
+          the top the hero sits above it and there's nothing to
+          overlay. The match count ("Upcoming · 4") updates with the
+          data automatically. */}
+      <div
+        className="sticky z-20 -mx-4 mb-2 flex items-center gap-3 px-4 py-2 md:-mx-8 md:px-8"
+        style={{
+          top: "max(env(safe-area-inset-top), 0px)",
+          // Cream-tinted translucent surface. Matches the page bg so
+          // it reads as the same canvas, with just enough opacity for
+          // a card edge to dim slightly as it scrolls under.
+          background: "color-mix(in srgb, var(--cream) 88%, transparent)",
+          backdropFilter: "saturate(140%) blur(8px)",
+          WebkitBackdropFilter: "saturate(140%) blur(8px)",
+        }}
+      >
+        <Eyebrow
+          color="var(--ink)"
+          style={{ fontSize: 12.5, letterSpacing: "0.1em" }}
+        >
+          Upcoming
+        </Eyebrow>
+        <Eyebrow style={{ fontSize: 11 }}>· {countLabel}</Eyebrow>
+        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
+      </div>
       <ul className="space-y-2">
         {items.map((item) => {
           const accentColor =

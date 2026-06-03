@@ -99,6 +99,10 @@ type PrefsCtx = {
   dismissPushRecovery: () => void;
   /** Mark the first-run onboarding flow finished (or skipped). One-way. */
   completeOnboarding: () => void;
+  /** Mark the inline first-follow tier education card as seen. Called
+   *  after the user picks a tier or taps "Looks good" on the card.
+   *  One-way flag; the card never appears again. */
+  markFirstFollowEducated: () => void;
   hydrated: boolean;
 };
 
@@ -399,7 +403,24 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
   const completeOnboarding = useCallback(() => {
     setPrefs((prev) => {
       if (prev.onboardingComplete) return prev;
-      const next: UserPrefs = { ...prev, onboardingComplete: true };
+      // Onboarding's step 3 ("Get quiet alerts for what you follow")
+      // already covers what the FirstFollowTierCard would teach.
+      // Flip the education flag too so onboarded users never see the
+      // post-follow card on top of what they just read.
+      const next: UserPrefs = {
+        ...prev,
+        onboardingComplete: true,
+        firstFollowEducated: true,
+      };
+      writeJSON(STORAGE_KEYS.prefs, next);
+      return next;
+    });
+  }, []);
+
+  const markFirstFollowEducated = useCallback(() => {
+    setPrefs((prev) => {
+      if (prev.firstFollowEducated) return prev;
+      const next: UserPrefs = { ...prev, firstFollowEducated: true };
       writeJSON(STORAGE_KEYS.prefs, next);
       return next;
     });
@@ -456,6 +477,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       dismissInstallPrompt,
       dismissPushRecovery,
       completeOnboarding,
+      markFirstFollowEducated,
       hydrated,
     }),
     [
@@ -470,6 +492,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       dismissInstallPrompt,
       dismissPushRecovery,
       completeOnboarding,
+      markFirstFollowEducated,
       hydrated,
     ]
   );

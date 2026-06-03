@@ -16,6 +16,7 @@ import {
   buildWinnerOverrides,
   hasSeriesContext,
 } from "../../nba/lib/series-keys";
+import { parseSeriesWins } from "../../nba/lib/series";
 import { WCGroups } from "./WCGroups";
 import { WC_KNOCKOUT_ROUNDS } from "../following/data/wc-fixtures";
 
@@ -37,6 +38,12 @@ import { WC_KNOCKOUT_ROUNDS } from "../following/data/wc-fixtures";
 type ApiGame = {
   id: string;
   status: "live" | "upcoming" | "final";
+  // ISO date string of the game start (e.g. "2026-06-02T23:00:00Z").
+  // Used by the per-row momentum line to detect "is there a game in
+  // this series scheduled today" — drives the "must win tonight"
+  // tail. The /api/live-scores feed already returns this field; we
+  // just hadn't been reading it into ApiGame.
+  date: string;
   away: { name: string; abbreviation: string };
   home: { name: string; abbreviation: string };
   seriesSummary: string;
@@ -56,6 +63,69 @@ type ApiGame = {
 function isSeriesCandidate(g: ApiGame): boolean {
   if (g.away.abbreviation === "TBD" || g.home.abbreviation === "TBD") return false;
   return hasSeriesContext(g);
+}
+
+/** Format a calendar date in the user's local timezone as `YYYY-MM-DD`.
+ *  Used to compare a game's date against "today" without dragging in a
+ *  tz library — the local day boundary is what users expect when the
+ *  copy says "tonight." */
+function localDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Deterministic stakes-aware one-liner for an active NBA playoff series.
+ *
+ *  Logic (from product spec):
+ *    • Wrapped series → null. The "Wrapped" pill already carries this.
+ *    • Series not started (0-0) → null. Dots are already empty; the line
+ *      would just read "X and Y are tied 0-0." which doesn't add anything.
+ *    • Game 7 in play / pending (3-3) → "[A] vs [B]. Series ends tonight."
+ *    • Tied at any other count → "[A] and [B] are tied X-X."
+ *    • One side leads:
+ *        - Game scheduled today → "[Leader] leads X-Y. [Trailing] must
+ *          win tonight."
+ *        - No game today → "[Leader] leads X-Y."
+ *
+ *  Pure helper — takes computed numbers and a boolean, returns the line
+ *  or null. No data fetching, no LLM, no API. The narrative pilot lives
+ *  in a separate module and is not touched here.
+ */
+export function buildSeriesMomentumLine(args: {
+  a: string;
+  b: string;
+  aWins: number;
+  bWins: number;
+  wrapped: boolean;
+  hasGameToday: boolean;
+}): string | null {
+  const { a, b, aWins, bWins, wrapped, hasGameToday } = args;
+  if (wrapped) return null;
+  if (aWins === 0 && bWins === 0) return null;
+
+  // 3-3 going into (or playing) Game 7. Use "tonight" per spec even
+  // when the game isn't scheduled today — Game 7s are stakes-defining
+  // moments and the copy is tuned for impact, not literal timing.
+  if (aWins === 3 && bWins === 3) {
+    return `${a} vs ${b}. Series ends tonight.`;
+  }
+
+  // Any other tied score (1-1, 2-2).
+  if (aWins === bWins) {
+    return `${a} and ${b} are tied ${aWins}-${aWins}.`;
+  }
+
+  const leader = aWins > bWins ? a : b;
+  const trailing = aWins > bWins ? b : a;
+  const hi = Math.max(aWins, bWins);
+  const lo = Math.min(aWins, bWins);
+
+  if (hasGameToday) {
+    return `${leader} leads ${hi}-${lo}. ${trailing} must win tonight.`;
+  }
+  return `${leader} leads ${hi}-${lo}.`;
 }
 
 export function TournamentClient({ tournamentId }: { tournamentId: string }) {
@@ -218,12 +288,23 @@ function NBAPlayoffsBody() {
     const overrides = buildWinnerOverrides(games);
 
     const seen = new Map<string, ApiGame>();
+    // Per-series, track every candidate game's local date so we can
+    // answer "is a game in this series scheduled today" cheaply when
+    // building the momentum line below.
+    const datesBySeries = new Map<string, Set<string>>();
+    const todayKey = localDateKey(new Date());
     for (const g of games) {
       if (!isSeriesCandidate(g)) continue;
       const key = buildSeriesKey(g.away.abbreviation, g.home.abbreviation);
       // Keep the most recent (last) game for each series so the summary
       // reflects current state.
       seen.set(key, g);
+      const parsed = new Date(g.date);
+      if (!Number.isNaN(parsed.getTime())) {
+        const dateSet = datesBySeries.get(key) ?? new Set<string>();
+        dateSet.add(localDateKey(parsed));
+        datesBySeries.set(key, dateSet);
+      }
     }
     return (
       Array.from(seen.entries())
@@ -254,17 +335,18 @@ function NBAPlayoffsBody() {
             ? `${round} · ${g.seriesConference}`
             : round;
 
-          // Pull win counts out of the summary so we can render an
-          // inline 7-dot strip for the series. Both `WINS SERIES` and
-          // `LEADS SERIES` patterns expose the hi-lo numbers. `TIED`
-          // is symmetric. Numbers default to 0-0 when nothing matches.
-          let winsTotal = 0;
-          const wm =
-            g.seriesSummary.match(/WINS?\s+SERIES\s+(\d+)\s*-\s*(\d+)/i) ||
-            g.seriesSummary.match(/LEADS?\s+SERIES\s+(\d+)\s*-\s*(\d+)/i);
-          const tm = g.seriesSummary.match(/TIED\s+(\d+)\s*-\s*(\d+)/i);
-          if (wm) winsTotal = Number(wm[1]) + Number(wm[2]);
-          else if (tm) winsTotal = Number(tm[1]) + Number(tm[2]);
+          // Pull per-team win counts out of the summary via the
+          // shared parseSeriesWins helper. It handles WINS / LEADS /
+          // TIED patterns and is robust to the NY ↔ NYK alias case.
+          // We use it for the momentum line AND derive the dot-strip
+          // total from it, replacing the local inline regex pass.
+          const { winsA, winsB } = parseSeriesWins(g.seriesSummary, a, b);
+          const winsTotal = winsA + winsB;
+          // Does this series have any game scheduled today (user
+          // local timezone)? Drives the "must win tonight" tail of
+          // the momentum line.
+          const hasGameToday =
+            datesBySeries.get(key)?.has(todayKey) ?? false;
 
           // Normalize compound placeholder abbrs (e.g. "OKC/MIN" for a
           // forward-projected opponent slot) to literal "TBD" in the
@@ -289,6 +371,12 @@ function NBAPlayoffsBody() {
             label: conf,
             wrapped: isWrapped,
             gamesPlayed: Math.min(7, winsTotal),
+            // Per-team wins + today-flag for the momentum line. We
+            // suppress the line when either side is a placeholder
+            // (no leader/trailing team to attribute to).
+            aWins: winsA,
+            bWins: winsB,
+            hasGameToday,
           };
         })
         // Defensive filter: drop any row where both sides resolved to
@@ -441,6 +529,31 @@ function NBAPlayoffsBody() {
                     Filled dots = games played, dashed dots = remaining.
                     Spoiler-safe (no winner attribution per dot). */}
                 <MiniSeriesStrip gamesPlayed={s.gamesPlayed} />
+                {/* Stakes-aware momentum line. Deterministic from
+                    parsed wins + today flag — no LLM, no API. Skips
+                    placeholder ("TBD") rows since there's nothing to
+                    attribute, and is null on wrapped series (the
+                    "Wrapped" pill already speaks for them). */}
+                {(() => {
+                  if (s.aIsTbd || s.bIsTbd) return null;
+                  const momentum = buildSeriesMomentumLine({
+                    a: s.a,
+                    b: s.b,
+                    aWins: s.aWins,
+                    bWins: s.bWins,
+                    wrapped: s.wrapped,
+                    hasGameToday: s.hasGameToday,
+                  });
+                  if (!momentum) return null;
+                  return (
+                    <p
+                      className="mt-1.5 truncate text-[12px] leading-snug"
+                      style={{ color: "var(--mute-1)", fontWeight: 500 }}
+                    >
+                      {momentum}
+                    </p>
+                  );
+                })()}
               </div>
               <svg
                 width="14"

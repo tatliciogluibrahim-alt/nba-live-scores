@@ -11,11 +11,14 @@ export function WatchingEmpty() {
       <Display as="h1" size="lg" className="mb-2">
         Your live games.
       </Display>
+      {/* Empty-state direction. Mirrors the muted secondary text used
+          elsewhere (Today's "Tell us who you follow" sub, Settings
+          row helpers). Tells the user where to act without nagging. */}
       <p
         className="mb-5 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Pin to track specific games.
+        Pin a game from Following to track it here.
       </p>
 
       <div className="space-y-2">
