@@ -1401,6 +1401,14 @@ export function buildTodayPayload({
 
   const hasLive = nba.some((g) => g.status === "live") || wc.some((g) => g.status === "live");
   const hasUpcoming = upNext.length > 0;
+  // A personal game scheduled for *tonight* (same calendar day as now)
+  // counts as live-stakes context, even if tipoff hasn't happened yet.
+  // Without this gate, the Today headline drops to "Quiet for now."
+  // while a followed team's game is hours away — which is the exact
+  // moment the page should feel most anticipatory. Reported from a
+  // real-world session: NYK vs SA was listed in NEXT UP with the
+  // "TONIGHT" eyebrow, and the headline still said "Quiet for now."
+  const hasTonightUpcoming = upNext.some((item) => item.isToday);
   const closing = pickClosing(recentForWrap, follows, hasLive, hasUpcoming, now);
   const pinnedSummary = buildPinnedSummary(nba, recentForWrap, wc, pinned);
   // Quiet Wrap intentionally shows both today's "Earlier" finals AND
@@ -1413,11 +1421,16 @@ export function buildTodayPayload({
   const hasTonightFinals = tonightFinals.length > 0;
   const hasFinals = quietWrap.length > 0;
   const isQuietDay = !hasLive && !hasUpcoming && !hasFinals;
-  // Resting state (design C): nothing live right now, but games are
-  // coming up and there's nothing just-wrapped to recap. Distinct from
-  // isQuietDay (the true nothing-at-all dead zone). Suppressed when a
-  // calm-ending card is showing, since that moment owns the screen.
-  const restingState = !hasLive && hasUpcoming && !hasFinals && !closing;
+  // Resting state (design C): nothing live right now, no game tonight,
+  // but games are coming up later in the week and there's nothing
+  // just-wrapped to recap. Distinct from isQuietDay (the true
+  // nothing-at-all dead zone). Suppressed when a calm-ending card is
+  // showing, since that moment owns the screen. Also suppressed by
+  // hasTonightUpcoming so a followed team's game tonight flips Today
+  // into the FrontPageLead path ("One game tonight.") instead of
+  // "Quiet for now."
+  const restingState =
+    !hasLive && hasUpcoming && !hasTonightUpcoming && !hasFinals && !closing;
   // Slate complete: nothing live, nothing upcoming, but at least one
   // game finished tonight. Yesterday's finals don't trigger the recap.
   const slateComplete = !hasLive && !hasUpcoming && hasTonightFinals;
