@@ -47,10 +47,34 @@ import type { Game } from "../../../nba/types";
 // NBA orange accent for the Live Activity (AGENTS palette).
 const ACCENT_NBA = "#e55b2a";
 
-/** Build the lock-screen status line: "Q3 · 4:21", "Final", etc. */
+/** Build the lock-screen status line: "Q3 · 4:21", "Final", etc.
+ *
+ *  Halftime detection: app/api/live-scores/route.ts normalizes ESPN's
+ *  "halftime" statusText to "End Q2". This function sees that and
+ *  returns "Halftime" so the lock screen shows the correct label
+ *  instead of the raw "Q2 · 0:00" that was appearing before.
+ *
+ *  End-of-period markers ("End Q1", "End Q3") are passed through so
+ *  the lock screen reads "End Q1" at the first-quarter buzzer instead
+ *  of "Q1 · 0:00". */
 function nbaStatusLine(g: NormalizedGame): string {
   if (g.status === "final") return "Final";
   if (g.status === "upcoming") return "Tipoff soon";
+
+  // Detect halftime. Two sources:
+  //   1. statusText = "End Q2" (set by live-scores route when ESPN
+  //      sends a halftime-flagged game status).
+  //   2. period === 2 && remaining === 0 (fallback: ESPN sometimes
+  //      holds remaining at 0 through the break without an explicit
+  //      halftime label in statusText).
+  if (g.statusText === "End Q2" || (g.period === 2 && g.remaining === 0)) {
+    return "Halftime";
+  }
+
+  // Other end-of-period labels from the live-scores normalizer.
+  if (g.statusText === "End Q1") return "End Q1";
+  if (g.statusText === "End Q3") return "End Q3";
+
   const period =
     g.period <= 4 ? `Q${g.period}` : g.period === 5 ? "OT" : `${g.period - 4}OT`;
   if (g.remaining == null) return period;
@@ -62,6 +86,17 @@ function nbaStatusLine(g: NormalizedGame): string {
 /** Map a scoreboard game to a Live Activity content snapshot. */
 function toActivityInput(g: NormalizedGame): ActivityUpdateInput {
   const statusLine = nbaStatusLine(g);
+
+  // Coarse clock bucket — round remaining seconds to the nearest
+  // 20-second window. Including this in the sig means the Live
+  // Activity clock updates whenever the ESPN-reported time crosses a
+  // 20-second boundary, not just on score/period/status changes.
+  // Without this, a 90-second scoring drought leaves the lock-screen
+  // clock frozen, making the lag feel much worse than it is.
+  // 20s chosen: fine enough to feel live, coarse enough that we're
+  // not hammering APNs on every ESPN sub-second tick.
+  const clockBucket = g.remaining != null ? Math.floor(g.remaining / 20) : -1;
+
   return {
     gameId: g.id,
     status: g.status,
@@ -76,9 +111,10 @@ function toActivityInput(g: NormalizedGame): ActivityUpdateInput {
       // Stadium Panel progress rail.
       progress: computeLiveActivityProgress("nba", statusLine, g.status),
     },
-    // Dedup on score + period + status (not the clock, which we don't
-    // push live) so identical ticks are no-ops.
-    sig: `${g.away.score}-${g.home.score}-${g.period}-${g.status}`,
+    // Dedup sig: score + period + status + coarse clock bucket.
+    // The clock bucket ensures we push whenever the displayed time
+    // would be stale by ~20s of game time, even with no scoring.
+    sig: `${g.away.score}-${g.home.score}-${g.period}-${g.status}-${clockBucket}`,
   };
 }
 
@@ -159,6 +195,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // ── Observability anchor ────────────────────────────────────────────
+  // cronStartMs lets us log the wall-clock time spent in each phase so
+  // future latency investigations have timestamps to work from instead
+  // of guessing from log ordering. Use this for "source feed fetched at"
+  // and "APNs push sent at" in per-game logs below.
+  const cronStartMs = Date.now();
+
   const baseUrl = resolveBaseUrl(req);
 
   // Fetch the canonical scoreboard. `no-store` so we don't pick up a
@@ -181,6 +224,19 @@ export async function GET(req: Request) {
       { error: err instanceof Error ? err.message : "live-scores fetch failed" },
       { status: 502 }
     );
+  }
+  // Log feed freshness anchor. Timestamp lets us correlate Vercel log
+  // lines against wall-clock time when debugging future lag reports.
+  const feedFetchedMs = Date.now();
+  const liveGameIds = (payload.games ?? [])
+    .filter((g) => g.status === "live")
+    .map((g) => g.id);
+  if (liveGameIds.length > 0) {
+    console.log("[scan-nba] feed fetched", {
+      feedFetchMs: feedFetchedMs - cronStartMs,
+      liveGames: liveGameIds.length,
+      liveGameIds,
+    });
   }
 
   const games = payload.games ?? [];
@@ -270,34 +326,68 @@ export async function GET(req: Request) {
     }
   }
 
+  // ── Dispatch push notifications + Live Activity in parallel ─────────
+  //
+  // Previously these ran sequentially (dispatch, then LA). They're fully
+  // independent: dispatch targets device-token push endpoints; LA targets
+  // per-Activity push tokens with a different APNs topic. Running in
+  // parallel saves the wall-clock time of whichever finishes first waiting
+  // for the other — saves 50-300ms per cron tick during live games.
+  //
+  // Dispatch error still returns 500 so cron-job.org alarms. LA errors are
+  // logged but never block the response — a failed LA update is less
+  // critical than a missing push notification.
+  const [dispatchSettled, laSettled] = await Promise.allSettled([
+    (async () => {
+      if (allEvents.length === 0) return null;
+      return await dispatchEvents(allEvents);
+    })(),
+    (async () => {
+      return await pushLiveActivityUpdates(games.map(toActivityInput));
+    })(),
+  ]);
+
+  // Unpack results. Dispatch error → 500 (keeps existing behavior).
   let dispatchResult: Awaited<ReturnType<typeof dispatchEvents>> | null = null;
-  if (allEvents.length > 0) {
-    try {
-      dispatchResult = await dispatchEvents(allEvents);
-    } catch (err) {
-      console.error("scan-nba dispatch error", err);
-      return NextResponse.json(
-        {
-          ok: false,
-          processed,
-          stateErrors,
-          events: allEvents.length,
-          error: err instanceof Error ? err.message : "dispatch failed",
-        },
-        { status: 500 }
-      );
-    }
+  if (dispatchSettled.status === "rejected") {
+    console.error("scan-nba dispatch error", dispatchSettled.reason);
+    return NextResponse.json(
+      {
+        ok: false,
+        processed,
+        stateErrors,
+        events: allEvents.length,
+        error:
+          dispatchSettled.reason instanceof Error
+            ? dispatchSettled.reason.message
+            : "dispatch failed",
+      },
+      { status: 500 }
+    );
+  }
+  dispatchResult = dispatchSettled.value;
+
+  let liveActivity: Awaited<ReturnType<typeof pushLiveActivityUpdates>> | null = null;
+  if (laSettled.status === "rejected") {
+    console.error("scan-nba live-activity error", laSettled.reason);
+  } else {
+    liveActivity = laSettled.value;
   }
 
-  // Live Activity score updates — ride the same fetch. Pushes fresh
-  // scores to any device showing a pinned game's Live Activity and ends
-  // them at final. No-op (one KV read) when nobody has one open.
-  let liveActivity: Awaited<ReturnType<typeof pushLiveActivityUpdates>> | null =
-    null;
-  try {
-    liveActivity = await pushLiveActivityUpdates(games.map(toActivityInput));
-  } catch (err) {
-    console.error("scan-nba live-activity error", err);
+  // ── Final timing log ─────────────────────────────────────────────────
+  // Logged only when there are live games so the log stream stays quiet
+  // on off-days. Gives future latency investigations a "server processed
+  // at" anchor to compare against the "feed fetched at" line above.
+  if (liveGameIds.length > 0) {
+    console.log("[scan-nba] tick complete", {
+      totalMs: Date.now() - cronStartMs,
+      processed,
+      events: allEvents.length,
+      dispatched: dispatchResult?.deliveries.filter((d) => d.delivered).length ?? 0,
+      laUpdated: liveActivity?.updated ?? 0,
+      laEnded: liveActivity?.ended ?? 0,
+      laPruned: liveActivity?.pruned ?? 0,
+    });
   }
 
   return NextResponse.json({

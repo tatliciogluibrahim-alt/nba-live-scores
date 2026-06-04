@@ -104,7 +104,35 @@ export async function pushLiveActivityUpdates(
     // sends (one terminal end push).
     if (!isFinal) {
       const last = await getActivitySig(gameId);
-      if (last === input.sig) continue;
+      if (last === input.sig) {
+        // Observability: log sig-matched skips during live games so we
+        // can tell in Vercel logs when updates are being suppressed vs
+        // when they're genuinely no-ops. Token count is safe to log;
+        // the token prefix is already truncated in the Live Activity
+        // APNs logs below.
+        console.log("[live-activity] sig matched, skip", {
+          gameId,
+          sig: input.sig,
+          tokens: tokens.length,
+          statusLine: input.contentState.statusLine,
+        });
+        continue;
+      }
+      // Log the change so we know what triggered this push.
+      console.log("[live-activity] sig changed, pushing", {
+        gameId,
+        newSig: input.sig,
+        prevSig: last ?? "none",
+        tokens: tokens.length,
+        statusLine: input.contentState.statusLine,
+        score: `${input.contentState.awayCode} ${input.contentState.awayScore} - ${input.contentState.homeCode} ${input.contentState.homeScore}`,
+      });
+    } else {
+      console.log("[live-activity] final, ending activity", {
+        gameId,
+        tokens: tokens.length,
+        statusLine: input.contentState.statusLine,
+      });
     }
 
     const nowSec = Math.floor(Date.now() / 1000);
@@ -130,15 +158,31 @@ export async function pushLiveActivityUpdates(
           if (isFinal) ended += 1;
           else updated += 1;
         } else if (res.status === 410 || res.status === 400) {
+          // Token is dead — remove from store. Log with a truncated
+          // token prefix for traceability without logging the full token.
+          console.warn("[live-activity] dead token pruned", {
+            gameId,
+            tokenPrefix: t.token.slice(0, 8),
+            status: res.status,
+            env: res.environment,
+          });
           await removeActivityToken(t.token);
           pruned += 1;
+        } else {
+          // Transient error (429, 5xx, network). Leave token in place,
+          // retry next tick.
+          console.warn("[live-activity] push failed (transient)", {
+            gameId,
+            tokenPrefix: t.token.slice(0, 8),
+            status: res.status,
+            body: res.body?.slice(0, 120),
+            err: res.error,
+          });
         }
-        // Other errors (network, 429, 5xx): leave the token in place
-        // and retry on the next tick.
       } catch (err) {
         // Catch-all so the chunk's other tokens still finish even if
         // one token's send throws unexpectedly.
-        console.warn("live-activity: per-token send threw", {
+        console.warn("[live-activity] per-token send threw", {
           gameId,
           err: err instanceof Error ? err.message : String(err),
         });
