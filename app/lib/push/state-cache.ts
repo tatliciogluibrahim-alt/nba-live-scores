@@ -57,3 +57,29 @@ export async function readCachedState(
 export async function writeCachedState(state: CachedGameState): Promise<void> {
   await kv.set(stateKey(state.gameId), state, { ex: STATE_TTL_SECONDS });
 }
+
+/** True when the meaningful state changed and a write is worth a KV
+ *  command. Ignores `updatedAt` (advances every tick) — the cron skips
+ *  the write when nothing detection-relevant moved, which is most ticks
+ *  for a stable game (an upcoming game waiting to tip, a live game
+ *  between scores, a settled final). The signature covers every field
+ *  the event detector branches on; `gameId`/codes never change. */
+export function nbaStateChanged(
+  prev: CachedGameState | null,
+  next: CachedGameState
+): boolean {
+  if (!prev) return true;
+  return (
+    prev.status !== next.status ||
+    prev.period !== next.period ||
+    prev.awayScore !== next.awayScore ||
+    prev.homeScore !== next.homeScore ||
+    prev.maxLead !== next.maxLead ||
+    !!prev.closeGameFired !== !!next.closeGameFired ||
+    !!prev.comebackFired !== !!next.comebackFired ||
+    !!prev.eoq1Fired !== !!next.eoq1Fired ||
+    !!prev.eoq2Fired !== !!next.eoq2Fired ||
+    !!prev.eoq3Fired !== !!next.eoq3Fired ||
+    !!prev.secondHalfStartFired !== !!next.secondHalfStartFired
+  );
+}

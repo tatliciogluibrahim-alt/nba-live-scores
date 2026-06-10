@@ -26,7 +26,8 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { detectEvents, type FreshGameState, type PushEvent } from "../../../lib/push/event-detector";
 import { dispatchEvents } from "../../../lib/push/dispatcher";
-import { readCachedState, writeCachedState } from "../../../lib/push/state-cache";
+import { readCachedState, writeCachedState, nbaStateChanged } from "../../../lib/push/state-cache";
+import { isStateRelevant } from "../../../lib/push/scan-relevance";
 import { incrCounter } from "../../../lib/push/ops-metrics";
 import {
   pushLiveActivityUpdates,
@@ -125,6 +126,9 @@ export const maxDuration = 60;
 type NormalizedGame = {
   id: string;
   status: "live" | "upcoming" | "final";
+  /** ISO kickoff/tip time from the feed. Used by the relevance gate to
+   *  skip per-game KV work for far-future fixtures and long-past finals. */
+  date?: string;
   statusText: string;
   period: number;
   remaining: number | null;
@@ -244,11 +248,18 @@ export async function GET(req: Request) {
   let processed = 0;
   let stateErrors = 0;
 
+  // Relevance gate — only games that can transition this tick get KV
+  // state work (live, tipping within 30 min, or recently final). The
+  // feed's rolling window also carries days of future fixtures and old
+  // finals; processing those every minute is what burned the Upstash
+  // free-tier command budget. Computed from feed data only (no KV).
+  const relevant = games.filter((g) => isStateRelevant(g.status, g.date, cronStartMs));
+
   // Bump the scan counter once per successful upstream fetch. The
   // dashboard divides by this to compute "events per scan" etc.
   await incrCounter("cron.scans");
 
-  for (const game of games) {
+  for (const game of relevant) {
     try {
       const fresh = toFresh(game);
       const prev = await readCachedState(fresh.gameId);
@@ -257,11 +268,18 @@ export async function GET(req: Request) {
         allEvents.push(...events);
         await incrCounter("events.detected", events.length);
       }
-      await writeCachedState(nextState);
-      // Final games get snapshotted so /game/[id] can resolve them
-      // even after they drop off the live feed (which happens a few
-      // hours after the game ends). Snapshots persist 60 days.
-      if (fresh.status === "final") {
+      // Only write when something detection-relevant actually changed.
+      // Most ticks for a stable game (upcoming waiting to tip, live
+      // between scores, settled final) are no-ops, so this skips the
+      // bulk of state writes. The 6h TTL is comfortably longer than any
+      // game's relevance window, so not refreshing it on a skip is safe.
+      if (nbaStateChanged(prev, nextState)) {
+        await writeCachedState(nextState);
+      }
+      // Snapshot on the live→final transition only, not every tick the
+      // game lingers as final in the feed. Snapshots persist 60 days so
+      // /game/[id] resolves the game after it drops off the live feed.
+      if (fresh.status === "final" && prev?.status !== "final") {
         await saveGameSnapshot(game as unknown as Game);
       }
       processed += 1;
@@ -272,11 +290,13 @@ export async function GET(req: Request) {
     }
   }
 
-  // Fail LOUD when there are games but we processed NONE — every per-game
-  // state read/write threw, which in practice means KV is unreachable.
-  // A 200 here would look healthy on cron-job.org while no NBA alert ever
-  // fires (silent-success failure). A 500 trips the scheduler's alert.
-  if (games.length > 0 && processed === 0 && stateErrors > 0) {
+  // Fail LOUD when there were RELEVANT games but we processed NONE —
+  // every per-game state read/write threw, which in practice means KV is
+  // unreachable. A 200 here would look healthy on cron-job.org while no
+  // NBA alert ever fires (silent-success failure). A 500 trips the
+  // scheduler's alert. Gate on `relevant` not `games`: an all-future
+  // slate legitimately processes zero and must stay a 200.
+  if (relevant.length > 0 && processed === 0 && stateErrors > 0) {
     return NextResponse.json(
       {
         ok: false,
@@ -343,7 +363,14 @@ export async function GET(req: Request) {
       return await dispatchEvents(allEvents);
     })(),
     (async () => {
-      return await pushLiveActivityUpdates(games.map(toActivityInput));
+      // Only touch the Live Activity store when there's a live or
+      // recently-final game to update or end. On idle / upcoming-only
+      // ticks this skips the listActivityGameIds() KV read entirely.
+      const laGames = relevant.filter(
+        (g) => g.status === "live" || g.status === "final"
+      );
+      if (laGames.length === 0) return null;
+      return await pushLiveActivityUpdates(laGames.map(toActivityInput));
     })(),
   ]);
 

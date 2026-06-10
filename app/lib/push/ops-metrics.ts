@@ -71,10 +71,14 @@ function counterKey(name: OpsCounter, bucket: string): string {
 export async function incrCounter(name: OpsCounter, by = 1): Promise<void> {
   try {
     const key = counterKey(name, todayBucket());
-    await kv.incrby(key, by);
-    // Set TTL on the bucket so old days roll off. `incrby` doesn't set
-    // a TTL, so we do it after — idempotent, safe to call repeatedly.
-    await kv.expire(key, BUCKET_TTL_SECONDS);
+    const next = await kv.incrby(key, by);
+    // Set the bucket TTL only on the FIRST increment of the day. `incrby`
+    // returns exactly `by` when it created the key (started from 0), so
+    // that's our "first write" signal. On every later increment the TTL
+    // is already set, so we skip the redundant `expire` — halving this
+    // counter's KV commands. The daily bucket rolls in <24h anyway, well
+    // inside the 7-day TTL, so a missed refresh is harmless.
+    if (next === by) await kv.expire(key, BUCKET_TTL_SECONDS);
   } catch (err) {
     console.error("ops.incrCounter failed", { name, err });
   }

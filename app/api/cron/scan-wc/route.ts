@@ -19,7 +19,9 @@ import { dispatchEvents } from "../../../lib/push/dispatcher";
 import {
   readCachedWCState,
   writeCachedWCState,
+  wcStateChanged,
 } from "../../../lib/push/wc-state-cache";
+import { isStateRelevant } from "../../../lib/push/scan-relevance";
 import { incrCounter } from "../../../lib/push/ops-metrics";
 import {
   pushLiveActivityUpdates,
@@ -38,6 +40,9 @@ export const maxDuration = 60;
 type FeedGame = {
   id: string;
   status: "live" | "upcoming" | "final";
+  /** ISO kickoff time from the feed. Used by the relevance gate to skip
+   *  per-game KV work for the dense future-fixture window and old finals. */
+  date?: string;
   statusText?: string;
   stage?: string;
   group?: string;
@@ -154,13 +159,21 @@ export async function GET(req: Request) {
   }
 
   const games = payload.games ?? [];
+  const nowMs = Date.now();
   const allEvents: PushEvent[] = [];
   let processed = 0;
   let stateErrors = 0;
 
+  // Relevance gate — only games that can transition this tick get KV
+  // state work (live, kicking off within 30 min, or recently final).
+  // The WC feed carries a ~14-day rolling fixture window; processing
+  // every future fixture every minute is what burned the Upstash
+  // free-tier command budget. Computed from feed data only (no KV).
+  const relevant = games.filter((g) => isStateRelevant(g.status, g.date, nowMs));
+
   await incrCounter("cron.scans");
 
-  for (const game of games) {
+  for (const game of relevant) {
     try {
       const fresh = toFresh(game);
       const prev = await readCachedWCState(fresh.gameId);
@@ -169,7 +182,11 @@ export async function GET(req: Request) {
         allEvents.push(...events);
         await incrCounter("events.detected", events.length);
       }
-      await writeCachedWCState(nextState);
+      // Only write when something detection-relevant changed (ignores the
+      // ever-advancing minute). Skips the bulk of writes for stable games.
+      if (wcStateChanged(prev, nextState)) {
+        await writeCachedWCState(nextState);
+      }
       processed += 1;
     } catch (err) {
       stateErrors += 1;
@@ -184,14 +201,16 @@ export async function GET(req: Request) {
   // look healthy on cron-job.org while no events are ever detected and
   // no WC alert ever fires (the silent-success failure mode). A 500
   // trips the scheduler's failure alert so the outage is visible.
-  if (games.length > 0 && processed === 0 && stateErrors > 0) {
+  // Gate on `relevant` not `games`: an all-future slate legitimately
+  // processes zero and must stay a 200, not look like a KV outage.
+  if (relevant.length > 0 && processed === 0 && stateErrors > 0) {
     return NextResponse.json(
       {
         ok: false,
         error: "all games failed state processing (KV unreachable?)",
         processed,
         stateErrors,
-        games: games.length,
+        games: relevant.length,
       },
       { status: 500 }
     );
@@ -217,12 +236,20 @@ export async function GET(req: Request) {
   }
 
   // Live Activity score updates for any pinned WC match on a device.
+  // Only touch the store when there's a live or recently-final match to
+  // update or end — skips the listActivityGameIds() KV read on idle /
+  // upcoming-only ticks.
   let liveActivity: Awaited<ReturnType<typeof pushLiveActivityUpdates>> | null =
     null;
-  try {
-    liveActivity = await pushLiveActivityUpdates(games.map(toActivityInput));
-  } catch (err) {
-    console.error("scan-wc live-activity error", err);
+  const laGames = relevant.filter(
+    (g) => g.status === "live" || g.status === "final"
+  );
+  if (laGames.length > 0) {
+    try {
+      liveActivity = await pushLiveActivityUpdates(laGames.map(toActivityInput));
+    } catch (err) {
+      console.error("scan-wc live-activity error", err);
+    }
   }
 
   return NextResponse.json({
