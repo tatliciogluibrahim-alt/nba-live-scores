@@ -42,16 +42,32 @@ export function OnboardingFlow() {
   // Latch active once, for a genuinely fresh install.
   useEffect(() => {
     if (
-      phase === "idle" &&
-      hydrated &&
-      !prefs.onboardingComplete &&
-      follows.length === 0
+      phase !== "idle" ||
+      !hydrated ||
+      prefs.onboardingComplete ||
+      follows.length !== 0
     ) {
-      // Latch from hydrated localStorage state (an external system) — a
-      // one-time activation, not a render-derived value.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPhase("active");
+      return;
     }
+
+    // Desktop web suppression. The two-surfaces-one-domain model means a
+    // desktop visitor lands on the marketing shell (or the /app desktop
+    // product preview) — the mobile 3-step onboarding overlay is wrong
+    // there. Native (Capacitor) always onboards regardless of viewport
+    // so the iPad app still gets the flow; only WEB at a wide viewport
+    // is suppressed. Checked here (client-only effect, window is
+    // available) rather than at render so there's no hydration mismatch:
+    // the component renders null on server and client until this latch.
+    const isDesktopWeb =
+      !isCapacitorNative() &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 768px)").matches;
+    if (isDesktopWeb) return;
+
+    // Latch from hydrated localStorage state (an external system) — a
+    // one-time activation, not a render-derived value.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPhase("active");
   }, [phase, hydrated, prefs.onboardingComplete, follows.length]);
 
   if (phase !== "active") return null;

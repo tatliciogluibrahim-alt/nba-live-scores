@@ -33,6 +33,28 @@ export type TeamComparisonStat = {
   home: string;
 };
 
+// A single player's box-score line, parsed from ESPN's summary
+// `boxscore.players[].statistics[0].athletes[]`. Counting stats only —
+// the "boxscore lite" module shows PTS plus whichever of REB/AST/STL/BLK
+// are meaningful, never the full ESPN stat row.
+export type PlayerStatLine = {
+  name: string;
+  pts: number;
+  reb: number;
+  ast: number;
+  stl: number;
+  blk: number;
+  min: number;
+  starter?: boolean;
+};
+
+// Top performers for one team — the top 3 scorers, already sorted. The
+// "Who mattered" module renders one of these per side, away team first.
+export type TeamPerformers = {
+  teamAbbreviation: string;
+  players: PlayerStatLine[];
+};
+
 export type PeriodScores = {
   away: number[];
   home: number[];

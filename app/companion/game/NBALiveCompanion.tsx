@@ -19,6 +19,7 @@ import type { Game } from "../../nba/types";
 import { PinControls } from "./PinControls";
 import { deriveHero, deriveSeriesContext, deriveSeriesDots } from "./nba-moments";
 import { HighlightsStack } from "./HighlightsStack";
+import { TopPerformers } from "./TopPerformers";
 import { PeriodScoreLine } from "./PeriodScoreLine";
 import { StakesLine } from "../stakes/StakesLine";
 import { deriveNBASeriesStake } from "../stakes/derive-stakes";
@@ -146,6 +147,19 @@ export function NBALiveCompanion({
     isUpcoming || game.status === "final" ? null : (
       <HighlightsStack game={gameWithFreshLeaders} />
     );
+  // "Who mattered" — top 3 scorers per team. Factual companion to the
+  // editorial highlights. Renders for live AND final (the recap carries
+  // narrative bullets, this carries the box-score table), but never
+  // upcoming. Null when ESPN hasn't populated the player boxscore yet.
+  const performers =
+    !isUpcoming && (detail?.performers?.length ?? 0) > 0 ? (
+      <TopPerformers
+        performers={detail!.performers}
+        gameId={game.id}
+        awayCode={game.away.abbreviation}
+        subject={subject}
+      />
+    ) : null;
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-4xl md:pt-2">
@@ -411,6 +425,11 @@ export function NBALiveCompanion({
           md:hidden — desktop copy lives in the right rail. */}
       {highlights ? <div className="mt-5 md:hidden">{highlights}</div> : null}
 
+      {/* ── Who mattered (mobile inline; desktop → rail) ────────────────
+          Top 3 scorers per team. Renders for live + final. md:hidden —
+          the desktop copy lives in the right rail below. */}
+      {performers ? <div className="mt-5 md:hidden">{performers}</div> : null}
+
       {/* Series state lives in the consolidated Series block under the
           scoreboard now — no second card before the pin controls. */}
 
@@ -441,10 +460,11 @@ export function NBALiveCompanion({
             highlights. Hidden on mobile (the inline copies above carry
             it there). Only renders the wrapper when there's something
             to show so an upcoming game doesn't leave an empty rail. */}
-        {periodScore || highlights ? (
+        {periodScore || highlights || performers ? (
           <aside className="mt-5 hidden md:mt-0 md:block">
             <div className="sticky top-4 space-y-4">
               {periodScore}
+              {performers}
               {highlights}
             </div>
           </aside>

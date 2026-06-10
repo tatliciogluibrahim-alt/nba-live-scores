@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { GameLeader, GamePlay } from "../../nba/types";
+import type { GameLeader, GamePlay, TeamPerformers } from "../../nba/types";
 
 // Lightweight wrapper around /api/nba-game-detail.
 //
@@ -29,6 +29,10 @@ export type NBADetail = {
    *  callers should fall back to the live-scores snapshot in that
    *  case. */
   leaders: GameLeader[];
+  /** Top 3 scorers per team from the ESPN boxscore. Empty for upcoming
+   *  games (no player rows yet) — the "Who mattered" module renders
+   *  nothing in that case. */
+  performers: TeamPerformers[];
 };
 
 const LIVE_INTERVAL_MS = 10_000;
@@ -42,6 +46,7 @@ type FullResponse = {
   broadcasts?: string[];
   plays?: GamePlay[];
   leaders?: GameLeader[];
+  performers?: TeamPerformers[];
   // Other fields exist on the API response but are intentionally not
   // typed here so we don't accidentally surface them in the UI.
 };
@@ -58,6 +63,7 @@ async function fetchDetail(eventId: string): Promise<NBADetail | null> {
       plays: json.plays ?? [],
       broadcasts: json.broadcasts ?? [],
       leaders: json.leaders ?? [],
+      performers: json.performers ?? [],
     };
   } catch {
     return null;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { GamePlay } from "../../nba/types";
+import type { GamePlay, TeamPerformers } from "../../nba/types";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,34 @@ type ESPNTeam = {
 type ESPNBoxscoreTeam = {
   team?: ESPNTeam;
   statistics?: ESPNStat[];
+};
+
+// Per-player box score. ESPN nests this under boxscore.players[] — one
+// block per team, each with a statistics[0] group whose `names` array
+// labels the positional `stats` row on every athlete. The app already
+// fetches this in the same summary response; it was just never typed or
+// read (only boxscore.teams was). Populated once a game is in progress
+// or final — upcoming games omit it.
+type ESPNBoxscorePlayerAthlete = {
+  athlete?: {
+    displayName?: string;
+    shortName?: string;
+  };
+  starter?: boolean;
+  didNotPlay?: boolean;
+  active?: boolean;
+  stats?: string[];
+};
+
+type ESPNBoxscorePlayerStatGroup = {
+  names?: string[];
+  labels?: string[];
+  athletes?: ESPNBoxscorePlayerAthlete[];
+};
+
+type ESPNBoxscorePlayersTeam = {
+  team?: ESPNTeam;
+  statistics?: ESPNBoxscorePlayerStatGroup[];
 };
 
 type ESPNHeaderCompetitor = {
@@ -117,6 +145,7 @@ type ESPNPlay = {
 type ESPNSummaryResponse = {
   boxscore?: {
     teams?: ESPNBoxscoreTeam[];
+    players?: ESPNBoxscorePlayersTeam[];
   };
   leaders?: ESPNTeamLeaders[];
   broadcasts?: ESPNBroadcast[];
@@ -255,6 +284,64 @@ function normalizeLeaders(data: ESPNSummaryResponse) {
     })
     .filter((leader) => leader.label && leader.value)
     .slice(0, 8);
+}
+
+// Parse one positional stat as an integer. ESPN stores box-score stats
+// as strings ("27", "12", "4-9"); the counting stats we care about
+// (PTS/REB/AST/STL/BLK/MIN) are plain integers. Returns 0 for missing
+// or non-numeric cells so a partial row never throws.
+function statInt(stats: string[] | undefined, idx: number): number {
+  if (!stats || idx < 0 || idx >= stats.length) return 0;
+  const n = parseInt(stats[idx], 10);
+  return Number.isFinite(n) ? n : 0;
+}
+
+// "Boxscore lite" — top 3 scorers per team. Reads boxscore.players[]
+// from the summary response (already fetched). ESPN can reorder/extend
+// the stat columns, so we map names → index per team rather than
+// hardcoding positions. DNP players and empty rows are dropped. Returns
+// [] for upcoming games (no players block) — callers render nothing.
+function normalizeBoxscorePlayers(data: ESPNSummaryResponse): TeamPerformers[] {
+  const teams = data.boxscore?.players ?? [];
+  const out: TeamPerformers[] = [];
+
+  for (const teamBlock of teams) {
+    const abbr = teamBlock.team?.abbreviation ?? "";
+    const group = teamBlock.statistics?.[0];
+    if (!abbr || !group) continue;
+
+    const names = group.names ?? [];
+    const ptsIdx = names.indexOf("PTS");
+    if (ptsIdx < 0) continue; // no points column → nothing to rank on
+    const rebIdx = names.indexOf("REB");
+    const astIdx = names.indexOf("AST");
+    const stlIdx = names.indexOf("STL");
+    const blkIdx = names.indexOf("BLK");
+    const minIdx = names.indexOf("MIN");
+
+    const players = (group.athletes ?? [])
+      .filter(
+        (a) => !a.didNotPlay && Array.isArray(a.stats) && a.stats.length > 0
+      )
+      .map((a) => ({
+        name: a.athlete?.shortName ?? a.athlete?.displayName ?? "Player",
+        pts: statInt(a.stats, ptsIdx),
+        reb: statInt(a.stats, rebIdx),
+        ast: statInt(a.stats, astIdx),
+        stl: statInt(a.stats, stlIdx),
+        blk: statInt(a.stats, blkIdx),
+        min: statInt(a.stats, minIdx),
+        starter: a.starter,
+      }))
+      .sort((x, y) => y.pts - x.pts)
+      .slice(0, 3);
+
+    if (players.length > 0) {
+      out.push({ teamAbbreviation: abbr, players });
+    }
+  }
+
+  return out;
 }
 
 function normalizePeriodScores(data: ESPNSummaryResponse) {
@@ -400,6 +487,7 @@ export async function GET(request: NextRequest) {
         broadcasts: [],
         line: null,
         leaders: [],
+        performers: [],
         teamComparison: [],
         periodScores: { away: [], home: [] },
         plays: [],
@@ -436,6 +524,7 @@ export async function GET(request: NextRequest) {
         broadcasts: normalizeBroadcasts(data),
         line: normalizeLine(data),
         leaders: normalizeLeaders(data),
+        performers: normalizeBoxscorePlayers(data),
         teamComparison: normalizeTeamComparison(data),
         periodScores: normalizePeriodScores(data),
         plays,
@@ -453,6 +542,7 @@ export async function GET(request: NextRequest) {
         broadcasts: [],
         line: null,
         leaders: [],
+        performers: [],
         teamComparison: [],
         periodScores: { away: [], home: [] },
         plays: [],
