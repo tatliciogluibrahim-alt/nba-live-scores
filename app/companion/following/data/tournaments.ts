@@ -31,7 +31,7 @@ export const TOURNAMENTS: TournamentEntry[] = [
   },
   {
     id: "fifa-world-cup-2026",
-    name: "FIFA World Cup 2026",
+    name: "World Cup 2026",
     detail: "48 nations · group stage through the final",
     accent: "var(--wc)",
     chip: "WC",

@@ -27,7 +27,7 @@ const MOMENTS: MomentEntry[] = [
     soft: "var(--nba-soft)",
   },
   {
-    sport: "FIFA",
+    sport: "World Cup",
     title: "World Cup 2026",
     detail:
       "Country pages with group, path-to-final, opener countdown, kickoff and full-time alerts. June 11, 2026 in Mexico City.",

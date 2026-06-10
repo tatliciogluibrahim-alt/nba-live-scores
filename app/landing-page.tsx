@@ -38,7 +38,7 @@ const ACTIVE_CARDS: {
   {
     id: "world-cup",
     eyebrow: "Soccer",
-    title: "FIFA World Cup 2026",
+    title: "World Cup 2026",
     description: "48 teams. Pick your country. Follow the path to the final.",
     badge: "JUNE 2026",
     bg: "#ffffff",

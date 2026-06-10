@@ -17,7 +17,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     q: "What sports are covered?",
-    a: "NBA Playoffs and FIFA World Cup 2026 right now. NFL lands ahead of the August 2026 season opener. More sports get added as their moment arrives.",
+    a: "NBA Playoffs and World Cup 2026 right now. NFL lands ahead of the August 2026 season opener. More sports get added as their moment arrives.",
   },
   {
     q: "How is this different from Apple Sports?",

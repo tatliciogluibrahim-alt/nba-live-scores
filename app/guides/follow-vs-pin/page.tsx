@@ -74,7 +74,7 @@ export default function FollowVsPinPage() {
         Open the app, tap{" "}
         <strong style={{ color: "var(--ink)" }}>Following</strong> in
         the bottom nav. Tap the &quot;Add a follow&quot; row, pick a
-        moment (NBA Playoffs, FIFA World Cup, etc.), then pick the
+        moment (NBA Playoffs, World Cup, etc.), then pick the
         team, country, series, or tournament you want to follow.
       </P>
       <P>

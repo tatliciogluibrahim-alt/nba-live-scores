@@ -40,7 +40,7 @@ export default function SportsCirclePage() {
           "Teams. Knicks, Eagles, USA.",
           "Countries. For the World Cup, Olympics, etc.",
           "Series. Knicks vs Cavaliers, USA's opening match.",
-          "Tournaments. NBA Playoffs, FIFA World Cup 2026.",
+          "Tournaments. NBA Playoffs, World Cup 2026.",
         ]}
       />
 

@@ -226,7 +226,7 @@ export function FollowingDashboard() {
       <div className="mt-5 space-y-2">
         <Link
           href="/following/add"
-          aria-label="Follow more (NBA Playoffs or FIFA World Cup)"
+          aria-label="Follow more (NBA Playoffs or World Cup)"
           className="flex min-h-[52px] w-full items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",

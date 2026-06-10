@@ -115,7 +115,7 @@ export default async function OGImage() {
               fontFamily: "monospace",
             }}
           >
-            NBA · FIFA World Cup 2026 · NFL coming
+            NBA · World Cup 2026 · NFL coming
           </div>
           <div
             style={{

@@ -18,7 +18,7 @@ export const metadata = {
 export default function WorldCup2026Page() {
   return (
     <ContentPageShell
-      eyebrow="FIFA World Cup 2026"
+      eyebrow="World Cup 2026"
       headline="A calm companion for the World Cup."
       intro="June 11, 2026. Mexico City. Pick your country. Countdown, your group, kickoff and full-time pings."
     >
@@ -54,7 +54,7 @@ export default function WorldCup2026Page() {
         ]}
       />
       <P>
-        Tournament alerts (FIFA World Cup as a follow object) cover the
+        Tournament alerts (World Cup as a follow object) cover the
         same plus tournament-wide moments (final-day kickoff, group-stage
         wrap, etc).
       </P>
@@ -97,7 +97,7 @@ export default function WorldCup2026Page() {
         </a>
         ). Open it, tap{" "}
         <strong style={{ color: "var(--ink)" }}>Following</strong>, pick
-        a country from the FIFA World Cup section. Turn alerts on.
+        a country from the World Cup section. Turn alerts on.
       </P>
       <P>
         On the country page, the tournament countdown will carry the

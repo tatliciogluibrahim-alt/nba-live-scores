@@ -149,7 +149,7 @@ export function WidgetSync() {
         const days = daysUntil(WC_KICKOFF);
         if (days > 0) {
           moment = {
-            text: "FIFA World Cup 2026",
+            text: "World Cup 2026",
             detail:
               days === 1 ? "Kicks off tomorrow" : `Kicks off in ${days} days`,
           };

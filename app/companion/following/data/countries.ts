@@ -1,4 +1,4 @@
-// Static FIFA World Cup 2026 country directory used by the country picker.
+// Static World Cup 2026 country directory used by the country picker.
 // Local copy — keeps the picker decoupled from the world-cup-app monolith.
 // Code is the ESPN/FIFA abbreviation. Group letters A–L map to WC_GROUPS.
 

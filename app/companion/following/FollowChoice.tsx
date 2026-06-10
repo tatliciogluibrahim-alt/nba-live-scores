@@ -82,7 +82,7 @@ export const FOLLOW_MOMENTS: FollowMoment[] = [
   },
   {
     id: "fifa-wc-2026",
-    name: "FIFA World Cup 2026",
+    name: "World Cup 2026",
     description: "48 nations through the final.",
     accent: "var(--wc)",
     icon: "⚽",

@@ -17,7 +17,7 @@ export async function generateMetadata({
   return {
     title: `${name} groups | No Noise Scores`,
     description: isWorldCup
-      ? "All 12 groups for the 2026 FIFA World Cup. 48 nations, group by group. Tap any team to open its page."
+      ? "All 12 groups for the 2026 World Cup. 48 nations, group by group. Tap any team to open its page."
       : `Every group in the ${name}. Tap any team to open its page.`,
     alternates: {
       canonical: `https://nonoisescores.app/tournament/${id}/groups`,

@@ -68,7 +68,7 @@ export default function WatchLaterGuide() {
 
       <CalloutBox eyebrow="What to do about other apps">
         Open your phone&apos;s notification settings and silence push
-        from anything that might spoil: ESPN, NBA, FIFA, theScore,
+        from anything that might spoil: ESPN, NBA, theScore,
         group chats, Twitter / X, Bluesky, Threads. You can re-enable
         after the game.
       </CalloutBox>

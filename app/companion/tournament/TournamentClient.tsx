@@ -27,7 +27,7 @@ import { WC_KNOCKOUT_ROUNDS } from "../following/data/wc-fixtures";
 //   • NBA Playoffs (`nba-playoffs-*`): list of active/recent playoff
 //     series, each with the canonical SevenDotStrip behavior. Tap a
 //     series row → existing /series/[id] page.
-//   • FIFA World Cup (`fifa-world-cup-*`): list of all 12 groups
+//   • World Cup (`fifa-world-cup-*`): list of all 12 groups
 //     (A–L) with their 4 member countries. Tap a country → existing
 //     /country/[code] page.
 //   • NFL (`nfl-season-*`): coming-soon state, no live data yet.
@@ -162,7 +162,7 @@ export function TournamentClient({ tournamentId }: { tournamentId: string }) {
 function TournamentHeader({ tournament }: { tournament: TournamentEntry }) {
   // Front Page treatment (Concept A): drop the boxed card, lead with a
   // big editorial headline (the tournament name) under a small
-  // letter-chip + eyebrow. Length-sized so "FIFA World Cup 2026" and
+  // letter-chip + eyebrow. Length-sized so "World Cup 2026" and
   // "NBA Playoffs" both sit right. Accent identity stays via the chip +
   // eyebrow color.
   const name = tournament.name;
@@ -620,7 +620,7 @@ function MiniSeriesStrip({ gamesPlayed }: { gamesPlayed: number }) {
   );
 }
 
-// ── FIFA World Cup body ────────────────────────────────────────────────
+// ── World Cup body ────────────────────────────────────────────────
 
 function FIFAWorldCupBody({ tournamentId }: { tournamentId: string }) {
   // Editorial groups preview (no flags). Leads with the user's followed

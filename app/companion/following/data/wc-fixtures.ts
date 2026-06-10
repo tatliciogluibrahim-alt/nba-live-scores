@@ -1,4 +1,4 @@
-// FIFA World Cup 2026 group-stage fixture directory.
+// World Cup 2026 group-stage fixture directory.
 //
 // Static fallback used when the ESPN feed's rolling window doesn't yet
 // include a match. ESPN drives live scores + status the moment a match

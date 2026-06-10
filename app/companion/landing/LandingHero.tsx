@@ -102,7 +102,7 @@ export function LandingHero() {
             fontWeight: 600,
           }}
         >
-          NBA · FIFA World Cup 2026 · NFL coming
+          NBA · World Cup 2026 · NFL coming
         </p>
       </div>
 

@@ -1311,7 +1311,7 @@ function CountdownHero({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">
-                FIFA World Cup 2026
+                World Cup 2026
               </p>
               <p className="mt-1 font-[family-name:var(--font-display)] text-[2.55rem] uppercase leading-none tracking-tight">
                 {days} days

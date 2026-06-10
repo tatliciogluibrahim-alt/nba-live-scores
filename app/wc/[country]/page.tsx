@@ -70,7 +70,7 @@ export async function generateMetadata({
     };
   }
 
-  const title = `${country.name} at the FIFA World Cup 2026 | No Noise Scores`;
+  const title = `${country.name} at the World Cup 2026 | No Noise Scores`;
   const description = `${country.name} are in Group ${country.group}. Follow ${country.name}'s path through the World Cup with kickoff and full-time alerts. Calm sports companion. No feeds, no ads, no noise.`;
   const canonical = `https://nonoisescores.app/wc/${country.id.toLowerCase()}`;
 
@@ -116,7 +116,7 @@ export default async function CountryLandingPage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SportsEvent",
-    name: `${country.name} at the FIFA World Cup 2026`,
+    name: `${country.name} at the World Cup 2026`,
     startDate: "2026-06-11",
     endDate: "2026-07-19",
     eventStatus: "https://schema.org/EventScheduled",
@@ -124,11 +124,6 @@ export default async function CountryLandingPage({
     location: {
       "@type": "Place",
       name: "United States, Canada, and Mexico",
-    },
-    organizer: {
-      "@type": "Organization",
-      name: "FIFA",
-      url: "https://www.fifa.com",
     },
     homeTeam: {
       "@type": "SportsTeam",
