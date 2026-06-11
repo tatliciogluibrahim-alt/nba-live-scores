@@ -3,13 +3,6 @@
 import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { NoSpoilersToggle } from "./NoSpoilersToggle";
-// ReminderSelector + QuietHoursSelector are now LIVE (#14). The server
-// honors both: the reminders cron (/api/cron/reminders) fires N minutes
-// before tipoff per `remindBeforeMinutes`, and the dispatcher + reminders
-// cron skip delivery during the `quietHours` window (evaluated in the
-// device's synced time zone). Both prefs ride the push sync payload.
-import { ReminderSelector } from "./ReminderSelector";
-import { QuietHoursSelector } from "./QuietHoursSelector";
 // Per-follow alert editing lives on the Following page now — every
 // follow card already carries its own tier control, so the full editor
 // here just duplicated it. Settings keeps a compact read-only summary
@@ -64,10 +57,6 @@ export function SettingsClient() {
         <NoSpoilersToggle />
         <AlertsSummary />
         <PushSubscriptionPanel />
-        {/* Delivery-timing controls sit with the push channel they
-            govern. Both are now server-honored (#14). */}
-        <ReminderSelector />
-        <QuietHoursSelector />
         <BriefSettingsRow />
         <NotificationPreview />
         <ThemeSelector />

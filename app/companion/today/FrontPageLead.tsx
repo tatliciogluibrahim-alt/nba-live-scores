@@ -137,7 +137,25 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
 
           <div className="flex-1" />
 
-          {lines && (lines.top || lines.bottom) ? (
+          {lead.live ? (
+            // Live games: a single clean line, not a full sentence
+            // ("Game is live.") jammed into the status slot and stacked
+            // over the channel. The eyebrow ("LIVE NOW" + pulse) already
+            // carries the live state; here we just point to where to
+            // watch. "LIVE · ABC" reads as deliberate, not amateur.
+            <div
+              className="text-right uppercase"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                color: deck.accent,
+              }}
+            >
+              {deck.broadcast ? `LIVE · ${deck.broadcast}` : "LIVE"}
+            </div>
+          ) : lines && (lines.top || lines.bottom) ? (
             <div className="text-right">
               {lines.top ? (
                 <div

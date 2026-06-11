@@ -78,12 +78,17 @@ export function TournamentCountdown({ country }: { country: CountryEntry }) {
   // tighter windows below still earn an eventful headline.
   const isCalm = !state.starting && !state.imminent && !state.closeWeek;
 
+  // This card counts down to the TOURNAMENT kickoff (WC_KICKOFF), not to
+  // this country's first match — so the copy must talk about the World
+  // Cup starting, never "{country}'s opener". The country's actual first
+  // fixture is shown separately in the Next Match card below (e.g.
+  // Türkiye opens Jun 14, four days after the Jun 11 tournament start).
   const headline = state.starting
-    ? `${country.name} kicks off soon.`
+    ? `The World Cup kicks off soon.`
     : state.imminent
-      ? `${country.name}'s opener is tomorrow.`
+      ? `The World Cup starts tomorrow.`
       : state.closeWeek
-        ? `${country.name} opens the tournament.`
+        ? `The World Cup is almost here.`
         : null;
 
   const detail = state.starting && state.hoursLabel
