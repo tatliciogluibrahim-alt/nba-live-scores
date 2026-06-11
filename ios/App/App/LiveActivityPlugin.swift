@@ -19,6 +19,7 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "end", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getActiveGameIds", returnType: CAPPluginReturnPromise),
     ]
 
     // Dictionary of active Live Activities keyed by gameId.
@@ -30,6 +31,60 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
     private var activities: [String: Activity<NoNoiseGameAttributes>] {
         get { _activities as? [String: Activity<NoNoiseGameAttributes>] ?? [:] }
         set { _activities = newValue }
+    }
+
+    // Capacitor lifecycle: runs once each time the plugin loads (i.e. once
+    // per app launch). ActivityKit Live Activities PERSIST across app
+    // launches/force-quits, but `_activities` is in-memory and starts empty
+    // every launch. Without rebuilding it here, a relaunch while a pinned
+    // game is still live would have no record of the existing tile and
+    // start() would mint a DUPLICATE. Reconcile re-adopts the OS-owned
+    // activities so dedupe survives the relaunch.
+    public override func load() {
+        guard #available(iOS 16.2, *) else { return }
+        reconcileFromSystem()
+    }
+
+    // Re-adopt any OS-persisted Live Activities into `_activities` and
+    // re-attach their push-token streams so the web half re-registers each
+    // token after a relaunch. Idempotent and cheap to call repeatedly.
+    @available(iOS 16.2, *)
+    private func reconcileFromSystem() {
+        for activity in Activity<NoNoiseGameAttributes>.activities {
+            let gameId = activity.attributes.gameId
+            // Skip activities minted before gameId was added to the
+            // attributes (dev-only) — they can't be keyed.
+            guard !gameId.isEmpty, activities[gameId] == nil else { continue }
+            activities[gameId] = activity
+            streamPushToken(for: activity, gameId: gameId)
+        }
+    }
+
+    // Forward an Activity's push token (current value + later rotations) to
+    // the web layer so it can register the token with the server.
+    @available(iOS 16.2, *)
+    private func streamPushToken(for activity: Activity<NoNoiseGameAttributes>, gameId: String) {
+        Task { [weak self] in
+            for await tokenData in activity.pushTokenUpdates {
+                let hex = tokenData.map { String(format: "%02x", $0) }.joined()
+                self?.notifyListeners("pushToken", data: [
+                    "gameId": gameId,
+                    "token": hex,
+                ])
+            }
+        }
+    }
+
+    // The existing Live Activity for a game, if any — checking the
+    // in-memory dictionary first (fast path for this launch) then the
+    // OS-persisted list (survives force-quit/relaunch, which the
+    // dictionary does not).
+    @available(iOS 16.2, *)
+    private func existingActivity(forGameId gameId: String) -> Activity<NoNoiseGameAttributes>? {
+        if let tracked = activities[gameId] { return tracked }
+        return Activity<NoNoiseGameAttributes>.activities.first {
+            $0.attributes.gameId == gameId
+        }
     }
 
     @objc func start(_ call: CAPPluginCall) {
@@ -54,9 +109,17 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
-        // If we already have an activity for this game, resolve immediately.
-        if activities[gameId] != nil {
-            call.resolve(["id": gameId])
+        // Idempotency across app launches. The in-memory `activities`
+        // dictionary is empty on a fresh launch, but the OS may still be
+        // showing a Live Activity from a previous run. existingActivity()
+        // checks both, so a relaunch-while-live re-adopts the existing
+        // tile (re-streaming its token) instead of minting a duplicate.
+        if let existing = existingActivity(forGameId: gameId) {
+            if activities[gameId] == nil {
+                activities[gameId] = existing
+                streamPushToken(for: existing, gameId: gameId)
+            }
+            call.resolve(["id": existing.id])
             return
         }
 
@@ -66,7 +129,10 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             sport: call.getString("sport") ?? "nba",
             // No-Spoilers: hide the score on the lock screen / Dynamic
             // Island when the pinned game is spoiler-hidden for the user.
-            redacted: call.getBool("redacted") ?? false
+            redacted: call.getBool("redacted") ?? false,
+            // Stored so a future launch can match this activity back to its
+            // game and avoid a duplicate (see existingActivity()).
+            gameId: gameId
         )
         let state = NoNoiseGameAttributes.ContentState(
             awayCode: call.getString("awayCode") ?? "",
@@ -92,15 +158,7 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
 
             // Stream per-Activity push tokens to the web layer. The token
             // can rotate, so we always forward the latest.
-            Task { [weak self] in
-                for await tokenData in activity.pushTokenUpdates {
-                    let hex = tokenData.map { String(format: "%02x", $0) }.joined()
-                    self?.notifyListeners("pushToken", data: [
-                        "gameId": gameId,
-                        "token": hex,
-                    ])
-                }
-            }
+            streamPushToken(for: activity, gameId: gameId)
 
             call.resolve(["id": activity.id])
         } catch {
@@ -135,5 +193,23 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             self?.activities[gameId] = nil
             call.resolve()
         }
+    }
+
+    // Returns the gameIds of Live Activities the OS currently has running.
+    // The web half (LiveActivitySync) seeds its in-memory `startedRef` from
+    // this on mount so, after a relaunch, it knows which pinned-and-live
+    // games already have a tile and won't ask to start a duplicate.
+    @objc func getActiveGameIds(_ call: CAPPluginCall) {
+        guard #available(iOS 16.2, *) else {
+            call.resolve(["gameIds": []])
+            return
+        }
+        // Re-adopt persisted activities first so token streams reattach and
+        // the returned list is authoritative.
+        reconcileFromSystem()
+        let ids = Activity<NoNoiseGameAttributes>.activities
+            .map { $0.attributes.gameId }
+            .filter { !$0.isEmpty }
+        call.resolve(["gameIds": ids])
     }
 }

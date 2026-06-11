@@ -257,9 +257,19 @@ export function PullToRefresh({
       </div>
 
       {/* Children translate downward as the user pulls. */}
+      {/* At rest (phase "idle") we apply NO transform at all. A permanent
+          `translate3d(0,0,0)` would composite this whole subtree onto its
+          own GPU layer, and text flush against that layer's edge gets its
+          first glyph clipped during rasterization — that's what was eating
+          the "Y" off "You follow" in the desktop right rail. Only the
+          active pull / snap-back states get the transform (and they
+          genuinely translate). Bonus: no always-on compositing layer. */}
       <div
         style={{
-          transform: `translate3d(0, ${translateY}px, 0)`,
+          transform:
+            phase === "idle"
+              ? undefined
+              : `translate3d(0, ${translateY}px, 0)`,
           transition:
             phase === "snapping"
               ? `transform ${SNAP_BACK_MS}ms ease-out`

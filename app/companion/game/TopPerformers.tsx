@@ -36,6 +36,7 @@ export function TopPerformers({
   gameId,
   awayCode,
   subject,
+  live,
 }: {
   performers: TeamPerformers[];
   gameId: string;
@@ -44,10 +45,16 @@ export function TopPerformers({
   awayCode: string;
   /** aria subject for the Spoiler wrapper, e.g. "NYK vs SA". */
   subject: string;
+  /** Live vs final. "Who mattered" is past tense and only reads right
+   *  once the game is over; while it's still being played we use the
+   *  tense-neutral "Top performers". */
+  live: boolean;
 }) {
   const noSpoilers = useEffectiveNoSpoilers(gameId);
 
   if (!performers || performers.length === 0) return null;
+
+  const title = live ? "Top performers" : "Who mattered";
 
   // Away team first, to match the away-first convention across the app.
   const ordered = [...performers].sort((a, b) =>
@@ -57,7 +64,7 @@ export function TopPerformers({
   return (
     <section>
       <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>Who mattered</Eyebrow>
+        <Eyebrow>{title}</Eyebrow>
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />
       </div>
 

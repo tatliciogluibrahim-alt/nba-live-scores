@@ -67,6 +67,7 @@ type PluginListenerHandle = { remove: () => void | Promise<void> };
 type LiveActivityPlugin = {
   start(opts: LiveActivityStartInput): Promise<{ id: string }>;
   end(opts: { gameId: string }): Promise<void>;
+  getActiveGameIds(): Promise<{ gameIds: string[] }>;
   addListener(
     eventName: "pushToken",
     listener: (data: LiveActivityPushTokenEvent) => void
@@ -123,6 +124,22 @@ export async function endLiveActivity(gameId: string): Promise<void> {
     await plugin.end({ gameId });
   } catch (err) {
     console.warn("[LiveActivity] end failed:", err);
+  }
+}
+
+/** gameIds of Live Activities the OS currently has running. Survives app
+ *  kills/relaunches (ActivityKit persists activities), so the web lifecycle
+ *  can seed its in-memory "already started" set on mount and avoid asking
+ *  the native plugin to start a duplicate. Returns [] off-native / on error. */
+export async function getActiveLiveActivityGameIds(): Promise<string[]> {
+  const plugin = getPlugin();
+  if (!plugin) return [];
+  try {
+    const res = await plugin.getActiveGameIds();
+    return res?.gameIds ?? [];
+  } catch (err) {
+    console.warn("[LiveActivity] getActiveGameIds failed:", err);
+    return [];
   }
 }
 

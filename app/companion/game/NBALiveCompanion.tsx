@@ -158,6 +158,7 @@ export function NBALiveCompanion({
         gameId={game.id}
         awayCode={game.away.abbreviation}
         subject={subject}
+        live={isLive}
       />
     ) : null;
 

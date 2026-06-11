@@ -50,6 +50,43 @@ struct NoNoiseGameAttributes: ActivityAttributes {
     // score updates never reveal it. Defaults false so older start
     // calls (and the synthesized memberwise init) stay valid.
     var redacted: Bool = false
+    // Stable game identifier, set once at start. ActivityKit Live
+    // Activities PERSIST across app launches/kills, but the plugin's
+    // in-memory activity dictionary does not. Storing gameId on the
+    // attributes lets a fresh launch match an OS-persisted activity back
+    // to its game (via Activity.activities) so start() can be idempotent
+    // and we never mint a duplicate tile. Defaults "" so activities
+    // minted before this field existed still decode.
+    var gameId: String = ""
+
+    // Explicit memberwise init so callers can omit redacted / gameId and
+    // still compile (an explicit init(from:) suppresses the synthesized
+    // memberwise one).
+    init(matchup: String, stage: String, sport: String,
+         redacted: Bool = false, gameId: String = "") {
+        self.matchup = matchup
+        self.stage = stage
+        self.sport = sport
+        self.redacted = redacted
+        self.gameId = gameId
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case matchup, stage, sport, redacted, gameId
+    }
+
+    // Custom decode so an activity persisted before `redacted` / `gameId`
+    // existed still decodes after an app update (synthesized Codable would
+    // throw on the missing keys and the OS would drop the activity).
+    // encode(to:) stays synthesized via CodingKeys.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        matchup = try c.decode(String.self, forKey: .matchup)
+        stage = try c.decode(String.self, forKey: .stage)
+        sport = try c.decode(String.self, forKey: .sport)
+        redacted = (try? c.decode(Bool.self, forKey: .redacted)) ?? false
+        gameId = (try? c.decode(String.self, forKey: .gameId)) ?? ""
+    }
 }
 
 // Convenience: split "OKC vs SA" into away / home codes.

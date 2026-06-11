@@ -12,6 +12,7 @@ import {
   startLiveActivity,
   endLiveActivity,
   addLiveActivityPushTokenListener,
+  getActiveLiveActivityGameIds,
   LIVE_ACTIVITY_SANDBOX,
   type LiveActivityStartInput,
 } from "./live-activity";
@@ -217,6 +218,26 @@ export function LiveActivitySync() {
     return () => {
       cancelled = true;
       if (unsub) unsub();
+    };
+  }, []);
+
+  // Seed startedRef from the OS-persisted Live Activities on mount.
+  // ActivityKit activities survive app kills/relaunches, but startedRef is
+  // in-memory and starts empty every launch. Without seeding, the poll
+  // would see a still-live pinned game with an empty startedRef and start a
+  // SECOND activity for one that already exists. Asking the native plugin
+  // which game activities are already running closes that gap. (Native
+  // start() is also idempotent across launches as a backstop.)
+  useEffect(() => {
+    if (!isCapacitorNative()) return;
+    let cancelled = false;
+    (async () => {
+      const ids = await getActiveLiveActivityGameIds();
+      if (cancelled) return;
+      for (const id of ids) startedRef.current.add(id);
+    })();
+    return () => {
+      cancelled = true;
     };
   }, []);
 
