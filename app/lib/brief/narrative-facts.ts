@@ -1,4 +1,4 @@
-import type { Game } from "../../nba/types";
+import type { Game, TeamPerformers } from "../../nba/types";
 import { deriveSeriesStake } from "../../companion/stakes/series-stakes";
 import type { GameFacts, PerformerFacts } from "../narrative/types";
 
@@ -12,8 +12,36 @@ function leaderValue(value: string): number {
   return m ? parseInt(m[1], 10) : 0;
 }
 
+/** Top scorer from the BOXSCORE (boxscore.players → TeamPerformers).
+ *  This is the reliable source: the per-category `leaders` block is
+ *  frequently empty for finals, which is why the narrative was getting
+ *  topPerformer=null and could only write score lines. The boxscore is
+ *  populated for every in-progress/final game. Highest PTS across both
+ *  teams wins; carries that player's REB/AST so lines can read
+ *  "Wembanyama went for 32 with 4 blocks" instead of just the score. */
+function topPerformerFromBoxscore(
+  performers: TeamPerformers[]
+): PerformerFacts | null {
+  let best: PerformerFacts | null = null;
+  for (const team of performers) {
+    for (const p of team.players) {
+      if (!best || p.pts > best.pts) {
+        best = {
+          name: p.name,
+          team: team.teamAbbreviation,
+          pts: p.pts,
+          ast: p.ast,
+          reb: p.reb,
+        };
+      }
+    }
+  }
+  return best && best.pts > 0 ? best : null;
+}
+
 /** Pull the top scorer plus their AST/REB from the game's leaders.
- *  Matches both long ("Points") and abbreviated ("PTS") labels. */
+ *  Matches both long ("Points") and abbreviated ("PTS") labels. Fallback
+ *  for when the boxscore performers aren't available. */
 function topPerformer(game: Game): PerformerFacts | null {
   const leaders = game.leaders ?? [];
   const pts = leaders
@@ -57,7 +85,13 @@ function groundedNumbers(
   return [...nums];
 }
 
-export function buildGameFactsFromGame(game: Game): GameFacts | null {
+export function buildGameFactsFromGame(
+  game: Game,
+  /** Boxscore top-3-per-team from /api/nba-game-detail. When present it's
+   *  the source of truth for the top performer; the `leaders`-based path
+   *  is the fallback. Pass it whenever you've fetched game detail. */
+  performers?: TeamPerformers[]
+): GameFacts | null {
   if (game.status !== "final") return null;
 
   const awayScore = game.away.score ?? null;
@@ -77,7 +111,12 @@ export function buildGameFactsFromGame(game: Game): GameFacts | null {
         : game.away.abbreviation;
 
   const stake = deriveSeriesStake(game);
-  const performer = topPerformer(game);
+  // Prefer the boxscore performer (reliable); fall back to the flaky
+  // per-category leaders only when the boxscore wasn't supplied.
+  const performer =
+    (performers && performers.length > 0
+      ? topPerformerFromBoxscore(performers)
+      : null) ?? topPerformer(game);
 
   return {
     gameId: game.id,

@@ -38,7 +38,7 @@ import { sendBriefEmail } from "../../../lib/brief/send-email";
 import { buildGameFactsFromGame } from "../../../lib/brief/narrative-facts";
 import { narrativeMode } from "../../../lib/narrative/config";
 import { getOrGenerateNarrative } from "../../../lib/narrative/service";
-import type { Game } from "../../../nba/types";
+import type { Game, TeamPerformers } from "../../../nba/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -176,7 +176,10 @@ async function enrichFinalLeaders(
 // template. Users see NOTHING — this only writes to the cron log so the
 // operator can judge quality before any cutover. Best-effort; never
 // affects the email send. See docs/NARRATIVE_INTELLIGENCE_ANALYSIS.md §9.
-async function runNarrativeShadow(games: Game[]): Promise<void> {
+async function runNarrativeShadow(
+  games: Game[],
+  baseUrl: string
+): Promise<void> {
   const mode = narrativeMode();
   if (mode === "off") return;
 
@@ -187,7 +190,24 @@ async function runNarrativeShadow(games: Game[]): Promise<void> {
 
   for (const g of finals) {
     try {
-      const facts = buildGameFactsFromGame(g);
+      // Pull the boxscore top performers so the generated line can name
+      // the standout ("Wembanyama went for 32"), not just the score. The
+      // per-category `leaders` block is often empty for finals; the
+      // boxscore isn't. ≤3 fetches/day, only when the pilot is on.
+      let performers: TeamPerformers[] = [];
+      try {
+        const res = await fetch(`${baseUrl}/api/nba-game-detail?id=${g.id}`, {
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+        });
+        if (res.ok) {
+          const json = (await res.json()) as { performers?: TeamPerformers[] };
+          performers = json.performers ?? [];
+        }
+      } catch {
+        /* fall back to leaders-based performer */
+      }
+      const facts = buildGameFactsFromGame(g, performers);
       if (!facts) continue;
       // Cache-first + retry-once. Only validated lines are returned;
       // a null candidate just means "template would render."
@@ -231,7 +251,7 @@ export async function GET(req: Request) {
   const nba = await enrichFinalLeaders(await fetchNBA(baseUrl), baseUrl);
 
   // Quiet evaluation of the narrative pilot. No-op unless opted in.
-  await runNarrativeShadow(nba);
+  await runNarrativeShadow(nba, baseUrl);
 
   const results: Array<{
     email: string;

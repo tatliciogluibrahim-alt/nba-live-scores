@@ -26,7 +26,7 @@ import { buildGameFactsFromGame } from "../../../lib/brief/narrative-facts";
 import { getOrGenerateNarrative } from "../../../lib/narrative/service";
 import { rankSignals } from "../../../lib/narrative/significance";
 import { validateNarrative } from "../../../lib/narrative/validate";
-import type { Game } from "../../../nba/types";
+import type { Game, TeamPerformers } from "../../../nba/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -74,21 +74,29 @@ async function resolveGame(baseUrl: string, id: string): Promise<Game | null> {
   return null;
 }
 
-async function enrichLeaders(baseUrl: string, game: Game): Promise<Game> {
+async function enrichLeaders(
+  baseUrl: string,
+  game: Game
+): Promise<{ game: Game; performers: TeamPerformers[] }> {
   try {
     const res = await fetch(`${baseUrl}/api/nba-game-detail?id=${game.id}`, {
       cache: "no-store",
       headers: { Accept: "application/json" },
     });
-    if (!res.ok) return game;
-    const json = (await res.json()) as { leaders?: Game["leaders"] };
-    if (json.leaders && json.leaders.length > 0) {
-      return { ...game, leaders: json.leaders };
-    }
+    if (!res.ok) return { game, performers: [] };
+    const json = (await res.json()) as {
+      leaders?: Game["leaders"];
+      performers?: TeamPerformers[];
+    };
+    const enriched =
+      json.leaders && json.leaders.length > 0
+        ? { ...game, leaders: json.leaders }
+        : game;
+    return { game: enriched, performers: json.performers ?? [] };
   } catch {
     /* keep existing leaders */
   }
-  return game;
+  return { game, performers: [] };
 }
 
 export async function GET(req: Request) {
@@ -112,8 +120,8 @@ export async function GET(req: Request) {
     );
   }
 
-  const game = await enrichLeaders(baseUrl, resolved);
-  const facts = buildGameFactsFromGame(game);
+  const { game, performers } = await enrichLeaders(baseUrl, resolved);
+  const facts = buildGameFactsFromGame(game, performers);
   if (!facts) {
     return NextResponse.json(
       {
