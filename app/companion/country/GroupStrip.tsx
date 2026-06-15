@@ -4,10 +4,12 @@ import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import type { GroupRow } from "./country-data";
 
-// Compact 4-row group strip. Pre-tournament we deliberately do NOT
-// render points / GP / GA — that would require a standings layer that
-// isn't wired yet and would risk leaking results when it lands. Once
-// real standings ship, this strip is the right surface to add them to.
+// Compact 4-row group strip. Pre-tournament rows are just name + code
+// (calm, matches the Front Page country mockup). Once group games
+// finish, each row gains its position rank plus a GP · PTS · GD line,
+// and rows sort by position. The stronger "through / out" read lives in
+// the gated StakesLine, not here — these standings numbers are the same
+// spoiler class the scoreline already exposes.
 //
 // Group-mate rows are clickable (Phase 22.5 polish): tapping a row
 // other than the currently-selected country routes to that country's
@@ -56,32 +58,54 @@ export function GroupStrip({
           const codeColor = row.isSelected ? "var(--wc)" : "var(--mute-1)";
           const standing = row.standing;
 
+          const gdStr =
+            standing && standing.played > 0
+              ? standing.gd > 0
+                ? `+${standing.gd}`
+                : `${standing.gd}`
+              : null;
+
           const rowChrome = (
             <div className="flex w-full items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div
-                  className="truncate text-[18px] leading-tight"
-                  style={{
-                    color: nameColor,
-                    fontWeight: 700,
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  {row.name}
-                </div>
+              <div className="flex min-w-0 items-baseline gap-2.5">
                 {standing && standing.played > 0 ? (
-                  <div
-                    className="mt-0.5 text-[11px] uppercase"
+                  <span
+                    className="shrink-0 text-[13px] tabular-nums"
                     style={{
                       fontFamily: "var(--font-mono)",
-                      letterSpacing: "0.08em",
-                      color: "var(--mute-1)",
-                      fontWeight: 600,
+                      color: row.isSelected ? "var(--wc)" : "var(--mute-2)",
+                      fontWeight: 700,
+                    }}
+                    aria-hidden="true"
+                  >
+                    {standing.position}
+                  </span>
+                ) : null}
+                <div className="min-w-0">
+                  <div
+                    className="truncate text-[18px] leading-tight"
+                    style={{
+                      color: nameColor,
+                      fontWeight: 700,
+                      letterSpacing: "-0.01em",
                     }}
                   >
-                    {standing.played} GP · {standing.points} PTS
+                    {row.name}
                   </div>
-                ) : null}
+                  {standing && standing.played > 0 ? (
+                    <div
+                      className="mt-0.5 text-[11px] uppercase"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        letterSpacing: "0.08em",
+                        color: "var(--mute-1)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {standing.played} GP · {standing.points} PTS · {gdStr} GD
+                    </div>
+                  ) : null}
+                </div>
               </div>
               <span
                 className="shrink-0 text-[11px] uppercase"

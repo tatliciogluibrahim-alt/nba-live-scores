@@ -29,7 +29,7 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
     return <CountryNotFound countryCode={countryCode} />;
   }
 
-  const { country, nextMatch, groupRows, pathStages, hasAnyFeed, fixtures } =
+  const { country, nextMatch, groupRows, pathStages, hasAnyFeed, fixtures, groupStake } =
     payload;
 
   // Pre-kickoff and no fixtures parsed for this country yet: let
@@ -232,12 +232,13 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
           tournamentStarted={tournamentStarted}
         />
         {/* Plain-English stake — sits under the path stages so it reads
-            as commentary on the structure above. Currently emits a
-            pre-tournament line ("Top two control their path") only; the
-            mid-tournament standings-aware variant ships when the WC
-            standings feed lands. */}
+            as commentary on the structure above. Once group games start
+            landing, payload.groupStake carries the live, state-aware line
+            ("USA sit 2nd on 4 points" / "USA are through" / "USA are
+            out"). Pre-tournament (or before any group game finishes) we
+            fall back to the structural pre-kickoff line. */}
         <StakesLine
-          stake={deriveWCGroupStake(country, tournamentStarted)}
+          stake={groupStake ?? deriveWCGroupStake(country, tournamentStarted)}
           ariaSubject={country.name}
         />
       </div>

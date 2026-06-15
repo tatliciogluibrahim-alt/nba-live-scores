@@ -629,7 +629,9 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
         subtitle: matchup,
         body: noSpoilers
           ? "Someone scored. Tap to check in."
-          : `${scoreLine(event)} · Goal`,
+          : event.scorer
+            ? `${event.scorer} · ${scoreLine(event)}`
+            : `${scoreLine(event)} · Goal`,
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:wc-goal:${event.awayScore}-${event.homeScore}`,
       };

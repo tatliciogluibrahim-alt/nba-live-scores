@@ -8,6 +8,7 @@ import { useFollows } from "../providers";
 import {
   composeBrief,
   type BriefPayload,
+  type BriefWCGame,
 } from "../../lib/brief/compose-brief";
 import type { Game } from "../../nba/types";
 
@@ -26,26 +27,34 @@ import type { Game } from "../../nba/types";
 export function BriefPreviewClient() {
   const { follows, hydrated } = useFollows();
   const [games, setGames] = useState<Game[]>([]);
+  const [wcGames, setWcGames] = useState<BriefWCGame[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Fetch NBA + World Cup in parallel so the preview matches the
+      // cron (which now folds WC matches into the brief). Either feed
+      // failing just drops that sport's rows; the preview still renders.
       try {
-        const res = await fetch("/api/live-scores", { cache: "no-store" });
-        if (!res.ok) {
-          if (!cancelled) setLoaded(true);
-          return;
+        const [nbaRes, wcRes] = await Promise.all([
+          fetch("/api/live-scores", { cache: "no-store" }),
+          fetch("/api/world-cup", { cache: "no-store" }),
+        ]);
+        if (nbaRes.ok) {
+          const json = (await nbaRes.json()) as {
+            games?: Game[];
+            seriesGames?: Game[];
+          };
+          if (!cancelled) setGames(json.seriesGames ?? json.games ?? []);
         }
-        const json = (await res.json()) as {
-          games?: Game[];
-          seriesGames?: Game[];
-        };
-        if (!cancelled) {
-          setGames(json.seriesGames ?? json.games ?? []);
-          setLoaded(true);
+        if (wcRes.ok) {
+          const json = (await wcRes.json()) as { games?: BriefWCGame[] };
+          if (!cancelled) setWcGames(json.games ?? []);
         }
       } catch {
+        // Swallow — loaded still flips so the UI leaves its shell.
+      } finally {
         if (!cancelled) setLoaded(true);
       }
     })();
@@ -67,8 +76,9 @@ export function BriefPreviewClient() {
         createdAt: 0,
       },
       nba: games,
+      wc: wcGames,
     });
-  }, [hydrated, loaded, follows, games]);
+  }, [hydrated, loaded, follows, games, wcGames]);
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">

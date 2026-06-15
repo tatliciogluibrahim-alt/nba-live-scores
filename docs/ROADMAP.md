@@ -515,6 +515,34 @@ Small or strategic items that surfaced mid-build. None blocking.
   dedicated session of clicking through every screen on both
   devices once the iOS native polish work settles. Phase 22.5-final
   candidate.
+- **Developer debug cockpit (lean v1).** An in-app debug console so
+  "the button does nothing" becomes a copyable report to paste into
+  Claude/Codex. Build the FOCUSED subset, not the 17-section spec:
+  (1) console gated by `?debug=1` + localStorage, off by default;
+  (2) global `error` + `unhandledrejection` + a React ErrorBoundary
+  → console; (3) `fetchWithDebug` wrapper logging failed API calls
+  with redaction; (4) a small `debugEvent()` ring buffer instrumented
+  on ONLY the flows that go silent (follow/unfollow, alert-preset
+  save, push-permission, push-subscribe — ~12 events, not 50);
+  (5) PWA/push diagnostics in the snapshot (SW registered/active,
+  notification permission, push-subscription exists yes/no) — the
+  push-debugging gold; (6) Copy Report + redaction utils; (7) a
+  `/api/health` endpoint (the one server piece worth doing — it would
+  have screamed "KV is down" during the June outage). SKIP: the full
+  server-logging overhaul (ops-metrics + cron logs + /admin already
+  cover it), an /admin/debug page, Sentry/PostHog (leave a
+  `reportError()` adapter seam and stop), the 50-event taxonomy
+  (instrument incrementally). CAUTION: gating must be airtight —
+  `NEXT_PUBLIC_DEBUG_CONSOLE` off in the native production build, never
+  reachable by an App Store reviewer (debug UI is a 4.x rejection risk,
+  same reason RegistrationDiagnostics was removed). Rationale: ~80% of
+  the original spec is client-side, but most real failures this app
+  hits (KV quota, cron, APNs delivery, stale email copy) are
+  server-side — so the lean v1 + health endpoint targets the actual
+  pain. Suggested files: `app/lib/debug/{debugStore,redact,report,
+  fetchWithDebug}.ts`, `app/companion/debug/DebugConsole.tsx` +
+  `ErrorBoundary`, `app/api/health/route.ts`. Full assessment in chat
+  history (2026-06-15).
 
 ---
 

@@ -76,6 +76,12 @@ export type PushEvent = {
    *  dispatcher renders it verbatim (No-Spoilers users get a calm
    *  variant instead). */
   note?: string;
+  /** Goal scorer's display name for wc-goal events, when the per-match
+   *  summary feed surfaced it ("Pulisic"). Own goals arrive as
+   *  "Name (OG)". Absent when the scoreboard moved but no scorer was
+   *  parseable — the dispatcher falls back to a plain "Goal" line.
+   *  No-Spoilers users never see it. */
+  scorer?: string;
 };
 
 export type FreshGameState = {

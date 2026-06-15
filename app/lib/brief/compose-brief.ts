@@ -300,6 +300,35 @@ function nbaGameMatchesFollow(game: Game, follow: Follow): boolean {
   }
 }
 
+// World Cup game shape the brief needs. Defined locally (not imported
+// from today-data) to keep this composer free of client-only modules,
+// the same way the NBA path leans on the lean `Game` type. Matches the
+// /api/world-cup response — the caller hands the games straight through.
+export type BriefWCGame = {
+  id: string;
+  date: string;
+  status: "live" | "upcoming" | "final";
+  stage?: string;
+  group?: string;
+  home: { abbreviation: string; name: string; score: number };
+  away: { abbreviation: string; name: string; score: number };
+};
+
+function wcGameMatchesFollow(game: BriefWCGame, follow: Follow): boolean {
+  switch (follow.kind) {
+    case "country":
+      return (
+        game.home.abbreviation === follow.id ||
+        game.away.abbreviation === follow.id
+      );
+    case "tournament":
+      return follow.id.startsWith("fifa-world-cup-");
+    case "team":
+    case "series":
+      return false; // these don't drive World Cup matches
+  }
+}
+
 // ── Format helpers ───────────────────────────────────────────────────
 
 function formatGameTime(date: string): string {
@@ -363,12 +392,17 @@ function summarizeFollowKinds(follows: Follow[]): string {
 export function composeBrief({
   subscriber,
   nba,
+  wc = [],
   now = new Date(),
 }: {
   subscriber: BriefSubscriber;
   /** NBA game list — should be the seriesGames window (~14d) so
    *  yesterday's finals are included even at week-boundary days. */
   nba: Game[];
+  /** World Cup fixtures from /api/world-cup (its ~14-day window already
+   *  covers yesterday + today). Optional so NBA-only callers and the
+   *  test suite stay valid; defaults to an empty slate. */
+  wc?: BriefWCGame[];
   /** Optional fixed clock for testing / preview. */
   now?: Date;
 }): BriefPayload {
@@ -414,6 +448,31 @@ export function composeBrief({
       };
     });
 
+  // Yesterday, World Cup: finals matching a country / tournament follow.
+  // Appended after the NBA finals so the brief reads sport-by-sport
+  // rather than time-interleaved (calmer, and clearer for a follower of
+  // both). Scores stay gated on includeScores, same as NBA.
+  const wcYesterday: BriefGameRow[] = wc
+    .filter(
+      (g) =>
+        g.status === "final" &&
+        isYesterday(g.date, now) &&
+        follows.some((f) => wcGameMatchesFollow(g, f))
+    )
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .map((g) => ({
+      source: "wc",
+      matchup: `${g.away.abbreviation} · ${g.home.abbreviation}`,
+      scoreLine: subscriber.includeScores
+        ? `${g.away.score} – ${g.home.score}`
+        : null,
+      status: g.status,
+      context: subscriber.includeScores
+        ? `Full time${g.stage ? ` · ${g.stage}` : ""}`
+        : "Full time.",
+      href: `/game/${g.id}`,
+    }));
+
   // Today: upcoming/live games matching any follow.
   const todayGames = nba.filter(
     (g) =>
@@ -437,6 +496,32 @@ export function composeBrief({
         href: `/game/${g.id}`,
       };
     });
+
+  // Today, World Cup: live or upcoming matches for followed countries /
+  // the tournament. Live matches show a calm "Live" context (and the
+  // score when scores are on); upcoming show kickoff time.
+  const wcToday: BriefGameRow[] = wc
+    .filter(
+      (g) =>
+        (g.status === "upcoming" || g.status === "live") &&
+        isToday(g.date, now) &&
+        follows.some((f) => wcGameMatchesFollow(g, f))
+    )
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map((g) => ({
+      source: "wc",
+      matchup: `${g.away.abbreviation} · ${g.home.abbreviation}`,
+      scoreLine:
+        g.status === "live" && subscriber.includeScores
+          ? `${g.away.score} – ${g.home.score}`
+          : null,
+      status: g.status,
+      context:
+        g.status === "live"
+          ? `Live${g.stage ? ` · ${g.stage}` : ""}`
+          : `${formatGameTime(g.date)}${g.stage ? ` · ${g.stage}` : ""}`,
+      href: `/game/${g.id}`,
+    }));
 
   // Worth knowing: stake context for today's games. Uses the SAME
   // shared `deriveSeriesStake` the in-app StakesLine uses, so the copy
@@ -532,8 +617,8 @@ export function composeBrief({
     monthDay,
     yesterdayMonthDay,
     issueNumber,
-    yesterday,
-    today,
+    yesterday: [...yesterday, ...wcYesterday],
+    today: [...today, ...wcToday],
     worthKnowing,
     countdown,
     alerts: {

@@ -29,6 +29,7 @@ import { listSubscribers } from "../../../lib/brief/subscriber-store";
 import {
   composeBrief,
   shouldSendBrief,
+  type BriefWCGame,
 } from "../../../lib/brief/compose-brief";
 import {
   renderBriefHtml,
@@ -120,6 +121,24 @@ async function fetchNBA(baseUrl: string): Promise<Game[]> {
     // Use the wider seriesGames window so yesterday's finals are
     // included even at the week boundary.
     return json.seriesGames ?? json.games ?? [];
+  } catch {
+    return [];
+  }
+}
+
+// World Cup fixtures for the brief. /api/world-cup's ~14-day window
+// already spans yesterday + today, so a single fetch covers both brief
+// sections. Best-effort: a failure just means no WC rows this run (NBA
+// still sends). The composer only reads the fields BriefWCGame declares.
+async function fetchWC(baseUrl: string): Promise<BriefWCGame[]> {
+  try {
+    const res = await fetch(`${baseUrl}/api/world-cup`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { games?: BriefWCGame[] };
+    return json.games ?? [];
   } catch {
     return [];
   }
@@ -249,6 +268,7 @@ export async function GET(req: Request) {
 
   const baseUrl = resolveBaseUrl(req);
   const nba = await enrichFinalLeaders(await fetchNBA(baseUrl), baseUrl);
+  const wc = await fetchWC(baseUrl);
 
   // Quiet evaluation of the narrative pilot. No-op unless opted in.
   await runNarrativeShadow(nba, baseUrl);
@@ -280,7 +300,7 @@ export async function GET(req: Request) {
         continue;
       }
 
-      const payload = composeBrief({ subscriber: sub, nba });
+      const payload = composeBrief({ subscriber: sub, nba, wc });
       if (!shouldSendBrief(payload)) {
         results.push({ email: sub.email, delivered: false, skipped: true });
         continue;

@@ -12,7 +12,9 @@
 //                      matching the product principle ("halftime AND then
 //                      start of second half"). Once per game.
 //   • wc-goal        — scoreline rose while live (any goal: open play,
-//                      pen, own goal). No scorer name (scoreboard feed).
+//                      pen, own goal). Carries the scorer name when the
+//                      caller threads one in via lastScorer (parsed from
+//                      the per-match summary); plain "Goal" otherwise.
 //   • wc-final       — status flipped live → final
 //
 // Deferred:
@@ -43,6 +45,12 @@ export type FreshWCGameState = {
    *  treated as false by the detector, so callers/tests that predate the
    *  field stay valid. */
   isHalftime?: boolean;
+  /** Display name of the most recent goal scorer, parsed from the
+   *  per-match summary feed ("Pulisic", or "Name (OG)" for own goals).
+   *  The detector attaches it to a wc-goal event so the push can name
+   *  the scorer. Absent / null when the feed didn't carry it — the goal
+   *  still fires, just without a name. */
+  lastScorer?: string | null;
 };
 
 /** Status ranks — once a fixture has moved forward, we treat any
@@ -149,7 +157,11 @@ export function detectWCEvents(
     stableNext.status === "live" &&
     nextTotal > prevTotal
   ) {
-    events.push({ ...baseInfo, type: "wc-goal" });
+    events.push({
+      ...baseInfo,
+      type: "wc-goal",
+      ...(stableNext.lastScorer ? { scorer: stableNext.lastScorer } : {}),
+    });
   }
 
   // Transition 3: live → final → full time.

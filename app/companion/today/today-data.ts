@@ -425,6 +425,13 @@ function pickHero(
       kind: "wc-live",
       eyebrow: isPinned ? `Pinned · ${stage}` : stage,
       headline: deriveWCLiveHeadline(heroWcLive),
+      // Busy-slate signal: during the group stage several matches run at
+      // once. When more than one is live, name the count so the hero
+      // doesn't look like the only thing on. Calm and factual, no FOMO.
+      context:
+        wcLive.length > 1
+          ? `${wcLive.length} World Cup matches live now.`
+          : undefined,
       live: true,
       accent: "var(--wc)",
       pinned: isPinned,
@@ -1579,9 +1586,11 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
     return {
       eyebrow: { label: "Live now", tone: heroTone },
       headline: lc === 1 ? `One game ${when}.` : `${spellCount(lc)} games ${when}.`,
-      // Series stake ("OKC leads series 3-2") — only present for
-      // playoff/series games; plain games and World Cup get none.
-      support: lead?.stake,
+      // Support line: a series stake ("OKC leads series 3-2") when the
+      // lead is a playoff game, else the hero's context line. For a busy
+      // World Cup slate that context is "N World Cup matches live now." —
+      // so the user sees the wider slate even though the deck shows one.
+      support: lead?.stake ?? payload.hero?.context,
       deck,
       live: true,
     };

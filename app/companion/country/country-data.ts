@@ -15,6 +15,7 @@ import {
   type WCStaticFixture,
 } from "../following/data/wc-fixtures";
 import type { WCGameLite } from "../today/today-data";
+import type { Stake } from "../stakes/derive-stakes";
 
 // ── Shapes ────────────────────────────────────────────────────────────
 
@@ -39,6 +40,22 @@ export type CountryGameRow = {
   kickoffISO: string;
 };
 
+/** A team's standing in its group, computed from finished group games.
+ *  Goal difference + position turn the strip from "4 PTS" into a table a
+ *  fan can actually read. `outcome` is set only once the group is
+ *  mathematically settled (all six group games final) — we never guess
+ *  clinch/elimination scenarios. "third" = finished 3rd; may still
+ *  advance as a best third-place finisher, so it's never called "out". */
+export type GroupStanding = {
+  played: number;
+  points: number;
+  gf: number;
+  ga: number;
+  gd: number;
+  position: number;
+  outcome: "through" | "third" | "out" | null;
+};
+
 export type GroupRow = {
   code: string;
   name: string;
@@ -47,7 +64,7 @@ export type GroupRow = {
   /** Group standing, populated once games in the group have finished.
    *  Undefined pre-tournament (the strip then shows just names + codes,
    *  matching the calm pre-kickoff design). */
-  standing?: { played: number; points: number };
+  standing?: GroupStanding;
 };
 
 export type PathStage = {
@@ -71,6 +88,12 @@ export type CountryPayload = {
 
   /** Scaffolded possible-path timeline. */
   pathStages: PathStage[];
+
+  /** Live, state-aware group stake ("USA sit 2nd on 4 points" / "USA are
+   *  through" / "USA are out"). Spoilery — the view gates it under
+   *  No-Spoilers. Null pre-tournament (the view falls back to the
+   *  structural pre-kickoff stake) or when no group game has finished. */
+  groupStake: Stake | null;
 
   /** True when /api/world-cup returned any fixtures for the tournament. */
   hasAnyFeed: boolean;
@@ -216,34 +239,126 @@ function staticRowForCountry(
 
 // ── Public builder ────────────────────────────────────────────────────
 
-// Tally group standings (games played + points) from finished
-// group-stage games. Win = 3, draw = 1, loss = 0. Keyed by team code.
-// Empty until the tournament starts producing finals.
-function computeGroupStandings(
+// Build the group table from finished group-stage games: played, points
+// (W=3/D=1/L=0), goals for/against, goal difference, and rank (points,
+// then GD, then GF — head-to-head, the real next tiebreaker, needs
+// per-match lookups and is deferred). `outcome` is filled only when the
+// group is mathematically settled (all six games final), so we never
+// falsely claim a team is through/out mid-group.
+//
+// Data caveat: this tallies from /api/world-cup's rolling window. Group
+// stage spans ~13 days, so on the final matchday an opening game can be
+// near the window edge — if it has rolled off, `outcome` simply stays
+// null (safe) rather than claiming a wrong result. The authoritative
+// upgrade is ESPN's fifa.world/standings endpoint (a later data pass).
+function computeGroupTable(
   games: WCGameLite[],
   group: string
-): Map<string, { played: number; points: number }> {
-  const table = new Map<string, { played: number; points: number }>();
-  const bump = (code: string, pts: number) => {
-    const cur = table.get(code) ?? { played: 0, points: 0 };
-    table.set(code, { played: cur.played + 1, points: cur.points + pts });
-  };
+): Map<string, GroupStanding> {
+  type Raw = { played: number; points: number; gf: number; ga: number };
+  const raw = new Map<string, Raw>();
+  const get = (c: string): Raw =>
+    raw.get(c) ?? { played: 0, points: 0, gf: 0, ga: 0 };
+
+  let finals = 0;
   for (const g of games) {
     if (g.group !== group || g.status !== "final") continue;
+    finals += 1;
     const h = g.home.abbreviation;
     const a = g.away.abbreviation;
-    if (g.home.score > g.away.score) {
-      bump(h, 3);
-      bump(a, 0);
-    } else if (g.away.score > g.home.score) {
-      bump(a, 3);
-      bump(h, 0);
-    } else {
-      bump(h, 1);
-      bump(a, 1);
+    const rh = get(h);
+    const ra = get(a);
+    rh.played += 1;
+    ra.played += 1;
+    rh.gf += g.home.score;
+    rh.ga += g.away.score;
+    ra.gf += g.away.score;
+    ra.ga += g.home.score;
+    if (g.home.score > g.away.score) rh.points += 3;
+    else if (g.away.score > g.home.score) ra.points += 3;
+    else {
+      rh.points += 1;
+      ra.points += 1;
     }
+    raw.set(h, rh);
+    raw.set(a, ra);
   }
+
+  // A WC group of four plays six games (each pair once). Complete = 6 final.
+  const groupComplete = finals >= 6;
+
+  const ranked = Array.from(raw.entries())
+    .map(([code, r]) => ({ code, ...r, gd: r.gf - r.ga }))
+    .sort((x, y) => y.points - x.points || y.gd - x.gd || y.gf - x.gf);
+
+  const table = new Map<string, GroupStanding>();
+  ranked.forEach((r, i) => {
+    const position = i + 1;
+    const outcome: GroupStanding["outcome"] = !groupComplete
+      ? null
+      : position <= 2
+        ? "through"
+        : position === 3
+          ? "third"
+          : "out";
+    table.set(r.code, {
+      played: r.played,
+      points: r.points,
+      gf: r.gf,
+      ga: r.ga,
+      gd: r.gd,
+      position,
+      outcome,
+    });
+  });
   return table;
+}
+
+const ORDINAL = ["", "1st", "2nd", "3rd", "4th"];
+
+/** Live, state-aware group stake. Replaces the null the pre-tournament
+ *  deriver returns once games start — so the country page stops going
+ *  silent at the exact moment advancement is on the line. Spoilery (it
+ *  reveals standings/outcome); the StakesLine gates it under No-Spoilers. */
+function buildGroupStake(
+  country: CountryEntry,
+  standing: GroupStanding | undefined,
+  fixtures: CountryGameRow[]
+): Stake | null {
+  if (!standing || standing.played === 0) return null;
+  const ord = ORDINAL[standing.position] ?? `${standing.position}th`;
+  const pts = `${standing.points} ${standing.points === 1 ? "point" : "points"}`;
+  const gdStr = standing.gd > 0 ? `+${standing.gd}` : `${standing.gd}`;
+
+  if (standing.outcome === "through") {
+    return {
+      eyebrow: "Path",
+      line: `${country.name} are through to the Round of 32, finishing ${ord} in Group ${country.group}.`,
+      spoilery: true,
+    };
+  }
+  if (standing.outcome === "out") {
+    return {
+      eyebrow: "Path",
+      line: `${country.name} are out, finishing ${ord} in Group ${country.group} on ${pts}.`,
+      spoilery: true,
+    };
+  }
+  if (standing.outcome === "third") {
+    return {
+      eyebrow: "Path",
+      line: `${country.name} finished 3rd in Group ${country.group}. A best third-place spot could still see them through.`,
+      spoilery: true,
+    };
+  }
+  // In progress — position, points, GD, and games left.
+  const remaining = fixtures.filter((f) => f.status === "upcoming").length;
+  const tail = remaining > 0 ? `, ${standing.played} of 3 played.` : ".";
+  return {
+    eyebrow: "Path",
+    line: `${country.name} sit ${ord} in Group ${country.group} on ${pts} (${gdStr} GD)${tail}`,
+    spoilery: true,
+  };
 }
 
 export function buildCountryPayload(
@@ -290,15 +405,15 @@ export function buildCountryPayload(
   const upcoming = fixtures.find((f) => f.status === "upcoming");
   const nextMatch = live ?? upcoming ?? null;
 
-  // Group standings — points + games played per team, tallied from
-  // finished group-stage games. Empty pre-tournament. Once games land,
-  // the strip shows standings and sorts by points.
-  const standings = computeGroupStandings(games, country.group);
+  // Group table — played / points / goals / GD / position per team,
+  // tallied from finished group-stage games. Empty pre-tournament. Once
+  // games land, the strip shows standings and sorts by position.
+  const standings = computeGroupTable(games, country.group);
   const anyPlayed = Array.from(standings.values()).some((s) => s.played > 0);
 
   // Group strip — the four members of this country's group, with the
-  // selected country flagged. Sorted by points once the tournament has
-  // started; directory order before then.
+  // selected country flagged. Sorted by computed position once the
+  // tournament has started; directory order before then.
   const groupRows: GroupRow[] = WC_COUNTRIES
     .filter((c) => c.group === country.group)
     .map((c) => ({
@@ -310,8 +425,13 @@ export function buildCountryPayload(
     }))
     .sort((a, b) => {
       if (!anyPlayed) return 0; // keep directory order pre-tournament
-      return (b.standing?.points ?? 0) - (a.standing?.points ?? 0);
+      return (a.standing?.position ?? 99) - (b.standing?.position ?? 99);
     });
+
+  // Live, state-aware group stake for the selected country. Null when no
+  // group game has finished (the view falls back to the structural
+  // pre-kickoff stake).
+  const groupStake = buildGroupStake(country, standings.get(country.id), fixtures);
 
   // Path stages — pre-tournament default. Mark a stage `reached` if a
   // fixture in that stage exists. Group stage is always reachable.
@@ -343,6 +463,7 @@ export function buildCountryPayload(
     fixtures,
     groupRows,
     pathStages,
+    groupStake,
     hasAnyFeed: games.length > 0,
   };
 }
@@ -386,7 +507,7 @@ export function buildAllGroups(
   return Array.from(byGroup.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([letter, members]) => {
-      const standings = computeGroupStandings(games, letter);
+      const standings = computeGroupTable(games, letter);
       const anyPlayed = Array.from(standings.values()).some((s) => s.played > 0);
       const rows: GroupRow[] = members
         .map((c) => ({
@@ -398,7 +519,7 @@ export function buildAllGroups(
         }))
         .sort((a, b) => {
           if (!anyPlayed) return 0;
-          return (b.standing?.points ?? 0) - (a.standing?.points ?? 0);
+          return (a.standing?.position ?? 99) - (b.standing?.position ?? 99);
         });
       return { letter, rows, anyPlayed };
     });

@@ -12,6 +12,34 @@ import {
   getCountry,
   type CountryEntry,
 } from "../../companion/following/data/countries";
+import {
+  getCountryFixtures,
+  type WCStaticFixture,
+} from "../../companion/following/data/wc-fixtures";
+
+const ET = "America/New_York";
+
+// Format a static fixture as a search-friendly schedule line, e.g.
+// "Sat, Jun 14, 3:00 PM ET · United States vs Türkiye". Times render in
+// ET (the page's primary US audience); the build is deterministic since
+// the timezone is pinned. No em-dashes (brand voice).
+function fixtureLine(f: WCStaticFixture, country: CountryEntry): string {
+  const oppCode = f.home === country.id ? f.away : f.home;
+  const opp = getCountry(oppCode);
+  const d = new Date(f.kickoff);
+  const date = d.toLocaleDateString("en-US", {
+    timeZone: ET,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+  const time = d.toLocaleTimeString("en-US", {
+    timeZone: ET,
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${date}, ${time} ET · ${country.name} vs ${opp?.name ?? oppCode}`;
+}
 
 // /wc/[country] — static SEO landing pages for each World Cup 2026
 // country. 48 pages generated at build time via generateStaticParams.
@@ -29,10 +57,11 @@ import {
 //     /country/[code]. Desktop-friendly.
 //
 // Both share the country data layer (countries.ts). The static page
-// has no live data — it can't, because the fixture schedule isn't
-// available statically. Content focuses on group context, the
-// brand pitch ("calm companion"), and the cross-link to the live
-// experience.
+// has no LIVE data (scores, standings), but it does embed the curated
+// group-stage schedule (wc-fixtures.ts) with real kickoff times, which
+// is what most pre-tournament searches actually want. Content focuses
+// on group context, the schedule, the brand pitch ("calm companion"),
+// and the cross-link to the live experience.
 
 // Pre-render every country at build time. Switching to dynamic later
 // would require revalidation logic — for now, every page is a static
@@ -107,12 +136,14 @@ export default async function CountryLandingPage({
   }
 
   const mates = getGroupMates(country);
+  const fixtures = getCountryFixtures(country.id);
   const appLink = `/country/${country.id}`;
 
   // JSON-LD structured data — SportsEvent schema lets Google surface
-  // this with rich-result formatting in the SERP. We keep it minimal
-  // because most match-level data (exact times, venues) isn't yet
-  // available statically.
+  // this with rich-result formatting in the SERP. Each group fixture is
+  // a subEvent with its real kickoff time (from the static fixtures
+  // table) so the SERP can show the schedule. Knockout times aren't set
+  // until the draw, so they stay out.
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SportsEvent",
@@ -130,6 +161,17 @@ export default async function CountryLandingPage({
       name: country.name,
     },
     url: `https://nonoisescores.app/wc/${country.id.toLowerCase()}`,
+    subEvent: fixtures.map((f) => {
+      const oppCode = f.home === country.id ? f.away : f.home;
+      const opp = getCountry(oppCode);
+      return {
+        "@type": "SportsEvent",
+        name: `${country.name} vs ${opp?.name ?? oppCode}`,
+        startDate: f.kickoff,
+        eventStatus: "https://schema.org/EventScheduled",
+        sport: "Soccer",
+      };
+    }),
   };
 
   return (
@@ -158,6 +200,30 @@ export default async function CountryLandingPage({
           knockouts. The best four third-place finishers across all
           groups also move on.
         </P>
+
+        {fixtures.length > 0 ? (
+          <>
+            <H2>{country.name}&apos;s group schedule</H2>
+            <P>
+              All three group-stage matches, with kickoff times in ET:
+            </P>
+            <BulletList items={fixtures.map((f) => fixtureLine(f, country))} />
+            <P>
+              <a
+                href={appLink}
+                style={{
+                  color: "var(--ink)",
+                  textDecoration: "underline",
+                  textDecorationThickness: "1px",
+                  textUnderlineOffset: "3px",
+                  fontWeight: 600,
+                }}
+              >
+                See the live Group {country.group} standings →
+              </a>
+            </P>
+          </>
+        ) : null}
 
         <H2>Follow {country.name} on No Noise Scores</H2>
         <P>

@@ -349,7 +349,9 @@ export function WCGameDetail({
 
 function relevantMatchEvents(events: WCMatchEventLite[]): WCMatchEventLite[] {
   return events.filter((event) =>
-    ["goal", "pen_goal", "own_goal", "red_card"].includes(event.type)
+    ["goal", "pen_goal", "own_goal", "red_card", "yellow_card"].includes(
+      event.type
+    )
   );
 }
 
@@ -373,6 +375,7 @@ function teamCodeForEvent(game: WCGameLite, event: WCMatchEventLite): string {
 
 function eventLabel(event: WCMatchEventLite): string {
   if (event.type === "red_card") return "Red card";
+  if (event.type === "yellow_card") return "Yellow card";
   if (event.type === "pen_goal") return "Penalty goal";
   if (event.type === "own_goal") return "Own goal";
   return "Goal";
@@ -439,7 +442,12 @@ function deriveWCHighlights(
 ): WCHighlight[] {
   const derived: WCHighlight[] = [];
   const events = relevantMatchEvents(game.events ?? []);
-  const goals = events.filter((e) => e.type !== "red_card");
+  // Positive goal filter — now that yellow_card flows through
+  // relevantMatchEvents, a "!== red_card" filter would miscount yellows
+  // as goals.
+  const goals = events.filter(
+    (e) => e.type === "goal" || e.type === "pen_goal" || e.type === "own_goal"
+  );
   const reds = events.filter((e) => e.type === "red_card");
 
   // When the Match Events timeline is showing, it already narrates every

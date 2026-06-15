@@ -37,6 +37,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+type FeedEvent = {
+  minute: number | null;
+  type: "goal" | "pen_goal" | "own_goal" | "red_card" | "yellow_card";
+  playerName?: string;
+};
+
 type FeedGame = {
   id: string;
   status: "live" | "upcoming" | "final";
@@ -48,6 +54,9 @@ type FeedGame = {
   group?: string;
   home: { name: string; abbreviation: string; score: number };
   away: { name: string; abbreviation: string; score: number };
+  /** Per-match goal / card timeline from /api/world-cup's normalizeEvents.
+   *  We read the latest goal's scorer to name it in the push. */
+  events?: FeedEvent[];
 };
 
 type WCResponse = {
@@ -83,6 +92,25 @@ function parseMinute(statusText: string | undefined): number | null {
   return base + stoppage;
 }
 
+// Latest goal scorer for the push body. Picks the goal event with the
+// highest minute (the most recent), which is the one that just moved the
+// scoreline when the detector fires wc-goal. Own goals are tagged "(OG)"
+// so the push reads honestly. Null when no goal carried a name.
+function latestScorer(events: FeedEvent[] | undefined): string | null {
+  if (!events || events.length === 0) return null;
+  const goals = events.filter(
+    (e) =>
+      (e.type === "goal" || e.type === "pen_goal" || e.type === "own_goal") &&
+      !!e.playerName
+  );
+  if (goals.length === 0) return null;
+  const latest = goals.reduce((best, e) =>
+    (e.minute ?? -1) >= (best.minute ?? -1) ? e : best
+  );
+  const name = latest.playerName as string;
+  return latest.type === "own_goal" ? `${name} (OG)` : name;
+}
+
 function toFresh(game: FeedGame): FreshWCGameState {
   return {
     gameId: game.id,
@@ -95,6 +123,7 @@ function toFresh(game: FeedGame): FreshWCGameState {
     // Same halftime-break test the lock-screen status line uses, so the
     // detector and the Live Activity agree on what "halftime" means.
     isHalftime: !!game.statusText && /ht|half/i.test(game.statusText),
+    lastScorer: latestScorer(game.events),
   };
 }
 
