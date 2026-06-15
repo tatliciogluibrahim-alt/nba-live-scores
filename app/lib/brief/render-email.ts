@@ -162,8 +162,10 @@ function mastheadHtml(payload: BriefPayload): string {
 // ── Yesterday ──────────────────────────────────────────────────────────
 
 function matchupLabel(row: BriefGameRow): string {
-  // compose-brief stores "AWAY · HOME"; the Margin reads it "AWAY at HOME".
-  return escape(row.matchup.replace(" · ", " at "));
+  // compose-brief stores "AWAY · HOME". NBA reads it "AWAY at HOME"; the
+  // World Cup is at neutral venues, so soccer rows read "AWAY vs HOME".
+  const connector = row.source === "wc" ? " vs " : " at ";
+  return escape(row.matchup.replace(" · ", connector));
 }
 
 function yesterdayShownGame(row: BriefGameRow, idx: number): string {

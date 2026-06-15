@@ -163,6 +163,50 @@ function findCountry(code: string): CountryEntry | null {
   return WC_COUNTRIES.find((c) => c.id === upper) ?? null;
 }
 
+// A single country cannot play two matches at the same instant, yet the
+// merged list can collide: our curated static schedule (wc-fixtures.ts)
+// is a best-guess round-robin, so it can fabricate a fixture (e.g. ESP vs
+// URU) at the very slot the real feed has a different opponent (ESP vs
+// CPV). Collapse to one row per kickoff slot. The feed is authoritative,
+// so a real row always beats a static guess; within the same source the
+// most-progressed status wins (live / final carries the real score).
+//
+// Keyed on the epoch, not the raw ISO string: the feed stamps "...16:00Z"
+// while static stamps "...16:00:00.000Z" — same instant, different text,
+// which a string key would miss.
+const FIXTURE_STATUS_RANK: Record<CountryGameRow["status"], number> = {
+  live: 2,
+  final: 1,
+  upcoming: 0,
+};
+function slotKey(iso: string): string {
+  const t = new Date(iso).getTime();
+  return Number.isNaN(t) ? iso : String(t);
+}
+// Static rows are minted with synthetic ids ("wc-h-md1-..."); feed rows
+// carry numeric ESPN ids. A static id is the tell that a row is a guess.
+function isStaticRow(r: CountryGameRow): boolean {
+  return !/^\d+$/.test(r.id);
+}
+function dedupeCountryFixtures(rows: CountryGameRow[]): CountryGameRow[] {
+  const bySlot = new Map<string, CountryGameRow>();
+  for (const r of rows) {
+    const key = slotKey(r.kickoffISO);
+    const cur = bySlot.get(key);
+    if (!cur) {
+      bySlot.set(key, r);
+      continue;
+    }
+    // Feed beats static; otherwise the more-progressed status wins.
+    const rBeats =
+      (isStaticRow(cur) && !isStaticRow(r)) ||
+      (isStaticRow(cur) === isStaticRow(r) &&
+        FIXTURE_STATUS_RANK[r.status] > FIXTURE_STATUS_RANK[cur.status]);
+    if (rBeats) bySlot.set(key, r);
+  }
+  return Array.from(bySlot.values());
+}
+
 function gameRowForCountry(
   g: WCGameLite,
   countryCode: string,
@@ -396,9 +440,10 @@ export function buildCountryPayload(
     .filter((sf) => !feedPairKeys.has([sf.away, sf.home].sort().join("-")))
     .map((sf) => staticRowForCountry(sf, country.id, dirByCode));
 
-  const fixtures = [...feedFixtures, ...staticRows].sort((a, b) =>
-    a.kickoffISO.localeCompare(b.kickoffISO)
-  );
+  const fixtures = dedupeCountryFixtures([
+    ...feedFixtures,
+    ...staticRows,
+  ]).sort((a, b) => a.kickoffISO.localeCompare(b.kickoffISO));
 
   // Next match = soonest live or upcoming; otherwise null.
   const live = fixtures.find((f) => f.status === "live");

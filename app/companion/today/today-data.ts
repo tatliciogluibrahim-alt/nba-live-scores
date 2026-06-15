@@ -288,13 +288,21 @@ export function daysUntil(target: Date, now = new Date()): number {
   return Math.max(0, Math.ceil(ms / 86_400_000));
 }
 
-function formatGameDay(date: string, now = new Date()): string {
+// `sport` picks the same-day word: NBA games skew evening ("Tonight"),
+// World Cup games are daytime in the US ("Today"). Without this a noon
+// World Cup match read "Tonight," contradicting the "games today."
+// headline on the same screen.
+function formatGameDay(
+  date: string,
+  now = new Date(),
+  sport: "nba" | "wc" = "nba"
+): string {
   const d = new Date(date);
   const sameDay =
     d.getFullYear() === now.getFullYear() &&
     d.getMonth() === now.getMonth() &&
     d.getDate() === now.getDate();
-  if (sameDay) return "Tonight";
+  if (sameDay) return sport === "wc" ? "Today" : "Tonight";
 
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -700,7 +708,7 @@ function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): UpNextIt
     id: g.id,
     pinned,
     personal,
-    eyebrow: `World Cup · ${formatGameDay(g.date)}`,
+    eyebrow: `World Cup · ${formatGameDay(g.date, new Date(), "wc")}`,
     headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     detail: `${formatGameTime(g.date)}${g.stage ? " · " + g.stage : ""}`,
     isToday: isSameDay(g.date),

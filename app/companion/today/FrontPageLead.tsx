@@ -122,7 +122,11 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
                   color: "var(--mute-1)",
                 }}
               >
-                AT
+                {/* "AT" is an NBA away-@-home convention. Soccer (and the
+                    World Cup's neutral venues) reads "vs" — and the list
+                    rows below use "vs" too, so this keeps one screen
+                    consistent with itself. */}
+                {deck.accent === "var(--wc)" ? "VS" : "AT"}
               </span>
               <DeckChip label={chips[1]} bg={chipBg} fg={deck.accent} />
             </div>

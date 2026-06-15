@@ -129,6 +129,14 @@ export function FollowingDashboard() {
     };
   });
 
+  // Wrapped follows that still have their alert toggle on are holding a
+  // scarce free-tier slot they can never spend — a wrapped season fires
+  // no more alerts. We don't silently flip the toggle; instead we point
+  // it out so the user can free the slot for something live.
+  const wrappedHoldingSlot = cards.filter(
+    (c) => c.wrapped && c.follow.alertEnabled
+  );
+
   return (
     <section>
       {/* Title row + a settings gear. Global alerts/notifications/theme
@@ -187,6 +195,20 @@ export function FollowingDashboard() {
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {alertSlotCount} of {alertSlotCap} alert slots used.
+        </p>
+      ) : null}
+
+      {/* A wrapped season can't fire more alerts, so its slot is dead
+          weight on the free tier. Nudge (don't auto-flip) so a live
+          follow can take the slot. */}
+      {wrappedHoldingSlot.length > 0 ? (
+        <p
+          className="mb-3 text-[12px] leading-snug"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          {wrappedHoldingSlot.length === 1
+            ? `${wrappedHoldingSlot[0].name} wrapped. Turn its alerts off to free a slot.`
+            : "Some wrapped follows are holding alert slots. Turn their alerts off to free them."}
         </p>
       ) : null}
 

@@ -530,9 +530,19 @@ function deriveWCHero(game: WCGameLite): {
   live: boolean;
 } {
   if (game.status === "upcoming") {
+    const context = game.stage ? `World Cup · ${game.stage}` : undefined;
+    const d = new Date(game.date);
+    const valid = !Number.isNaN(d.getTime());
+    // Feed still says "upcoming" but kickoff time has already passed (feed
+    // lag, or a stale status). Don't promise a future time that's already
+    // gone — switch to present tense rather than "Kicks off today at 12:00"
+    // when it's 12:40.
+    if (valid && d.getTime() <= Date.now()) {
+      return { eyebrow: "Preview", headline: "Kicking off.", context, live: false };
+    }
     const tipoff = (() => {
       try {
-        const d = new Date(game.date);
+        if (!valid) return "soon";
         const today = new Date().toDateString() === d.toDateString();
         const time = d.toLocaleTimeString(undefined, {
           hour: "numeric",
@@ -552,7 +562,7 @@ function deriveWCHero(game: WCGameLite): {
     return {
       eyebrow: "Preview",
       headline: `Kicks off ${tipoff}.`,
-      context: game.stage ? `World Cup · ${game.stage}` : undefined,
+      context,
       live: false,
     };
   }

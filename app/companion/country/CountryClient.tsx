@@ -134,7 +134,7 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
       {fixtures.length > 0 ? (
         <section className="mt-5">
           <div className="mb-2 flex items-center gap-3">
-            <Eyebrow>Group matches</Eyebrow>
+            <Eyebrow>{country.name}&apos;s matches</Eyebrow>
             <div
               className="h-px flex-1"
               style={{ background: "var(--line)" }}
