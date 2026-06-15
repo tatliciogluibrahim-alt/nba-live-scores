@@ -168,11 +168,17 @@ export function deriveSeriesContext(game: Game): SeriesContext {
 
   // Safe descriptor: combine "Game N" with the round/conference label.
   // Tournament structure is public information; round names don't spoil.
-  const roundLabel = conf && round
-    ? `${conf} ${normalizeRoundName(round)}`
-    : conf
-      ? conf
-      : normalizeRoundName(round);
+  // Guard against duplication like "Finals NBA Finals" (conf="Finals" +
+  // round="NBA Finals"): when the normalized round name already contains
+  // the conference word, the round name is complete on its own. Keeps
+  // legitimate pairs like "East · Semifinals" intact.
+  const roundLabel = (() => {
+    const normalized = normalizeRoundName(round);
+    if (!conf) return normalized;
+    if (!normalized) return conf;
+    if (normalized.toLowerCase().includes(conf.toLowerCase())) return normalized;
+    return `${conf} ${normalized}`;
+  })();
 
   const parts: string[] = [];
   if (gameNumber) parts.push(`Game ${gameNumber}`);

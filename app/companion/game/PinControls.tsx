@@ -14,13 +14,25 @@ export function PinControls({
   onUnpin,
   subject,
   className,
+  gameStatus,
 }: {
   pinned: boolean;
   onPin: () => void;
   onUnpin: () => void;
   subject: string;
   className?: string;
+  /** Lifecycle of the game this control pins. For a FINAL game the
+   *  "live-tracks it on your lock screen when it starts" line is false —
+   *  the game already started and ended — so we switch to reference copy.
+   *  Omitted (undefined) keeps the default forward-looking copy. */
+  gameStatus?: "upcoming" | "live" | "final";
 }) {
+  // Final games can't be live-tracked; pinning them is for reference.
+  const footnote =
+    gameStatus === "final"
+      ? "Pinning keeps this game in Watching for easy reference. Alerts come from follows."
+      : "Pinning keeps this game in Watching and live-tracks it on your lock screen when it starts (up to 3 at once). Alerts come from follows.";
+
   return (
     <div className={className}>
       {pinned ? (
@@ -70,11 +82,7 @@ export function PinControls({
         className="mt-2 flex flex-wrap items-baseline gap-x-2 text-[11px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        <span>
-          Pinning keeps this game in Watching and live-tracks it on your
-          lock screen when it starts (up to 3 at once). Alerts come from
-          follows.
-        </span>
+        <span>{footnote}</span>
         {pinned ? (
           <Link
             href="/watching"

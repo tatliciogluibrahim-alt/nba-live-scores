@@ -7,7 +7,7 @@ import { resolveFollowIdentity } from "../follow/identity";
 import { useFollows } from "../providers";
 import type { Follow } from "../state/types";
 import { FollowCard, type FollowCardData } from "./FollowCard";
-import { useWrappedSeries } from "./use-wrapped-series";
+import { useWrappedSeries, NBA_PLAYOFFS_WRAPPED } from "./use-wrapped-series";
 import { useLiveFollows, isFollowLive } from "./use-live-follows";
 import { SportsCircleShareModal } from "../share/SportsCircleShareModal";
 import { SyncCircleModal } from "./SyncCircleModal";
@@ -115,7 +115,16 @@ export function FollowingDashboard() {
       name: identity.name,
       detail: identity.detail,
       accent: identity.accent,
-      wrapped: f.kind === "series" && wrappedSeries.has(f.id),
+      // Wrapped covers two cases now: a wrapped SERIES, and a wrapped
+      // TOURNAMENT (NBA playoffs) once the Finals are decided. Without
+      // the tournament case, a finished playoffs run stayed under
+      // "Coming up" because bucketOf() only routes wrapped cards to
+      // "Season over".
+      wrapped:
+        (f.kind === "series" && wrappedSeries.has(f.id)) ||
+        (f.kind === "tournament" &&
+          f.id.startsWith("nba-playoffs") &&
+          wrappedSeries.has(NBA_PLAYOFFS_WRAPPED)),
       isLive: isFollowLive(f.kind, f.id, liveFollows),
     };
   });

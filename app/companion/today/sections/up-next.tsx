@@ -11,8 +11,11 @@ import type { UpNextItem } from "../today-data";
 export function UpNext({ items }: { items: UpNextItem[] }) {
   if (items.length === 0) return null;
 
-  // Pluralization for the sticky header count. "1 match" / "4 matches".
-  const countLabel = `${items.length} ${items.length === 1 ? "match" : "matches"}`;
+  // No count on this header. The list spans multiple days (today's games
+  // + the next few), so any number here ("5 matches") read as a
+  // contradiction against the today-scoped headline ("One game tonight.").
+  // The headline owns the count; this is just a section label for the
+  // forward list. Also removes the games/matches terminology drift.
 
   return (
     <section>
@@ -46,7 +49,6 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
         >
           Upcoming
         </Eyebrow>
-        <Eyebrow style={{ fontSize: 11 }}>· {countLabel}</Eyebrow>
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />
       </div>
       <ul className="space-y-2">

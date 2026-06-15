@@ -324,6 +324,7 @@ export function WCGameDetail({
         onPin={onPin}
         onUnpin={onUnpin}
         subject={subject}
+        gameStatus={status}
         className="mt-3"
       />
        </div>
@@ -441,6 +442,14 @@ function deriveWCHighlights(
   const goals = events.filter((e) => e.type !== "red_card");
   const reds = events.filter((e) => e.type === "red_card");
 
+  // When the Match Events timeline is showing, it already narrates every
+  // goal/card. Highlights should only add what the timeline DOESN'T —
+  // multi-goal stories (brace/hat-trick), multi-assist games — not a
+  // "Scorer · 1 goal" line that just repeats a row above. When there's
+  // no timeline (no events, e.g. supplied-data-only path), the derived
+  // lines act as the fallback.
+  const hasTimeline = events.length > 0;
+
   const scorerCounts = new Map<string, { name: string; team: string; goals: number }>();
   for (const event of goals) {
     if (event.type === "own_goal") continue;
@@ -452,7 +461,15 @@ function deriveWCHighlights(
   const topScorer = Array.from(scorerCounts.values()).sort(
     (a, b) => b.goals - a.goals
   )[0];
-  if (topScorer?.name) {
+  if (topScorer?.name && topScorer.goals >= 2) {
+    // A brace/hat-trick is a story the timeline doesn't tell in one line.
+    derived.push({
+      eyebrow: topScorer.goals >= 3 ? "Hat-trick" : "Brace",
+      body: `${topScorer.name}${topScorer.team ? ` (${topScorer.team})` : ""} · ${topScorer.goals} goals`,
+      spoilery: true,
+    });
+  } else if (topScorer?.name && !hasTimeline) {
+    // Fallback only: no timeline to carry the goal, so name the scorer.
     derived.push({
       eyebrow: "Scorer",
       body: `${topScorer.name}${topScorer.team ? ` (${topScorer.team})` : ""} · ${topScorer.goals} ${topScorer.goals === 1 ? "goal" : "goals"}`,
@@ -472,7 +489,9 @@ function deriveWCHighlights(
   const topAssist = Array.from(assistCounts.values()).sort(
     (a, b) => b.assists - a.assists
   )[0];
-  if (topAssist?.name) {
+  // A multi-assist game is a distinct aggregate the per-goal timeline
+  // doesn't surface; a single assist already shows on its goal row.
+  if (topAssist?.name && (topAssist.assists >= 2 || !hasTimeline)) {
     derived.push({
       eyebrow: "Playmaker",
       body: `${topAssist.name} · ${topAssist.assists} ${topAssist.assists === 1 ? "assist" : "assists"}`,
@@ -480,7 +499,9 @@ function deriveWCHighlights(
     });
   }
 
-  if (reds[0]) {
+  // The red card is already a row in the timeline — only call it out
+  // separately when there's no timeline to carry it.
+  if (reds[0] && !hasTimeline) {
     const team = teamCodeForEvent(game, reds[0]);
     derived.push({
       eyebrow: "Discipline",

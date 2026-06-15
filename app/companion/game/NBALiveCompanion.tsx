@@ -452,6 +452,7 @@ export function NBALiveCompanion({
         onPin={onPin}
         onUnpin={onUnpin}
         subject={subject}
+        gameStatus={status}
         className="mt-3"
       />
         </div>

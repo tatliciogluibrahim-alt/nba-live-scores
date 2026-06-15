@@ -53,8 +53,17 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
   // phantom "context hidden" label for empty / non-spoilery summaries.
   const hasSpoilerySummary = isSpoilery(payload.spoilerySummary);
   const showSpoilerySummary = !noSpoilers && hasSpoilerySummary;
+  // Wrapped series read like a receipt: the winner is already stated once
+  // in the big summary line above ("NYK WINS SERIES 4-1"), so the
+  // "What's at stake" spoilery stake ("NYK won the series 4–1.") just
+  // repeats it. Suppress it when wrapped; keep it for live/upcoming where
+  // it's forward-looking ("NYK can clinch.").
+  const isWrapped = payload.statusLabel === "Final";
   const showSpoileryStake =
-    !noSpoilers && payload.spoileryStakeLine && payload.spoileryStakeLine !== payload.spoilerySummary;
+    !noSpoilers &&
+    !isWrapped &&
+    payload.spoileryStakeLine &&
+    payload.spoileryStakeLine !== payload.spoilerySummary;
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
@@ -147,7 +156,11 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
 
       {/* ── Alert preset / Follow controls ────────────────────────── */}
       <div className="mt-5">
-        <SeriesPresetSection seriesKey={payload.key} subjectLabel={subject} />
+        <SeriesPresetSection
+          seriesKey={payload.key}
+          subjectLabel={subject}
+          statusLabel={payload.statusLabel}
+        />
       </div>
 
       {/* ── Related games list ────────────────────────────────────── */}

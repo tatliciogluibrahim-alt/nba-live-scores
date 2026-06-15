@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PresetRow } from "../following/PresetRow";
 import { useFollows } from "../providers";
@@ -8,14 +9,23 @@ import { PRESETS, type AlertPreset } from "../state/types";
 // Alert preset block for the series. If the user already follows this
 // series, surface the preset radio. If not, show a Follow button that
 // adds the follow with the default Companion preset.
+//
+// Lifecycle: a WRAPPED series (statusLabel "Final") has no future games,
+// so the "Get told when this series swings" follow pitch is a dead CTA.
+// For a wrapped + not-followed series we show a calm receipt that routes
+// to the broader tournament instead.
 
 export function SeriesPresetSection({
   seriesKey,
   subjectLabel,
+  statusLabel,
 }: {
   seriesKey: string;
   subjectLabel: string;
+  /** Series lifecycle from the payload. "Final" = wrapped. */
+  statusLabel?: "Live" | "Upcoming" | "Final" | "Series";
 }) {
+  const isWrapped = statusLabel === "Final";
   const {
     follows,
     addFollow,
@@ -39,6 +49,49 @@ export function SeriesPresetSection({
 
   function handlePreset(next: AlertPreset) {
     setFollowAlertTier("series", seriesKey, next);
+  }
+
+  // Wrapped + not following: the series is over, so there's nothing to
+  // get alerted about. Show a calm receipt that points at the tournament
+  // (the next live thing) instead of a dead "follow this series" CTA.
+  if (isWrapped && !isFollowed) {
+    return (
+      <section>
+        <div className="mb-2 flex items-center gap-3">
+          <Eyebrow>Series wrapped</Eyebrow>
+          <div className="h-px flex-1" style={{ background: "var(--line)" }} />
+        </div>
+        <div
+          className="rounded-[14px] border px-3 py-3"
+          style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+        >
+          <p
+            className="text-[13px]"
+            style={{ color: "var(--ink)", fontWeight: 600 }}
+          >
+            This series is done.
+          </p>
+          <p
+            className="mt-1 text-[12px]"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            Follow the playoffs to track what happens next.
+          </p>
+          <Link
+            href="/tournament/nba-playoffs-2025"
+            aria-label="Open NBA Playoffs"
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+            style={{
+              background: "transparent",
+              color: "var(--ink)",
+              border: "1px solid var(--line)",
+            }}
+          >
+            NBA Playoffs →
+          </Link>
+        </div>
+      </section>
+    );
   }
 
   return (

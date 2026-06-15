@@ -199,12 +199,58 @@ const EDITORIAL_MOMENTS: EditorialMoment[] = [
     body: "First whistle Thursday, June 11. 48 nations across the next month.",
     appliesTo: followsWC,
   },
+  // ── World Cup lifecycle (kickoff → wrapped) ───────────────────────
+  // Date-keyed to the real 2026 schedule (group stage through Jun 24,
+  // R32 Jun 28, Final Jul 19 — see WC_KNOCKOUT_ROUNDS in wc-fixtures.ts).
+  // "Opening match today" used to fire Jun 11–13, which read as wrong on
+  // Jun 12–13. Each state now matches the actual calendar day and never
+  // claims fake precision.
   {
-    // Kickoff day + the opening weekend. Calm "it's here" beat.
+    // Opening day only.
     startKey: "2026-06-11",
-    endKey: "2026-06-14",
+    endKey: "2026-06-12",
     headline: "The World Cup is here.",
-    body: "Opening match today. Group stage runs through the next two weeks.",
+    body: "Opening match today. Group stage runs through June 24.",
+    appliesTo: followsWC,
+  },
+  {
+    // Group stage in progress (Jun 12 → Jun 24).
+    startKey: "2026-06-12",
+    endKey: "2026-06-25",
+    headline: "The World Cup is underway.",
+    body: "Group stage continues, matches most days through June 24.",
+    appliesTo: followsWC,
+  },
+  {
+    // Between the group stage and the knockouts (Jun 25 → Jun 27).
+    startKey: "2026-06-25",
+    endKey: "2026-06-28",
+    headline: "Group stage is done.",
+    body: "The knockout rounds begin June 28.",
+    appliesTo: followsWC,
+  },
+  {
+    // Knockout rounds (Jun 28 → Jul 18).
+    startKey: "2026-06-28",
+    endKey: "2026-07-19",
+    headline: "The knockout rounds are on.",
+    body: "Win or go home, through to the final on July 19.",
+    appliesTo: followsWC,
+  },
+  {
+    // Final day.
+    startKey: "2026-07-19",
+    endKey: "2026-07-20",
+    headline: "The World Cup final is today.",
+    body: "One match decides it.",
+    appliesTo: followsWC,
+  },
+  {
+    // Post-tournament wrap (the week after).
+    startKey: "2026-07-20",
+    endKey: "2026-07-27",
+    headline: "The World Cup is wrapped.",
+    body: "That is the tournament. Thanks for following along.",
     appliesTo: followsWC,
   },
 ];
