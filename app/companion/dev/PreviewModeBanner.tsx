@@ -46,7 +46,7 @@ export function PreviewModeBanner() {
     <div
       role="status"
       aria-live="polite"
-      aria-label="World Cup preview mode active"
+      aria-label="Summer Soccer preview mode active"
       style={{
         // Inline at the top of the scroll container rather than sticky.
         // Both this banner and BrandBar were targeting `top: 0` and the

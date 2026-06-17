@@ -30,11 +30,15 @@ export const TOURNAMENTS: TournamentEntry[] = [
     chip: "NBA",
   },
   {
+    // Internal id is kept stable for back-compat with stored follows; the
+    // user-facing name is generic ("Summer Soccer 2026") to avoid the
+    // FIFA "World Cup" trademark (App Store 5.2.1). Scores and schedules
+    // are factual; the app is not affiliated with FIFA.
     id: "fifa-world-cup-2026",
-    name: "World Cup 2026",
-    detail: "48 nations · group stage through the final",
+    name: "Summer Soccer 2026",
+    detail: "International soccer · group stage through the final",
     accent: "var(--wc)",
-    chip: "WC",
+    chip: "SOC",
   },
   {
     // NFL Season 2026 scaffolding (Phase 9). The data layer + picker

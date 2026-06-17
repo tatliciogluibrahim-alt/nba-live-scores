@@ -5,7 +5,7 @@ import { CountryClient } from "../../companion/country/CountryClient";
 import { getCountry } from "../../companion/following/data/countries";
 import { getTournament } from "../../companion/following/data/tournaments";
 
-// Dynamic per-country title. `/country/USA` → "USA · World Cup 2026 |
+// Dynamic per-country title. `/country/USA` → "USA · Summer Soccer 2026 |
 // No Noise Scores" (or the country's full name when the directory
 // recognizes the code). Falls back to a generic "Country" title for
 // codes we don't know. Helps browser tabs, share previews, and
@@ -22,7 +22,7 @@ export async function generateMetadata({
     return { title: "Country | No Noise Scores" };
   }
   return {
-    title: `${entry.name} · World Cup 2026 | No Noise Scores`,
+    title: `${entry.name} · Summer Soccer 2026 | No Noise Scores`,
   };
 }
 
@@ -56,7 +56,7 @@ function resolveBackTarget(from: string | undefined): {
       href: groupsView
         ? `/tournament/${tournament.id}/groups`
         : `/tournament/${tournament.id}`,
-      label: isWC ? "World Cup" : tournament.name,
+      label: isWC ? "Summer Soccer" : tournament.name,
     };
   }
 

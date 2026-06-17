@@ -38,9 +38,9 @@ export default function SportsCirclePage() {
       <BulletList
         items={[
           "Teams. Knicks, Eagles, USA.",
-          "Countries. For the World Cup, Olympics, etc.",
+          "Countries. For the Summer Soccer, Olympics, etc.",
           "Series. Knicks vs Cavaliers, USA's opening match.",
-          "Tournaments. NBA Playoffs, World Cup 2026.",
+          "Tournaments. NBA Playoffs, Summer Soccer 2026.",
         ]}
       />
 

@@ -49,7 +49,7 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
             across for the matchup. Gives the eye an anchor before the
             score module below. Shown for NBA and WC alike now that WC
             uses readable country codes (flags were dropped from the
-            sports circle); the contextEyebrow still carries "World Cup". */}
+            sports circle); the contextEyebrow still carries "Summer Soccer". */}
         {item.awayCode && item.homeCode ? (
           <div className="mb-3 flex items-center gap-2">
             <TeamChip code={item.awayCode} accent={chipAccent} />

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { WCGame, WCMatchEvent, WCTeam } from "./api/world-cup/route";
 import { Segmented } from "./shared/atoms";
 
-// ── Verified 2026 World Cup groups (12 groups of 4, 48 teams) ─────────────────
+// ── Verified 2026 Summer Soccer groups (12 groups of 4, 48 teams) ─────────────────
 export const WC_GROUPS: Record<string, string[]> = {
   A: ["MEX", "CZE", "KOR", "RSA"],
   B: ["CAN", "BIH", "SUI", "QAT"],
@@ -132,7 +132,7 @@ function getWorldCupMomentStake(game: WCGame, selectedCountry: string | null): s
   if (isOpeningMatch) return "Opening match";
   if (isSelectedCountryMatch && isGroupMatch) return `Your Group ${game.group} match`;
   if (isGroupMatch) return `Group ${game.group} match`;
-  if (stage.includes("final") && !stage.includes("semi")) return "World Cup Final";
+  if (stage.includes("final") && !stage.includes("semi")) return "Summer Soccer Final";
   if (stage.includes("3rd") || stage.includes("third")) return "Third-place match";
   return "Winner advances";
 }
@@ -149,7 +149,7 @@ type Venue = {
 const NYC_VENUES: Venue[] = [
   { name: "Nevada Smith's", address: "74 3rd Ave", neighborhood: "East Village", note: "NYC's original soccer bar since 1980", mapUrl: "https://maps.google.com/?q=Nevada+Smiths+74+3rd+Ave+New+York+NY" },
   { name: "Smithfield Hall", address: "138 W 25th St", neighborhood: "Chelsea", note: "34 screens, 400-person capacity", mapUrl: "https://maps.google.com/?q=Smithfield+Hall+138+W+25th+St+New+York+NY" },
-  { name: "Foley's NY", address: "18 W 33rd St", neighborhood: "Midtown", note: "Classic sports pub, World Cup regulars", mapUrl: "https://maps.google.com/?q=Foleys+NY+18+W+33rd+St+New+York+NY" },
+  { name: "Foley's NY", address: "18 W 33rd St", neighborhood: "Midtown", note: "Classic sports pub, Summer Soccer regulars", mapUrl: "https://maps.google.com/?q=Foleys+NY+18+W+33rd+St+New+York+NY" },
   { name: "Legends NYC", address: "6 W 33rd St", neighborhood: "Midtown", note: "Massive bar near MSG, multiple levels", mapUrl: "https://maps.google.com/?q=Legends+NYC+6+W+33rd+St+New+York+NY" },
   { name: "Riviera Bar & Grill", address: "225 W 14th St", neighborhood: "West Village", note: "Dedicated WC viewing parties every match", mapUrl: "https://maps.google.com/?q=Riviera+Bar+225+W+14th+St+New+York+NY" },
   { name: "Olivia's", address: "315 Court St", neighborhood: "Carroll Gardens, BK", note: "Best atmosphere in Brooklyn for soccer", mapUrl: "https://maps.google.com/?q=Olivias+315+Court+St+Brooklyn+NY" },
@@ -566,7 +566,7 @@ function GroupsPreview({
           <p className="mt-1 text-[0.76rem] font-semibold text-[#8a7a66]">
             {selectedCountry && selectedGroup
               ? `${flagEmoji(selectedCountry)} ${selectedCountry} starts in Group ${selectedGroup}.`
-              : "All 12 groups are set. Pick a country to bring yours forward."}
+              : "All groups are set. Pick a country to bring yours forward."}
           </p>
         </div>
       </div>
@@ -628,7 +628,7 @@ function GroupsPreview({
         <p className="text-[0.6rem] font-bold text-[#a89880]">
           {selectedCountry && selectedGroup
             ? `Group ${selectedGroup} appears first. All teams stay neutral until matches begin.`
-            : "48 teams · 12 groups · standings stay neutral until kickoff."}
+            : "Group stage · standings stay neutral until kickoff."}
         </p>
       </div>
     </div>
@@ -1079,7 +1079,7 @@ function VenueSheet({
     (game.home.abbreviation === selectedCountry || game.away.abbreviation === selectedCountry)
       ? selectedCountry
       : null;
-  const stageLabel = game.group ? `Group ${game.group}` : game.stage || "World Cup";
+  const stageLabel = game.group ? `Group ${game.group}` : game.stage || "Summer Soccer";
   const venueLabel = game.venue ?? "Venue TBA";
   const statusLabel =
     game.status === "live"
@@ -1311,7 +1311,7 @@ function CountdownHero({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">
-                World Cup 2026
+                Summer Soccer 2026
               </p>
               <p className="mt-1 font-[family-name:var(--font-display)] text-[2.55rem] uppercase leading-none tracking-tight">
                 {days} days
@@ -1402,7 +1402,7 @@ function WorldCupWatchGuide({
   const selectedGroup = selectedCountry ? TEAM_GROUP[selectedCountry] : null;
   const selectedLabel = selectedCountry && selectedGroup
     ? `${flagEmoji(selectedCountry)} ${selectedCountry} · Group ${selectedGroup}`
-    : "World Cup 2026";
+    : "Summer Soccer 2026";
   const accentText = safeTextColor(accentColor);
   const watchPaths = [
     {
@@ -1649,7 +1649,7 @@ function ScheduleComingSoonCard({
             boxShadow: `inset 0 0 0 1px ${accentColor}2e`,
           }}
         >
-          {selectedCountry && group ? `${flagEmoji(selectedCountry)} Group ${group}` : "World Cup"}
+          {selectedCountry && group ? `${flagEmoji(selectedCountry)} Group ${group}` : "Summer Soccer"}
         </span>
       </div>
       <div className="grid grid-cols-1 gap-2 bg-[#fbf8f3] p-3 sm:grid-cols-3">
@@ -2575,7 +2575,7 @@ export default function WorldCupApp({
                 className="text-sm font-semibold uppercase tracking-tight"
                 style={{ color: safeTextColor(accentColor) === "#1a1208" ? accentColor === "#000000" ? "#1a1208" : accentColor : accentColor }}
               >
-                World Cup 2026
+                Summer Soccer 2026
               </span>
             </div>
           </div>

@@ -131,13 +131,13 @@ describe("deriveTodayHeadline", () => {
     expect(r.support).toBe("OKC leads series 3-2");
   });
 
-  it("says 'today' for World Cup games (daytime), not 'tonight'", () => {
+  it("says 'today' for Summer Soccer games (daytime), not 'tonight'", () => {
     const r = deriveTodayHeadline(
       base({
         upNext: [
           upNextItem({
             source: "wc",
-            eyebrow: "World Cup · Sat",
+            eyebrow: "Summer Soccer · Sat",
             detail: "3:00 PM · Group D",
             stake: undefined,
           }),
@@ -146,7 +146,7 @@ describe("deriveTodayHeadline", () => {
     );
     expect(r.headline).toBe("One game today.");
     expect(r.eyebrow.tone).toBe("wc");
-    // World Cup fixtures carry no series stake.
+    // Summer Soccer fixtures carry no series stake.
     expect(r.support).toBeUndefined();
   });
 
@@ -156,7 +156,7 @@ describe("deriveTodayHeadline", () => {
 
   it("softens to 'Quiet for now.' when a countdown reminder is present", () => {
     const r = deriveTodayHeadline(
-      base({ reminder: { text: "World Cup kicks off in 15 days." } })
+      base({ reminder: { text: "Summer Soccer kicks off in 15 days." } })
     );
     expect(r.headline).toBe("Quiet for now.");
     expect(r.deck).toBeNull();

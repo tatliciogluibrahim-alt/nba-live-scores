@@ -28,7 +28,7 @@ export default function HowItWorksPage() {
       </P>
       <P>
         Following something means it surfaces on Today. Your team&apos;s
-        upcoming games show up. Your country&apos;s World Cup path gets
+        upcoming games show up. Your country&apos;s Summer Soccer path gets
         a page. Everything else stays quiet. Follows are unlimited and
         free.
       </P>

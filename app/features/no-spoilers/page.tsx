@@ -77,7 +77,7 @@ export default function NoSpoilersPage() {
         items={[
           "You record games and watch them at night.",
           "You're at work during a playoff afternoon.",
-          "World Cup match you can't watch live.",
+          "Summer Soccer match you can't watch live.",
           "You missed the live window and want to watch the replay fresh.",
         ]}
       />

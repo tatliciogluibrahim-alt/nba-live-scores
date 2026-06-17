@@ -1,4 +1,4 @@
-// Cron entrypoint — World Cup pass.
+// Cron entrypoint — Summer Soccer pass.
 //
 // Parallels /api/cron/scan-nba but reads /api/world-cup and routes
 // transitions through the WC detector and the shared dispatcher.
@@ -30,7 +30,7 @@ import {
 import type { PushEvent } from "../../../lib/push/event-detector";
 import { computeLiveActivityProgress } from "../../../lib/push/live-activity-progress";
 
-// World Cup green accent for the Live Activity (AGENTS palette).
+// Summer Soccer green accent for the Live Activity (AGENTS palette).
 const ACCENT_WC = "#1e6b3c";
 
 export const runtime = "nodejs";

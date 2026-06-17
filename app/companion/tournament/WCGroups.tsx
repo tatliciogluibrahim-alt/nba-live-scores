@@ -10,7 +10,7 @@ import { buildAllGroups, type GroupBlock } from "../country/country-data";
 import type { GroupRow } from "../country/country-data";
 import type { WCGameLite } from "../today/today-data";
 
-// World Cup groups view — editorial, flag-free, matching the country
+// Summer Soccer groups view — editorial, flag-free, matching the country
 // GroupStrip. Two modes:
 //
 //   • "preview" (tournament page): your followed group first (when you
@@ -212,7 +212,7 @@ export function WCGroups({
   if (mode === "full") {
     return (
       <section className="mt-5">
-        <GroupsHeader count={`${groups.length} in total · A–L`} />
+        <GroupsHeader count={"Group stage"} />
         <div className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-3 md:gap-x-8">
           {groups.map((block) => (
             <GroupColumn
@@ -237,7 +237,7 @@ export function WCGroups({
 
   return (
     <section className="mt-5">
-      <GroupsHeader count={`${groups.length} in total`} />
+      <GroupsHeader count={"Group stage"} />
 
       {followedBlock ? (
         <div className="mb-5">
@@ -260,7 +260,7 @@ export function WCGroups({
           href={`/tournament/${tournamentId}/groups`}
           className="inline-flex min-h-[36px] items-center gap-1.5 text-[12px] underline decoration-dotted underline-offset-4"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          aria-label="View all 12 World Cup groups"
+          aria-label="View all 12 Summer Soccer groups"
         >
           View all {groups.length} groups →
         </Link>

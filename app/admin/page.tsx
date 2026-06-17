@@ -68,7 +68,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-type Sport = "NBA" | "World Cup" | "Tournament";
+type Sport = "NBA" | "Summer Soccer" | "Tournament";
 
 type AlertLike = { kind: string; id: string; tier?: string };
 
@@ -79,12 +79,12 @@ type AlertLike = { kind: string; id: string; tier?: string };
 // matcher will need an "nfl-" branch.
 function sportFor(alert: AlertLike): Sport {
   if (alert.kind === "team") return "NBA"; // only NBA has team follows today
-  if (alert.kind === "country") return "World Cup";
+  if (alert.kind === "country") return "Summer Soccer";
   if (alert.kind === "series") return "NBA"; // playoff series
   if (alert.kind === "tournament") {
     const id = alert.id.toLowerCase();
     if (id.startsWith("nba")) return "NBA";
-    if (id.includes("fifa") || id.includes("world-cup")) return "World Cup";
+    if (id.includes("fifa") || id.includes("world-cup")) return "Summer Soccer";
     return "Tournament";
   }
   return "Tournament";
@@ -154,7 +154,7 @@ export default async function AdminPage({
   };
   const sportTotals: Record<Sport, number> = {
     NBA: 0,
-    "World Cup": 0,
+    "Summer Soccer": 0,
     Tournament: 0,
   };
   const followCounts = new Map<
@@ -221,7 +221,7 @@ export default async function AdminPage({
         <Section title="Follows by sport (push-enabled)">
           <div style={statGridStyle}>
             <Stat label="NBA follows" value={sportTotals.NBA} />
-            <Stat label="World Cup follows" value={sportTotals["World Cup"]} />
+            <Stat label="Summer Soccer follows" value={sportTotals["Summer Soccer"]} />
             <Stat label="Other tournament follows" value={sportTotals.Tournament} />
           </div>
 
@@ -329,7 +329,7 @@ export default async function AdminPage({
           </div>
           <p style={mutedStyle}>
             A row counts as multi-sport when its alerts span at least
-            two of NBA, World Cup, or Tournament.
+            two of NBA, Summer Soccer, or Tournament.
           </p>
         </Section>
       </main>

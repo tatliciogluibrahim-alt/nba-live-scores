@@ -97,6 +97,20 @@ export function SettingsClient() {
           @nonoisescores
         </a>
       </footer>
+
+      {/* Independence / non-affiliation notice. Scores and schedules are
+          factual information; the app uses no league or federation marks,
+          logos, or branding, and claims no affiliation. Keeps the IP
+          position explicit for users and App Review (Guideline 5.2.1). */}
+      <p
+        className="mt-4 text-[11px] leading-relaxed"
+        style={{ color: "var(--mute-2)", fontWeight: 500 }}
+      >
+        No Noise Scores is an independent app. It is not affiliated with,
+        endorsed by, or sponsored by FIFA, the NBA, the NFL, or any league,
+        federation, or governing body. Team and country names, schedules,
+        and scores are shown as factual information.
+      </p>
     </main>
   );
 }

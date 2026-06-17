@@ -13,7 +13,7 @@
 //
 // What we DO redact (whole line, when matched):
 //   NBA — series state, lead, margin, late-game closeness phrases.
-//   World Cup — group/knockout advancement, elimination, "through to",
+//   Summer Soccer — group/knockout advancement, elimination, "through to",
 //   "qualified", "won group", "finished first/second/third", "beat",
 //   "defeated", "lost to".
 
@@ -40,7 +40,7 @@ const PATTERNS: RegExp[] = [
   /\b(won|wins)\b/i,
   /\b(lost|loses?)\b/i,
 
-  // ── Advancement / knockout progression (World Cup + NBA Finals) ─
+  // ── Advancement / knockout progression (Summer Soccer + NBA Finals) ─
   /\badvanc(e|ed|es|ing)\b/i,
   /\bwinner\b/i,
   /eliminated/i,

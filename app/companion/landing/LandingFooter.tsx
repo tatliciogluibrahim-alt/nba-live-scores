@@ -41,7 +41,7 @@ const COLUMNS = [
       },
       { label: "vs ESPN app", href: "/compare/espn-app-alternative" },
       { label: "NBA Playoff alerts", href: "/nba-playoffs-alerts" },
-      { label: "World Cup 2026 app", href: "/world-cup-2026-app" },
+      { label: "Summer Soccer 2026 app", href: "/world-cup-2026-app" },
     ],
   },
   {

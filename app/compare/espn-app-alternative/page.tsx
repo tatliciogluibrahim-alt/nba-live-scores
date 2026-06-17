@@ -44,7 +44,7 @@ export default function VsESPNPage() {
           ["Betting odds / spreads", "Yes, integrated", "No"],
           ["Social / comments", "Some", "No"],
           ["Push notifications", "Frequent, sometimes promotional", "Per-follow tier you control"],
-          ["Sport breadth", "Every major sport, every season", "NBA Playoffs + World Cup + NFL coming"],
+          ["Sport breadth", "Every major sport, every season", "NBA Playoffs + Summer Soccer + NFL coming"],
           ["No-Spoilers mode", "No", "End-to-end"],
           ["Editorial voice", "Headline-y, breaking-news flavor", "Calm, plain"],
           ["Ads", "Many", "None"],
@@ -90,7 +90,7 @@ export default function VsESPNPage() {
       <H2>Who should switch</H2>
       <P>
         Fans who watch their team and care about big moments (playoffs,
-        World Cup, NFL Sundays) but who&apos;ve muted ESPN&apos;s
+        Summer Soccer, NFL Sundays) but who&apos;ve muted ESPN&apos;s
         notifications because they fire too often, or who close the
         app within seconds because the front page is overwhelming.
       </P>

@@ -107,7 +107,7 @@ export type UpNextItem = {
    *  follows. Personal games get a stronger visual treatment so the eye
    *  can instantly tell "mine" from the generic feed filler. */
   personal: boolean;
-  eyebrow: string;           // "NBA · Tonight" | "World Cup · Sat"
+  eyebrow: string;           // "NBA · Tonight" | "Summer Soccer · Sat"
   headline: string;          // "Knicks vs Cavaliers"
   detail: string;            // "8:00 PM · MSG"
   /** True when this game is on the current calendar day. The Front Page
@@ -119,7 +119,7 @@ export type UpNextItem = {
    *  with the soonest upcoming day instead. */
   dayWord: string;
   /** Series stake, humanized ("OKC leads series 3-2"). NBA series games
-   *  only; undefined for plain games and World Cup fixtures. */
+   *  only; undefined for plain games and Summer Soccer fixtures. */
   stake?: string;
   watch?: { channel: string; stream?: string };
   href: string;
@@ -139,7 +139,7 @@ export type QuietWrapItem = {
 };
 
 export type ReminderRow = {
-  text: string;              // "World Cup kicks off in 20 days."
+  text: string;              // "Summer Soccer kicks off in 20 days."
   detail?: string;           // "Mexico City · Group A"
   href?: string;
 };
@@ -289,8 +289,8 @@ export function daysUntil(target: Date, now = new Date()): number {
 }
 
 // `sport` picks the same-day word: NBA games skew evening ("Tonight"),
-// World Cup games are daytime in the US ("Today"). Without this a noon
-// World Cup match read "Tonight," contradicting the "games today."
+// Summer Soccer games are daytime in the US ("Today"). Without this a noon
+// Summer Soccer match read "Tonight," contradicting the "games today."
 // headline on the same screen.
 function formatGameDay(
   date: string,
@@ -316,7 +316,7 @@ function formatGameDay(
 
   // A bare weekday ("Thu") only reads unambiguously within the current
   // week. Beyond ~6 days a game would read as "this Thursday" when it's
-  // actually next week or further (e.g. a World Cup opener 10 days out).
+  // actually next week or further (e.g. a Summer Soccer opener 10 days out).
   // Past that horizon, show the date instead.
   if (daysUntil(d, now) <= 6) {
     return d.toLocaleDateString(undefined, { weekday: "short" });
@@ -413,7 +413,7 @@ function pickHero(
   // upcoming one. Within "live", a pinned or followed match is the
   // strongest "I care" signal; NBA wins ties only when neither side is
   // explicitly cared-about. Without this, a live followed WC match
-  // (e.g. USA at the World Cup) never reached the hero — it was
+  // (e.g. USA at the Summer Soccer) never reached the hero — it was
   // NBA-only before.
   const nbaCared =
     live.find((g) => pinnedIds.has(g.id)) ??
@@ -428,7 +428,7 @@ function pickHero(
 
   if (heroWcLive) {
     const isPinned = pinnedIds.has(heroWcLive.id);
-    const stage = heroWcLive.stage ? `World Cup · ${heroWcLive.stage}` : "World Cup";
+    const stage = heroWcLive.stage ? `Summer Soccer · ${heroWcLive.stage}` : "Summer Soccer";
     return {
       kind: "wc-live",
       eyebrow: isPinned ? `Pinned · ${stage}` : stage,
@@ -438,7 +438,7 @@ function pickHero(
       // doesn't look like the only thing on. Calm and factual, no FOMO.
       context:
         wcLive.length > 1
-          ? `${wcLive.length} World Cup matches live now.`
+          ? `${wcLive.length} Summer Soccer matches live now.`
           : undefined,
       live: true,
       accent: "var(--wc)",
@@ -504,7 +504,7 @@ function pickHero(
     };
   }
 
-  // Nothing live or imminent on NBA. We used to inflate the World Cup
+  // Nothing live or imminent on NBA. We used to inflate the Summer Soccer
   // countdown into a hero card here ("17 days to first whistle"), but
   // the bottom ReminderRow already says exactly the same thing — and
   // does it as a calm one-liner, not a big editorial block at the top
@@ -523,10 +523,10 @@ function pickHero(
     const hoursRounded = Math.max(1, Math.ceil(hoursUntilKickoff));
     return {
       kind: "wc-countdown",
-      eyebrow: country ? "Tournament day" : "World Cup 2026",
+      eyebrow: country ? "Tournament day" : "Summer Soccer 2026",
       headline: country
         ? `${country.name}'s tournament begins.`
-        : "World Cup kicks off today.",
+        : "Summer Soccer kicks off today.",
       context:
         hoursRounded <= 6
           ? `Kicks off in ${hoursRounded} hour${hoursRounded === 1 ? "" : "s"}.`
@@ -708,7 +708,7 @@ function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): UpNextIt
     id: g.id,
     pinned,
     personal,
-    eyebrow: `World Cup · ${formatGameDay(g.date, new Date(), "wc")}`,
+    eyebrow: `Summer Soccer · ${formatGameDay(g.date, new Date(), "wc")}`,
     headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     detail: `${formatGameTime(g.date)}${g.stage ? " · " + g.stage : ""}`,
     isToday: isSameDay(g.date),
@@ -790,7 +790,7 @@ function buildUpNext(
   //   2. then soonest first
   // NBA and WC are merged BEFORE sorting — not "all NBA then all WC" — so
   // the next 2 weeks read in true time order. The playoff games (Jun
-  // 3-10) sort ahead of the World Cup openers (Jun 11) because they
+  // 3-10) sort ahead of the Summer Soccer openers (Jun 11) because they
   // happen first, not because of any sport priority.
   type Candidate = { date: number; pinned: boolean; item: UpNextItem };
   const candidates: Candidate[] = [];
@@ -927,7 +927,7 @@ function buildReminder(follows: Follow[], now = new Date()): ReminderRow | null 
 
   const country = follows.find((f) => f.kind === "country");
   if (country) {
-    // Lead with the World Cup (cleaner + grammatical — "United States
+    // Lead with the Summer Soccer (cleaner + grammatical — "United States
     // kick off" read awkwardly), and carry the followed country in the
     // secondary detail line so it still feels personal. The human
     // country name, not the ESPN/FIFA code (per the voice rule). Falls
@@ -936,14 +936,14 @@ function buildReminder(follows: Follow[], now = new Date()): ReminderRow | null 
     const name = entry?.name ?? country.id;
     const detail = entry ? `${name} · Group ${entry.group}` : name;
     return {
-      text: `World Cup kicks off in ${dayWord}.`,
+      text: `Summer Soccer kicks off in ${dayWord}.`,
       detail,
       href: `/country/${country.id}`,
     };
   }
 
   return {
-    text: `World Cup kicks off in ${dayWord}.`,
+    text: `Summer Soccer kicks off in ${dayWord}.`,
     detail: "Pick a country in Following to make this personal.",
     href: "/following",
   };
@@ -1408,7 +1408,7 @@ export function buildTodayPayload({
   // Up Next uses the WIDER window (seriesGames, ~2 weeks ahead), not the
   // current calendar week. The full playoff slate runs past this week
   // (e.g. Games 3-4 land next week), and they must appear before the
-  // World Cup openers. buildUpNext filters to status==="upcoming", so the
+  // Summer Soccer openers. buildUpNext filters to status==="upcoming", so the
   // wider window's past finals are dropped — only the forward games stay.
   const upNext = buildUpNext(recentForWrap, wc, follows, pinned);
   const quietWrap = buildQuietWrap(recentForWrap, follows, now);
@@ -1572,7 +1572,7 @@ function leadGame(payload: TodayPayload): LeadGame | null {
   return null;
 }
 
-// NBA playoff games are evening events → "tonight"; World Cup games
+// NBA playoff games are evening events → "tonight"; Summer Soccer games
 // skew daytime → "today". The headline is about the day you care about,
 // not a generic "up next" — the eyebrow carries the live/upcoming state.
 function whenWord(tone: "nba" | "wc"): string {
@@ -1596,7 +1596,7 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
       headline: lc === 1 ? `One game ${when}.` : `${spellCount(lc)} games ${when}.`,
       // Support line: a series stake ("OKC leads series 3-2") when the
       // lead is a playoff game, else the hero's context line. For a busy
-      // World Cup slate that context is "N World Cup matches live now." —
+      // Summer Soccer slate that context is "N Summer Soccer matches live now." —
       // so the user sees the wider slate even though the deck shows one.
       support: lead?.stake ?? payload.hero?.context,
       deck,
@@ -1640,7 +1640,7 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
     };
   }
 
-  // Nothing live or upcoming. Calm — the World Cup countdown and any
+  // Nothing live or upcoming. Calm — the Summer Soccer countdown and any
   // wrapped recap render as their own quieter stories below.
   return {
     eyebrow: { label: "Today", tone: "mute" },

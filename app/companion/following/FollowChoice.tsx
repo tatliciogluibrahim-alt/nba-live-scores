@@ -82,8 +82,8 @@ export const FOLLOW_MOMENTS: FollowMoment[] = [
   },
   {
     id: "fifa-wc-2026",
-    name: "World Cup 2026",
-    description: "48 nations through the final.",
+    name: "Summer Soccer 2026",
+    description: "Group stage through the final.",
     accent: "var(--wc)",
     icon: "⚽",
     granularities: [
@@ -96,7 +96,7 @@ export const FOLLOW_MOMENTS: FollowMoment[] = [
       {
         eyebrow: "Country",
         title: "A country",
-        detail: "All 48 nations. Group, path, and matches.",
+        detail: "All groups, path, and matches.",
         href: "/following/country",
       },
     ],

@@ -1,7 +1,7 @@
 "use client";
 
 // Legacy sports picker. Preserved during the companion transition so existing
-// NBA and World Cup screens stay reachable for QA. Not surfaced in the
+// NBA and Summer Soccer screens stay reachable for QA. Not surfaced in the
 // main IA — only reachable via /legacy.
 
 import { useRouter } from "next/navigation";

@@ -49,7 +49,7 @@ export type WidgetSnapshot = {
   generatedAt: number;
   /** Up to ~3 upcoming followed games, soonest first. */
   upcoming: WidgetUpcoming[];
-  /** The overall moment line, e.g. "World Cup kicks off in 14 days." */
+  /** The overall moment line, e.g. "Summer Soccer kicks off in 14 days." */
   moment: { text: string; detail?: string } | null;
   /** True when the user has nothing to show (no follows / nothing up). */
   empty: boolean;

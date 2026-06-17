@@ -236,8 +236,8 @@ function getSeriesDates() {
   // Recent finals (so completed playoff matchups don't vanish on Monday)
   // AND the forward slate. The forward window is +14 so the full playoff
   // run (Games 3-7 land beyond the current week) is fetched and can be
-  // ordered chronologically against the World Cup openers in Up Next.
-  // Matches the World Cup feed's forward reach.
+  // ordered chronologically against the Summer Soccer openers in Up Next.
+  // Matches the Summer Soccer feed's forward reach.
   return getDateWindow(-14, 14);
 }
 

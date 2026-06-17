@@ -41,10 +41,10 @@ function fixtureLine(f: WCStaticFixture, country: CountryEntry): string {
   return `${date}, ${time} ET · ${country.name} vs ${opp?.name ?? oppCode}`;
 }
 
-// /wc/[country] — static SEO landing pages for each World Cup 2026
+// /wc/[country] — static SEO landing pages for each Summer Soccer 2026
 // country. 48 pages generated at build time via generateStaticParams.
 //
-// Purpose: capture organic search for "[Country] World Cup 2026
+// Purpose: capture organic search for "[Country] Summer Soccer 2026
 // schedule," "when does [Country] play," etc. The web's pre-tournament
 // search surge starts ~7-10 days before the June 11 kickoff. Pages
 // need to be live and indexed before that to rank.
@@ -84,7 +84,7 @@ function getGroupMates(country: CountryEntry): CountryEntry[] {
 // ── Metadata ─────────────────────────────────────────────────────────
 // One generateMetadata call per page, providing tailored title +
 // description per country. The title pattern follows what people
-// actually search for: "[Country] World Cup 2026 schedule."
+// actually search for: "[Country] Summer Soccer 2026 schedule."
 
 export async function generateMetadata({
   params,
@@ -99,8 +99,8 @@ export async function generateMetadata({
     };
   }
 
-  const title = `${country.name} at the World Cup 2026 | No Noise Scores`;
-  const description = `${country.name} are in Group ${country.group}. Follow ${country.name}'s path through the World Cup with kickoff and full-time alerts. Calm sports companion. No feeds, no ads, no noise.`;
+  const title = `${country.name} at the Summer Soccer 2026 | No Noise Scores`;
+  const description = `${country.name} are in Group ${country.group}. Follow ${country.name}'s path through the Summer Soccer with kickoff and full-time alerts. Calm sports companion. No feeds, no ads, no noise.`;
   const canonical = `https://nonoisescores.app/wc/${country.id.toLowerCase()}`;
 
   return {
@@ -147,7 +147,7 @@ export default async function CountryLandingPage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SportsEvent",
-    name: `${country.name} at the World Cup 2026`,
+    name: `${country.name} at the Summer Soccer 2026`,
     startDate: "2026-06-11",
     endDate: "2026-07-19",
     eventStatus: "https://schema.org/EventScheduled",
@@ -184,8 +184,8 @@ export default async function CountryLandingPage({
       />
 
       <ContentPageShell
-        eyebrow={`World Cup 2026 · Group ${country.group}`}
-        headline={`${country.flag}  ${country.name} at the World Cup.`}
+        eyebrow={`Summer Soccer 2026 · Group ${country.group}`}
+        headline={`${country.flag}  ${country.name} at the Summer Soccer.`}
         intro={`${country.name} are in Group ${country.group}. The tournament opens June 11, 2026. Follow ${country.name} on No Noise Scores to get kickoff and full-time alerts for every match.`}
       >
         <H2>Group {country.group}</H2>
@@ -227,7 +227,7 @@ export default async function CountryLandingPage({
 
         <H2>Follow {country.name} on No Noise Scores</H2>
         <P>
-          Pick {country.name} as your World Cup country. You get a
+          Pick {country.name} as your Summer Soccer country. You get a
           country page showing the live group standings, the next
           match (opponent, time, channel), and a path-to-final
           visualization. Push alerts fire at kickoff and full time
@@ -272,7 +272,7 @@ export default async function CountryLandingPage({
               textUnderlineOffset: "3px",
             }}
           >
-            More about the World Cup pages
+            More about the Summer Soccer pages
           </a>
           .
         </P>

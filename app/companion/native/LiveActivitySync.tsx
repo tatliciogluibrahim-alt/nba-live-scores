@@ -85,7 +85,7 @@ function parseScore(line: string | null): { away: number; home: number } {
   return { away: Number(nums[0]), home: Number(nums[1]) };
 }
 
-// Strip the leading "NBA · " / "World Cup · " sport prefix from the
+// Strip the leading "NBA · " / "Summer Soccer · " sport prefix from the
 // context eyebrow so the Stadium Panel's `subline` doesn't double up
 // with the sport tag at the top of the bug. "NBA · Game 6" → "Game 6".
 function deriveSubline(item: PinnedItem): string {

@@ -17,7 +17,7 @@ import Link from "next/link";
 import type { WCGameLite, WCMatchEventLite } from "../today/today-data";
 import { PinControls } from "./PinControls";
 
-// World Cup game detail. Mirrors NBALiveCompanion's structure (H1 →
+// Summer Soccer game detail. Mirrors NBALiveCompanion's structure (H1 →
 // ScoreModule → HeroMoment → WatchLine → Highlights → PinControls) but
 // with soccer-bespoke copy:
 //   • "Kickoff" instead of "Tipoff"
@@ -210,7 +210,7 @@ export function WCGameDetail({
         }}
       >
         <ScoreModule
-          eyebrow={game.stage ? `World Cup · ${game.stage}` : "World Cup"}
+          eyebrow={game.stage ? `Summer Soccer · ${game.stage}` : "Summer Soccer"}
           away={{ code: game.away.abbreviation, name: game.away.name }}
           home={{ code: game.home.abbreviation, name: game.home.name }}
           awayScore={isUpcoming ? null : game.away.score}
@@ -276,7 +276,7 @@ export function WCGameDetail({
       <section className="mt-5">
         <div className="mb-2 flex items-center gap-3">
           <Eyebrow color="var(--wc)">
-            {game.group ? `Group ${game.group}` : "World Cup"}
+            {game.group ? `Group ${game.group}` : "Summer Soccer"}
           </Eyebrow>
           <div className="h-px flex-1" style={{ background: "var(--line)" }} />
         </div>
@@ -530,7 +530,7 @@ function deriveWCHero(game: WCGameLite): {
   live: boolean;
 } {
   if (game.status === "upcoming") {
-    const context = game.stage ? `World Cup · ${game.stage}` : undefined;
+    const context = game.stage ? `Summer Soccer · ${game.stage}` : undefined;
     const d = new Date(game.date);
     const valid = !Number.isNaN(d.getTime());
     // Feed still says "upcoming" but kickoff time has already passed (feed

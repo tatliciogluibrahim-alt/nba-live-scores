@@ -15,7 +15,7 @@ import { PRESETS } from "../state/types";
 import { StakesLine } from "../stakes/StakesLine";
 import { deriveWCGroupStake } from "../stakes/derive-stakes";
 
-// Single-screen World Cup Country Dashboard. Composition only.
+// Single-screen Summer Soccer Country Dashboard. Composition only.
 
 export function CountryClient({ countryCode }: { countryCode: string }) {
   const { payload, hydrated, tournamentStarted } = useCountryData(countryCode);
@@ -208,7 +208,7 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
       <div className="mt-5">
         <GroupStrip group={country.group} rows={groupRows} />
         {/* Tournament link — gives the user a way back to the full
-            World Cup view (all 12 groups) regardless of how they
+            Summer Soccer view (all 12 groups) regardless of how they
             entered this country page. Pre-fix, a user who came in
             from Following had no path to the tournament without
             going back to Following first and finding the tournament
@@ -218,7 +218,7 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
             href="/tournament/fifa-world-cup-2026/groups"
             className="inline-flex min-h-[36px] items-center gap-1.5 text-[12px] underline underline-offset-4 decoration-dotted"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
-            aria-label="View all World Cup 2026 groups"
+            aria-label="View all Summer Soccer 2026 groups"
           >
             View all groups →
           </Link>

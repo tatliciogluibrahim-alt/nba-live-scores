@@ -7,7 +7,7 @@ import {
 } from "../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "World Cup 2026 app | No Noise Scores",
+  title: "Summer Soccer 2026 app | No Noise Scores",
   description:
     "Pick your country. Countdown to kickoff. Group context. Path to the final. Kickoff and full-time alerts. June 11, 2026.",
   alternates: {
@@ -18,19 +18,19 @@ export const metadata = {
 export default function WorldCup2026Page() {
   return (
     <ContentPageShell
-      eyebrow="World Cup 2026"
-      headline="A calm companion for the World Cup."
+      eyebrow="Summer Soccer 2026"
+      headline="A calm companion for the Summer Soccer."
       intro="June 11, 2026. Mexico City. Pick your country. Countdown, your group, kickoff and full-time pings."
     >
       <P>
-        The World Cup is a 32-day event with 48 teams across the US,
+        Summer Soccer 2026 is a 32-day event across the US,
         Canada, and Mexico. Most football apps either treat it like
         regular-season schedule or drown you in a generic
         soccer-everywhere feed. This one is the opposite: a calm
         tournament companion built for this specific month.
       </P>
 
-      <H2>What the World Cup pages do</H2>
+      <H2>What the Summer Soccer pages do</H2>
       <BulletList
         items={[
           "Pick your country. You see your country's path through the tournament. Group, opponents, knockout bracket.",
@@ -54,7 +54,7 @@ export default function WorldCup2026Page() {
         ]}
       />
       <P>
-        Tournament alerts (World Cup as a follow object) cover the
+        Tournament alerts (Summer Soccer as a follow object) cover the
         same plus tournament-wide moments (final-day kickoff, group-stage
         wrap, etc).
       </P>
@@ -74,7 +74,7 @@ export default function WorldCup2026Page() {
       </P>
       <P>
         That&apos;s not what we are. We&apos;re a calm tournament
-        companion focused on the World Cup specifically. No heatmaps,
+        companion focused on the Summer Soccer specifically. No heatmaps,
         no xG, no formations grid. If you want those stats, FotMob is
         the right tool. If you want a calm place to track your country
         through a one-month-long event without the rest of the
@@ -97,7 +97,7 @@ export default function WorldCup2026Page() {
         </a>
         ). Open it, tap{" "}
         <strong style={{ color: "var(--ink)" }}>Following</strong>, pick
-        a country from the World Cup section. Turn alerts on.
+        a country from the Summer Soccer section. Turn alerts on.
       </P>
       <P>
         On the country page, the tournament countdown will carry the

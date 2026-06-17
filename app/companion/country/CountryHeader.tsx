@@ -18,7 +18,7 @@ export function CountryHeader({ country }: { country: CountryEntry }) {
           and the name as a big editorial headline (matches the Front
           Page country mockup, which is flag-free). */}
       <Eyebrow color="var(--wc)">
-        World Cup 2026 · Group {country.group}
+        Summer Soccer 2026 · Group {country.group}
       </Eyebrow>
       <h1
         className="mt-2"

@@ -388,7 +388,7 @@ export async function GET() {
     const failedCount = results.filter((r) => r.status === "rejected").length;
     if (dates.length > 0 && failedCount === dates.length) {
       console.error(
-        "World Cup feed total outage",
+        "Summer Soccer feed total outage",
         results.find((r) => r.status === "rejected")
       );
       return NextResponse.json(
@@ -421,7 +421,7 @@ export async function GET() {
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
   } catch (err) {
-    console.error("World Cup API error:", err);
+    console.error("Summer Soccer API error:", err);
     return NextResponse.json(
       {
         games: [],

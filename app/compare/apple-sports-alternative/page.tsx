@@ -44,7 +44,7 @@ export default function VsAppleSportsPage() {
             "Live Activities, Lock Screen widgets, watch complication",
             "PWA. No Live Activities on iOS.",
           ],
-          ["Sport breadth", "Many sports, all seasons", "NBA Playoffs + World Cup + NFL coming"],
+          ["Sport breadth", "Many sports, all seasons", "NBA Playoffs + Summer Soccer + NFL coming"],
           ["Install friction", "App Store, free, one tap", "Add to Home Screen on iPhone"],
           ["Distribution", "Pre-installed-ish on iPhone", "Web link, share-of-mouth"],
         ]}
@@ -113,7 +113,7 @@ export default function VsAppleSportsPage() {
         </strong>{" "}
         you want editorial voice, you watch games on delay, you want
         per-follow alert nuance, you&apos;re focused on NBA Playoffs +
-        World Cup (or you&apos;re tired of sports apps being noisy), or
+        Summer Soccer (or you&apos;re tired of sports apps being noisy), or
         you don&apos;t mind a PWA install for a calmer experience.
       </P>
 

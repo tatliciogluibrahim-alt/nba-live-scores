@@ -163,7 +163,7 @@ function mastheadHtml(payload: BriefPayload): string {
 
 function matchupLabel(row: BriefGameRow): string {
   // compose-brief stores "AWAY · HOME". NBA reads it "AWAY at HOME"; the
-  // World Cup is at neutral venues, so soccer rows read "AWAY vs HOME".
+  // Summer Soccer is at neutral venues, so soccer rows read "AWAY vs HOME".
   const connector = row.source === "wc" ? " vs " : " at ";
   return escape(row.matchup.replace(" · ", connector));
 }

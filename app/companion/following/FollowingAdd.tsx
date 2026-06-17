@@ -4,7 +4,7 @@ import { MomentSection } from "./MomentSection";
 import { PickYourMomentGate } from "./PickYourMoment";
 
 // /following/add — moment-grouped follow picker. NBA Playoffs and
-// World Cup 2026 each get their own section with a granularity
+// Summer Soccer 2026 each get their own section with a granularity
 // ladder (broadest first, most-specific last). Same underlying picker
 // routes — this layout just makes the model readable: a new user
 // understands "I pick a moment, then how much of it" in one glance.

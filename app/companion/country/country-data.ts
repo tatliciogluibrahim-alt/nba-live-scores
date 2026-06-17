@@ -224,7 +224,7 @@ function gameRowForCountry(
     opponentFlag: opponent?.flag ?? "",
     dateLabel: formatDayLabel(g.date),
     timeLabel: formatTimeLabel(g.date),
-    stage: g.stage || (g.group ? `Group ${g.group}` : "World Cup"),
+    stage: g.stage || (g.group ? `Group ${g.group}` : "Summer Soccer"),
     isHome,
     scoreLine:
       g.status === "upcoming"
@@ -526,7 +526,7 @@ export function tournamentHasStarted(games: WCGameLite[]): boolean {
 // Groups page and the country page can never disagree. Rows sort by
 // points once any group game finishes; directory order before then.
 // `selectedCode` (the user's followed country, if any) flags its row so
-// the view can highlight it in World Cup green.
+// the view can highlight it in Summer Soccer green.
 
 export type GroupBlock = {
   letter: string;

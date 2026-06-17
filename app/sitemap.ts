@@ -45,7 +45,7 @@ const PUBLIC_ROUTES: Array<{ path: string; priority: number }> = [
 ];
 
 // WC country landing pages (Phase 21C-2). 48 static pages, one per
-// country in the World Cup 2026. Priority 0.6 — lower than the
+// country in the Summer Soccer 2026. Priority 0.6 — lower than the
 // canonical content pages above, higher than zero because they're
 // real indexable content with tournament-specific keywords. The
 // tournament-tied search surge starts ~7-10 days before kickoff

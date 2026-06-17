@@ -185,7 +185,7 @@ export function OnboardingFlow() {
             <div className="mt-5 space-y-2">
               {[
                 { id: NBA_TOURNAMENT, name: "NBA Playoffs", sub: "The bracket through the Finals.", accent: "var(--nba)" },
-                { id: WC_TOURNAMENT, name: "World Cup 2026", sub: "48 nations through the final.", accent: "var(--wc)" },
+                { id: WC_TOURNAMENT, name: "Summer Soccer 2026", sub: "Group stage through the final.", accent: "var(--wc)" },
               ].map((m) => {
                 const on = isFollowing("tournament", m.id);
                 return (

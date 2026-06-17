@@ -14,7 +14,7 @@ export type PinnedItem = {
 
   // Display
   matchup: string;             // "NYK · CLE"
-  contextEyebrow: string;      // "NBA · Game 4" | "World Cup · Group A"
+  contextEyebrow: string;      // "NBA · Game 4" | "Summer Soccer · Group A"
   status: "live" | "upcoming" | "final";
   statusLabel: string;         // "LIVE" | "TONIGHT" | "FINAL"
   statusTone: StatusTone;
@@ -153,7 +153,7 @@ function wcToPinned(g: WCGameLite, pinnedAt: number): PinnedItem {
     id: g.id,
     pinnedAt,
     matchup: `${g.away.abbreviation} · ${g.home.abbreviation}`,
-    contextEyebrow: g.stage ? `World Cup · ${g.stage}` : "World Cup",
+    contextEyebrow: g.stage ? `Summer Soccer · ${g.stage}` : "Summer Soccer",
     status: g.status,
     statusLabel: label,
     statusTone: tone,

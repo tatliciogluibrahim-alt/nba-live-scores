@@ -28,7 +28,7 @@ export default function AboutPage() {
 
       <P>
         This one is narrower on purpose. It covers the events that pull
-        you to the screen. NBA Playoffs, the World Cup, NFL when it
+        you to the screen. NBA Playoffs, the Summer Soccer, NFL when it
         gets here. The rest of the time it stays quiet.
       </P>
 

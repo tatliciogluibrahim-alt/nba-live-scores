@@ -2,7 +2,7 @@
 
 // Preview-mode helpers. The WC live-day simulation harness lets us
 // feel the day-of UX without waiting for June 11 — when preview mode
-// is active, the World Cup data hooks (Today / Country / Watching /
+// is active, the Summer Soccer data hooks (Today / Country / Watching /
 // Game detail) swap their fetch URL from `/api/world-cup` to
 // `/api/preview/world-cup`, which returns a hardcoded realistic
 // match-day snapshot.
@@ -55,7 +55,7 @@ export function isWCPreviewMode(): boolean {
   }
 }
 
-/** URL to fetch World Cup data from, based on current preview state. */
+/** URL to fetch Summer Soccer data from, based on current preview state. */
 export function wcFeedUrl(): string {
   return isWCPreviewMode() ? "/api/preview/world-cup" : "/api/world-cup";
 }

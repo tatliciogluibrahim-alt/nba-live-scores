@@ -2,7 +2,7 @@
 //
 // The Today / Watching tabs are separate routes, so navigating between
 // them unmounts the data hook and refetches the shared feeds
-// (/api/live-scores, the World Cup feed) from scratch — a visible
+// (/api/live-scores, the Summer Soccer feed) from scratch — a visible
 // empty-shell flash on every hop, on data both tabs share.
 //
 // This cache fixes the flash WITHOUT touching the polling/freshness

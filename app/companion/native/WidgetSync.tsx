@@ -133,10 +133,10 @@ export function WidgetSync() {
       : null;
 
     // Anticipation fallback: the user follows something, but nothing is
-    // scheduled in the feed window yet (e.g. they follow the World Cup a
+    // scheduled in the feed window yet (e.g. they follow the Summer Soccer a
     // week before kickoff). Instead of a blank widget with a "follow
     // something" CTA — which is wrong, they already did — show a calm
-    // countdown. Today that's the World Cup pre-kickoff; a WC tournament
+    // countdown. Today that's the Summer Soccer pre-kickoff; a WC tournament
     // or country follow qualifies.
     if (upcoming.length === 0 && !moment) {
       const followsWc = followsRef.current.some(
@@ -149,7 +149,7 @@ export function WidgetSync() {
         const days = daysUntil(WC_KICKOFF);
         if (days > 0) {
           moment = {
-            text: "World Cup 2026",
+            text: "Summer Soccer 2026",
             detail:
               days === 1 ? "Kicks off tomorrow" : `Kicks off in ${days} days`,
           };

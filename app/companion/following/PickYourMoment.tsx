@@ -25,7 +25,7 @@ import { FOLLOW_MOMENTS } from "./FollowChoice";
 //   • The skip link is always visible from the first paint. Users
 //     who came in motivated bail to the full picker in one tap.
 //
-// The active moments (NBA Playoffs + World Cup 2026) get the two big
+// The active moments (NBA Playoffs + Summer Soccer 2026) get the two big
 // cards. Coming-soon moments (NFL 2026) are surfaced as a quiet
 // footnote below — the user knows what's next without it competing
 // with the active options.

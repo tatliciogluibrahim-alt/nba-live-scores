@@ -84,17 +84,17 @@ export function TournamentCountdown({ country }: { country: CountryEntry }) {
   // fixture is shown separately in the Next Match card below (e.g.
   // Türkiye opens Jun 14, four days after the Jun 11 tournament start).
   const headline = state.starting
-    ? `The World Cup kicks off soon.`
+    ? `The Summer Soccer kicks off soon.`
     : state.imminent
-      ? `The World Cup starts tomorrow.`
+      ? `The Summer Soccer starts tomorrow.`
       : state.closeWeek
-        ? `The World Cup is almost here.`
+        ? `The Summer Soccer is almost here.`
         : null;
 
   const detail = state.starting && state.hoursLabel
-    ? `World Cup starts in ${state.hoursLabel}.`
+    ? `Summer Soccer starts in ${state.hoursLabel}.`
     : state.imminent
-      ? "World Cup starts within 24 hours."
+      ? "Summer Soccer starts within 24 hours."
       : state.closeWeek
         ? `${state.daysLabel} to first whistle. Group ${country.group}.`
         : `${state.daysLabel} until first whistle. Group ${country.group} draw is set.`;

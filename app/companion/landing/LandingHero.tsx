@@ -102,7 +102,7 @@ export function LandingHero() {
             fontWeight: 600,
           }}
         >
-          NBA · World Cup 2026 · NFL coming
+          NBA · Summer Soccer 2026 · NFL coming
         </p>
       </div>
 
@@ -351,7 +351,7 @@ function PhonePreview() {
               color: "var(--wc)",
             }}
           >
-            World Cup
+            Summer Soccer
           </p>
           <p
             className="mt-0.5 text-[12px]"

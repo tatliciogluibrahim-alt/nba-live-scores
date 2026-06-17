@@ -16,7 +16,7 @@ import { getTournament } from "../following/data/tournaments";
 import type { Follow } from "../state/types";
 
 export type FollowIdentity = {
-  /** Kind eyebrow text, e.g. "Team · NBA", "Country · World Cup". */
+  /** Kind eyebrow text, e.g. "Team · NBA", "Country · Summer Soccer". */
   kindLabel: string;
   /** Display name, e.g. "New York Knicks", "Bosnia & Herzegovina". */
   name: string;
@@ -43,9 +43,9 @@ export function resolveFollowIdentity(follow: Follow): FollowIdentity {
     case "country": {
       const country = getCountry(follow.id);
       return {
-        kindLabel: "Country · World Cup",
+        kindLabel: "Country · Summer Soccer",
         name: countryDisplayName(follow.id),
-        detail: country ? `Group ${country.group} · World Cup` : undefined,
+        detail: country ? `Group ${country.group} · Summer Soccer` : undefined,
         // Country code (e.g. USA, GER), not the flag emoji — flags were
         // dropped from the sports circle per design feedback. Flags stay
         // only on share cards.

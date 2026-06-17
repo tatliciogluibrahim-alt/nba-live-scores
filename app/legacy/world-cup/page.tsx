@@ -1,6 +1,6 @@
 "use client";
 
-// Legacy World Cup experience preserved during companion transition.
+// Legacy Summer Soccer experience preserved during companion transition.
 // Country selection persists to localStorage (same key as before) so users
 // migrating between legacy and the new IA don't lose state.
 

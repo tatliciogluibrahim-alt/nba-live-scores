@@ -33,7 +33,7 @@ export function BriefPreviewClient() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // Fetch NBA + World Cup in parallel so the preview matches the
+      // Fetch NBA + Summer Soccer in parallel so the preview matches the
       // cron (which now folds WC matches into the brief). Either feed
       // failing just drops that sport's rows; the preview still renders.
       try {

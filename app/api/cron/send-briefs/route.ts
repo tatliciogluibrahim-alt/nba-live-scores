@@ -126,7 +126,7 @@ async function fetchNBA(baseUrl: string): Promise<Game[]> {
   }
 }
 
-// World Cup fixtures for the brief. /api/world-cup's ~14-day window
+// Summer Soccer fixtures for the brief. /api/world-cup's ~14-day window
 // already spans yesterday + today, so a single fetch covers both brief
 // sections. Best-effort: a failure just means no WC rows this run (NBA
 // still sends). The composer only reads the fields BriefWCGame declares.

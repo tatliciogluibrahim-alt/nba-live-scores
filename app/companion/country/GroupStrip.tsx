@@ -47,7 +47,7 @@ export function GroupStrip({
       </div>
 
       {/* Editorial typographic list — no flags. Big team name + mono
-          code; the followed country is highlighted in World Cup green.
+          code; the followed country is highlighted in Summer Soccer green.
           Standings (GP · PTS) appear under the name once group games
           finish; pre-kickoff it's just name + code (calm, matches the
           Front Page country mockup). */}
@@ -141,7 +141,7 @@ export function GroupStrip({
           }
 
           // Group-mate row — Link with from=<tournament-id> so the
-          // destination's CrumbBar shows "World Cup" instead of bouncing
+          // destination's CrumbBar shows "Summer Soccer" instead of bouncing
           // back through Following.
           return (
             <li key={row.code} style={baseStyle}>

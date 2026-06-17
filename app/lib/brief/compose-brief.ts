@@ -28,7 +28,7 @@ import { deriveSeriesStake } from "../../companion/stakes/series-stakes";
 import { getSeriesSnippets } from "../insights/context-snippets";
 import type { Game } from "../../nba/types";
 
-// First whistle of the World Cup. Defined locally so the composer stays
+// First whistle of the Summer Soccer. Defined locally so the composer stays
 // free of the big today-data module. Keep in sync with WC_KICKOFF there.
 const WC_KICKOFF = new Date("2026-06-11T19:00:00Z");
 
@@ -95,13 +95,13 @@ export type BriefPayload = {
   /** Stake context lines for impending games — "Knicks can clinch
    *  tonight" etc. Drawn from the stakes deriver. */
   worthKnowing: string[];
-  /** Optional anticipatory countdown for "Worth knowing" — the World Cup
+  /** Optional anticipatory countdown for "Worth knowing" — the Summer Soccer
    *  run-up. Renders as a big accent numeral + label + sentence. Only set
    *  pre-kickoff for subscribers who follow a country or the tournament;
    *  never the sole reason a brief sends. */
   countdown?: {
     number: number;
-    accentLabel: string; // "Days · World Cup"
+    accentLabel: string; // "Days · Summer Soccer"
     text: string;
   };
   /** Calm summary of the subscriber's follow + alert state. */
@@ -155,7 +155,7 @@ const followsNBA = (follows: Follow[]): boolean =>
         /\b(SA|NYK|OKC|CLE)\b/.test(f.id))
   );
 
-// Follows ANY World Cup surface. Used by the WC editorial moments below
+// Follows ANY Summer Soccer surface. Used by the WC editorial moments below
 // so a user who only follows the WC (a country or the tournament itself)
 // still sees a calm pre-kickoff acknowledgment in their daily brief.
 const followsWC = (follows: Follow[]): boolean =>
@@ -195,11 +195,11 @@ const EDITORIAL_MOMENTS: EditorialMoment[] = [
     // above since the array is iterated in order.
     startKey: "2026-06-04",
     endKey: "2026-06-11",
-    headline: "The World Cup is days away.",
-    body: "First whistle Thursday, June 11. 48 nations across the next month.",
+    headline: "The Summer Soccer is days away.",
+    body: "First whistle Thursday, June 11. A month of international soccer.",
     appliesTo: followsWC,
   },
-  // ── World Cup lifecycle (kickoff → wrapped) ───────────────────────
+  // ── Summer Soccer lifecycle (kickoff → wrapped) ───────────────────────
   // Date-keyed to the real 2026 schedule (group stage through Jun 24,
   // R32 Jun 28, Final Jul 19 — see WC_KNOCKOUT_ROUNDS in wc-fixtures.ts).
   // "Opening match today" used to fire Jun 11–13, which read as wrong on
@@ -209,7 +209,7 @@ const EDITORIAL_MOMENTS: EditorialMoment[] = [
     // Opening day only.
     startKey: "2026-06-11",
     endKey: "2026-06-12",
-    headline: "The World Cup is here.",
+    headline: "The Summer Soccer is here.",
     body: "Opening match today. Group stage runs through June 24.",
     appliesTo: followsWC,
   },
@@ -217,7 +217,7 @@ const EDITORIAL_MOMENTS: EditorialMoment[] = [
     // Group stage in progress (Jun 12 → Jun 24).
     startKey: "2026-06-12",
     endKey: "2026-06-25",
-    headline: "The World Cup is underway.",
+    headline: "The Summer Soccer is underway.",
     body: "Group stage continues, matches most days through June 24.",
     appliesTo: followsWC,
   },
@@ -241,7 +241,7 @@ const EDITORIAL_MOMENTS: EditorialMoment[] = [
     // Final day.
     startKey: "2026-07-19",
     endKey: "2026-07-20",
-    headline: "The World Cup final is today.",
+    headline: "The Summer Soccer final is today.",
     body: "One match decides it.",
     appliesTo: followsWC,
   },
@@ -249,7 +249,7 @@ const EDITORIAL_MOMENTS: EditorialMoment[] = [
     // Post-tournament wrap (the week after).
     startKey: "2026-07-20",
     endKey: "2026-07-27",
-    headline: "The World Cup is wrapped.",
+    headline: "The Summer Soccer is wrapped.",
     body: "That is the tournament. Thanks for following along.",
     appliesTo: followsWC,
   },
@@ -300,7 +300,7 @@ function nbaGameMatchesFollow(game: Game, follow: Follow): boolean {
   }
 }
 
-// World Cup game shape the brief needs. Defined locally (not imported
+// Summer Soccer game shape the brief needs. Defined locally (not imported
 // from today-data) to keep this composer free of client-only modules,
 // the same way the NBA path leans on the lean `Game` type. Matches the
 // /api/world-cup response — the caller hands the games straight through.
@@ -325,7 +325,7 @@ function wcGameMatchesFollow(game: BriefWCGame, follow: Follow): boolean {
       return follow.id.startsWith("fifa-world-cup-");
     case "team":
     case "series":
-      return false; // these don't drive World Cup matches
+      return false; // these don't drive Summer Soccer matches
   }
 }
 
@@ -399,7 +399,7 @@ export function composeBrief({
   /** NBA game list — should be the seriesGames window (~14d) so
    *  yesterday's finals are included even at week-boundary days. */
   nba: Game[];
-  /** World Cup fixtures from /api/world-cup (its ~14-day window already
+  /** Summer Soccer fixtures from /api/world-cup (its ~14-day window already
    *  covers yesterday + today). Optional so NBA-only callers and the
    *  test suite stay valid; defaults to an empty slate. */
   wc?: BriefWCGame[];
@@ -448,7 +448,7 @@ export function composeBrief({
       };
     });
 
-  // Yesterday, World Cup: finals matching a country / tournament follow.
+  // Yesterday, Summer Soccer: finals matching a country / tournament follow.
   // Appended after the NBA finals so the brief reads sport-by-sport
   // rather than time-interleaved (calmer, and clearer for a follower of
   // both). Scores stay gated on includeScores, same as NBA.
@@ -497,7 +497,7 @@ export function composeBrief({
       };
     });
 
-  // Today, World Cup: live or upcoming matches for followed countries /
+  // Today, Summer Soccer: live or upcoming matches for followed countries /
   // the tournament. Live matches show a calm "Live" context (and the
   // score when scores are on); upcoming show kickoff time.
   const wcToday: BriefGameRow[] = wc
@@ -535,7 +535,7 @@ export function composeBrief({
     }
   }
 
-  // World Cup anticipation countdown (pre-kickoff). Rides along on briefs
+  // Summer Soccer anticipation countdown (pre-kickoff). Rides along on briefs
   // already sending for other reasons — never triggers a send on its own
   // (shouldSendBrief ignores it), so it can't become a daily countdown
   // nag. Shows the followed country's group when there is one.
@@ -559,9 +559,9 @@ export function composeBrief({
         ? `${country.name} in Group ${country.group} with ${listWithAnd(mates)}. First whistle June 11.`
         : `${country.name} in Group ${country.group}. First whistle June 11.`;
     } else {
-      text = "48 nations, 12 groups. First whistle June 11.";
+      text = "Group stage to the final. First whistle June 11.";
     }
-    countdown = { number: days, accentLabel: "Days · World Cup", text };
+    countdown = { number: days, accentLabel: "Days · Summer Soccer", text };
   }
 
   // Alerts summary. Tier labels mirror PRESETS in state/types.ts (kept

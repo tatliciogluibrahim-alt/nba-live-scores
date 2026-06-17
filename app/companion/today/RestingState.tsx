@@ -41,7 +41,7 @@ export function RestingState({ items }: { items: UpNextItem[] }) {
           </div>
           <ul>
             {items.slice(0, 5).map((item) => {
-              // World Cup day words (the long-horizon ones) get the green
+              // Summer Soccer day words (the long-horizon ones) get the green
               // accent; NBA day words stay calm ink. Mirrors the moment
               // accents used across the app.
               const whenColor =

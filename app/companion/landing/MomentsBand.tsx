@@ -1,7 +1,7 @@
 import { SectionHeader } from "./HowItWorksCapsule";
 
 // "Built for the moments" — three moment cards: NBA Playoffs, FIFA
-// World Cup 2026, NFL (coming). The product is narrow on purpose;
+// Summer Soccer 2026, NFL (coming). The product is narrow on purpose;
 // this section makes that narrowness feel intentional and curated,
 // not lacking.
 
@@ -27,8 +27,8 @@ const MOMENTS: MomentEntry[] = [
     soft: "var(--nba-soft)",
   },
   {
-    sport: "World Cup",
-    title: "World Cup 2026",
+    sport: "Summer Soccer",
+    title: "Summer Soccer 2026",
     detail:
       "Country pages with group, path-to-final, opener countdown, kickoff and full-time alerts. June 11, 2026 in Mexico City.",
     accent: "var(--wc)",
@@ -64,7 +64,7 @@ export function MomentsBand() {
           className="mt-4 max-w-[60ch] text-[16px] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
-          NBA Playoffs, the World Cup, NFL Sundays. We add sports
+          NBA Playoffs, the Summer Soccer, NFL Sundays. We add sports
           moment by moment, not all at once.
         </p>
 

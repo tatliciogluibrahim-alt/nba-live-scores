@@ -37,7 +37,7 @@ const MATRIX: Record<EventType, ReadonlySet<AlertPreset>> = {
   // Player milestones (30/40/50 PTS) — the loud tier only.
   "nba-highlight": new Set<AlertPreset>(["all"]),
   final: new Set<AlertPreset>(["quiet", "companion", "all"]),
-  // World Cup — kickoff + final are bookend events (every tier).
+  // Summer Soccer — kickoff + final are bookend events (every tier).
   // Halftime maps to companion + all, matching the NBA eoq-2 pattern.
   "wc-kickoff": new Set<AlertPreset>(["quiet", "companion", "all"]),
   "wc-halftime": new Set<AlertPreset>(["companion", "all"]),

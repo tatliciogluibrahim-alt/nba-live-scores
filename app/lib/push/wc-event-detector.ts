@@ -1,4 +1,4 @@
-// World Cup event detector. Compares a freshly-fetched WC fixture state
+// Summer Soccer event detector. Compares a freshly-fetched WC fixture state
 // with the last cached state and emits zero or more push-worthy events.
 // Pure function — caller persists the new state afterwards.
 //

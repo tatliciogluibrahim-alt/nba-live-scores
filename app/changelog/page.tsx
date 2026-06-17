@@ -44,7 +44,7 @@ export default function ChangelogPage() {
         ]}
       />
 
-      <H3>May. World Cup pre-kickoff readiness.</H3>
+      <H3>May. Summer Soccer pre-kickoff readiness.</H3>
       <P>
         Tightens the 30-day run-up to June 11. The tournament-countdown
         component now carries the country page across the full

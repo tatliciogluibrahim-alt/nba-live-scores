@@ -123,7 +123,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
                 }}
               >
                 {/* "AT" is an NBA away-@-home convention. Soccer (and the
-                    World Cup's neutral venues) reads "vs" — and the list
+                    Summer Soccer's neutral venues) reads "vs" — and the list
                     rows below use "vs" too, so this keeps one screen
                     consistent with itself. */}
                 {deck.accent === "var(--wc)" ? "VS" : "AT"}
