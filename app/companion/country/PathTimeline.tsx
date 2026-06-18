@@ -22,6 +22,71 @@ export function PathTimeline({
 }) {
   const noSpoilers = useNoSpoilers();
 
+  // Until a real knockout fixture lands, every stage past the group is
+  // identical filler ("Possible path. Eight teams left."), so the six
+  // full cards are dead vertical space that pushes the useful match info
+  // down. Pre-knockout we collapse the path to a single calm breadcrumb;
+  // we only expand to the detailed cards once an actual knockout stage is
+  // reached (which is also the point the detail copy stops being generic).
+  const anyKnockoutReached = stages.some(
+    (s) => s.key !== "group" && s.reached
+  );
+  // Index of the furthest stage to emphasize in the breadcrumb. Under
+  // No-Spoilers we don't highlight beyond the group (advancement leak).
+  const currentIdx = (() => {
+    if (noSpoilers) return 0;
+    let i = 0;
+    stages.forEach((s, idx) => {
+      if (s.reached) i = idx;
+    });
+    return i;
+  })();
+
+  if (!anyKnockoutReached) {
+    return (
+      <section>
+        <div className="mb-2 flex items-center gap-3">
+          <Eyebrow>Possible path</Eyebrow>
+          <div className="h-px flex-1" style={{ background: "var(--line)" }} />
+        </div>
+        <div
+          className="flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-[14px] border px-3 py-3"
+          style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+        >
+          {stages.map((stage, idx) => {
+            const on = idx === currentIdx;
+            return (
+              <span key={stage.key} className="flex items-center gap-x-1.5">
+                {idx > 0 ? (
+                  <span aria-hidden style={{ color: "var(--mute-2)", fontSize: 12 }}>
+                    →
+                  </span>
+                ) : null}
+                <span
+                  className="text-[12.5px]"
+                  style={{
+                    color: on ? "var(--ink)" : "var(--mute-1)",
+                    fontWeight: on ? 700 : 500,
+                  }}
+                >
+                  {stage.label}
+                </span>
+              </span>
+            );
+          })}
+        </div>
+        <p
+          className="mt-2 text-[11px]"
+          style={{ color: "var(--mute-2)", fontWeight: 500 }}
+        >
+          {tournamentStarted
+            ? "Path fills in after the group stage."
+            : "Path updates when the tournament begins."}
+        </p>
+      </section>
+    );
+  }
+
   // Under No-Spoilers, mark all post-group stages as "context hidden"
   // because "reached" itself implies the country survived prior rounds.
   return (
@@ -30,15 +95,6 @@ export function PathTimeline({
         <Eyebrow>Possible path</Eyebrow>
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />
       </div>
-
-      {!tournamentStarted ? (
-        <p
-          className="mb-3 text-[12px]"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          Path updates when the tournament begins.
-        </p>
-      ) : null}
 
       <ol className="space-y-2">
         {stages.map((stage, idx) => {

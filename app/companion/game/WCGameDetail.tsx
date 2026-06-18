@@ -106,12 +106,28 @@ export function WCGameDetail({
           <Eyebrow>Match events</Eyebrow>
           <div className="h-px flex-1" style={{ background: "var(--line)" }} />
         </div>
-        <ul className="space-y-2">
-          {matchEvents.map((event, index) => (
+        <ul className="space-y-1.5">
+          {matchEvents.map((event, index) => {
+            // Event hierarchy: goals / penalties / red cards are the match
+            // story and get the full card. Yellow cards are routine, so
+            // they drop to a light row (no border/fill) and stop visually
+            // competing with goals.
+            const isMajor =
+              event.type === "goal" ||
+              event.type === "pen_goal" ||
+              event.type === "own_goal" ||
+              event.type === "red_card";
+            return (
             <li
               key={`${event.minute}-${event.type}-${event.playerName}-${index}`}
-              className="rounded-[14px] border px-3 py-2.5"
-              style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+              className={
+                isMajor ? "rounded-[14px] border px-3 py-2.5" : "px-3 py-1"
+              }
+              style={
+                isMajor
+                  ? { background: "var(--paper)", borderColor: "var(--line)" }
+                  : undefined
+              }
             >
               {noSpoilers ? (
                 <p
@@ -126,7 +142,8 @@ export function WCGameDetail({
                 <MatchEventRow event={event} game={game} />
               )}
             </li>
-          ))}
+            );
+          })}
         </ul>
       </section>
     ) : null;

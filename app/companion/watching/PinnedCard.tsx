@@ -137,7 +137,14 @@ export function PinnedCard({ item }: { item: PinnedItem }) {
               border: "1px solid var(--ink)",
             }}
           >
-            {isUpcoming ? "Open game" : "View game"}
+            {/* Sport-aware noun: soccer pins say "match", NBA "game". */}
+            {item.source === "wc"
+              ? isUpcoming
+                ? "Open match"
+                : "View match"
+              : isUpcoming
+                ? "Open game"
+                : "View game"}
           </Link>
           <button
             type="button"
