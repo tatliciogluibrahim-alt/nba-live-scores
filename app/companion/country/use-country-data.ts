@@ -1,61 +1,70 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import type { WCGameLite } from "../today/today-data";
-import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import {
   buildCountryPayload,
   tournamentHasStarted,
   type CountryPayload,
+  type WCScheduleFixtureLite,
+  type WCScheduleStandingLite,
 } from "./country-data";
 
-const LIVE_INTERVAL_MS = 10_000;
-const IDLE_INTERVAL_MS = 30_000;
+const LIVE_INTERVAL_MS = 15_000;
+const IDLE_INTERVAL_MS = 60_000;
 
-async function fetchWC(): Promise<WCGameLite[]> {
+type SchedulePayload = {
+  fixtures: WCScheduleFixtureLite[];
+  standings: Record<string, WCScheduleStandingLite[]>;
+};
+
+// The country page reads the full-tournament schedule + official standings
+// (real pairings, dates, scores, tables) — the same source the groups page
+// uses, so the two surfaces always agree. The rolling live-scores window
+// (/api/world-cup) is no longer needed here; live statuses ride along in
+// the schedule fixtures.
+async function fetchSchedule(): Promise<SchedulePayload> {
   try {
-    // wcFeedUrl() honors ?preview=wc-day to swap in the simulation
-    // harness data; real /api/world-cup otherwise.
-    const res = await fetch(wcFeedUrl(), { cache: "no-store" });
-    if (!res.ok) return [];
-    const json = (await res.json()) as { games?: WCGameLite[] };
-    return json.games ?? [];
+    const res = await fetch("/api/world-cup/schedule", { cache: "no-store" });
+    if (!res.ok) return { fixtures: [], standings: {} };
+    const json = (await res.json()) as Partial<SchedulePayload>;
+    return { fixtures: json.fixtures ?? [], standings: json.standings ?? {} };
   } catch {
-    return [];
+    return { fixtures: [], standings: {} };
   }
 }
 
 export function useCountryData(code: string) {
-  const [games, setGames] = useState<WCGameLite[]>([]);
-  const gamesRef = useRef<WCGameLite[]>([]);
-  // `now` is stamped inside the poll (an effect), never during render, so
-  // the standings honesty gate stays fresh without an impure Date.now()
-  // call in the component body.
-  const [now, setNow] = useState(0);
+  const [data, setData] = useState<SchedulePayload>({
+    fixtures: [],
+    standings: {},
+  });
+  const dataRef = useRef<SchedulePayload>(data);
   const [hydrated, setHydrated] = useState(false);
 
   useVisibilityPoll(
     async (isCancelled) => {
-      const next = await fetchWC();
+      const next = await fetchSchedule();
       if (isCancelled()) return;
-      gamesRef.current = next;
-      setGames(next);
-      setNow(Date.now());
+      dataRef.current = next;
+      setData(next);
       setHydrated(true);
     },
     () =>
-      gamesRef.current.some((g) => g.status === "live")
+      dataRef.current.fixtures.some((f) => f.status === "live")
         ? LIVE_INTERVAL_MS
         : IDLE_INTERVAL_MS
   );
 
   const payload = useMemo<CountryPayload | null>(() => {
     if (!hydrated) return null;
-    return buildCountryPayload(code, games, now);
-  }, [code, games, now, hydrated]);
+    return buildCountryPayload(code, data.fixtures, data.standings);
+  }, [code, data, hydrated]);
 
-  const started = useMemo(() => tournamentHasStarted(games), [games]);
+  const started = useMemo(
+    () => tournamentHasStarted(data.fixtures),
+    [data.fixtures]
+  );
 
   return { payload, hydrated, tournamentStarted: started };
 }
