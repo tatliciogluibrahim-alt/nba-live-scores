@@ -127,5 +127,14 @@ describe("buildAllGroupsDetailed", () => {
     expect(block.phase).toBe("complete");
     expect(block.standingsTrustworthy).toBe(true);
     expect(block.next).toBeNull();
+
+    // Scores must survive the group-card transform (the root-cause bug:
+    // they were available in the feed but dropped). Canonical away/home.
+    const mexCze = block.schedule.find(
+      (m) => m.awayCode === "MEX" && m.homeCode === "CZE"
+    );
+    expect(mexCze?.awayScore).toBe(2);
+    expect(mexCze?.homeScore).toBe(0);
+    expect(mexCze?.statusText).toBe("FT");
   });
 });

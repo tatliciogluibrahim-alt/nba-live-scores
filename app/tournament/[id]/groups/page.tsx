@@ -41,7 +41,7 @@ export default async function TournamentGroupsPage({
         backLabel={tournament?.name ?? "Tournament"}
         title="Groups"
       />
-      <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-4xl md:pt-2">
+      <main className="mx-auto max-w-md px-4 pb-4 pt-4 md:max-w-4xl md:pt-6">
         <header className="px-1">
           <h1
             style={{
@@ -60,7 +60,7 @@ export default async function TournamentGroupsPage({
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {isWorldCup
-              ? "Tap a country to see its matches, group, and path. Tap Matches on any group for the full schedule."
+              ? "Tap a country to see its matches, group, and path."
               : "Tap any team to open its page."}
           </p>
         </header>

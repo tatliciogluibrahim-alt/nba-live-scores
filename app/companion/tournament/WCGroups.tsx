@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
+import { Spoiler } from "../spoiler/Spoiler";
 import { useFollows } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
@@ -276,48 +277,80 @@ function GroupTeamRow({
   );
 }
 
+// Right-aligned state word. Calm, user-facing — no admin "RESULT PENDING".
+// Carries the live minute ("Live · 67'") but never a score (safe under
+// No-Spoilers; only the numbers in the matchup line are gated).
 function statusWord(match: GroupScheduleRow): string {
   if (match.status === "final") return "Full time";
-  if (match.status === "live") return "Live";
-  // Played but outside the feed window — honest, never a false "Upcoming".
-  if (match.awaitingResult) return "Result pending";
-  return "Upcoming";
+  if (match.status === "live") {
+    const t = match.statusText.trim();
+    return t && t.toLowerCase() !== "live" ? `Live · ${t}` : "Live";
+  }
+  // Played, but the rolling window doesn't carry the result yet.
+  if (match.awaitingResult) return "Awaiting result";
+  return ""; // upcoming — the date/time line carries it on the left
 }
 
 function ScheduleRow({ match }: { match: GroupScheduleRow }) {
   const live = match.status === "live";
+  const played = match.status === "live" || match.status === "final";
+  const hasScore = match.awayScore != null && match.homeScore != null;
+  const state = statusWord(match);
+
   const inner = (
     <div className="flex items-baseline justify-between gap-3 py-1.5">
       <div className="min-w-0">
-        <p
-          className="truncate text-[13px]"
-          style={{ color: "var(--ink)", fontWeight: 600 }}
-        >
-          {match.awayCode} v {match.homeCode}
-        </p>
-        <p
-          className="mt-0.5 text-[10px] uppercase"
+        {played && hasScore ? (
+          // "BIH 0 · 0 SUI" — canonical away-then-home order. Only the
+          // numbers are Spoiler-gated; the matchup stays readable.
+          <p
+            className="truncate text-[13px]"
+            style={{ color: "var(--ink)", fontWeight: 700 }}
+          >
+            {match.awayCode}{" "}
+            <Spoiler
+              gameId={match.id}
+              ariaSubject={`${match.awayCode} versus ${match.homeCode}`}
+            >
+              {match.awayScore} · {match.homeScore}
+            </Spoiler>{" "}
+            {match.homeCode}
+          </p>
+        ) : (
+          <p
+            className="truncate text-[13px]"
+            style={{ color: "var(--ink)", fontWeight: 600 }}
+          >
+            {match.awayCode} vs {match.homeCode}
+          </p>
+        )}
+        {!played ? (
+          <p
+            className="mt-0.5 text-[10px] uppercase"
+            style={{
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.05em",
+              color: "var(--mute-2)",
+              fontWeight: 600,
+            }}
+          >
+            {match.dateLabel} · {match.timeLabel}
+          </p>
+        ) : null}
+      </div>
+      {state ? (
+        <span
+          className="shrink-0 text-[10px] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            letterSpacing: "0.05em",
-            color: "var(--mute-2)",
-            fontWeight: 600,
+            letterSpacing: "0.06em",
+            color: live ? "var(--live)" : "var(--mute-1)",
+            fontWeight: 700,
           }}
         >
-          {match.dateLabel} · {match.timeLabel}
-        </p>
-      </div>
-      <span
-        className="shrink-0 text-[10px] uppercase"
-        style={{
-          fontFamily: "var(--font-mono)",
-          letterSpacing: "0.06em",
-          color: live ? "var(--live)" : "var(--mute-1)",
-          fontWeight: 700,
-        }}
-      >
-        {statusWord(match)}
-      </span>
+          {state}
+        </span>
+      ) : null}
     </div>
   );
   // Static-only rows (no feed id yet) aren't deep-linkable; render plain.
@@ -373,7 +406,7 @@ function ScheduleList({ schedule }: { schedule: GroupScheduleRow[] }) {
 function nextLine(block: GroupDetail): string {
   if (block.phase === "complete") return "All matches played";
   if (block.next) {
-    return `Next · ${block.next.awayCode} v ${block.next.homeCode} · ${block.next.timeLabel}`;
+    return `Next · ${block.next.awayCode} vs ${block.next.homeCode} · ${block.next.timeLabel}`;
   }
   return "Schedule";
 }
@@ -437,7 +470,7 @@ function GroupCard({
             className="shrink-0 text-[11px]"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
-            {open ? "Hide ↑" : "Matches ↓"}
+            {open ? "Matches ↑" : "Matches ↓"}
           </span>
         </button>
         {open ? <ScheduleList schedule={block.schedule} /> : null}
@@ -498,7 +531,7 @@ export function WCGroups({
 
   if (mode === "full") {
     return (
-      <section className="mt-5 pb-2">
+      <section className="mt-6 pb-2">
         <GroupsHeader count={"Group stage"} />
         <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
           {detailGroups.map((block) => (

@@ -20,7 +20,11 @@ import { SportsBallLoader } from "../atoms/SportsBallLoader";
 const NBA_TOURNAMENT = "nba-playoffs-2025";
 const WC_TOURNAMENT = "fifa-world-cup-2026";
 
-async function requestNotifications(): Promise<void> {
+async function requestNotifications(hasFollow: boolean): Promise<void> {
+  // Never ask the OS for push permission before the user has chosen at
+  // least one follow — the permission is meaningless without something to
+  // be alerted about, and a cold prompt reads as a generic app nag.
+  if (!hasFollow) return;
   if (!isCapacitorNative()) return;
   try {
     const mod = await import("@capacitor/push-notifications");
@@ -149,14 +153,14 @@ export function OnboardingFlow() {
                 letterSpacing: "-0.02em",
               }}
             >
-              A calm sports companion for the moments that matter.
+              Your sports, without the feed.
             </h1>
             <p
               className="mt-4 text-[16px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Follow what matters. Skip the rest. No feeds. No ads. No
-              noise. Just your teams, and the moments inside their games.
+              Pick what you follow. We&apos;ll keep Today, alerts, widgets,
+              and recaps focused on that.
             </p>
           </div>
         ) : null}
@@ -172,15 +176,14 @@ export function OnboardingFlow() {
                 letterSpacing: "-0.02em",
               }}
             >
-              Build your circle.
+              Pick your first follows.
             </h1>
             <p
               className="mt-3 text-[15px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Pick what you actually follow. Only those games show up
-              here. You can add teams, countries, and series later, and
-              set how loud each one gets.
+              These shape Today, alerts, widgets, and the Brief. You can
+              add more later.
             </p>
             <div className="mt-5 space-y-2">
               {[
@@ -224,19 +227,16 @@ export function OnboardingFlow() {
                 );
               })}
             </div>
-            {/* Secondary "browse later" link. Previously this called
-                finish() and EJECTED users mid-onboarding — they'd land
-                on /following without ever seeing the alerts step, which
-                tanked the notification opt-in. Now it's an honest
-                "after onboarding" affordance: don't end the flow, just
-                acknowledge there's more to explore once the user is set
-                up. Quieter copy + smaller font de-emphasizes it next to
-                the primary Continue action. */}
+            {/* Quiet reassurance, not a competing "browse all" CTA. It
+                does NOT end the flow (an earlier version called finish()
+                here and ejected users before the alerts step, tanking
+                opt-in). Just tells them more follows are available later
+                in Following, so the primary action stays the moment pick. */}
             <p
               className="mt-4 text-[12px] leading-snug"
               style={{ color: "var(--mute-2)", fontWeight: 500 }}
             >
-              You can browse all moments in Following after this.
+              You can add more in Following later.
             </p>
           </div>
         ) : null}
@@ -258,9 +258,8 @@ export function OnboardingFlow() {
               className="mt-3 text-[15px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Start, wraps, and one-possession swings for the games you
-              chose. Calm by default. You set the level per follow, and
-              nothing else gets through.
+              Choose how loud each follow gets. Calm by default, and
+              nothing else gets through. You can change this anytime.
             </p>
 
             {/* A peek at what an alert looks like — the lock-screen ping. */}
@@ -320,7 +319,7 @@ export function OnboardingFlow() {
               disabled={working}
               onClick={async () => {
                 setWorking(true);
-                await requestNotifications();
+                await requestNotifications(follows.length > 0);
                 // Record the notification decision so the Today FirstRunStrip
                 // doesn't re-ask the same thing right after onboarding.
                 dismissNotifPrompt();

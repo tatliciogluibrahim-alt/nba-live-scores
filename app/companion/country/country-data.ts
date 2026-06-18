@@ -618,12 +618,20 @@ export type GroupScheduleRow = {
   awayName: string;
   homeName: string;
   status: "live" | "upcoming" | "final";
+  /** Away / home goals once the match is live or final; null for upcoming
+   *  (and for static rows the feed hasn't reached). Canonical away-then-home
+   *  order, matching Today / Game Detail / Watching / the lock screen. */
+  awayScore: number | null;
+  homeScore: number | null;
+  /** Feed status detail — the live minute ("67'", "HT") or the end state
+   *  ("FT" / "AET" / "Pens"). Empty for static-only rows. */
+  statusText: string;
   dateLabel: string;         // "Sat, Jun 20"
   timeLabel: string;         // "3:00 PM"
   kickoffISO: string;        // sort key
   /** True for a static fixture whose kickoff has already passed but which
    *  the rolling feed window no longer covers — the match has been played,
-   *  we just can't see the result. Rendered as "Result pending" (never a
+   *  we just can't see the result. Rendered as "Awaiting result" (never a
    *  false "Upcoming") and excluded from the "Next" line. */
   awaitingResult: boolean;
   /** /game/<id> when a real feed row backs it; "" for static-only. */
@@ -659,6 +667,20 @@ function matchdayFor(group: string, a: string, b: string): number {
   return MATCHDAY_BY_PAIR.get(`${group}:${[a, b].sort().join("-")}`) ?? 0;
 }
 
+// Warn once per fixture (dedup'd) when a past match has no feed result, so
+// a real data gap is visible in logs rather than silently looking broken.
+const warnedMissingResult = new Set<string>();
+function warnMissingResult(m: GroupScheduleRow): void {
+  if (warnedMissingResult.has(m.id)) return;
+  warnedMissingResult.add(m.id);
+  if (typeof console !== "undefined") {
+    console.warn(
+      `[wc-groups] no result for past fixture ${m.awayCode} v ${m.homeCode} ` +
+        `(${m.kickoffISO}) — outside the feed window or missing from the feed.`
+    );
+  }
+}
+
 function feedScheduleRow(
   g: WCGameLite,
   dir: Map<string, CountryEntry>
@@ -673,6 +695,10 @@ function feedScheduleRow(
     awayName: dir.get(a)?.name ?? a,
     homeName: dir.get(h)?.name ?? h,
     status: g.status,
+    // Scores are live in the feed object — surface them (upcoming has none).
+    awayScore: g.status === "upcoming" ? null : g.away.score,
+    homeScore: g.status === "upcoming" ? null : g.home.score,
+    statusText: g.statusText ?? "",
     dateLabel: formatDayLabel(g.date),
     timeLabel: formatTimeLabel(g.date),
     kickoffISO: g.date,
@@ -694,6 +720,9 @@ function staticScheduleRow(
     awayName: dir.get(f.away)?.name ?? f.away,
     homeName: dir.get(f.home)?.name ?? f.home,
     status: "upcoming",
+    awayScore: null,
+    homeScore: null,
+    statusText: "",
     dateLabel: formatDayLabel(f.kickoff),
     timeLabel: formatTimeLabel(f.kickoff),
     kickoffISO: f.kickoff,
@@ -738,6 +767,13 @@ export function buildAllGroupsDetailed(
       const schedule = [...feedRows, ...staticRows].sort((a, b) =>
         a.kickoffISO.localeCompare(b.kickoffISO)
       );
+
+      // A past fixture with no result in the feed is a data gap (window
+      // rolled off, or a parser/endpoint shape change). Log it once so it
+      // never just silently reads as broken; the UI shows "Awaiting result".
+      for (const m of schedule) {
+        if (m.awaitingResult) warnMissingResult(m);
+      }
 
       // Honest standings gate (see groupStandingsTrustworthy).
       const standings = computeGroupTable(games, letter);
