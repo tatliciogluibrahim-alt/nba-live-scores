@@ -42,9 +42,17 @@ export type ActivityUpdateInput = {
   gameId: string;
   status: "live" | "upcoming" | "final";
   contentState: LiveActivityContentState;
-  /** Meaningful-change signature (score / period / status). When it
-   *  matches the last push, a live update is skipped. */
+  /** Full dedup signature (score / status / minute). When it matches the
+   *  last push, a live update is skipped. Includes the clock so the real
+   *  minute pushes through. */
   sig: string;
+  /** The "meaningful" slice of the sig WITHOUT the clock (score / status /
+   *  halftime). When only the minute advanced, the meaningful slice is
+   *  unchanged → the update is sent at low priority (5) so the system can
+   *  batch it; a score / status change keeps the meaningful slice moving →
+   *  priority 10. Optional: callers that don't provide it (NBA today) get
+   *  the previous always-priority-10 behavior. */
+  meaningfulSig?: string;
 };
 
 // Dim the Live Activity's UI if we haven't pushed in this long (e.g. the
@@ -100,11 +108,33 @@ export async function pushLiveActivityUpdates(
 
     const isFinal = input.status === "final";
 
+    // APNs priority for this update. Final is always immediate (10).
+    // For a live update we lower it to 5 when only the clock advanced so
+    // the system can batch the minute ticks and conserve the update
+    // budget; a score / status / halftime change stays at 10.
+    let updatePriority: 5 | 10 = 10;
+
     // Live games: skip when nothing meaningful changed. Final always
     // sends (one terminal end push).
     if (!isFinal) {
-      const last = await getActivitySig(gameId);
-      if (last === input.sig) {
+      // The stored sig is a JSON `{s,m}` (full sig + meaningful slice).
+      // Older deploys stored a plain string — tolerate that as `{s, m:null}`.
+      const lastRaw = await getActivitySig(gameId);
+      let lastSig: string | null = lastRaw;
+      let lastMeaningful: string | null = null;
+      if (lastRaw) {
+        try {
+          const parsed = JSON.parse(lastRaw);
+          if (parsed && typeof parsed === "object" && typeof parsed.s === "string") {
+            lastSig = parsed.s;
+            lastMeaningful = typeof parsed.m === "string" ? parsed.m : null;
+          }
+        } catch {
+          // lastRaw is an old plain-string sig; lastSig already holds it.
+        }
+      }
+
+      if (lastSig === input.sig) {
         // Observability: log sig-matched skips during live games so we
         // can tell in Vercel logs when updates are being suppressed vs
         // when they're genuinely no-ops. Token count is safe to log;
@@ -118,11 +148,21 @@ export async function pushLiveActivityUpdates(
         });
         continue;
       }
+
+      // Only the minute advanced (meaningful slice unchanged) → low
+      // priority. No meaningful info on either side → keep 10 (safe).
+      const minuteOnly =
+        input.meaningfulSig != null &&
+        lastMeaningful != null &&
+        input.meaningfulSig === lastMeaningful;
+      updatePriority = minuteOnly ? 5 : 10;
+
       // Log the change so we know what triggered this push.
       console.log("[live-activity] sig changed, pushing", {
         gameId,
         newSig: input.sig,
-        prevSig: last ?? "none",
+        prevSig: lastSig ?? "none",
+        priority: updatePriority,
         tokens: tokens.length,
         statusLine: input.contentState.statusLine,
         score: `${input.contentState.awayCode} ${input.contentState.awayScore} - ${input.contentState.homeCode} ${input.contentState.homeScore}`,
@@ -152,7 +192,7 @@ export async function pushLiveActivityUpdates(
           sandbox: t.sandbox,
           staleDate: isFinal ? undefined : nowSec + STALE_AFTER_S,
           dismissalDate: isFinal ? nowSec + FINAL_LINGER_S : undefined,
-          priority: 10,
+          priority: isFinal ? 10 : updatePriority,
         });
         if (res.ok) {
           if (isFinal) ended += 1;
@@ -192,7 +232,12 @@ export async function pushLiveActivityUpdates(
     if (isFinal) {
       await clearActivityGame(gameId);
     } else {
-      await setActivitySig(gameId, input.sig);
+      // Store both the full sig (dedup) and the meaningful slice (next
+      // tick's priority decision) as JSON.
+      await setActivitySig(
+        gameId,
+        JSON.stringify({ s: input.sig, m: input.meaningfulSig ?? null })
+      );
     }
   }
 

@@ -18,25 +18,16 @@ struct NoNoiseGameAttributes: ActivityAttributes {
         // computeLiveActivityProgress() on the JS side. Decodes from JSON;
         // older payloads without it fall back to 0 via the custom init.
         var progress: Double
-        // On-device live clock. `clockStart` is an epoch (seconds) anchor;
-        // when `clockRunning` is true the views render a self-updating
-        // timer from that anchor, so the match minute advances WITHOUT a
-        // push between goals. Both optional + tolerant so older payloads
-        // (and NBA, which keeps the static statusLine) decode fine.
-        var clockStart: Double?
-        var clockRunning: Bool?
 
         // Custom decode so a missing `progress` field falls back to 0.
         // Prevents Codable decode failure if an old update push arrives
         // before the server side has been deployed.
         init(awayCode: String, awayScore: Int, homeCode: String, homeScore: Int,
-             statusLine: String, subline: String, accentHex: String, progress: Double,
-             clockStart: Double? = nil, clockRunning: Bool? = nil) {
+             statusLine: String, subline: String, accentHex: String, progress: Double) {
             self.awayCode = awayCode; self.awayScore = awayScore
             self.homeCode = homeCode; self.homeScore = homeScore
             self.statusLine = statusLine; self.subline = subline
             self.accentHex = accentHex; self.progress = progress
-            self.clockStart = clockStart; self.clockRunning = clockRunning
         }
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -48,8 +39,6 @@ struct NoNoiseGameAttributes: ActivityAttributes {
             subline = try c.decode(String.self, forKey: .subline)
             accentHex = try c.decode(String.self, forKey: .accentHex)
             progress = (try? c.decode(Double.self, forKey: .progress)) ?? 0
-            clockStart = try? c.decode(Double.self, forKey: .clockStart)
-            clockRunning = try? c.decode(Bool.self, forKey: .clockRunning)
         }
     }
     // Set once at start, never changes:

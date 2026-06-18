@@ -343,17 +343,6 @@ export type LiveActivityContentState = {
    *  push. The Swift ContentState is non-optional — omitting this field
    *  will fail Codable decode and the activity won't update. */
   progress: number;
-  /** On-device live-clock anchor (epoch SECONDS). When set and
-   *  clockRunning is true, the Live Activity renders a self-updating
-   *  Text(style: .timer) anchored here, so the match minute advances on
-   *  device with NO push between scoring events (fixes the "stuck at 6'"
-   *  freeze). Set to `now - minuteSeconds` so the timer reads the
-   *  current minute and ticks up. Omitted for halftime / pre-match /
-   *  final and for NBA (which keeps the static statusLine). */
-  clockStart?: number;
-  /** True only while the clock should visibly run (live, not halftime,
-   *  minute parseable). Picks timer vs static statusLine in the widget. */
-  clockRunning?: boolean;
 };
 
 /** Set once when starting via push-to-start. Decoded by `ActivityAttributes`. */

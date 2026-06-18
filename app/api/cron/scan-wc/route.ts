@@ -142,17 +142,17 @@ function toActivityInput(game: FeedGame): ActivityUpdateInput {
   const isHalftime = !!game.statusText && /ht|half/i.test(game.statusText);
   const minute = parseMinute(game.statusText);
 
-  // On-device live clock. The widget renders a self-updating timer
-  // anchored to `clockStart`, so the match minute advances WITHOUT a push
-  // between goals (the "stuck at 6'" fix). Anchor = now minus the current
-  // minute, so the timer reads the live minute and ticks up. Only run it
-  // during open play (live, not halftime, minute known); halftime /
-  // pre-match / final show the static statusLine instead.
-  const clockRunning =
-    game.status === "live" && !isHalftime && minute != null;
-  const clockStart = clockRunning
-    ? Math.floor(Date.now() / 1000) - (minute as number) * 60
-    : undefined;
+  // The minute is part of the dedup sig, so the cron pushes the real feed
+  // minute (~once a tick) and the Live Activity shows the actual match
+  // clock — never frozen at the last goal, never drifting ahead of play.
+  // `meaningfulSig` excludes the minute: a tick where only the minute
+  // changed is a low-priority (5) update the system can batch; a score /
+  // status / halftime change is high-priority (10). The frequent-updates
+  // entitlement (build 11) is what keeps the minute pushes from being
+  // throttled out.
+  const meaningfulSig = `${game.away.score}-${game.home.score}-${game.status}-${
+    isHalftime ? "ht" : "run"
+  }`;
 
   return {
     gameId: game.id,
@@ -168,14 +168,9 @@ function toActivityInput(game: FeedGame): ActivityUpdateInput {
       accentHex: ACCENT_WC,
       // Stadium Panel progress rail.
       progress: computeLiveActivityProgress("wc", statusLine, game.status),
-      clockStart,
-      clockRunning,
     },
-    // Dedup on score + status + a halftime flag. The minute advances every
-    // tick but the on-device timer handles that with no push; we DO need a
-    // push when play stops/resumes at halftime so the timer pauses/resumes,
-    // hence the `ht` segment. Goals + these transitions are what push.
-    sig: `${game.away.score}-${game.home.score}-${game.status}-${isHalftime ? "ht" : "run"}`,
+    sig: `${meaningfulSig}-${minute ?? ""}`,
+    meaningfulSig,
   };
 }
 
