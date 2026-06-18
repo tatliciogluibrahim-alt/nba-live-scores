@@ -87,6 +87,28 @@ describe("buildAllGroupsDetailed", () => {
     expect(block.next?.awaitingResult).toBe(false);
   });
 
+  it("labels matchdays by chronological order, not the pairing guess", () => {
+    const now = Date.parse("2026-06-25T00:00:00Z");
+    const games = [
+      wcGame("A", "KOR", "MEX", 1, 0, "2026-06-11T19:00:00Z"),
+      wcGame("A", "CZE", "RSA", 2, 2, "2026-06-11T22:00:00Z"),
+      wcGame("A", "MEX", "CZE", 0, 0, "2026-06-16T16:00:00Z"),
+      wcGame("A", "KOR", "RSA", 1, 1, "2026-06-16T19:00:00Z"),
+      wcGame("A", "MEX", "RSA", 3, 1, "2026-06-20T19:00:00Z"),
+      wcGame("A", "CZE", "KOR", 2, 1, "2026-06-20T19:00:00Z"),
+    ];
+    const block = groupA(games, now);
+    // Matchday must never decrease as kickoff increases — so the sections
+    // always read MD1 -> MD2 -> MD3 top to bottom, matching the dates.
+    for (let i = 1; i < block.schedule.length; i++) {
+      expect(block.schedule[i].matchday).toBeGreaterThanOrEqual(
+        block.schedule[i - 1].matchday
+      );
+    }
+    expect(block.schedule[0].matchday).toBe(1);
+    expect(block.schedule[5].matchday).toBe(3);
+  });
+
   it("country payload shares the same standings honesty gate", () => {
     // Trustworthy: now just after MD1, both MD1 finals present.
     const trusted = buildCountryPayload(

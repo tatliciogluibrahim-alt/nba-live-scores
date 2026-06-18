@@ -564,6 +564,7 @@ export type GroupBlock = {
 
 export function buildAllGroups(
   games: WCGameLite[],
+  now: number,
   selectedCode?: string
 ): GroupBlock[] {
   const sel = selectedCode?.toUpperCase();
@@ -579,20 +580,22 @@ export function buildAllGroups(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([letter, members]) => {
       const standings = computeGroupTable(games, letter);
-      const anyPlayed = Array.from(standings.values()).some((s) => s.played > 0);
+      // Same honesty gate as the full groups page + country page, so the
+      // tournament preview never shows standings the other surfaces hide.
+      const trustworthy = groupStandingsTrustworthy(games, now, letter);
       const rows: GroupRow[] = members
         .map((c) => ({
           code: c.id,
           name: c.name,
           flag: c.flag,
           isSelected: c.id === sel,
-          standing: standings.get(c.id),
+          standing: trustworthy ? standings.get(c.id) : undefined,
         }))
         .sort((a, b) => {
-          if (!anyPlayed) return 0;
+          if (!trustworthy) return 0;
           return (a.standing?.position ?? 99) - (b.standing?.position ?? 99);
         });
-      return { letter, rows, anyPlayed };
+      return { letter, rows, anyPlayed: trustworthy };
     });
 }
 
@@ -655,18 +658,6 @@ export type GroupDetail = {
   startsLabel: string | null;
 };
 
-// Matchday lookup by group + sorted team-pair, so feed rows (which don't
-// carry a matchday) can be grouped alongside the static schedule.
-const MATCHDAY_BY_PAIR = new Map<string, number>(
-  WC_GROUP_FIXTURES.map((f) => [
-    `${f.group}:${[f.away, f.home].sort().join("-")}`,
-    f.matchday,
-  ])
-);
-function matchdayFor(group: string, a: string, b: string): number {
-  return MATCHDAY_BY_PAIR.get(`${group}:${[a, b].sort().join("-")}`) ?? 0;
-}
-
 // Warn once per fixture (dedup'd) when a past match has no feed result, so
 // a real data gap is visible in logs rather than silently looking broken.
 const warnedMissingResult = new Set<string>();
@@ -689,7 +680,7 @@ function feedScheduleRow(
   const h = g.home.abbreviation;
   return {
     id: g.id,
-    matchday: matchdayFor(g.group ?? "", a, h),
+    matchday: 0, // assigned by chronological rank in buildAllGroupsDetailed
     awayCode: a,
     homeCode: h,
     awayName: dir.get(a)?.name ?? a,
@@ -751,10 +742,20 @@ export function buildAllGroupsDetailed(
   return Array.from(byGroup.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([letter, members]) => {
+      // Only this group's four teams belong on the card. A feed game whose
+      // group tag is right but whose teams aren't both in our roster (a
+      // mislabel, or a draw that drifted from the curated guess) would
+      // otherwise inject a foreign matchup and a phantom 4th matchday.
+      const memberCodes = new Set(members.map((c) => c.id));
       // Schedule — feed rows (live status + real /game ids) win; the
       // curated static schedule fills any pair the window hasn't reached.
       const feedRows = games
-        .filter((g) => (g.group ?? "") === letter)
+        .filter(
+          (g) =>
+            (g.group ?? "") === letter &&
+            memberCodes.has(g.away.abbreviation) &&
+            memberCodes.has(g.home.abbreviation)
+        )
         .map((g) => feedScheduleRow(g, dirByCode));
       const feedPairs = new Set(
         feedRows.map((r) => [r.awayCode, r.homeCode].sort().join("-"))
@@ -767,6 +768,17 @@ export function buildAllGroupsDetailed(
       const schedule = [...feedRows, ...staticRows].sort((a, b) =>
         a.kickoffISO.localeCompare(b.kickoffISO)
       );
+
+      // Matchday is derived from chronological order, NOT the curated
+      // pairing guess: a WC group plays 3 matchdays of 2 games each, in
+      // order, so the two earliest are MD1, next two MD2, last two MD3.
+      // Deriving from the static pair lookup let a feed date disagree with
+      // its label (a MD1 pair landing on a MD3 date) and the sections
+      // rendered out of order. Chronological ranking keeps the matchday
+      // headings consistent with the dates shown beneath them.
+      schedule.forEach((m, i) => {
+        m.matchday = Math.min(Math.floor(i / 2) + 1, 3); // group stage = 3
+      });
 
       // A past fixture with no result in the feed is a data gap (window
       // rolled off, or a parser/endpoint shape change). Log it once so it

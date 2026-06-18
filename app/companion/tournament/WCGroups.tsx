@@ -493,8 +493,8 @@ export function WCGroups({
   const { games, now, hydrated } = useWCGames();
 
   const previewGroups = useMemo(
-    () => (mode === "preview" ? buildAllGroups(games, followedCountry) : []),
-    [mode, games, followedCountry]
+    () => (mode === "preview" ? buildAllGroups(games, now, followedCountry) : []),
+    [mode, games, now, followedCountry]
   );
   const detailGroups = useMemo(
     () =>

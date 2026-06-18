@@ -150,6 +150,30 @@ describe("deriveTodayHeadline", () => {
     expect(r.support).toBeUndefined();
   });
 
+  it("pluralizes soccer as 'matches', not the 'matchs' typo", () => {
+    const r = deriveTodayHeadline(
+      base({
+        upNext: [
+          upNextItem({ id: "w1", source: "wc", eyebrow: "Summer Soccer · Today" }),
+          upNextItem({ id: "w2", source: "wc", eyebrow: "Summer Soccer · Today" }),
+        ],
+      })
+    );
+    expect(r.headline).toBe("Two matches today.");
+  });
+
+  it("pluralizes basketball as 'games'", () => {
+    const r = deriveTodayHeadline(
+      base({
+        upNext: [
+          upNextItem({ id: "g1" }),
+          upNextItem({ id: "g2" }),
+        ],
+      })
+    );
+    expect(r.headline).toBe("Two games tonight.");
+  });
+
   it("is calm when nothing is live or upcoming", () => {
     expect(deriveTodayHeadline(base()).headline).toBe("All quiet.");
   });

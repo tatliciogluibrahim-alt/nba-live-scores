@@ -1631,6 +1631,12 @@ function sportNoun(tone: "nba" | "wc"): string {
   return tone === "wc" ? "match" : "game";
 }
 
+// Plural form — "matches" / "games". "match" pluralizes with -es, so a
+// blunt `${noun}s` produced the "matchs" typo.
+function sportNounPlural(tone: "nba" | "wc"): string {
+  return tone === "wc" ? "matches" : "games";
+}
+
 export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
   const lead = leadGame(payload);
   const deck = lead?.deck ?? null;
@@ -1647,7 +1653,10 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
     const noun = sportNoun(heroTone);
     return {
       eyebrow: { label: "Live now", tone: heroTone },
-      headline: lc === 1 ? `One ${noun} live.` : `${spellCount(lc)} ${noun}s live.`,
+      headline:
+        lc === 1
+          ? `One ${noun} live.`
+          : `${spellCount(lc)} ${sportNounPlural(heroTone)} live.`,
       // Support line: a series stake ("OKC leads series 3-2") when the
       // lead is a playoff game, else the hero's context line. For a busy
       // Summer Soccer slate that context is "N Summer Soccer matches live now." —
@@ -1673,7 +1682,9 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
       return {
         eyebrow: { label: "Up next", tone },
         headline:
-          n === 1 ? `One ${noun} ${when}.` : `${spellCount(n)} ${noun}s ${when}.`,
+          n === 1
+            ? `One ${noun} ${when}.`
+            : `${spellCount(n)} ${sportNounPlural(tone)} ${when}.`,
         support: lead?.stake,
         deck,
         live: false,
@@ -1689,7 +1700,10 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
     const noun = sportNoun(tone);
     return {
       eyebrow: { label: "Up next", tone },
-      headline: n === 1 ? `One ${noun} ${day}.` : `${spellCount(n)} ${noun}s ${day}.`,
+      headline:
+        n === 1
+          ? `One ${noun} ${day}.`
+          : `${spellCount(n)} ${sportNounPlural(tone)} ${day}.`,
       support: lead?.stake,
       deck,
       live: false,
