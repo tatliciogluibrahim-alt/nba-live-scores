@@ -23,13 +23,24 @@ export type PerformerFacts = {
   reb: number;
 };
 
+/** A soccer scorer and how many goals they got in the match. */
+export type ScorerFacts = {
+  name: string;
+  team: string;
+  goals: number;
+};
+
 /** The validated fact object handed to the renderer. Every number that
  *  may legitimately appear in generated text is collected in
  *  `groundedNumbers` — the validator rejects any number not in that set,
- *  which is how we enforce zero-hallucination on figures. */
+ *  which is how we enforce zero-hallucination on figures.
+ *
+ *  Shared across sports. NBA fills the basketball fields (seriesLine,
+ *  topPerformer); soccer fills the WC fields (scorers, stage, stakeLine).
+ *  The unused side is simply null/empty for the other sport. */
 export type GameFacts = {
   gameId: string;
-  sport: "nba";
+  sport: "nba" | "wc";
   status: "live" | "upcoming" | "final";
   away: TeamFacts;
   home: TeamFacts;
@@ -42,15 +53,33 @@ export type GameFacts = {
   seriesLine: string | null;
   seriesUrgent: boolean;
   topPerformer: PerformerFacts | null;
+  // ── Soccer-only ──────────────────────────────────────────────────────
+  /** Goal scorers, most goals first. NBA leaves this empty. */
+  scorers?: ScorerFacts[];
+  /** Round label: "Group A", "Round of 16", "Final". */
+  stage?: string | null;
+  /** The calm "what this result means" stake (group standing / advancement). */
+  stakeLine?: string | null;
   groundedNumbers: number[];
 };
 
 export type SignalKind =
+  // NBA
   | "game7"
   | "clinch"
   | "career-night"
   | "nail-biter"
   | "blowout"
+  // Soccer
+  | "decider"
+  | "hat-trick"
+  | "brace"
+  | "comeback-draw"
+  | "goal-fest"
+  | "shutout"
+  | "stalemate"
+  | "tight-win"
+  // Shared
   | "routine";
 
 export type Signal = {

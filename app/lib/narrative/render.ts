@@ -15,7 +15,10 @@ const ENDPOINT = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
 const TIMEOUT_MS = 12_000;
 
-const SYSTEM_PROMPT = [
+// Shared rules — identical across sports. Only the closing voice
+// examples swap, so the cadence stays consistent while the references
+// match the sport being described.
+const SYSTEM_BASE = [
   "You write one short, calm line for a sports companion app.",
   "Voice: a smart friend who watched the game and texts you the single",
   "thing worth knowing. Plain, factual, grounded. Specific, not vague.",
@@ -41,6 +44,9 @@ const SYSTEM_PROMPT = [
   "  Also no opinion words: 'impressive', 'huge', 'massive', 'epic',",
   "  'clutch', 'must-win', 'unstoppable'.",
   "",
+].join("\n");
+
+const NBA_EXAMPLES = [
   "Voice examples (style only — do not reuse these specific facts).",
   "These show the cadence: observation + one specific detail. Short.",
   "Calm but alive. Past tense for finals.",
@@ -53,23 +59,49 @@ const SYSTEM_PROMPT = [
   "Return only the line, no preamble.",
 ].join("\n");
 
+const WC_EXAMPLES = [
+  "Voice examples (style only — do not reuse these specific facts).",
+  "These show the cadence: observation + one specific detail. Short.",
+  "Calm but alive. Past tense for finished matches. Soccer scores read",
+  "away-then-home. Say 'match', not 'game'. 'GD' is goal difference.",
+  "  · 'Mexico beat South Africa 2-0. Both from Gimenez.'",
+  "  · 'Goalless in Group A. Spain and Uruguay take a point each.'",
+  "  · 'Brazil are through to the Round of 32 after the 3-1.'",
+  "  · 'Tight one. Switzerland edged Canada 1-0.'",
+  "  · 'Five goals in Group D. Germany came out 3-2.'",
+  "",
+  "Return only the line, no preamble.",
+].join("\n");
+
+function systemPrompt(sport: GameFacts["sport"]): string {
+  return SYSTEM_BASE + (sport === "wc" ? WC_EXAMPLES : NBA_EXAMPLES);
+}
+
 function buildUserPrompt(facts: GameFacts, signals: Signal[]): string {
   const lead = signals[0]?.kind ?? "routine";
+  const factsJson =
+    facts.sport === "wc"
+      ? {
+          away: facts.away,
+          home: facts.home,
+          winner: facts.winnerCode,
+          margin: facts.margin,
+          stage: facts.stage,
+          scorers: facts.scorers ?? [],
+          stake: facts.stakeLine,
+        }
+      : {
+          away: facts.away,
+          home: facts.home,
+          winner: facts.winnerCode,
+          margin: facts.margin,
+          series: facts.seriesLine,
+          topPerformer: facts.topPerformer,
+        };
   return [
     `Lead the line with this angle: ${lead}.`,
     "Facts (the only source you may use):",
-    JSON.stringify(
-      {
-        away: facts.away,
-        home: facts.home,
-        winner: facts.winnerCode,
-        margin: facts.margin,
-        series: facts.seriesLine,
-        topPerformer: facts.topPerformer,
-      },
-      null,
-      2
-    ),
+    JSON.stringify(factsJson, null, 2),
   ].join("\n");
 }
 
@@ -101,7 +133,7 @@ export async function narrate(
         model,
         max_tokens: 120,
         temperature: 0.4,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt(facts.sport),
         messages: [{ role: "user", content: buildUserPrompt(facts, signals) }],
       }),
     });
