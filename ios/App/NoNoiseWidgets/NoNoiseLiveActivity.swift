@@ -159,11 +159,24 @@ private struct CenterBug: View {
                     .tracking(1.6)
                     .foregroundStyle(theme.accent)
             }
-            Text(state.statusLine)
-                .font(.system(size: statusSize, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(nnInk)
-                .lineLimit(1)
+            // Live clock: when the server marks the clock running, render a
+            // self-updating timer anchored to clockStart so the minute
+            // advances on-device with no push between goals (fixes the
+            // "stuck at 6'" freeze). Halftime / final / NBA fall through to
+            // the static statusLine.
+            if let start = state.clockStart, state.clockRunning == true {
+                Text(Date(timeIntervalSince1970: start), style: .timer)
+                    .font(.system(size: statusSize, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(nnInk)
+                    .lineLimit(1)
+            } else {
+                Text(state.statusLine)
+                    .font(.system(size: statusSize, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(nnInk)
+                    .lineLimit(1)
+            }
             if !compact && !state.subline.isEmpty {
                 Text(state.subline.uppercased())
                     .font(.system(size: 8.5, weight: .semibold, design: .monospaced))

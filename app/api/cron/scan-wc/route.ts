@@ -139,6 +139,21 @@ function wcStatusLine(game: FeedGame): string {
 /** Map a WC feed game to a Live Activity content snapshot. */
 function toActivityInput(game: FeedGame): ActivityUpdateInput {
   const statusLine = wcStatusLine(game);
+  const isHalftime = !!game.statusText && /ht|half/i.test(game.statusText);
+  const minute = parseMinute(game.statusText);
+
+  // On-device live clock. The widget renders a self-updating timer
+  // anchored to `clockStart`, so the match minute advances WITHOUT a push
+  // between goals (the "stuck at 6'" fix). Anchor = now minus the current
+  // minute, so the timer reads the live minute and ticks up. Only run it
+  // during open play (live, not halftime, minute known); halftime /
+  // pre-match / final show the static statusLine instead.
+  const clockRunning =
+    game.status === "live" && !isHalftime && minute != null;
+  const clockStart = clockRunning
+    ? Math.floor(Date.now() / 1000) - (minute as number) * 60
+    : undefined;
+
   return {
     gameId: game.id,
     status: game.status,
@@ -153,10 +168,14 @@ function toActivityInput(game: FeedGame): ActivityUpdateInput {
       accentHex: ACCENT_WC,
       // Stadium Panel progress rail.
       progress: computeLiveActivityProgress("wc", statusLine, game.status),
+      clockStart,
+      clockRunning,
     },
-    // Dedup on score + status (the minute advances every tick and we
-    // don't want a push a minute; goals + transitions are what matter).
-    sig: `${game.away.score}-${game.home.score}-${game.status}`,
+    // Dedup on score + status + a halftime flag. The minute advances every
+    // tick but the on-device timer handles that with no push; we DO need a
+    // push when play stops/resumes at halftime so the timer pauses/resumes,
+    // hence the `ht` segment. Goals + these transitions are what push.
+    sig: `${game.away.score}-${game.home.score}-${game.status}-${isHalftime ? "ht" : "run"}`,
   };
 }
 
