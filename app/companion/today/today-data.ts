@@ -1625,6 +1625,12 @@ function whenWord(tone: "nba" | "wc"): string {
   return tone === "wc" ? "today" : "tonight";
 }
 
+// Sport-aware noun: soccer surfaces say "match", basketball "game".
+// Keeps the same screen from mixing "game" and "match" for the same sport.
+function sportNoun(tone: "nba" | "wc"): string {
+  return tone === "wc" ? "match" : "game";
+}
+
 export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
   const lead = leadGame(payload);
   const deck = lead?.deck ?? null;
@@ -1632,14 +1638,16 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
   const heroTone: "nba" | "wc" =
     payload.hero?.accent === "var(--wc)" ? "wc" : "nba";
 
-  // Live takes the lead. Headline names the slate ("One game tonight.");
-  // the eyebrow says it's live.
+  // Live takes the lead. The headline counts LIVE games and says so, to
+  // match the "Live now" eyebrow — saying "One game today" while the
+  // Upcoming list below shows several more reads as a contradiction. The
+  // count is the live slate (pinned-live / live hero), not the day's slate.
   if (heroLive || payload.pinnedSummary.live > 0) {
     const lc = Math.max(payload.pinnedSummary.live, heroLive ? 1 : 0, 1);
-    const when = whenWord(heroTone);
+    const noun = sportNoun(heroTone);
     return {
       eyebrow: { label: "Live now", tone: heroTone },
-      headline: lc === 1 ? `One game ${when}.` : `${spellCount(lc)} games ${when}.`,
+      headline: lc === 1 ? `One ${noun} live.` : `${spellCount(lc)} ${noun}s live.`,
       // Support line: a series stake ("OKC leads series 3-2") when the
       // lead is a playoff game, else the hero's context line. For a busy
       // Summer Soccer slate that context is "N Summer Soccer matches live now." —
@@ -1661,10 +1669,11 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
       const n = todayItems.length;
       const tone: "nba" | "wc" = todayItems[0].source === "wc" ? "wc" : "nba";
       const when = whenWord(tone);
+      const noun = sportNoun(tone);
       return {
         eyebrow: { label: "Up next", tone },
         headline:
-          n === 1 ? `One game ${when}.` : `${spellCount(n)} games ${when}.`,
+          n === 1 ? `One ${noun} ${when}.` : `${spellCount(n)} ${noun}s ${when}.`,
         support: lead?.stake,
         deck,
         live: false,
@@ -1672,14 +1681,15 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
     }
 
     // Nothing on today — lead with the soonest upcoming day and count
-    // only the games that share it ("One game Saturday.").
+    // only the games that share it ("One match Saturday.").
     const lead0 = payload.upNext[0];
     const day = lead0.dayWord;
     const n = payload.upNext.filter((u) => u.dayWord === day).length;
     const tone: "nba" | "wc" = lead0.source === "wc" ? "wc" : "nba";
+    const noun = sportNoun(tone);
     return {
       eyebrow: { label: "Up next", tone },
-      headline: n === 1 ? `One game ${day}.` : `${spellCount(n)} games ${day}.`,
+      headline: n === 1 ? `One ${noun} ${day}.` : `${spellCount(n)} ${noun}s ${day}.`,
       support: lead?.stake,
       deck,
       live: false,

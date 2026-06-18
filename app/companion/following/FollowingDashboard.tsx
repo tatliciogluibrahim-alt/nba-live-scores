@@ -174,8 +174,7 @@ export function FollowingDashboard() {
         className="mb-4 text-[12px] leading-snug"
         style={{ color: "var(--mute-2)", fontWeight: 500 }}
       >
-        Follows drive what you see and your alerts. Pinning a single
-        game is separate, and lives in Watching.
+        Follows shape Today and your alerts. Pins live in Watching.
       </p>
       {/* First-follow alert-tier education. Self-gates on
           follows.length === 1 + !firstFollowEducated, so on every
@@ -265,7 +264,7 @@ export function FollowingDashboard() {
             border: "1px solid var(--ink)",
           }}
         >
-          Add
+          Add follow
         </Link>
 
         {/* Secondary row. Match the existing outlined-pill style used

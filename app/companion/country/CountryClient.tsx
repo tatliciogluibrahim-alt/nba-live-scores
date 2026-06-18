@@ -96,7 +96,11 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
                 style={{ background: "var(--line)" }}
               />
             </div>
-            <NextMatchBlock match={nextMatch} countryCode={country.id} />
+            <NextMatchBlock
+              match={nextMatch}
+              countryCode={country.id}
+              countryName={country.name}
+            />
           </section>
         ) : (
           <section className="mt-4">

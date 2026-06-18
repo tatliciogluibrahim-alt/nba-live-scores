@@ -65,7 +65,7 @@ describe("deriveTodayHeadline", () => {
       })
     );
     // NBA games skew evening → "tonight". Eyebrow carries the live state.
-    expect(r.headline).toBe("One game tonight.");
+    expect(r.headline).toBe("One game live.");
     expect(r.eyebrow.label).toBe("Live now");
     expect(r.eyebrow.tone).toBe("nba");
     expect(r.deck?.matchup).toBe("OKC vs SA");
@@ -144,7 +144,7 @@ describe("deriveTodayHeadline", () => {
         ],
       })
     );
-    expect(r.headline).toBe("One game today.");
+    expect(r.headline).toBe("One match today.");
     expect(r.eyebrow.tone).toBe("wc");
     // Summer Soccer fixtures carry no series stake.
     expect(r.support).toBeUndefined();

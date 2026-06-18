@@ -17,9 +17,14 @@ import type { CountryGameRow } from "./country-data";
 export function NextMatchBlock({
   match,
   countryCode,
+  countryName,
 }: {
   match: CountryGameRow;
   countryCode: string;
+  /** The page's country, shown so the matchup reads as a full pairing
+   *  ("Czechia vs South Africa") instead of just "vs South Africa" —
+   *  which made the selected country an inference. */
+  countryName: string;
 }) {
   const isUpcoming = match.status === "upcoming";
   const tone =
@@ -68,7 +73,7 @@ export function NextMatchBlock({
               color: "var(--mute-1)",
             }}
           >
-            vs
+            {countryName} vs
           </p>
           <p
             className="mt-0.5 text-[20px] leading-snug"
