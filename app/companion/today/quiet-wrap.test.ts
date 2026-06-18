@@ -28,6 +28,7 @@ const country = (id: string): Follow => ({
   id,
   alertEnabled: false,
   alertTier: "quiet",
+  followedAt: 0,
 });
 
 describe("Quiet Wrap — World Cup integration", () => {

@@ -484,9 +484,15 @@ export function composeBrief({
   const today: BriefGameRow[] = todayGames
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map((g) => {
-      const context = `${formatGameTime(g.date)}${
-        g.gameContext ? ` · ${g.gameContext}` : ""
-      }`;
+      // A live game reads "Live", not a kickoff time. Mirrors the WC
+      // rows below; without this a live NBA game in the morning Brief
+      // showed its tip-off time as if it hadn't started.
+      const context =
+        g.status === "live"
+          ? `Live${g.gameContext ? ` · ${g.gameContext}` : ""}`
+          : `${formatGameTime(g.date)}${
+              g.gameContext ? ` · ${g.gameContext}` : ""
+            }`;
       return {
         source: "nba",
         matchup: `${g.away.abbreviation} · ${g.home.abbreviation}`,

@@ -240,7 +240,10 @@ function tierWelcomeBody(tier: AlertPreset, follows: number): string {
   if (follows === 0) {
     return "Enable alerts on a follow to start getting pings.";
   }
+  // Mirror the canonical PRESETS copy (state/types.ts) so the welcome
+  // push matches the tier wording everywhere else. The `all` line was
+  // stale "Close games"-era copy after the tier became "Full Details".
   if (tier === "quiet") return "Start and final only.";
-  if (tier === "companion") return "Start, key breaks, final.";
-  return "Key swings and close finishes.";
+  if (tier === "companion") return "Scores, key breaks, and finals.";
+  return "Everything: scores, close finishes, comebacks.";
 }

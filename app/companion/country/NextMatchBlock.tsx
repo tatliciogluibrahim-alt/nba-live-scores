@@ -45,7 +45,9 @@ export function NextMatchBlock({
       <div className="flex items-center justify-between gap-3">
         <Eyebrow color="var(--wc)">{match.stage}</Eyebrow>
         <StatusPill tone={tone} breathe={tone === "live"}>
-          {isUpcoming ? "Upcoming" : tone === "live" ? "Live" : "Final"}
+          {/* Soccer's end-state word ("Full time"), matching the game
+              detail, Today, and Brief. Was "Final" — the lone outlier. */}
+          {isUpcoming ? "Upcoming" : tone === "live" ? "Live" : "Full time"}
         </StatusPill>
       </div>
 

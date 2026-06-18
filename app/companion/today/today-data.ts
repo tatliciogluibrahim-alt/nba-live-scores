@@ -245,6 +245,10 @@ export type ClosingMoment = {
    *  the user may still want to follow a team into the next round).
    *  Fully-automatic per the Finals-era alerts principles. */
   autoDropFollow?: { kind: "series"; id: string };
+  /** Calm one-line acknowledgment shown on the card when a follow was
+   *  auto-retired, so the removal isn't silent (honors "you're in
+   *  control"). Only set alongside autoDropFollow. */
+  autoDropNote?: string;
 };
 
 export type TodayPayload = {
@@ -1229,6 +1233,9 @@ function pickClosing(
       // next round). Frees the alert slot the moment the series wraps.
       autoDropFollow: followedSeries.has(seriesKey)
         ? { kind: "series", id: seriesKey }
+        : undefined,
+      autoDropNote: followedSeries.has(seriesKey)
+        ? "We retired your follow on this series to free an alert slot. Your other follows are untouched."
         : undefined,
     };
   }

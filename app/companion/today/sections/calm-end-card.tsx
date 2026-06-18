@@ -93,6 +93,17 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
         </p>
       ) : null}
 
+      {/* Acknowledge an auto-retired follow so the removal isn't silent
+          ("you're in control"). Calm, factual, no upsell. */}
+      {moment.autoDropNote ? (
+        <p
+          className="mt-2 text-[12px] leading-snug"
+          style={{ color: "var(--mute-2)", fontWeight: 500 }}
+        >
+          {moment.autoDropNote}
+        </p>
+      ) : null}
+
       {/* Dot strip (series only). Each played game gets a small chip
           with the two abbreviations. Under No-Spoilers the winner mark
           is hidden — the dot just shows "G1: NYK · CLE" without

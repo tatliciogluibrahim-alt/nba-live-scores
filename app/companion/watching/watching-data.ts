@@ -77,13 +77,21 @@ function formatGameTime(date: string): string {
   });
 }
 
-function formatGameDay(date: string, now = new Date()): string {
+// `sport` picks the same-day word: NBA games skew evening ("Tonight"),
+// Summer Soccer is daytime in the US ("Today"). Mirrors the same fix in
+// today-data.ts so a same-day soccer pin doesn't read "Tonight" here
+// while Today says "Today".
+function formatGameDay(
+  date: string,
+  now = new Date(),
+  sport: "nba" | "wc" = "nba"
+): string {
   const d = new Date(date);
   const sameDay =
     d.getFullYear() === now.getFullYear() &&
     d.getMonth() === now.getMonth() &&
     d.getDate() === now.getDate();
-  if (sameDay) return "Tonight";
+  if (sameDay) return sport === "wc" ? "Today" : "Tonight";
 
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -144,7 +152,7 @@ function wcToPinned(g: WCGameLite, pinnedAt: number): PinnedItem {
 
   let detailLine = g.statusText || "";
   if (isUpcoming) {
-    detailLine = `${formatGameDay(g.date)} · ${formatGameTime(g.date)}`;
+    detailLine = `${formatGameDay(g.date, new Date(), "wc")} · ${formatGameTime(g.date)}`;
     if (g.stage) detailLine += ` · ${g.stage}`;
   }
 
