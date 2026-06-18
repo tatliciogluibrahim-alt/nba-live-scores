@@ -54,6 +54,12 @@
 	</array>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<!-- Allow high-frequency Live Activity push updates (live sports
+	     scores). Without this key, priority-10 ActivityKit pushes are
+	     subject to the system update budget and get throttled/dropped
+	     mid-game — the root native cause of laggy score updates. -->
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
 	<!-- Export-compliance: the app only uses standard iOS encryption
 	     (HTTPS + APNs). Declaring this once here means Apple won't
 	     prompt for export-compliance documentation on every TestFlight
