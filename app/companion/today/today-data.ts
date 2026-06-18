@@ -850,57 +850,96 @@ const QUIET_WRAP_WINDOW_DAYS = 3;
 
 function buildQuietWrap(
   nbaRecent: NBAGame[],
+  wc: WCGameLite[],
   follows: Follow[],
   now = new Date()
 ): QuietWrapItem[] {
   const cutoffMs = now.getTime() - QUIET_WRAP_WINDOW_DAYS * 86_400_000;
-
-  const finals = nbaRecent
-    .filter((g) => {
-      if (g.status !== "final") return false;
-      const gameMs = new Date(g.date).getTime();
-      return Number.isFinite(gameMs) && gameMs >= cutoffMs;
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const inWindow = (date: string) => {
+    const ms = new Date(date).getTime();
+    return Number.isFinite(ms) && ms >= cutoffMs;
+  };
 
   const followedTeams = new Set(
     follows.filter((f) => f.kind === "team").map((f) => f.id)
   );
-
-  // Followed-first ordering.
-  const personal = finals.filter((g) =>
-    [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr))
+  const followedCountries = new Set(
+    follows.filter((f) => f.kind === "country").map((f) => f.id)
   );
-  const everyone = finals.filter((g) => !personal.includes(g));
+  // Cap is 1 (a single "discovery" row) only for a user with NO follows
+  // at all, so a fresh user doesn't get an ESPN-dump of random finals.
+  // Previously this keyed on NBA teams alone, which wrongly treated a
+  // country-only (Summer Soccer) follower as un-followed.
+  const hasAnyFollow = follows.length > 0;
 
-  // When the user has no follows, cap at 1 "discovery" row so Quiet Wrap
-  // doesn't ESPN-dump three random finals on a fresh user.
-  const cap = followedTeams.size === 0 ? 1 : 3;
+  // Both sports flow into one ranked list. Quiet Wrap was NBA-only until
+  // now — Summer Soccer finals never reached it because the function
+  // never received the WC feed. `personal` (a followed team/country is in
+  // the match) floats to the top; within a tier the most recent comes
+  // first, so a soccer final from today can sit above last night's NBA.
+  type Entry =
+    | { source: "nba"; ms: number; personal: boolean; g: NBAGame }
+    | { source: "wc"; ms: number; personal: boolean; g: WCGameLite };
 
-  return [...personal, ...everyone].slice(0, cap).map<QuietWrapItem>((g) => {
-    // Use "vs" to match the Up Next + game-detail pattern. Earlier
-    // this was "·" which read as a series-context chip but the
-    // Quiet Wrap card is a final-score line, not a series label.
-    const matchup = `${g.away.abbreviation} vs ${g.home.abbreviation}`;
-    const scoreLine = `${g.away.score} – ${g.home.score}`;
+  const nbaEntries: Entry[] = nbaRecent
+    .filter((g) => g.status === "final" && inWindow(g.date))
+    .map((g) => ({
+      source: "nba",
+      ms: new Date(g.date).getTime(),
+      personal: [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr)),
+      g,
+    }));
 
+  const wcEntries: Entry[] = wc
+    .filter((g) => g.status === "final" && inWindow(g.date))
+    .map((g) => ({
+      source: "wc",
+      ms: new Date(g.date).getTime(),
+      personal: [...followedCountries].some((c) => gameIncludesCountry(g, c)),
+      g,
+    }));
+
+  const ranked = [...nbaEntries, ...wcEntries].sort((a, b) =>
+    a.personal !== b.personal ? (a.personal ? -1 : 1) : b.ms - a.ms
+  );
+
+  const cap = hasAnyFollow ? 3 : 1;
+
+  return ranked.slice(0, cap).map<QuietWrapItem>((e) => {
+    const dayLabel = quietWrapDayLabel(e.g.date, now);
+    // Use "vs" to match the Up Next + game-detail pattern. The Quiet
+    // Wrap card is a final-score line, not a series label.
+    const matchup = `${e.g.away.abbreviation} vs ${e.g.home.abbreviation}`;
+    const scoreLine = `${e.g.away.score} – ${e.g.home.score}`;
+
+    if (e.source === "wc") {
+      return {
+        source: "wc",
+        id: e.g.id,
+        eyebrow: dayLabel,
+        matchup,
+        scoreLine,
+        // Soccer's calm end-state word, mirroring WCGameDetail.
+        context: "Full time.",
+        spoilerSubject: matchup,
+        kind: "final",
+        href: `/game/${e.g.id}`,
+      };
+    }
+
+    const g = e.g;
     // Pull "Game N" out of the API gameContext when present. Lets two
     // finals of the same series (e.g. NY · CLE Game 3 and NY · CLE Game 4)
     // visually disambiguate in the wrap list.
     const gameNumberMatch = g.gameContext?.match(/Game\s+(\d)/i);
     const gameNumberLabel = gameNumberMatch ? `Game ${gameNumberMatch[1]}` : null;
-
-    const dayLabel = quietWrapDayLabel(g.date, now);
     const eyebrow = gameNumberLabel
       ? `${dayLabel} · ${gameNumberLabel}`
       : dayLabel;
 
     // Calm prose only — the score already carries the result. Avoid
-    // winner-revealing verbs ("took it", "beat", "won", "advanced",
-    // "clinched", "leads") even when No-Spoilers is off. The single
-    // word "Final." is the calmest acknowledgement that the game ended.
-    const context = "Final.";
-
+    // winner-revealing verbs even when No-Spoilers is off. "Final." is the
+    // calmest acknowledgement that the game ended.
     const isSeriesClinch = /WINS\s+SERIES/i.test(g.seriesSummary);
 
     return {
@@ -909,7 +948,7 @@ function buildQuietWrap(
       eyebrow,
       matchup,
       scoreLine,
-      context,
+      context: "Final.",
       spoilerSubject: g.matchup,
       kind: isSeriesClinch ? "series" : "final",
       href: `/game/${g.id}`,
@@ -1411,7 +1450,7 @@ export function buildTodayPayload({
   // Summer Soccer openers. buildUpNext filters to status==="upcoming", so the
   // wider window's past finals are dropped — only the forward games stay.
   const upNext = buildUpNext(recentForWrap, wc, follows, pinned);
-  const quietWrap = buildQuietWrap(recentForWrap, follows, now);
+  const quietWrap = buildQuietWrap(recentForWrap, wc, follows, now);
   const reminder = buildReminder(follows, now);
 
   const hasLive = nba.some((g) => g.status === "live") || wc.some((g) => g.status === "live");
