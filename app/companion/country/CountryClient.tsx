@@ -199,7 +199,9 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
                   >
                     {f.status === "live"
                       ? "Live now"
-                      : `${f.dateLabel} · ${f.timeLabel}`}
+                      : f.status === "final"
+                        ? "Full time"
+                        : `${f.dateLabel} · ${f.timeLabel}`}
                   </p>
                 </li>
               );
