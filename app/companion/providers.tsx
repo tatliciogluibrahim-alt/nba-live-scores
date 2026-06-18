@@ -28,10 +28,26 @@ import {
 } from "./state/storage";
 import { PushSyncEffect } from "./push/PushSyncEffect";
 import { CapacitorPushBootstrap } from "./push/CapacitorPushBootstrap";
-import { LiveActivitySync } from "./native/LiveActivitySync";
-import { WidgetSync } from "./native/WidgetSync";
-import { OnboardingFlow } from "./onboarding/OnboardingFlow";
+import dynamic from "next/dynamic";
 import { RevealProvider } from "./spoiler/reveal";
+
+// Native-only sync components pull @capacitor/core (~24KB) and the
+// LiveActivity/Widget bridges, all of which early-return on the web /
+// desktop PWA (isCapacitorNative gate). Onboarding renders null for
+// returning users. Loading them lazily (client-only) keeps that code
+// out of the eager Today chunk so it never parses where it can't run.
+const LiveActivitySync = dynamic(
+  () => import("./native/LiveActivitySync").then((m) => m.LiveActivitySync),
+  { ssr: false }
+);
+const WidgetSync = dynamic(
+  () => import("./native/WidgetSync").then((m) => m.WidgetSync),
+  { ssr: false }
+);
+const OnboardingFlow = dynamic(
+  () => import("./onboarding/OnboardingFlow").then((m) => m.OnboardingFlow),
+  { ssr: false }
+);
 
 // ─── Follows ──────────────────────────────────────────────────────────
 type FollowsCtx = {

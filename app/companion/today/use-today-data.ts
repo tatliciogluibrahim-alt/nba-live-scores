@@ -124,17 +124,37 @@ export function useTodayData() {
   // passes the primitive's accessor; refetch passes a no-op since a
   // user-initiated pull should always apply).
   const loadInto = useCallback(async (isCancelled: () => boolean) => {
-    const [nbaResult, wc] = await Promise.all([fetchNBA(), fetchWC()]);
-    if (isCancelled()) return;
-    const next: FetchedData = {
-      nba: nbaResult.games,
-      nbaRecent: nbaResult.recent,
-      wc,
-      updatedAt: new Date(),
+    // Settle the two feeds INDEPENDENTLY so the slate paints the moment
+    // the first feed with content lands, instead of blocking on the
+    // slower one (the WC route fans out a 14-day window). We only flip
+    // hasLoadedOnce on a non-empty result, so the loading shell holds
+    // until there's something to show — no flash of "All quiet" while
+    // the meaningful feed is still in flight (NBA returns fast+empty in
+    // the offseason; WC returns fast+empty out of season).
+    const applyNba = (r: Awaited<ReturnType<typeof fetchNBA>>) => {
+      if (isCancelled()) return;
+      dataRef.current = {
+        ...dataRef.current,
+        nba: r.games,
+        nbaRecent: r.recent,
+        updatedAt: new Date(),
+      };
+      setData(dataRef.current);
+      if (r.games.length > 0 || r.recent.length > 0) setHasLoadedOnce(true);
     };
-    dataRef.current = next;
-    setData(next);
-    setHasLoadedOnce(true);
+    const applyWc = (wc: WCGameLite[]) => {
+      if (isCancelled()) return;
+      dataRef.current = { ...dataRef.current, wc, updatedAt: new Date() };
+      setData(dataRef.current);
+      if (wc.length > 0) setHasLoadedOnce(true);
+    };
+    await Promise.allSettled([
+      fetchNBA().then(applyNba),
+      fetchWC().then(applyWc),
+    ]);
+    // Both settled — flip even if both came back empty so a genuinely
+    // quiet day leaves the loading shell instead of hanging.
+    if (!isCancelled()) setHasLoadedOnce(true);
   }, []);
 
   useVisibilityPoll(
