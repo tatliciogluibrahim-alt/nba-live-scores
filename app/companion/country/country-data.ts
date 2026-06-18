@@ -12,6 +12,7 @@ import {
 } from "../following/data/countries";
 import {
   getCountryFixtures,
+  WC_GROUP_FIXTURES,
   type WCStaticFixture,
 } from "../following/data/wc-fixtures";
 import type { WCGameLite } from "../today/today-data";
@@ -358,6 +359,25 @@ function computeGroupTable(
   return table;
 }
 
+// Honesty gate shared by the country page and the groups overview. The
+// rolling feed window doesn't span the whole group stage, so once an
+// early matchday rolls off, computeGroupTable UNDERCOUNTS points. Only
+// trust standings when every match due by `now` (per the curated static
+// schedule) is still present as a final in the feed.
+function groupStandingsTrustworthy(
+  games: WCGameLite[],
+  now: number,
+  group: string
+): boolean {
+  const finalsInWindow = games.filter(
+    (g) => (g.group ?? "") === group && g.status === "final"
+  ).length;
+  const dueByNow = WC_GROUP_FIXTURES.filter(
+    (f) => f.group === group && new Date(f.kickoff).getTime() <= now
+  ).length;
+  return dueByNow > 0 && finalsInWindow >= dueByNow;
+}
+
 const ORDINAL = ["", "1st", "2nd", "3rd", "4th"];
 
 /** Live, state-aware group stake. Replaces the null the pre-tournament
@@ -407,7 +427,8 @@ function buildGroupStake(
 
 export function buildCountryPayload(
   code: string,
-  games: WCGameLite[]
+  games: WCGameLite[],
+  now: number
 ): CountryPayload | null {
   const country = findCountry(code);
   if (!country) return null;
@@ -451,14 +472,16 @@ export function buildCountryPayload(
   const nextMatch = live ?? upcoming ?? null;
 
   // Group table — played / points / goals / GD / position per team,
-  // tallied from finished group-stage games. Empty pre-tournament. Once
-  // games land, the strip shows standings and sorts by position.
+  // tallied from finished group-stage games. Only surfaced when the
+  // honesty gate passes; otherwise the rolling window has dropped an
+  // early matchday and the points would read low (same gate the groups
+  // overview uses, so the two surfaces never disagree).
   const standings = computeGroupTable(games, country.group);
-  const anyPlayed = Array.from(standings.values()).some((s) => s.played > 0);
+  const trustworthy = groupStandingsTrustworthy(games, now, country.group);
 
   // Group strip — the four members of this country's group, with the
-  // selected country flagged. Sorted by computed position once the
-  // tournament has started; directory order before then.
+  // selected country flagged. Sorted by computed position once standings
+  // can be trusted; directory order otherwise.
   const groupRows: GroupRow[] = WC_COUNTRIES
     .filter((c) => c.group === country.group)
     .map((c) => ({
@@ -466,17 +489,20 @@ export function buildCountryPayload(
       name: c.name,
       flag: c.flag,
       isSelected: c.id === country.id,
-      standing: standings.get(c.id),
+      standing: trustworthy ? standings.get(c.id) : undefined,
     }))
     .sort((a, b) => {
-      if (!anyPlayed) return 0; // keep directory order pre-tournament
+      if (!trustworthy) return 0; // keep directory order
       return (a.standing?.position ?? 99) - (b.standing?.position ?? 99);
     });
 
   // Live, state-aware group stake for the selected country. Null when no
-  // group game has finished (the view falls back to the structural
-  // pre-kickoff stake).
-  const groupStake = buildGroupStake(country, standings.get(country.id), fixtures);
+  // group game has finished, or when standings can't be trusted (the view
+  // then falls back to the structural pre-kickoff stake rather than
+  // stating a wrong position/points).
+  const groupStake = trustworthy
+    ? buildGroupStake(country, standings.get(country.id), fixtures)
+    : null;
 
   // Path stages — pre-tournament default. Mark a stage `reached` if a
   // fixture in that stage exists. Group stage is always reachable.
@@ -567,5 +593,199 @@ export function buildAllGroups(
           return (a.standing?.position ?? 99) - (b.standing?.position ?? 99);
         });
       return { letter, rows, anyPlayed };
+    });
+}
+
+// ── Detailed all-groups builder (Groups overview page) ────────────────
+// Richer than buildAllGroups: each group also carries its full six-match
+// schedule (feed + curated static merged) plus an HONEST standings gate.
+//
+// Honesty gate — /api/world-cup is a rolling 14-day window that does NOT
+// span the whole ~13-day group stage, so once a group's early matchday
+// rolls off the back, computeGroupTable would UNDERCOUNT its points (a
+// team on 6 points over two wins reads as 3 once its opener falls out of
+// the window). We only surface numeric standings when every match that
+// should have been played by `now` is still visible as a final in the
+// feed (finalsInWindow >= dueByNow). Otherwise the card shows the
+// schedule alone — never a wrong table. The country detail table carries
+// the same caveat; a real standings endpoint is the eventual upgrade.
+
+export type GroupScheduleRow = {
+  id: string;
+  matchday: number;          // 1 | 2 | 3, or 0 if unmapped
+  awayCode: string;
+  homeCode: string;
+  awayName: string;
+  homeName: string;
+  status: "live" | "upcoming" | "final";
+  dateLabel: string;         // "Sat, Jun 20"
+  timeLabel: string;         // "3:00 PM"
+  kickoffISO: string;        // sort key
+  /** True for a static fixture whose kickoff has already passed but which
+   *  the rolling feed window no longer covers — the match has been played,
+   *  we just can't see the result. Rendered as "Result pending" (never a
+   *  false "Upcoming") and excluded from the "Next" line. */
+  awaitingResult: boolean;
+  /** /game/<id> when a real feed row backs it; "" for static-only. */
+  href: string;
+};
+
+export type GroupDetail = {
+  letter: string;
+  rows: GroupRow[];
+  /** All six group matches, chronological. Always complete (static fills
+   *  any match the rolling feed window hasn't reached). */
+  schedule: GroupScheduleRow[];
+  /** True when numeric standings can be trusted (see honesty gate above). */
+  standingsTrustworthy: boolean;
+  /** "upcoming" before first kickoff · "live" once underway · "complete"
+   *  once all six are final. Drives the calm status chip. */
+  phase: "upcoming" | "live" | "complete";
+  /** Soonest live-or-upcoming match, for the always-visible "Next" line. */
+  next: GroupScheduleRow | null;
+  /** Day label of the group's opener, shown while phase === "upcoming". */
+  startsLabel: string | null;
+};
+
+// Matchday lookup by group + sorted team-pair, so feed rows (which don't
+// carry a matchday) can be grouped alongside the static schedule.
+const MATCHDAY_BY_PAIR = new Map<string, number>(
+  WC_GROUP_FIXTURES.map((f) => [
+    `${f.group}:${[f.away, f.home].sort().join("-")}`,
+    f.matchday,
+  ])
+);
+function matchdayFor(group: string, a: string, b: string): number {
+  return MATCHDAY_BY_PAIR.get(`${group}:${[a, b].sort().join("-")}`) ?? 0;
+}
+
+function feedScheduleRow(
+  g: WCGameLite,
+  dir: Map<string, CountryEntry>
+): GroupScheduleRow {
+  const a = g.away.abbreviation;
+  const h = g.home.abbreviation;
+  return {
+    id: g.id,
+    matchday: matchdayFor(g.group ?? "", a, h),
+    awayCode: a,
+    homeCode: h,
+    awayName: dir.get(a)?.name ?? a,
+    homeName: dir.get(h)?.name ?? h,
+    status: g.status,
+    dateLabel: formatDayLabel(g.date),
+    timeLabel: formatTimeLabel(g.date),
+    kickoffISO: g.date,
+    awaitingResult: false,
+    href: `/game/${g.id}`,
+  };
+}
+
+function staticScheduleRow(
+  f: WCStaticFixture,
+  now: number,
+  dir: Map<string, CountryEntry>
+): GroupScheduleRow {
+  return {
+    id: f.id,
+    matchday: f.matchday,
+    awayCode: f.away,
+    homeCode: f.home,
+    awayName: dir.get(f.away)?.name ?? f.away,
+    homeName: dir.get(f.home)?.name ?? f.home,
+    status: "upcoming",
+    dateLabel: formatDayLabel(f.kickoff),
+    timeLabel: formatTimeLabel(f.kickoff),
+    kickoffISO: f.kickoff,
+    awaitingResult: new Date(f.kickoff).getTime() <= now,
+    href: "",
+  };
+}
+
+export function buildAllGroupsDetailed(
+  games: WCGameLite[],
+  now: number,
+  selectedCode?: string
+): GroupDetail[] {
+  const sel = selectedCode?.toUpperCase();
+  const dirByCode = new Map<string, CountryEntry>(
+    WC_COUNTRIES.map((c) => [c.id, c])
+  );
+
+  const byGroup = new Map<string, CountryEntry[]>();
+  for (const c of WC_COUNTRIES) {
+    const arr = byGroup.get(c.group) ?? [];
+    arr.push(c);
+    byGroup.set(c.group, arr);
+  }
+
+  return Array.from(byGroup.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([letter, members]) => {
+      // Schedule — feed rows (live status + real /game ids) win; the
+      // curated static schedule fills any pair the window hasn't reached.
+      const feedRows = games
+        .filter((g) => (g.group ?? "") === letter)
+        .map((g) => feedScheduleRow(g, dirByCode));
+      const feedPairs = new Set(
+        feedRows.map((r) => [r.awayCode, r.homeCode].sort().join("-"))
+      );
+      const staticRows = WC_GROUP_FIXTURES.filter(
+        (f) =>
+          f.group === letter &&
+          !feedPairs.has([f.away, f.home].sort().join("-"))
+      ).map((f) => staticScheduleRow(f, now, dirByCode));
+      const schedule = [...feedRows, ...staticRows].sort((a, b) =>
+        a.kickoffISO.localeCompare(b.kickoffISO)
+      );
+
+      // Honest standings gate (see groupStandingsTrustworthy).
+      const standings = computeGroupTable(games, letter);
+      const standingsTrustworthy = groupStandingsTrustworthy(games, now, letter);
+
+      const rows: GroupRow[] = members
+        .map((c) => ({
+          code: c.id,
+          name: c.name,
+          flag: c.flag,
+          isSelected: c.id === sel,
+          standing: standingsTrustworthy ? standings.get(c.id) : undefined,
+        }))
+        .sort((a, b) => {
+          if (!standingsTrustworthy) return 0; // directory order otherwise
+          return (a.standing?.position ?? 99) - (b.standing?.position ?? 99);
+        });
+
+      const allFinal =
+        schedule.length > 0 && schedule.every((r) => r.status === "final");
+      // Started once any match has a result (final/live) or a past kickoff
+      // that rolled off the window (awaitingResult).
+      const anyStarted = schedule.some(
+        (r) => r.status !== "upcoming" || r.awaitingResult
+      );
+      const phase: GroupDetail["phase"] = allFinal
+        ? "complete"
+        : anyStarted
+          ? "live"
+          : "upcoming";
+
+      // "Next" = a live match, else the soonest genuinely-future upcoming
+      // (never a rolled-off static row with a past kickoff).
+      const next =
+        schedule.find((r) => r.status === "live") ??
+        schedule.find((r) => r.status === "upcoming" && !r.awaitingResult) ??
+        null;
+      const startsLabel =
+        phase === "upcoming" && schedule[0] ? schedule[0].dateLabel : null;
+
+      return {
+        letter,
+        rows,
+        schedule,
+        standingsTrustworthy,
+        phase,
+        next,
+        startsLabel,
+      };
     });
 }

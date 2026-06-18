@@ -6,8 +6,14 @@ import { Eyebrow } from "../atoms/Eyebrow";
 import { useFollows } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
-import { buildAllGroups, type GroupBlock } from "../country/country-data";
-import type { GroupRow } from "../country/country-data";
+import {
+  buildAllGroups,
+  buildAllGroupsDetailed,
+  type GroupBlock,
+  type GroupDetail,
+  type GroupRow,
+  type GroupScheduleRow,
+} from "../country/country-data";
 import type { WCGameLite } from "../today/today-data";
 
 // Summer Soccer groups view — editorial, flag-free, matching the country
@@ -16,12 +22,17 @@ import type { WCGameLite } from "../today/today-data";
 //   • "preview" (tournament page): your followed group first (when you
 //     follow one), then one row of other groups, then "View all groups".
 //     Keeps the tournament page calm instead of stacking all 12.
-//   • "full" (/tournament/[id]/groups): every group in a two-column grid.
+//   • "full" (/tournament/[id]/groups): every group as a stacked card —
+//     teams, an honest standings line, and an expandable six-match
+//     schedule. Schedule-first so a soccer novice can always answer
+//     "when does this group play?" even before any result lands.
 //
-// Standings (GP · PTS) appear under a name once that group has played a
-// game; pre-tournament it's just names + codes. Rows link to the
-// country page carrying ?from=<tournament-id> so the back-crumb resolves
-// to the tournament.
+// Standings only appear when they can be trusted: the rolling feed window
+// doesn't span the whole group stage, so an early matchday can roll off
+// and undercount points. buildAllGroupsDetailed gates on that — a card
+// with incomplete data shows the schedule alone, never a wrong table.
+// Rows link to the country page carrying ?from=<tournament-id>:groups so
+// the back-crumb resolves to this full-groups page, not the condensed one.
 
 const LIVE_INTERVAL_MS = 10_000;
 const IDLE_INTERVAL_MS = 30_000;
@@ -37,12 +48,13 @@ async function fetchWC(): Promise<WCGameLite[]> {
   }
 }
 
-function useWCGroups(selectedCode?: string): {
-  groups: GroupBlock[];
-  hydrated: boolean;
-} {
+function useWCGames(): { games: WCGameLite[]; now: number; hydrated: boolean } {
   const [games, setGames] = useState<WCGameLite[]>([]);
   const gamesRef = useRef<WCGameLite[]>([]);
+  // `now` is stamped inside the poll (an effect), never during render, so
+  // the standings honesty gate (matches-due-by-now) stays fresh without
+  // an impure Date.now() call in the component body.
+  const [now, setNow] = useState(0);
   const [hydrated, setHydrated] = useState(false);
 
   useVisibilityPoll(
@@ -51,6 +63,7 @@ function useWCGroups(selectedCode?: string): {
       if (isCancelled()) return;
       gamesRef.current = next;
       setGames(next);
+      setNow(Date.now());
       setHydrated(true);
     },
     () =>
@@ -59,13 +72,10 @@ function useWCGroups(selectedCode?: string): {
         : IDLE_INTERVAL_MS
   );
 
-  const groups = useMemo(
-    () => buildAllGroups(games, selectedCode),
-    [games, selectedCode]
-  );
-
-  return { groups, hydrated };
+  return { games, now, hydrated };
 }
+
+// ── Preview mode (tournament page) — compact group columns ─────────────
 
 function CountryRow({
   row,
@@ -73,9 +83,6 @@ function CountryRow({
   isLast,
 }: {
   row: GroupRow;
-  /** Value passed as `?from=...` on the country link. Encodes BOTH the
-   *  tournament id AND which view (`...:groups` from the full list) so
-   *  back-nav lands on the right surface. */
   fromParam: string;
   isLast: boolean;
 }) {
@@ -179,6 +186,268 @@ function GroupsHeader({ count }: { count: string }) {
   );
 }
 
+// ── Full mode (groups page) — stacked schedule-first cards ─────────────
+
+const ORDINAL = ["", "1st", "2nd", "3rd", "4th"];
+
+function GroupStatusChip({ phase }: { phase: GroupDetail["phase"] }) {
+  const label =
+    phase === "complete"
+      ? "Complete"
+      : phase === "live"
+        ? "In progress"
+        : "Upcoming";
+  return (
+    <span
+      className="shrink-0 text-[10px] uppercase"
+      style={{
+        fontFamily: "var(--font-mono)",
+        letterSpacing: "0.08em",
+        color: "var(--mute-1)",
+        fontWeight: 600,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function GroupTeamRow({
+  row,
+  fromParam,
+  isLast,
+}: {
+  row: GroupRow;
+  fromParam: string;
+  isLast: boolean;
+}) {
+  const nameColor = row.isSelected ? "var(--wc)" : "var(--ink)";
+  const codeColor = row.isSelected ? "var(--wc)" : "var(--mute-1)";
+  const s = row.standing;
+  const standingLine =
+    s && s.played > 0
+      ? `${ORDINAL[s.position] ?? `${s.position}th`} · ${s.played} GP · ${s.points} PTS · ${s.gd > 0 ? "+" : ""}${s.gd} GD`
+      : null;
+
+  return (
+    <Link
+      href={`/country/${row.code}?from=${fromParam}`}
+      aria-label={`Open ${row.name}`}
+      className="flex items-center justify-between gap-2 py-2 transition active:scale-[0.99]"
+      style={{ borderBottom: isLast ? "none" : "1px solid var(--line)" }}
+    >
+      <div className="min-w-0">
+        <div
+          className="truncate text-[14px] leading-tight"
+          style={{
+            color: nameColor,
+            fontWeight: row.isSelected ? 700 : 600,
+            letterSpacing: "-0.005em",
+          }}
+        >
+          {row.name}
+        </div>
+        {standingLine ? (
+          <div
+            className="mt-0.5 text-[10px] uppercase"
+            style={{
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.05em",
+              color: "var(--mute-1)",
+              fontWeight: 600,
+            }}
+          >
+            {standingLine}
+          </div>
+        ) : null}
+      </div>
+      <span
+        className="shrink-0 text-[11px] uppercase"
+        style={{
+          fontFamily: "var(--font-mono)",
+          letterSpacing: "0.06em",
+          color: codeColor,
+          fontWeight: 700,
+        }}
+      >
+        {row.code}
+      </span>
+    </Link>
+  );
+}
+
+function statusWord(match: GroupScheduleRow): string {
+  if (match.status === "final") return "Full time";
+  if (match.status === "live") return "Live";
+  // Played but outside the feed window — honest, never a false "Upcoming".
+  if (match.awaitingResult) return "Result pending";
+  return "Upcoming";
+}
+
+function ScheduleRow({ match }: { match: GroupScheduleRow }) {
+  const live = match.status === "live";
+  const inner = (
+    <div className="flex items-baseline justify-between gap-3 py-1.5">
+      <div className="min-w-0">
+        <p
+          className="truncate text-[13px]"
+          style={{ color: "var(--ink)", fontWeight: 600 }}
+        >
+          {match.awayCode} v {match.homeCode}
+        </p>
+        <p
+          className="mt-0.5 text-[10px] uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.05em",
+            color: "var(--mute-2)",
+            fontWeight: 600,
+          }}
+        >
+          {match.dateLabel} · {match.timeLabel}
+        </p>
+      </div>
+      <span
+        className="shrink-0 text-[10px] uppercase"
+        style={{
+          fontFamily: "var(--font-mono)",
+          letterSpacing: "0.06em",
+          color: live ? "var(--live)" : "var(--mute-1)",
+          fontWeight: 700,
+        }}
+      >
+        {statusWord(match)}
+      </span>
+    </div>
+  );
+  // Static-only rows (no feed id yet) aren't deep-linkable; render plain.
+  return match.href ? (
+    <Link
+      href={match.href}
+      aria-label={`Open ${match.awayCode} versus ${match.homeCode}`}
+      className="block transition active:scale-[0.99]"
+    >
+      {inner}
+    </Link>
+  ) : (
+    <div>{inner}</div>
+  );
+}
+
+function ScheduleList({ schedule }: { schedule: GroupScheduleRow[] }) {
+  // Group by matchday so the six rows read as the round-robin they are.
+  const byDay = new Map<number, GroupScheduleRow[]>();
+  for (const m of schedule) {
+    const arr = byDay.get(m.matchday) ?? [];
+    arr.push(m);
+    byDay.set(m.matchday, arr);
+  }
+  const days = Array.from(byDay.keys()).sort((a, b) => a - b);
+
+  return (
+    <div className="mt-2 space-y-2.5">
+      {days.map((day) => (
+        <div key={day}>
+          {day > 0 ? (
+            <p
+              className="mb-0.5 text-[9px] uppercase"
+              style={{
+                fontFamily: "var(--font-mono)",
+                letterSpacing: "0.1em",
+                color: "var(--mute-2)",
+                fontWeight: 700,
+              }}
+            >
+              Matchday {day}
+            </p>
+          ) : null}
+          {(byDay.get(day) ?? []).map((m) => (
+            <ScheduleRow key={`${m.id}-${m.awayCode}`} match={m} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function nextLine(block: GroupDetail): string {
+  if (block.phase === "complete") return "All matches played";
+  if (block.next) {
+    return `Next · ${block.next.awayCode} v ${block.next.homeCode} · ${block.next.timeLabel}`;
+  }
+  return "Schedule";
+}
+
+function GroupCard({
+  block,
+  fromParam,
+}: {
+  block: GroupDetail;
+  fromParam: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasSelected = block.rows.some((r) => r.isSelected);
+
+  return (
+    <article
+      className="rounded-[16px] border"
+      style={{
+        background: "var(--paper)",
+        borderColor: hasSelected ? "var(--wc)" : "var(--line)",
+      }}
+    >
+      <div className="px-4 pb-3 pt-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <Eyebrow color={hasSelected ? "var(--wc)" : undefined}>
+            Group {block.letter}
+          </Eyebrow>
+          <GroupStatusChip phase={block.phase} />
+        </div>
+
+        <div className="mt-2.5">
+          {block.rows.map((row, idx) => (
+            <GroupTeamRow
+              key={row.code}
+              row={row}
+              fromParam={fromParam}
+              isLast={idx === block.rows.length - 1}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div
+        className="border-t px-4 py-2.5"
+        style={{ borderColor: "var(--line)" }}
+      >
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-label={`${open ? "Hide" : "Show"} Group ${block.letter} matches`}
+          className="flex min-h-[32px] w-full items-center justify-between gap-3 text-left"
+        >
+          <span
+            className="min-w-0 truncate text-[12px]"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            {nextLine(block)}
+          </span>
+          <span
+            className="shrink-0 text-[11px]"
+            style={{ color: "var(--ink)", fontWeight: 600 }}
+          >
+            {open ? "Hide ↑" : "Matches ↓"}
+          </span>
+        </button>
+        {open ? <ScheduleList schedule={block.schedule} /> : null}
+      </div>
+    </article>
+  );
+}
+
+// ── Component ──────────────────────────────────────────────────────────
+
 export function WCGroups({
   tournamentId,
   mode,
@@ -188,34 +457,52 @@ export function WCGroups({
 }) {
   const { follows } = useFollows();
   const followedCountry = follows.find((f) => f.kind === "country")?.id;
-  const { groups, hydrated } = useWCGroups(followedCountry);
+  const { games, now, hydrated } = useWCGames();
+
+  const previewGroups = useMemo(
+    () => (mode === "preview" ? buildAllGroups(games, followedCountry) : []),
+    [mode, games, followedCountry]
+  );
+  const detailGroups = useMemo(
+    () =>
+      mode === "full"
+        ? buildAllGroupsDetailed(games, now, followedCountry)
+        : [],
+    [mode, games, now, followedCountry]
+  );
 
   if (!hydrated) {
     return (
       <section className="mt-5" aria-busy aria-live="polite">
-        <div
-          className="h-[160px] rounded-[14px]"
-          style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
-        />
+        <div className="space-y-3">
+          {Array.from({ length: mode === "full" ? 4 : 1 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-[160px] rounded-[16px]"
+              style={{
+                background: "var(--paper)",
+                border: "1px solid var(--line)",
+              }}
+            />
+          ))}
+        </div>
       </section>
     );
   }
 
-  // `fromParam` encodes BOTH the tournament id and which view the user
-  // is leaving from. Country detail's resolveBackTarget parses the
-  // `:groups` suffix and routes back to the full-groups page instead of
-  // the condensed tournament page — fixing the "lose your place after
-  // inspecting one country" friction.
-  const fromParam =
-    mode === "full" ? `${tournamentId}:groups` : tournamentId;
+  // `fromParam` encodes BOTH the tournament id and which view the user is
+  // leaving from. Country detail's resolveBackTarget parses the `:groups`
+  // suffix and routes back to this full-groups page instead of the
+  // condensed tournament page.
+  const fromParam = mode === "full" ? `${tournamentId}:groups` : tournamentId;
 
   if (mode === "full") {
     return (
-      <section className="mt-5">
+      <section className="mt-5 pb-2">
         <GroupsHeader count={"Group stage"} />
-        <div className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-3 md:gap-x-8">
-          {groups.map((block) => (
-            <GroupColumn
+        <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
+          {detailGroups.map((block) => (
+            <GroupCard
               key={block.letter}
               block={block}
               fromParam={fromParam}
@@ -229,10 +516,10 @@ export function WCGroups({
   // Preview mode. Lead with the followed group (when present), then show
   // one row (two columns) of the next groups, then a "View all" link.
   const followedBlock = followedCountry
-    ? groups.find((g) => g.rows.some((r) => r.isSelected)) ?? null
+    ? previewGroups.find((g) => g.rows.some((r) => r.isSelected)) ?? null
     : null;
 
-  const others = groups.filter((g) => g !== followedBlock);
+  const others = previewGroups.filter((g) => g !== followedBlock);
   const previewOthers = others.slice(0, 2);
 
   return (
@@ -247,11 +534,7 @@ export function WCGroups({
 
       <div className="grid grid-cols-2 gap-x-6 gap-y-5">
         {previewOthers.map((block) => (
-          <GroupColumn
-            key={block.letter}
-            block={block}
-            fromParam={fromParam}
-          />
+          <GroupColumn key={block.letter} block={block} fromParam={fromParam} />
         ))}
       </div>
 
@@ -262,7 +545,7 @@ export function WCGroups({
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
           aria-label="View all 12 Summer Soccer groups"
         >
-          View all {groups.length} groups →
+          View all {previewGroups.length} groups →
         </Link>
       </div>
     </section>

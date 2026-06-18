@@ -59,7 +59,9 @@ export default async function TournamentGroupsPage({
             className="mt-2 text-[13px] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            Tap any team to open its page.
+            {isWorldCup
+              ? "Tap a country to see its matches, group, and path. Tap Matches on any group for the full schedule."
+              : "Tap any team to open its page."}
           </p>
         </header>
 

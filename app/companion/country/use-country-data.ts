@@ -29,6 +29,10 @@ async function fetchWC(): Promise<WCGameLite[]> {
 export function useCountryData(code: string) {
   const [games, setGames] = useState<WCGameLite[]>([]);
   const gamesRef = useRef<WCGameLite[]>([]);
+  // `now` is stamped inside the poll (an effect), never during render, so
+  // the standings honesty gate stays fresh without an impure Date.now()
+  // call in the component body.
+  const [now, setNow] = useState(0);
   const [hydrated, setHydrated] = useState(false);
 
   useVisibilityPoll(
@@ -37,6 +41,7 @@ export function useCountryData(code: string) {
       if (isCancelled()) return;
       gamesRef.current = next;
       setGames(next);
+      setNow(Date.now());
       setHydrated(true);
     },
     () =>
@@ -47,8 +52,8 @@ export function useCountryData(code: string) {
 
   const payload = useMemo<CountryPayload | null>(() => {
     if (!hydrated) return null;
-    return buildCountryPayload(code, games);
-  }, [code, games, hydrated]);
+    return buildCountryPayload(code, games, now);
+  }, [code, games, now, hydrated]);
 
   const started = useMemo(() => tournamentHasStarted(games), [games]);
 
