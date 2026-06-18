@@ -5,17 +5,15 @@ import { useMemo, useRef, useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { Spoiler } from "../spoiler/Spoiler";
 import { useFollows } from "../providers";
-import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import {
-  buildAllGroups,
-  buildAllGroupsDetailed,
-  type GroupBlock,
+  buildAllGroupsFromSchedule,
   type GroupDetail,
   type GroupRow,
   type GroupScheduleRow,
+  type WCScheduleFixtureLite,
+  type WCScheduleStandingLite,
 } from "../country/country-data";
-import type { WCGameLite } from "../today/today-data";
 
 // Summer Soccer groups view — editorial, flag-free, matching the country
 // GroupStrip. Two modes:
@@ -24,56 +22,64 @@ import type { WCGameLite } from "../today/today-data";
 //     follow one), then one row of other groups, then "View all groups".
 //     Keeps the tournament page calm instead of stacking all 12.
 //   • "full" (/tournament/[id]/groups): every group as a stacked card —
-//     teams, an honest standings line, and an expandable six-match
-//     schedule. Schedule-first so a soccer novice can always answer
-//     "when does this group play?" even before any result lands.
+//     teams, the official standings line, and an expandable schedule.
 //
-// Standings only appear when they can be trusted: the rolling feed window
-// doesn't span the whole group stage, so an early matchday can roll off
-// and undercount points. buildAllGroupsDetailed gates on that — a card
-// with incomplete data shows the schedule alone, never a wrong table.
+// Data comes from /api/world-cup/schedule: the COMPLETE tournament from
+// ESPN (real pairings, dates, scores) plus the OFFICIAL standings. No
+// rolling-window gaps, so nothing is fabricated and standings are real.
 // Rows link to the country page carrying ?from=<tournament-id>:groups so
 // the back-crumb resolves to this full-groups page, not the condensed one.
 
-const LIVE_INTERVAL_MS = 10_000;
-const IDLE_INTERVAL_MS = 30_000;
+const LIVE_INTERVAL_MS = 15_000;
+const IDLE_INTERVAL_MS = 60_000;
 
-async function fetchWC(): Promise<WCGameLite[]> {
+type SchedulePayload = {
+  fixtures: WCScheduleFixtureLite[];
+  standings: Record<string, WCScheduleStandingLite[]>;
+};
+
+async function fetchSchedule(): Promise<SchedulePayload> {
   try {
-    const res = await fetch(wcFeedUrl(), { cache: "no-store" });
-    if (!res.ok) return [];
-    const json = (await res.json()) as { games?: WCGameLite[] };
-    return json.games ?? [];
+    const res = await fetch("/api/world-cup/schedule", { cache: "no-store" });
+    if (!res.ok) return { fixtures: [], standings: {} };
+    const json = (await res.json()) as Partial<SchedulePayload>;
+    return { fixtures: json.fixtures ?? [], standings: json.standings ?? {} };
   } catch {
-    return [];
+    return { fixtures: [], standings: {} };
   }
 }
 
-function useWCGames(): { games: WCGameLite[]; now: number; hydrated: boolean } {
-  const [games, setGames] = useState<WCGameLite[]>([]);
-  const gamesRef = useRef<WCGameLite[]>([]);
-  // `now` is stamped inside the poll (an effect), never during render, so
-  // the standings honesty gate (matches-due-by-now) stays fresh without
-  // an impure Date.now() call in the component body.
-  const [now, setNow] = useState(0);
+function useWCSchedule(): {
+  fixtures: WCScheduleFixtureLite[];
+  standings: Record<string, WCScheduleStandingLite[]>;
+  hydrated: boolean;
+} {
+  const [data, setData] = useState<SchedulePayload>({
+    fixtures: [],
+    standings: {},
+  });
+  const dataRef = useRef<SchedulePayload>(data);
   const [hydrated, setHydrated] = useState(false);
 
   useVisibilityPoll(
     async (isCancelled) => {
-      const next = await fetchWC();
+      const next = await fetchSchedule();
       if (isCancelled()) return;
-      gamesRef.current = next;
-      setGames(next);
-      setNow(Date.now());
+      dataRef.current = next;
+      setData(next);
       setHydrated(true);
     },
     () =>
-      gamesRef.current.some((g) => g.status === "live")
+      dataRef.current.fixtures.some((f) => f.status === "live")
         ? LIVE_INTERVAL_MS
         : IDLE_INTERVAL_MS
   );
 
-  return { games, now, hydrated };
+  return {
+    fixtures: data.fixtures,
+    standings: data.standings,
+    hydrated,
+  };
 }
 
 // ── Preview mode (tournament page) — compact group columns ─────────────
@@ -142,7 +148,7 @@ function GroupColumn({
   block,
   fromParam,
 }: {
-  block: GroupBlock;
+  block: { letter: string; rows: GroupRow[] };
   fromParam: string;
 }) {
   const hasSelected = block.rows.some((r) => r.isSelected);
@@ -490,18 +496,11 @@ export function WCGroups({
 }) {
   const { follows } = useFollows();
   const followedCountry = follows.find((f) => f.kind === "country")?.id;
-  const { games, now, hydrated } = useWCGames();
+  const { fixtures, standings, hydrated } = useWCSchedule();
 
-  const previewGroups = useMemo(
-    () => (mode === "preview" ? buildAllGroups(games, now, followedCountry) : []),
-    [mode, games, now, followedCountry]
-  );
-  const detailGroups = useMemo(
-    () =>
-      mode === "full"
-        ? buildAllGroupsDetailed(games, now, followedCountry)
-        : [],
-    [mode, games, now, followedCountry]
+  const groups = useMemo(
+    () => buildAllGroupsFromSchedule(fixtures, standings, followedCountry),
+    [fixtures, standings, followedCountry]
   );
 
   if (!hydrated) {
@@ -534,7 +533,7 @@ export function WCGroups({
       <section className="mt-6 pb-2">
         <GroupsHeader count={"Group stage"} />
         <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
-          {detailGroups.map((block) => (
+          {groups.map((block) => (
             <GroupCard
               key={block.letter}
               block={block}
@@ -549,10 +548,10 @@ export function WCGroups({
   // Preview mode. Lead with the followed group (when present), then show
   // one row (two columns) of the next groups, then a "View all" link.
   const followedBlock = followedCountry
-    ? previewGroups.find((g) => g.rows.some((r) => r.isSelected)) ?? null
+    ? groups.find((g) => g.rows.some((r) => r.isSelected)) ?? null
     : null;
 
-  const others = previewGroups.filter((g) => g !== followedBlock);
+  const others = groups.filter((g) => g !== followedBlock);
   const previewOthers = others.slice(0, 2);
 
   return (
@@ -578,7 +577,7 @@ export function WCGroups({
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
           aria-label="View all 12 Summer Soccer groups"
         >
-          View all {previewGroups.length} groups →
+          View all {groups.length} groups →
         </Link>
       </div>
     </section>

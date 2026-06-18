@@ -837,3 +837,162 @@ export function buildAllGroupsDetailed(
       };
     });
 }
+
+// ── Real-data all-groups builder (ESPN full schedule + standings) ──────
+// Consumes /api/world-cup/schedule: the COMPLETE tournament fixture list
+// and the OFFICIAL standings, both straight from ESPN. No rolling-window
+// gaps to fill, so there's no static guess, no computeGroupTable, and no
+// honesty gate — every match, time, score, and table is real. This is the
+// builder the groups page uses; buildAllGroupsDetailed is the legacy
+// feed-window path kept until the country page migrates too.
+
+export type WCScheduleFixtureLite = {
+  id: string;
+  date: string;
+  status: "live" | "upcoming" | "final";
+  statusText: string;
+  group: string;
+  home: { name: string; abbreviation: string; score: number };
+  away: { name: string; abbreviation: string; score: number };
+  broadcasts: string[];
+};
+
+export type WCScheduleStandingLite = {
+  code: string;
+  played: number;
+  points: number;
+  gf: number;
+  ga: number;
+  gd: number;
+  position: number;
+};
+
+function scheduleRow(
+  f: WCScheduleFixtureLite,
+  dir: Map<string, CountryEntry>
+): GroupScheduleRow {
+  const a = f.away.abbreviation;
+  const h = f.home.abbreviation;
+  return {
+    id: f.id,
+    matchday: 0, // assigned by chronological rank below
+    awayCode: a,
+    homeCode: h,
+    awayName: dir.get(a)?.name ?? f.away.name,
+    homeName: dir.get(h)?.name ?? f.home.name,
+    status: f.status,
+    awayScore: f.status === "upcoming" ? null : f.away.score,
+    homeScore: f.status === "upcoming" ? null : f.home.score,
+    statusText: f.statusText,
+    dateLabel: formatDayLabel(f.date),
+    timeLabel: formatTimeLabel(f.date),
+    kickoffISO: f.date,
+    awaitingResult: false, // full schedule is always present
+    href: f.id ? `/game/${f.id}` : "",
+  };
+}
+
+export function buildAllGroupsFromSchedule(
+  fixtures: WCScheduleFixtureLite[],
+  standings: Record<string, WCScheduleStandingLite[]>,
+  selectedCode?: string
+): GroupDetail[] {
+  const sel = selectedCode?.toUpperCase();
+  const dirByCode = new Map<string, CountryEntry>(
+    WC_COUNTRIES.map((c) => [c.id, c])
+  );
+
+  const byGroup = new Map<string, CountryEntry[]>();
+  for (const c of WC_COUNTRIES) {
+    const arr = byGroup.get(c.group) ?? [];
+    arr.push(c);
+    byGroup.set(c.group, arr);
+  }
+
+  return Array.from(byGroup.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([letter, members]) => {
+      const memberCodes = new Set(members.map((c) => c.id));
+
+      const schedule = fixtures
+        .filter(
+          (f) =>
+            f.group === letter &&
+            memberCodes.has(f.away.abbreviation) &&
+            memberCodes.has(f.home.abbreviation)
+        )
+        .map((f) => scheduleRow(f, dirByCode))
+        .sort((a, b) => a.kickoffISO.localeCompare(b.kickoffISO));
+      schedule.forEach((m, i) => {
+        m.matchday = Math.min(Math.floor(i / 2) + 1, 3);
+      });
+
+      // Official standings, keyed by team code.
+      const table = new Map<string, WCScheduleStandingLite>(
+        (standings[letter] ?? []).map((s) => [s.code, s])
+      );
+      const anyPlayed = (standings[letter] ?? []).some((s) => s.played > 0);
+      const groupComplete =
+        (standings[letter]?.length ?? 0) > 0 &&
+        (standings[letter] ?? []).every((s) => s.played >= 3);
+
+      const rows: GroupRow[] = members
+        .map((c) => {
+          const s = table.get(c.id);
+          const standing: GroupStanding | undefined = s
+            ? {
+                played: s.played,
+                points: s.points,
+                gf: s.gf,
+                ga: s.ga,
+                gd: s.gd,
+                position: s.position,
+                outcome: !groupComplete
+                  ? null
+                  : s.position <= 2
+                    ? "through"
+                    : s.position === 3
+                      ? "third"
+                      : "out",
+              }
+            : undefined;
+          return {
+            code: c.id,
+            name: c.name,
+            flag: c.flag,
+            isSelected: c.id === sel,
+            standing,
+          };
+        })
+        .sort((a, b) => {
+          if (!anyPlayed) return 0;
+          return (a.standing?.position ?? 99) - (b.standing?.position ?? 99);
+        });
+
+      const allFinal =
+        schedule.length > 0 && schedule.every((r) => r.status === "final");
+      const anyStarted = schedule.some((r) => r.status !== "upcoming");
+      const phase: GroupDetail["phase"] = allFinal
+        ? "complete"
+        : anyStarted
+          ? "live"
+          : "upcoming";
+
+      const next =
+        schedule.find((r) => r.status === "live") ??
+        schedule.find((r) => r.status === "upcoming") ??
+        null;
+      const startsLabel =
+        phase === "upcoming" && schedule[0] ? schedule[0].dateLabel : null;
+
+      return {
+        letter,
+        rows,
+        schedule,
+        standingsTrustworthy: anyPlayed, // real table — trustworthy once played
+        phase,
+        next,
+        startsLabel,
+      };
+    });
+}
