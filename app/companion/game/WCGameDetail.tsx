@@ -275,7 +275,7 @@ export function WCGameDetail({
       ) : null}
 
       {/* ── Hero moment ──────────────────────────────────────────────── */}
-      <div className="mt-4">
+      <div className="mt-3">
         <HeroMoment
           eyebrow={hero.eyebrow}
           headline={hero.headline}
@@ -290,7 +290,7 @@ export function WCGameDetail({
       {/* ── Both countries — group context + jump into each country's
           page. Gives an upcoming match (which has no events/highlights
           yet) somewhere to go: group, path, and fixtures per side. ── */}
-      <section className="mt-5">
+      <section className="mt-4">
         <div className="mb-2 flex items-center gap-3">
           <Eyebrow color="var(--wc)">
             {game.group ? `Group ${game.group}` : "Summer Soccer"}
@@ -325,12 +325,12 @@ export function WCGameDetail({
 
       {/* ── Highlights (mobile inline; desktop → rail) ───────────────── */}
       {highlightsSection ? (
-        <div className="mt-5 md:hidden">{highlightsSection}</div>
+        <div className="mt-4 md:hidden">{highlightsSection}</div>
       ) : null}
 
       {/* ── Broadcast (bottom group: broadcast → pin → footnote) ──────── */}
       {channel ? (
-        <div className="mt-5">
+        <div className="mt-4">
           <WatchLine channel={channel} ariaSubject={subject} />
         </div>
       ) : null}
