@@ -2,194 +2,88 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { isCapacitorNative } from "../dev/native-detect";
 import type { KnockoutMomentItem, WCGameLite } from "../today/today-data";
 
 // Summer Soccer share card — the growth artifact. A user posts a calm
-// "Mexico are through to the Round of 16" card (or a match result) with
-// the nonoisescores.app lockup, and a friend who sees it taps through.
+// "Mexico are through to the Round of 16" card with the nonoisescores.app
+// lockup, and a friend who sees it taps through.
 //
-// Mirrors the NBA ShareCard mechanism exactly (DOM + inline styles ->
-// html-to-image toPng -> Web Share API with a download fallback), but
-// with the green Summer Soccer accent and knockout-aware copy. Literal
-// hex throughout: the card is cloned out of the DOM to render a PNG, so
-// CSS variables wouldn't resolve.
+// The card image is rendered SERVER-SIDE (/api/share-card via Satori) and
+// fetched here, so it works in any webview — no client html-to-image that
+// can silently fail inside the Capacitor WKWebView. Share path:
+//   native (Capacitor): write the PNG, Share.share the file
+//   web: Web Share API with the file
+//   fallback: Web Share text+link -> copy link -> download
+// Always gives visible feedback, never a silent no-op.
 
 export type WCSharePayload =
   | { kind: "wc-game"; game: WCGameLite }
   | { kind: "knockout-moment"; moment: KnockoutMomentItem };
 
-const GREEN = "#1e6b3c";
-const CREAM = "#f5f1ea";
-const INK = "#1a1208";
-const MUTE = "#a89880";
-const CARD = "#fffaf2";
+const SITE_URL = "https://nonoisescores.app";
 
-function Lockup() {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 12,
-          background: "#07111f",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "0 8px 18px rgba(7,17,31,0.22)",
-          flexShrink: 0,
-        }}
-      >
-        <img src="/favicon.svg" alt="" style={{ width: 22, height: 22 }} />
-      </div>
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <p style={{ margin: 0, fontSize: 9, fontWeight: 900, color: GREEN, textTransform: "uppercase", letterSpacing: "0.14em", lineHeight: 1 }}>
-          No Noise
-        </p>
-        <p style={{ margin: "3px 0 0", fontSize: 17, fontWeight: 950, color: INK, textTransform: "uppercase", letterSpacing: "-0.04em", lineHeight: 1 }}>
-          Scores
-        </p>
-      </div>
-    </div>
-  );
-}
+type CardParams = {
+  eyebrow: string;
+  headline: string;
+  sub: string;
+  accent: "green" | "mute";
+  shareText: string;
+};
 
-function Footer() {
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-      <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: MUTE, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-        No feeds. No clutter.
-      </p>
-      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: MUTE }}>
-        nonoisescores.app · @nonoisescores
-      </p>
-    </div>
-  );
-}
-
-function Shell({ eyebrow, children }: { eyebrow: string; children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        width: 540,
-        height: 540,
-        background: CREAM,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        padding: 42,
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        boxSizing: "border-box",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18 }}>
-        <Lockup />
-        <p style={{ margin: 0, maxWidth: 240, textAlign: "right", fontSize: 12, fontWeight: 900, color: GREEN, textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1.3 }}>
-          {eyebrow}
-        </p>
-      </div>
-      {children}
-      <Footer />
-    </div>
-  );
-}
-
-function MomentCanvas({ moment }: { moment: KnockoutMomentItem }) {
-  const advanced = moment.outcome === "advanced";
-  const headline = moment.isChampion
-    ? `${moment.countryName} are champions.`
-    : advanced
-      ? `${moment.countryName} are through to the ${moment.nextStage}.`
-      : `${moment.countryName}'s run ended in the ${moment.stageLabel}.`;
-  const eyebrow = `${moment.stageLabel} · ${moment.isChampion ? "Champions" : advanced ? "Through" : "Out"}`;
-
-  return (
-    <Shell eyebrow={eyebrow}>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-          borderRadius: 28,
-          background: CARD,
-          padding: "30px 26px",
-          borderLeft: `6px solid ${advanced ? GREEN : "#d4cdc0"}`,
-          boxShadow: "0 0 0 1px #e8e0d4, 0 18px 38px rgba(26,18,8,0.08)",
-        }}
-      >
-        <p style={{ margin: 0, fontSize: 38, fontWeight: 950, letterSpacing: "-0.03em", color: INK, lineHeight: 1.04 }}>
-          {headline}
-        </p>
-        <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: MUTE, fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>
-          {moment.scoreLine}
-        </p>
-      </div>
-    </Shell>
-  );
-}
-
-function GameCanvas({ game }: { game: WCGameLite }) {
-  const stage = game.stage || "Summer Soccer";
-  const eyebrow =
-    game.status === "final"
-      ? `Full time · ${stage}`
-      : game.status === "live"
-        ? `Live · ${game.statusText} · ${stage}`
-        : stage;
-  const showScore = game.status !== "upcoming";
-
-  return (
-    <Shell eyebrow={eyebrow}>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 14,
-          borderRadius: 28,
-          background: CARD,
-          padding: "26px 24px",
-          boxShadow: "0 0 0 1px #e8e0d4, 0 18px 38px rgba(26,18,8,0.08)",
-        }}
-      >
-        {[game.away, game.home].map((team, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18 }}>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 52, fontWeight: 950, letterSpacing: "-0.055em", color: INK, lineHeight: 0.92 }}>
-                {team.abbreviation}
-              </p>
-              <p style={{ margin: "5px 0 0", fontSize: 13, fontWeight: 700, color: MUTE, lineHeight: 1.1 }}>
-                {team.name}
-              </p>
-            </div>
-            {showScore ? (
-              <span style={{ minWidth: 82, textAlign: "right", fontSize: 64, fontWeight: 950, letterSpacing: "-0.06em", color: INK, lineHeight: 0.92, fontVariantNumeric: "tabular-nums" }}>
-                {team.score}
-              </span>
-            ) : (
-              <span style={{ fontSize: 20, fontWeight: 800, color: MUTE, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                {i === 0 ? "vs" : ""}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-    </Shell>
-  );
-}
-
-function shareTextFor(payload: WCSharePayload): string {
+function cardParams(payload: WCSharePayload): CardParams {
   if (payload.kind === "knockout-moment") {
     const m = payload.moment;
-    if (m.isChampion) return `${m.countryName} are champions.`;
-    return m.outcome === "advanced"
-      ? `${m.countryName} are through to the ${m.nextStage}.`
-      : `${m.countryName}'s run ended in the ${m.stageLabel}.`;
+    const advanced = m.outcome === "advanced";
+    const headline = m.isChampion
+      ? `${m.countryName} are champions.`
+      : advanced
+        ? `${m.countryName} are through to the ${m.nextStage}.`
+        : `${m.countryName}'s run ended in the ${m.stageLabel}.`;
+    return {
+      eyebrow: `${m.stageLabel} · ${m.isChampion ? "Champions" : advanced ? "Through" : "Out"}`,
+      headline,
+      sub: m.scoreLine,
+      accent: advanced ? "green" : "mute",
+      shareText: headline,
+    };
   }
   const g = payload.game;
+  const stage = g.stage || "Summer Soccer";
+  const eyebrow =
+    g.status === "final"
+      ? `Full time · ${stage}`
+      : g.status === "live"
+        ? `Live · ${stage}`
+        : stage;
   const matchup = `${g.away.abbreviation} vs ${g.home.abbreviation}`;
-  return g.stage ? `${matchup} · ${g.stage}` : matchup;
+  return {
+    eyebrow,
+    headline: matchup,
+    sub: g.status === "upcoming" ? "" : `${g.away.score} – ${g.home.score}`,
+    accent: "green",
+    shareText: g.stage ? `${matchup} · ${g.stage}` : matchup,
+  };
+}
+
+function buildCardUrl(p: CardParams): string {
+  const q = new URLSearchParams({
+    eyebrow: p.eyebrow,
+    headline: p.headline,
+    sub: p.sub,
+    accent: p.accent,
+  });
+  return `/api/share-card?${q.toString()}`;
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 export function WCShareModal({
@@ -199,65 +93,48 @@ export function WCShareModal({
   payload: WCSharePayload;
   onClose: () => void;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
-  const url = "https://nonoisescores.app";
-  const shareText = shareTextFor(payload);
+  const params = cardParams(payload);
+  const cardUrl = buildCardUrl(params);
 
-  // Robust share that degrades instead of silently doing nothing — the
-  // bug was that in the Capacitor WKWebView (the installed app) file
-  // sharing isn't supported, so the old download fallback was a no-op.
-  // Order: native image share -> text+link share (works in the webview)
-  // -> copy link -> desktop download. Always gives visible feedback.
   async function handleSave() {
     if (isSaving) return;
     setIsSaving(true);
     setResult(null);
 
-    // Build the PNG best-effort. Some webviews can't render it; that's
-    // fine, we still share the text + link below.
-    let file: File | null = null;
-    let dataUrl: string | null = null;
-    if (cardRef.current) {
-      try {
-        const { toPng } = await import("html-to-image");
-        dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
-        const blob = await (await fetch(dataUrl)).blob();
-        file = new File([blob], "no-noise-summer-soccer.png", { type: "image/png" });
-      } catch {
-        file = null;
-      }
+    // Fetch the server-rendered PNG (reliable in any webview).
+    let blob: Blob | null = null;
+    try {
+      const res = await fetch(cardUrl, { cache: "no-store" });
+      if (res.ok) blob = await res.blob();
+    } catch {
+      blob = null;
     }
+    const file = blob
+      ? new File([blob], "no-noise-summer-soccer.png", { type: "image/png" })
+      : null;
 
     const nav = typeof navigator !== "undefined" ? navigator : undefined;
     try {
-      // Installed app (Capacitor WKWebView): the Web Share API can't attach
-      // files here, so go through the native Share + Filesystem plugins to
-      // share the actual image card. Falls through to the web path below if
-      // the plugins aren't in this build yet — so the current App Store
-      // build keeps working (text + link) until the next build ships.
-      if (isCapacitorNative() && dataUrl) {
+      // Installed app (Capacitor): write the PNG + share the file natively.
+      // Falls through if the plugins aren't in this build yet, so the
+      // current App Store build keeps working (text + link).
+      if (isCapacitorNative() && blob) {
         try {
+          const base64 = await blobToBase64(blob);
           const [{ Filesystem, Directory }, { Share }] = await Promise.all([
             import("@capacitor/filesystem"),
             import("@capacitor/share"),
           ]);
           const fileName = "no-noise-summer-soccer.png";
-          await Filesystem.writeFile({
-            path: fileName,
-            data: dataUrl.split(",")[1] ?? "",
-            directory: Directory.Cache,
-          });
-          const { uri } = await Filesystem.getUri({
-            path: fileName,
-            directory: Directory.Cache,
-          });
+          await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Cache });
+          const { uri } = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
           await Share.share({
             title: "No Noise Scores",
-            text: shareText,
-            url,
+            text: params.shareText,
+            url: SITE_URL,
             files: [uri],
           });
           onClose();
@@ -268,37 +145,34 @@ export function WCShareModal({
       }
 
       if (file && nav?.canShare?.({ files: [file] })) {
-        await nav.share({ files: [file], title: "No Noise Scores", text: shareText });
+        await nav.share({ files: [file], title: "No Noise Scores", text: params.shareText });
         onClose();
         return;
       }
       if (nav?.share) {
-        // WKWebView supports text/url sharing even when files aren't.
-        await nav.share({ title: "No Noise Scores", text: shareText, url });
+        await nav.share({ title: "No Noise Scores", text: params.shareText, url: SITE_URL });
         onClose();
         return;
       }
-      if (dataUrl) {
+      if (file) {
         const link = document.createElement("a");
-        link.href = dataUrl;
+        link.href = URL.createObjectURL(file);
         link.download = "no-noise-summer-soccer.png";
         link.click();
         setResult("Image saved");
       } else if (nav?.clipboard?.writeText) {
-        await nav.clipboard.writeText(`${shareText} ${url}`);
+        await nav.clipboard.writeText(`${params.shareText} ${SITE_URL}`);
         setResult("Link copied");
       } else {
         setResult("Couldn't share on this device");
       }
     } catch (error) {
-      // User-cancelled the native sheet — not a failure, just close quietly.
       if ((error as { name?: string })?.name === "AbortError") {
         onClose();
         return;
       }
-      // Share threw (webview quirk) — fall back to copying the link.
       try {
-        await nav?.clipboard?.writeText?.(`${shareText} ${url}`);
+        await nav?.clipboard?.writeText?.(`${params.shareText} ${SITE_URL}`);
         setResult("Link copied");
       } catch {
         setResult("Couldn't share — try again");
@@ -315,20 +189,15 @@ export function WCShareModal({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="flex flex-col items-center gap-4 rounded-[1.5rem] bg-[#f5f1ea] p-5 shadow-2xl">
-        <div
-          ref={cardRef}
-          style={{ width: 300, height: 300, transformOrigin: "top left", pointerEvents: "none" }}
-          className="overflow-hidden rounded-2xl shadow-lg"
-        >
-          <div style={{ width: 540, height: 540, transform: "scale(0.5556)", transformOrigin: "top left" }}>
-            {payload.kind === "knockout-moment" ? (
-              <MomentCanvas moment={payload.moment} />
-            ) : (
-              <GameCanvas game={payload.game} />
-            )}
-          </div>
-        </div>
+      <div className="flex w-full max-w-[340px] flex-col items-center gap-4 rounded-[1.5rem] bg-[#f5f1ea] p-5 shadow-2xl">
+        <img
+          src={cardUrl}
+          alt="Share card preview"
+          width={300}
+          height={300}
+          className="h-[300px] w-[300px] rounded-2xl shadow-lg"
+          style={{ background: "#f5f1ea", objectFit: "cover" }}
+        />
 
         <div className="flex w-full gap-3">
           <button
