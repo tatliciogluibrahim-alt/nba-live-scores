@@ -20,6 +20,7 @@ import { QuietWrap } from "./sections/quiet-wrap";
 import { ReminderRow } from "./sections/reminder-row";
 import { CalmCard } from "./sections/calm-card";
 import { CalmEndCard } from "./sections/calm-end-card";
+import { KnockoutMomentCard } from "./sections/knockout-moment-card";
 
 // Today composition. One screen, three states layered on the same shape:
 //   1. North Star — live hero + follows + up next + finals + reminder
@@ -166,6 +167,16 @@ export function TodayClient() {
           <CalmEndCard moment={payload.closing} />
         </div>
       ) : null}
+
+      {/* Knockout moment — a followed country advanced or went out. The
+          win-or-go-home beat. Each self-suppresses once dismissed. */}
+      {hydrated
+        ? payload.knockoutMoments.map((m) => (
+            <div key={m.id} className="mb-4">
+              <KnockoutMomentCard moment={m} />
+            </div>
+          ))
+        : null}
 
       {/* Loading shell — keep the page shape, fill with calm placeholder */}
       {!hydrated ? <LoadingShell /> : null}

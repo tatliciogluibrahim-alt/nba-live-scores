@@ -2,6 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   buildKnockoutRounds,
   roundKeyFromStage,
+  knockoutResult,
+  countryKnockoutOutcome,
+  nextStageLabel,
+  type KnockoutGameLike,
   type KnockoutRoundKey,
 } from "./knockout-data";
 import type { WCScheduleFixtureLite } from "../country/country-data";
@@ -128,5 +132,71 @@ describe("buildKnockoutRounds", () => {
     );
     const r32 = rounds.find((r) => r.key === "r32")!;
     expect(r32.matches.map((m) => m.id)).toEqual(["early", "late"]);
+  });
+});
+
+function ko(over: Partial<KnockoutGameLike> = {}): KnockoutGameLike {
+  return {
+    stage: "Round of 32",
+    status: "final",
+    home: { abbreviation: "POR", score: 1 },
+    away: { abbreviation: "USA", score: 0 },
+    ...over,
+  };
+}
+
+describe("knockoutResult / countryKnockoutOutcome", () => {
+  it("resolves a regulation winner", () => {
+    const r = knockoutResult(ko({ home: { abbreviation: "POR", score: 2 }, away: { abbreviation: "USA", score: 1 } }));
+    expect(r).toEqual({ winnerCode: "POR", loserCode: "USA", stageKey: "r32" });
+  });
+
+  it("resolves a penalty winner when level after the match", () => {
+    const r = knockoutResult(
+      ko({
+        home: { abbreviation: "POR", score: 1 },
+        away: { abbreviation: "USA", score: 1 },
+        penaltyHome: 3,
+        penaltyAway: 4,
+      })
+    );
+    expect(r).toEqual({ winnerCode: "USA", loserCode: "POR", stageKey: "r32" });
+  });
+
+  it("returns null (never guesses) when level with no usable penalty score", () => {
+    expect(
+      knockoutResult(ko({ home: { abbreviation: "POR", score: 1 }, away: { abbreviation: "USA", score: 1 } }))
+    ).toBeNull();
+    expect(
+      knockoutResult(
+        ko({
+          home: { abbreviation: "POR", score: 1 },
+          away: { abbreviation: "USA", score: 1 },
+          penaltyHome: 3,
+          penaltyAway: 3,
+        })
+      )
+    ).toBeNull();
+  });
+
+  it("returns null for a group-stage match or a non-final knockout match", () => {
+    expect(knockoutResult(ko({ stage: "Group A" }))).toBeNull();
+    expect(knockoutResult(ko({ status: "live" }))).toBeNull();
+  });
+
+  it("maps a country to advanced / eliminated / null", () => {
+    const g = ko({ home: { abbreviation: "POR", score: 2 }, away: { abbreviation: "USA", score: 1 } });
+    expect(countryKnockoutOutcome(g, "POR")).toBe("advanced");
+    expect(countryKnockoutOutcome(g, "USA")).toBe("eliminated");
+    expect(countryKnockoutOutcome(g, "BRA")).toBeNull(); // not involved
+  });
+});
+
+describe("nextStageLabel", () => {
+  it("names the next round, and Champions after the final", () => {
+    expect(nextStageLabel("r32")).toBe("Round of 16");
+    expect(nextStageLabel("qf")).toBe("Semifinals");
+    expect(nextStageLabel("sf")).toBe("Final");
+    expect(nextStageLabel("final")).toBe("Champions");
   });
 });

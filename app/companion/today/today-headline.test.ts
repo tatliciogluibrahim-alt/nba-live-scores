@@ -25,6 +25,7 @@ function base(over: Partial<TodayPayload> = {}): TodayPayload {
       unresolved: 0,
       primary: null,
     },
+    knockoutMoments: [],
     ...over,
   };
 }

@@ -101,6 +101,83 @@ function toMatch(f: WCScheduleFixtureLite): KnockoutMatch {
   };
 }
 
+// ── Advancement outcome (single-elimination) ──────────────────────────
+// Knockout matches are win-or-go-home: the winner advances, the loser is
+// out. A level match is decided on penalties. These are pure and used by
+// the Today advancement card and the Brief. Data-integrity rule: NEVER
+// guess a winner — if a final knockout match is level with no usable
+// penalty score, return null rather than fabricate an outcome.
+
+export type KnockoutGameLike = {
+  stage: string;
+  status: "live" | "upcoming" | "final";
+  home: { abbreviation: string; score: number };
+  away: { abbreviation: string; score: number };
+  penaltyHome?: number | null;
+  penaltyAway?: number | null;
+};
+
+export type KnockoutResult = {
+  winnerCode: string;
+  loserCode: string;
+  stageKey: KnockoutRoundKey;
+};
+
+/** Resolve a finished knockout match to its winner/loser, or null if it
+ *  isn't a decided knockout match. Penalty-aware. */
+export function knockoutResult(game: KnockoutGameLike): KnockoutResult | null {
+  if (game.status !== "final") return null;
+  const stageKey = roundKeyFromStage(game.stage);
+  if (!stageKey) return null; // group stage or unknown — not a knockout
+  const { home: h, away: a } = game;
+  let winnerHome: boolean;
+  if (h.score > a.score) winnerHome = true;
+  else if (a.score > h.score) winnerHome = false;
+  else {
+    // Level after regulation/extra time → penalties decide it.
+    const ph = game.penaltyHome;
+    const pa = game.penaltyAway;
+    if (typeof ph === "number" && typeof pa === "number" && ph !== pa) {
+      winnerHome = ph > pa;
+    } else {
+      return null; // undecided / no usable penalty score — never guess
+    }
+  }
+  return {
+    winnerCode: winnerHome ? h.abbreviation : a.abbreviation,
+    loserCode: winnerHome ? a.abbreviation : h.abbreviation,
+    stageKey,
+  };
+}
+
+/** A country's outcome in a finished knockout match: advanced, eliminated,
+ *  or null when the match doesn't decide that country (not involved, not a
+ *  decided knockout match). */
+export function countryKnockoutOutcome(
+  game: KnockoutGameLike,
+  countryCode: string
+): "advanced" | "eliminated" | null {
+  const r = knockoutResult(game);
+  if (!r) return null;
+  if (r.winnerCode === countryCode) return "advanced";
+  if (r.loserCode === countryCode) return "eliminated";
+  return null;
+}
+
+const NEXT_STAGE_LABEL: Record<KnockoutRoundKey, string> = {
+  r32: "Round of 16",
+  r16: "Quarterfinals",
+  qf: "Semifinals",
+  sf: "Final",
+  final: "Champions", // winning the final wins the tournament
+};
+
+/** Where a winner goes next ("Round of 16", … or "Champions" for the
+ *  final). Used for the advancement headline. */
+export function nextStageLabel(stage: KnockoutRoundKey): string {
+  return NEXT_STAGE_LABEL[stage];
+}
+
 /** Build the five knockout rounds from the full schedule. `staticDates` maps
  *  a round key to a fallback ISO date (from WC_KNOCKOUT_ROUNDS) so a round
  *  with no fixtures in the feed yet still shows its scheduled date. */

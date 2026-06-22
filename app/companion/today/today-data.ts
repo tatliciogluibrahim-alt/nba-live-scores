@@ -6,6 +6,11 @@ import type { Follow, PinnedGame } from "../state/types";
 import { getCountry } from "../following/data/countries";
 import { getTournament } from "../following/data/tournaments";
 import { prettifySeriesSummary } from "../../nba/lib/series";
+import {
+  countryKnockoutOutcome,
+  knockoutResult,
+  nextStageLabel,
+} from "../tournament/knockout-data";
 
 // ── Minimal shapes lifted from /api/live-scores + /api/world-cup ─────
 // We intentionally keep these decoupled from the legacy route types so
@@ -251,6 +256,28 @@ export type ClosingMoment = {
   autoDropNote?: string;
 };
 
+/** A knockout advancement / elimination moment for a followed country
+ *  whose knockout match just finished. The headline and score are
+ *  spoilery — the view gates them under No-Spoilers. At most one per
+ *  followed country (the most recent decided knockout match). */
+export type KnockoutMomentItem = {
+  /** Stable id for dismiss tracking: "ko:<gameId>:<countryCode>". */
+  id: string;
+  countryCode: string;
+  countryName: string;
+  outcome: "advanced" | "eliminated";
+  /** The round just played, e.g. "Round of 32". */
+  stageLabel: string;
+  /** Where the winner goes next ("Quarterfinals"), or "Champions" if they
+   *  won the final. Empty for an elimination. */
+  nextStage: string;
+  /** True when the country won the Final (tournament champions). */
+  isChampion: boolean;
+  /** Spoilery final line, e.g. "USA 1 – POR 2". */
+  scoreLine: string;
+  href: string;
+};
+
 export type TodayPayload = {
   hero: TodayHero | null;
   youFollow: YouFollowItem[];
@@ -281,6 +308,10 @@ export type TodayPayload = {
    *  "wrapped" (final) — pre-fix, the brief said "later" for any pin
    *  regardless of actual status. */
   pinnedSummary: PinnedSummary;
+  /** Knockout advancement / elimination moments for followed countries
+   *  whose knockout match just finished. Usually empty; at most one per
+   *  followed country. Each self-suppresses once dismissed (view layer). */
+  knockoutMoments: KnockoutMomentItem[];
 };
 
 // ── Pure helpers ──────────────────────────────────────────────────────
@@ -1512,7 +1543,58 @@ export function buildTodayPayload({
     finalsCount,
     closing,
     pinnedSummary,
+    knockoutMoments: buildKnockoutMoments(wc, follows),
   };
+}
+
+// Knockout advancement / elimination moments for the user's followed
+// countries. Single-elimination, so a finished knockout match decides the
+// followed country's fate; countryKnockoutOutcome computes it from the
+// real score (penalty-aware) and never guesses. The live WC feed is a
+// rolling window, so any final here is recent — no extra date windowing.
+export function buildKnockoutMoments(
+  wc: WCGameLite[],
+  follows: Follow[]
+): KnockoutMomentItem[] {
+  const followed = new Set(
+    follows.filter((f) => f.kind === "country").map((f) => f.id)
+  );
+  if (followed.size === 0) return [];
+
+  // Most recent decided knockout match per followed country.
+  const latest = new Map<
+    string,
+    { game: WCGameLite; outcome: "advanced" | "eliminated" }
+  >();
+  for (const g of wc) {
+    if (g.status !== "final") continue;
+    for (const code of followed) {
+      if (g.home.abbreviation !== code && g.away.abbreviation !== code) continue;
+      const outcome = countryKnockoutOutcome(g, code);
+      if (!outcome) continue;
+      const prev = latest.get(code);
+      if (!prev || g.date > prev.game.date) latest.set(code, { game: g, outcome });
+    }
+  }
+
+  const items: KnockoutMomentItem[] = [];
+  for (const [code, { game, outcome }] of latest) {
+    const r = knockoutResult(game);
+    if (!r) continue;
+    const next = nextStageLabel(r.stageKey);
+    items.push({
+      id: `ko:${game.id}:${code}`,
+      countryCode: code,
+      countryName: getCountry(code)?.name ?? code,
+      outcome,
+      stageLabel: game.stage,
+      nextStage: outcome === "advanced" ? next : "",
+      isChampion: outcome === "advanced" && r.stageKey === "final",
+      scoreLine: `${game.away.abbreviation} ${game.away.score} – ${game.home.abbreviation} ${game.home.score}`,
+      href: `/country/${code}`,
+    });
+  }
+  return items;
 }
 
 // ── Front Page headline (Concept A) ────────────────────────────────────
