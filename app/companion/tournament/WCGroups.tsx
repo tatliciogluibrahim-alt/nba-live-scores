@@ -49,7 +49,7 @@ async function fetchSchedule(): Promise<SchedulePayload> {
   }
 }
 
-function useWCSchedule(): {
+export function useWCSchedule(): {
   fixtures: WCScheduleFixtureLite[];
   standings: Record<string, WCScheduleStandingLite[]>;
   hydrated: boolean;

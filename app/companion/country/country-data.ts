@@ -173,13 +173,16 @@ function buildGroupStake(
   const ord = ORDINAL[standing.position] ?? `${standing.position}th`;
   const pts = `${standing.points} ${standing.points === 1 ? "point" : "points"}`;
   const gdStr = standing.gd > 0 ? `+${standing.gd}` : `${standing.gd}`;
+  const remaining = fixtures.filter((f) => f.status === "upcoming").length;
 
   if (standing.outcome === "through") {
-    return {
-      eyebrow: "Path",
-      line: `${country.name} are through to the Round of 32, finishing ${ord} in Group ${country.group}.`,
-      spoilery: true,
-    };
+    // Early clinch (games still to play) reads "have clinched"; once the
+    // group is done it reports the final finishing position.
+    const line =
+      remaining > 0
+        ? `${country.name} have clinched a place in the Round of 32 from Group ${country.group}.`
+        : `${country.name} are through to the Round of 32, finishing ${ord} in Group ${country.group}.`;
+    return { eyebrow: "Path", line, spoilery: true };
   }
   if (standing.outcome === "out") {
     return {
@@ -196,7 +199,6 @@ function buildGroupStake(
     };
   }
   // In progress — position, points, GD, and games left.
-  const remaining = fixtures.filter((f) => f.status === "upcoming").length;
   const tail = remaining > 0 ? `, ${standing.played} of 3 played.` : ".";
   return {
     eyebrow: "Path",
@@ -237,11 +239,47 @@ function countryRowFromScheduleFixture(
   };
 }
 
+/** Deterministic top-2 clinch within a group. A team has secured a top-two
+ *  finish (a guaranteed Round of 32 place) when at most one OTHER team can
+ *  still reach or exceed its CURRENT points. Conservative by construction:
+ *  it uses the team's current points as its floor (worst case: it loses its
+ *  remaining games) and each rival's maximum (wins them all), and treats
+ *  "could tie" as "could finish above" since tiebreakers aren't modeled. So
+ *  it never claims a clinch a remaining result could undo. Group-internal
+ *  only: it does NOT attempt the cross-group "best third place" math, which
+ *  depends on other groups and can flip. */
+export function clinchedTopTwo(
+  rows: Pick<WCScheduleStandingLite, "code" | "points" | "played">[],
+  code: string
+): boolean {
+  const me = rows.find((r) => r.code === code);
+  if (!me || rows.length < 2) return false;
+  const rivalsAbleToCatch = rows.filter((r) => {
+    if (r.code === code) return false;
+    const rivalMax = r.points + 3 * Math.max(0, 3 - r.played);
+    return rivalMax >= me.points;
+  }).length;
+  return rivalsAbleToCatch <= 1;
+}
+
 // Map ESPN's official standing row into the app's GroupStanding shape.
+// `clinched` flips a team to "through" before the group is mathematically
+// complete (early top-2 clinch). Once the group is complete, the final
+// position decides through / third / out.
 function toGroupStanding(
   s: WCScheduleStandingLite,
-  groupComplete: boolean
+  groupComplete: boolean,
+  clinched: boolean
 ): GroupStanding {
+  const outcome: GroupStanding["outcome"] = groupComplete
+    ? s.position <= 2
+      ? "through"
+      : s.position === 3
+        ? "third"
+        : "out"
+    : clinched
+      ? "through"
+      : null;
   return {
     played: s.played,
     points: s.points,
@@ -249,13 +287,7 @@ function toGroupStanding(
     ga: s.ga,
     gd: s.gd,
     position: s.position,
-    outcome: !groupComplete
-      ? null
-      : s.position <= 2
-        ? "through"
-        : s.position === 3
-          ? "third"
-          : "out",
+    outcome,
   };
 }
 
@@ -295,6 +327,13 @@ export function buildCountryPayload(
   const groupComplete =
     groupRowsRaw.length > 0 && groupRowsRaw.every((s) => s.played >= 3);
 
+  // Early top-2 clinch per team (only meaningful before the group is
+  // complete — once complete, final position decides the outcome).
+  const clinchedByCode = new Map<string, boolean>();
+  for (const s of groupRowsRaw) {
+    clinchedByCode.set(s.code, !groupComplete && clinchedTopTwo(groupRowsRaw, s.code));
+  }
+
   const groupRows: GroupRow[] = WC_COUNTRIES.filter(
     (c) => c.group === country.group
   )
@@ -305,7 +344,9 @@ export function buildCountryPayload(
         name: c.name,
         flag: c.flag,
         isSelected: c.id === country.id,
-        standing: s ? toGroupStanding(s, groupComplete) : undefined,
+        standing: s
+          ? toGroupStanding(s, groupComplete, clinchedByCode.get(c.id) ?? false)
+          : undefined,
       };
     })
     .sort((a, b) => {
@@ -319,7 +360,11 @@ export function buildCountryPayload(
     anyPlayed && ownStanding
       ? buildGroupStake(
           country,
-          toGroupStanding(ownStanding, groupComplete),
+          toGroupStanding(
+            ownStanding,
+            groupComplete,
+            clinchedByCode.get(country.id) ?? false
+          ),
           countryFixtures
         )
       : null;
@@ -337,13 +382,23 @@ export function buildCountryPayload(
     return "group";
   };
   const reachedSet = new Set<PathStage["key"]>(["group"]);
-  for (const f of countryFixtures) reachedSet.add(stageKeyForFixture(f));
-  const pathStages: PathStage[] = stages.map((s) => ({
-    key: s.key,
-    label: s.label,
-    detail: s.detail,
-    reached: reachedSet.has(s.key),
-  }));
+  // First real fixture per knockout stage — lets the path show the actual
+  // opponent ("vs Portugal · Sat Jun 28") instead of the generic template
+  // copy, the moment the bracket sets that round.
+  const fixtureByStage = new Map<PathStage["key"], CountryGameRow>();
+  for (const f of countryFixtures) {
+    const k = stageKeyForFixture(f);
+    reachedSet.add(k);
+    if (k !== "group" && !fixtureByStage.has(k)) fixtureByStage.set(k, f);
+  }
+  const pathStages: PathStage[] = stages.map((s) => {
+    const fx = fixtureByStage.get(s.key);
+    const detail =
+      fx && fx.opponentName
+        ? `vs ${fx.opponentName} · ${fx.dateLabel}`
+        : s.detail;
+    return { key: s.key, label: s.label, detail, reached: reachedSet.has(s.key) };
+  });
 
   return {
     country,
