@@ -123,6 +123,10 @@ function soccerStatusText(
   if (state === "upcoming") return "Upcoming";
   const desc = ((status?.type?.description ?? "") + " " + (status?.type?.detail ?? "")).toLowerCase();
   const clock = status?.displayClock?.trim() ?? "";
+  // Weather / safety delay or suspension — ESPN freezes the clock with
+  // state still "in". Surface "Delayed" instead of the stale minute.
+  if (desc.includes("delay") || desc.includes("suspend") || desc.includes("postpon"))
+    return "Delayed";
   if (desc.includes("halftime") || desc.includes("half time")) return "HT";
   if (desc.includes("extra time") || desc.includes("et extra")) return `ET ${clock}`;
   if (desc.includes("penalty") || desc.includes("pso")) return "Penalties";

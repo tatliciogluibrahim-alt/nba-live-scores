@@ -607,6 +607,9 @@ function deriveWCHero(game: WCGameLite): {
 
   // live
   const text = (game.statusText ?? "").toLowerCase();
+  if (text.includes("delay") || text.includes("suspend")) {
+    return { eyebrow: "Delayed", headline: "Match delayed.", context: "Play is paused.", live: true };
+  }
   if (text.includes("ht") || text.includes("half")) {
     return { eyebrow: "Halftime", headline: "Halftime.", live: true };
   }

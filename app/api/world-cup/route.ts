@@ -160,6 +160,13 @@ function formatSoccerStatus(
   const desc = ((status?.type?.description ?? "") + " " + (status?.type?.detail ?? "")).toLowerCase();
   const clock = status?.displayClock?.trim() ?? "";
 
+  // Weather / safety delay or suspension. ESPN keeps state "in" but
+  // freezes the clock, so without this we'd print the stale minute
+  // ("45'+3'") and read it as "first half underway". Surface the real
+  // state instead — and it stops the halftime detector misreading it.
+  if (desc.includes("delay") || desc.includes("suspend") || desc.includes("postpon"))
+    return "Delayed";
+
   if (desc.includes("halftime") || desc.includes("half time")) return "HT";
   if (desc.includes("extra time") || desc.includes("et extra")) return `ET ${clock}`;
   if (desc.includes("penalty") || desc.includes("pso")) return "Penalties";
