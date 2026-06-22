@@ -62,6 +62,7 @@ export function useSetupStep(): UseSetupStepResult {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlatform(detectPlatform());
     setStandalone(detectStandalone());
     setPermission(readPermission());

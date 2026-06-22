@@ -13,7 +13,6 @@ import type { SetupPlatform } from "../resolve-setup-step";
 // Platform and promptInstall are passed as props from the hook.
 
 export function InstallStep({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   variant,
   platform,
   promptInstall,
@@ -25,9 +24,9 @@ export function InstallStep({
   const { dismissInstallPrompt } = useUserPrefs();
   const [showIosSteps, setShowIosSteps] = useState(false);
 
-  // Derive mode from platform prop — iOS always gets instructions,
-  // Android/desktop get the one-tap prompt.
-  const mode = platform === "ios" ? "ios-instructions" : "android-prompt";
+  // Derive mode from variant prop — blocking means iOS instructions flow,
+  // optional means Android/desktop one-tap prompt.
+  const mode = variant === "blocking" ? "ios-instructions" : "android-prompt";
 
   async function onAndroidInstall() {
     await promptInstall();
@@ -67,7 +66,7 @@ export function InstallStep({
         className="mt-1 text-[12px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        {mode === "ios-instructions"
+        {platform === "ios"
           ? "On iPhone, push notifications work after install."
           : "Faster open, full screen, real notifications."}
       </p>
