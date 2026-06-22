@@ -178,6 +178,19 @@ function GameCanvas({ game }: { game: WCGameLite }) {
   );
 }
 
+function shareTextFor(payload: WCSharePayload): string {
+  if (payload.kind === "knockout-moment") {
+    const m = payload.moment;
+    if (m.isChampion) return `${m.countryName} are champions.`;
+    return m.outcome === "advanced"
+      ? `${m.countryName} are through to the ${m.nextStage}.`
+      : `${m.countryName}'s run ended in the ${m.stageLabel}.`;
+  }
+  const g = payload.game;
+  const matchup = `${g.away.abbreviation} vs ${g.home.abbreviation}`;
+  return g.stage ? `${matchup} · ${g.stage}` : matchup;
+}
+
 export function WCShareModal({
   payload,
   onClose,
@@ -187,29 +200,74 @@ export function WCShareModal({
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
 
+  const url = "https://nonoisescores.app";
+  const shareText = shareTextFor(payload);
+
+  // Robust share that degrades instead of silently doing nothing — the
+  // bug was that in the Capacitor WKWebView (the installed app) file
+  // sharing isn't supported, so the old download fallback was a no-op.
+  // Order: native image share -> text+link share (works in the webview)
+  // -> copy link -> desktop download. Always gives visible feedback.
   async function handleSave() {
-    if (!cardRef.current || isSaving) return;
+    if (isSaving) return;
     setIsSaving(true);
+    setResult(null);
+
+    // Build the PNG best-effort. Some webviews can't render it; that's
+    // fine, we still share the text + link below.
+    let file: File | null = null;
+    let dataUrl: string | null = null;
+    if (cardRef.current) {
+      try {
+        const { toPng } = await import("html-to-image");
+        dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
+        const blob = await (await fetch(dataUrl)).blob();
+        file = new File([blob], "no-noise-summer-soccer.png", { type: "image/png" });
+      } catch {
+        file = null;
+      }
+    }
+
+    const nav = typeof navigator !== "undefined" ? navigator : undefined;
     try {
-      const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
-      const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], "no-noise-summer-soccer.png", { type: "image/png" });
-      if (
-        typeof navigator !== "undefined" &&
-        navigator.share &&
-        navigator.canShare?.({ files: [file] })
-      ) {
-        await navigator.share({ files: [file], title: "No Noise Scores" });
-      } else {
+      if (file && nav?.canShare?.({ files: [file] })) {
+        await nav.share({ files: [file], title: "No Noise Scores", text: shareText });
+        onClose();
+        return;
+      }
+      if (nav?.share) {
+        // WKWebView supports text/url sharing even when files aren't.
+        await nav.share({ title: "No Noise Scores", text: shareText, url });
+        onClose();
+        return;
+      }
+      if (dataUrl) {
         const link = document.createElement("a");
         link.href = dataUrl;
         link.download = "no-noise-summer-soccer.png";
         link.click();
+        setResult("Image saved");
+      } else if (nav?.clipboard?.writeText) {
+        await nav.clipboard.writeText(`${shareText} ${url}`);
+        setResult("Link copied");
+      } else {
+        setResult("Couldn't share on this device");
       }
     } catch (error) {
-      console.error("Share failed", error);
+      // User-cancelled the native sheet — not a failure, just close quietly.
+      if ((error as { name?: string })?.name === "AbortError") {
+        onClose();
+        return;
+      }
+      // Share threw (webview quirk) — fall back to copying the link.
+      try {
+        await nav?.clipboard?.writeText?.(`${shareText} ${url}`);
+        setResult("Link copied");
+      } catch {
+        setResult("Couldn't share — try again");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -251,9 +309,14 @@ export function WCShareModal({
             disabled={isSaving}
             className="flex-1 rounded-full bg-[#1a1208] py-2.5 text-sm font-bold text-[#f5f1ea] transition hover:bg-[#2a1e10] disabled:opacity-50"
           >
-            {isSaving ? "Saving…" : "Share"}
+            {isSaving ? "Sharing…" : "Share"}
           </button>
         </div>
+        {result ? (
+          <p className="text-[12px] font-semibold text-[#8a7a66]" aria-live="polite">
+            {result}
+          </p>
+        ) : null}
       </div>
     </div>
   );
