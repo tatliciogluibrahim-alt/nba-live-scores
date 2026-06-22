@@ -3,10 +3,11 @@
 import { Eyebrow } from "../atoms/Eyebrow";
 import { useUserPrefs } from "../providers";
 
-// Quiet hours — three honest options. Setting persists via setQuietHours.
-// We deliberately do NOT promise that any push will be suppressed yet
-// (Stage 10 ships UI + state model only — there is no real push backend).
-// The setting is preserved for when push lands.
+// Quiet hours — three honest options. Setting persists via setQuietHours
+// and syncs to the push backend, which suppresses both live alerts
+// (dispatcher.ts) and pre-game reminders (cron/reminders) inside the
+// window. Evaluating the window needs the device time zone, which syncs
+// alongside it.
 
 type Option = {
   id: "off" | "10pm-8am" | "11pm-7am";

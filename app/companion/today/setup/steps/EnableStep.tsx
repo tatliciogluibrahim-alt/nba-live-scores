@@ -1,37 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isCapacitorNative } from "../dev/native-detect";
-import { useFollows, useUserPrefs } from "../providers";
-import { usePushSubscription } from "../push/use-push-subscription";
-import type { AlertPreset } from "../state/types";
-import { PRESETS } from "../state/types";
+import { useFollows, useUserPrefs } from "../../../providers";
+import { usePushSubscription } from "../../../push/use-push-subscription";
+import type { AlertPreset } from "../../../state/types";
+import { PRESETS } from "../../../state/types";
 
-// Enable Notifications card — Stages A + C.
+// Enable Notifications step — extracted from EnableNotificationsCard.
 //
-// Renders on Today, below the Brief, only when:
-//   • the user is hydrated
-//   • the browser supports the Notification API
-//   • permission is "default" (never asked, never denied)
-//   • the user hasn't already dismissed this card
-//
-// Apple punishes apps that fire the permission prompt on launch with no
-// context, so this card is a calm informational surface. The prompt
-// itself only fires when the user *taps the button* — that user gesture
-// is what makes the permission request legitimate to iOS and Chrome.
+// Renders only when the resolver returns step === "enable". Self-gating
+// removed: the resolver guarantees this body only mounts when appropriate.
 //
 // Stage 17: the user picks the default tier for newly-added follows
 // before tapping enable. Existing follows keep their per-follow tiers.
 
 const TIER_ORDER: AlertPreset[] = ["quiet", "companion", "all"];
 
-export function EnableNotificationsCard() {
-  const { prefs, dismissNotifPrompt, setDefaultAlertTier, hydrated } = useUserPrefs();
+export function EnableStep() {
+  const { prefs, dismissNotifPrompt, setDefaultAlertTier } = useUserPrefs();
   const { follows } = useFollows();
   const { subscribe } = usePushSubscription();
-  const [permission, setPermission] = useState<NotificationPermission | "unsupported" | null>(
-    null
-  );
   const [busy, setBusy] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   // Local tier state mirrors prefs so the user can preview the default
@@ -50,32 +38,7 @@ export function EnableNotificationsCard() {
     }
   }, [prefs.defaultAlertTier]);
 
-  // Read current permission state once on mount.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!("Notification" in window)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPermission("unsupported");
-      return;
-    }
-    setPermission(window.Notification.permission);
-  }, []);
-
   const alertFollows = follows.filter((f) => f.alertEnabled);
-
-  // Bail conditions — silent (no UI flash).
-  if (!hydrated) return null;
-  // Native iOS: notification permission is handled by Capacitor's
-  // CapacitorPushNotifications plugin (APNs), not by the Web Push
-  // permission API. Calling subscribe() here would either fail or wire
-  // up a stale Web Push subscription that never receives real pushes.
-  // The native permission prompt fires once on first launch through
-  // the iOS-native pipeline instead.
-  if (isCapacitorNative()) return null;
-  if (permission === null) return null;
-  if (permission === "unsupported") return null;
-  if (permission !== "default") return null;
-  if (prefs.notifPromptDismissed) return null;
 
   async function onEnable() {
     if (typeof window === "undefined") return;
@@ -87,7 +50,6 @@ export function EnableNotificationsCard() {
       setDefaultAlertTier(tier);
 
       const result = await window.Notification.requestPermission();
-      setPermission(result);
 
       if (result === "granted") {
         // Create the Web Push subscription with enabled per-follow alerts

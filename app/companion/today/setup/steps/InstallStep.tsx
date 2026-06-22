@@ -1,105 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Eyebrow } from "../atoms/Eyebrow";
-import { useUserPrefs } from "../providers";
-import { isCapacitorNative } from "../dev/native-detect";
+import { useState } from "react";
+import { Eyebrow } from "../../../atoms/Eyebrow";
+import { useUserPrefs } from "../../../providers";
+import type { SetupPlatform } from "../resolve-setup-step";
 
-// Install for game alerts — Phase 9 friend-beta gate.
+// Install step — extracted from InstallPromptCard.
 //
-// One dismissible "Add to Home Screen" affordance on Today. Renders only
-// when:
-//   • the user is hydrated
-//   • the app isn't running inside the Capacitor native wrapper (Phase
-//     22.5 — when iOS native ships, this card is nonsensical because
-//     the user already has the App Store install)
-//   • the app isn't already running standalone (we wouldn't ask an
-//     already-installed PWA user to install)
-//   • the user hasn't already dismissed the card
-//   • we have something useful to say — either the Android Chrome
-//     beforeinstallprompt fired, OR we detect iOS Safari (where there's
-//     no programmatic install but Add-to-Home-Screen is a real
-//     workflow worth pointing at)
-//
-// Notifications work best as a Home Screen app on iOS — install is a
-// real prerequisite for push there. Saying so is honest onboarding,
-// not a sales pitch.
+// Renders only when the resolver returns step === "install" or
+// step === "installOptional". Self-gating removed: the resolver
+// guarantees this body only mounts when appropriate.
+// Platform and promptInstall are passed as props from the hook.
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
-
-type Mode = "android-prompt" | "ios-instructions" | "hidden";
-
-export function InstallPromptCard() {
-  const { prefs, dismissInstallPrompt, hydrated } = useUserPrefs();
-  const [mode, setMode] = useState<Mode>("hidden");
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
-    null
-  );
+export function InstallStep({
+  variant,
+  platform,
+  promptInstall,
+}: {
+  variant: "blocking" | "optional";
+  platform: SetupPlatform;
+  promptInstall: () => Promise<void>;
+}) {
+  const { dismissInstallPrompt } = useUserPrefs();
   const [showIosSteps, setShowIosSteps] = useState(false);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // Running inside the Capacitor native wrapper — never show.
-    // The native app IS the installed app; offering "Add to Home
-    // Screen" inside it would be confusing nonsense.
-    if (isCapacitorNative()) return;
-
-    // Already running as an installed PWA — never show.
-    const standalone =
-      window.matchMedia?.("(display-mode: standalone)").matches ||
-      // iOS legacy detector
-      (window.navigator as Navigator & { standalone?: boolean }).standalone ===
-        true;
-    if (standalone) {
-      // No state change needed — initial mode is already "hidden".
-      return;
-    }
-
-    // iOS Safari has no programmatic install. We detect the platform and
-    // surface manual instructions when tapped.
-    const ua = window.navigator.userAgent;
-    const isIOS = /iPad|iPhone|iPod/.test(ua);
-    if (isIOS) {
-      // Platform detection is read-once-on-mount; the eslint
-      // set-state-in-effect rule discourages this pattern in general
-      // but the alternative (a synchronous render-time check) won't
-      // run server-side and would cause hydration mismatches.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMode("ios-instructions");
-    }
-
-    // Android Chrome / desktop Chrome: capture the install event for a
-    // one-tap install button.
-    const onBefore = (e: Event) => {
-      e.preventDefault();
-      setDeferred(e as BeforeInstallPromptEvent);
-      setMode("android-prompt");
-    };
-    window.addEventListener("beforeinstallprompt", onBefore);
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onBefore);
-    };
-  }, []);
-
-  if (!hydrated) return null;
-  if (prefs.installPromptDismissed) return null;
-  if (mode === "hidden") return null;
+  // Derive mode from variant prop — blocking means iOS instructions flow,
+  // optional means Android/desktop one-tap prompt.
+  const mode = variant === "blocking" ? "ios-instructions" : "android-prompt";
 
   async function onAndroidInstall() {
-    if (!deferred) return;
-    try {
-      await deferred.prompt();
-      const choice = await deferred.userChoice;
-      // Either outcome retires the card — we don't pester.
-      void choice;
-    } finally {
-      dismissInstallPrompt();
-    }
+    await promptInstall();
+    dismissInstallPrompt();
   }
 
   return (
@@ -135,7 +66,7 @@ export function InstallPromptCard() {
         className="mt-1 text-[12px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        {mode === "ios-instructions"
+        {platform === "ios"
           ? "On iPhone, push notifications work after install."
           : "Faster open, full screen, real notifications."}
       </p>

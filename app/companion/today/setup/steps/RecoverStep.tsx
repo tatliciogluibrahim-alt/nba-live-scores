@@ -1,48 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Eyebrow } from "../atoms/Eyebrow";
-import { isCapacitorNative } from "../dev/native-detect";
-import { useFollows, useUserPrefs } from "../providers";
+import { useState } from "react";
+import { Eyebrow } from "../../../atoms/Eyebrow";
+import { useFollows, useUserPrefs } from "../../../providers";
+import type { SetupPlatform } from "../resolve-setup-step";
 
-// Push Permission Recovery Card — Phase 21C.
+// Push Permission Recovery step — extracted from PushPermissionRecoveryCard.
 //
-// Renders on Today only when the user has *denied* push permission
-// AND has at least one follow worth recovering. Different surface
-// than EnableNotificationsCard, which only renders when permission
-// is "default" (never asked).
-//
-// The retention reasoning, from docs/RETENTION_PLAYBOOK.md:
-//
-//   No push permission is the single highest predictor of churn.
-//   A user who denied is showing they care enough to make a
-//   decision. Surfacing a calm path back — with platform-specific
-//   re-enable instructions — recovers a meaningful chunk of them.
-//
-// Voice constraints (per AGENTS.md):
-//   • No urgency. No "don't miss out."
-//   • Plain instructions, platform-aware where possible.
-//   • One dismissal is permanent. We never re-prompt automatically.
-//
-// Why this card eventually becomes ~75% less important:
-//   Once iOS native ships (see docs/IOS_NATIVE_PLAN.md), APNs grant
-//   rates are dramatically higher than PWA web push. The Android
-//   case stays useful indefinitely; the iOS PWA case becomes a
-//   transitional concern.
+// Renders only when the resolver returns step === "recover". Self-gating
+// removed: the resolver guarantees this body only mounts when appropriate.
+// Platform is passed as a prop from the hook instead of being detected locally.
 
-type Platform = "ios" | "android" | "desktop" | "unknown";
-
-function detectPlatform(): Platform {
-  if (typeof navigator === "undefined") return "unknown";
-  const ua = navigator.userAgent;
-  if (/iPad|iPhone|iPod/.test(ua)) return "ios";
-  if (/Android/.test(ua)) return "android";
-  // Treat desktop browsers (Chrome, Safari, Firefox on macOS/Windows)
-  // as one bucket. The re-enable path is the URL bar lock icon.
-  return "desktop";
-}
-
-function instructionsFor(platform: Platform): {
+function instructionsFor(platform: SetupPlatform): {
   steps: string[];
   hint?: string;
 } {
@@ -87,48 +56,10 @@ function instructionsFor(platform: Platform): {
   }
 }
 
-export function PushPermissionRecoveryCard() {
-  const { prefs, dismissPushRecovery, hydrated } = useUserPrefs();
+export function RecoverStep({ platform }: { platform: SetupPlatform }) {
+  const { dismissPushRecovery } = useUserPrefs();
   const { follows } = useFollows();
-  const [permission, setPermission] =
-    useState<NotificationPermission | "unsupported" | null>(null);
-  const [platform, setPlatform] = useState<Platform | null>(null);
   const [expanded, setExpanded] = useState(false);
-
-  // One-time client detection. The set-state-in-effect rule is
-  // suppressed for the first setState in each branch — server-render
-  // hydration can't observe browser-only state without this pattern.
-  // Same documented workaround used in EnableNotificationsCard and
-  // InstallPromptCard.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!("Notification" in window)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPermission("unsupported");
-      setPlatform("unknown");
-      return;
-    }
-    setPermission(window.Notification.permission);
-    setPlatform(detectPlatform());
-  }, []);
-
-  // Bail conditions — silent (no UI flash on render before hydration).
-  if (!hydrated) return null;
-  // Native iOS: this card is Web-Push-specific (its iOS hint talks about
-  // installed PWAs, the recovery steps assume a browser permission
-  // store). On native, APNs is the source of truth and Capacitor has
-  // its own permission prompt flow. Hide entirely.
-  if (isCapacitorNative()) return null;
-  if (permission === null || platform === null) return null;
-  if (permission === "unsupported") return null;
-  if (permission !== "denied") return null;
-  if (prefs.pushRecoveryDismissed) return null;
-
-  // Don't surface this until the user has at least one follow. A user
-  // with no follows + denied push isn't a retention problem — they
-  // haven't told us what they care about yet, and that's the gap to
-  // close first.
-  if (follows.length === 0) return null;
 
   const enabledFollowCount = follows.filter((f) => f.alertEnabled).length;
   const { steps, hint } = instructionsFor(platform);
