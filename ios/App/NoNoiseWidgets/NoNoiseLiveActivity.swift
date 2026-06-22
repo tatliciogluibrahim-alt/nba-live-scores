@@ -243,15 +243,18 @@ private struct StadiumPanelLockView: View {
     var body: some View {
         VStack(spacing: 16) {
             HStack(spacing: 0) {
-                TeamBlock(code: state.homeCode,
-                          score: state.homeScore,
-                          dim: state.dim(home: true),
-                          align: .leading,
-                          redacted: redacted)
-                CenterBug(state: state, theme: theme)
+                // Away on the left, home on the right — matches the order
+                // every other surface uses (ScoreModule, game detail, share
+                // card, widget). ESPN convention is "away at home".
                 TeamBlock(code: state.awayCode,
                           score: state.awayScore,
                           dim: state.dim(home: false),
+                          align: .leading,
+                          redacted: redacted)
+                CenterBug(state: state, theme: theme)
+                TeamBlock(code: state.homeCode,
+                          score: state.homeScore,
+                          dim: state.dim(home: true),
                           align: .trailing,
                           redacted: redacted)
             }
@@ -292,18 +295,18 @@ struct NoNoiseLiveActivity: Widget {
                 // Expanded — mirrors the lock tile: blocks bracket the
                 // center bug, with the rail below.
                 DynamicIslandExpandedRegion(.leading) {
-                    TeamBlock(code: s.homeCode,
-                              score: s.homeScore,
-                              dim: s.dim(home: true),
+                    TeamBlock(code: s.awayCode,
+                              score: s.awayScore,
+                              dim: s.dim(home: false),
                               align: .leading,
                               compact: true,
                               redacted: redacted)
                         .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    TeamBlock(code: s.awayCode,
-                              score: s.awayScore,
-                              dim: s.dim(home: false),
+                    TeamBlock(code: s.homeCode,
+                              score: s.homeScore,
+                              dim: s.dim(home: true),
                               align: .trailing,
                               compact: true,
                               redacted: redacted)
@@ -326,12 +329,12 @@ struct NoNoiseLiveActivity: Widget {
                     .foregroundStyle(theme.accent)
                     .symbolEffect(.pulse, options: .repeating)
             } compactTrailing: {
-                Text(redacted ? "\u{2022}\u{2022}\u{2022}" : "\(s.homeScore)\u{2013}\(s.awayScore)")
+                Text(redacted ? "\u{2022}\u{2022}\u{2022}" : "\(s.awayScore)\u{2013}\(s.homeScore)")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundStyle(nnInk)
             } minimal: {
-                Text(redacted ? "\u{2022}\u{2022}\u{2022}" : "\(s.homeScore)\u{2013}\(s.awayScore)")
+                Text(redacted ? "\u{2022}\u{2022}\u{2022}" : "\(s.awayScore)\u{2013}\(s.homeScore)")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundStyle(nnInk)
