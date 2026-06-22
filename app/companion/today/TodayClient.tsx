@@ -9,11 +9,9 @@ import { useTodayData } from "./use-today-data";
 import { deriveTodayHeadline } from "./today-data";
 import { FrontPageLead } from "./FrontPageLead";
 import { RestingState } from "./RestingState";
-import { EnableNotificationsCard } from "./EnableNotificationsCard";
-import { PushPermissionRecoveryCard } from "./PushPermissionRecoveryCard";
-import { InstallPromptCard } from "./InstallPromptCard";
 import { BriefPromptCard } from "./BriefPromptCard";
-import { FirstRunStrip } from "./FirstRunStrip";
+import { useSetupStep } from "./setup/useSetupStep";
+import { SetupCard } from "./setup/SetupCard";
 import { FirstFollowTierCard } from "../follow/FirstFollowTierCard";
 import { QuietRecap } from "./QuietRecap";
 import { YouFollow } from "./sections/you-follow";
@@ -60,6 +58,7 @@ export function TodayClient() {
   // the conversational Daily Brief sentence as the editorial top of the
   // screen, and absorbs the live hero (the deck IS the lead game).
   const lead = hydrated ? deriveTodayHeadline(payload) : null;
+  const setup = useSetupStep();
 
   return (
     <PullToRefresh onRefresh={refetch}>
@@ -130,10 +129,10 @@ export function TodayClient() {
         </div>
       </header>
 
-      {/* First-run onboarding — the 3-card checklist that shows
-          until the user has followed, pinned, and made a notification
-          decision. Auto-retires when all three are done. */}
-      {hydrated ? <FirstRunStrip /> : null}
+      {/* Setup — top slot. Only the foundational follow step renders here;
+          it is the screen for a brand-new user. Every post-follow nudge
+          renders below the content instead (inline slot, further down). */}
+      {setup.step === "follow" ? <SetupCard setup={setup} /> : null}
 
       {/* First-follow alert-tier education — sits below the strip
           (so the user reads "you followed something" before the deep
@@ -168,24 +167,6 @@ export function TodayClient() {
         </div>
       ) : null}
 
-      {/* Install for game alerts — Phase 9 friend-beta gate. Sits above
-          EnableNotificationsCard because on iOS, install is a prerequisite
-          for push working at all. Internally bails when running standalone
-          or when the user has dismissed. */}
-      <InstallPromptCard />
-
-      {/* Enable Notifications — Stage A push pass. Renders below the
-          Brief so a fresh-install user sees it without it competing
-          with the Brief itself. Internally bails if permission is
-          already decided or the user dismissed. */}
-      <EnableNotificationsCard />
-
-      {/* Push Permission Recovery — Phase 21C. Renders only when
-          permission is "denied" AND the user has follows worth
-          recovering. Mutually exclusive with EnableNotificationsCard
-          (that one renders for "default"). One dismissal is permanent. */}
-      <PushPermissionRecoveryCard />
-
       {/* Loading shell — keep the page shape, fill with calm placeholder */}
       {!hydrated ? <LoadingShell /> : null}
 
@@ -205,6 +186,11 @@ export function TodayClient() {
             <div className="md:hidden">
               <YouFollow items={payload.youFollow} />
             </div>
+
+            {/* Setup — inline slot. Any post-follow nudge (install / enable
+                / recover / optional install) renders here, below the live
+                content, so scores come first. At most one ever shows. */}
+            {setup.step && setup.step !== "follow" ? <SetupCard setup={setup} /> : null}
 
             {/* On a resting day the Next-up list is shown inside
                 RestingState above, so skip the standalone section to
