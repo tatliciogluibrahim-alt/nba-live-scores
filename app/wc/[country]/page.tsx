@@ -99,8 +99,8 @@ export async function generateMetadata({
     };
   }
 
-  const title = `${country.name} at the Summer Soccer 2026 | No Noise Scores`;
-  const description = `${country.name} are in Group ${country.group}. Follow ${country.name}'s path through the Summer Soccer with kickoff and full-time alerts. Calm sports companion. No feeds, no ads, no noise.`;
+  const title = `${country.name} World Cup 2026 schedule | No Noise Scores`;
+  const description = `${country.name} are in Group ${country.group} at the 2026 World Cup. Follow ${country.name}'s path with kickoff and full-time alerts. A calm sports companion. No feeds, no ads, no noise.`;
   const canonical = `https://nonoisescores.app/wc/${country.id.toLowerCase()}`;
 
   return {
@@ -147,7 +147,7 @@ export default async function CountryLandingPage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SportsEvent",
-    name: `${country.name} at the Summer Soccer 2026`,
+    name: `${country.name} at the 2026 World Cup`,
     startDate: "2026-06-11",
     endDate: "2026-07-19",
     eventStatus: "https://schema.org/EventScheduled",
@@ -184,8 +184,8 @@ export default async function CountryLandingPage({
       />
 
       <ContentPageShell
-        eyebrow={`Summer Soccer 2026 · Group ${country.group}`}
-        headline={`${country.flag}  ${country.name} at the Summer Soccer.`}
+        eyebrow={`World Cup 2026 · Group ${country.group}`}
+        headline={`${country.flag}  ${country.name} at the 2026 World Cup.`}
         intro={`${country.name} are in Group ${country.group}. The tournament opens June 11, 2026. Follow ${country.name} on No Noise Scores to get kickoff and full-time alerts for every match.`}
       >
         <H2>Group {country.group}</H2>

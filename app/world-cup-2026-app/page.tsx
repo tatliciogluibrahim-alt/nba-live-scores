@@ -7,9 +7,9 @@ import {
 } from "../companion/landing/ContentPageShell";
 
 export const metadata = {
-  title: "Summer Soccer 2026 app | No Noise Scores",
+  title: "World Cup 2026 app | No Noise Scores",
   description:
-    "Pick your country. Countdown to kickoff. Group context. Path to the final. Kickoff and full-time alerts. June 11, 2026.",
+    "A calm World Cup 2026 companion. Pick your country, countdown to kickoff, your group, path to the final, and kickoff + full-time alerts. June 11, 2026.",
   alternates: {
     canonical: "https://nonoisescores.app/world-cup-2026-app",
   },
@@ -18,16 +18,17 @@ export const metadata = {
 export default function WorldCup2026Page() {
   return (
     <ContentPageShell
-      eyebrow="Summer Soccer 2026"
-      headline="A calm companion for the Summer Soccer."
-      intro="June 11, 2026. Mexico City. Pick your country. Countdown, your group, kickoff and full-time pings."
+      eyebrow="World Cup 2026"
+      headline="A calm companion for the 2026 World Cup."
+      intro="June 11, 2026. Pick your country. Countdown, your group, kickoff and full-time pings, all the way to the final."
     >
       <P>
-        Summer Soccer 2026 is a 32-day event across the US,
-        Canada, and Mexico. Most football apps either treat it like
-        regular-season schedule or drown you in a generic
-        soccer-everywhere feed. This one is the opposite: a calm
-        tournament companion built for this specific month.
+        The 2026 World Cup is a 32-day event across the US, Canada, and
+        Mexico. Most football apps either treat it like a regular-season
+        schedule or drown you in a generic soccer-everywhere feed. This one
+        is the opposite: a calm tournament companion built for this
+        specific month. (Inside the app the tournament is labelled
+        &quot;Summer Soccer&quot; &mdash; same event, calmer name.)
       </P>
 
       <H2>What the Summer Soccer pages do</H2>
