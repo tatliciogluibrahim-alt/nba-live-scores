@@ -25,12 +25,36 @@ export type WCSharePayload =
 const SITE_URL = "https://nonoisescores.app";
 
 type CardParams = {
+  kind: "moment" | "game";
   eyebrow: string;
-  headline: string;
-  sub: string;
   accent: "green" | "mute";
   shareText: string;
+  // moment
+  headline?: string;
+  sub?: string;
+  // game scoreboard
+  away?: string;
+  home?: string;
+  as?: string;
+  hs?: string;
+  scorers?: string;
+  lead?: "away" | "home";
 };
+
+// Goal scorers + minute, e.g. "Mbappé 67' · Griezmann 80'". Own goals
+// tagged. Trimmed to a few so the card stays calm.
+function scorersLine(game: WCGameLite): string {
+  const goals = (game.events ?? []).filter(
+    (e) => e.type === "goal" || e.type === "pen_goal" || e.type === "own_goal"
+  );
+  if (goals.length === 0) return "";
+  const parts = goals.slice(0, 4).map((g) => {
+    const min = (g.minute || "").replace(/:\d\d$/, "").replace(/'$/, "").trim();
+    const og = g.type === "own_goal" ? " (OG)" : "";
+    return `${g.playerName}${min ? ` ${min}'` : ""}${og}`;
+  });
+  return parts.join(" · ") + (goals.length > 4 ? ` +${goals.length - 4}` : "");
+}
 
 function cardParams(payload: WCSharePayload): CardParams {
   if (payload.kind === "knockout-moment") {
@@ -42,6 +66,7 @@ function cardParams(payload: WCSharePayload): CardParams {
         ? `${m.countryName} are through to the ${m.nextStage}.`
         : `${m.countryName}'s run ended in the ${m.stageLabel}.`;
     return {
+      kind: "moment",
       eyebrow: `${m.stageLabel} · ${m.isChampion ? "Champions" : advanced ? "Through" : "Out"}`,
       headline,
       sub: m.scoreLine,
@@ -51,29 +76,54 @@ function cardParams(payload: WCSharePayload): CardParams {
   }
   const g = payload.game;
   const stage = g.stage || "Summer Soccer";
-  const eyebrow =
-    g.status === "final"
-      ? `Full time · ${stage}`
-      : g.status === "live"
-        ? `Live · ${stage}`
-        : stage;
   const matchup = `${g.away.abbreviation} vs ${g.home.abbreviation}`;
+
+  // Upcoming: no score yet — use the calm matchup headline layout.
+  if (g.status === "upcoming") {
+    return {
+      kind: "moment",
+      eyebrow: stage,
+      headline: matchup,
+      sub: "",
+      accent: "green",
+      shareText: g.stage ? `${matchup} · ${g.stage}` : matchup,
+    };
+  }
+
+  // Live / final: the scoreboard layout with scorers + leader emphasis.
+  const lead =
+    g.away.score > g.home.score
+      ? "away"
+      : g.home.score > g.away.score
+        ? "home"
+        : undefined;
   return {
-    eyebrow,
-    headline: matchup,
-    sub: g.status === "upcoming" ? "" : `${g.away.score} – ${g.home.score}`,
+    kind: "game",
+    eyebrow: g.status === "final" ? `Full time · ${stage}` : `Live · ${stage}`,
     accent: "green",
-    shareText: g.stage ? `${matchup} · ${g.stage}` : matchup,
+    away: g.away.abbreviation,
+    home: g.home.abbreviation,
+    as: String(g.away.score),
+    hs: String(g.home.score),
+    scorers: scorersLine(g),
+    lead,
+    shareText: `${g.away.abbreviation} ${g.away.score} – ${g.home.score} ${g.home.abbreviation}`,
   };
 }
 
 function buildCardUrl(p: CardParams): string {
-  const q = new URLSearchParams({
-    eyebrow: p.eyebrow,
-    headline: p.headline,
-    sub: p.sub,
-    accent: p.accent,
-  });
+  const q = new URLSearchParams({ kind: p.kind, eyebrow: p.eyebrow, accent: p.accent });
+  if (p.kind === "game") {
+    q.set("away", p.away ?? "");
+    q.set("home", p.home ?? "");
+    q.set("as", p.as ?? "");
+    q.set("hs", p.hs ?? "");
+    if (p.scorers) q.set("scorers", p.scorers);
+    if (p.lead) q.set("lead", p.lead);
+  } else {
+    q.set("headline", p.headline ?? "");
+    if (p.sub) q.set("sub", p.sub);
+  }
   return `/api/share-card?${q.toString()}`;
 }
 
@@ -131,12 +181,10 @@ export function WCShareModal({
           const fileName = "no-noise-summer-soccer.png";
           await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Cache });
           const { uri } = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
-          await Share.share({
-            title: "No Noise Scores",
-            text: params.shareText,
-            url: SITE_URL,
-            files: [uri],
-          });
+          // Image only — the card already carries the URL, so we don't
+          // bundle text/link with it. Keeps "Save to Photos" clean (just
+          // the card) and the share uncluttered.
+          await Share.share({ title: "No Noise Scores", files: [uri] });
           onClose();
           return;
         } catch {
@@ -145,7 +193,8 @@ export function WCShareModal({
       }
 
       if (file && nav?.canShare?.({ files: [file] })) {
-        await nav.share({ files: [file], title: "No Noise Scores", text: params.shareText });
+        // Image only (the card carries the URL) — clean Save to Photos.
+        await nav.share({ files: [file], title: "No Noise Scores" });
         onClose();
         return;
       }
