@@ -163,8 +163,15 @@ function normalizeFixture(event: ESPNEvent): WCScheduleFixture | null {
     score: Number(awayC?.score ?? 0),
   };
 
-  const group =
-    TEAM_GROUP[home.abbreviation] ?? TEAM_GROUP[away.abbreviation] ?? "";
+  // Assign a group letter ONLY when both teams sit in the same group —
+  // i.e. a true group-stage match. Knockout fixtures pair teams from
+  // different groups (or carry TBD slots pre-draw), so they fall through
+  // to "" and get their stage from ESPN's own round headline. Without
+  // this, a knockout match like MEX vs BRA would inherit MEX's "Group A"
+  // and could surface as a phantom group fixture.
+  const homeG = TEAM_GROUP[home.abbreviation];
+  const awayG = TEAM_GROUP[away.abbreviation];
+  const group = homeG && homeG === awayG ? homeG : "";
   const slug = event.season?.slug ?? "";
   const stage = group
     ? `Group ${group}`

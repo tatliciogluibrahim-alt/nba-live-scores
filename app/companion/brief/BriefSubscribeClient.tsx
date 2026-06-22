@@ -146,7 +146,7 @@ export function BriefSubscribeClient() {
             >
               {hydrated && follows.length > 0
                 ? `Snapshot of your ${follows.length} follow${follows.length === 1 ? "" : "s"} goes with this signup. Re-subscribe to refresh.`
-                : "Add follows in the app first — the brief only covers what you follow."}
+                : "Add follows in the app first. The brief only covers what you follow."}
             </p>
           </div>
 

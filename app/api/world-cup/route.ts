@@ -282,8 +282,14 @@ function normalizeEvent(event: ESPNEvent): WCGame | null {
   const home = normalizeTeam(homeComp);
   const away = normalizeTeam(awayComp);
 
-  // Derive group from team abbreviation
-  const group = TEAM_GROUP[home.abbreviation] ?? TEAM_GROUP[away.abbreviation] ?? "";
+  // Derive group only when both teams sit in the same group (a true
+  // group-stage match). Knockout fixtures pair teams from different
+  // groups, so they fall through to "" and pick up a knockout stage
+  // label below — otherwise a knockout game would inherit one team's
+  // group and read as a phantom group fixture.
+  const homeG = TEAM_GROUP[home.abbreviation];
+  const awayG = TEAM_GROUP[away.abbreviation];
+  const group = homeG && homeG === awayG ? homeG : "";
 
   // Stage label
   const slug = event.season?.slug ?? "";

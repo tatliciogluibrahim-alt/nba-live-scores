@@ -90,8 +90,8 @@ export function BriefPreviewClient() {
         className="mt-2 text-[12px] leading-snug"
         style={{ color: "var(--mute-2)", fontWeight: 500 }}
       >
-        Preview only. This is what tomorrow morning&apos;s email would
-        look like based on your current follows.
+        Preview only. This is what your morning brief looks like, built
+        from today&apos;s games and your current follows.
       </p>
 
       {!payload ? (
