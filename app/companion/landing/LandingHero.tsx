@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandMark } from "../frame/BrandMark";
+import { APP_STORE_URL } from "../../lib/app-store";
 
 // Landing hero — the first thing a desktop visitor sees.
 //
@@ -58,10 +59,13 @@ export function LandingHero() {
           about.
         </p>
 
-        {/* CTAs */}
+        {/* CTAs — lead with the App Store (one-tap install on iPhone),
+            then the browser/PWA path for Android + desktop, then beta. */}
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          <Link
-            href="/app"
+          <a
+            href={APP_STORE_URL}
+            target="_blank"
+            rel="noopener"
             className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[14px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
@@ -69,7 +73,18 @@ export function LandingHero() {
               border: "1px solid var(--ink)",
             }}
           >
-            Open the app
+            Download on the App Store
+          </a>
+          <Link
+            href="/app"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[14px] font-semibold transition active:scale-[0.98]"
+            style={{
+              background: "transparent",
+              color: "var(--ink)",
+              border: "1px solid var(--line)",
+            }}
+          >
+            Open in browser
           </Link>
           <Link
             href="/beta"
@@ -88,8 +103,8 @@ export function LandingHero() {
           className="mt-5 text-[13px] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
-          Add to your home screen for instant access to your sports
-          circle.
+          On iPhone, get it from the App Store. On Android or desktop, add
+          it to your home screen for instant access to your sports circle.
         </p>
 
         {/* Tiny moments line */}

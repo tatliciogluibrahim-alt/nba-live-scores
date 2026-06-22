@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { ScoreModule } from "../atoms/ScoreModule";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
@@ -16,6 +17,7 @@ import { WatchLine } from "../watch/WatchLine";
 import Link from "next/link";
 import type { WCGameLite, WCMatchEventLite } from "../today/today-data";
 import { PinControls } from "./PinControls";
+import { WCShareModal } from "../share/WCShareModal";
 
 // Summer Soccer game detail. Mirrors NBALiveCompanion's structure (H1 →
 // ScoreModule → HeroMoment → WatchLine → Highlights → PinControls) but
@@ -59,6 +61,7 @@ export function WCGameDetail({
   const baseHidden = globalNoSpoilers || followHidden;
   const { isRevealed } = useReveal();
   const noSpoilers = baseHidden && !isRevealed(game.id);
+  const [shareOpen, setShareOpen] = useState(false);
   const isLive = game.status === "live";
   const isUpcoming = game.status === "upcoming";
   const subject = `${game.away.abbreviation} vs ${game.home.abbreviation}`;
@@ -344,6 +347,28 @@ export function WCGameDetail({
         gameStatus={status}
         className="mt-3"
       />
+
+      {/* Share — a calm card with the score/stage + nonoisescores.app, the
+          organic growth artifact. Hidden under No-Spoilers so a share
+          never leaks the result the user is hiding. */}
+      {!noSpoilers ? (
+        <button
+          type="button"
+          onClick={() => setShareOpen(true)}
+          className="mt-3 inline-flex min-h-[40px] items-center gap-1.5 px-1 text-[13px] transition active:scale-[0.99]"
+          style={{ color: "var(--mute-1)", fontWeight: 600 }}
+        >
+          Share this match
+          <span aria-hidden>→</span>
+        </button>
+      ) : null}
+
+      {shareOpen ? (
+        <WCShareModal
+          payload={{ kind: "wc-game", game }}
+          onClose={() => setShareOpen(false)}
+        />
+      ) : null}
        </div>
 
        {/* ── Right rail (desktop md+ only) ────────────────────────────

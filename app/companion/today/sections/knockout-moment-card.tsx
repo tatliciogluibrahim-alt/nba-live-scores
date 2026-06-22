@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Display } from "../../atoms/Display";
 import { useNoSpoilers } from "../../providers";
 import { useClosingDismissed } from "./use-closing-dismissed";
+import { WCShareModal } from "../../share/WCShareModal";
 import type { KnockoutMomentItem } from "../today-data";
 
 // KnockoutMomentCard — the win-or-go-home beat for a followed country.
@@ -21,6 +23,7 @@ import type { KnockoutMomentItem } from "../today-data";
 export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
   const noSpoilers = useNoSpoilers();
   const { hydrated, isDismissed, dismiss } = useClosingDismissed();
+  const [shareOpen, setShareOpen] = useState(false);
 
   if (!hydrated) return null;
   if (isDismissed(moment.id)) return null;
@@ -100,13 +103,34 @@ export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
         </p>
       ) : null}
 
-      <Link
-        href={moment.href}
-        className="mt-4 inline-flex items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.97]"
-        style={{ background: "var(--ink)", color: "var(--paper)" }}
-      >
-        Open {moment.countryName}
-      </Link>
+      <div className="mt-4 flex items-center gap-2">
+        <Link
+          href={moment.href}
+          className="inline-flex items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.97]"
+          style={{ background: "var(--ink)", color: "var(--paper)" }}
+        >
+          Open {moment.countryName}
+        </Link>
+        {/* Share the moment — the growth artifact. Only when scores are
+            visible (the card IS the spoiler), so we don't leak a result. */}
+        {!noSpoilers ? (
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            className="inline-flex items-center justify-center rounded-full border px-4 py-2 text-[13px] font-semibold transition active:scale-[0.97]"
+            style={{ borderColor: "var(--line)", color: "var(--ink)", background: "transparent" }}
+          >
+            Share
+          </button>
+        ) : null}
+      </div>
+
+      {shareOpen ? (
+        <WCShareModal
+          payload={{ kind: "knockout-moment", moment }}
+          onClose={() => setShareOpen(false)}
+        />
+      ) : null}
     </section>
   );
 }

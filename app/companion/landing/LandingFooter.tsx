@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { APP_STORE_URL } from "../../lib/app-store";
 
 // Footer — the "quiet library" of content links. Per AGENTS.md guidance,
 // not hidden, not cloaked, just calmly visible at the bottom of the
@@ -131,6 +132,18 @@ export function LandingFooter() {
           style={{ borderColor: "rgba(241,234,216,0.15)" }}
         >
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <a
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener"
+              className="text-[12px] transition hover:underline"
+              style={{
+                color: "var(--cream-on-dark-1, rgba(241,234,216,0.9))",
+                fontWeight: 500,
+              }}
+            >
+              Download on the App Store
+            </a>
             <a
               href="https://instagram.com/nonoisescores"
               target="_blank"
