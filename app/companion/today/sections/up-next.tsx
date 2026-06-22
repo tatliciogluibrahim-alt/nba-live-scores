@@ -8,8 +8,17 @@ import type { UpNextItem } from "../today-data";
 // Vertical list of upcoming games. Up-next rows stay fully visible under
 // No-Spoilers — future games can't be spoiled.
 
-export function UpNext({ items }: { items: UpNextItem[] }) {
-  if (items.length === 0) return null;
+export function UpNext({
+  items,
+  excludeHref,
+}: {
+  items: UpNextItem[];
+  excludeHref?: string;
+}) {
+  // The lead game is rendered as the Front Page deck above. Drop it from
+  // this list so the same match doesn't appear twice on one screen.
+  const list = excludeHref ? items.filter((i) => i.href !== excludeHref) : items;
+  if (list.length === 0) return null;
 
   // No count on this header. The list spans multiple days (today's games
   // + the next few), so any number here ("5 matches") read as a
@@ -52,7 +61,7 @@ export function UpNext({ items }: { items: UpNextItem[] }) {
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />
       </div>
       <ul className="space-y-2">
-        {items.map((item) => {
+        {list.map((item) => {
           const accentColor =
             item.source === "nba" ? "var(--nba)" : "var(--wc)";
           // Personal games (followed team/country) get a wider accent

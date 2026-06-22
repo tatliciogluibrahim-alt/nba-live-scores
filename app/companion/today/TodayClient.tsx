@@ -196,7 +196,7 @@ export function TodayClient() {
                 RestingState above, so skip the standalone section to
                 avoid a duplicate "Upcoming" list. */}
             {!payload.restingState ? (
-              <UpNext items={payload.upNext} />
+              <UpNext items={payload.upNext} excludeHref={lead?.deck?.href} />
             ) : null}
 
             <QuietWrap items={payload.quietWrap} />

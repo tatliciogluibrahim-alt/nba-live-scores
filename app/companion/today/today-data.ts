@@ -672,8 +672,11 @@ function buildYouFollow(
         return {
           kind: "tournament",
           id: f.id,
-          label: f.id,
-          chip: tournament?.chip ?? "CUP",
+          label: tournament?.name ?? f.id,
+          // A tournament chip shows its name, not a 3-letter code: "SOC"
+          // reads like a team abbreviation next to AUT / ARG. The pill
+          // can carry the full name since tournament follows are few.
+          chip: tournament?.name ?? "Tournament",
           statusLabel: "Cup",
           tone: "current",
           // /tournament/[id] became a real detail page in Phase 9 —

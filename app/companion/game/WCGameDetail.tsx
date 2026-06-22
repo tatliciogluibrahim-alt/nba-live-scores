@@ -547,39 +547,27 @@ function deriveWCHero(game: WCGameLite): {
   live: boolean;
 } {
   if (game.status === "upcoming") {
-    const context = game.stage ? `Summer Soccer · ${game.stage}` : undefined;
     const d = new Date(game.date);
     const valid = !Number.isNaN(d.getTime());
-    // Feed still says "upcoming" but kickoff time has already passed (feed
-    // lag, or a stale status). Don't promise a future time that's already
-    // gone — switch to present tense rather than "Kicks off today at 12:00"
-    // when it's 12:40.
+    // The scoreboard card above already shows the stage and the exact
+    // kickoff time. The preview only adds the day, so the two cards don't
+    // both repeat "Summer Soccer · Group J" and "1:00 PM". No context line
+    // here for the same reason — the stage lives on the scoreboard eyebrow.
     if (valid && d.getTime() <= Date.now()) {
-      return { eyebrow: "Preview", headline: "Kicking off.", context, live: false };
+      return { eyebrow: "Preview", headline: "Kicking off.", live: false };
     }
-    const tipoff = (() => {
+    const dayWord = (() => {
       try {
         if (!valid) return "soon";
         const today = new Date().toDateString() === d.toDateString();
-        const time = d.toLocaleTimeString(undefined, {
-          hour: "numeric",
-          minute: "2-digit",
-        });
-        return today ? `today at ${time}` : d.toLocaleString(undefined, {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        });
+        return today ? "today" : d.toLocaleDateString(undefined, { weekday: "long" });
       } catch {
         return "soon";
       }
     })();
     return {
       eyebrow: "Preview",
-      headline: `Kicks off ${tipoff}.`,
-      context,
+      headline: `Kicks off ${dayWord}.`,
       live: false,
     };
   }

@@ -164,18 +164,12 @@ export function FollowingDashboard() {
         {buildFollowSummary(follows) ||
           "Add what you care about. Nothing else surfaces here."}
       </p>
-      {/* One-line reinforcement of the pin / follow distinction.
-          Follow = these surface and drive alerts. Pin = bookmark a
-          specific game in Watching. Users used to conflate the two
-          (pin felt like "follow"); a calm line on the dashboard makes
-          the model explicit before the user opens an alert tier
-          selector and wonders why pinning isn't there. */}
-      <p
-        className="mb-4 text-[12px] leading-snug"
-        style={{ color: "var(--mute-2)", fontWeight: 500 }}
-      >
-        Follows shape Today and your alerts. Pins live in Watching.
-      </p>
+      {/* The pin / follow distinction used to get its own standalone line
+          here, but stacked under the summary it read as over-explaining
+          before the user saw a single follow. Pinning is taught where it
+          happens (the Watching empty state + the game-detail pin
+          footnote), so the dashboard stays to the count + alert slots. */}
+      <div className="mb-2" />
       {/* First-follow alert-tier education. Self-gates on
           follows.length === 1 + !firstFollowEducated, so on every
           subsequent visit it's a no-op. Sits above the slot counter

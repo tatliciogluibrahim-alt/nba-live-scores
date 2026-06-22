@@ -219,8 +219,18 @@ export function FollowCard({ data }: { data: FollowCardData }) {
       </p>
       {detail ? (
         <p
-          className="mt-0.5 truncate text-[12px]"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          className="mt-0.5 text-[12px] leading-snug"
+          style={{
+            color: "var(--mute-1)",
+            fontWeight: 500,
+            // Wrap a long detail (e.g. a tournament's "group stage through
+            // the final") onto a second line instead of clipping it
+            // mid-word. Short team/series details still sit on one line.
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
         >
           {detail}
         </p>
