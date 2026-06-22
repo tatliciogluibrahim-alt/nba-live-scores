@@ -496,6 +496,14 @@ function dedupeTagFor(event: PushEvent): string {
 
 function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
   const matchup = `${event.awayCode} vs ${event.homeCode}`;
+  // Knockout WC matches add the round to the subtitle ("USA vs POR ·
+  // Round of 32") so a win-or-go-home alert reads with its stakes. Group
+  // stage and NBA keep the plain matchup.
+  const koStage =
+    event.stage && !/^group/i.test(event.stage) && event.stage.trim() !== ""
+      ? event.stage
+      : null;
+  const wcSubtitle = koStage ? `${matchup} · ${koStage}` : matchup;
   // Title / subtitle / body shape:
   //   • title    — the EVENT ("Final", "End of Q3", "Halftime")
   //   • subtitle — the MATCHUP ("SA vs OKC")
@@ -600,7 +608,7 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
     case "wc-kickoff":
       return {
         title: "Kickoff",
-        subtitle: matchup,
+        subtitle: wcSubtitle,
         body: "The match is underway. Tap to follow along.",
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:wc-kickoff`,
@@ -608,7 +616,7 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
     case "wc-halftime":
       return {
         title: "Halftime",
-        subtitle: matchup,
+        subtitle: wcSubtitle,
         body: noSpoilers ? "Half done. Tap to check in." : scoreLine(event),
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:wc-halftime`,
@@ -616,7 +624,7 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
     case "wc-second-half":
       return {
         title: "Second half",
-        subtitle: matchup,
+        subtitle: wcSubtitle,
         body: noSpoilers
           ? "Second half underway. Tap to check in."
           : `${scoreLine(event)} · Second half started`,
@@ -626,7 +634,7 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
     case "wc-goal":
       return {
         title: "Goal",
-        subtitle: matchup,
+        subtitle: wcSubtitle,
         body: noSpoilers
           ? "Someone scored. Tap to check in."
           : event.scorer
@@ -638,7 +646,7 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
     case "wc-final":
       return {
         title: "Full time",
-        subtitle: matchup,
+        subtitle: wcSubtitle,
         body: noSpoilers
           ? "Match wrapped. Tap when you're ready."
           : scoreLine(event),

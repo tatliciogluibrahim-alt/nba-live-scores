@@ -51,6 +51,11 @@ export type FreshWCGameState = {
    *  the scorer. Absent / null when the feed didn't carry it — the goal
    *  still fires, just without a name. */
   lastScorer?: string | null;
+  /** Stage label from the feed ("Round of 32", "Group A"). Passed through
+   *  to the event payload for knockout-aware alert copy. Not part of the
+   *  cached state or the change-detection — purely decorative on the
+   *  event, so it can't affect which events fire. */
+  stage?: string;
 };
 
 /** Status ranks — once a fixture has moved forward, we treat any
@@ -80,6 +85,7 @@ export function detectWCEvents(
     homeCode: stableNext.homeCode,
     awayScore: stableNext.awayScore,
     homeScore: stableNext.homeScore,
+    stage: stableNext.stage,
   };
 
   const events: PushEvent[] = [];

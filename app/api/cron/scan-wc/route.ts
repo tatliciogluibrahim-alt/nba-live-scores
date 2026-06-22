@@ -119,6 +119,7 @@ function toFresh(game: FeedGame): FreshWCGameState {
     homeCode: game.home.abbreviation,
     awayScore: game.away.score,
     homeScore: game.home.score,
+    stage: game.stage,
     minute: parseMinute(game.statusText),
     // Same halftime-break test the lock-screen status line uses, so the
     // detector and the Live Activity agree on what "halftime" means.

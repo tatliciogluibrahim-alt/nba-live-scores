@@ -63,6 +63,10 @@ export type PushEvent = {
    *  decoration ("Quarter wrapped"). */
   awayScore: number;
   homeScore: number;
+  /** Stage label for WC events ("Round of 32", "Group A", …). The
+   *  dispatcher uses it to add knockout context to the alert subtitle.
+   *  Absent for NBA / when the feed didn't carry it. */
+  stage?: string;
   /** True when this is a Game 7 tipoff (NBA only). The dispatcher
    *  uses this to swap in stakes-aware copy ("Game 7 · OKC vs MIN /
    *  Series on the line.") in place of the generic tipoff body.

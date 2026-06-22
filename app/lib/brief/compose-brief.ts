@@ -19,6 +19,11 @@ import type { BriefSubscriber } from "./subscriber-store";
 import { deriveNBARecap } from "../../companion/recap/derive-recap";
 import { getTeam } from "../../companion/following/data/teams";
 import {
+  countryKnockoutOutcome,
+  knockoutResult,
+  nextStageLabel,
+} from "../../companion/tournament/knockout-data";
+import {
   countryDisplayName,
   getCountry,
   WC_COUNTRIES,
@@ -312,6 +317,10 @@ export type BriefWCGame = {
   group?: string;
   home: { abbreviation: string; name: string; score: number };
   away: { abbreviation: string; name: string; score: number };
+  /** Penalty shootout scores, when a knockout match went to penalties.
+   *  Lets the Brief report advancement correctly for a level match. */
+  penaltyHome?: number | null;
+  penaltyAway?: number | null;
 };
 
 function wcGameMatchesFollow(game: BriefWCGame, follow: Follow): boolean {
@@ -538,6 +547,46 @@ export function composeBrief({
     for (const g of todayGames) {
       const stake = deriveSeriesStake(g);
       if (stake?.urgent) worthKnowing.push(stake.line);
+    }
+
+    // Knockout advancement for followed countries. Single-elimination, so
+    // a decided knockout match closes the country's tournament one way or
+    // the other. Penalty-aware via countryKnockoutOutcome, which never
+    // guesses a level match. Most recent decided match per country.
+    for (const f of follows) {
+      if (f.kind !== "country") continue;
+      const decided = wc
+        .filter(
+          (g) =>
+            g.status === "final" &&
+            (g.home.abbreviation === f.id || g.away.abbreviation === f.id)
+        )
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      for (const g of decided) {
+        const ko = {
+          stage: g.stage ?? "",
+          status: g.status,
+          home: g.home,
+          away: g.away,
+          penaltyHome: g.penaltyHome,
+          penaltyAway: g.penaltyAway,
+        };
+        const outcome = countryKnockoutOutcome(ko, f.id);
+        if (!outcome) continue;
+        const r = knockoutResult(ko);
+        if (!r) continue;
+        const name = getCountry(f.id)?.name ?? f.id;
+        if (outcome === "advanced") {
+          worthKnowing.push(
+            r.stageKey === "final"
+              ? `${name} won the Summer Soccer final. Champions.`
+              : `${name} are through to the ${nextStageLabel(r.stageKey)}.`
+          );
+        } else {
+          worthKnowing.push(`${name}'s run ended in the ${g.stage ?? "knockouts"}.`);
+        }
+        break; // most recent decided knockout match only
+      }
     }
   }
 
