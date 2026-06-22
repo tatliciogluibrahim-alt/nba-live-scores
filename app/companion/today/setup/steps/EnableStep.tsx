@@ -16,6 +16,21 @@ import { PRESETS } from "../../../state/types";
 
 const TIER_ORDER: AlertPreset[] = ["quiet", "companion", "all"];
 
+// Fire-and-forget activation-funnel beacon. Never blocks or throws — a
+// metrics hiccup must not affect the enable flow.
+function trackFunnel(event: string) {
+  try {
+    void fetch("/api/metrics/funnel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* ignore */
+  }
+}
+
 export function EnableStep() {
   const { prefs, dismissNotifPrompt, setDefaultAlertTier } = useUserPrefs();
   const { follows } = useFollows();
@@ -38,6 +53,20 @@ export function EnableStep() {
     }
   }, [prefs.defaultAlertTier]);
 
+  // The prompt surfaced — the funnel denominator. Deduped to once per
+  // device via localStorage so repeat Today visits (the step re-mounts
+  // until the user acts) don't inflate the denominator and depress the
+  // grant rate.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("nns:funnel:prompt_shown") === "1") return;
+      localStorage.setItem("nns:funnel:prompt_shown", "1");
+    } catch {
+      /* storage blocked — fall through and still beacon once this mount */
+    }
+    trackFunnel("prompt_shown");
+  }, []);
+
   const alertFollows = follows.filter((f) => f.alertEnabled);
 
   async function onEnable() {
@@ -52,6 +81,7 @@ export function EnableStep() {
       const result = await window.Notification.requestPermission();
 
       if (result === "granted") {
+        trackFunnel("permission_granted");
         // Create the Web Push subscription with enabled per-follow alerts
         // so the dispatcher can fanout immediately on the next change.
         try {
@@ -86,6 +116,7 @@ export function EnableStep() {
           dismissNotifPrompt();
         }, 1800);
       } else if (result === "denied") {
+        trackFunnel("permission_denied");
         dismissNotifPrompt();
       }
     } finally {

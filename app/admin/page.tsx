@@ -28,6 +28,7 @@ import {
 import { listIosTokens } from "../lib/push/ios-token-store";
 import { subscriberCount } from "../lib/brief/subscriber-store";
 import { betaSubscriberCount } from "../lib/beta/subscriber-store";
+import { readFunnel } from "../lib/push/funnel-metrics";
 
 // Constant-time compare to defeat timing oracles. Mirrors the same
 // pattern used in /api/admin/push/status. Returns false if either
@@ -129,13 +130,53 @@ export default async function AdminPage({
   }
 
   // All reads run in parallel. Each one is independent.
-  const [webCount, webSubs, iosTokens, briefCount, betaCount] = await Promise.all([
-    subscriptionCount(),
-    listSubscriptions(),
-    listIosTokens(),
-    subscriberCount(),
-    betaSubscriberCount(),
-  ]);
+  const [webCount, webSubs, iosTokens, briefCount, betaCount, funnel] =
+    await Promise.all([
+      subscriptionCount(),
+      listSubscriptions(),
+      listIosTokens(),
+      subscriberCount(),
+      betaSubscriberCount(),
+      readFunnel(),
+    ]);
+
+  // Activation funnel: of the unique devices that saw the notification
+  // prompt, how many granted. prompt_shown is deduped client-side.
+  const grantRate =
+    funnel.prompt_shown > 0
+      ? Math.round((funnel.permission_granted / funnel.prompt_shown) * 100)
+      : 0;
+
+  // Delivery retention (a proxy — server-side activity is push DELIVERY,
+  // not app opens). Computed on-read from the createdAt / lastSeenAt
+  // already on every push row, so no new store or cron.
+  const NOW = new Date().getTime();
+  const DAY = 86_400_000;
+  const lifeRows: Array<{ createdAt?: number; lastSeenAt?: number }> = [
+    ...webSubs.map((s) => ({ createdAt: s.createdAt, lastSeenAt: s.lastSeenAt })),
+    ...iosTokens.map((t) => ({ createdAt: t.createdAt, lastSeenAt: t.lastSeenAt })),
+  ];
+  const active7 = lifeRows.filter(
+    (r) => r.lastSeenAt != null && NOW - r.lastSeenAt <= 7 * DAY
+  ).length;
+  const eligibleD1 = lifeRows.filter(
+    (r) => r.createdAt != null && NOW - r.createdAt >= DAY
+  );
+  const retainedD1 = eligibleD1.filter(
+    (r) => r.lastSeenAt != null && r.createdAt != null && r.lastSeenAt - r.createdAt >= DAY
+  ).length;
+  const eligibleD7 = lifeRows.filter(
+    (r) => r.createdAt != null && NOW - r.createdAt >= 7 * DAY
+  );
+  const retainedD7 = eligibleD7.filter(
+    (r) => r.lastSeenAt != null && r.createdAt != null && r.lastSeenAt - r.createdAt >= 7 * DAY
+  ).length;
+  const d1Rate = eligibleD1.length
+    ? Math.round((retainedD1 / eligibleD1.length) * 100)
+    : 0;
+  const d7Rate = eligibleD7.length
+    ? Math.round((retainedD7 / eligibleD7.length) * 100)
+    : 0;
 
   // Both stores carry the same alerts[] + noSpoilers shape, so fold
   // them into one population for the cross-cutting stats below. Each
@@ -257,6 +298,52 @@ export default async function AdminPage({
             rows (web + iOS). Follows from users who haven&rsquo;t
             enabled push are stored in localStorage only and don&rsquo;t
             reach KV, so they are not counted here.
+          </p>
+        </Section>
+
+        <Section title="Activation funnel">
+          <div style={statGridStyle}>
+            <Stat label="Prompt shown" value={funnel.prompt_shown} sub="unique devices" />
+            <Stat
+              label="Granted"
+              value={funnel.permission_granted}
+              sub={`${grantRate}% of ${funnel.prompt_shown.toLocaleString()} shown`}
+            />
+            <Stat label="Denied" value={funnel.permission_denied} />
+          </div>
+          <p style={mutedStyle}>
+            The notification permission ask. Prompt-shown is deduped to one
+            per device, so granted divided by shown is a real grant rate.
+            Web-push subscribe fires on every preference re-sync, so it
+            isn&rsquo;t counted here. The Endpoints web-push total is the
+            subscribed count.
+          </p>
+        </Section>
+
+        <Section title="Delivery retention">
+          <div style={statGridStyle}>
+            <Stat
+              label="Active · last 7d"
+              value={active7}
+              sub={`of ${lifeRows.length.toLocaleString()} push rows`}
+            />
+            <Stat
+              label="D1 retained"
+              value={retainedD1}
+              sub={`${d1Rate}% of ${eligibleD1.length.toLocaleString()} eligible`}
+            />
+            <Stat
+              label="D7 retained"
+              value={retainedD7}
+              sub={`${d7Rate}% of ${eligibleD7.length.toLocaleString()} eligible`}
+            />
+          </div>
+          <p style={mutedStyle}>
+            Server-side activity is push delivery, not app opens, so this
+            measures whether a device is still being delivered to N days
+            after it subscribed. A directional proxy for retention, not
+            session retention. &ldquo;Eligible&rdquo; counts only rows old
+            enough to have reached that day mark. Small samples are noisy.
           </p>
         </Section>
 
