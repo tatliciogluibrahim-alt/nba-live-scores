@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { LandingFooter } from "./LandingFooter";
+import { APP_STORE_URL } from "../../lib/app-store";
 
 // ContentPageShell — shared chrome for static marketing content pages
 // (Phases 13-16). Header lockup + nav, main column, LandingFooter.
@@ -49,7 +50,7 @@ export function ContentPageShell({
           >
             No Noise Scores
           </Link>
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-4 md:gap-6">
             <Link
               href="/how-it-works"
               className="hidden text-[13px] md:inline"
@@ -64,8 +65,20 @@ export function ContentPageShell({
             >
               Changelog
             </Link>
+            {/* SEO traffic lands on these pages, so the install CTA points
+                at the App Store (the one-tap path). "Open in browser"
+                keeps the cross-platform PWA route for Android/desktop. */}
             <Link
               href="/app"
+              className="hidden text-[13px] md:inline"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              Open in browser
+            </Link>
+            <a
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener"
               className="inline-flex min-h-[40px] items-center justify-center rounded-full px-4 text-[13px] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "var(--ink)",
@@ -73,8 +86,8 @@ export function ContentPageShell({
                 border: "1px solid var(--ink)",
               }}
             >
-              Open the app
-            </Link>
+              Get the app
+            </a>
           </nav>
         </div>
       </header>
