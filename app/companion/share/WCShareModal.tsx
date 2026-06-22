@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useRef, useState } from "react";
+import { isCapacitorNative } from "../dev/native-detect";
 import type { KnockoutMomentItem, WCGameLite } from "../today/today-data";
 
 // Summer Soccer share card — the growth artifact. A user posts a calm
@@ -232,6 +233,40 @@ export function WCShareModal({
 
     const nav = typeof navigator !== "undefined" ? navigator : undefined;
     try {
+      // Installed app (Capacitor WKWebView): the Web Share API can't attach
+      // files here, so go through the native Share + Filesystem plugins to
+      // share the actual image card. Falls through to the web path below if
+      // the plugins aren't in this build yet — so the current App Store
+      // build keeps working (text + link) until the next build ships.
+      if (isCapacitorNative() && dataUrl) {
+        try {
+          const [{ Filesystem, Directory }, { Share }] = await Promise.all([
+            import("@capacitor/filesystem"),
+            import("@capacitor/share"),
+          ]);
+          const fileName = "no-noise-summer-soccer.png";
+          await Filesystem.writeFile({
+            path: fileName,
+            data: dataUrl.split(",")[1] ?? "",
+            directory: Directory.Cache,
+          });
+          const { uri } = await Filesystem.getUri({
+            path: fileName,
+            directory: Directory.Cache,
+          });
+          await Share.share({
+            title: "No Noise Scores",
+            text: shareText,
+            url,
+            files: [uri],
+          });
+          onClose();
+          return;
+        } catch {
+          /* plugins absent / native share failed — use the web path below */
+        }
+      }
+
       if (file && nav?.canShare?.({ files: [file] })) {
         await nav.share({ files: [file], title: "No Noise Scores", text: shareText });
         onClose();

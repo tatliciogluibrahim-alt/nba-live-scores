@@ -19,8 +19,10 @@
   },
   "dependencies": {
     "@capacitor/core": "^8.3.1",
+    "@capacitor/filesystem": "^8.1.2",
     "@capacitor/ios": "^8.3.1",
     "@capacitor/push-notifications": "^8.0.3",
+    "@capacitor/share": "^8.0.1",
     "@upstash/ratelimit": "^2.0.8",
     "@vercel/analytics": "^2.0.1",
     "@vercel/kv": "^3.0.0",
