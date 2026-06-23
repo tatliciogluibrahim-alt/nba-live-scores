@@ -52,4 +52,20 @@ enum WidgetStore {
     static func writeIndex(_ i: Int) {
         UserDefaults(suiteName: appGroup)?.set(i, forKey: indexKey)
     }
+
+    // No-Spoilers reveal — a per-game flag the lock-screen Live Activity's
+    // Reveal button sets (iOS 17+). Device-local in the App Group, keyed by
+    // gameId, so the server's score pushes can't re-hide a revealed game:
+    // the activity re-renders on each push and re-reads this flag.
+    static func revealKey(_ gameId: String) -> String { "reveal:\(gameId)" }
+
+    static func isRevealed(_ gameId: String) -> Bool {
+        guard !gameId.isEmpty else { return false }
+        return UserDefaults(suiteName: appGroup)?.bool(forKey: revealKey(gameId)) ?? false
+    }
+
+    static func setRevealed(_ gameId: String) {
+        guard !gameId.isEmpty else { return }
+        UserDefaults(suiteName: appGroup)?.set(true, forKey: revealKey(gameId))
+    }
 }

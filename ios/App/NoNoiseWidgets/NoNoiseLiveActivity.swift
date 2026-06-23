@@ -1,4 +1,5 @@
 import ActivityKit
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -237,7 +238,11 @@ private struct StadiumPanelLockView: View {
     // sport + redacted live on the attributes (set-once, never update),
     // not on ContentState. Threaded in from the ActivityConfiguration body.
     let sport: String
+    // `redacted` here means "currently hidden": redacted attribute AND not
+    // yet revealed on this device. When true the tile shows a Reveal button
+    // (iOS 17+) wired to the game's id.
     var redacted: Bool = false
+    var gameId: String = ""
     private var theme: SportTheme { .from(sport) }
 
     var body: some View {
@@ -269,11 +274,59 @@ private struct StadiumPanelLockView: View {
                 .tracking(1.2)
                 .foregroundStyle(nnMute)
             }
+            if redacted { revealButton }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 15)
         .activityBackgroundTint(nnBg)
         .activitySystemActionForegroundColor(nnInk)
+    }
+
+    // No-Spoilers reveal control. iOS 17+ only (interactive Live Activity
+    // buttons need App Intents); on 16.x the tile simply stays hidden and
+    // tapping it opens the app, where the in-app reveal still works.
+    @ViewBuilder private var revealButton: some View {
+        if #available(iOS 17.0, *) {
+            Button(intent: RevealScoreIntent(gameId: gameId)) {
+                Text("Tap to reveal score")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .tracking(0.8)
+                    .foregroundStyle(theme.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
+// MARK: - Interactive No-Spoilers reveal (iOS 17+)
+//
+// Tapping "Reveal" on the lock screen flips a per-game flag in the App
+// Group. The real score is already on-device in ContentState (the redacted
+// attribute only hides it), so reveal is a pure local display toggle —
+// no network, no new push. We re-render the activity so it re-reads the
+// flag immediately; future server pushes re-read it too, so the score
+// stays revealed.
+@available(iOS 17.0, *)
+struct RevealScoreIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Reveal score"
+
+    @Parameter(title: "Game")
+    var gameId: String
+
+    init() {}
+    init(gameId: String) { self.gameId = gameId }
+
+    func perform() async throws -> some IntentResult {
+        WidgetStore.setRevealed(gameId)
+        // Re-push current content so the tile re-renders and picks up the
+        // flag now, not on the next score update.
+        for activity in Activity<NoNoiseGameAttributes>.activities
+        where activity.attributes.gameId == gameId {
+            await activity.update(activity.content)
+        }
+        return .result()
     }
 }
 
@@ -282,15 +335,22 @@ private struct StadiumPanelLockView: View {
 struct NoNoiseLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: NoNoiseGameAttributes.self) { context in
+            // Hide the score only while redacted AND not yet revealed on
+            // this device. The reveal flag is device-local (App Group), so
+            // the next server score push can't re-hide it.
+            let hideScore = context.attributes.redacted
+                && !WidgetStore.isRevealed(context.attributes.gameId)
             StadiumPanelLockView(
                 state: context.state,
                 sport: context.attributes.sport,
-                redacted: context.attributes.redacted
+                redacted: hideScore,
+                gameId: context.attributes.gameId
             )
         } dynamicIsland: { context in
             let s = context.state
             let theme = SportTheme.from(context.attributes.sport)
             let redacted = context.attributes.redacted
+                && !WidgetStore.isRevealed(context.attributes.gameId)
             return DynamicIsland {
                 // Expanded — mirrors the lock tile: blocks bracket the
                 // center bug, with the rail below.
