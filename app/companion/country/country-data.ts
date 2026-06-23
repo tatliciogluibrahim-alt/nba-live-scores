@@ -372,7 +372,9 @@ export function buildCountryPayload(
   // Path stages — mark a stage `reached` if a fixture in it exists.
   const stages = pathTemplate(country.group);
   const stageKeyForFixture = (f: CountryGameRow): PathStage["key"] => {
-    const s = f.stage.toLowerCase();
+    // Normalize hyphenated slugs ("round-of-32") to spaces so the same
+    // includes() checks match both ESPN's headline and slug forms.
+    const s = f.stage.toLowerCase().replace(/-/g, " ");
     if (s.startsWith("group")) return "group";
     if (s.includes("round of 32")) return "r32";
     if (s.includes("round of 16")) return "r16";
@@ -388,8 +390,15 @@ export function buildCountryPayload(
   const fixtureByStage = new Map<PathStage["key"], CountryGameRow>();
   for (const f of countryFixtures) {
     const k = stageKeyForFixture(f);
+    if (k === "group") continue;
+    // A knockout stage counts as "reached" only once the opponent is a
+    // real country — i.e. the team has actually advanced into it. A
+    // scheduled placeholder slot ("3RD" / "1A") is a bracket position,
+    // not arrival, so it must not light up the rail or name a phantom
+    // opponent.
+    if (!dirByCode.has(f.opponentCode)) continue;
     reachedSet.add(k);
-    if (k !== "group" && !fixtureByStage.has(k)) fixtureByStage.set(k, f);
+    if (!fixtureByStage.has(k)) fixtureByStage.set(k, f);
   }
   const pathStages: PathStage[] = stages.map((s) => {
     const fx = fixtureByStage.get(s.key);
