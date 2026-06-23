@@ -270,13 +270,20 @@ a {
    live score updates. Brief opacity dip into the sport accent then back.
    Draws the eye to the change without screaming. One iteration only. */
 @keyframes no-noise-score-flash {
-  0%   { opacity: 1; }
-  25%  { opacity: 0.25; color: var(--nba); }
-  100% { opacity: 1; }
+  0%   { transform: scale(1); opacity: 1; }
+  30%  { transform: scale(1.09); opacity: 0.78; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .no-noise-score-flash {
-  animation: no-noise-score-flash 0.45s ease-out forwards;
+  /* The new score "lands": a gentle pop + soft pulse that settles on an
+     ease-out-quint curve. Transform-driven so it works regardless of the
+     per-team leader colors on the inner spans (the old opacity-into-accent
+     dip never showed, since those inline colors override it), and it stays
+     within the no-glow / no-gradient brand. Anchored left so the pop grows
+     into the row's whitespace without nudging layout. One iteration. */
+  animation: no-noise-score-flash 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-origin: left center;
 }
 
 @media (prefers-reduced-motion: reduce) {
