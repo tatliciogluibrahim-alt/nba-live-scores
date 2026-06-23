@@ -83,7 +83,10 @@ struct NoNoiseUpcomingWidget: Widget {
         }
         .configurationDisplayName("Upcoming")
         .description("Your next followed games and the moment ahead.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+        .supportedFamilies([
+            .systemSmall, .systemMedium, .systemLarge,
+            .accessoryRectangular, .accessoryInline,
+        ])
     }
 }
 
@@ -106,22 +109,96 @@ struct UpcomingWidgetView: View {
     @Environment(\.widgetFamily) var family
     let entry: UpcomingEntry
 
+    private var isAccessory: Bool {
+        family == .accessoryRectangular || family == .accessoryInline
+    }
+
     var body: some View {
-        content.containerBackground(wCream, for: .widget)
+        if isAccessory {
+            // Lock screen / StandBy: the system tints these, so no cream
+            // chassis — transparent background, rely on hierarchy.
+            content.containerBackground(.clear, for: .widget)
+        } else {
+            content.containerBackground(wCream, for: .widget)
+        }
     }
 
     @ViewBuilder private var content: some View {
-        if let snap = entry.snapshot, !snap.empty,
-           !(snap.upcoming.isEmpty && snap.moment == nil) {
-            if family == .systemSmall {
-                SmallBody(snap: snap, startIndex: entry.startIndex)
-            } else if family == .systemLarge {
-                LargeBody(snap: snap, startIndex: entry.startIndex)
+        switch family {
+        case .accessoryRectangular:
+            AccessoryRectBody(snap: entry.snapshot)
+        case .accessoryInline:
+            AccessoryInlineBody(snap: entry.snapshot)
+        default:
+            if let snap = entry.snapshot, !snap.empty,
+               !(snap.upcoming.isEmpty && snap.moment == nil) {
+                if family == .systemSmall {
+                    SmallBody(snap: snap, startIndex: entry.startIndex)
+                } else if family == .systemLarge {
+                    LargeBody(snap: snap, startIndex: entry.startIndex)
+                } else {
+                    MediumBody(snap: snap, startIndex: entry.startIndex)
+                }
             } else {
-                MediumBody(snap: snap, startIndex: entry.startIndex)
+                EmptyBody()
+            }
+        }
+    }
+}
+
+// MARK: - Lock-screen accessory bodies
+//
+// Live score when a followed game is on, otherwise the next match. The
+// score hides under No-Spoilers. System-tinted on the lock screen, so we
+// lean on hierarchy, not color.
+
+private func accScore(_ t: WidgetLiveTeam, redacted: Bool) -> String {
+    redacted ? "\u{2022}" : "\(t.score)"
+}
+
+private struct AccessoryRectBody: View {
+    let snap: WidgetSnapshot?
+
+    var body: some View {
+        if let live = snap?.live?.first {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(live.statusLine.uppercased())
+                    .font(.system(size: 11, weight: .semibold))
+                    .widgetAccentable()
+                Text("\(live.away.code) \(accScore(live.away, redacted: live.redacted))\u{2013}\(accScore(live.home, redacted: live.redacted)) \(live.home.code)")
+                    .font(.system(size: 16, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+        } else if let up = snap?.upcoming.first {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("UP NEXT")
+                    .font(.system(size: 10, weight: .semibold))
+                    .widgetAccentable()
+                Text(up.matchup)
+                    .font(.system(size: 16, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text(up.detail)
+                    .font(.system(size: 11, weight: .medium))
+                    .lineLimit(1)
             }
         } else {
-            EmptyBody()
+            Text("No games up").font(.system(size: 13, weight: .medium))
+        }
+    }
+}
+
+private struct AccessoryInlineBody: View {
+    let snap: WidgetSnapshot?
+
+    var body: some View {
+        if let live = snap?.live?.first {
+            Text("\(live.away.code) \(accScore(live.away, redacted: live.redacted))\u{2013}\(accScore(live.home, redacted: live.redacted)) \(live.home.code)")
+        } else if let up = snap?.upcoming.first {
+            Text("\(up.matchup) \u{00b7} \(up.detail.components(separatedBy: " \u{00b7} ").first ?? up.detail)")
+        } else {
+            Text("No games up")
         }
     }
 }
@@ -447,6 +524,188 @@ struct NNMarkView: View {
                 .fill(Color(hex: "e55b2a"))
                 .frame(width: 4, height: 4)
                 .offset(x: 5, y: 0)
+        }
+    }
+}
+
+// MARK: - Live-score widget (home screen)
+//
+// Shows the latest known score of a followed game in progress. iOS
+// throttles widget refreshes and they get no pushes, so this is NOT
+// real-time like the Live Activity — it shows the score as of the last
+// snapshot the app wrote, with an "as of" time so it never reads as a
+// confident-but-stale lie. Score hides under No-Spoilers (entry.redacted).
+// Lives in this file (already in the widget target) so no new Xcode file
+// to add to the extension.
+
+struct LiveScoreEntry: TimelineEntry {
+    let date: Date
+    let snapshot: WidgetSnapshot?
+}
+
+struct LiveScoreProvider: TimelineProvider {
+    func placeholder(in context: Context) -> LiveScoreEntry {
+        LiveScoreEntry(date: Date(), snapshot: nil)
+    }
+    func getSnapshot(in context: Context, completion: @escaping (LiveScoreEntry) -> Void) {
+        completion(LiveScoreEntry(date: Date(), snapshot: WidgetStore.read()))
+    }
+    func getTimeline(in context: Context, completion: @escaping (Timeline<LiveScoreEntry>) -> Void) {
+        let entry = LiveScoreEntry(date: Date(), snapshot: WidgetStore.read())
+        // 15-min cadence (a live score goes stale faster than the upcoming
+        // list); the app's snapshot writes keep it fresh while open.
+        let next = Calendar.current.date(byAdding: .minute, value: 15, to: Date())
+            ?? Date().addingTimeInterval(15 * 60)
+        completion(Timeline(entries: [entry], policy: .after(next)))
+    }
+}
+
+private func liveDeepLink(_ snap: WidgetSnapshot?) -> URL? {
+    if let href = snap?.live?.first?.href {
+        return URL(string: "https://nonoisescores.app\(href)")
+    }
+    return URL(string: "https://nonoisescores.app/app")
+}
+
+struct NoNoiseLiveScoreWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "NoNoiseLiveScore", provider: LiveScoreProvider()) { entry in
+            LiveScoreWidgetView(entry: entry)
+                .widgetURL(liveDeepLink(entry.snapshot))
+        }
+        .configurationDisplayName("Live score")
+        .description("The latest score of a game you're following.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+private func asOfText(_ generatedAt: Double) -> String {
+    guard generatedAt > 0 else { return "" }
+    let d = Date(timeIntervalSince1970: generatedAt / 1000)
+    let f = DateFormatter()
+    f.dateFormat = "h:mm a"
+    return "as of \(f.string(from: d))"
+}
+
+private func lsScore(_ t: WidgetLiveTeam, redacted: Bool) -> String {
+    redacted ? "\u{2022}\u{2022}\u{2022}" : "\(t.score)"
+}
+
+struct LiveScoreWidgetView: View {
+    @Environment(\.widgetFamily) var family
+    let entry: LiveScoreEntry
+
+    var body: some View {
+        content.containerBackground(wCream, for: .widget)
+    }
+
+    @ViewBuilder private var content: some View {
+        let live = entry.snapshot?.live ?? []
+        let at = entry.snapshot?.generatedAt ?? 0
+        if live.isEmpty {
+            EmptyLiveBody()
+        } else if family == .systemMedium {
+            MediumLiveBody(live: Array(live.prefix(2)), generatedAt: at)
+        } else {
+            SmallLiveBody(game: live[0], generatedAt: at)
+        }
+    }
+}
+
+private struct SmallLiveBody: View {
+    let game: WidgetLive
+    let generatedAt: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(game.statusLine.uppercased())
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.5)
+                    .foregroundStyle(Color(hex: game.accentHex))
+                    .lineLimit(1)
+                Spacer()
+                NNMarkView().frame(width: 18, height: 18)
+            }
+            Spacer()
+            scoreRow(code: game.away.code, score: lsScore(game.away, redacted: game.redacted))
+            scoreRow(code: game.home.code, score: lsScore(game.home, redacted: game.redacted))
+            Spacer()
+            if !asOfText(generatedAt).isEmpty {
+                Text(asOfText(generatedAt))
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(wMute)
+            }
+        }
+    }
+
+    private func scoreRow(code: String, score: String) -> some View {
+        HStack {
+            Text(code)
+                .font(.system(size: 17, weight: .heavy))
+                .foregroundStyle(wInk)
+            Spacer()
+            Text(score)
+                .font(.system(size: 22, weight: .heavy))
+                .foregroundStyle(wInk)
+                .monospacedDigit()
+        }
+    }
+}
+
+private struct MediumLiveBody: View {
+    let live: [WidgetLive]
+    let generatedAt: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("LIVE")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.8)
+                    .foregroundStyle(wMute)
+                Spacer()
+                if !asOfText(generatedAt).isEmpty {
+                    Text(asOfText(generatedAt))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(wMute)
+                }
+                NNMarkView().frame(width: 16, height: 16)
+            }
+            ForEach(live, id: \.id) { g in
+                HStack {
+                    Text("\(g.away.code) \(lsScore(g.away, redacted: g.redacted))\u{2013}\(lsScore(g.home, redacted: g.redacted)) \(g.home.code)")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(wInk)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Spacer()
+                    Text(g.statusLine)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color(hex: g.accentHex))
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+private struct EmptyLiveBody: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Spacer()
+                NNMarkView().frame(width: 18, height: 18)
+            }
+            Spacer()
+            Text("No live games")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(wInk)
+            Text("We'll show the score when a game you follow is on.")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(wMute)
+                .lineLimit(2)
+            Spacer()
         }
     }
 }

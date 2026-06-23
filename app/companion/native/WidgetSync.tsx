@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { useFollows, usePinned } from "../providers";
+import { useFollows, usePinned, useNoSpoilers } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import { isCapacitorNative } from "../dev/native-detect";
@@ -14,7 +14,13 @@ import {
   type UpNextItem,
 } from "../today/today-data";
 import { getTournament } from "../following/data/tournaments";
-import { writeWidgetSnapshot, type WidgetSnapshot, type WidgetUpcoming } from "./widget-bridge";
+import {
+  writeWidgetSnapshot,
+  type WidgetSnapshot,
+  type WidgetUpcoming,
+  type WidgetLive,
+} from "./widget-bridge";
+import type { Follow } from "../state/types";
 
 // WidgetSync — invisible, mounted globally beside LiveActivitySync. The
 // web half of the home-screen widget (Phase 22.5-4).
@@ -84,19 +90,101 @@ function itemToUpcoming(item: UpNextItem): WidgetUpcoming {
   };
 }
 
+// Live followed games for the live-score widget. A game counts as followed
+// if a team/country/series code is in it, or a matching tournament is
+// followed. Score is redacted when global No-Spoilers is on, or when a
+// matching follow has per-follow hideSpoilers.
+function buildLiveEntries(
+  nba: NBAGame[],
+  wc: WCGameLite[],
+  follows: Follow[],
+  noSpoilers: boolean
+): WidgetLive[] {
+  const codes = new Set<string>();
+  let wcTour = false;
+  let nbaTour = false;
+  for (const f of follows) {
+    if (f.kind === "team" || f.kind === "country") codes.add(f.id.toUpperCase());
+    else if (f.kind === "series")
+      f.id.split("-").forEach((c) => codes.add(c.toUpperCase()));
+    else if (f.kind === "tournament") {
+      if (getTournament(f.id)?.accent === "var(--wc)") wcTour = true;
+      else nbaTour = true;
+    }
+  }
+
+  const hideFor = (away: string, home: string, sport: "nba" | "wc"): boolean => {
+    if (noSpoilers) return true;
+    return follows.some((f) => {
+      if (!f.hideSpoilers) return false;
+      if (f.kind === "team" || f.kind === "country") {
+        const id = f.id.toUpperCase();
+        return id === away || id === home;
+      }
+      if (f.kind === "series")
+        return f.id
+          .split("-")
+          .some((c) => c.toUpperCase() === away || c.toUpperCase() === home);
+      if (f.kind === "tournament")
+        return (getTournament(f.id)?.accent === "var(--wc)" ? "wc" : "nba") === sport;
+      return false;
+    });
+  };
+
+  const out: WidgetLive[] = [];
+  for (const g of nba) {
+    if (g.status !== "live") continue;
+    const a = g.away.abbreviation.toUpperCase();
+    const h = g.home.abbreviation.toUpperCase();
+    if (!(nbaTour || codes.has(a) || codes.has(h))) continue;
+    out.push({
+      id: g.id,
+      sport: "nba",
+      away: { code: g.away.abbreviation, score: g.away.score },
+      home: { code: g.home.abbreviation, score: g.home.score },
+      statusLine: g.statusText || "Live",
+      redacted: hideFor(a, h, "nba"),
+      accentHex: ACCENT_NBA,
+      href: `/game/${g.id}`,
+    });
+  }
+  for (const g of wc) {
+    if (g.status !== "live") continue;
+    const a = g.away.abbreviation.toUpperCase();
+    const h = g.home.abbreviation.toUpperCase();
+    if (!(wcTour || codes.has(a) || codes.has(h))) continue;
+    out.push({
+      id: g.id,
+      sport: "wc",
+      away: { code: g.away.abbreviation, score: g.away.score },
+      home: { code: g.home.abbreviation, score: g.home.score },
+      statusLine: g.statusText || "Live",
+      redacted: hideFor(a, h, "wc"),
+      accentHex: ACCENT_WC,
+      href: `/game/${g.id}`,
+    });
+  }
+  return out.slice(0, 5);
+}
+
 export function WidgetSync() {
   const { follows } = useFollows();
   const { pinned, hydrated } = usePinned();
+  const noSpoilers = useNoSpoilers();
 
   // Stable refs the poll closure reads without re-subscribing.
   const followsRef = useRef(follows);
   const pinnedRef = useRef(pinned);
+  const noSpoilersRef = useRef(noSpoilers);
   useEffect(() => {
     followsRef.current = follows;
   }, [follows]);
   useEffect(() => {
     pinnedRef.current = pinned;
   }, [pinned]);
+  useEffect(() => {
+    noSpoilersRef.current = noSpoilers;
+  }, [noSpoilers]);
 
   const writeSnapshot = useCallback(async () => {
     const [nbaRes, wcRes] = await Promise.all([fetchNBA(), fetchWC()]);
@@ -157,11 +245,19 @@ export function WidgetSync() {
       }
     }
 
+    const live = buildLiveEntries(
+      nba,
+      wc,
+      followsRef.current,
+      noSpoilersRef.current
+    );
+
     const snapshot: WidgetSnapshot = {
       generatedAt: Date.now(),
       upcoming,
+      live,
       moment,
-      empty: upcoming.length === 0 && moment === null,
+      empty: upcoming.length === 0 && live.length === 0 && moment === null,
     };
     await writeWidgetSnapshot(snapshot);
   }, []);

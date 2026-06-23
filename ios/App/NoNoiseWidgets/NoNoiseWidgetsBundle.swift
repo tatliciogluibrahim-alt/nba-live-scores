@@ -6,5 +6,6 @@ struct NoNoiseWidgetsBundle: WidgetBundle {
     var body: some Widget {
         NoNoiseLiveActivity()
         NoNoiseUpcomingWidget()
+        NoNoiseLiveScoreWidget()
     }
 }

@@ -20,9 +20,32 @@ struct WidgetMoment: Codable, Hashable {
     var detail: String?
 }
 
+struct WidgetLiveTeam: Codable, Hashable {
+    var code: String
+    var score: Int
+}
+
+// One live followed game. The LATEST KNOWN score as of the snapshot's
+// generatedAt — home-screen widgets can't tick live, so views show that
+// timestamp rather than implying real time.
+struct WidgetLive: Codable, Hashable {
+    var id: String
+    var sport: String        // "nba" | "wc" | "nfl"
+    var away: WidgetLiveTeam
+    var home: WidgetLiveTeam
+    var statusLine: String   // "67'" / "HT" / "Q3 · 4:21"
+    var redacted: Bool       // No-Spoilers: hide the score
+    var accentHex: String
+    var href: String
+}
+
 struct WidgetSnapshot: Codable {
     var generatedAt: Double
     var upcoming: [WidgetUpcoming]
+    // Optional so a snapshot written by an older build (no `live` key)
+    // still decodes — synthesized Decodable treats optionals as
+    // decodeIfPresent. Read as `snapshot.live ?? []`.
+    var live: [WidgetLive]?
     var moment: WidgetMoment?
     var empty: Bool
 }

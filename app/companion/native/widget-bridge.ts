@@ -49,10 +49,30 @@ export type WidgetSnapshot = {
   generatedAt: number;
   /** Up to ~3 upcoming followed games, soonest first. */
   upcoming: WidgetUpcoming[];
+  /** Live followed games (latest known score as of generatedAt). */
+  live: WidgetLive[];
   /** The overall moment line, e.g. "Summer Soccer kicks off in 14 days." */
   moment: { text: string; detail?: string } | null;
   /** True when the user has nothing to show (no follows / nothing up). */
   empty: boolean;
+};
+
+/** One live followed game, score-ready. Mirrors the Swift `WidgetLive`.
+ *  iOS home-screen widgets can't update in real time (the OS throttles
+ *  refreshes and they get no pushes), so this is the LATEST KNOWN score
+ *  as of `WidgetSnapshot.generatedAt` — the widget shows that timestamp,
+ *  never pretending to be live like the Live Activity. */
+export type WidgetLive = {
+  id: string;
+  sport: "nba" | "wc" | "nfl";
+  away: { code: string; score: number };
+  home: { code: string; score: number };
+  /** Short status, e.g. "67'" / "HT" / "Q3 · 4:21". */
+  statusLine: string;
+  /** No-Spoilers: hide the score (global toggle or per-follow). */
+  redacted: boolean;
+  accentHex: string;
+  href: string;
 };
 
 type WidgetBridgePlugin = {
