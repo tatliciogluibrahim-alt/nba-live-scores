@@ -40,18 +40,18 @@ export function PinControls({
   // Button labels — only become lock-screen language on native live games,
   // so the word "Pin" never clashes with the separate Following concept.
   const pinnedLabel =
-    native && isLive ? "Live on your lock screen" : "Pinned · Tap to unpin";
+    native && isLive ? "On your lock screen" : "Pinned · Tap to unpin";
   const unpinnedLabel =
-    native && isLive ? "Track on lock screen" : "Pin to Watching";
+    native && isLive ? "Add to lock screen" : "Pin to Watching";
 
   const footnote = isFinal
     ? "Pinning keeps this game in Watching for easy reference. Alerts come from follows."
     : native
       ? isLive
         ? pinned
-          ? "Following the score on your lock screen and home-screen widget. Up to 3 games at once."
-          : "Follow the score live on your lock screen and home-screen widget. Up to 3 games at once."
-        : "Pinning keeps it in Watching and tracks it live on your lock screen when it starts. Up to 3 games at once."
+          ? "Tracking this game live. Lock your phone to see it. Tap above to stop, or manage from Watching."
+          : "Puts the live score on your lock screen and home-screen widget. Lock your phone to see it. Up to 3 at once."
+        : "Pinning keeps it in Watching and tracks it live on your lock screen when it starts. Up to 3 at once."
       : "Pinning keeps this game in Watching. Alerts come from follows.";
 
   return (
@@ -88,13 +88,14 @@ export function PinControls({
           onClick={onPin}
           aria-label={`Pin ${subject} to Watching`}
           aria-pressed={false}
-          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",
             color: "var(--cream)",
             border: "1px solid var(--ink)",
           }}
         >
+          {native && isLive ? <LockScreenGlyph /> : null}
           {unpinnedLabel}
         </button>
       )}
@@ -115,5 +116,16 @@ export function PinControls({
         ) : null}
       </p>
     </div>
+  );
+}
+
+// Small lock-screen / phone glyph, so "Add to lock screen" reads as a
+// lock-screen action, not just text. currentColor inherits the button ink.
+function LockScreenGlyph() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="6" y="2" width="12" height="20" rx="3" stroke="currentColor" strokeWidth="2" />
+      <line x1="9.5" y1="6" x2="14.5" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }

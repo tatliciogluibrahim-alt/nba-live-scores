@@ -101,7 +101,7 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
             letterSpacing: "0.04em",
           }}
         >
-          Tracking {Math.min(liveCount, 3)} of 3 on your lock screen
+          On your lock screen: {Math.min(liveCount, 3)} of 3 · unpin a game below to stop
         </p>
       ) : null}
 
