@@ -8,6 +8,7 @@ import { useFollows, useNoSpoilers } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveTodayHeadline } from "./today-data";
 import { FrontPageLead } from "./FrontPageLead";
+import { LiveTrackHint } from "./LiveTrackHint";
 import { RestingState } from "./RestingState";
 import { BriefPromptCard } from "./BriefPromptCard";
 import { useSetupStep } from "./setup/useSetupStep";
@@ -156,6 +157,10 @@ export function TodayClient() {
       ) : lead ? (
         <FrontPageLead lead={lead} />
       ) : null}
+
+      {/* Contextual one-time hint — teach lock-screen tracking the first
+          time a followed game is live (native only, dismissible). */}
+      <LiveTrackHint active={Boolean(lead?.live)} />
 
       {/* Calm Ending — series wrapped or season wrapped. Sits above the
           install/notifications cards so the user sees the acknowledgment
