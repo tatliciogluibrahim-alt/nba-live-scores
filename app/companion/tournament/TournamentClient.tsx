@@ -19,6 +19,7 @@ import {
 import { parseSeriesWins } from "../../nba/lib/series";
 import { WCGroups } from "./WCGroups";
 import { WCKnockout } from "./WCKnockout";
+import { WCBracket } from "./WCBracket";
 
 // /tournament/[id] — first detail page for tournament follows.
 // Replaces the Phase 1 fallback that routed tournament chips to
@@ -630,7 +631,12 @@ function FIFAWorldCupBody({ tournamentId }: { tournamentId: string }) {
   return (
     <>
       <WCGroups tournamentId={tournamentId} mode="preview" />
-      <WCKnockout />
+      <div className="mt-8">
+        <WCBracket />
+      </div>
+      <div className="mt-8">
+        <WCKnockout />
+      </div>
     </>
   );
 }
