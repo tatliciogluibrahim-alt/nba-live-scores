@@ -252,3 +252,40 @@ function placeholderR32(n: number, _followedCodes: Set<string>): BracketMatch {
     href: null,
   };
 }
+
+export type BracketRound = {
+  key: KnockoutRoundKey;
+  label: string;
+  matches: BracketMatch[]; // in match-number order
+  dateLabel: string | null; // earliest known date in the round
+};
+
+// Round-ordered view of the bracket for the swipe-through-rounds page.
+// Reuses buildWCBracket (the verified tree) and flattens to rounds.
+export function buildBracketRounds(
+  fixtures: WCScheduleFixture[],
+  followedCodes: Set<string>
+): { rounds: BracketRound[]; resolved: boolean; hasFollowed: boolean } {
+  const b = buildWCBracket(fixtures, followedCodes);
+  const byNumber = (a: BracketMatch, z: BracketMatch) => a.number - z.number;
+  const r32 = b.quarters.flatMap((q) => q.r32).sort(byNumber);
+  const r16 = b.quarters.flatMap((q) => q.r16).sort(byNumber);
+  const qf = b.quarters
+    .map((q) => q.qf)
+    .filter((m): m is BracketMatch => m != null)
+    .sort(byNumber);
+  const final = b.final ? [b.final] : [];
+  const firstDate = (ms: BracketMatch[]) =>
+    ms.find((m) => m.dateLabel)?.dateLabel ?? null;
+
+  const rounds: BracketRound[] = [
+    { key: "r32", label: "Round of 32", matches: r32, dateLabel: firstDate(r32) },
+    { key: "r16", label: "Round of 16", matches: r16, dateLabel: firstDate(r16) },
+    { key: "qf", label: "Quarterfinals", matches: qf, dateLabel: firstDate(qf) },
+    { key: "sf", label: "Semifinals", matches: b.semis, dateLabel: firstDate(b.semis) },
+    { key: "final", label: "Final", matches: final, dateLabel: firstDate(final) },
+  ];
+
+  const hasFollowed = b.quarters.some((q) => q.hasFollowed);
+  return { rounds, resolved: b.resolved, hasFollowed };
+}

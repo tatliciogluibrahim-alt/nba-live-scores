@@ -105,6 +105,13 @@ export function FollowingDashboard() {
   // series detail), but the card signals it won't drive new alerts.
   const wrappedSeries = useWrappedSeries();
   const liveFollows = useLiveFollows();
+  // Surface the bracket entry only for people who follow the World Cup
+  // (a country or the tournament). It's a destination link, not IA.
+  const followsWC = follows.some(
+    (f) =>
+      f.kind === "country" ||
+      (f.kind === "tournament" && f.id.startsWith("fifa-world-cup"))
+  );
 
   const cards: FollowCardData[] = follows.map((f) => {
     const identity = resolveFollowIdentity(f);
@@ -235,6 +242,35 @@ export function FollowingDashboard() {
         >
           Nothing yet. Add a team, country, or series below.
         </p>
+      ) : null}
+
+      {/* World Cup bracket entry — a destination link, shown only to WC
+          followers, kept out of the core nav. */}
+      {followsWC ? (
+        <Link
+          href="/tournament/fifa-world-cup-2026/bracket"
+          aria-label="View the World Cup bracket"
+          className="mt-5 flex items-center justify-between gap-3 rounded-[16px] border px-4 py-3.5 transition active:scale-[0.99]"
+          style={{ background: "var(--paper)", borderColor: "var(--line)", borderLeft: "3px solid var(--wc)" }}
+        >
+          <span className="flex min-w-0 flex-col">
+            <span
+              className="text-[10px] uppercase"
+              style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--wc)" }}
+            >
+              World Cup
+            </span>
+            <span className="mt-0.5 text-[14px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
+              View the bracket
+            </span>
+            <span className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+              See who&apos;s through, round by round
+            </span>
+          </span>
+          <span aria-hidden style={{ color: "var(--mute-1)", fontSize: 16 }}>
+            →
+          </span>
+        </Link>
       ) : null}
 
       {/* Circle actions — Add is the primary action; Share + Sync are
