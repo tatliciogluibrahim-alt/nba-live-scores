@@ -12,6 +12,7 @@ import { NoSpoilersProCard } from "./NoSpoilersProCard";
 import { BriefSettingsRow } from "./BriefSettingsRow";
 import { NotificationPreview } from "./NotificationPreview";
 import { PushSubscriptionPanel } from "./PushSubscriptionPanel";
+import { LockScreenWidgetsRow } from "./LockScreenWidgetsRow";
 import { ThemeSelector } from "./ThemeSelector";
 
 // Alerts & Notifications — single calm settings-style screen.
@@ -59,6 +60,7 @@ export function SettingsClient() {
         <PushSubscriptionPanel />
         <BriefSettingsRow />
         <NotificationPreview />
+        <LockScreenWidgetsRow />
         <ThemeSelector />
         {/* No-Spoilers Pro teaser sits at the bottom — it's a "coming
             later" note, not an action, so it doesn't compete with the

@@ -5,6 +5,7 @@ import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PinnedCard, StalePinCard } from "./PinnedCard";
 import { LiveRoom } from "./LiveRoom";
+import { useIsNative } from "../dev/native-detect";
 import type { PinnedItem, WatchingPayload } from "./watching-data";
 
 // List of pinned games. Live first, then upcoming, then final. Stale pins
@@ -56,6 +57,7 @@ function buildWatchingSummary(
 export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
   const { items, stalePins, liveCount } = payload;
   const hasLivePin = liveCount > 0;
+  const native = useIsNative();
   // Live Room mode: ≥2 pins live. The dock takes the top of the screen
   // and the regular roster below shows the non-live pins so the user
   // can still see what's queued / wrapped.
@@ -85,6 +87,23 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
         ) : null}
         <span>{buildWatchingSummary(items, stalePins.length)}</span>
       </p>
+
+      {/* Live-tracking status — only on native (lock screen exists there)
+          and only when something's live. Caps the display at 3 since the
+          app tracks at most 3 Live Activities at once. */}
+      {native && hasLivePin ? (
+        <p
+          className="mb-4 -mt-2 text-[12px]"
+          style={{
+            color: "var(--mute-1)",
+            fontWeight: 600,
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          Tracking {Math.min(liveCount, 3)} of 3 on your lock screen
+        </p>
+      ) : null}
 
       {/* ── Live Room dock (Stage 15E) — only when ≥2 live pins ─────── */}
       {liveRoomMode ? <LiveRoom payload={payload} /> : null}

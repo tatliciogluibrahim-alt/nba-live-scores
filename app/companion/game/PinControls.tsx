@@ -1,12 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useIsNative } from "../dev/native-detect";
 
-// Shared pin / unpin control. Used by both NBA Live Companion and the
-// WC game shell. State-correct: an unpinned game offers just the pin
-// action — "Open Watching" doesn't appear yet because pinning is the
-// step the page is asking the user to take. Once the game is pinned,
-// "Open Watching" appears as a quiet secondary link.
+// Shared pin / unpin control. The single gesture that, on the native app,
+// also live-tracks a game on the lock screen + home-screen widget. The
+// label and footnote are state-aware so the gesture says what it does:
+//
+//   native + live, not pinned   → "Track on lock screen"
+//   native + live, pinned       → "Live on your lock screen" (tap to stop)
+//   native + upcoming           → "Pin to Watching" (tracks live when it starts)
+//   web (no lock screen/widget) → plain "Pin to Watching", no lock-screen copy
+//   final                       → reference-only copy (can't be live-tracked)
+//
+// Web-gated copy matters: lock-screen Live Activities + widgets exist only
+// in the installed app, so the web/PWA must not claim them.
 
 export function PinControls({
   pinned,
@@ -21,17 +29,30 @@ export function PinControls({
   onUnpin: () => void;
   subject: string;
   className?: string;
-  /** Lifecycle of the game this control pins. For a FINAL game the
-   *  "live-tracks it on your lock screen when it starts" line is false —
-   *  the game already started and ended — so we switch to reference copy.
-   *  Omitted (undefined) keeps the default forward-looking copy. */
+  /** Lifecycle of the game this control pins. Drives the live-tracking
+   *  copy. Omitted keeps the calm default. */
   gameStatus?: "upcoming" | "live" | "final";
 }) {
-  // Final games can't be live-tracked; pinning them is for reference.
-  const footnote =
-    gameStatus === "final"
-      ? "Pinning keeps this game in Watching for easy reference. Alerts come from follows."
-      : "Pinning keeps this game in Watching and live-tracks it on your lock screen when it starts (up to 3 at once). Alerts come from follows.";
+  const native = useIsNative();
+  const isLive = gameStatus === "live";
+  const isFinal = gameStatus === "final";
+
+  // Button labels — only become lock-screen language on native live games,
+  // so the word "Pin" never clashes with the separate Following concept.
+  const pinnedLabel =
+    native && isLive ? "Live on your lock screen" : "Pinned · Tap to unpin";
+  const unpinnedLabel =
+    native && isLive ? "Track on lock screen" : "Pin to Watching";
+
+  const footnote = isFinal
+    ? "Pinning keeps this game in Watching for easy reference. Alerts come from follows."
+    : native
+      ? isLive
+        ? pinned
+          ? "Following the score on your lock screen and home-screen widget. Up to 3 games at once."
+          : "Follow the score live on your lock screen and home-screen widget. Up to 3 games at once."
+        : "Pinning keeps it in Watching and tracks it live on your lock screen when it starts. Up to 3 games at once."
+      : "Pinning keeps this game in Watching. Alerts come from follows.";
 
   return (
     <div className={className}>
@@ -54,12 +75,12 @@ export function PinControls({
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               fontWeight: 700,
-              color: "var(--mute-1)",
+              color: native && isLive ? "var(--live)" : "var(--mute-1)",
             }}
           >
-            ✓
+            {native && isLive ? "●" : "✓"}
           </span>
-          Pinned · Tap to unpin
+          {pinnedLabel}
         </button>
       ) : (
         <button
@@ -74,7 +95,7 @@ export function PinControls({
             border: "1px solid var(--ink)",
           }}
         >
-          Pin to Watching
+          {unpinnedLabel}
         </button>
       )}
 

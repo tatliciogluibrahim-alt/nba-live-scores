@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useFollows, useUserPrefs } from "../../../providers";
 import { usePushSubscription } from "../../../push/use-push-subscription";
+import { useIsNative } from "../../../dev/native-detect";
 import type { AlertPreset } from "../../../state/types";
 import { PRESETS } from "../../../state/types";
 
@@ -35,6 +36,7 @@ export function EnableStep() {
   const { prefs, dismissNotifPrompt, setDefaultAlertTier } = useUserPrefs();
   const { follows } = useFollows();
   const { subscribe } = usePushSubscription();
+  const native = useIsNative();
   const [busy, setBusy] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   // Local tier state mirrors prefs so the user can preview the default
@@ -192,6 +194,14 @@ export function EnableStep() {
           >
             {PRESETS[tier].detail}
           </p>
+          {native ? (
+            <p
+              className="mt-1.5 text-[11px] leading-snug"
+              style={{ color: "var(--mute-2)", fontWeight: 500 }}
+            >
+              Tip: pin live games to follow the score on your lock screen.
+            </p>
+          ) : null}
 
           <div className="mt-3 flex items-center gap-2">
             <button

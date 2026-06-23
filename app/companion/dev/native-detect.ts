@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 // Utility for detecting whether the PWA is currently running inside
 // the Capacitor native wrapper (iOS, eventually Android) versus a
 // regular browser. Used to suppress PWA-only affordances like the
@@ -49,4 +51,18 @@ export function isCapacitorNative(): boolean {
 
   cachedIsNative = false;
   return false;
+}
+
+const NATIVE_NOOP_SUBSCRIBE = () => () => {};
+
+/** Hydration-safe React hook for native-gated rendering. Returns false on
+ *  the server and during hydration, then the real native value on the
+ *  client. Use this (not `isCapacitorNative()` directly) when render output
+ *  differs by platform, so the client value can't mismatch the server HTML. */
+export function useIsNative(): boolean {
+  return useSyncExternalStore(
+    NATIVE_NOOP_SUBSCRIBE,
+    () => isCapacitorNative(),
+    () => false
+  );
 }
