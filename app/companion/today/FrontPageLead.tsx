@@ -65,7 +65,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
   return (
     <section className="mb-5">
       <p
-        className="mb-2 flex items-center gap-1.5 text-[12.5px] uppercase"
+        className="no-noise-lead-rise mb-2 flex items-center gap-1.5 text-[12.5px] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
@@ -87,6 +87,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
           700, not the handoff mockup's heavier Archivo Black 900. Reads
           editorial-bold without shouting. */}
       <h2
+        className="no-noise-lead-rise"
         style={{
           fontFamily: "var(--font-display)",
           fontWeight: 700,
@@ -95,6 +96,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
           letterSpacing: "-0.02em",
           color: "var(--ink)",
           textWrap: "pretty",
+          animationDelay: "60ms",
         }}
       >
         {lead.headline}
@@ -104,11 +106,12 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
         <Link
           href={deck.href}
           aria-label={`Open ${deck.matchup}`}
-          className="mt-5 flex items-center gap-3 rounded-[14px] border px-4 py-3.5 transition active:scale-[0.99]"
+          className="no-noise-lead-rise mt-5 flex items-center gap-3 rounded-[14px] border px-4 py-3.5 transition active:scale-[0.99]"
           style={{
             background: lead.live ? "var(--paper)" : "var(--cream-2)",
             borderColor: lead.live ? deck.accent : "var(--line)",
             borderLeft: `3px solid ${deck.accent}`,
+            animationDelay: "120ms",
           }}
         >
           {chips ? (
@@ -194,8 +197,8 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
 
       {lead.support ? (
         <p
-          className="mt-3.5 text-[14px] leading-snug"
-          style={{ color: "var(--ink-2)", fontWeight: 400 }}
+          className="no-noise-lead-rise mt-3.5 text-[14px] leading-snug"
+          style={{ color: "var(--ink-2)", fontWeight: 400, animationDelay: "170ms" }}
         >
           {lead.support}
         </p>

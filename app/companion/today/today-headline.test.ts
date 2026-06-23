@@ -66,7 +66,7 @@ describe("deriveTodayHeadline", () => {
       })
     );
     // NBA games skew evening → "tonight". Eyebrow carries the live state.
-    expect(r.headline).toBe("One game live.");
+    expect(r.headline).toBe("OKC vs SA.");
     expect(r.eyebrow.label).toBe("Live now");
     expect(r.eyebrow.tone).toBe("nba");
     expect(r.deck?.matchup).toBe("OKC vs SA");
@@ -87,7 +87,7 @@ describe("deriveTodayHeadline", () => {
 
   it("singular for one upcoming game", () => {
     const r = deriveTodayHeadline(base({ upNext: [upNextItem()] }));
-    expect(r.headline).toBe("One game tonight.");
+    expect(r.headline).toBe("OKC vs SA tonight.");
   });
 
   it("counts only TODAY's games, not a future 'Game 7 if necessary'", () => {
@@ -105,7 +105,7 @@ describe("deriveTodayHeadline", () => {
         ],
       })
     );
-    expect(r.headline).toBe("One game tonight.");
+    expect(r.headline).toBe("OKC vs SA tonight.");
   });
 
   it("leads with the soonest day when nothing is on today", () => {
@@ -122,7 +122,7 @@ describe("deriveTodayHeadline", () => {
         ],
       })
     );
-    expect(r.headline).toBe("One game Saturday.");
+    expect(r.headline).toBe("OKC vs SA Saturday.");
   });
 
   it("surfaces the series stake of an upcoming game as the support line", () => {
@@ -145,7 +145,7 @@ describe("deriveTodayHeadline", () => {
         ],
       })
     );
-    expect(r.headline).toBe("One match today.");
+    expect(r.headline).toBe("OKC vs SA today.");
     expect(r.eyebrow.tone).toBe("wc");
     // Summer Soccer fixtures carry no series stake.
     expect(r.support).toBeUndefined();

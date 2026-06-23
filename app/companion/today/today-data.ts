@@ -1710,16 +1710,24 @@ function whenWord(tone: "nba" | "wc"): string {
   return tone === "wc" ? "today" : "tonight";
 }
 
-// Sport-aware noun: soccer surfaces say "match", basketball "game".
-// Keeps the same screen from mixing "game" and "match" for the same sport.
-function sportNoun(tone: "nba" | "wc"): string {
-  return tone === "wc" ? "match" : "game";
-}
-
 // Plural form — "matches" / "games". "match" pluralizes with -es, so a
 // blunt `${noun}s` produced the "matchs" typo.
 function sportNounPlural(tone: "nba" | "wc"): string {
   return tone === "wc" ? "matches" : "games";
+}
+
+// "AUT vs ARG" -> "Austria vs Argentina" for the lead headline. Resolves
+// country codes to names (Summer Soccer); NBA codes pass through (no name
+// table, and not the live season). Spoiler-safe — it names the fixture,
+// never a score, so it's the same exposure as the deck below it.
+function editorialMatchup(matchup: string, tone: "nba" | "wc"): string {
+  if (tone !== "wc") return matchup;
+  const parts = matchup.split(/\s+vs\s+/i);
+  if (parts.length !== 2) return matchup;
+  const [a, b] = parts.map(
+    (p) => getCountry(p.trim().toUpperCase())?.name ?? p.trim()
+  );
+  return `${a} vs ${b}`;
 }
 
 export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
@@ -1735,12 +1743,13 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
   // count is the live slate (pinned-live / live hero), not the day's slate.
   if (heroLive || payload.pinnedSummary.live > 0) {
     const lc = Math.max(payload.pinnedSummary.live, heroLive ? 1 : 0, 1);
-    const noun = sportNoun(heroTone);
     return {
       eyebrow: { label: "Live now", tone: heroTone },
+      // One live game leads with the matchup itself (the eyebrow + pulse
+      // already say it's live); several fall back to the live count.
       headline:
-        lc === 1
-          ? `One ${noun} live.`
+        lc === 1 && deck
+          ? `${editorialMatchup(deck.matchup, heroTone)}.`
           : `${spellCount(lc)} ${sportNounPlural(heroTone)} live.`,
       // Support line: a series stake ("OKC leads series 3-2") when the
       // lead is a playoff game, else the hero's context line. For a busy
@@ -1763,12 +1772,13 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
       const n = todayItems.length;
       const tone: "nba" | "wc" = todayItems[0].source === "wc" ? "wc" : "nba";
       const when = whenWord(tone);
-      const noun = sportNoun(tone);
       return {
         eyebrow: { label: "Up next", tone },
+        // One game on the slate leads with the matchup; several keep the
+        // count so the headline stays honest about the day's shape.
         headline:
-          n === 1
-            ? `One ${noun} ${when}.`
+          n === 1 && deck
+            ? `${editorialMatchup(deck.matchup, tone)} ${when}.`
             : `${spellCount(n)} ${sportNounPlural(tone)} ${when}.`,
         support: lead?.stake,
         deck,
@@ -1782,12 +1792,11 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
     const day = lead0.dayWord;
     const n = payload.upNext.filter((u) => u.dayWord === day).length;
     const tone: "nba" | "wc" = lead0.source === "wc" ? "wc" : "nba";
-    const noun = sportNoun(tone);
     return {
       eyebrow: { label: "Up next", tone },
       headline:
-        n === 1
-          ? `One ${noun} ${day}.`
+        n === 1 && deck
+          ? `${editorialMatchup(deck.matchup, tone)} ${day}.`
           : `${spellCount(n)} ${sportNounPlural(tone)} ${day}.`,
       support: lead?.stake,
       deck,

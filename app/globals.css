@@ -292,6 +292,32 @@ a {
   }
 }
 
+/* Front Page lead reveal — when Today opens, the lead settles in: a calm
+   rise + fade on an ease-out-quint curve, staggered (eyebrow → headline →
+   deck) via per-element animation-delay. `both` holds the start frame
+   through the delay so nothing flashes before its turn. Fires once on
+   mount; data-poll re-renders reuse the same nodes and don't re-trigger. */
+@keyframes no-noise-lead-rise {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.no-noise-lead-rise {
+  animation: no-noise-lead-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .no-noise-lead-rise {
+    animation: none;
+  }
+}
+
 /* Loading-shell pulse — subtle opacity breath on skeleton rectangles so
    slow-network states feel alive rather than broken. Respects
    prefers-reduced-motion. */
