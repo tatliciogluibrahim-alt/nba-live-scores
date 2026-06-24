@@ -76,6 +76,16 @@ async function fetchWC(): Promise<WCGameLite[] | null> {
   }
 }
 
+// Widget live-status label. Drops the ticking minute / clock ("58'",
+// "Q3 4:21") to a plain "Live" — home-screen + lock-screen widgets can't
+// refresh per-minute, so a precise clock always lags (and visibly trails
+// the real-time Live Activity beside it). Word statuses that don't tick
+// (HT, Delayed, Penalties) are kept; only digit-bearing clocks collapse.
+function widgetLiveStatus(statusText: string): string {
+  if (!statusText) return "Live";
+  return /\d/.test(statusText) ? "Live" : statusText;
+}
+
 function itemToUpcoming(item: UpNextItem): WidgetUpcoming {
   const sport: WidgetUpcoming["sport"] = item.source === "wc" ? "wc" : "nba";
   return {
@@ -142,7 +152,7 @@ function buildLiveEntries(
       sport: "nba",
       away: { code: g.away.abbreviation, score: g.away.score },
       home: { code: g.home.abbreviation, score: g.home.score },
-      statusLine: g.statusText || "Live",
+      statusLine: widgetLiveStatus(g.statusText),
       redacted: hideFor(a, h, "nba"),
       accentHex: ACCENT_NBA,
       href: `/game/${g.id}`,
@@ -158,7 +168,7 @@ function buildLiveEntries(
       sport: "wc",
       away: { code: g.away.abbreviation, score: g.away.score },
       home: { code: g.home.abbreviation, score: g.home.score },
-      statusLine: g.statusText || "Live",
+      statusLine: widgetLiveStatus(g.statusText),
       redacted: hideFor(a, h, "wc"),
       accentHex: ACCENT_WC,
       href: `/game/${g.id}`,
