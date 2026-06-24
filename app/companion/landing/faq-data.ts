@@ -13,7 +13,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     q: "Does it work on iPhone?",
-    a: "Yes. Open the site in Safari, tap Share, then Add to Home Screen. Push notifications work after install. That's an Apple rule for web apps, not ours.",
+    a: "Yes. Get it from the App Store in one tap, or add the web app to your home screen from Safari (tap Share, then Add to Home Screen). Push notifications work either way.",
   },
   {
     q: "What sports are covered?",

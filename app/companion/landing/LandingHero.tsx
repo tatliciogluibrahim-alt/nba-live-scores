@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { BrandMark } from "../frame/BrandMark";
 import { APP_STORE_URL } from "../../lib/app-store";
@@ -59,29 +60,17 @@ export function LandingHero() {
           about.
         </p>
 
-        {/* CTAs — lead with the App Store (one-tap install on iPhone),
-            then the browser/PWA path for Android + desktop, then beta. */}
+        {/* CTAs — on a DESKTOP browser the App Store button is a dead end
+            (you can't tap it from your phone), so the primary action here is
+            the browser app; the App Store path becomes the QR card below. */}
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          <a
-            href={APP_STORE_URL}
-            target="_blank"
-            rel="noopener"
+          <Link
+            href="/app"
             className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[14px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",
               border: "1px solid var(--ink)",
-            }}
-          >
-            Download on the App Store
-          </a>
-          <Link
-            href="/app"
-            className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[14px] font-semibold transition active:scale-[0.98]"
-            style={{
-              background: "transparent",
-              color: "var(--ink)",
-              border: "1px solid var(--line)",
             }}
           >
             Open in browser
@@ -99,12 +88,47 @@ export function LandingHero() {
           </Link>
         </div>
 
+        {/* QR bridge — a desktop visitor scans to land the iPhone app on
+            their phone, where the lock-screen alerts actually live. */}
+        <div
+          className="mt-6 flex items-center gap-4 rounded-[16px] border p-4"
+          style={{ background: "var(--paper)", borderColor: "var(--line)", maxWidth: 380 }}
+        >
+          <img
+            src="/app-store-qr.svg"
+            alt="Scan to download No Noise Scores on the App Store"
+            width={88}
+            height={88}
+            style={{ borderRadius: 10, display: "block" }}
+          />
+          <div className="min-w-0">
+            <p
+              className="text-[10px] uppercase"
+              style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--mute-1)" }}
+            >
+              On your iPhone
+            </p>
+            <p className="mt-0.5 text-[14px] leading-snug" style={{ color: "var(--ink)", fontWeight: 600 }}>
+              Scan to get it on the App Store.
+            </p>
+            <a
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener"
+              className="mt-1 inline-block text-[12px]"
+              style={{ color: "var(--mute-1)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}
+            >
+              Or open the App Store →
+            </a>
+          </div>
+        </div>
+
         <p
           className="mt-5 text-[13px] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
-          On iPhone, get it from the App Store. On Android or desktop, add
-          it to your home screen for instant access to your sports circle.
+          On iPhone, scan the code to install. On Android or desktop, open it
+          in any browser. Your sports circle syncs with a code.
         </p>
 
         {/* Tiny moments line */}

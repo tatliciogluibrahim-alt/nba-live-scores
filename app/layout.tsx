@@ -89,6 +89,12 @@ export const metadata: Metadata = {
     title: "No Noise Scores",
     statusBarStyle: "default",
   },
+  // Apple Smart App Banner — Safari shows a "Get / Open" banner linking
+  // straight to the App Store listing (and opens the app if installed).
+  // Also gives the listing a crawlable signal from the site.
+  itunes: {
+    appId: "6774968763",
+  },
   formatDetection: {
     telephone: false,
   },

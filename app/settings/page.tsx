@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function SettingsPage() {
   return (
-    <CompanionFrame>
+    <CompanionFrame desktopNav="detail">
       <CrumbBar
         backHref="/following"
         backLabel="Following"
