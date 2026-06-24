@@ -26,6 +26,7 @@ function base(over: Partial<TodayPayload> = {}): TodayPayload {
       primary: null,
     },
     knockoutMoments: [],
+    scoreboard: [],
     ...over,
   };
 }

@@ -34,6 +34,7 @@ const EMPTY: TodayPayload = {
     primary: null,
   },
   knockoutMoments: [],
+    scoreboard: [],
 };
 
 // Polling cadence per STRATEGY.md: 10s when a live game is on the surface,

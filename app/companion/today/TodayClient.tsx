@@ -9,6 +9,7 @@ import { useTodayData } from "./use-today-data";
 import { deriveTodayHeadline } from "./today-data";
 import { FrontPageLead } from "./FrontPageLead";
 import { LiveTrackHint } from "./LiveTrackHint";
+import { DesktopScoreboard } from "./DesktopScoreboard";
 import { RestingState } from "./RestingState";
 import { BriefPromptCard } from "./BriefPromptCard";
 import { useSetupStep } from "./setup/useSetupStep";
@@ -60,6 +61,11 @@ export function TodayClient() {
   // the conversational Daily Brief sentence as the editorial top of the
   // screen, and absorbs the live hero (the deck IS the lead game).
   const lead = hydrated ? deriveTodayHeadline(payload) : null;
+  // Desktop scoreboard: the dense at-a-glance grid. Replaces the single
+  // calm lead on desktop when there are games to show; mobile + desktop-
+  // quiet keep the lead.
+  const scoreboard = hydrated ? payload.scoreboard : [];
+  const hasScoreboard = scoreboard.length > 0;
   const setup = useSetupStep();
 
   return (
@@ -152,15 +158,26 @@ export function TodayClient() {
           day (nothing live, games coming up) the calm "Quiet for now."
           state (design C) takes over instead, folding in the Next-up
           list. */}
-      {hydrated && payload.restingState ? (
-        <RestingState items={payload.upNext} />
-      ) : lead ? (
-        <FrontPageLead lead={lead} />
+      {/* Desktop scoreboard — the at-a-glance grid that fills the width.
+          Desktop + games only; the calm single lead below stays the mobile
+          (and desktop-quiet) treatment. */}
+      {hasScoreboard ? (
+        <div className="hidden md:block">
+          <DesktopScoreboard tiles={scoreboard} />
+        </div>
       ) : null}
 
-      {/* Contextual one-time hint — teach lock-screen tracking the first
-          time a followed game is live (native only, dismissible). */}
-      <LiveTrackHint active={Boolean(lead?.live)} />
+      <div className={hasScoreboard ? "md:hidden" : undefined}>
+        {hydrated && payload.restingState ? (
+          <RestingState items={payload.upNext} />
+        ) : lead ? (
+          <FrontPageLead lead={lead} />
+        ) : null}
+
+        {/* Contextual one-time hint — teach lock-screen tracking the first
+            time a followed game is live (native only, dismissible). */}
+        <LiveTrackHint active={Boolean(lead?.live)} />
+      </div>
 
       {/* Calm Ending — series wrapped or season wrapped. Sits above the
           install/notifications cards so the user sees the acknowledgment

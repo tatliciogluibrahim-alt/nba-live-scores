@@ -312,6 +312,30 @@ export type TodayPayload = {
    *  whose knockout match just finished. Usually empty; at most one per
    *  followed country. Each self-suppresses once dismissed (view layer). */
   knockoutMoments: KnockoutMomentItem[];
+  /** Desktop multi-game scoreboard: the user's followed games that are
+   *  live now or coming today, score-forward. Empty on mobile-irrelevant
+   *  quiet days. Desktop renders these as a dense grid; mobile ignores it
+   *  in favor of the single calm lead. */
+  scoreboard: ScoreboardTile[];
+};
+
+/** One tile in the desktop scoreboard grid. Score-forward; null scores for
+ *  upcoming games. */
+export type ScoreboardTile = {
+  id: string;
+  source: TodaySource;
+  awayCode: string;
+  homeCode: string;
+  awayScore: number | null;
+  homeScore: number | null;
+  status: "live" | "upcoming";
+  /** "67'" / "Q3 · 4:21" / "8:00 PM". */
+  statusLine: string;
+  /** "Summer Soccer · Group L" / "NBA · Game 6". */
+  stageLine: string;
+  href: string;
+  /** Leader emphasis for live tiles; null on tie / upcoming. */
+  lead: "away" | "home" | null;
 };
 
 // ── Pure helpers ──────────────────────────────────────────────────────
@@ -1461,6 +1485,100 @@ function buildPinnedSummary(
 
 // ── Top-level builder ─────────────────────────────────────────────────
 
+// The desktop scoreboard: the user's followed games that are live now or
+// coming today, score-forward. Live tiles come from the raw feeds (real
+// scores); upcoming-today tiles reuse the already-built Up Next list.
+// "Followed" = pinned, a team/country in the game, or a covering tournament.
+function buildScoreboard(
+  nba: NBAGame[],
+  wc: WCGameLite[],
+  upNext: UpNextItem[],
+  follows: Follow[],
+  pinned: PinnedGame[]
+): ScoreboardTile[] {
+  const pinnedIds = new Set(pinned.map((p) => p.gameId));
+  const codes = new Set<string>();
+  let wcTour = false;
+  let nbaTour = false;
+  for (const f of follows) {
+    if (f.kind === "team" || f.kind === "country") codes.add(f.id.toUpperCase());
+    else if (f.kind === "series")
+      f.id.split("-").forEach((c) => codes.add(c.toUpperCase()));
+    else if (f.kind === "tournament") {
+      if (getTournament(f.id)?.accent === "var(--wc)") wcTour = true;
+      else nbaTour = true;
+    }
+  }
+  const covered = (away: string, home: string, sport: "nba" | "wc", id: string) =>
+    pinnedIds.has(id) ||
+    (sport === "wc" ? wcTour : nbaTour) ||
+    codes.has(away.toUpperCase()) ||
+    codes.has(home.toUpperCase());
+  const leadOf = (a: number, h: number): "away" | "home" | null =>
+    a > h ? "away" : h > a ? "home" : null;
+
+  const tiles: ScoreboardTile[] = [];
+
+  for (const g of nba) {
+    if (g.status !== "live") continue;
+    if (!covered(g.away.abbreviation, g.home.abbreviation, "nba", g.id)) continue;
+    tiles.push({
+      id: g.id,
+      source: "nba",
+      awayCode: g.away.abbreviation,
+      homeCode: g.home.abbreviation,
+      awayScore: g.away.score,
+      homeScore: g.home.score,
+      status: "live",
+      statusLine: g.statusText || "Live",
+      stageLine: g.gameContext ? `NBA · ${g.gameContext}` : "NBA",
+      href: `/game/${g.id}`,
+      lead: leadOf(g.away.score, g.home.score),
+    });
+  }
+  for (const g of wc) {
+    if (g.status !== "live") continue;
+    if (!covered(g.away.abbreviation, g.home.abbreviation, "wc", g.id)) continue;
+    tiles.push({
+      id: g.id,
+      source: "wc",
+      awayCode: g.away.abbreviation,
+      homeCode: g.home.abbreviation,
+      awayScore: g.away.score,
+      homeScore: g.home.score,
+      status: "live",
+      statusLine: g.statusText || "Live",
+      stageLine: g.stage ? `Summer Soccer · ${g.stage}` : "Summer Soccer",
+      href: `/game/${g.id}`,
+      lead: leadOf(g.away.score, g.home.score),
+    });
+  }
+  // Upcoming today — reuse Up Next (already has personal + isToday). Include
+  // tournament-covered upcoming games too, even when no team/country matches.
+  for (const u of upNext) {
+    if (!u.isToday) continue;
+    const sport = u.source === "wc" ? "wc" : "nba";
+    if (!(u.personal || (sport === "wc" ? wcTour : nbaTour))) continue;
+    const parts = u.headline.split(/\s+vs\s+/i);
+    if (parts.length !== 2) continue;
+    tiles.push({
+      id: u.id,
+      source: sport,
+      awayCode: parts[0].trim(),
+      homeCode: parts[1].trim(),
+      awayScore: null,
+      homeScore: null,
+      status: "upcoming",
+      statusLine: u.detail.split(" · ")[0] ?? u.detail,
+      stageLine: u.eyebrow,
+      href: u.href,
+      lead: null,
+    });
+  }
+
+  return tiles.slice(0, 12);
+}
+
 export function buildTodayPayload({
   nba,
   nbaRecent,
@@ -1544,6 +1662,7 @@ export function buildTodayPayload({
     closing,
     pinnedSummary,
     knockoutMoments: buildKnockoutMoments(wc, follows),
+    scoreboard: buildScoreboard(nba, wc, upNext, follows, pinned),
   };
 }
 
