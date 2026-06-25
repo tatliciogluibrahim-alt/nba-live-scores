@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 
 export const dynamic = "force-dynamic";
 
 const ESPN_TIMEOUT_MS = 8000;
 const WC_LEAGUE = "fifa.world";
+
+// Server-internal snapshot cache. Every surface (Today, Watching, the widget +
+// Live Activity sync, the scan-wc cron) hits this route on its own timer, so
+// without a shared snapshot they can show different live state at the same
+// instant. An ~8s TTL (below the 10s live poll) means they all read one
+// snapshot per window — consistency without perceptible lag. Server-only: the
+// HTTP response stays no-store so the client poll cadence is untouched.
+// Degrades to a live fetch when KV is absent (local dev).
+const LIVE_CACHE_KEY = "nns:wc:live:v1";
+const LIVE_CACHE_TTL_SECONDS = 8;
 
 // ── Group map (verified from ESPN API + standings, June 2026) ─────────────────
 const TEAM_GROUP: Record<string, string> = {
@@ -397,6 +408,29 @@ async function fetchForDate(date: string): Promise<ESPNEvent[]> {
 }
 
 export async function GET() {
+  const nowMs = Date.now();
+
+  // Serve a fresh-enough cached snapshot so all surfaces agree (see the cache
+  // note above). Falls through to a live fetch on a miss or when KV is absent.
+  try {
+    const cached = await kv.get<{ games: WCGame[]; fetchedAt: number }>(
+      LIVE_CACHE_KEY
+    );
+    if (cached && nowMs - cached.fetchedAt < LIVE_CACHE_TTL_SECONDS * 1000) {
+      return NextResponse.json(
+        {
+          games: cached.games,
+          count: cached.games.length,
+          updatedAt: new Date(cached.fetchedAt).toISOString(),
+          cached: true,
+        },
+        { headers: { "Cache-Control": "no-store, max-age=0" } }
+      );
+    }
+  } catch {
+    // KV unavailable (local dev) or read error — fall through to a live fetch.
+  }
+
   try {
     const dates = getDateWindow();
     const results = await Promise.allSettled(dates.map(fetchForDate));
@@ -457,6 +491,18 @@ export async function GET() {
     const games = Array.from(byId.values()).sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
+
+    // Cache the fresh snapshot for the next ~8s of callers. Best-effort: a KV
+    // write failure (or absence in dev) just means the next call fetches live.
+    try {
+      await kv.set(
+        LIVE_CACHE_KEY,
+        { games, fetchedAt: nowMs },
+        { ex: LIVE_CACHE_TTL_SECONDS }
+      );
+    } catch {
+      // No-op — degrade to per-request live fetches.
+    }
 
     return NextResponse.json(
       { games, count: games.length, updatedAt: new Date().toISOString() },

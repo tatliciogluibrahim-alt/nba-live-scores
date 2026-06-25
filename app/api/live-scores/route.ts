@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 
 export const dynamic = "force-dynamic";
+
+// Server-internal snapshot cache (see /api/world-cup for the rationale): an ~8s
+// TTL so every surface reads one snapshot per window. Server-only — the HTTP
+// response stays no-store. Degrades to a live fetch when KV is absent.
+const LIVE_CACHE_KEY = "nns:nba:live:v1";
+const LIVE_CACHE_TTL_SECONDS = 8;
 
 type ESPNTeam = {
   id?: string;
@@ -617,7 +624,36 @@ async function fetchGamesForDate(date: string) {
   }
 }
 
+type LiveScoresPayload = {
+  games: NormalizedGame[];
+  seriesGames: NormalizedGame[];
+  count: number;
+  seriesCount: number;
+  week: string[];
+  seriesWindow: { start?: string; end?: string };
+  failedDates: string[];
+  updatedAt: string;
+};
+
 export async function GET() {
+  const nowMs = Date.now();
+
+  // Serve a fresh-enough cached snapshot so all surfaces agree; fall through to
+  // a live fetch on a miss or when KV is absent.
+  try {
+    const cached = await kv.get<{ payload: LiveScoresPayload; fetchedAt: number }>(
+      LIVE_CACHE_KEY
+    );
+    if (cached && nowMs - cached.fetchedAt < LIVE_CACHE_TTL_SECONDS * 1000) {
+      return NextResponse.json(
+        { ...cached.payload, cached: true },
+        { headers: { "Cache-Control": "no-store, max-age=0" } }
+      );
+    }
+  } catch {
+    // KV unavailable (local dev) or read error — fall through to a live fetch.
+  }
+
   try {
     const weekDates = getWeekDates();
     const seriesDates = getSeriesDates();
@@ -683,22 +719,34 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(
-      {
-        games,
-        seriesGames,
-        count: games.length,
-        seriesCount: seriesGames.length,
-        week: weekDates,
-        seriesWindow: {
-          start: seriesDates[0],
-          end: seriesDates[seriesDates.length - 1],
-        },
-        failedDates,
-        updatedAt: new Date().toISOString(),
+    const payload: LiveScoresPayload = {
+      games,
+      seriesGames,
+      count: games.length,
+      seriesCount: seriesGames.length,
+      week: weekDates,
+      seriesWindow: {
+        start: seriesDates[0],
+        end: seriesDates[seriesDates.length - 1],
       },
-      { headers: { "Cache-Control": "no-store, max-age=0" } }
-    );
+      failedDates,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Cache the fresh snapshot for the next ~8s of callers. Best-effort.
+    try {
+      await kv.set(
+        LIVE_CACHE_KEY,
+        { payload, fetchedAt: nowMs },
+        { ex: LIVE_CACHE_TTL_SECONDS }
+      );
+    } catch {
+      // No-op — degrade to per-request live fetches.
+    }
+
+    return NextResponse.json(payload, {
+      headers: { "Cache-Control": "no-store, max-age=0" },
+    });
   } catch (error) {
     console.error("NBA live scores API error:", error);
 
