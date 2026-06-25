@@ -256,6 +256,31 @@ a {
   }
 }
 
+/* ── Landing hero "cut through" load sequence ──────────────────────────
+   The hushed noise settles in, then the message + CTAs + phone rise in
+   sequence — calm emerging from the firehose. Reduced-motion shows the
+   final state with no movement. */
+@keyframes nns-hero-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes nns-noise-settle {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.nns-hero-rise   { animation: nns-hero-rise 720ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.nns-hero-rise-2 { animation: nns-hero-rise 720ms cubic-bezier(0.16, 1, 0.3, 1) 110ms both; }
+.nns-hero-rise-3 { animation: nns-hero-rise 720ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both; }
+.nns-hero-rise-4 { animation: nns-hero-rise 820ms cubic-bezier(0.16, 1, 0.3, 1) 320ms both; }
+.nns-hero-noise  { animation: nns-noise-settle 1600ms ease 200ms both; }
+@media (prefers-reduced-motion: reduce) {
+  .nns-hero-rise,
+  .nns-hero-rise-2,
+  .nns-hero-rise-3,
+  .nns-hero-rise-4,
+  .nns-hero-noise { animation: none; opacity: 1; transform: none; }
+}
+
 /* Focus ring for No-Spoilers reveal controls. The Spoiler primitive is a
    blurred button — the browser default ring can sit beneath the blur or
    be hard to see. This class gives keyboard users a clear, calm outline

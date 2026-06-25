@@ -15,125 +15,168 @@ import { APP_STORE_URL } from "../../lib/app-store";
 
 export function LandingHero() {
   return (
-    <section
-      className="mx-auto grid gap-12 px-8 py-16 md:grid-cols-2 md:px-12 md:py-24 lg:gap-16 lg:px-20"
-      style={{ maxWidth: 1280 }}
-    >
-      {/* ── Left: positioning + CTAs ─────────────────────────────────── */}
-      <div className="flex flex-col justify-center">
-        {/* Brand lockup lives in the sticky LandingHeader now; the hero leads
-            straight with the H1 so the two wordmarks don't stack. */}
-        <h1
-          className="leading-[1.05]"
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: "clamp(40px, 5.5vw, 64px)",
-            fontWeight: 800,
-            letterSpacing: "-0.02em",
-            color: "var(--ink)",
-          }}
-        >
-          The calm sports companion.
-        </h1>
-        <p
-          className="mt-5 max-w-[42ch] text-[18px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          Follow what matters. Skip the rest. Scores, alerts, and recaps
-          for the teams, countries, series, and tournaments you care
-          about.
-        </p>
+    <section className="relative overflow-hidden">
+      {/* Signature: the firehose, hushed. The calm message cuts through it. */}
+      <NoiseField />
 
-        {/* CTAs — on a DESKTOP browser the App Store button is a dead end
-            (you can't tap it from your phone), so the primary action here is
-            the browser app; the App Store path becomes the QR card below. */}
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          <Link
-            href="/app"
-            className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[14px] font-semibold transition active:scale-[0.98]"
+      <div
+        className="relative mx-auto grid items-center gap-12 px-8 py-20 md:grid-cols-[1.05fr_0.95fr] md:px-12 md:py-28 lg:gap-16 lg:px-20"
+        style={{ maxWidth: 1280 }}
+      >
+        {/* ── Left: the statement ───────────────────────────────────────── */}
+        <div className="flex flex-col justify-center">
+          <p
+            className="nns-hero-rise mb-5 text-[11px] uppercase"
             style={{
-              background: "var(--ink)",
-              color: "var(--cream)",
-              border: "1px solid var(--ink)",
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.18em",
+              color: "var(--mute-1)",
+              fontWeight: 700,
             }}
           >
-            Open in browser
-          </Link>
-          <Link
-            href="/beta"
-            className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[14px] font-semibold transition active:scale-[0.98]"
+            NBA Playoffs · Summer Soccer 2026 · NFL soon
+          </p>
+
+          {/* The tagline as the hero statement; the type enacts it — "Skip the
+              rest." recedes into mute, the way the noise should. */}
+          <h1
+            className="nns-hero-rise-2"
             style={{
-              background: "transparent",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(46px, 7vw, 92px)",
+              fontWeight: 800,
+              letterSpacing: "-0.035em",
+              lineHeight: 0.96,
               color: "var(--ink)",
-              border: "1px solid var(--line)",
             }}
           >
-            Join the friend beta
-          </Link>
-        </div>
+            Follow what matters.
+            <br />
+            <span style={{ color: "var(--mute-2)" }}>Skip the rest.</span>
+          </h1>
 
-        {/* QR bridge — a desktop visitor scans to land the iPhone app on
-            their phone, where the lock-screen alerts actually live. */}
-        <div
-          className="mt-6 flex items-center gap-4 rounded-[16px] border p-4"
-          style={{ background: "var(--paper)", borderColor: "var(--line)", maxWidth: 380 }}
-        >
-          <img
-            src="/app-store-qr.svg"
-            alt="Scan to download No Noise Scores on the App Store"
-            width={88}
-            height={88}
-            style={{ borderRadius: 10, display: "block" }}
-          />
-          <div className="min-w-0">
-            <p
-              className="text-[10px] uppercase"
-              style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--mute-1)" }}
+          <p
+            className="nns-hero-rise-3 mt-6 max-w-[44ch] text-[18px] leading-snug"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            A calm sports companion for the moments that matter. Scores, alerts,
+            and recaps for the teams, countries, series, and tournaments you
+            care about.
+          </p>
+
+          {/* CTAs — on a DESKTOP browser the App Store button is a dead end
+              (you can't tap it from your phone), so the primary action here is
+              the browser app; the App Store path becomes the QR card below. */}
+          <div className="nns-hero-rise-3 mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="/app"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[14px] font-semibold transition active:scale-[0.98]"
+              style={{
+                background: "var(--ink)",
+                color: "var(--cream)",
+                border: "1px solid var(--ink)",
+              }}
             >
-              On your iPhone
-            </p>
-            <p className="mt-0.5 text-[14px] leading-snug" style={{ color: "var(--ink)", fontWeight: 600 }}>
-              Scan to get it on the App Store.
-            </p>
-            <a
-              href={APP_STORE_URL}
-              target="_blank"
-              rel="noopener"
-              className="mt-1 inline-block text-[12px]"
-              style={{ color: "var(--mute-1)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}
+              Open in browser
+            </Link>
+            <Link
+              href="/beta"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[14px] font-semibold transition active:scale-[0.98]"
+              style={{
+                background: "transparent",
+                color: "var(--ink)",
+                border: "1px solid var(--line)",
+              }}
             >
-              Or open the App Store →
-            </a>
+              Join the friend beta
+            </Link>
           </div>
+
+          {/* QR bridge — a desktop visitor scans to land the iPhone app on
+              their phone, where the lock-screen alerts actually live. */}
+          <div
+            className="nns-hero-rise-4 mt-6 flex items-center gap-4 rounded-[16px] border p-4"
+            style={{ background: "var(--paper)", borderColor: "var(--line)", maxWidth: 380 }}
+          >
+            <img
+              src="/app-store-qr.svg"
+              alt="Scan to download No Noise Scores on the App Store"
+              width={88}
+              height={88}
+              style={{ borderRadius: 10, display: "block" }}
+            />
+            <div className="min-w-0">
+              <p
+                className="text-[10px] uppercase"
+                style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--mute-1)" }}
+              >
+                On your iPhone
+              </p>
+              <p className="mt-0.5 text-[14px] leading-snug" style={{ color: "var(--ink)", fontWeight: 600 }}>
+                Scan to get it on the App Store.
+              </p>
+              <a
+                href={APP_STORE_URL}
+                target="_blank"
+                rel="noopener"
+                className="mt-1 inline-block text-[12px]"
+                style={{ color: "var(--mute-1)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}
+              >
+                Or open the App Store →
+              </a>
+            </div>
+          </div>
+
+          <p
+            className="nns-hero-rise-4 mt-5 text-[13px] leading-snug"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            On iPhone, scan the code to install. On Android or desktop, open it
+            in any browser. Your sports circle syncs with a code.
+          </p>
         </div>
 
-        <p
-          className="mt-5 text-[13px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          On iPhone, scan the code to install. On Android or desktop, open it
-          in any browser. Your sports circle syncs with a code.
-        </p>
-
-        {/* Tiny moments line */}
-        <p
-          className="mt-8 text-[11px] uppercase"
-          style={{
-            fontFamily: "var(--font-mono)",
-            letterSpacing: "0.12em",
-            color: "var(--mute-2)",
-            fontWeight: 600,
-          }}
-        >
-          NBA · Summer Soccer 2026 · NFL coming
-        </p>
-      </div>
-
-      {/* ── Right: phone-sized live preview snapshot ─────────────────── */}
-      <div className="flex items-center justify-center">
-        <PhonePreview />
+        {/* ── Right: the signal — the calm artifact amid the noise ──────── */}
+        <div className="nns-hero-rise-4 flex items-center justify-center">
+          <PhonePreview />
+        </div>
       </div>
     </section>
+  );
+}
+
+// NoiseField — the one bold idea. A faint mono whisper of everything No Noise
+// Scores silences: live tickers, "BREAKING", and the feed words the brand
+// rejects ("TRENDING", "TOP STORY"), quieted to the edges. A radial cream wash
+// clears them behind the message so calm visibly emerges from the firehose.
+// Decorative + aria-hidden; settles in on load (reduced-motion: static).
+function NoiseField() {
+  const row =
+    "LAL 112 · DEN 108      GOAL — BRA 67'      BREAKING      Q4 2:14      TRENDING NOW      FINAL      10 NEW ALERTS      TOP STORY      ARG 2 · CHI 1      LIVE 89'      HALFTIME      5 NOTIFICATIONS      UPSET ALERT      ";
+  const base = {
+    fontFamily: "var(--font-mono)",
+    fontWeight: 700,
+    letterSpacing: "0.06em",
+    color: "var(--mute-2)",
+    whiteSpace: "nowrap" as const,
+  };
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "9%", fontSize: 30, opacity: 0.14, filter: "blur(0.4px)" }}>
+        {row}{row}
+      </p>
+      <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "42%", fontSize: 22, opacity: 0.1, filter: "blur(0.5px)", transform: "translateX(-130px)" }}>
+        {row}{row}
+      </p>
+      <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "76%", fontSize: 26, opacity: 0.12, filter: "blur(0.4px)", transform: "translateX(-60px)" }}>
+        {row}{row}
+      </p>
+      {/* Cream wash — quiets the noise where the message + CTAs live. */}
+      <div
+        className="absolute inset-0"
+        style={{ background: "radial-gradient(115% 78% at 26% 50%, var(--cream) 40%, transparent 80%)" }}
+      />
+    </div>
   );
 }
 
