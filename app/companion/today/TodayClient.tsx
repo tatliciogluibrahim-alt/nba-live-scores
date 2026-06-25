@@ -66,6 +66,12 @@ export function TodayClient() {
   // quiet keep the lead.
   const scoreboard = hydrated ? payload.scoreboard : [];
   const hasScoreboard = scoreboard.length > 0;
+  // When 2+ games are live, a single hero can't represent the slate (it
+  // shows one game and merely counts the rest — "2 matches live now" while
+  // hiding the second). Surface the scoreboard on mobile too in that case;
+  // one live game (or none) keeps the calm single lead on mobile.
+  const liveCount = scoreboard.filter((t) => t.status === "live").length;
+  const mobileScoreboard = liveCount >= 2;
   const setup = useSetupStep();
 
   return (
@@ -162,12 +168,12 @@ export function TodayClient() {
           Desktop + games only; the calm single lead below stays the mobile
           (and desktop-quiet) treatment. */}
       {hasScoreboard ? (
-        <div className="hidden md:block">
+        <div className={mobileScoreboard ? undefined : "hidden md:block"}>
           <DesktopScoreboard tiles={scoreboard} />
         </div>
       ) : null}
 
-      <div className={hasScoreboard ? "md:hidden" : undefined}>
+      <div className={mobileScoreboard ? "hidden" : hasScoreboard ? "md:hidden" : undefined}>
         {hydrated && payload.restingState ? (
           <RestingState items={payload.upNext} />
         ) : lead ? (
