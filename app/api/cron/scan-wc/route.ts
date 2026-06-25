@@ -29,7 +29,7 @@ import {
 } from "../../../lib/push/live-activity-update";
 import type { PushEvent } from "../../../lib/push/event-detector";
 import { computeLiveActivityProgress } from "../../../lib/push/live-activity-progress";
-import { parseMinute, latestScorer, type ScorerEvent } from "../../../lib/push/wc-scorer";
+import { parseMinute, recentScorer, type ScorerEvent } from "../../../lib/push/wc-scorer";
 
 // Summer Soccer green accent for the Live Activity (AGENTS palette).
 const ACCENT_WC = "#1e6b3c";
@@ -80,6 +80,7 @@ function isAuthorized(req: Request): boolean {
 }
 
 function toFresh(game: FeedGame): FreshWCGameState {
+  const minute = parseMinute(game.statusText);
   return {
     gameId: game.id,
     status: game.status,
@@ -88,11 +89,14 @@ function toFresh(game: FeedGame): FreshWCGameState {
     awayScore: game.away.score,
     homeScore: game.home.score,
     stage: game.stage,
-    minute: parseMinute(game.statusText),
+    minute,
     // Same halftime-break test the lock-screen status line uses, so the
     // detector and the Live Activity agree on what "halftime" means.
     isHalftime: !!game.statusText && /ht|half/i.test(game.statusText),
-    lastScorer: latestScorer(game.events),
+    // Only name the scorer when the goal is recent vs the match clock — if the
+    // score rose but the goal event hasn't landed in the feed yet, naming the
+    // stale "latest" goal would be wrong, so omit it (the push says "Goal").
+    lastScorer: recentScorer(game.events, minute),
   };
 }
 

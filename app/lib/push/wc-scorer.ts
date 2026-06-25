@@ -29,11 +29,9 @@ export function parseMinute(statusText: string | undefined | null): number | nul
   return base + stoppage;
 }
 
-// Latest goal scorer for the push body — the goal with the highest minute
-// (the one that just moved the scoreline when the detector fires wc-goal).
-// Own goals are tagged "(OG)" so the push reads honestly. Null when no goal
-// carried a name. Minutes are parsed numerically (see the module note).
-export function latestScorer(events: ScorerEvent[] | undefined): string | null {
+// The named goal with the highest minute (the most recent). Minutes are parsed
+// numerically (see the module note). Null when no goal carried a name.
+function latestGoalEvent(events: ScorerEvent[] | undefined): ScorerEvent | null {
   if (!events || events.length === 0) return null;
   const goals = events.filter(
     (e) =>
@@ -41,9 +39,39 @@ export function latestScorer(events: ScorerEvent[] | undefined): string | null {
       !!e.playerName
   );
   if (goals.length === 0) return null;
-  const latest = goals.reduce((best, e) =>
+  return goals.reduce((best, e) =>
     (parseMinute(e.minute) ?? -1) >= (parseMinute(best.minute) ?? -1) ? e : best
   );
-  const name = latest.playerName as string;
-  return latest.type === "own_goal" ? `${name} (OG)` : name;
+}
+
+function format(goal: ScorerEvent): string {
+  const name = goal.playerName as string;
+  return goal.type === "own_goal" ? `${name} (OG)` : name;
+}
+
+// Latest goal scorer for the push body — the goal that just moved the
+// scoreline when the detector fires wc-goal. Own goals are tagged "(OG)".
+export function latestScorer(events: ScorerEvent[] | undefined): string | null {
+  const goal = latestGoalEvent(events);
+  return goal ? format(goal) : null;
+}
+
+// Scorer for the push body, but ONLY when we're confident it's the goal that
+// just scored. When the scoreboard total rose but the matching goal event
+// hasn't landed in the feed yet, the "latest" named goal is a stale earlier
+// one — naming it would be a confident lie. So if the match minute is known
+// and the latest named goal is more than `windowMin` behind it, return null
+// and let the push send a plain "Goal" line (data-integrity: omit over wrong).
+export function recentScorer(
+  events: ScorerEvent[] | undefined,
+  matchMinute: number | null,
+  windowMin = 6
+): string | null {
+  const goal = latestGoalEvent(events);
+  if (!goal) return null;
+  if (matchMinute != null) {
+    const goalMinute = parseMinute(goal.minute);
+    if (goalMinute == null || matchMinute - goalMinute > windowMin) return null;
+  }
+  return format(goal);
 }
