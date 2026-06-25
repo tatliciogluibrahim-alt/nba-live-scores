@@ -10,6 +10,7 @@
 // the landing-only primitives (Section, FAQ, Pillars) don't bleed into
 // the app's companion atoms.
 
+import { LandingHeader } from "./LandingHeader";
 import { LandingHero } from "./LandingHero";
 import { HowItWorksCapsule } from "./HowItWorksCapsule";
 import { MomentsBand } from "./MomentsBand";
@@ -75,6 +76,7 @@ export function LandingShell() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
+      <LandingHeader sticky />
       <LandingHero />
       <HowItWorksCapsule />
       <MomentsBand />

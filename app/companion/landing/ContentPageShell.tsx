@@ -1,7 +1,6 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { LandingFooter } from "./LandingFooter";
-import { APP_STORE_URL } from "../../lib/app-store";
+import { LandingHeader } from "./LandingHeader";
 
 // ContentPageShell — shared chrome for static marketing content pages
 // (Phases 13-16). Header lockup + nav, main column, LandingFooter.
@@ -29,68 +28,8 @@ export function ContentPageShell({
         minHeight: "100vh",
       }}
     >
-      {/* ── Header lockup + nav ─────────────────────────────────────── */}
-      <header
-        className="border-b"
-        style={{ borderColor: "var(--line)" }}
-      >
-        <div
-          className="mx-auto flex items-center justify-between px-8 py-5 md:px-12 lg:px-20"
-          style={{ maxWidth: 1280 }}
-        >
-          <Link
-            href="/"
-            className="text-[18px]"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              letterSpacing: "-0.01em",
-              color: "var(--ink)",
-            }}
-          >
-            No Noise Scores
-          </Link>
-          <nav className="flex items-center gap-4 md:gap-6">
-            <Link
-              href="/how-it-works"
-              className="hidden text-[13px] md:inline"
-              style={{ color: "var(--mute-1)", fontWeight: 500 }}
-            >
-              How it works
-            </Link>
-            <Link
-              href="/changelog"
-              className="hidden text-[13px] md:inline"
-              style={{ color: "var(--mute-1)", fontWeight: 500 }}
-            >
-              Changelog
-            </Link>
-            {/* SEO traffic lands on these pages, so the install CTA points
-                at the App Store (the one-tap path). "Open in browser"
-                keeps the cross-platform PWA route for Android/desktop. */}
-            <Link
-              href="/app"
-              className="hidden text-[13px] md:inline"
-              style={{ color: "var(--mute-1)", fontWeight: 500 }}
-            >
-              Open in browser
-            </Link>
-            <a
-              href={APP_STORE_URL}
-              target="_blank"
-              rel="noopener"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-full px-4 text-[13px] font-semibold transition active:scale-[0.98]"
-              style={{
-                background: "var(--ink)",
-                color: "var(--cream)",
-                border: "1px solid var(--ink)",
-              }}
-            >
-              Get the app
-            </a>
-          </nav>
-        </div>
-      </header>
+      {/* Shared marketing header (brand + nav + install CTAs). */}
+      <LandingHeader />
 
       {/* ── Page header band ───────────────────────────────────────── */}
       <section

@@ -1,6 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { BrandMark } from "../frame/BrandMark";
 import { APP_STORE_URL } from "../../lib/app-store";
 
 // Landing hero — the first thing a desktop visitor sees.
@@ -22,23 +21,8 @@ export function LandingHero() {
     >
       {/* ── Left: positioning + CTAs ─────────────────────────────────── */}
       <div className="flex flex-col justify-center">
-        {/* Brand lockup — BrandMark glyph + wordmark. Sized small so it
-            reads as identity (not a hero element); the H1 below carries
-            the editorial weight. */}
-        <div className="mb-5 flex items-center gap-2.5">
-          <BrandMark size={32} />
-          <p
-            className="text-[14px]"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              letterSpacing: "-0.005em",
-              color: "var(--ink)",
-            }}
-          >
-            No Noise Scores
-          </p>
-        </div>
+        {/* Brand lockup lives in the sticky LandingHeader now; the hero leads
+            straight with the H1 so the two wordmarks don't stack. */}
         <h1
           className="leading-[1.05]"
           style={{
