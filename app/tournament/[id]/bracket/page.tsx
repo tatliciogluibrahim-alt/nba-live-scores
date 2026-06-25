@@ -78,7 +78,7 @@ export default async function TournamentBracketPage({
         backLabel={tournament?.name ?? "Tournament"}
         title="Bracket"
       />
-      <main className="mx-auto max-w-md px-4 pb-8 pt-4 md:max-w-2xl md:pt-6">
+      <main className="mx-auto max-w-md px-4 pb-8 pt-4 md:max-w-6xl md:px-8 md:pt-6">
         <header className="px-1">
           <h1
             style={{

@@ -48,34 +48,6 @@ export function WCBracket() {
 
   return (
     <section className="mt-4">
-      {/* Round switcher — one calm gesture to move through the tournament. */}
-      <div
-        className="sticky top-0 z-10 -mx-4 mb-4 px-4 py-2"
-        style={{ background: "var(--bar-blur-bg, var(--cream))", backdropFilter: "blur(8px)" }}
-      >
-        <div className="flex gap-1.5">
-          {rounds.map((r) => {
-            const on = r.key === active;
-            return (
-              <button
-                key={r.key}
-                type="button"
-                onClick={() => setActive(r.key)}
-                aria-pressed={on}
-                className="flex-1 rounded-full py-2 text-[12px] font-semibold transition active:scale-[0.97]"
-                style={{
-                  background: on ? "var(--ink)" : "transparent",
-                  color: on ? "var(--cream)" : "var(--ink)",
-                  border: `1px solid ${on ? "var(--ink)" : "var(--line)"}`,
-                }}
-              >
-                {SHORT[r.key]}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {!resolved ? (
         <p
           className="mb-3 text-[12px] leading-snug"
@@ -86,34 +58,99 @@ export function WCBracket() {
         </p>
       ) : null}
 
-      <div className="mb-2 flex items-baseline justify-between">
-        <h2
-          className="text-[15px]"
-          style={{ color: "var(--ink)", fontWeight: 800, letterSpacing: "-0.01em" }}
+      {/* ── Mobile: one round at a time via the switcher ──────────────── */}
+      <div className="md:hidden">
+        <div
+          className="sticky top-0 z-10 -mx-4 mb-4 px-4 py-2"
+          style={{ background: "var(--bar-blur-bg, var(--cream))", backdropFilter: "blur(8px)" }}
         >
-          {round.label}
-        </h2>
-        {round.dateLabel ? (
-          <span
-            className="text-[11px] uppercase"
-            style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.08em", color: "var(--mute-1)", fontWeight: 600 }}
+          <div className="flex gap-1.5">
+            {rounds.map((r) => {
+              const on = r.key === active;
+              return (
+                <button
+                  key={r.key}
+                  type="button"
+                  onClick={() => setActive(r.key)}
+                  aria-pressed={on}
+                  className="flex-1 rounded-full py-2 text-[12px] font-semibold transition active:scale-[0.97]"
+                  style={{
+                    background: on ? "var(--ink)" : "transparent",
+                    color: on ? "var(--cream)" : "var(--ink)",
+                    border: `1px solid ${on ? "var(--ink)" : "var(--line)"}`,
+                  }}
+                >
+                  {SHORT[r.key]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mb-2 flex items-baseline justify-between">
+          <h2
+            className="text-[15px]"
+            style={{ color: "var(--ink)", fontWeight: 800, letterSpacing: "-0.01em" }}
           >
-            {round.dateLabel}
-          </span>
-        ) : null}
+            {round.label}
+          </h2>
+          {round.dateLabel ? (
+            <span
+              className="text-[11px] uppercase"
+              style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.08em", color: "var(--mute-1)", fontWeight: 600 }}
+            >
+              {round.dateLabel}
+            </span>
+          ) : null}
+        </div>
+
+        {round.matches.length === 0 ? (
+          <p className="text-[13px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+            Not set yet.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {round.matches.map((m) => (
+              <MatchCard key={`${m.round}-${m.number}`} match={m} />
+            ))}
+          </div>
+        )}
       </div>
 
-      {round.matches.length === 0 ? (
-        <p className="text-[13px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
-          Not set yet.
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {round.matches.map((m) => (
-            <MatchCard key={`${m.round}-${m.number}`} match={m} />
-          ))}
-        </div>
-      )}
+      {/* ── Desktop: the whole bracket as adjacent round columns ──────── */}
+      <div className="hidden md:grid md:grid-cols-5 md:gap-3">
+        {rounds.map((r) => (
+          <div key={r.key}>
+            <div className="mb-2">
+              <p
+                className="text-[11px] uppercase"
+                style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.08em", color: "var(--ink)", fontWeight: 700 }}
+              >
+                {SHORT[r.key]}
+              </p>
+              {r.dateLabel ? (
+                <p
+                  className="text-[10px] uppercase"
+                  style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.06em", color: "var(--mute-2)", fontWeight: 600 }}
+                >
+                  {r.dateLabel}
+                </p>
+              ) : null}
+            </div>
+            {r.matches.length === 0 ? (
+              <p className="text-[12px]" style={{ color: "var(--mute-2)", fontWeight: 500 }}>
+                Not set yet.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {r.matches.map((m) => (
+                  <MatchCard key={`${m.round}-${m.number}`} match={m} />
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
