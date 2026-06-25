@@ -13,7 +13,7 @@ export function WatchingEmpty() {
   return (
     <section>
       <Display as="h1" size="lg" className="mb-2">
-        Your live games.
+        Watching.
       </Display>
       {/* Empty-state direction. Mirrors the muted secondary text used
           elsewhere (Today's "Tell us who you follow" sub, Settings

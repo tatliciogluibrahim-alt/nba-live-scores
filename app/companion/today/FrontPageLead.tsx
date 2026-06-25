@@ -1,7 +1,13 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { TodayHeadline } from "./today-data";
+
+// The lead settles in once per page-load, not on every Today re-mount (each
+// tab return remounts the route). A module flag — reset on a full reload —
+// gates the rise so it's a first-impression, not a restless replay.
+let leadEntered = false;
 
 // Front Page lead (Concept A). The editorial top of Today: an accent
 // eyebrow, a big punchy state headline ("One game up next."), and a
@@ -62,10 +68,17 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
   const chipBg = deck?.accent === "var(--wc)" ? "var(--wc-soft)" : "var(--nba-soft)";
   const lines = deck ? deckLines(deck.detail, deck.broadcast) : null;
 
+  // Animate only the first lead of the page-load; later re-mounts render static.
+  const [animate] = useState(() => !leadEntered);
+  useEffect(() => {
+    leadEntered = true;
+  }, []);
+  const rise = animate ? "no-noise-lead-rise" : "";
+
   return (
     <section className="mb-5">
       <p
-        className="no-noise-lead-rise mb-2 flex items-center gap-1.5 text-[12.5px] uppercase"
+        className={`${rise} mb-2 flex items-center gap-1.5 text-[12.5px] uppercase`}
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
@@ -87,7 +100,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
           700, not the handoff mockup's heavier Archivo Black 900. Reads
           editorial-bold without shouting. */}
       <h2
-        className="no-noise-lead-rise"
+        className={rise}
         style={{
           fontFamily: "var(--font-display)",
           fontWeight: 700,
@@ -106,7 +119,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
         <Link
           href={deck.href}
           aria-label={`Open ${deck.matchup}`}
-          className="no-noise-lead-rise mt-5 flex items-center gap-3 rounded-[14px] border px-4 py-3.5 transition active:scale-[0.99]"
+          className={`${rise} mt-5 flex items-center gap-3 rounded-[14px] border px-4 py-3.5 transition active:scale-[0.99]`}
           style={{
             background: lead.live ? "var(--paper)" : "var(--cream-2)",
             borderColor: lead.live ? deck.accent : "var(--line)",
@@ -197,7 +210,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
 
       {lead.support ? (
         <p
-          className="no-noise-lead-rise mt-3.5 text-[14px] leading-snug"
+          className={`${rise} mt-3.5 text-[14px] leading-snug`}
           style={{ color: "var(--ink-2)", fontWeight: 400, animationDelay: "170ms" }}
         >
           {lead.support}

@@ -160,12 +160,14 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       readJSON<unknown>(STORAGE_KEYS.pinned, [])
     );
 
-    // Auto-unpin stale games. Pins older than 24 hours are almost
-    // certainly finished games the user forgot to unpin. Cleaning them
-    // on hydration keeps the Watching tab tidy (user feedback 2026-05-28).
-    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    // Auto-unpin stale pins to keep Watching tidy (user feedback 2026-05-28).
+    // Keyed on pinnedAt age, but the window is 4 days, not 24h: "pinned for
+    // later" is a supported state, and a 24h cutoff dropped a WC match pinned
+    // a couple days before kickoff — before it had even been played. 4 days
+    // covers pinning a few days out plus a day of post-game grace.
+    const STALE_PIN_MS = 4 * 24 * 60 * 60 * 1000;
     const storedPinned = rawPinned.filter(
-      (p) => Date.now() - p.pinnedAt < TWENTY_FOUR_HOURS
+      (p) => Date.now() - p.pinnedAt < STALE_PIN_MS
     );
 
     const storedPrefs = normalizeStoredPrefs(

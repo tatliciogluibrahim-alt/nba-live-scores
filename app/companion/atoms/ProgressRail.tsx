@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { useReducedMotion } from "../hooks/use-reduced-motion";
 
 // ProgressRail — the in-app sibling of the lock-screen Live Activity's
 // period rail (NoNoiseLiveActivity.swift ProgressRail). Same structure,
@@ -55,6 +56,7 @@ export function ProgressRail({
   style?: CSSProperties;
 }) {
   const rail = SPORT_RAIL[sport];
+  const reduce = useReducedMotion();
   // Defensive: Math.min/max don't neutralize NaN, which would yield a
   // `width:"NaN%"`. No current caller can produce NaN (the progress math
   // always returns a finite 0..1), but coerce it anyway so the rail can
@@ -84,7 +86,7 @@ export function ProgressRail({
             borderRadius: 999,
             background: accent,
             // A calm fill transition so live updates glide rather than jump.
-            transition: "width 600ms ease-out",
+            transition: reduce ? "none" : "width 600ms ease-out",
           }}
         />
         {/* Period tick marks */}
@@ -114,7 +116,7 @@ export function ProgressRail({
               borderRadius: 999,
               background: accent,
               boxShadow: "0 0 0 2px var(--paper)",
-              transition: "left 600ms ease-out",
+              transition: reduce ? "none" : "left 600ms ease-out",
             }}
           />
         ) : null}
