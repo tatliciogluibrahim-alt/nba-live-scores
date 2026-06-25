@@ -141,6 +141,13 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
         /* snapshot fetch failed — fall through to NotFound */
       }
 
+      // Nothing resolved this tick. If we already had a resolved game, KEEP it
+      // — a transient empty/failed feed (a 503, a dropped poll) must not blank
+      // a live scoreboard to "snapshot unavailable". Only fall to NotFound when
+      // we never resolved anything (a genuinely bad id).
+      if (resolvedRef.current && resolvedRef.current.source !== null) {
+        return;
+      }
       const next = { source: null, game: null } as const;
       resolvedRef.current = next;
       setResolved(next);

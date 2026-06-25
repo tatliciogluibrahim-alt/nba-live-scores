@@ -431,6 +431,24 @@ function gameIncludesCountry(g: WCGameLite, code: string): boolean {
   return g.away.abbreviation === code || g.home.abbreviation === code;
 }
 
+// Most relevant game for a follow: live now > soonest upcoming > most recent
+// final. A plain .find() returned feed order, so a chip could read "Final"
+// while the team was actually live, and the hero could name a different game
+// than Up Next's first row.
+function pickRelevantGame<T extends { status: string; date: string }>(
+  games: T[]
+): T | undefined {
+  return (
+    games.find((g) => g.status === "live") ??
+    games
+      .filter((g) => g.status === "upcoming")
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0] ??
+    games
+      .filter((g) => g.status === "final")
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+  );
+}
+
 // ── Hero pick ─────────────────────────────────────────────────────────
 // One earned moment. Preference order:
 //   1. A live NBA game involving a followed team
@@ -551,7 +569,11 @@ function pickHero(
   }
 
   // No live game — try the next upcoming followed-team game today
-  const todayNBA = nba.filter((g) => g.status === "upcoming");
+  // Sorted soonest-first so the hero names the NEXT followed game, matching
+  // Up Next's first row instead of whatever the feed happened to list first.
+  const todayNBA = nba
+    .filter((g) => g.status === "upcoming")
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const todayFollowed = todayNBA.find((g) =>
     [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr))
   );
@@ -650,7 +672,7 @@ function buildYouFollow(
   return follows
     .map<YouFollowItem | null>((f) => {
       if (f.kind === "team") {
-        const g = nba.find((x) => gameIncludesTeam(x, f.id));
+        const g = pickRelevantGame(nba.filter((x) => gameIncludesTeam(x, f.id)));
         if (g) {
           return {
             kind: "team",
@@ -690,7 +712,7 @@ function buildYouFollow(
         // Country code, not the flag emoji — flags were dropped from the
         // sports circle (kept only on share cards).
         const countryChip = f.id;
-        const g = wc.find((x) => gameIncludesCountry(x, f.id));
+        const g = pickRelevantGame(wc.filter((x) => gameIncludesCountry(x, f.id)));
         if (g) {
           return {
             kind: "country",
