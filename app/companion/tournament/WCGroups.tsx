@@ -14,6 +14,25 @@ import {
   type WCScheduleFixtureLite,
   type WCScheduleStandingLite,
 } from "../country/country-data";
+import { WC_GROUP_FIXTURES } from "../following/data/wc-fixtures";
+import { getCountry } from "../following/data/countries";
+
+// Curated group fixtures adapted to the schedule shape, so the page can
+// SERVER-RENDER the real 12 groups + teams (status "upcoming", no scores)
+// instead of a skeleton. The client then upgrades to the live schedule +
+// official standings on hydration. This is what makes the body crawlable
+// for "world cup 2026 groups" — the empty client shell saw nothing before.
+const CURATED_FIXTURES: WCScheduleFixtureLite[] = WC_GROUP_FIXTURES.map((f) => ({
+  id: f.id,
+  date: f.kickoff,
+  status: "upcoming" as const,
+  statusText: "",
+  stage: `Group ${f.group}`,
+  group: f.group,
+  home: { name: getCountry(f.home)?.name ?? f.home, abbreviation: f.home, score: 0 },
+  away: { name: getCountry(f.away)?.name ?? f.away, abbreviation: f.away, score: 0 },
+  broadcasts: [],
+}));
 
 // Summer Soccer groups view — editorial, flag-free, matching the country
 // GroupStrip. Two modes:
@@ -498,29 +517,19 @@ export function WCGroups({
   const followedCountry = follows.find((f) => f.kind === "country")?.id;
   const { fixtures, standings, hydrated } = useWCSchedule();
 
+  // Build from the live schedule once it's in; until then (SSR + first paint,
+  // or a failed fetch) build from the curated fixtures so the real groups +
+  // teams render server-side rather than a skeleton.
+  const useLive = hydrated && fixtures.length > 0;
   const groups = useMemo(
-    () => buildAllGroupsFromSchedule(fixtures, standings, followedCountry),
-    [fixtures, standings, followedCountry]
+    () =>
+      buildAllGroupsFromSchedule(
+        useLive ? fixtures : CURATED_FIXTURES,
+        useLive ? standings : {},
+        followedCountry
+      ),
+    [useLive, fixtures, standings, followedCountry]
   );
-
-  if (!hydrated) {
-    return (
-      <section className="mt-5" aria-busy aria-live="polite">
-        <div className="space-y-3">
-          {Array.from({ length: mode === "full" ? 4 : 1 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-[160px] rounded-[16px]"
-              style={{
-                background: "var(--paper)",
-                border: "1px solid var(--line)",
-              }}
-            />
-          ))}
-        </div>
-      </section>
-    );
-  }
 
   // `fromParam` encodes BOTH the tournament id and which view the user is
   // leaving from. Country detail's resolveBackTarget parses the `:groups`
