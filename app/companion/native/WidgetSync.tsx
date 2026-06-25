@@ -36,6 +36,10 @@ import type { Follow } from "../state/types";
 // includes them runs.
 
 const REFRESH_MS = 30 * 60 * 1000; // upcoming/moments don't change fast
+// While a followed game is live, refresh fast so the widget's live score (and
+// the live→final flip) stays current with the app open — the 30-min idle
+// cadence left "Live" stale on the tile after a game had already ended.
+const LIVE_REFRESH_MS = 15 * 1000;
 
 const ACCENT_NBA = "#e55b2a";
 const ACCENT_WC = "#1e6b3c";
@@ -186,6 +190,9 @@ export function WidgetSync() {
   const followsRef = useRef(follows);
   const pinnedRef = useRef(pinned);
   const noSpoilersRef = useRef(noSpoilers);
+  // Drives the poll cadence: tightens to LIVE_REFRESH_MS while a followed
+  // game is live, relaxes to REFRESH_MS otherwise.
+  const hasLiveRef = useRef(false);
   useEffect(() => {
     followsRef.current = follows;
   }, [follows]);
@@ -261,6 +268,7 @@ export function WidgetSync() {
       followsRef.current,
       noSpoilersRef.current
     );
+    hasLiveRef.current = live.length > 0;
 
     const snapshot: WidgetSnapshot = {
       generatedAt: Date.now(),
@@ -299,7 +307,7 @@ export function WidgetSync() {
     async () => {
       await writeSnapshot();
     },
-    () => REFRESH_MS,
+    () => (hasLiveRef.current ? LIVE_REFRESH_MS : REFRESH_MS),
     isCapacitorNative() && hydrated
   );
 
