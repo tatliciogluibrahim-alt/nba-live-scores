@@ -488,16 +488,29 @@ function pickHero(
   if (heroWcLive) {
     const isPinned = pinnedIds.has(heroWcLive.id);
     const stage = heroWcLive.stage ? `Summer Soccer · ${heroWcLive.stage}` : "Summer Soccer";
+    // Busy-slate count must reflect the user's FOLLOWED live matches, not the
+    // whole feed — a feed-wide count ("6 live now") beside one shown game is
+    // a lie (RC4). A tournament follow covers every match; otherwise count
+    // pinned + followed-country live games.
+    const followsWcTour = follows.some(
+      (f) => f.kind === "tournament" && getTournament(f.id)?.accent === "var(--wc)"
+    );
+    const followedWcLiveCount = wcLive.filter(
+      (g) =>
+        followsWcTour ||
+        pinnedIds.has(g.id) ||
+        [...followedCountries].some((c) => gameIncludesCountry(g, c))
+    ).length;
     return {
       kind: "wc-live",
       eyebrow: isPinned ? `Pinned · ${stage}` : stage,
       headline: deriveWCLiveHeadline(heroWcLive),
-      // Busy-slate signal: during the group stage several matches run at
-      // once. When more than one is live, name the count so the hero
-      // doesn't look like the only thing on. Calm and factual, no FOMO.
+      // Busy-slate signal: when more than one FOLLOWED match is live, name the
+      // count so the hero doesn't look like the only thing on. Calm and
+      // factual, no FOMO. Matches the scoreboard's live set.
       context:
-        wcLive.length > 1
-          ? `${wcLive.length} Summer Soccer matches live now.`
+        followedWcLiveCount > 1
+          ? `${followedWcLiveCount} Summer Soccer matches live now.`
           : undefined,
       live: true,
       accent: "var(--wc)",
@@ -817,12 +830,21 @@ function buildUpNext(
   );
   const pinnedIds = new Set(pinned.map((p) => p.gameId));
 
+  // Drop games whose kickoff has already passed while the feed still marks
+  // them "upcoming" (ESPN's pre→in flip lags by a minute or two). They belong
+  // in the live scoreboard, not in Upcoming reading their kickoff time — the
+  // exact "live game shown as 6:00 PM upcoming" symptom (RC3/RC4). A 2-minute
+  // grace absorbs clock skew without hiding a genuine pre-match.
+  const KICKOFF_GRACE_MS = 2 * 60 * 1000;
+  const kickoffNotPassed = (date: string) =>
+    new Date(date).getTime() > Date.now() - KICKOFF_GRACE_MS;
+
   const nbaUpcoming = nba
-    .filter((g) => g.status === "upcoming")
+    .filter((g) => g.status === "upcoming" && kickoffNotPassed(g.date))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const wcUpcoming = wc
-    .filter((g) => g.status === "upcoming")
+    .filter((g) => g.status === "upcoming" && kickoffNotPassed(g.date))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   // "Personal" = a game the user explicitly follows: their team, their

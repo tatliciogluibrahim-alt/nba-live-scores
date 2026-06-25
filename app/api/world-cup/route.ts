@@ -419,10 +419,32 @@ export async function GET() {
       r.status === "fulfilled" ? r.value : []
     );
 
+    // Status-aware dedup. ESPN buckets fixtures by US/ET date, so a late-night
+    // match can appear in two adjacent date buckets — and the later bucket may
+    // carry a transient "pre" reading. Last-writer-wins (the old behavior)
+    // would let that "pre" clobber a correct live/final reading, flapping the
+    // game between live and upcoming across surfaces (RC3). Keep the
+    // higher-status copy; tie-break on the higher score total (more advanced).
+    const STATUS_RANK: Record<WCGame["status"], number> = {
+      final: 3,
+      live: 2,
+      upcoming: 1,
+    };
     const byId = new Map<string, WCGame>();
     events.forEach((e) => {
       const g = normalizeEvent(e);
-      if (g) byId.set(g.id, g);
+      if (!g) return;
+      const existing = byId.get(g.id);
+      if (!existing) {
+        byId.set(g.id, g);
+        return;
+      }
+      const better =
+        STATUS_RANK[g.status] !== STATUS_RANK[existing.status]
+          ? STATUS_RANK[g.status] > STATUS_RANK[existing.status]
+          : g.away.score + g.home.score >
+            existing.away.score + existing.home.score;
+      if (better) byId.set(g.id, g);
     });
 
     const games = Array.from(byId.values()).sort(
