@@ -59,8 +59,12 @@ export function useVisibilityPoll(
       }, intervalRef.current());
     };
 
-    // Initial load (only when visible — matches prior behavior).
-    void run();
+    // Initial load is UNCONDITIONAL — a fresh mount must fetch even if the tab
+    // is hidden (PWA cold-open then immediately backgrounded, or iOS's "resume
+    // as hidden" quirk), otherwise the loading shell hangs until a manual
+    // background→foreground. Recurring ticks + the visibilitychange handler
+    // stay visibility-gated.
+    void loadRef.current(isCancelled);
     schedule();
 
     const onVisibilityChange = () => {

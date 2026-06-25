@@ -182,6 +182,15 @@ export function normalizeStoredPrefs(value: unknown): UserPrefs {
   if (typeof value.firstFollowEducated === "boolean") {
     next.firstFollowEducated = value.firstFollowEducated;
   }
+  // These two were silently dropped on every hydration, so "permanent"
+  // dismissals didn't survive a reload — the push-recovery card re-nagged
+  // each session and onboarding re-armed for skip-through users.
+  if (typeof value.onboardingComplete === "boolean") {
+    next.onboardingComplete = value.onboardingComplete;
+  }
+  if (typeof value.pushRecoveryDismissed === "boolean") {
+    next.pushRecoveryDismissed = value.pushRecoveryDismissed;
+  }
 
   return next;
 }

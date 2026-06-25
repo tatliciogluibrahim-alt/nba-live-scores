@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { useNoSpoilers } from "../providers";
-import { useReveal } from "./reveal";
+import { useReveal, useEffectiveNoSpoilers } from "./reveal";
 
 // Score-hidden card with explicit, context-aware reveal copy:
 //   - 'live'   → "Tap to reveal score"
@@ -44,7 +43,10 @@ export function NoSpoilerGameCard({
   /** Children render in place of the hidden card when revealed. */
   children?: ReactNode;
 }) {
-  const noSpoilers = useNoSpoilers();
+  // Effective hidden state honors the per-follow GameSpoilerScope (selective
+  // No-Spoilers), not just the global toggle. Falls back to global outside a
+  // scope.
+  const noSpoilers = useEffectiveNoSpoilers(gameId);
   const { isRevealed, reveal } = useReveal();
   const [internalRevealed, setInternalRevealed] = useState(false);
   const revealed =

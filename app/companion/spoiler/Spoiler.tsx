@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { useNoSpoilers } from "../providers";
-import { useReveal } from "./reveal";
+import { useReveal, useEffectiveNoSpoilers } from "./reveal";
 
 // Inline score wrapper. When No-Spoilers is on, blurs the wrapped content
 // behind a tap-to-reveal button. When No-Spoilers is off (or after reveal),
@@ -28,7 +27,11 @@ export function Spoiler({
   /** When set, reveal is shared across all of this game's surfaces. */
   gameId?: string;
 }) {
-  const noSpoilers = useNoSpoilers();
+  // Effective hidden state honors the per-follow GameSpoilerScope, not just the
+  // global toggle — so selective No-Spoilers (the paid feature) actually hides
+  // the score even with the global toggle off. Falls back to global outside a
+  // scope.
+  const noSpoilers = useEffectiveNoSpoilers(gameId);
   const { isRevealed, reveal } = useReveal();
   const [localRevealed, setLocalRevealed] = useState(false);
   const revealed = gameId ? isRevealed(gameId) : localRevealed;

@@ -1093,7 +1093,8 @@ const TOURNAMENT_CLOSE_WINDOW_DAYS = 7;
  *  the series margin (high-low). Null when the line doesn't indicate a
  *  series clinch. */
 function parseSeriesClinch(
-  summary: string
+  summary: string,
+  game: NBAGame
 ): { winnerCode: string; high: number; low: number } | null {
   if (!summary) return null;
   // Common shapes: "OKC WINS SERIES 4-2", "Oklahoma City wins series 4-2",
@@ -1103,7 +1104,22 @@ function parseSeriesClinch(
   const high = Number(m[2]);
   const low = Number(m[3]);
   if (!Number.isFinite(high) || !Number.isFinite(low)) return null;
-  return { winnerCode: m[1].toUpperCase().slice(0, 3), high, low };
+  // Resolve the matched token against THIS game's real teams — never fabricate
+  // a code by slicing a city name ("Oklahoma City" → "OKL"). Match on the real
+  // abbreviation or name, case-insensitive; no match → not a usable clinch.
+  const token = m[1].trim().toLowerCase();
+  const matches = (t: { name: string; abbreviation: string }) =>
+    t.abbreviation.toLowerCase() === token ||
+    t.name.toLowerCase() === token ||
+    t.name.toLowerCase().includes(token) ||
+    token.includes(t.abbreviation.toLowerCase());
+  const winner = matches(game.away)
+    ? game.away
+    : matches(game.home)
+      ? game.home
+      : null;
+  if (!winner) return null;
+  return { winnerCode: winner.abbreviation, high, low };
 }
 
 /** Pull all games belonging to a series (sorted-abbr key, e.g.
@@ -1232,13 +1248,13 @@ function pickClosing(
       if (g.status !== "final") return false;
       const gameMs = new Date(g.date).getTime();
       if (!Number.isFinite(gameMs) || gameMs < seriesWindowMs) return false;
-      return parseSeriesClinch(g.seriesSummary) !== null;
+      return parseSeriesClinch(g.seriesSummary, g) !== null;
     })
     .map((g) => {
       const seriesKey = [g.away.abbreviation, g.home.abbreviation]
         .sort()
         .join("-");
-      const clinch = parseSeriesClinch(g.seriesSummary)!;
+      const clinch = parseSeriesClinch(g.seriesSummary, g)!;
       return { g, seriesKey, clinch };
     })
     // Followed (by series OR by team in the series) only.
@@ -1333,7 +1349,7 @@ function pickClosing(
         if (g.seriesRound !== "NBA Finals") return false;
         const gameMs = new Date(g.date).getTime();
         if (!Number.isFinite(gameMs) || gameMs < tournamentWindowMs) return false;
-        return parseSeriesClinch(g.seriesSummary) !== null;
+        return parseSeriesClinch(g.seriesSummary, g) !== null;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
 
@@ -1361,7 +1377,10 @@ function pickClosing(
     if (follows.length > 0) {
       const circle = buildCircle(follows, new Set());
       if (circle.length > 0) {
-        const dayStamp = now.toISOString().slice(0, 10); // YYYY-MM-DD
+        // Local YYYY-MM-DD, not UTC: a UTC day rolls over hours before local
+        // midnight, so an evening dismissal in the Americas re-appeared the
+        // same night. QuietRecap already keys on the local date — match it.
+        const dayStamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
         return {
           id: `deadzone:${dayStamp}`,
           kind: "deadzone",
@@ -1650,7 +1669,11 @@ export function buildTodayPayload({
   // yesterday's finals for context, but the Quiet Recap moment is
   // strictly about *tonight's* slate. Count only games that finished
   // today (local time), via formatGameDay's "Tonight" branch.
-  const tonightFinals = nba.filter(
+  // Use recentForWrap, not nba: ESPN drops finals from the current-week feed a
+  // few hours after they end, so a late-night opener — the exact moment the
+  // once-per-night recap exists for — would silently never fire. Quiet Wrap
+  // already reads recentForWrap, so this keeps the two in agreement.
+  const tonightFinals = recentForWrap.filter(
     (g) => g.status === "final" && formatGameDay(g.date, now) === "Tonight"
   );
   const hasTonightFinals = tonightFinals.length > 0;
