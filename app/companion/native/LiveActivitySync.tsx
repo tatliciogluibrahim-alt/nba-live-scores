@@ -18,6 +18,7 @@ import {
 } from "./live-activity";
 import { postWithRetry } from "../push/register-state";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
+import { deriveSubline } from "./live-activity-subline";
 import type { PinnedGame } from "../state/types";
 
 // LiveActivitySync — invisible, mounted globally beside
@@ -85,16 +86,6 @@ function parseScore(line: string | null): { away: number; home: number } {
   return { away: Number(nums[0]), home: Number(nums[1]) };
 }
 
-// Strip the leading "NBA · " / "Summer Soccer · " sport prefix from the
-// context eyebrow so the Stadium Panel's `subline` doesn't double up
-// with the sport tag at the top of the bug. "NBA · Game 6" → "Game 6".
-function deriveSubline(item: PinnedItem): string {
-  const e = item.contextEyebrow || "";
-  return e
-    .replace(/^\s*(NBA|World\s*Cup|WC|NFL)\s*[·•|-]\s*/i, "")
-    .trim();
-}
-
 function itemToStartInput(
   item: PinnedItem,
   redacted: boolean
@@ -117,7 +108,7 @@ function itemToStartInput(
     // Center-bug context line. Server may refine on the first update;
     // we seed it from the contextEyebrow so the tile reads correctly
     // the moment it opens.
-    subline: deriveSubline(item),
+    subline: deriveSubline(item.contextEyebrow),
     accentHex: sport === "wc" ? ACCENT_WC : ACCENT_NBA,
     // Initial Stadium Panel rail value so the activity opens at the
     // right point in the match instead of starting at 0.
