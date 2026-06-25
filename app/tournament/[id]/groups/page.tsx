@@ -4,6 +4,8 @@ import { CompanionFrame } from "../../../companion/frame/CompanionFrame";
 import { CrumbBar } from "../../../companion/frame/CrumbBar";
 import { WCGroups } from "../../../companion/tournament/WCGroups";
 import { getTournament } from "../../../companion/following/data/tournaments";
+import { WC_GROUP_FIXTURES } from "../../../companion/following/data/wc-fixtures";
+import { getCountry } from "../../../companion/following/data/countries";
 
 export async function generateMetadata({
   params,
@@ -34,8 +36,46 @@ export default async function TournamentGroupsPage({
   const tournament = getTournament(id);
   const isWorldCup = id.startsWith("fifa-world-cup-");
 
+  // JSON-LD structured data — the group page is otherwise a client-rendered
+  // shell (WCGroups hydrates the tables), so a SportsEvent with every group
+  // fixture as a subEvent is what lets Google + AI search surface the real
+  // group schedule for "world cup 2026 groups". Dates are the curated
+  // kickoffs (never fabricated). Group-stage only; knockout lives on /bracket.
+  const jsonLd = isWorldCup
+    ? {
+        "@context": "https://schema.org",
+        "@type": "SportsEvent",
+        name: "FIFA World Cup 2026 — Group Stage",
+        startDate: "2026-06-11",
+        endDate: "2026-06-27",
+        eventStatus: "https://schema.org/EventScheduled",
+        sport: "Soccer",
+        location: {
+          "@type": "Place",
+          name: "United States, Canada, and Mexico",
+        },
+        url: `https://nonoisescores.app/tournament/${id}/groups`,
+        subEvent: WC_GROUP_FIXTURES.map((f) => ({
+          "@type": "SportsEvent",
+          name: `${getCountry(f.away)?.name ?? f.away} vs ${
+            getCountry(f.home)?.name ?? f.home
+          }`,
+          startDate: f.kickoff,
+          eventStatus: "https://schema.org/EventScheduled",
+          sport: "Soccer",
+        })),
+      }
+    : null;
+
   return (
-    <CompanionFrame desktopNav="detail">
+    <>
+      {jsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      ) : null}
+      <CompanionFrame desktopNav="detail">
       <CrumbBar
         backHref={`/tournament/${id}`}
         backLabel={tournament?.name ?? "Tournament"}
@@ -90,6 +130,7 @@ export default async function TournamentGroupsPage({
           </section>
         )}
       </main>
-    </CompanionFrame>
+      </CompanionFrame>
+    </>
   );
 }

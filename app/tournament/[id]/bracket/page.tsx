@@ -4,6 +4,7 @@ import { CompanionFrame } from "../../../companion/frame/CompanionFrame";
 import { CrumbBar } from "../../../companion/frame/CrumbBar";
 import { WCBracket } from "../../../companion/tournament/WCBracket";
 import { getTournament } from "../../../companion/following/data/tournaments";
+import { WC_KNOCKOUT_ROUNDS } from "../../../companion/following/data/wc-fixtures";
 
 export async function generateMetadata({
   params,
@@ -34,8 +35,44 @@ export default async function TournamentBracketPage({
   const tournament = getTournament(id);
   const isWorldCup = id.startsWith("fifa-world-cup-");
 
+  // JSON-LD structured data — the bracket is a client-rendered shell, so a
+  // SportsEvent with each knockout round as a subEvent is what lets Google +
+  // AI search surface the knockout schedule for "world cup 2026 bracket".
+  // Round-level only: per-match opponents aren't known until groups settle,
+  // so we never fabricate matchups — just the curated round dates.
+  const jsonLd = isWorldCup
+    ? {
+        "@context": "https://schema.org",
+        "@type": "SportsEvent",
+        name: "FIFA World Cup 2026 — Knockout Stage",
+        startDate: "2026-06-28",
+        endDate: "2026-07-19",
+        eventStatus: "https://schema.org/EventScheduled",
+        sport: "Soccer",
+        location: {
+          "@type": "Place",
+          name: "United States, Canada, and Mexico",
+        },
+        url: `https://nonoisescores.app/tournament/${id}/bracket`,
+        subEvent: WC_KNOCKOUT_ROUNDS.map((r) => ({
+          "@type": "SportsEvent",
+          name: `FIFA World Cup 2026 ${r.label}`,
+          startDate: r.kickoffISO,
+          eventStatus: "https://schema.org/EventScheduled",
+          sport: "Soccer",
+        })),
+      }
+    : null;
+
   return (
-    <CompanionFrame desktopNav="detail">
+    <>
+      {jsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      ) : null}
+      <CompanionFrame desktopNav="detail">
       <CrumbBar
         backHref={`/tournament/${id}`}
         backLabel={tournament?.name ?? "Tournament"}
@@ -90,6 +127,7 @@ export default async function TournamentBracketPage({
           </section>
         )}
       </main>
-    </CompanionFrame>
+      </CompanionFrame>
+    </>
   );
 }
