@@ -353,7 +353,14 @@ function formatDateForESPN(date: Date): string {
 
 /** A rolling 14-day window centered on today (covers multi-day group stages) */
 function getDateWindow(): string[] {
-  const today = new Date();
+  // Anchor "today" to ET. ESPN buckets fixtures by US/ET date, but the server
+  // runs in UTC, so a raw getHours() cutoff fired at the wrong wall-clock time
+  // and could drop or duplicate the late-night slate. Derive the ET wall clock
+  // (formatDateForESPN reads local fields), then apply the same <5am
+  // sports-day cutoff against ET hours.
+  const today = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/New_York" })
+  );
   if (today.getHours() < 5) today.setDate(today.getDate() - 1);
   return Array.from({ length: 14 }, (_, i) => {
     const d = new Date(today);

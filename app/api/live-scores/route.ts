@@ -199,10 +199,15 @@ function formatDateForESPN(date: Date) {
 }
 
 function getScoreboardToday() {
-  const now = new Date();
-  const scoreboardToday = new Date(now);
+  // Anchor to ET (NBA's scheduling tz + how ESPN buckets the scoreboard by
+  // date). The server runs in UTC, so a raw getHours() cutoff was mistimed.
+  // Derive the ET wall clock, then apply the same <5am sports-day cutoff
+  // against ET hours.
+  const scoreboardToday = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/New_York" })
+  );
 
-  if (now.getHours() < 5) {
+  if (scoreboardToday.getHours() < 5) {
     scoreboardToday.setDate(scoreboardToday.getDate() - 1);
   }
 
