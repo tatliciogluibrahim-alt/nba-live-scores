@@ -105,7 +105,7 @@ export function PickerScreen({
           onChange={(e) => setQuery(e.target.value)}
           placeholder={searchPlaceholder}
           aria-label={searchPlaceholder}
-          className="min-h-[28px] w-full bg-transparent text-[14px] outline-none"
+          className="min-h-[28px] w-full bg-transparent text-[14px] outline-none no-noise-focus-ring"
           style={{ color: "var(--ink)", fontWeight: 500 }}
         />
       </label>

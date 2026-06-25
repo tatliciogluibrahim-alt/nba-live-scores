@@ -266,6 +266,22 @@ a {
   border-radius: 6px;
 }
 
+/* Keyboard focus baseline. A calm, visible ink ring on interactive elements
+   for keyboard users only (:focus-visible never fires on mouse click).
+   Low-specificity :where() so any component can override it intentionally. */
+:where(a, button, [role="button"], [role="radio"], [role="tab"], input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Explicit ring for inputs that set Tailwind `outline-none` (which would
+   otherwise win over the baseline above). Apply alongside outline-none so the
+   custom-styled field still shows a keyboard focus ring. */
+.no-noise-focus-ring:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
 /* Score flash — single-cycle highlight fired on the score line when a
    live score updates. Brief opacity dip into the sport accent then back.
    Draws the eye to the change without screaming. One iteration only. */

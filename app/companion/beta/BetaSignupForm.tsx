@@ -231,7 +231,7 @@ function FormField({
           required={required}
           placeholder={placeholder}
           rows={3}
-          className="mt-1.5 w-full rounded-[10px] px-3 py-2 text-[14px] outline-none"
+          className="mt-1.5 w-full rounded-[10px] px-3 py-2 text-[14px] outline-none no-noise-focus-ring"
           style={baseStyle}
         />
       ) : (
@@ -242,7 +242,7 @@ function FormField({
           onChange={(e) => onChange(e.target.value)}
           required={required}
           placeholder={placeholder}
-          className="mt-1.5 w-full rounded-[10px] px-3 py-2 text-[14px] outline-none"
+          className="mt-1.5 w-full rounded-[10px] px-3 py-2 text-[14px] outline-none no-noise-focus-ring"
           style={baseStyle}
         />
       )}

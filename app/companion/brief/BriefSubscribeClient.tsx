@@ -122,7 +122,7 @@ export function BriefSubscribeClient() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="block w-full rounded-[10px] border px-3 py-2.5 text-[14px] outline-none"
+              className="block w-full rounded-[10px] border px-3 py-2.5 text-[14px] outline-none no-noise-focus-ring"
               style={{
                 background: "var(--paper)",
                 borderColor: "var(--line)",
