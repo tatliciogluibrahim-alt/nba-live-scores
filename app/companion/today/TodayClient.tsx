@@ -255,7 +255,12 @@ export function TodayClient() {
               user's sports circle is always in view while they scan
               hero / up-next. The sticky offset is small (16px) so the
               rail tracks the scroll without crowding the top edge. */}
-          <aside className="hidden md:block">
+          {/* pl-2: the rail's content sits flush at the grid column's left
+              edge, leaving no room for the "YOU FOLLOW" heading's first-glyph
+              left bearing — some Chrome builds clip it at the edge ("YOU" →
+              "OU"). A small left inset gives the glyph room (the chips keep
+              their pill padding, so they were never affected). */}
+          <aside className="hidden md:block pl-2">
             <div className="sticky top-4">
               <YouFollow items={payload.youFollow} />
             </div>
