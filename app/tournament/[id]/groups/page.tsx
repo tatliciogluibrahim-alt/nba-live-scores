@@ -17,7 +17,7 @@ export async function generateMetadata({
   const name = tournament?.name ?? "Tournament";
   const isWorldCup = id.startsWith("fifa-world-cup-");
   return {
-    title: `${name} groups | No Noise Scores`,
+    title: `${isWorldCup ? "World Cup 2026" : name} groups | No Noise Scores`,
     description: isWorldCup
       ? "All groups for Summer Soccer 2026, group by group. Tap any team to open its page."
       : `Every group in the ${name}. Tap any team to open its page.`,

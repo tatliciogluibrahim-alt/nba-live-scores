@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 // Run a brief exit animation, then fire the real removal. Returns `exiting`
 // (drive a collapse/fade off it) and `begin` (call instead of the removal —
@@ -9,9 +9,20 @@ import { useState, useCallback } from "react";
 // motion-reduce:* classes collapsing the transition to instant.
 export function useExit(onDone: () => void, ms = 200) {
   const [exiting, setExiting] = useState(false);
+  // Track the pending timer so we can cancel it on unmount (avoid firing
+  // onDone / setState after the component is gone) and so a second begin()
+  // can't stack a duplicate removal.
+  const timer = useRef<number | null>(null);
   const begin = useCallback(() => {
+    if (timer.current !== null) return;
     setExiting(true);
-    window.setTimeout(onDone, ms);
+    timer.current = window.setTimeout(onDone, ms);
   }, [onDone, ms]);
+  useEffect(
+    () => () => {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+    },
+    []
+  );
   return { exiting, begin };
 }

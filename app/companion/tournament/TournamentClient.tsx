@@ -674,7 +674,7 @@ function FIFAWorldCupBody({ tournamentId }: { tournamentId: string }) {
   const bracketLink = (
     <Link
       href={`/tournament/${tournamentId}/bracket`}
-      aria-label="View the full World Cup bracket"
+      aria-label="View the full Summer Soccer bracket"
       className="flex items-center justify-between gap-3 rounded-[16px] border px-4 py-3.5 transition active:scale-[0.99]"
       style={{ background: "var(--paper)", borderColor: "var(--line)", borderLeft: "3px solid var(--wc)" }}
     >

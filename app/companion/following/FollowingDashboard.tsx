@@ -256,7 +256,7 @@ export function FollowingDashboard() {
       {followsWC ? (
         <Link
           href="/tournament/fifa-world-cup-2026/bracket"
-          aria-label="View the World Cup bracket"
+          aria-label="View the Summer Soccer bracket"
           className="mt-5 flex items-center justify-between gap-3 rounded-[16px] border px-4 py-3.5 transition active:scale-[0.99]"
           style={{ background: "var(--paper)", borderColor: "var(--line)", borderLeft: "3px solid var(--wc)" }}
         >
@@ -265,7 +265,7 @@ export function FollowingDashboard() {
               className="text-[10px] uppercase"
               style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--wc)" }}
             >
-              World Cup
+              Summer Soccer
             </span>
             <span className="mt-0.5 text-[14px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
               View the bracket
