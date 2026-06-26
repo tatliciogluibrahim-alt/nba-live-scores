@@ -19,6 +19,7 @@ import {
 import { parseSeriesWins } from "../../nba/lib/series";
 import { WCGroups } from "./WCGroups";
 import { WCKnockout } from "./WCKnockout";
+import { tournamentPhase } from "../following/data/tournament-phase";
 
 // /tournament/[id] — first detail page for tournament follows.
 // Replaces the Phase 1 fallback that routed tournament chips to
@@ -623,37 +624,63 @@ function MiniSeriesStrip({ gamesPlayed }: { gamesPlayed: number }) {
 // ── Summer Soccer body ────────────────────────────────────────────────
 
 function FIFAWorldCupBody({ tournamentId }: { tournamentId: string }) {
-  // Editorial groups preview (no flags). Leads with the user's followed
-  // group, then one row of others, then "View all groups". The full
-  // 12-group grid lives at /tournament/[id]/groups. Standings surface
-  // once games finish — see WCGroups.
+  // Phase 21D — lifecycle-aware. Group/pre: groups lead (the full 12-group grid
+  // lives at /tournament/[id]/groups). Knockout/concluded: the bracket is what
+  // people come for, so it leads and the group stage moves below as history.
+  const phase = tournamentPhase(tournamentId);
+  const knockoutFirst = phase === "knockout" || phase === "concluded";
+
+  const bracketLink = (
+    <Link
+      href={`/tournament/${tournamentId}/bracket`}
+      aria-label="View the full World Cup bracket"
+      className="flex items-center justify-between gap-3 rounded-[16px] border px-4 py-3.5 transition active:scale-[0.99]"
+      style={{ background: "var(--paper)", borderColor: "var(--line)", borderLeft: "3px solid var(--wc)" }}
+    >
+      <span className="flex min-w-0 flex-col">
+        <span
+          className="text-[10px] uppercase"
+          style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--wc)" }}
+        >
+          Bracket
+        </span>
+        <span className="mt-0.5 text-[14px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
+          {knockoutFirst ? "Open the bracket" : "View the full bracket"}
+        </span>
+        <span className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+          Round of 32 to the final
+        </span>
+      </span>
+      <span aria-hidden style={{ color: "var(--mute-1)", fontSize: 16 }}>
+        →
+      </span>
+    </Link>
+  );
+
+  if (knockoutFirst) {
+    return (
+      <>
+        {bracketLink}
+        <div className="mt-8">
+          <WCKnockout />
+        </div>
+        <div className="mt-10">
+          <p
+            className="mb-2 text-[11px] uppercase"
+            style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--mute-1)" }}
+          >
+            Group stage
+          </p>
+          <WCGroups tournamentId={tournamentId} mode="preview" />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <WCGroups tournamentId={tournamentId} mode="preview" />
-      <Link
-        href={`/tournament/${tournamentId}/bracket`}
-        aria-label="View the full World Cup bracket"
-        className="mt-8 flex items-center justify-between gap-3 rounded-[16px] border px-4 py-3.5 transition active:scale-[0.99]"
-        style={{ background: "var(--paper)", borderColor: "var(--line)", borderLeft: "3px solid var(--wc)" }}
-      >
-        <span className="flex min-w-0 flex-col">
-          <span
-            className="text-[10px] uppercase"
-            style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--wc)" }}
-          >
-            Bracket
-          </span>
-          <span className="mt-0.5 text-[14px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
-            View the full bracket
-          </span>
-          <span className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
-            Round of 32 to the final
-          </span>
-        </span>
-        <span aria-hidden style={{ color: "var(--mute-1)", fontSize: 16 }}>
-          →
-        </span>
-      </Link>
+      <div className="mt-8">{bracketLink}</div>
       <div className="mt-8">
         <WCKnockout />
       </div>
