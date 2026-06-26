@@ -136,10 +136,19 @@ export function TournamentClient({ tournamentId }: { tournamentId: string }) {
     return <TournamentNotFound id={tournamentId} />;
   }
 
+  // Phase 21D — a concluded tournament is no longer a live, followable thing.
+  // Show a "Season wrapped" acknowledgment instead of the live alert pill, and
+  // hide the follow/alert controls (you can browse the results, not follow it).
+  const concluded = tournamentPhase(tournament.id) === "concluded";
+
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
       <TournamentHeader tournament={tournament} />
-      <AlertStatePill tournamentId={tournament.id} />
+      {concluded ? (
+        <SeasonWrappedBanner />
+      ) : (
+        <AlertStatePill tournamentId={tournament.id} />
+      )}
 
       {tournament.comingSoon ? (
         <ComingSoonBody tournament={tournament} />
@@ -151,10 +160,42 @@ export function TournamentClient({ tournamentId }: { tournamentId: string }) {
         <GenericTournamentBody />
       )}
 
-      <div className="mt-6">
-        <TournamentPresetSection tournament={tournament} />
-      </div>
+      {!concluded ? (
+        <div className="mt-6">
+          <TournamentPresetSection tournament={tournament} />
+        </div>
+      ) : null}
     </main>
+  );
+}
+
+// Concluded-tournament acknowledgment. Calm, forward-only — the results stay
+// browsable, but there's nothing live to follow.
+function SeasonWrappedBanner() {
+  return (
+    <div
+      className="mt-3 rounded-[14px] border px-4 py-3"
+      style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+    >
+      <p
+        className="text-[11px] uppercase"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          letterSpacing: "0.12em",
+          color: "var(--mute-1)",
+        }}
+      >
+        Season wrapped
+      </p>
+      <p
+        className="mt-1 text-[13px] leading-snug"
+        style={{ color: "var(--ink)", fontWeight: 600 }}
+      >
+        This one&apos;s in the books. The results stay here to browse — there&apos;s
+        nothing live left to follow.
+      </p>
+    </div>
   );
 }
 
