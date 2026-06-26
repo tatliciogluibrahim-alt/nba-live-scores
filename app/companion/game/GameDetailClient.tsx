@@ -6,6 +6,7 @@ import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
+import { readFeed, FEED_KEYS } from "../hooks/feed-cache";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 import type { Game } from "../../nba/types";
 import { NBALiveCompanion } from "./NBALiveCompanion";
@@ -65,6 +66,35 @@ async function fetchGames(): Promise<{
   }
 }
 
+// Seed the initial resolve from the shared feed cache (the same slate Today /
+// Watching just wrote), so tapping a game you were already looking at paints
+// instantly instead of flashing a resolving state. The poll refreshes within
+// its interval; a cache miss falls back to the fetch path as before.
+function seedResolved(gameId: string): Resolved | null {
+  try {
+    const ls = readFeed<{ games: NBAGame[]; recent: NBAGame[] }>(
+      FEED_KEYS.liveScores
+    );
+    if (ls) {
+      const allNBA = mergeNBAGames(ls.games ?? [], ls.recent ?? []);
+      const nbaGame = allNBA.find((g) => g.id === gameId);
+      if (nbaGame) {
+        return {
+          source: "nba",
+          game: nbaGame as unknown as Game,
+          allNBAGames: allNBA as unknown as Game[],
+        };
+      }
+    }
+    const wc = readFeed<WCGameLite[]>(FEED_KEYS.worldCup);
+    const wcGame = wc?.find((g) => g.id === gameId);
+    if (wcGame) return { source: "wc", game: wcGame };
+  } catch {
+    /* cache unavailable — resolve via fetch */
+  }
+  return null;
+}
+
 // Polling cadence matches the rest of the app (10s live / 30s idle).
 const LIVE_INTERVAL_MS = 10_000;
 const IDLE_INTERVAL_MS = 30_000;
@@ -75,8 +105,10 @@ function pageIsVisible(): boolean {
 
 export function GameDetailClient({ gameId }: { gameId: string }) {
   const { isPinned, pinGame, unpinGame } = usePinned();
-  const [resolved, setResolved] = useState<Resolved | null>(null);
-  const resolvedRef = useRef<Resolved | null>(null);
+  const [resolved, setResolved] = useState<Resolved | null>(() =>
+    seedResolved(gameId)
+  );
+  const resolvedRef = useRef<Resolved | null>(resolved);
 
   useEffect(() => {
     const mounted = { current: true };
