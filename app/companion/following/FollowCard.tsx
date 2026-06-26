@@ -301,12 +301,18 @@ export function FollowCard({ data }: { data: FollowCardData }) {
         </button>
       </div>
 
-      {expanded ? (
-        <div
-          id={`follow-${follow.kind}-${follow.id}-body`}
-          className="border-t px-3 py-3"
-          style={{ borderColor: "var(--line)" }}
-        >
+      {/* Drawer animates open via a grid-rows 0fr→1fr transition (CSS-only, no
+          JS height measuring); the body stays mounted so it can ease. */}
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none"
+        style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div
+            id={`follow-${follow.kind}-${follow.id}-body`}
+            className="border-t px-3 py-3"
+            style={{ borderColor: "var(--line)" }}
+          >
           <Eyebrow>Alerts</Eyebrow>
           <button
             type="button"
@@ -416,8 +422,9 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           >
             Unfollow
           </button>
+          </div>
         </div>
-      ) : null}
+      </div>
     </article>
   );
 }

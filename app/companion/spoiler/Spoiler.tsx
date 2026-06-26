@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useReveal, useEffectiveNoSpoilers } from "./reveal";
 
@@ -34,11 +34,24 @@ export function Spoiler({
   const noSpoilers = useEffectiveNoSpoilers(gameId);
   const { isRevealed, reveal } = useReveal();
   const [localRevealed, setLocalRevealed] = useState(false);
+  // One-shot flag set on the reveal tap so the score resolves into focus
+  // (animated) only then — never on a never-hidden score or an
+  // already-revealed mount. Cleared after the animation plays.
+  const [justRevealed, setJustRevealed] = useState(false);
   const revealed = gameId ? isRevealed(gameId) : localRevealed;
+
+  useEffect(() => {
+    if (!justRevealed) return;
+    const t = setTimeout(() => setJustRevealed(false), 300);
+    return () => clearTimeout(t);
+  }, [justRevealed]);
 
   if (!noSpoilers || revealed) {
     return (
-      <span className="tabular-nums" style={{ fontVariantNumeric: "tabular-nums" }}>
+      <span
+        className={`tabular-nums${justRevealed ? " nns-reveal-in" : ""}`}
+        style={{ fontVariantNumeric: "tabular-nums" }}
+      >
         {children}
       </span>
     );
@@ -60,6 +73,7 @@ export function Spoiler({
         e.stopPropagation();
         if (gameId) reveal(gameId);
         else setLocalRevealed(true);
+        setJustRevealed(true);
       }}
       aria-label={label}
       className="no-noise-reveal-focus tabular-nums"

@@ -281,6 +281,21 @@ a {
   .nns-hero-noise { animation: none; opacity: 1; transform: none; }
 }
 
+/* Score resolving into focus when a No-Spoilers cell is revealed — a calm
+   blur-out instead of a hard cut. Fires only on the reveal tap (the component
+   gates the class on a hidden→revealed transition), never on already-revealed
+   scores. Reduced-motion shows it instantly. */
+@keyframes nns-reveal-in {
+  from { filter: blur(7px); opacity: 0.55; }
+  to   { filter: blur(0); opacity: 1; }
+}
+.nns-reveal-in {
+  animation: nns-reveal-in 260ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nns-reveal-in { animation: none; }
+}
+
 /* Focus ring for No-Spoilers reveal controls. The Spoiler primitive is a
    blurred button — the browser default ring can sit beneath the blur or
    be hard to see. This class gives keyboard users a clear, calm outline
