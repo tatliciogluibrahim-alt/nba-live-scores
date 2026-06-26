@@ -115,6 +115,10 @@ export function useTodayData() {
   const { pinned, hydrated: pinnedHydrated } = usePinned();
   const [data, setData] = useState<FetchedData>(seedData);
   const dataRef = useRef<FetchedData>(data);
+  // Last-committed feed signatures — used to skip the re-render + updatedAt
+  // bump when a poll returns byte-identical data (a quiet tick).
+  const nbaSigRef = useRef<string>("");
+  const wcSigRef = useRef<string>("");
   // If we seeded from cache, treat the tab as already loaded so no
   // loading shell flashes before the first poll lands.
   const [hasLoadedOnce, setHasLoadedOnce] = useState(
@@ -135,6 +139,16 @@ export function useTodayData() {
     // the offseason; WC returns fast+empty out of season).
     const applyNba = (r: Awaited<ReturnType<typeof fetchNBA>>) => {
       if (isCancelled()) return;
+      // Skip the commit (re-render + updatedAt re-stamp) when the feed is
+      // byte-identical to the last — a quiet tick shouldn't rebuild the payload
+      // or churn the masthead date. A live minute or score change alters the
+      // stringified feed, so live updates still apply.
+      const sig = JSON.stringify(r.games) + "|" + JSON.stringify(r.recent);
+      if (sig === nbaSigRef.current && dataRef.current.updatedAt !== null) {
+        if (r.games.length > 0 || r.recent.length > 0) setHasLoadedOnce(true);
+        return;
+      }
+      nbaSigRef.current = sig;
       dataRef.current = {
         ...dataRef.current,
         nba: r.games,
@@ -146,6 +160,12 @@ export function useTodayData() {
     };
     const applyWc = (wc: WCGameLite[]) => {
       if (isCancelled()) return;
+      const sig = JSON.stringify(wc);
+      if (sig === wcSigRef.current && dataRef.current.updatedAt !== null) {
+        if (wc.length > 0) setHasLoadedOnce(true);
+        return;
+      }
+      wcSigRef.current = sig;
       dataRef.current = { ...dataRef.current, wc, updatedAt: new Date() };
       setData(dataRef.current);
       if (wc.length > 0) setHasLoadedOnce(true);

@@ -96,6 +96,9 @@ export function useWatchingData() {
     return { nba: ls?.games ?? [], wc: wc ?? [], updatedAt: new Date() };
   });
   const dataRef = useRef<Fetched>(data);
+  // Last-committed feed signature — skip the re-render + updatedAt bump on a
+  // byte-identical (quiet) tick.
+  const sigRef = useRef<string>("");
   const [hasLoadedOnce, setHasLoadedOnce] = useState(
     () => data.updatedAt !== null
   );
@@ -108,6 +111,12 @@ export function useWatchingData() {
   const loadInto = useCallback(async (isCancelled: () => boolean) => {
     const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
     if (isCancelled()) return;
+    const sig = JSON.stringify(nba) + "|" + JSON.stringify(wc);
+    if (sig === sigRef.current && dataRef.current.updatedAt !== null) {
+      setHasLoadedOnce(true);
+      return;
+    }
+    sigRef.current = sig;
     const next = { nba, wc, updatedAt: new Date() };
     dataRef.current = next;
     setData(next);
