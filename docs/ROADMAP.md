@@ -126,6 +126,53 @@ Re-engagement email lives in this list too but is blocked on Phase
 
 ---
 
+## Phase 21D — Tournament Lifecycle (phase-aware surfaces + closure)
+
+**The idea (operator request, 2026-06-26).** A tournament is not a
+static thing you follow forever — it moves through phases, and every
+surface should follow that arc instead of freezing on day one.
+
+**Phases, derived from real data (never hardcoded dates):**
+
+1. **Pre-kickoff** → countdown (already exists).
+2. **Group stage** → groups are the default view.
+3. **Knockouts** → the **bracket** becomes the default view. Once
+   every group game is final, tapping "Summer Soccer" should land on
+   the bracket, not the group stage. Groups stay reachable as
+   history (a tab / a link), just not the thing you wade through.
+4. **Concluded** → the tournament is **over**. The NBA playoffs end,
+   the WC final is played. It stops being a live, followable thing:
+   - You can't **newly follow** it (the follow control reads
+     "Season wrapped" / is disabled, not an active toggle).
+   - **Existing follows** flip to a calm wrapped state — no alerts,
+     no live surfaces, no "live now" rail. Forward-only: we never
+     delete the follow or the history, we mark it closed.
+   - Today / Following show a quiet "Season wrapped." acknowledgment
+     (reuse the CalmEndCard tone), not a dead live card.
+
+**The mechanism.** One derived `tournamentPhase(tournamentId)`
+signal computed from the real schedule + standings already in the
+feed:
+- group→knockout: all group-stage fixtures `final`.
+- knockout→concluded: the Final is `final` (or, for NBA, a series
+  clinches the championship round).
+Every surface reads that one signal: the tournament picker, the
+tournament page's default tab, the follow control, the Today
+scoreboard / Up Next, the "Live now" rail, and the alert dispatcher.
+
+**Why it's near-term, not someday.** The WC reaches the Round of 32
+on **2026-06-28**, so the group→bracket default flip is live within
+days. The NBA playoffs concluding is the first real "concluded"
+case. This is the right batch to build before the knockout surge.
+
+**Constraints.** Forward-only (never reinterpret locked data, never
+delete follows). Copy stays on-brand ("Season wrapped.", calm, no
+FOMO). One source of truth — the phase signal is derived once and
+read everywhere, never duplicated per surface. Don't special-case
+NBA vs WC in the UI; both read the same `tournamentPhase`.
+
+---
+
 ## Phase 22 — NFL Season Build (planned August 2026)
 
 Unchanged from earlier roadmap. Real NFL data, game detail
