@@ -5,6 +5,7 @@
 import type { Follow, PinnedGame } from "../state/types";
 import { getCountry } from "../following/data/countries";
 import { getTournament } from "../following/data/tournaments";
+import { tournamentPhase } from "../following/data/tournament-phase";
 import { prettifySeriesSummary } from "../../nba/lib/series";
 import {
   countryKnockoutOutcome,
@@ -759,6 +760,7 @@ function buildYouFollow(
       }
       if (f.kind === "tournament") {
         const tournament = getTournament(f.id);
+        const concluded = tournamentPhase(f.id) === "concluded";
         return {
           kind: "tournament",
           id: f.id,
@@ -767,8 +769,9 @@ function buildYouFollow(
           // reads like a team abbreviation next to AUT / ARG. The pill
           // can carry the full name since tournament follows are few.
           chip: tournament?.name ?? "Tournament",
-          statusLabel: "Cup",
-          tone: "current",
+          // Concluded tournaments read as wrapped (muted), not an active "Cup".
+          statusLabel: concluded ? "Wrapped" : "Cup",
+          tone: concluded ? "final" : "current",
           // /tournament/[id] became a real detail page in Phase 9 —
           // chip routes there now instead of falling back to /following.
           href: `/tournament/${f.id}`,

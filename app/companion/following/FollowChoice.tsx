@@ -50,6 +50,10 @@ export type FollowMoment = {
      *  header, e.g. "Kicks off September". */
     label: string;
   };
+  /** Canonical tournament id this moment maps to, used to read its lifecycle
+   *  phase. When the tournament is concluded, the moment dims + becomes
+   *  non-followable in the picker (like comingSoon, but "Season wrapped"). */
+  tournamentId?: string;
 };
 
 export const FOLLOW_MOMENTS: FollowMoment[] = [
@@ -59,6 +63,7 @@ export const FOLLOW_MOMENTS: FollowMoment[] = [
     description: "The bracket through the Finals.",
     accent: "var(--nba)",
     icon: "🏀",
+    tournamentId: "nba-playoffs-2025",
     granularities: [
       {
         eyebrow: "Tournament",
@@ -86,6 +91,7 @@ export const FOLLOW_MOMENTS: FollowMoment[] = [
     description: "Group stage through the final.",
     accent: "var(--wc)",
     icon: "⚽",
+    tournamentId: "fifa-world-cup-2026",
     granularities: [
       {
         eyebrow: "Tournament",

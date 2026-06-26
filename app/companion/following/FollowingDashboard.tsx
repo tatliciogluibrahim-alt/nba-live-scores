@@ -8,6 +8,7 @@ import { useFollows } from "../providers";
 import type { Follow } from "../state/types";
 import { FollowCard, type FollowCardData } from "./FollowCard";
 import { useWrappedSeries, NBA_PLAYOFFS_WRAPPED } from "./use-wrapped-series";
+import { tournamentPhase } from "./data/tournament-phase";
 import { useLiveFollows, isFollowLive } from "./use-live-follows";
 import { SportsCircleShareModal } from "../share/SportsCircleShareModal";
 import { SyncCircleModal } from "./SyncCircleModal";
@@ -129,9 +130,15 @@ export function FollowingDashboard() {
       // "Season over".
       wrapped:
         (f.kind === "series" && wrappedSeries.has(f.id)) ||
+        // A tournament is wrapped once its lifecycle phase is "concluded"
+        // (robust through the offseason — the WC after the final, the NBA
+        // playoffs after the season year), OR the moment the Finals series
+        // wraps in the live feed (so it flips immediately, before the
+        // July-1 offseason boundary the phase uses).
         (f.kind === "tournament" &&
-          f.id.startsWith("nba-playoffs") &&
-          wrappedSeries.has(NBA_PLAYOFFS_WRAPPED)),
+          (tournamentPhase(f.id) === "concluded" ||
+            (f.id.startsWith("nba-playoffs") &&
+              wrappedSeries.has(NBA_PLAYOFFS_WRAPPED)))),
       isLive: isFollowLive(f.kind, f.id, liveFollows),
     };
   });

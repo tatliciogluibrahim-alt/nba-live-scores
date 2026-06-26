@@ -313,11 +313,20 @@ export function FollowCard({ data }: { data: FollowCardData }) {
             className="border-t px-3 py-3"
             style={{ borderColor: "var(--line)" }}
           >
+          {wrapped ? (
+            <p
+              className="mb-2 text-[12px] leading-snug"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              Season wrapped. There are no alerts left to send — keep this for
+              posterity, or unfollow below.
+            </p>
+          ) : null}
           <Eyebrow>Alerts</Eyebrow>
           <button
             type="button"
             onClick={handleAlertToggle}
-            disabled={!canEnable}
+            disabled={!canEnable || wrapped}
             aria-label={`${follow.alertEnabled ? "Disable" : "Enable"} alerts for ${name}`}
             // Disabled state used to rely on opacity alone, which read
             // as just "slightly faded" rather than "you can't do this

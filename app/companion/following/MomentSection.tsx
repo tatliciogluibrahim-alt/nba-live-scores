@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
+import { tournamentPhase } from "./data/tournament-phase";
 import type { FollowMoment } from "./FollowChoice";
 
 // One moment block on the Follow picker hub. Renders the moment name
@@ -21,6 +22,14 @@ import type { FollowMoment } from "./FollowChoice";
 
 export function MomentSection({ moment }: { moment: FollowMoment }) {
   const isComingSoon = Boolean(moment.comingSoon);
+  // A concluded tournament dims + becomes non-followable here too, like a
+  // coming-soon moment — but the chip reads "Season wrapped" and the rows
+  // tail with "Wrapped" instead of "Not yet".
+  const isConcluded =
+    !isComingSoon &&
+    !!moment.tournamentId &&
+    tournamentPhase(moment.tournamentId) === "concluded";
+  const isInactive = isComingSoon || isConcluded;
 
   return (
     <section
@@ -34,9 +43,9 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
         background: "var(--paper)",
         borderColor: "var(--line)",
         borderLeft: `4px solid ${moment.accent}`,
-        // Subtle overall opacity dip on coming-soon sections so the
-        // active moments (NBA, WC) earn the user's eye first.
-        opacity: isComingSoon ? 0.78 : 1,
+        // Subtle overall opacity dip on inactive (coming-soon / concluded)
+        // sections so the active moments earn the user's eye first.
+        opacity: isInactive ? 0.78 : 1,
       }}
     >
       {/* Section header — icon, name, description, optional chip. */}
@@ -46,7 +55,7 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
             {moment.icon}
           </span>
           <Eyebrow color={moment.accent}>{moment.name}</Eyebrow>
-          {moment.comingSoon ? (
+          {isInactive ? (
             <span
               className="ml-auto rounded-full px-2 py-0.5"
               style={{
@@ -60,7 +69,7 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
                 border: "1px solid var(--line)",
               }}
             >
-              {moment.comingSoon.label}
+              {moment.comingSoon ? moment.comingSoon.label : "Season wrapped"}
             </span>
           ) : null}
         </div>
@@ -100,7 +109,7 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
                   {g.detail}
                 </p>
               </div>
-              {isComingSoon ? (
+              {isInactive ? (
                 <span
                   className="shrink-0 text-[11px] uppercase"
                   style={{
@@ -110,7 +119,7 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
                     fontWeight: 600,
                   }}
                 >
-                  Not yet
+                  {isConcluded ? "Wrapped" : "Not yet"}
                 </span>
               ) : (
                 <svg
@@ -131,7 +140,7 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
 
           return (
             <li key={g.href + g.eyebrow}>
-              {isComingSoon ? (
+              {isInactive ? (
                 <div
                   className="flex min-h-[64px] items-center gap-3 px-4 py-3"
                   style={{
@@ -139,7 +148,7 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
                     color: "var(--ink)",
                     borderTop: "1px solid var(--line)",
                   }}
-                  aria-label={`${moment.name}: ${g.title} (coming soon)`}
+                  aria-label={`${moment.name}: ${g.title} (${isConcluded ? "season wrapped" : "coming soon"})`}
                 >
                   {inner}
                 </div>
