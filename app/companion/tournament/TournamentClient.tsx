@@ -753,7 +753,8 @@ function ComingSoonBody({ tournament }: { tournament: TournamentEntry }) {
             letterSpacing: "-0.005em",
           }}
         >
-          {tournament.name} isn&apos;t live yet.
+          {tournament.name}
+          {" isn’t live yet."}
         </p>
         <p
           className="mt-2 text-[13px] leading-snug"
