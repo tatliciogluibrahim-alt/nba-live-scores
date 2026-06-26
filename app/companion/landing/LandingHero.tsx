@@ -267,7 +267,7 @@ function PhonePreview() {
             className="mt-1 text-[13px] leading-snug"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
-            One pinned game is live. Knicks · Cavaliers.
+            One pinned game is live. Knicks · Spurs.
           </p>
         </div>
 
@@ -314,7 +314,7 @@ function PhonePreview() {
                 textTransform: "uppercase",
               }}
             >
-              NYK · CLE
+              NYK · SA
             </span>
             <span
               style={{
@@ -346,7 +346,7 @@ function PhonePreview() {
           {[
             { code: "NYK", live: true },
             { code: "USA", live: false },
-            { code: "BRA", live: false },
+            { code: "KC", live: false },
           ].map((c) => (
             <span
               key={c.code}
@@ -395,21 +395,21 @@ function PhonePreview() {
             className="text-[12px]"
             style={{ color: "var(--ink)", fontWeight: 700 }}
           >
-            USA vs MEX
+            USA vs PAR
           </p>
           <p
             className="mt-0.5 text-[11px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            Group A · Thu 8:00 PM · FOX
+            Group D · Thu 8:00 PM · FOX
           </p>
         </div>
 
-        {/* Reminder row */}
+        {/* Reminder row — the third sport, framed as the upcoming moment. */}
         <div
           className="mt-3 rounded-[12px] px-3 py-2"
           style={{
-            background: "var(--wc-soft)",
+            background: "var(--nfl-soft)",
           }}
         >
           <p
@@ -418,16 +418,16 @@ function PhonePreview() {
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               letterSpacing: "0.12em",
-              color: "var(--wc)",
+              color: "var(--nfl)",
             }}
           >
-            Summer Soccer
+            NFL Season
           </p>
           <p
             className="mt-0.5 text-[12px]"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
-            16 days until first whistle.
+            Chiefs vs Bills. Opens September.
           </p>
         </div>
         </div>

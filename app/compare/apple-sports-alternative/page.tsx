@@ -42,7 +42,7 @@ export default function VsAppleSportsPage() {
           [
             "OS integration",
             "Live Activities, Lock Screen widgets, watch complication",
-            "PWA. No Live Activities on iOS.",
+            "Live Activities coming to the iPhone app",
           ],
           ["Sport breadth", "Many sports, all seasons", "NBA Playoffs + Summer Soccer + NFL coming"],
           ["Install friction", "App Store, free, one tap", "Add to Home Screen on iPhone"],
@@ -50,10 +50,10 @@ export default function VsAppleSportsPage() {
         ]}
       />
       <P>
-        If raw speed-to-score and OS integration matter most to you,
-        Apple Sports is the right pick. They have advantages we
-        structurally can&apos;t match (iOS Live Activities aren&apos;t
-        available to web apps).
+        If raw speed-to-score matters most to you, Apple Sports is the
+        right pick. Their cold launch is faster. The OS-integration gap
+        is closing, though: the native iPhone app brings Live Activities
+        to No Noise Scores too.
       </P>
 
       <H2>Where No Noise Scores wins</H2>
@@ -103,9 +103,10 @@ export default function VsAppleSportsPage() {
         <strong style={{ color: "var(--ink)" }}>
           Pick Apple Sports if:
         </strong>{" "}
-        you live on iPhone, you mostly want scores and Live Activities,
-        you don&apos;t need No-Spoilers, you follow more sports than
-        this app covers, or you prefer one-tap App Store install.
+        you live on iPhone, you mostly want scores with the deepest iOS
+        integration, you don&apos;t need No-Spoilers, you follow more
+        sports than this app covers, or you prefer one-tap App Store
+        install.
       </P>
       <P>
         <strong style={{ color: "var(--ink)" }}>
