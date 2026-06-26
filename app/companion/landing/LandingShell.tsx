@@ -14,6 +14,7 @@ import { LandingHeader } from "./LandingHeader";
 import { LandingHero } from "./LandingHero";
 import { HowItWorksCapsule } from "./HowItWorksCapsule";
 import { MomentsBand } from "./MomentsBand";
+import { SpotlightBand } from "./SpotlightBand";
 import { DifferentiatorPillars } from "./DifferentiatorPillars";
 import { LandingFAQ } from "./LandingFAQ";
 import { FAQ_ITEMS } from "./faq-data";
@@ -80,6 +81,7 @@ export function LandingShell() {
       <LandingHero />
       <HowItWorksCapsule />
       <MomentsBand />
+      <SpotlightBand />
       <DifferentiatorPillars />
       <LandingFAQ />
       <LandingFooter />

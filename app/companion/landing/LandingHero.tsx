@@ -162,19 +162,23 @@ function NoiseField() {
   };
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "9%", fontSize: 30, opacity: 0.14, filter: "blur(0.4px)" }}>
+      {/* Rows sit BELOW the eyebrow band (the eyebrow stays in clean cream up
+          top) and are hushed low so the message always wins. The firehose
+          reads behind the headline + the phone, never over the labels. */}
+      <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "31%", fontSize: 28, opacity: 0.09, filter: "blur(0.5px)" }}>
         {row}{row}
       </p>
-      <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "42%", fontSize: 22, opacity: 0.1, filter: "blur(0.5px)", transform: "translateX(-130px)" }}>
+      <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "56%", fontSize: 22, opacity: 0.07, filter: "blur(0.6px)", transform: "translateX(-130px)" }}>
         {row}{row}
       </p>
-      <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "76%", fontSize: 26, opacity: 0.12, filter: "blur(0.4px)", transform: "translateX(-60px)" }}>
+      <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "81%", fontSize: 25, opacity: 0.08, filter: "blur(0.5px)", transform: "translateX(-60px)" }}>
         {row}{row}
       </p>
-      {/* Cream wash — quiets the noise where the message + CTAs live. */}
+      {/* Cream wash — keeps the whole message column (eyebrow → CTAs) clean;
+          the noise resolves behind the phone + lower edges. */}
       <div
         className="absolute inset-0"
-        style={{ background: "radial-gradient(115% 78% at 26% 50%, var(--cream) 40%, transparent 80%)" }}
+        style={{ background: "radial-gradient(125% 95% at 22% 48%, var(--cream) 48%, transparent 84%)" }}
       />
     </div>
   );
