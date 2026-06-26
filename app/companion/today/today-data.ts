@@ -1555,7 +1555,6 @@ function buildPinnedSummary(
 function buildScoreboard(
   nba: NBAGame[],
   wc: WCGameLite[],
-  upNext: UpNextItem[],
   follows: Follow[],
   pinned: PinnedGame[]
 ): ScoreboardTile[] {
@@ -1616,29 +1615,10 @@ function buildScoreboard(
       lead: leadOf(g.away.score, g.home.score),
     });
   }
-  // Upcoming today — reuse Up Next (already has personal + isToday). Include
-  // tournament-covered upcoming games too, even when no team/country matches.
-  for (const u of upNext) {
-    if (!u.isToday) continue;
-    const sport = u.source === "wc" ? "wc" : "nba";
-    if (!(u.personal || (sport === "wc" ? wcTour : nbaTour))) continue;
-    const parts = u.headline.split(/\s+vs\s+/i);
-    if (parts.length !== 2) continue;
-    tiles.push({
-      id: u.id,
-      source: sport,
-      awayCode: parts[0].trim(),
-      homeCode: parts[1].trim(),
-      awayScore: null,
-      homeScore: null,
-      status: "upcoming",
-      statusLine: u.detail.split(" · ")[0] ?? u.detail,
-      stageLine: u.eyebrow,
-      href: u.href,
-      lead: null,
-    });
-  }
-
+  // Live games only. Upcoming games live in the Up Next list (time-forward,
+  // with channels) — surfacing them here too produced a redundant grid of
+  // score-less "—" tiles duplicating that list, especially for a tournament
+  // follower whose whole slate is "personal".
   return tiles.slice(0, 12);
 }
 
@@ -1729,7 +1709,7 @@ export function buildTodayPayload({
     closing,
     pinnedSummary,
     knockoutMoments: buildKnockoutMoments(wc, follows),
-    scoreboard: buildScoreboard(nba, wc, upNext, follows, pinned),
+    scoreboard: buildScoreboard(nba, wc, follows, pinned),
   };
 }
 
