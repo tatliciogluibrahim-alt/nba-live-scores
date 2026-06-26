@@ -25,9 +25,21 @@ export function tournamentPhase(
   now: Date = new Date()
 ): TournamentPhase {
   if (tournamentId.startsWith("fifa-world-cup-")) return wcPhase(now);
-  // Other tournaments default to "group" (treated as active) until their own
-  // per-sport derivation lands. NBA concluded/offseason is tracked separately
-  // because, unlike the WC, its end isn't a single fixture in a curated table.
+  if (tournamentId.startsWith("nba-playoffs-")) return nbaPhase(tournamentId, now);
+  // Unknown tournaments default to "group" (treated as active).
+  return "group";
+}
+
+// NBA has no group/knockout split to surface, so the only meaningful boundary
+// is active vs concluded. The Finals always wrap by late June, so July 1 of the
+// season year onward is concluded (the offseason has no live games anyway, so
+// this is the reliable signal — derived from the id's year, not a magic
+// per-tournament date). "group" stands in for "active" here.
+function nbaPhase(tournamentId: string, now: Date): TournamentPhase {
+  const year = Number(tournamentId.split("-").pop());
+  if (!Number.isFinite(year)) return "group";
+  // month index 6 = July.
+  if (now.getTime() >= Date.UTC(year, 6, 1)) return "concluded";
   return "group";
 }
 

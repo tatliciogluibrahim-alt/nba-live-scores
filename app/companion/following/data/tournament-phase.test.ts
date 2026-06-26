@@ -30,8 +30,26 @@ describe("tournamentPhase — Summer Soccer (from the real fixture schedule)", (
   });
 });
 
-describe("tournamentPhase — other tournaments", () => {
-  it("defaults to 'group' (active) until per-sport derivation lands", () => {
-    expect(tournamentPhase("nba-playoffs-2025")).toBe("group");
+describe("tournamentPhase — NBA playoffs (active vs concluded by season year)", () => {
+  it("is active ('group') during the playoff window", () => {
+    expect(tournamentPhase("nba-playoffs-2026", new Date("2026-05-15T00:00:00Z"))).toBe(
+      "group"
+    );
+  });
+
+  it("is 'concluded' from July 1 of the season year onward", () => {
+    expect(tournamentPhase("nba-playoffs-2025", new Date("2025-07-01T00:00:00Z"))).toBe(
+      "concluded"
+    );
+    // A prior season is concluded forever after.
+    expect(tournamentPhase("nba-playoffs-2025", new Date("2026-06-26T00:00:00Z"))).toBe(
+      "concluded"
+    );
+  });
+
+  it("defaults to 'group' for an unknown tournament", () => {
+    expect(tournamentPhase("nfl-season-2026", new Date("2026-06-26T00:00:00Z"))).toBe(
+      "group"
+    );
   });
 });
