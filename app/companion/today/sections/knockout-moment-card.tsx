@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Display } from "../../atoms/Display";
 import { useNoSpoilers } from "../../providers";
 import { useClosingDismissed } from "./use-closing-dismissed";
+import { useExit } from "../../hooks/use-exit";
 import { WCShareModal } from "../../share/WCShareModal";
 import type { KnockoutMomentItem } from "../today-data";
 
@@ -24,6 +25,8 @@ export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
   const noSpoilers = useNoSpoilers();
   const { hydrated, isDismissed, dismiss } = useClosingDismissed();
   const [shareOpen, setShareOpen] = useState(false);
+  // Dismiss collapses + fades out before unmounting.
+  const { exiting, begin } = useExit(() => dismiss(moment.id));
 
   if (!hydrated) return null;
   if (isDismissed(moment.id)) return null;
@@ -46,6 +49,11 @@ export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
         : `${moment.countryName}'s run ended in the ${moment.stageLabel}.`;
 
   return (
+    <div
+      className="grid transition-all duration-200 ease-out motion-reduce:transition-none"
+      style={{ gridTemplateRows: exiting ? "0fr" : "1fr", opacity: exiting ? 0 : 1 }}
+    >
+      <div className="overflow-hidden">
     <section
       className="relative overflow-hidden rounded-[14px] border px-4 py-5"
       style={{
@@ -57,7 +65,7 @@ export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
     >
       <button
         type="button"
-        onClick={() => dismiss(moment.id)}
+        onClick={begin}
         className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full transition active:scale-[0.95]"
         style={{ color: "var(--mute-1)" }}
         aria-label="Dismiss"
@@ -132,5 +140,7 @@ export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
         />
       ) : null}
     </section>
+      </div>
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Display } from "../../atoms/Display";
 import { useNoSpoilers } from "../../providers";
 import { useClosingDismissed } from "./use-closing-dismissed";
+import { useExit } from "../../hooks/use-exit";
 import type { ClosingMoment } from "../today-data";
 
 // CalmEndCard — the "honest ending" card.
@@ -28,6 +29,9 @@ import type { ClosingMoment } from "../today-data";
 export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
   const noSpoilers = useNoSpoilers();
   const { hydrated, isDismissed, dismiss } = useClosingDismissed();
+  // Dismiss collapses + fades the card out before unmounting, so the calm
+  // acknowledgment doesn't pop away instantly.
+  const { exiting, begin } = useExit(() => dismiss(moment.id));
 
   // Wait for hydration before rendering — avoids a flash for moments
   // the user already dismissed on a previous visit.
@@ -37,6 +41,11 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
   const isSeries = moment.kind === "series";
 
   return (
+    <div
+      className="grid transition-all duration-200 ease-out motion-reduce:transition-none"
+      style={{ gridTemplateRows: exiting ? "0fr" : "1fr", opacity: exiting ? 0 : 1 }}
+    >
+      <div className="overflow-hidden">
     <section
       className="relative overflow-hidden rounded-[14px] border px-4 py-5"
       style={{
@@ -54,7 +63,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
       {/* Dismiss control. Calm × in the top-right, no harsh weight. */}
       <button
         type="button"
-        onClick={() => dismiss(moment.id)}
+        onClick={begin}
         className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full transition active:scale-[0.95]"
         style={{ color: "var(--mute-1)" }}
         aria-label="Dismiss"
@@ -229,5 +238,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
         </div>
       ) : null}
     </section>
+      </div>
+    </div>
   );
 }
