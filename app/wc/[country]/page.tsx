@@ -186,7 +186,7 @@ export default async function CountryLandingPage({
       <ContentPageShell
         eyebrow={`World Cup 2026 · Group ${country.group}`}
         headline={`${country.flag}  ${country.name} at the 2026 World Cup.`}
-        intro={`${country.name} are in Group ${country.group}. The tournament opens June 11, 2026. Follow ${country.name} on No Noise Scores to get kickoff and full-time alerts for every match.`}
+        intro={`${country.name} are in Group ${country.group} at the 2026 World Cup. Follow ${country.name} on No Noise Scores for their group, their path through the knockout rounds, and kickoff and full-time alerts on every match.`}
       >
         <H2>Group {country.group}</H2>
         <P>

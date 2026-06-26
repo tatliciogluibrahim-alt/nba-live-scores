@@ -29,6 +29,22 @@ export default function ChangelogPage() {
     >
       <H2>2026</H2>
 
+      <H3>June. Summer Soccer, the bracket, and a calmer app.</H3>
+      <P>
+        The tournament arrived, and the whole app got quieter and more
+        considered along the way.
+      </P>
+      <BulletList
+        items={[
+          "Summer Soccer 2026 is live. Groups, official standings, every fixture, and a round-by-round bracket. Once the group stage wraps, the tournament leads straight with the bracket instead of the finished groups.",
+          "A real desktop experience. Every live game you follow at a glance, the full bracket laid out as columns, keyboard shortcuts to move between tabs, and a redesigned home page.",
+          "Tournament lifecycle. A tournament that's over reads \"Season wrapped\" and stops sending alerts. The results stay to browse, with nothing to clean up.",
+          "Calmer motion throughout. Scores resolve into focus when you reveal them, the day settles in once instead of replaying on every visit, and cards fade out instead of popping.",
+          "More accurate alerts. Goal notifications name the right scorer, and the \"live now\" count always matches what's on screen.",
+          "Lock-screen Live Activities on iPhone. A game you're tracking lives on your lock screen, with the score and the clock.",
+        ]}
+      />
+
       <H3>May. Stakes, recap, brief.</H3>
       <P>
         Three features that turn the app from a calm scoreboard into a

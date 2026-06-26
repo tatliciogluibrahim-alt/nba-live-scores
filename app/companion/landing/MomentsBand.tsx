@@ -30,7 +30,7 @@ const MOMENTS: MomentEntry[] = [
     sport: "Summer Soccer",
     title: "Summer Soccer 2026",
     detail:
-      "Country pages with group, path-to-final, opener countdown, kickoff and full-time alerts. June 11, 2026 in Mexico City.",
+      "Country pages with your group, the path to the final, the bracket, and kickoff and full-time alerts. Live across the US, Canada, and Mexico.",
     accent: "var(--wc)",
     soft: "var(--wc-soft)",
   },

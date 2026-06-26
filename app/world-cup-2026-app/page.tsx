@@ -9,7 +9,7 @@ import {
 export const metadata = {
   title: "World Cup 2026 app | No Noise Scores",
   description:
-    "A calm World Cup 2026 companion. Pick your country, countdown to kickoff, your group, path to the final, and kickoff + full-time alerts. June 11, 2026.",
+    "A calm World Cup 2026 companion. Pick your country, follow your group and the path to the final, and get kickoff and full-time alerts. No feeds, no noise.",
   alternates: {
     canonical: "https://nonoisescores.app/world-cup-2026-app",
   },
@@ -20,7 +20,7 @@ export default function WorldCup2026Page() {
     <ContentPageShell
       eyebrow="World Cup 2026"
       headline="A calm companion for the 2026 World Cup."
-      intro="June 11, 2026. Pick your country. Countdown, your group, kickoff and full-time pings, all the way to the final."
+      intro="Pick your country. Your group, the path to the final, and kickoff and full-time pings, all the way through the knockouts."
     >
       <P>
         The 2026 World Cup is a 32-day event across the US, Canada, and
@@ -28,15 +28,15 @@ export default function WorldCup2026Page() {
         schedule or drown you in a generic soccer-everywhere feed. This one
         is the opposite: a calm tournament companion built for this
         specific month. (Inside the app the tournament is labelled
-        &quot;Summer Soccer&quot; &mdash; same event, calmer name.)
+        &quot;Summer Soccer&quot;. Same event, calmer name.)
       </P>
 
       <H2>What the Summer Soccer pages do</H2>
       <BulletList
         items={[
           "Pick your country. You see your country's path through the tournament. Group, opponents, knockout bracket.",
-          "Live countdown to the opening match (June 11) with intensity tiers as kickoff approaches.",
-          "Group strip showing your group's current standings (lights up post-kickoff).",
+          "Live scores and your country's standing through the group stage and into the knockout rounds.",
+          "Group strip with your group's live standings.",
           "Path timeline. Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final.",
           "Stakes line: \"Top two in Group X advance. Best four third-place finishers also move on.\"",
           "Country's next match block. Opponent, time, channel.",
@@ -101,10 +101,9 @@ export default function WorldCup2026Page() {
         a country from the Summer Soccer section. Turn alerts on.
       </P>
       <P>
-        On the country page, the tournament countdown will carry the
-        screen through the next 16 days. Once kickoff arrives,
-        we&apos;ll switch to surfacing your country&apos;s next match
-        and live state.
+        On the country page you see your country&apos;s next match, its
+        live state during a game, and its path through the knockout
+        rounds.
       </P>
 
       <P>
