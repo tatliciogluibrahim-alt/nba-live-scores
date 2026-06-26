@@ -126,7 +126,19 @@ Re-engagement email lives in this list too but is blocked on Phase
 
 ---
 
-## Phase 21D — Tournament Lifecycle (phase-aware surfaces + closure)
+## ✅ Phase 21D — Tournament Lifecycle — CORE SHIPPED (2026-06-26)
+
+**Shipped:** one derived `tournamentPhase` signal
+(`app/companion/following/data/tournament-phase.ts`, WC from the
+fixture schedule, NBA concluded from the season year) read by the
+tournament page (WC knockout→bracket-first; concluded→"Season
+wrapped" banner + follow controls hidden), the Following card
+(concluded→wrapped chip + "Season over" bucket + alert toggle
+disabled), the picker (concluded moment dims + non-followable), and
+Today's "you follow" chip (concluded→"Wrapped"). Forward-only;
+results stay browsable. **Remaining polish:** none critical — the
+core ask is met. A later refinement could base WC group→knockout on
+actual group-final results rather than the last group fixture's date.
 
 **The idea (operator request, 2026-06-26).** A tournament is not a
 static thing you follow forever — it moves through phases, and every
