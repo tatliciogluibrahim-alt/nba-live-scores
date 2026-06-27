@@ -139,16 +139,39 @@ When changing code:
 
 ## Current Phase
 
+**The iOS app is LIVE on the App Store.** v1.0 went live 2026-06-17.
+v1.0.1 (build 15) is in App Store review as of ~2026-06-23 (bug
+fixes and widget refinements). Phase 22.5 (iOS native via Capacitor)
+is **shipped**, not in progress: Live Activity, the home-screen
+upcoming widget, the home-screen live-score widget, and lock-screen
+accessory widgets are all in production. Distribution is App Store +
+PWA add-to-home. Cost to date: $99/year Apple Developer Program, no
+contractor.
+
 Phases 1–8, A/B/C, **9–20**, the QA bug round, the polish batch,
-the copy + tone sweep, and **Phase 21B (Calm Endings + Tier
-Honesty)** are all complete. The product is in a shippable state
-with a live desktop landing surface, a full SEO content layer,
-dynamic OG image generation, dark mode, a beta signup form, and
-Series Closure + Wind-Down cards on Today. See
-`app/CHANGELOG_PRODUCT.md` for per-phase detail.
+the copy + tone sweep, **Phase 21B (Calm Endings + Tier Honesty)**,
+**Phase 21 (the Brief)**, **Phase 21D (Tournament Lifecycle)**, and
+**Phase 22.5 (iOS native ship)** are all complete. The product is
+shipped on three surfaces: native iOS app, mobile PWA, and the
+desktop landing + SEO content layer. See `app/CHANGELOG_PRODUCT.md`
+for per-phase detail.
 
 Completed (most recent first):
 
+- **Phase 22.5 — iOS native shipped to the App Store.** v1.0 live
+  2026-06-17; v1.0.1 (build 15) submitted ~2026-06-23, in review.
+  Capacitor 8 wrapper around the production PWA. Two custom Swift
+  plugins: `LiveActivityPlugin` (ActivityKit bridge) and
+  `WidgetBridgePlugin` (App Group snapshot writer). The
+  `NoNoiseWidgetsExtension` target ships the Live Activity (lock
+  screen + Dynamic Island), the home-screen upcoming widget, the
+  home-screen live-score widget, and lock-screen accessory widgets.
+  APNs push verified on a physical device. Live Activity runs against
+  the production APNs endpoint (`LIVE_ACTIVITY_SANDBOX = false`).
+  Capabilities: Live Activities + frequent updates, App Group
+  `group.com.nonoisescores.app`, remote-notification background mode,
+  encryption-exempt flag, privacy manifest. Native code lives in
+  `ios/App/`.
 - **Phase 22.5-3 — Live Activity working on iPhone** (2026-05-29).
   Verified visually on lock screen + Dynamic Island. The blocker was
   a Capacitor footgun: `getPlugin()` in
@@ -223,8 +246,9 @@ Completed (most recent first):
 - **Phase 8**. World Cup pre-kickoff readiness.
 - **Phases 1–7**. Foundation work.
 
-**Next:** Phases 21C, 21, 22.5 (in progress), 22, 23+. See
-`docs/ROADMAP.md`.
+**Next:** Phase 22.5-D (desktop bespoke, ongoing), Phase 22 (NFL,
+August 2026), Phase 23+, and the open Phase 21C retention plays. iOS
+native (22.5) and the Brief (21) are shipped. See `docs/ROADMAP.md`.
 
 - **Phase 21C** — Retention plays (push permission recovery card
   shipped 2026-05-26; Series Closure follow suggestion, Game 7
@@ -242,21 +266,19 @@ Completed (most recent first):
   2026-05-28.** Two design rounds didn't beat the existing share
   card. Not on the critical path; revisit post-launch only if users
   ask to share.
-- **Phase 22.5** — **iOS Native via Capacitor + Desktop Bespoke — IN PROGRESS.**
-  Proof-of-life (22.5-1) and dispatcher integration (22.5-2) both
-  shipped 2026-05-27. Real APNs push verified on physical iPhone.
-  Live Activity **web half** (22.5-3) shipped 2026-05-28:
-  `app/companion/native/live-activity.ts` (bridge) +
-  `LiveActivitySync.tsx` (lifecycle, mounted in providers) +
-  server half already built. Native-gated, inert until the Swift
-  plugin exists. Remaining: Live Activity **Swift plugin + Widget
-  Extension** (22.5-3/4, Xcode pairing — see
-  `docs/LIVE_ACTIVITY_BUILD.md`), App Store ship (22.5-5). Desktop bespoke (22.5-D) runs in parallel as
-  alternating sessions per the 2026-05-27 decision (Swift one
-  weekend, responsive web the next). DIY approach with Claude
-  pairing — total cost so far is just $99/year Apple Developer
-  Program. Plans in `docs/IOS_NATIVE_PLAN.md` and
-  `docs/DESKTOP_BESPOKE_PLAN.md`.
+- **Phase 22.5** — **iOS Native via Capacitor — SHIPPED. App is LIVE
+  on the App Store.** v1.0 live 2026-06-17; v1.0.1 (build 15) in
+  review ~2026-06-23. 22.5-1 (proof of life), 22.5-2 (dispatcher
+  integration), 22.5-3 (Live Activity, Swift plugin + extension),
+  22.5-4 (home-screen + live-score + lock-screen widgets), and 22.5-5
+  (App Store submission) are all done. Native code in `ios/App/`:
+  `LiveActivityPlugin.swift`, `WidgetBridgePlugin.swift`, and the
+  `NoNoiseWidgetsExtension` target. DIY with Claude pairing, $99/year
+  Apple Developer Program, no contractor. **Still open: 22.5-D
+  (desktop bespoke)** runs in parallel as alternating sessions per
+  the 2026-05-27 decision. Plans in `docs/IOS_NATIVE_PLAN.md` and
+  `docs/DESKTOP_BESPOKE_PLAN.md`; on-device build notes in
+  `docs/LIVE_ACTIVITY_BUILD.md`.
 - **Phase 22** — NFL season build (August 2026).
 - **Phase 23+** — Beyond: Sports Circle prototype, multi-device push
   (simpler post-iOS-native), No-Spoilers Pro as the paid pitch,
@@ -277,8 +299,6 @@ Each phase is its own go/no-go unit. Do not jump ahead.
 Do not do yet:
 
 - NFL full build (Phase 22. August 2026).
-- iOS native wrap (Phase 22.5, contractor needed — see
-  `docs/IOS_NATIVE_PLAN.md`).
 - Account system.
 - Monetization UI beyond the 3-free-alerts model already in copy.
 - Large refactor.

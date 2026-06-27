@@ -2,6 +2,43 @@
 
 ---
 
+## Phase 22.5 SHIPPED — iOS app LIVE on the App Store — 2026-06-17 (v1.0), ~2026-06-23 (v1.0.1 in review)
+
+The native iOS app is live. v1.0 went live on the App Store
+**2026-06-17**. v1.0.1 (build 15) was submitted ~**2026-06-23** and is
+in review (bug fixes + widget refinements).
+
+What's in the shipped app:
+
+- **Capacitor 8 wrapper** around the production PWA
+  (`com.nonoisescores.app`, server `https://nonoisescores.app/app`).
+- **Live Activity** (lock screen + Dynamic Island) — `LiveActivityPlugin.swift`
+  (ActivityKit bridge) + `NoNoiseLiveActivity.swift`. Real-time score
+  updates via APNs background push from the scan-nba / scan-wc crons,
+  against the **production** APNs endpoint (`LIVE_ACTIVITY_SANDBOX = false`).
+  No-Spoilers tap-to-reveal on the tile (iOS 17+).
+- **Home-screen widgets** — `WidgetBridgePlugin.swift` writes an App
+  Group snapshot; `NoNoiseUpcomingWidget` (upcoming followed games,
+  paged) and `NoNoiseLiveScoreWidget` (live followed-game snapshot)
+  render it. Personal-follows filter, capped at 5, debounced writes.
+- **Lock-screen accessory widgets** (rectangular + inline).
+- **Capabilities:** `NSSupportsLiveActivities` +
+  `NSSupportsLiveActivitiesFrequentUpdates`, App Group
+  `group.com.nonoisescores.app`, `remote-notification` background
+  mode, `ITSAppUsesNonExemptEncryption = false`, PrivacyInfo manifest.
+- Native code lives in `ios/App/`. Two native targets: `App` and
+  `NoNoiseWidgetsExtension`.
+
+DIY end to end with Claude pairing. Total spend: $99/year Apple
+Developer Program, no contractor.
+
+> Note to verify when next in Xcode: `App.entitlements` shows
+> `aps-environment: development`. Push works in production, so the
+> distribution profile is supplying the production value at archive
+> time — confirm the release entitlement resolves to `production`.
+
+---
+
 ## Phase 22.5-3 LIVE — Live Activity bridge fix, Game Pulse, contrast, copy QA — 2026-05-29
 
 The day Live Activities started working on device, plus a wide pre-ship

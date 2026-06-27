@@ -9,19 +9,17 @@ Phase 21 (the Brief) are all complete** (see
 feature shipped briefly as part of Phase 21B-2 then was reverted on
 2026-05-27.
 
-**Update 2026-05-28:** Phase 21 (Brief) shipped — it's live and
+**Update 2026-06-27: the iOS app is LIVE on the App Store.** Phase
+22.5 (iOS native via Capacitor) is fully shipped. v1.0 went live
+2026-06-17; v1.0.1 (build 15) is in review as of ~2026-06-23 (bug
+fixes + widget refinements). Live Activity, the home-screen upcoming
+widget, the home-screen live-score widget, and lock-screen accessory
+widgets are all in production. Phase 21 (Brief) is live and
 auto-sending daily. No-Spoilers Pro (selective per-follow) shipped
-its UI + behavior (the global toggle stays free; selective is the
-paid pitch — see the No-Spoilers model in AGENTS.md). The Sports
-Circle visual prototype was explored across two design rounds and
-**shelved** — the existing typographic share card is the answer;
-revisit only if users actually want to share. The remaining critical
-path to launch is **Phase 22.5-4 (Widget App Group container fix) +
-pre-ship cleanup + 22.5-5 (App Store submission)** plus a manual
-visual QA pass. **Phase 22.5-3 (Live Activity) shipped 2026-05-29**
-and is verified working on a physical iPhone; remaining 22.5-4 work
-is operational (App Group entitlement attachment via a fresh
-reinstall), not new code.
+its UI + behavior (global toggle free; selective is the paid pitch).
+The Sports Circle visual prototype was explored and **shelved**. The
+remaining open threads are **Phase 22.5-D (desktop bespoke)**, the
+open **Phase 21C** retention plays, and **Phase 22 (NFL, Aug 2026)**.
 
 Each phase below is one go/no-go unit. Do not jump ahead.
 
@@ -192,7 +190,11 @@ surfaces, NFL-specific event taxonomy. Spec in `docs/nfl-design.md`.
 
 ---
 
-## ✅ Phase 22.5-1/2 — iOS Native via Capacitor — IN PROGRESS (May 2026)
+## ✅ Phase 22.5 — iOS Native via Capacitor — SHIPPED (app LIVE on the App Store)
+
+**v1.0 live 2026-06-17. v1.0.1 (build 15) in review ~2026-06-23.**
+All of 22.5-1 through 22.5-5 are done. The detail below is kept for
+history; the "Remaining" framing it once carried no longer applies.
 
 Two parts shipped 2026-05-27.
 
@@ -211,7 +213,7 @@ Two parts shipped 2026-05-27.
   over a generic `SubscriberPreferences` type. Per-transport dedupe
   keys so a user with both web + native installs gets both pings.
 
-Remaining within Phase 22.5:
+The rest of Phase 22.5 (all shipped):
 
 - **22.5-3 — SHIPPED 2026-05-29.** Live Activity for pinned games on
   lock screen + Dynamic Island, verified working on a physical iPhone
@@ -224,16 +226,14 @@ Remaining within Phase 22.5:
   button. The blocker was a Capacitor JS-bridge footgun documented in
   `app/CHANGELOG_PRODUCT.md` (2026-05-29 entry); the native plugin
   was correct the whole time.
-- **22.5-4 — data path SHIPPED, container provisioning open.** The
-  WidgetKit extension renders the lock-screen-style "Upcoming"
-  hero, the app writes coherent snapshots via the WidgetBridge
-  plugin, and `WidgetSync` correctly maps follows → personal
-  upcoming + the WC moment line (`personal`-only filter, capped at
-  5, debounced 400ms). The remaining open is the App Group
-  `CFPrefsPlistSource` warning — Xcode capability is checked on
-  both targets but the provisioning profile isn't carrying the
-  entitlement yet. Resolution is operational (↻ refresh + delete app
-  + Clean Build Folder + reinstall).
+- **22.5-4 — SHIPPED.** The `NoNoiseWidgetsExtension` ships the
+  home-screen upcoming widget, the home-screen live-score widget,
+  and lock-screen accessory widgets. The app writes App Group
+  snapshots via the `WidgetBridge` plugin, and `WidgetSync` maps
+  follows → personal upcoming + the WC moment line (`personal`-only
+  filter, capped at 5, debounced 400ms). The App Group entitlement /
+  provisioning issue that was open in May is resolved (the app is
+  live, widgets render in production).
 - **22.5-D** — **Desktop bespoke (lean)** — runs in parallel with
   22.5-3/4 as alternating sessions (Swift one weekend, responsive
   web the next). Lean scope: make `/app` desktop-aware with a
@@ -252,9 +252,8 @@ Remaining within Phase 22.5:
     deepening; live-game pips in a top header lockup; keyboard
     shortcuts for power users. Will iterate based on real desktop
     usage data once the lean ship is live.
-- **22.5-5** — App Store submission (screenshots, metadata, privacy
-  policy entries, first rejection + resubmit). ~1 weekend + 1-2
-  weeks waiting. Runs after 22.5-3 + 22.5-4 are ship-ready.
+- **22.5-5 — SHIPPED.** App Store submission complete. v1.0 live
+  2026-06-17; v1.0.1 (build 15) in review ~2026-06-23.
 
 Promoted from "Phase 23+ unsequenced" to a real near-term phase
 following the strategic conversation 2026-05-26. Full plan in

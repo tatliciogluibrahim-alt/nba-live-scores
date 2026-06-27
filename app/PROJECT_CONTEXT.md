@@ -492,11 +492,13 @@ Alerts Preview, WC Country Landing Pages, Comparison Pages, Pick
 Your Moment onboarding (skippable), Multi-Device Follow Sync, Calm
 Guides expansion.
 
-**Phase 22.5 — iOS Native via Capacitor (in progress, May 2026)**
+**Phase 22.5 — iOS Native via Capacitor — SHIPPED. App is LIVE on the
+App Store.**
 
-Promoted from "Phase 23+ unsequenced" and partially shipped on
-2026-05-27. Originally budgeted at ~$2,500 contractor + $99/year.
-Actually shipped DIY with Claude pairing for $99/year total. Full
+v1.0 went live 2026-06-17. v1.0.1 (build 15) is in App Store review
+as of ~2026-06-23 (bug fixes + widget refinements). Promoted from
+"Phase 23+ unsequenced," shipped DIY with Claude pairing for $99/year
+total (originally budgeted at ~$2,500 contractor + $99/year). Full
 plan in `docs/IOS_NATIVE_PLAN.md`.
 
 - **22.5-1 (proof of life) — SHIPPED.** Capacitor 8 wrapper around
@@ -514,14 +516,19 @@ plan in `docs/IOS_NATIVE_PLAN.md`.
   share matching, both honor No-Spoilers, both honor per-follow
   tiers. Per-transport dedupe namespaces so dual-installed users
   get pinged on both surfaces without claim collision.
-- **22.5-3 (Live Activity) — PENDING.** Native Swift code for the
-  lock-screen / Dynamic Island real-time score updates on pinned
-  games. New SPM target, ~2-3 weekends.
-- **22.5-4 (Home screen widget) — PENDING.** Small + medium widget
-  showing pinned game score or next followed game countdown.
-  ~1-2 weekends.
-- **22.5-5 (App Store ship) — PENDING.** Screenshots, metadata,
-  privacy policy entries, first rejection round, resubmit.
+- **22.5-3 (Live Activity) — SHIPPED.** `LiveActivityPlugin.swift`
+  (ActivityKit bridge) + `NoNoiseLiveActivity.swift` in the
+  `NoNoiseWidgetsExtension` target drive lock-screen / Dynamic Island
+  real-time score updates on pinned games via APNs background push.
+  Runs against the production APNs endpoint
+  (`LIVE_ACTIVITY_SANDBOX = false`). Verified on a physical iPhone.
+- **22.5-4 (Widgets) — SHIPPED.** `WidgetBridgePlugin.swift` writes an
+  App Group snapshot that feeds the home-screen upcoming widget, the
+  home-screen live-score widget, and lock-screen accessory widgets
+  (`NoNoiseUpcomingWidget.swift`). Personal-follows filter, capped at
+  5, debounced writes.
+- **22.5-5 (App Store ship) — SHIPPED.** v1.0 live 2026-06-17;
+  v1.0.1 (build 15) in review ~2026-06-23.
 
 **Strategic discussions captured 2026-05-26:**
 
@@ -545,11 +552,11 @@ plan in `docs/IOS_NATIVE_PLAN.md`.
   settles. Code-level audits caught a title-format inconsistency
   but won't catch visual regressions.
 
-**Next:** Phase 22.5 continuation, then 21, 22, 23+. See
-`docs/ROADMAP.md`.
+**Next:** Phase 22.5-D (desktop bespoke), then 22, 23+, plus the open
+Phase 21C retention plays. iOS native (22.5) and the Brief (21) are
+shipped. See `docs/ROADMAP.md`.
 
-- Phase 22.5 — finish Live Activity, Widget, App Store ship.
-- Phase 21 — Brief launch (when domain email is sorted).
+- Phase 22.5-D — desktop bespoke (ongoing, alternating sessions).
 - Phase 22 — NFL season build (August 2026).
 - Phase 23+ — Sports Circle visual prototype, Path B refactor,
   multi-device push relay (simpler post-iOS-native), No-Spoilers

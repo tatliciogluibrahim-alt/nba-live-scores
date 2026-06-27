@@ -1,15 +1,21 @@
 # Live Activity + Widget — build runbook (Phase 22.5-3 / 22.5-4)
 
+> ✅ **SHIPPED.** This runbook is now history. The Live Activity and
+> widgets it describes are live in the App Store app (v1.0 live
+> 2026-06-17). The real, working Swift lives in `ios/App/`:
+> `LiveActivityPlugin.swift`, `WidgetBridgePlugin.swift`,
+> `NoNoiseLiveActivity.swift`, `NoNoiseUpcomingWidget.swift`. Use
+> those files as the source of truth, not the snippets below.
+
 This is the worklist to ship the pinned-game **Live Activity** (lock
 screen + Dynamic Island) and a **Home Screen widget**. The web/server
 half is already built and verified; everything here is the **native
 Swift + Xcode** half that can only be done on a Mac with a device.
 
-> ⚠️ The Swift in this doc is **unverified** — written without an Xcode
-> toolchain. Treat it as a faithful starting point, not copy-paste-and-
-> ship. Expect to fix small API details against the live SDK. Live
-> Activities need a **real device** (the simulator won't drive
-> push-updated activities reliably).
+> ⚠️ The Swift in this doc was **unverified** when written (no Xcode
+> toolchain). It was a starting point, since superseded by the shipped
+> code in `ios/App/`. Live Activities need a **real device** (the
+> simulator won't drive push-updated activities reliably).
 
 ---
 

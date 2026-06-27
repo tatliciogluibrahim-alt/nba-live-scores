@@ -165,15 +165,15 @@ single-thread Swift work; desktop is responsive web work in the
 codebase the user already knows). Different brain modes makes
 rotation cheap.
 
-Sequencing inside Phase 22.5:
-- 22.5-3: iOS Live Activity (Swift, ~2-3 weekends)
-- 22.5-4: iOS Home Screen Widget (Swift, ~1-2 weekends)
-- 22.5-D: Desktop bespoke lean ship — runs in parallel with one
-  of the above as alternating sessions. Roughly ~1 weekend of
-  focused work for the "minimum viable desktop layout" PR; further
-  surfaces deepen iteratively.
-- 22.5-5: App Store submission once 22.5-3 + 22.5-4 are
-  ship-ready.
+Sequencing inside Phase 22.5 (status as of 2026-06-27):
+- 22.5-3: iOS Live Activity — **SHIPPED.**
+- 22.5-4: iOS widgets (home-screen + live-score + lock-screen) — **SHIPPED.**
+- 22.5-5: App Store submission — **SHIPPED.** v1.0 live 2026-06-17;
+  v1.0.1 in review ~2026-06-23.
+- 22.5-D: Desktop bespoke lean ship — **still the open thread.** The
+  iOS native track is done, so desktop is no longer "parallel with"
+  it; it's the remaining 22.5 work. First lean PR shipped 2026-05-27;
+  further surfaces deepen iteratively.
 
 Considered and rejected:
 - **A — wait until iOS native ships completely.** Splits focus
