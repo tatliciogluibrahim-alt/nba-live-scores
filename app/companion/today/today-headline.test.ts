@@ -76,6 +76,47 @@ describe("deriveTodayHeadline", () => {
     expect(r.support).toBe("OKC leads series 3-2");
   });
 
+  it("names the followed subject when one of your games is live", () => {
+    const r = deriveTodayHeadline(
+      base({
+        hero: {
+          kind: "wc-live",
+          eyebrow: "Summer Soccer · Group D",
+          headline: "Second half underway.",
+          spoilerMatchup: "USA vs PAR",
+          subject: "United States",
+          followedLiveCount: 1,
+          live: true,
+          accent: "var(--wc)",
+          href: "/game/g1",
+        },
+      })
+    );
+    expect(r.headline).toBe("United States are live.");
+    expect(r.eyebrow.label).toBe("Live now");
+    expect(r.eyebrow.tone).toBe("wc");
+  });
+
+  it("counts your live follows when two or more are live (over the subject)", () => {
+    const r = deriveTodayHeadline(
+      base({
+        hero: {
+          kind: "wc-live",
+          eyebrow: "Summer Soccer",
+          headline: "Second half underway.",
+          spoilerMatchup: "USA vs PAR",
+          subject: "United States",
+          followedLiveCount: 2,
+          context: "2 Summer Soccer matches live now.",
+          live: true,
+          accent: "var(--wc)",
+          href: "/game/g1",
+        },
+      })
+    );
+    expect(r.headline).toBe("Two of yours are live.");
+  });
+
   it("counts upcoming games with spelled numbers", () => {
     const r = deriveTodayHeadline(
       base({ upNext: [upNextItem(), upNextItem({ id: "g2", href: "/game/g2" })] })

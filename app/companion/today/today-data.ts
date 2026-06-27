@@ -79,6 +79,13 @@ export type TodayHero = {
   accent: "var(--nba)" | "var(--wc)";
   /** True when this hero is being surfaced because the user pinned the game. */
   pinned?: boolean;
+  /** When the live hero is a team/country you follow, the followed subject's
+   *  name ("United States", "Knicks"). Lets the headline lead personally
+   *  ("United States are live.") instead of naming the raw matchup. */
+  subject?: string;
+  /** How many games you follow are live right now (across both sports).
+   *  Drives the "Two of yours are live." headline. */
+  followedLiveCount?: number;
   /** Where tapping the hero goes (Stage 1 placeholder routes for now). */
   href: string;
   /** When set, the No-Spoilers variant uses this matchup string. */
@@ -504,26 +511,41 @@ function pickHero(
   const heroLive = nbaCared ?? (wcCared ? null : live[0]);
   const heroWcLive = !heroLive ? (wcCared ?? wcLive[0]) : null;
 
+  // Followed-live counts (both sports) drive the personal headline rungs
+  // ("United States are live." / "Two of yours are live."). A WC tournament
+  // follow covers every match; otherwise count pinned + followed-country/team
+  // live games. This is the user's FOLLOWED live set, not the whole feed — a
+  // feed-wide count beside one shown game would be a lie (RC4).
+  const followsWcTour = follows.some(
+    (f) => f.kind === "tournament" && getTournament(f.id)?.accent === "var(--wc)"
+  );
+  const followedWcLiveCount = wcLive.filter(
+    (g) =>
+      followsWcTour ||
+      pinnedIds.has(g.id) ||
+      [...followedCountries].some((c) => gameIncludesCountry(g, c))
+  ).length;
+  const followedNbaLiveCount = live.filter(
+    (g) =>
+      pinnedIds.has(g.id) ||
+      [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr))
+  ).length;
+  const followedLiveCount = followedWcLiveCount + followedNbaLiveCount;
+
   if (heroWcLive) {
     const isPinned = pinnedIds.has(heroWcLive.id);
     const stage = heroWcLive.stage ? `Summer Soccer · ${heroWcLive.stage}` : "Summer Soccer";
-    // Busy-slate count must reflect the user's FOLLOWED live matches, not the
-    // whole feed — a feed-wide count ("6 live now") beside one shown game is
-    // a lie (RC4). A tournament follow covers every match; otherwise count
-    // pinned + followed-country live games.
-    const followsWcTour = follows.some(
-      (f) => f.kind === "tournament" && getTournament(f.id)?.accent === "var(--wc)"
+    // When the live hero is a country you follow, name it so the headline can
+    // lead personally ("United States are live.").
+    const subjectCode = [...followedCountries].find((c) =>
+      gameIncludesCountry(heroWcLive, c)
     );
-    const followedWcLiveCount = wcLive.filter(
-      (g) =>
-        followsWcTour ||
-        pinnedIds.has(g.id) ||
-        [...followedCountries].some((c) => gameIncludesCountry(g, c))
-    ).length;
     return {
       kind: "wc-live",
       eyebrow: isPinned ? `Pinned · ${stage}` : stage,
       headline: deriveWCLiveHeadline(heroWcLive),
+      subject: subjectCode ? getCountry(subjectCode)?.name : undefined,
+      followedLiveCount,
       // Busy-slate signal: when more than one FOLLOWED match is live, name the
       // count so the hero doesn't look like the only thing on. Calm and
       // factual, no FOMO. Matches the scoreboard's live set.
@@ -550,10 +572,17 @@ function pickHero(
     const watch = heroLive.broadcasts[0]
       ? { channel: heroLive.broadcasts[0] }
       : undefined;
+    // NBA has no name table, so the personal headline uses the abbreviation
+    // ("NYK are live."). NBA is off-season now anyway; WC gets full names.
+    const subjectAbbr = [...followedTeams].find((abbr) =>
+      gameIncludesTeam(heroLive, abbr)
+    );
     return {
       kind: "nba-live",
       eyebrow: isPinned ? `Pinned · ${baseEyebrow}` : baseEyebrow,
       headline: deriveLiveHeadline(heroLive),
+      subject: subjectAbbr,
+      followedLiveCount,
       context: heroLive.seriesSummary || undefined,
       stake: heroLive.seriesSummary
         ? prettifySeriesSummary(heroLive.seriesSummary)
@@ -1912,14 +1941,22 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
   // count is the live slate (pinned-live / live hero), not the day's slate.
   if (heroLive || payload.pinnedSummary.live > 0) {
     const lc = Math.max(payload.pinnedSummary.live, heroLive ? 1 : 0, 1);
+    const subject = payload.hero?.subject;
+    const followedLive = payload.hero?.followedLiveCount ?? 0;
     return {
       eyebrow: { label: "Live now", tone: heroTone },
-      // One live game leads with the matchup itself (the eyebrow + pulse
-      // already say it's live); several fall back to the live count.
+      // Personal rungs lead: when 2+ of your follows are live, count them
+      // ("Two of yours are live."); when exactly one is, name it ("United
+      // States are live."). Otherwise fall back to the matchup (one live
+      // game) or the live count — the eyebrow + pulse already say it's live.
       headline:
-        lc === 1 && deck
-          ? `${editorialMatchup(deck.matchup, heroTone)}.`
-          : `${spellCount(lc)} ${sportNounPlural(heroTone)} live.`,
+        followedLive >= 2
+          ? `${spellCount(followedLive)} of yours are live.`
+          : subject
+            ? `${subject} are live.`
+            : lc === 1 && deck
+              ? `${editorialMatchup(deck.matchup, heroTone)}.`
+              : `${spellCount(lc)} ${sportNounPlural(heroTone)} live.`,
       // Support line: a series stake ("OKC leads series 3-2") when the
       // lead is a playoff game, else the hero's context line. For a busy
       // Summer Soccer slate that context is "N Summer Soccer matches live now." —

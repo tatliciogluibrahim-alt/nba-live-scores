@@ -30,8 +30,12 @@ const TONE_COLOR: Record<TodayHeadline["eyebrow"]["tone"], string> = {
 // quiet.") stay bold without ballooning and the longest ("Three games
 // tonight.") stays readable.
 function headlineSize(len: number): number {
-  const fit = Math.floor(350 / (Math.max(len, 1) * 0.55));
-  return Math.max(28, Math.min(46, fit));
+  // Confident, oversized lead (the one moment-line on the screen). Solve for
+  // the size that keeps the string within ~380px and clamp so a short line
+  // ("United States are live.") runs large without ballooning and the longest
+  // ("Three matches tonight.") stays readable.
+  const fit = Math.floor(380 / (Math.max(len, 1) * 0.55));
+  return Math.max(30, Math.min(54, fit));
 }
 
 /** Parse "OKC vs SA" → ["OKC","SA"] when both sides are short codes that
@@ -105,7 +109,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
           fontFamily: "var(--font-display)",
           fontWeight: 700,
           fontSize: size,
-          lineHeight: 1.0,
+          lineHeight: 1.02,
           letterSpacing: "-0.02em",
           color: "var(--ink)",
           textWrap: "pretty",
