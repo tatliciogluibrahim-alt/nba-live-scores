@@ -3,6 +3,15 @@ import { CompanionFrame } from "../../companion/frame/CompanionFrame";
 import { CrumbBar } from "../../companion/frame/CrumbBar";
 import { TournamentClient } from "../../companion/tournament/TournamentClient";
 import { getTournament } from "../../companion/following/data/tournaments";
+import { tournamentPhase } from "../../companion/following/data/tournament-phase";
+
+// The lifecycle phase is time-derived (new Date()). Computing it in the client
+// component caused a hydration mismatch (React #418): the statically-rendered
+// HTML froze the build-time phase, the client re-derived "now", and at a phase
+// boundary the two disagreed. We compute it once on the server and pass it down
+// so server and client always render the same phase. revalidate keeps the
+// static phase fresh as the tournament moves between phases.
+export const revalidate = 600;
 
 // Dynamic per-tournament title. Falls back to generic "Tournament"
 // for unknown ids (defensive).
@@ -27,6 +36,7 @@ export default async function TournamentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const phase = tournamentPhase(id);
 
   return (
     <CompanionFrame desktopNav="detail">
@@ -35,7 +45,7 @@ export default async function TournamentPage({
         backLabel="Following"
         title="Tournament"
       />
-      <TournamentClient tournamentId={id} />
+      <TournamentClient tournamentId={id} phase={phase} />
     </CompanionFrame>
   );
 }

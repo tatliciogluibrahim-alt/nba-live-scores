@@ -19,7 +19,7 @@ import {
 import { parseSeriesWins } from "../../nba/lib/series";
 import { WCGroups } from "./WCGroups";
 import { WCKnockout } from "./WCKnockout";
-import { tournamentPhase } from "../following/data/tournament-phase";
+import type { TournamentPhase } from "../following/data/tournament-phase";
 
 // /tournament/[id] — first detail page for tournament follows.
 // Replaces the Phase 1 fallback that routed tournament chips to
@@ -129,7 +129,16 @@ export function buildSeriesMomentumLine(args: {
   return `${leader} leads ${hi}-${lo}.`;
 }
 
-export function TournamentClient({ tournamentId }: { tournamentId: string }) {
+export function TournamentClient({
+  tournamentId,
+  phase,
+}: {
+  tournamentId: string;
+  // Time-derived lifecycle phase, computed on the SERVER and passed in so the
+  // server-rendered HTML and the client hydration agree (see the note in
+  // app/tournament/[id]/page.tsx — recomputing it here caused React #418).
+  phase: TournamentPhase;
+}) {
   const tournament = getTournament(tournamentId);
 
   if (!tournament) {
@@ -139,7 +148,7 @@ export function TournamentClient({ tournamentId }: { tournamentId: string }) {
   // Phase 21D — a concluded tournament is no longer a live, followable thing.
   // Show a "Season wrapped" acknowledgment instead of the live alert pill, and
   // hide the follow/alert controls (you can browse the results, not follow it).
-  const concluded = tournamentPhase(tournament.id) === "concluded";
+  const concluded = phase === "concluded";
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
@@ -155,7 +164,7 @@ export function TournamentClient({ tournamentId }: { tournamentId: string }) {
       ) : tournament.id.startsWith("nba-playoffs-") ? (
         <NBAPlayoffsBody />
       ) : tournament.id.startsWith("fifa-world-cup-") ? (
-        <FIFAWorldCupBody tournamentId={tournament.id} />
+        <FIFAWorldCupBody tournamentId={tournament.id} phase={phase} />
       ) : (
         <GenericTournamentBody />
       )}
@@ -664,11 +673,16 @@ function MiniSeriesStrip({ gamesPlayed }: { gamesPlayed: number }) {
 
 // ── Summer Soccer body ────────────────────────────────────────────────
 
-function FIFAWorldCupBody({ tournamentId }: { tournamentId: string }) {
+function FIFAWorldCupBody({
+  tournamentId,
+  phase,
+}: {
+  tournamentId: string;
+  phase: TournamentPhase;
+}) {
   // Phase 21D — lifecycle-aware. Group/pre: groups lead (the full 12-group grid
   // lives at /tournament/[id]/groups). Knockout/concluded: the bracket is what
   // people come for, so it leads and the group stage moves below as history.
-  const phase = tournamentPhase(tournamentId);
   const knockoutFirst = phase === "knockout" || phase === "concluded";
 
   const bracketLink = (
