@@ -45,6 +45,10 @@ export type FreshWCGameState = {
    *  treated as false by the detector, so callers/tests that predate the
    *  field stay valid. */
   isHalftime?: boolean;
+  /** True when the feed reports first-half added time ("45'+6'"). parseMinute
+   *  folds that to 51, which would trip the minute>50 "second half" fallback —
+   *  this flag lets the detector exclude it. Absent is treated as false. */
+  isFirstHalfStoppage?: boolean;
   /** Display name of the most recent goal scorer, parsed from the
    *  per-match summary feed ("Pulisic", or "Name (OG)" for own goals).
    *  The detector attaches it to a wc-goal event so the push can name
@@ -129,15 +133,18 @@ export function detectWCEvents(
   //
   // Fallback for feeds that never surface "HT" (straight 45+3 → 46'):
   // if we never saw halftime but the clock is clearly in the second half
-  // (minute > 50, safely past any plausible first-half stoppage) and we
-  // saw the match live before, fire once. 50 not 45 so 45+N stoppage
-  // (which tops out well under 50 in practice) can't trip it.
+  // and we saw the match live before, fire once. We must exclude first-half
+  // added time: "45'+6'" folds to minute 51 via parseMinute, so a bare
+  // minute>50 test fires "second half" DURING first-half stoppage (the bug
+  // that shipped a "Second half started" push at halftime). isFirstHalfStoppage
+  // flags exactly that, so the fallback only trips on a real second-half clock.
   const secondHalfAlreadyFired = prev?.secondHalfFired === true;
   let nextSecondHalfFired = secondHalfAlreadyFired;
   const cameOutOfHalftime =
     prev?.isHalftime === true && !stableNext.isHalftime;
   const clearlySecondHalf =
     !stableNext.isHalftime &&
+    !stableNext.isFirstHalfStoppage &&
     stableNext.minute != null &&
     stableNext.minute > 50;
   if (

@@ -93,6 +93,11 @@ function toFresh(game: FeedGame): FreshWCGameState {
     // Same halftime-break test the lock-screen status line uses, so the
     // detector and the Live Activity agree on what "halftime" means.
     isHalftime: !!game.statusText && /ht|half/i.test(game.statusText),
+    // First-half stoppage ("45'+6'") folds to minute 51 via parseMinute, which
+    // would (wrongly) trip the minute>50 "second half" fallback. Flag it so the
+    // detector excludes it — it is first-half added time, not the second half.
+    isFirstHalfStoppage:
+      !!game.statusText && /^\s*45\s*'?\s*\+/.test(game.statusText),
     // Only name the scorer when the goal is recent vs the match clock — if the
     // score rose but the goal event hasn't landed in the feed yet, naming the
     // stale "latest" goal would be wrong, so omit it (the push says "Goal").
@@ -105,8 +110,15 @@ function wcStatusLine(game: FeedGame): string {
   if (game.status === "final") return "Full time";
   if (game.status === "upcoming") return "Kickoff soon";
   if (game.statusText && /ht|half/i.test(game.statusText)) return "Halftime";
-  const min = parseMinute(game.statusText);
-  return min != null ? `${min}'` : game.statusText || "Live";
+  // Preserve stoppage notation ("45+6'", "90+2'") instead of folding it to a
+  // single minute. A folded "51'" reads as a second-half minute when it is
+  // really first-half added time.
+  const raw = (game.statusText ?? "").trim();
+  if (/\d\s*'?\s*\+\s*\d/.test(raw)) {
+    return raw.replace(/['\s]/g, "") + "'";
+  }
+  const min = parseMinute(raw);
+  return min != null ? `${min}'` : raw || "Live";
 }
 
 /** Map a WC feed game to a Live Activity content snapshot. */

@@ -57,6 +57,34 @@ describe("detectWCEvents — goals", () => {
   });
 });
 
+describe("detectWCEvents — second half vs first-half stoppage", () => {
+  // The bug: "45'+6'" folds to minute 51, and the minute>50 fallback fired a
+  // "Second half started" push DURING first-half stoppage (and at the break).
+  it("does NOT fire wc-second-half during first-half stoppage (45'+6')", () => {
+    const { events } = detectWCEvents(
+      wcPrev({ minute: 44, isHalftime: false, halftimeFired: false }),
+      wcFresh({ minute: 51, isHalftime: false, isFirstHalfStoppage: true })
+    );
+    expect(events.some((e) => e.type === "wc-second-half")).toBe(false);
+  });
+
+  it("still fires wc-second-half on a genuine second-half clock (HT-less feed)", () => {
+    const { events } = detectWCEvents(
+      wcPrev({ minute: 49, isHalftime: false, halftimeFired: false }),
+      wcFresh({ minute: 51, isHalftime: false, isFirstHalfStoppage: false })
+    );
+    expect(events.some((e) => e.type === "wc-second-half")).toBe(true);
+  });
+
+  it("fires wc-second-half when resuming from the halftime break", () => {
+    const { events } = detectWCEvents(
+      wcPrev({ minute: 45, isHalftime: true, halftimeFired: true }),
+      wcFresh({ minute: 46, isHalftime: false, isFirstHalfStoppage: false })
+    );
+    expect(events.some((e) => e.type === "wc-second-half")).toBe(true);
+  });
+});
+
 describe("detectNBAHighlights — milestones", () => {
   const base = {
     gameId: "g1",
