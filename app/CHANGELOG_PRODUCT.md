@@ -2,6 +2,35 @@
 
 ---
 
+## Lock-screen live-score offer — built + merged to main 2026-06-29 (ships in the next iOS build)
+
+A kickoff push whose tap adds the live score to your lock screen, the calm
+version of Google's "tap to add the live score" pattern.
+
+- At a followed game's kickoff/tipoff, eligible iOS users get the **offer
+  variant** of the start push (title = matchup, body = "Tap to add the live
+  score to your lock screen."). Tapping it pins the game; the existing
+  `LiveActivitySync` then starts and maintains the lock-screen tile.
+- **No added notification volume.** The offer *replaces* the plain start
+  push for eligible iOS recipients (one APNs payload per recipient, chosen
+  at fanout). Web push is untouched.
+- Gated by a default-on **"Lock screen live scores"** toggle in Settings.
+  The preference (`lockScreenOffers`) threads client → register-ios →
+  dispatcher, default-on at every read site.
+- **Game 7 / WC knockout stakes preserved** in the offer subtitle ("Game 7
+  · series on the line", or the knockout round), falling back to "Starting
+  now" otherwise.
+- Custom tap data rides as top-level APNs keys; a `?offer=live-activity`
+  url is the fallback for older iOS without Live Activities.
+- No new Swift. Built TDD across 10 commits; per-task + whole-branch review
+  clean. Spec/plan in `docs/superpowers/`.
+- **Not yet in users' hands:** needs `npm run ios:sync` + a new App Store
+  build. On-device checklist (tap from background + cold start, redaction
+  on a spoiler-hidden follow, custom-data delivery) lives in the plan's
+  Task 9.
+
+---
+
 ## Phase 22.5 SHIPPED — iOS app LIVE on the App Store — 2026-06-17 (v1.0), ~2026-06-23 (v1.0.1 in review)
 
 The native iOS app is live. v1.0 went live on the App Store
