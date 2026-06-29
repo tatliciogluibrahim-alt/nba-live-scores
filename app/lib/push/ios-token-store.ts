@@ -34,6 +34,9 @@ export type StoredIosToken = {
    *  closeness-revealing events (close-game, comeback) and to swap
    *  push bodies for safe variants. */
   noSpoilers: boolean;
+  /** Whether the device wants the lock-screen live-score offer at
+   *  kickoff. Defaults true (undefined stored tokens are treated as on). */
+  lockScreenOffers: boolean;
   /** Optional Quiet Hours window. When set (with timeZone), the
    *  dispatcher + reminders cron skip delivery during it. */
   quietHours?: { start: string; end: string };
@@ -75,6 +78,8 @@ function normalizeStored(
     token: raw.token ?? token,
     alerts: Array.isArray(raw.alerts) ? raw.alerts : [],
     noSpoilers: typeof raw.noSpoilers === "boolean" ? raw.noSpoilers : false,
+    lockScreenOffers:
+      typeof raw.lockScreenOffers === "boolean" ? raw.lockScreenOffers : true,
     quietHours: raw.quietHours,
     remindBeforeMinutes:
       typeof raw.remindBeforeMinutes === "number"
@@ -94,6 +99,7 @@ export async function upsertIosToken(input: {
   token: string;
   alerts?: SyncedAlert[];
   noSpoilers?: boolean;
+  lockScreenOffers?: boolean;
   quietHours?: { start: string; end: string };
   remindBeforeMinutes?: number;
   timeZone?: string;
@@ -114,6 +120,10 @@ export async function upsertIosToken(input: {
     input.noSpoilers !== undefined
       ? input.noSpoilers
       : existing?.noSpoilers ?? false;
+  const lockScreenOffers =
+    input.lockScreenOffers !== undefined
+      ? input.lockScreenOffers
+      : existing?.lockScreenOffers ?? true;
   const quietHours = syncing ? input.quietHours : existing?.quietHours;
   const remindBeforeMinutes = syncing
     ? input.remindBeforeMinutes
@@ -125,11 +135,14 @@ export async function upsertIosToken(input: {
         ...existing,
         alerts,
         noSpoilers,
+        lockScreenOffers,
         quietHours,
         remindBeforeMinutes,
         timeZone,
         updatedAt:
-          input.alerts !== undefined || input.noSpoilers !== undefined
+          input.alerts !== undefined ||
+          input.noSpoilers !== undefined ||
+          input.lockScreenOffers !== undefined
             ? now
             : existing.updatedAt,
         lastSeenAt: now,
@@ -138,6 +151,7 @@ export async function upsertIosToken(input: {
         token,
         alerts,
         noSpoilers,
+        lockScreenOffers,
         quietHours,
         remindBeforeMinutes,
         timeZone,
@@ -199,6 +213,7 @@ export async function listIosTokens(): Promise<StoredIosToken[]> {
         token,
         alerts: [],
         noSpoilers: false,
+        lockScreenOffers: true,
         createdAt: now,
         updatedAt: now,
         lastSeenAt: now,
