@@ -300,6 +300,28 @@ describe("live-activity offer builders", () => {
       sport: "nba",
     });
   });
+
+  it("uses the Game 7 stakes as the offer subtitle for a Game 7 tipoff", () => {
+    const p = buildLiveActivityOfferPayload(nbaEvent({ type: "tipoff", isGame7: true }));
+    expect(p.subtitle).toBe("Game 7 · series on the line");
+    expect(p.title).toBe("OKC vs SA");
+    expect(p.body).toBe("Tap to add the live score to your lock screen.");
+  });
+
+  it("uses the knockout round as the offer subtitle for a WC knockout kickoff", () => {
+    const p = buildLiveActivityOfferPayload(wcEvent({ stage: "Round of 32" }));
+    expect(p.subtitle).toBe("Round of 32");
+  });
+
+  it("falls back to 'Starting now' for a WC group-stage kickoff", () => {
+    const p = buildLiveActivityOfferPayload(wcEvent({ stage: "Group A" }));
+    expect(p.subtitle).toBe("Starting now");
+  });
+
+  it("falls back to 'Starting now' for a plain tipoff with no stakes", () => {
+    const p = buildLiveActivityOfferPayload(nbaEvent({ type: "tipoff" }));
+    expect(p.subtitle).toBe("Starting now");
+  });
 });
 
 describe("wantsLiveActivityOffer", () => {

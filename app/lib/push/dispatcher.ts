@@ -533,6 +533,21 @@ function startTag(event: PushEvent): string {
     : `${event.gameId}:tipoff`;
 }
 
+/** Stakes line for the offer subtitle. Spoiler-safe (carries no score —
+ *  the round/game number is not a spoiler). Game 7 and WC knockout rounds
+ *  keep their stakes so the offer doesn't flatten the highest-stakes
+ *  moments; everything else reads "Starting now". Mirrors the framing
+ *  buildPayload gives the same start events. */
+function offerSubtitle(event: PushEvent): string {
+  if (event.isGame7) return "Game 7 · series on the line";
+  const koStage =
+    event.stage && !/^group/i.test(event.stage) && event.stage.trim() !== ""
+      ? event.stage
+      : null;
+  if (koStage) return koStage;
+  return "Starting now";
+}
+
 /** The "tap to add the live score to your lock screen" offer payload.
  *  Spoiler-safe by construction (start = 0-0, no score in copy). iOS only;
  *  never sent to web push. The url carries an ?offer marker as a fallback
@@ -540,7 +555,7 @@ function startTag(event: PushEvent): string {
 export function buildLiveActivityOfferPayload(event: PushEvent): PushPayload {
   return {
     title: offerMatchup(event),
-    subtitle: "Starting now",
+    subtitle: offerSubtitle(event),
     body: "Tap to add the live score to your lock screen.",
     url: `/game/${event.gameId}?offer=live-activity`,
     tag: startTag(event),
