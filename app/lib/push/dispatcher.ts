@@ -295,17 +295,23 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           return;
         }
 
-        const payload = buildPayload(event, ios.noSpoilers);
+        // Lock-screen live-score offer: for an eligible iOS recipient at
+        // kickoff, send the offer variant INSTEAD of the plain start push
+        // (one payload per recipient, so no double notification). The tap
+        // carries data the web layer reads to pin the game + start the
+        // Live Activity. Everyone else gets the normal payload.
+        const offer = wantsLiveActivityOffer(ios, event);
+        const payload = offer
+          ? buildLiveActivityOfferPayload(event)
+          : buildPayload(event, ios.noSpoilers);
         apnsAttempted += 1;
         const result = await sendApnsPush({
           deviceToken: ios.token,
           title: payload.title,
           subtitle: payload.subtitle,
           body: payload.body,
-          // Pass through `tag` as the apns-collapse-id so a second
-          // update for the same event collapses on-device instead of
-          // stacking a row in Notification Center.
           collapseId: payload.tag,
+          data: offer ? liveActivityOfferData(event) : undefined,
           // PRODUCTION. TestFlight + App Store builds get their device
           // tokens from the production APNs endpoint
           // (api.push.apple.com). Sending to sandbox
@@ -501,6 +507,16 @@ const START_EVENT_TYPES = new Set<PushEvent["type"]>(["tipoff", "wc-kickoff"]);
 /** True when the event is a game-start event (NBA tipoff or WC kickoff). */
 export function isStartEvent(event: PushEvent): boolean {
   return START_EVENT_TYPES.has(event.type);
+}
+
+/** Eligibility for the lock-screen live-score offer variant. iOS-only by
+ *  construction (only the APNs loop calls it). Default ON: a token whose
+ *  lockScreenOffers is undefined is treated as opted in. */
+export function wantsLiveActivityOffer(
+  token: { lockScreenOffers?: boolean },
+  event: PushEvent
+): boolean {
+  return isStartEvent(event) && token.lockScreenOffers !== false;
 }
 
 /** The matchup used as the offer title, e.g. "BRA vs JPN". */

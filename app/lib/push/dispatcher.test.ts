@@ -4,6 +4,7 @@ import {
   isStartEvent,
   buildLiveActivityOfferPayload,
   liveActivityOfferData,
+  wantsLiveActivityOffer,
 } from "./dispatcher";
 import type { PushEvent } from "./event-detector";
 import type { SyncedAlert } from "./sync-validation";
@@ -298,5 +299,31 @@ describe("live-activity offer builders", () => {
       gameId: "g9",
       sport: "nba",
     });
+  });
+});
+
+describe("wantsLiveActivityOffer", () => {
+  const base = { lockScreenOffers: true } as const;
+
+  it("true for a start event when lockScreenOffers is on", () => {
+    expect(wantsLiveActivityOffer(base, nbaEvent({ type: "tipoff" }))).toBe(true);
+    expect(
+      wantsLiveActivityOffer(base, nbaEvent({ type: "wc-kickoff", awayCode: "BRA", homeCode: "JPN" }))
+    ).toBe(true);
+  });
+
+  it("false when the toggle is off", () => {
+    expect(
+      wantsLiveActivityOffer({ lockScreenOffers: false }, nbaEvent({ type: "tipoff" }))
+    ).toBe(false);
+  });
+
+  it("false for non-start events even with the toggle on", () => {
+    expect(wantsLiveActivityOffer(base, nbaEvent({ type: "final" }))).toBe(false);
+    expect(wantsLiveActivityOffer(base, nbaEvent({ type: "close-game" }))).toBe(false);
+  });
+
+  it("treats undefined lockScreenOffers as on (default)", () => {
+    expect(wantsLiveActivityOffer({}, nbaEvent({ type: "tipoff" }))).toBe(true);
   });
 });
