@@ -32,6 +32,7 @@ type Body = {
   // alerts: SyncedAlert[], noSpoilers: boolean.
   alerts?: unknown;
   noSpoilers?: unknown;
+  lockScreenOffers?: unknown;
 };
 
 export async function POST(req: Request) {
@@ -68,6 +69,7 @@ export async function POST(req: Request) {
       token,
       alerts: sync.alerts,
       noSpoilers: sync.noSpoilers,
+      lockScreenOffers: sync.lockScreenOffers,
       quietHours: sync.quietHours,
       remindBeforeMinutes: sync.remindBeforeMinutes,
       timeZone: sync.timeZone,

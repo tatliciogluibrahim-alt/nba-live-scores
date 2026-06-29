@@ -147,6 +147,10 @@ export function normalizeStoredPrefs(value: unknown): UserPrefs {
       typeof value.noSpoilers === "boolean"
         ? value.noSpoilers
         : DEFAULT_PREFS.noSpoilers,
+    lockScreenOffers:
+      typeof value.lockScreenOffers === "boolean"
+        ? value.lockScreenOffers
+        : DEFAULT_PREFS.lockScreenOffers,
     defaultAlertTier:
       typeof value.defaultAlertTier === "string" &&
       ALERT_PRESETS.has(value.defaultAlertTier as AlertPreset)

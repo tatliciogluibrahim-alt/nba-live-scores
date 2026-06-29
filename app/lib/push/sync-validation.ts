@@ -18,6 +18,9 @@ export type ValidSyncPayload = {
   /** No-Spoilers mode flag. Gates closeness-leaking events at the
    *  dispatcher (close-game, comeback) — see Codex QA #1. */
   noSpoilers: boolean;
+  /** Whether the device wants the lock-screen live-score offer at
+   *  kickoff (iOS only). Defaults true. */
+  lockScreenOffers: boolean;
   /** Optional Quiet Hours window ("HH:MM" 24h). When set (with a
    *  timeZone), the dispatcher + reminders cron suppress delivery while
    *  the device's local time is inside it. */
@@ -78,7 +81,7 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
   // This keeps the subscribe endpoint backwards-compatible with clients
   // that POST only a subscription (no follows / preset yet).
   if (!input || typeof input !== "object") {
-    return { alerts: [], noSpoilers: false };
+    return { alerts: [], noSpoilers: false, lockScreenOffers: true };
   }
 
   const raw = input as {
@@ -88,6 +91,7 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
     follows?: unknown;
     alertPreset?: unknown;
     noSpoilers?: unknown;
+    lockScreenOffers?: unknown;
     quietHours?: unknown;
     remindBeforeMinutes?: unknown;
     timeZone?: unknown;
@@ -122,9 +126,11 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
   }
 
   const noSpoilers = raw.noSpoilers === true;
+  // Default ON: undefined/absent → true. Only an explicit false disables.
+  const lockScreenOffers = raw.lockScreenOffers !== false;
   const quietHours = parseQuietHours(raw.quietHours);
   const remindBeforeMinutes = parseRemindBeforeMinutes(raw.remindBeforeMinutes);
   const timeZone = parseTimeZone(raw.timeZone);
 
-  return { alerts, noSpoilers, quietHours, remindBeforeMinutes, timeZone };
+  return { alerts, noSpoilers, lockScreenOffers, quietHours, remindBeforeMinutes, timeZone };
 }

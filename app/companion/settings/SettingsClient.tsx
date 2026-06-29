@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { NoSpoilersToggle } from "./NoSpoilersToggle";
+import { LockScreenOffersToggle } from "./LockScreenOffersToggle";
 // Per-follow alert editing lives on the Following page now — every
 // follow card already carries its own tier control, so the full editor
 // here just duplicated it. Settings keeps a compact read-only summary
@@ -56,6 +57,7 @@ export function SettingsClient() {
           behind a + so it doesn't dominate the scroll. */}
       <div className="space-y-5">
         <NoSpoilersToggle />
+        <LockScreenOffersToggle />
         <AlertsSummary />
         <PushSubscriptionPanel />
         <BriefSettingsRow />

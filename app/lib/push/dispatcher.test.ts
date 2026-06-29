@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { subscriberWantsEvent } from "./dispatcher";
+import {
+  subscriberWantsEvent,
+  isStartEvent,
+  buildLiveActivityOfferPayload,
+  liveActivityOfferData,
+  wantsLiveActivityOffer,
+} from "./dispatcher";
 import type { PushEvent } from "./event-detector";
 import type { SyncedAlert } from "./sync-validation";
 
@@ -236,5 +242,110 @@ describe("subscriberWantsEvent — defensive", () => {
         nbaEvent()
       )
     ).toBe(false);
+  });
+});
+
+describe("live-activity offer builders", () => {
+  function wcEvent(over: Partial<PushEvent> = {}): PushEvent {
+    return {
+      type: "wc-kickoff",
+      gameId: "wc1",
+      awayCode: "BRA",
+      homeCode: "JPN",
+      awayScore: 0,
+      homeScore: 0,
+      ...over,
+    };
+  }
+
+  it("treats tipoff and wc-kickoff as start events", () => {
+    expect(isStartEvent(nbaEvent({ type: "tipoff" }))).toBe(true);
+    expect(isStartEvent(wcEvent())).toBe(true);
+  });
+
+  it("does not treat non-start events as start events", () => {
+    expect(isStartEvent(nbaEvent({ type: "final" }))).toBe(false);
+    expect(isStartEvent(nbaEvent({ type: "close-game" }))).toBe(false);
+    expect(isStartEvent(wcEvent({ type: "wc-goal" }))).toBe(false);
+  });
+
+  it("builds a spoiler-safe offer payload with the matchup as title", () => {
+    const p = buildLiveActivityOfferPayload(wcEvent());
+    expect(p.title).toBe("BRA vs JPN");
+    expect(p.subtitle).toBe("Starting now");
+    expect(p.body).toBe("Tap to add the live score to your lock screen.");
+    expect(p.url).toBe("/game/wc1?offer=live-activity");
+    expect(p.tag).toBe("wc1:wc-kickoff");
+    // never leak a score
+    expect(p.body).not.toMatch(/\d/);
+    // no em-dashes in user-facing copy
+    expect(`${p.title}${p.subtitle}${p.body}`).not.toContain("—");
+  });
+
+  it("uses the nba start tag for nba tipoff offers", () => {
+    const p = buildLiveActivityOfferPayload(nbaEvent({ type: "tipoff", gameId: "g9" }));
+    expect(p.tag).toBe("g9:tipoff");
+    expect(p.title).toBe("OKC vs SA");
+  });
+
+  it("builds offer data with type, gameId, and sport", () => {
+    expect(liveActivityOfferData(wcEvent())).toEqual({
+      type: "live-activity-offer",
+      gameId: "wc1",
+      sport: "wc",
+    });
+    expect(liveActivityOfferData(nbaEvent({ type: "tipoff", gameId: "g9" }))).toEqual({
+      type: "live-activity-offer",
+      gameId: "g9",
+      sport: "nba",
+    });
+  });
+
+  it("uses the Game 7 stakes as the offer subtitle for a Game 7 tipoff", () => {
+    const p = buildLiveActivityOfferPayload(nbaEvent({ type: "tipoff", isGame7: true }));
+    expect(p.subtitle).toBe("Game 7 · series on the line");
+    expect(p.title).toBe("OKC vs SA");
+    expect(p.body).toBe("Tap to add the live score to your lock screen.");
+  });
+
+  it("uses the knockout round as the offer subtitle for a WC knockout kickoff", () => {
+    const p = buildLiveActivityOfferPayload(wcEvent({ stage: "Round of 32" }));
+    expect(p.subtitle).toBe("Round of 32");
+  });
+
+  it("falls back to 'Starting now' for a WC group-stage kickoff", () => {
+    const p = buildLiveActivityOfferPayload(wcEvent({ stage: "Group A" }));
+    expect(p.subtitle).toBe("Starting now");
+  });
+
+  it("falls back to 'Starting now' for a plain tipoff with no stakes", () => {
+    const p = buildLiveActivityOfferPayload(nbaEvent({ type: "tipoff" }));
+    expect(p.subtitle).toBe("Starting now");
+  });
+});
+
+describe("wantsLiveActivityOffer", () => {
+  const base = { lockScreenOffers: true } as const;
+
+  it("true for a start event when lockScreenOffers is on", () => {
+    expect(wantsLiveActivityOffer(base, nbaEvent({ type: "tipoff" }))).toBe(true);
+    expect(
+      wantsLiveActivityOffer(base, nbaEvent({ type: "wc-kickoff", awayCode: "BRA", homeCode: "JPN" }))
+    ).toBe(true);
+  });
+
+  it("false when the toggle is off", () => {
+    expect(
+      wantsLiveActivityOffer({ lockScreenOffers: false }, nbaEvent({ type: "tipoff" }))
+    ).toBe(false);
+  });
+
+  it("false for non-start events even with the toggle on", () => {
+    expect(wantsLiveActivityOffer(base, nbaEvent({ type: "final" }))).toBe(false);
+    expect(wantsLiveActivityOffer(base, nbaEvent({ type: "close-game" }))).toBe(false);
+  });
+
+  it("treats undefined lockScreenOffers as on (default)", () => {
+    expect(wantsLiveActivityOffer({}, nbaEvent({ type: "tipoff" }))).toBe(true);
   });
 });

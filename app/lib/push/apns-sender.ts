@@ -182,6 +182,27 @@ function isEnvironmentMismatch(status: number, body: string | undefined): boolea
   );
 }
 
+/** Build the APNs JSON body. `aps` holds the visible alert; any custom
+ *  `data` becomes TOP-LEVEL keys (siblings of `aps`), which is how Apple
+ *  delivers custom fields and how Capacitor surfaces them on the web side
+ *  as `notification.data`. Custom keys must never go inside `aps`. */
+export function buildApnsPayload(
+  alert: Record<string, string>,
+  data?: Record<string, string>
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    aps: {
+      alert,
+      sound: "default",
+      "mutable-content": 1,
+    },
+  };
+  if (data) {
+    for (const [k, v] of Object.entries(data)) payload[k] = v;
+  }
+  return payload;
+}
+
 /** Send a single APNs push. Returns success/failure with status code.
  *  Caller is responsible for handling 410 Gone (token has expired —
  *  remove from store). Returns ok=true only on HTTP 200. */
@@ -209,6 +230,10 @@ export async function sendApnsPush(opts: {
    *  environment. Lets the test endpoint see each environment's raw
    *  result in isolation. */
   noFallback?: boolean;
+  /** Optional custom data delivered as top-level APNs keys (outside
+   *  `aps`). Capacitor surfaces these as `notification.data` on tap.
+   *  Used by the lock-screen live-score offer. */
+  data?: Record<string, string>;
 }): Promise<ApnsResult> {
   const bundleId = process.env.APNS_BUNDLE_ID;
   if (!bundleId) {
@@ -239,13 +264,7 @@ export async function sendApnsPush(opts: {
     body: opts.body,
   };
   if (opts.subtitle) alert.subtitle = opts.subtitle;
-  const payload = {
-    aps: {
-      alert,
-      sound: "default",
-      "mutable-content": 1,
-    },
-  };
+  const payload = buildApnsPayload(alert, opts.data);
   const headers: Record<string, string> = {
     authorization: `bearer ${jwt}`,
     "apns-topic": bundleId,

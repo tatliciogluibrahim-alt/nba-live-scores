@@ -92,6 +92,7 @@ export function usePinned(): PinnedCtx {
 type PrefsCtx = {
   prefs: UserPrefs;
   setNoSpoilers: (value: boolean) => void;
+  setLockScreenOffers: (value: boolean) => void;
   setRemindBeforeMinutes: (minutes: number) => void;
   setQuietHours: (range: { start: string; end: string } | undefined) => void;
   /** Records the YYYY-MM-DD the user dismissed the Quiet Recap card, so
@@ -344,6 +345,14 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setLockScreenOffers = useCallback((value: boolean) => {
+    setPrefs((prev) => {
+      const next = { ...prev, lockScreenOffers: value };
+      writeJSON(STORAGE_KEYS.prefs, next);
+      return next;
+    });
+  }, []);
+
   const setRemindBeforeMinutes = useCallback((minutes: number) => {
     setPrefs((prev) => {
       const next = { ...prev, remindBeforeMinutes: minutes };
@@ -486,6 +495,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     () => ({
       prefs,
       setNoSpoilers,
+      setLockScreenOffers,
       setRemindBeforeMinutes,
       setQuietHours,
       markQuietRecapSeen,
@@ -501,6 +511,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     [
       prefs,
       setNoSpoilers,
+      setLockScreenOffers,
       setRemindBeforeMinutes,
       setQuietHours,
       markQuietRecapSeen,
