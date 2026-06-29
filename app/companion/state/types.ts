@@ -37,6 +37,9 @@ export type PinnedGame = {
 
 export type UserPrefs = {
   noSpoilers: boolean;
+  /** Whether kickoff pushes for followed games offer to add the live
+   *  score to the lock screen (iOS only). Default on. */
+  lockScreenOffers?: boolean;
   /** Default tier applied to newly-created follows. Replaces the old
    *  pre-v2 global `alertPreset` which used to apply to ALL follows.
    *  Now: each Follow owns its own alertTier and alertEnabled. */
@@ -93,6 +96,7 @@ export type UserPrefs = {
 // ── Defaults ──────────────────────────────────────────────────────────
 export const DEFAULT_PREFS: UserPrefs = {
   noSpoilers: false,
+  lockScreenOffers: true,
   defaultAlertTier: "companion",
   plan: "free",
   remindBeforeMinutes: 30,
