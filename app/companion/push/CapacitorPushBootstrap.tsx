@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFollows, useUserPrefs } from "../providers";
+import { useFollows, useUserPrefs, usePinned } from "../providers";
 import { postWithRetry } from "./register-state";
 
 // CapacitorPushBootstrap — invisible component, mounted globally
@@ -113,6 +113,7 @@ function hashSync(sync: SyncPayload): string {
 export function CapacitorPushBootstrap() {
   const { follows, hydrated: followsHydrated } = useFollows();
   const { prefs, hydrated: prefsHydrated, dismissNotifPrompt } = useUserPrefs();
+  const { pinGame } = usePinned();
 
   // Refs to keep the listener closure looking at fresh state without
   // re-running the bootstrap effect when state changes.
@@ -129,6 +130,7 @@ export function CapacitorPushBootstrap() {
   // callback identity changed). The setter is wrapped in useCallback
   // so the ref rarely changes, but the ref pattern is the safe form.
   const dismissNotifPromptRef = useRef(dismissNotifPrompt);
+  const pinGameRef = useRef(pinGame);
   // True once we've successfully attached listeners + registered, so a
   // re-run (e.g. when onboarding completes) doesn't double-attach.
   const startedRef = useRef(false);
@@ -149,6 +151,7 @@ export function CapacitorPushBootstrap() {
     quietHoursRef.current = prefs.quietHours;
     remindRef.current = prefs.remindBeforeMinutes;
     dismissNotifPromptRef.current = dismissNotifPrompt;
+    pinGameRef.current = pinGame;
   }, [
     follows,
     prefs.noSpoilers,
@@ -156,6 +159,7 @@ export function CapacitorPushBootstrap() {
     prefs.quietHours,
     prefs.remindBeforeMinutes,
     dismissNotifPrompt,
+    pinGame,
   ]);
 
   // Bootstrap effect: wires permission, listeners, register(). Re-runs
@@ -262,6 +266,18 @@ export function CapacitorPushBootstrap() {
         "pushNotificationActionPerformed",
         (action) => {
           console.log("[CapacitorPush] tap:", action);
+          // Lock-screen live-score offer: tapping pins the game. The
+          // already-mounted LiveActivitySync poll then starts + maintains
+          // the lock-screen tile (it builds the input, applies
+          // No-Spoilers redaction, registers the per-Activity push token,
+          // and ends the tile when the game finishes). Cold start works
+          // too: this listener is attached before the queued tap fires.
+          const data = action.notification?.data as
+            | { type?: string; gameId?: string }
+            | undefined;
+          if (data?.type === "live-activity-offer" && data.gameId) {
+            pinGameRef.current(data.gameId);
+          }
         }
       );
 
