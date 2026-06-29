@@ -36,6 +36,7 @@ const REGISTER_ENDPOINT = "/api/push/register-ios";
 type SyncPayload = {
   alerts: Array<{ kind: string; id: string; tier: string }>;
   noSpoilers: boolean;
+  lockScreenOffers: boolean;
   quietHours?: { start: string; end: string };
   remindBeforeMinutes?: number;
   timeZone?: string;
@@ -50,6 +51,7 @@ async function postRegister(token: string, sync: SyncPayload): Promise<boolean> 
       token,
       alerts: sync.alerts,
       noSpoilers: sync.noSpoilers,
+      lockScreenOffers: sync.lockScreenOffers,
       quietHours: sync.quietHours,
       remindBeforeMinutes: sync.remindBeforeMinutes,
       timeZone: sync.timeZone,
@@ -70,6 +72,7 @@ function buildSync(
   follows: ReturnType<typeof useFollows>["follows"],
   opts: {
     noSpoilers: boolean;
+    lockScreenOffers: boolean;
     quietHours?: { start: string; end: string };
     remindBeforeMinutes?: number;
   }
@@ -79,6 +82,7 @@ function buildSync(
       .filter((f) => f.alertEnabled)
       .map((f) => ({ kind: f.kind, id: f.id, tier: f.alertTier })),
     noSpoilers: opts.noSpoilers,
+    lockScreenOffers: opts.lockScreenOffers,
     quietHours: opts.quietHours,
     remindBeforeMinutes: opts.remindBeforeMinutes,
     timeZone: deviceTimeZone(),
@@ -88,6 +92,8 @@ function buildSync(
 function hashSync(sync: SyncPayload): string {
   return (
     (sync.noSpoilers ? "1" : "0") +
+    "|" +
+    (sync.lockScreenOffers ? "1" : "0") +
     "|" +
     (sync.quietHours
       ? `${sync.quietHours.start}-${sync.quietHours.end}`
@@ -114,6 +120,7 @@ export function CapacitorPushBootstrap() {
   const lastHashRef = useRef<string | null>(null);
   const followsRef = useRef(follows);
   const noSpoilersRef = useRef(prefs.noSpoilers);
+  const lockScreenOffersRef = useRef(prefs.lockScreenOffers !== false);
   const quietHoursRef = useRef(prefs.quietHours);
   const remindRef = useRef(prefs.remindBeforeMinutes);
   // dismissNotifPromptRef so we can call the setter from inside the
@@ -138,12 +145,14 @@ export function CapacitorPushBootstrap() {
   useEffect(() => {
     followsRef.current = follows;
     noSpoilersRef.current = prefs.noSpoilers;
+    lockScreenOffersRef.current = prefs.lockScreenOffers !== false;
     quietHoursRef.current = prefs.quietHours;
     remindRef.current = prefs.remindBeforeMinutes;
     dismissNotifPromptRef.current = dismissNotifPrompt;
   }, [
     follows,
     prefs.noSpoilers,
+    prefs.lockScreenOffers,
     prefs.quietHours,
     prefs.remindBeforeMinutes,
     dismissNotifPrompt,
@@ -227,6 +236,7 @@ export function CapacitorPushBootstrap() {
         // are handled by the second effect below.
         const sync = buildSync(followsRef.current, {
           noSpoilers: noSpoilersRef.current,
+          lockScreenOffers: lockScreenOffersRef.current,
           quietHours: quietHoursRef.current,
           remindBeforeMinutes: remindRef.current,
         });
@@ -282,6 +292,7 @@ export function CapacitorPushBootstrap() {
 
     const sync = buildSync(follows, {
       noSpoilers: prefs.noSpoilers,
+      lockScreenOffers: prefs.lockScreenOffers !== false,
       quietHours: prefs.quietHours,
       remindBeforeMinutes: prefs.remindBeforeMinutes,
     });
@@ -304,6 +315,7 @@ export function CapacitorPushBootstrap() {
   }, [
     follows,
     prefs.noSpoilers,
+    prefs.lockScreenOffers,
     prefs.quietHours,
     prefs.remindBeforeMinutes,
     followsHydrated,
