@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { subscriberWantsEvent } from "./dispatcher";
+import {
+  subscriberWantsEvent,
+  isStartEvent,
+  buildLiveActivityOfferPayload,
+  liveActivityOfferData,
+} from "./dispatcher";
 import type { PushEvent } from "./event-detector";
 import type { SyncedAlert } from "./sync-validation";
 
@@ -236,5 +241,62 @@ describe("subscriberWantsEvent — defensive", () => {
         nbaEvent()
       )
     ).toBe(false);
+  });
+});
+
+describe("live-activity offer builders", () => {
+  function wcEvent(over: Partial<PushEvent> = {}): PushEvent {
+    return {
+      type: "wc-kickoff",
+      gameId: "wc1",
+      awayCode: "BRA",
+      homeCode: "JPN",
+      awayScore: 0,
+      homeScore: 0,
+      ...over,
+    };
+  }
+
+  it("treats tipoff and wc-kickoff as start events", () => {
+    expect(isStartEvent(nbaEvent({ type: "tipoff" }))).toBe(true);
+    expect(isStartEvent(wcEvent())).toBe(true);
+  });
+
+  it("does not treat non-start events as start events", () => {
+    expect(isStartEvent(nbaEvent({ type: "final" }))).toBe(false);
+    expect(isStartEvent(nbaEvent({ type: "close-game" }))).toBe(false);
+    expect(isStartEvent(wcEvent({ type: "wc-goal" }))).toBe(false);
+  });
+
+  it("builds a spoiler-safe offer payload with the matchup as title", () => {
+    const p = buildLiveActivityOfferPayload(wcEvent());
+    expect(p.title).toBe("BRA vs JPN");
+    expect(p.subtitle).toBe("Starting now");
+    expect(p.body).toBe("Tap to add the live score to your lock screen.");
+    expect(p.url).toBe("/game/wc1?offer=live-activity");
+    expect(p.tag).toBe("wc1:wc-kickoff");
+    // never leak a score
+    expect(p.body).not.toMatch(/\d/);
+    // no em-dashes in user-facing copy
+    expect(`${p.title}${p.subtitle}${p.body}`).not.toContain("—");
+  });
+
+  it("uses the nba start tag for nba tipoff offers", () => {
+    const p = buildLiveActivityOfferPayload(nbaEvent({ type: "tipoff", gameId: "g9" }));
+    expect(p.tag).toBe("g9:tipoff");
+    expect(p.title).toBe("OKC vs SA");
+  });
+
+  it("builds offer data with type, gameId, and sport", () => {
+    expect(liveActivityOfferData(wcEvent())).toEqual({
+      type: "live-activity-offer",
+      gameId: "wc1",
+      sport: "wc",
+    });
+    expect(liveActivityOfferData(nbaEvent({ type: "tipoff", gameId: "g9" }))).toEqual({
+      type: "live-activity-offer",
+      gameId: "g9",
+      sport: "nba",
+    });
   });
 });

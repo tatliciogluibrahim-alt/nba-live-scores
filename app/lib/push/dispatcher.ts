@@ -494,6 +494,53 @@ function dedupeTagFor(event: PushEvent): string {
   return `${event.gameId}:${event.type}`;
 }
 
+/** Start-of-game events that the lock-screen offer rides on. The offer
+ *  variant only ever replaces these. */
+const START_EVENT_TYPES = new Set<PushEvent["type"]>(["tipoff", "wc-kickoff"]);
+
+/** True when the event is a game-start event (NBA tipoff or WC kickoff). */
+export function isStartEvent(event: PushEvent): boolean {
+  return START_EVENT_TYPES.has(event.type);
+}
+
+/** The matchup used as the offer title, e.g. "BRA vs JPN". */
+function offerMatchup(event: PushEvent): string {
+  return `${event.awayCode} vs ${event.homeCode}`;
+}
+
+/** The collapse tag for a start event — must match the tag buildPayload
+ *  uses for the same event so the offer and the normal start push share a
+ *  Notification Center slot. */
+function startTag(event: PushEvent): string {
+  return event.type === "wc-kickoff"
+    ? `${event.gameId}:wc-kickoff`
+    : `${event.gameId}:tipoff`;
+}
+
+/** The "tap to add the live score to your lock screen" offer payload.
+ *  Spoiler-safe by construction (start = 0-0, no score in copy). iOS only;
+ *  never sent to web push. The url carries an ?offer marker as a fallback
+ *  so older builds without the tap handler still land on the game page. */
+export function buildLiveActivityOfferPayload(event: PushEvent): PushPayload {
+  return {
+    title: offerMatchup(event),
+    subtitle: "Starting now",
+    body: "Tap to add the live score to your lock screen.",
+    url: `/game/${event.gameId}?offer=live-activity`,
+    tag: startTag(event),
+  };
+}
+
+/** Custom APNs data the tap handler reads to pin the game + start the
+ *  Live Activity. Sent as top-level keys alongside `aps`. */
+export function liveActivityOfferData(event: PushEvent): Record<string, string> {
+  return {
+    type: "live-activity-offer",
+    gameId: event.gameId,
+    sport: isWCEvent(event) ? "wc" : "nba",
+  };
+}
+
 function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
   const matchup = `${event.awayCode} vs ${event.homeCode}`;
   // Knockout WC matches add the round to the subtitle ("USA vs POR ·
