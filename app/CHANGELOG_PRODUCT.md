@@ -2,6 +2,47 @@
 
 ---
 
+## Desktop polish pass — 2026-06-29
+
+A visual-QA-driven polish of the desktop app surface (`/app` at `md+`),
+not a redesign. Driven by a reusable Playwright screenshot harness
+(`scripts/desktop-shots.mjs`) that seeds a populated WC live-day state and
+captures every surface at 390 / 768 / 1280 / 1920, light + dark.
+
+- **Ultrawide width.** Today and Following gain `2xl:max-w-7xl`, so 1920
+  screens use the space instead of a fixed `max-w-5xl` column (still
+  centered). The calm centered column at smaller desktop widths is
+  unchanged.
+- **Settings desktop width.** Was stuck at phone-width `max-w-md`; now
+  `md:max-w-2xl` so it reads as a desktop settings column.
+- **Watching Live Room.** Live games now lay out side by side
+  (`md:grid-cols-2 xl:grid-cols-3`) instead of as a tall single-column
+  stack.
+- **Today You-Follow rail.** Lifted to the top by moving the desktop
+  scoreboard into the grid's left column, so the rail aligns with the
+  scoreboard instead of starting below it. (Minor: the scoreboard
+  eyebrow truncates to "GRO…" in the ~1280-1536 band where the column is
+  narrowest; roomy again at 1920.)
+- **Keyboard shortcut.** `g t` now routes to `/app`, not `/` (which
+  serves the marketing landing on desktop).
+
+Investigated and dismissed (no change made):
+- **"1 Issue" error console** — a React hydration-mismatch warning seen
+  during dev cold-compile. Confirmed against a production build
+  (`npm run build && npm run start`): the in-app error pill does not
+  render and no hydration mismatch / page error occurs. Dev-only artifact.
+- **Dark-mode sidebar** — not a bug; `--cream` inverts in dark mode and
+  the rail uses it.
+- **Double chrome on detail pages** — not a bug; `BrandBar` is already
+  `md:hidden` and detail routes show the sidebar.
+
+QA harness (`scripts/desktop-shots.mjs`) added as reusable infra; re-run
+it and diff after any desktop change. Note: 768 is exactly the `md`
+breakpoint (already desktop), so the harness now also shoots 390 for the
+true mobile layout.
+
+---
+
 ## Lock-screen live-score offer — built + merged to main 2026-06-29 (ships in the next iOS build)
 
 A kickoff push whose tap adds the live score to your lock screen, the calm
