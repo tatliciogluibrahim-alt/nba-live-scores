@@ -43,3 +43,7 @@ next-env.d.ts
 
 # local agent scratch files
 .claude/
+
+# Desktop visual-QA screenshot output (scripts/desktop-shots.mjs)
+desktop-qa/
+desktop-qa-*/

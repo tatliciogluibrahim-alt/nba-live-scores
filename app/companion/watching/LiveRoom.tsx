@@ -52,7 +52,7 @@ export function LiveRoom({ payload }: { payload: WatchingPayload }) {
         </span>
       </div>
 
-      <ul className="space-y-2">
+      <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
         {liveItems.map((item) => (
           <li key={item.id}>
             <LiveRoomCard item={item} />

@@ -11,8 +11,8 @@ import { useRouter } from "next/navigation";
 // Desktop-only (a phone has no keyboard); ignored while typing in a field or
 // with a modifier held, so it never hijacks real input or browser shortcuts.
 
-const DESTS: Record<string, string> = {
-  t: "/",
+export const DESTS: Record<string, string> = {
+  t: "/app",
   f: "/following",
   w: "/watching",
   h: "/how-it-works",

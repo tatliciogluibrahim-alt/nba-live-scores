@@ -76,7 +76,7 @@ export function TodayClient() {
 
   return (
     <PullToRefresh onRefresh={refetch}>
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-5xl md:px-8 md:pt-6">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-5xl md:px-8 md:pt-6 2xl:max-w-7xl">
       {/* ── Masthead (Concept A "Front Page"): date · No Noise wordmark ·
           No-Spoilers state, with a full-width hairline beneath. The big
           "Today" title is gone — the Brief headline below is the page's
@@ -164,15 +164,6 @@ export function TodayClient() {
           day (nothing live, games coming up) the calm "Quiet for now."
           state (design C) takes over instead, folding in the Next-up
           list. */}
-      {/* Desktop scoreboard — the at-a-glance grid that fills the width.
-          Desktop + games only; the calm single lead below stays the mobile
-          (and desktop-quiet) treatment. */}
-      {hasScoreboard ? (
-        <div className={mobileScoreboard ? undefined : "hidden md:block"}>
-          <DesktopScoreboard tiles={scoreboard} />
-        </div>
-      ) : null}
-
       <div className={mobileScoreboard ? "hidden" : hasScoreboard ? "md:hidden" : undefined}>
         {hydrated && payload.restingState ? (
           <RestingState items={payload.upNext} />
@@ -217,6 +208,16 @@ export function TodayClient() {
       {hydrated ? (
         <div className="md:grid md:grid-cols-[minmax(0,1fr)_280px] md:gap-6">
           <div className="space-y-5">
+            {/* Desktop scoreboard — at the top of the content column so the
+                You-Follow rail (right column) aligns with it instead of
+                starting below a full-width band. Desktop + games only;
+                the calm single lead below stays the mobile treatment. */}
+            {hasScoreboard ? (
+              <div className={mobileScoreboard ? undefined : "hidden md:block"}>
+                <DesktopScoreboard tiles={scoreboard} />
+              </div>
+            ) : null}
+
             {/* The lead game is now the Front Page deck above; the old
                 WorthCheckingNow hero would just duplicate it. */}
 
