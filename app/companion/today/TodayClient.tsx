@@ -76,7 +76,7 @@ export function TodayClient() {
 
   return (
     <PullToRefresh onRefresh={refetch}>
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-5xl md:px-8 md:pt-6">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-5xl md:px-8 md:pt-6 2xl:max-w-7xl">
       {/* ── Masthead (Concept A "Front Page"): date · No Noise wordmark ·
           No-Spoilers state, with a full-width hairline beneath. The big
           "Today" title is gone — the Brief headline below is the page's

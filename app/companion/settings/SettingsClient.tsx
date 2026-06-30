@@ -25,7 +25,7 @@ import { ThemeSelector } from "./ThemeSelector";
 
 export function SettingsClient() {
   return (
-    <main className="mx-auto max-w-md px-4 pb-4 pt-1">
+    <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl md:px-8 md:pt-6">
       <div className="mb-5 flex items-baseline justify-between gap-3">
         <div>
           <Display as="h1" size="lg" className="mb-1">
