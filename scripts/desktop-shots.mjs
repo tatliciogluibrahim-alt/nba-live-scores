@@ -68,7 +68,12 @@ const routes = onlyRoutes
   ? allRoutes.filter(([name]) => onlyRoutes.includes(name))
   : allRoutes;
 
-const widths = [768, 1280, 1920];
+// 390 = true mobile (below the md breakpoint). 768 is EXACTLY the md
+// breakpoint, so it already renders the desktop layout — include 390 so the
+// harness actually covers the mobile layout it claims to. QA_WIDTHS overrides.
+const widths = process.env.QA_WIDTHS
+  ? process.env.QA_WIDTHS.split(",").map((s) => Number(s.trim()))
+  : [390, 768, 1280, 1920];
 
 // light at every width; dark only at the canonical desktop width to keep
 // the shot count sane.
