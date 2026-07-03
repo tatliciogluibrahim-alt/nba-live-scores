@@ -5,7 +5,8 @@ import Link from "next/link";
 import type { TodayHeadline } from "./today-data";
 import { Monument } from "../system/Monument";
 import { rungFor, peakEligible } from "../system/register";
-import { GameSpoilerScope, useFollowHidesGame } from "../spoiler/reveal";
+import { GameSpoilerScope, useFollowHidesGame, useReveal } from "../spoiler/reveal";
+import { safeText } from "../spoiler/safe-text";
 import { useNoSpoilers } from "../providers";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
 
@@ -111,6 +112,10 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
       : { teamCodes: participantCodes }
   );
   const baseHidden = globalNoSpoilers || followHidden;
+  // Reveal-aware so the deck fact-string comes back the moment the user
+  // taps to reveal the game (isRevealed clears the hidden decision). Called
+  // unconditionally to keep hook order stable across the game/headline branches.
+  const { isRevealed } = useReveal();
 
   // Animate only the first lead of the page-load; later re-mounts render static.
   const [animate] = useState(() => !leadEntered);
@@ -157,6 +162,20 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
     const deckText = lead.live
       ? joinSentences(deck.detail, lead.support)
       : joinSentences(lead.headline, lead.support);
+
+    // No-Spoilers deck suppression (spec §9). The Monument already frosts
+    // the deck visually via its <Spoiler>, but the SAFE-TEXT rule means the
+    // underlying (blurred) string + its a11y text must ALSO be non-spoilery
+    // so nothing leaks before the tap. When the game is hidden, run the deck
+    // through safeText — a spoilery support line ("OKC leads series 3-2.")
+    // blanks the whole deck (whole-line redaction, same as the pinned-card
+    // detail line); a calm status deck ("Second half underway.") passes
+    // through and is just frosted. isRevealed clears baseHidden, so the full
+    // deck returns on reveal. Non-hidden games are untouched.
+    const deckHidden = baseHidden && !isRevealed(game.gameId);
+    const safeDeck = deckText
+      ? safeText(deckText, deckHidden) || undefined
+      : undefined;
 
     return (
       <>
@@ -209,7 +228,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
                   ) : null}
                 </>
               }
-              deck={deckText}
+              deck={safeDeck}
               href={deck.href}
               gameId={game.gameId}
               spoilerSubject={game.spoilerSubject}

@@ -59,3 +59,19 @@ export function upNextCountLabel(items: { source: TodaySource }[]): string {
 export function wrapCountLabel(n: number): string {
   return `${n} WRAPPED`;
 }
+
+/** Day-word label for a resting-day UP NEXT row stamp. "Today" when the
+ *  fixture is on the current day, otherwise the capitalized dayWord
+ *  ("Tomorrow", "Saturday"), falling back to "Upcoming" when neither is
+ *  known. On a resting day the games are days out, so the day word carries
+ *  more than the kickoff clock — this is what the agate stamp shows. Pure
+ *  string logic (no React) so the RestingState render stays a layout. */
+export function upNextDayLabel(item: {
+  isToday: boolean;
+  dayWord?: string;
+}): string {
+  if (item.isToday) return "Today";
+  const w = item.dayWord?.trim();
+  if (!w) return "Upcoming";
+  return w.charAt(0).toUpperCase() + w.slice(1);
+}

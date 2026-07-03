@@ -7,6 +7,7 @@ import {
   agateScore,
   upNextCountLabel,
   wrapCountLabel,
+  upNextDayLabel,
 } from "./agate-slate";
 
 describe("padIdx", () => {
@@ -84,5 +85,23 @@ describe("wrapCountLabel", () => {
   it("uses the sport-neutral WRAPPED noun", () => {
     expect(wrapCountLabel(1)).toBe("1 WRAPPED");
     expect(wrapCountLabel(2)).toBe("2 WRAPPED");
+  });
+});
+
+describe("upNextDayLabel (resting-day stamp)", () => {
+  it("says Today for a same-day fixture", () => {
+    expect(upNextDayLabel({ isToday: true, dayWord: "" })).toBe("Today");
+  });
+  it("capitalizes a day word for a future fixture", () => {
+    expect(upNextDayLabel({ isToday: false, dayWord: "tomorrow" })).toBe(
+      "Tomorrow"
+    );
+    expect(upNextDayLabel({ isToday: false, dayWord: "Saturday" })).toBe(
+      "Saturday"
+    );
+  });
+  it("falls back to Upcoming when no day word is known", () => {
+    expect(upNextDayLabel({ isToday: false, dayWord: "" })).toBe("Upcoming");
+    expect(upNextDayLabel({ isToday: false })).toBe("Upcoming");
   });
 });
