@@ -496,7 +496,7 @@ export type TodayLeadGame = {
   spoilerSubject: string;
 };
 
-function wcLeadGame(g: WCGameLite): TodayLeadGame {
+export function wcLeadGame(g: WCGameLite): TodayLeadGame {
   const upcoming = g.status === "upcoming";
   return {
     source: "wc",
@@ -518,7 +518,7 @@ function wcLeadGame(g: WCGameLite): TodayLeadGame {
   };
 }
 
-function nbaLeadGame(g: NBAGame): TodayLeadGame {
+export function nbaLeadGame(g: NBAGame): TodayLeadGame {
   const upcoming = g.status === "upcoming";
   return {
     source: "nba",

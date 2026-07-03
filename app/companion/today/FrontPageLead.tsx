@@ -173,7 +173,14 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
               progress={progress}
               kicker={
                 <>
-                  <span style={{ color: "var(--mute-2)" }}>01</span>
+                  <span
+                    style={{
+                      color:
+                        rung === "peak"
+                          ? "var(--cream-on-acc-dim)"
+                          : "var(--mute-2)",
+                    }}
+                  >01</span>
                   {lead.live ? (
                     <span
                       aria-hidden
