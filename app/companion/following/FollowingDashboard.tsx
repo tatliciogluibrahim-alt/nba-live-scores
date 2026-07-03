@@ -540,7 +540,7 @@ function FollowingMobile({
           <span
             aria-hidden
             className="no-noise-live-fade inline-block shrink-0 rounded-full"
-            style={{ width: 6, height: 6, background: "var(--cream)" }}
+            style={{ width: 6, height: 6, background: "var(--cream-on-ink)" }}
           />
           <span
             className="flex-1 uppercase tabular-nums lining-nums"
