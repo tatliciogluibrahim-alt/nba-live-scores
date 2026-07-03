@@ -17,7 +17,7 @@ import { slotState } from "../system/lock-screen-slots";
 //
 // The four states:
 //   default → filled pill. Verb by platform (native+live = "Track on Lock
-//             Screen", else "Pin to Watching").
+//             Screen", else "Add to Watching").
 //   held    → outlined ◉ stamp, "tap to remove".
 //   full    → outlined disabled stamp, "Lock screen full · N of 3".
 //   denied  → outlined stamp "Turn on Live Activities" (game is still in
@@ -222,7 +222,7 @@ function DefaultCta({
   nativeUpcoming: boolean;
   onTap: () => void;
 }) {
-  const label = lockScreen ? "Track on Lock Screen" : "Pin to Watching";
+  const label = lockScreen ? "Track on Lock Screen" : "Add to Watching";
   const subnote = lockScreen
     ? "Keeps the score on your lock screen and in Watching."
     : nativeUpcoming
@@ -265,7 +265,7 @@ function HeldStamp({
 }) {
   const label = lockScreen
     ? "◉ On your lock screen · tap to remove"
-    : "◉ In Watching · tap to remove";
+    : "✓ In Watching · tap to remove";
   return (
     <>
       <OutlineStamp
