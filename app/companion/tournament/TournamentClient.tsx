@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
+import { SecHead } from "../system/SecHead";
 import { useFollows } from "../providers";
 import { PRESETS } from "../state/types";
 import {
   getTournament,
   type TournamentEntry,
 } from "../following/data/tournaments";
+import { WC_COUNTRIES } from "../following/data/countries";
 import {
   buildSeriesKey,
   isPlaceholderAbbr,
@@ -17,8 +19,12 @@ import {
   hasSeriesContext,
 } from "../../nba/lib/series-keys";
 import { parseSeriesWins } from "../../nba/lib/series";
-import { WCGroups } from "./WCGroups";
-import { WCKnockout } from "./WCKnockout";
+import { WCGroups, useWCSchedule } from "./WCGroups";
+import { WCKnockout, WCKnockoutPreview } from "./WCKnockout";
+import { buildKnockoutRounds, buildKnockoutPreview, KNOCKOUT_STATIC_DATES } from "./knockout-data";
+import { buildPathData } from "./path-data";
+import { PathField } from "./PathField";
+import type { WCScheduleStandingLite } from "../country/country-data";
 import type { TournamentPhase } from "../following/data/tournament-phase";
 
 // /tournament/[id] — first detail page for tournament follows.
@@ -152,7 +158,7 @@ export function TournamentClient({
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
-      <TournamentHeader tournament={tournament} />
+      <TournamentPagehead tournament={tournament} phase={phase} />
       {concluded ? (
         <SeasonWrappedBanner />
       ) : (
@@ -259,6 +265,164 @@ function TournamentHeader({ tournament }: { tournament: TournamentEntry }) {
         {tournament.detail}
       </p>
     </header>
+  );
+}
+
+// ── Pagehead (D3 seam) ─────────────────────────────────────────────────
+// Mobile: the System D editorial pagehead — "Summer Soccer." display + a mono
+// meta line + (for the World Cup) the OVERVIEW · GROUPS · BRACKET tab row that
+// cross-links the existing routes. Desktop: the legacy TournamentHeader,
+// pixel-frozen until D4. Chrome (the ← FOLLOWING / TOURNAMENT crumb) lives at
+// the page level (DetailCrumbs), per the leaf-screen chrome law.
+
+function TournamentPagehead({
+  tournament,
+  phase,
+}: {
+  tournament: TournamentEntry;
+  phase: TournamentPhase;
+}) {
+  return (
+    <>
+      <div className="md:hidden">
+        <MobilePagehead tournament={tournament} phase={phase} />
+      </div>
+      <div className="hidden md:block">
+        <TournamentHeader tournament={tournament} />
+      </div>
+    </>
+  );
+}
+
+const MOBILE_META_STYLE = {
+  fontFamily: "var(--font-mono)",
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: "0.12em",
+} as const;
+
+function MobilePagehead({
+  tournament,
+  phase,
+}: {
+  tournament: TournamentEntry;
+  phase: TournamentPhase;
+}) {
+  const isWC = tournament.id.startsWith("fifa-world-cup-");
+  // Drop a trailing year so the pagehead reads as the name ("Summer Soccer.")
+  // rather than the directory label ("Summer Soccer 2026").
+  const name = tournament.name.replace(/\s+\d{4}$/, "");
+
+  return (
+    <>
+      <Display
+        as="h1"
+        size="lg"
+        style={{
+          fontWeight: 800,
+          fontSize: "31px",
+          letterSpacing: "-0.02em",
+          lineHeight: 1.05,
+        }}
+      >
+        {name}.
+      </Display>
+
+      {isWC ? (
+        <WCMetaLine phase={phase} />
+      ) : (
+        <p
+          className="mt-2 text-[13px] leading-snug"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          {tournament.detail}
+        </p>
+      )}
+
+      {isWC ? <TournamentTabs tournamentId={tournament.id} /> : null}
+    </>
+  );
+}
+
+/** Current group-stage matchday (1..3) from the live standings — the max
+ *  games played by any team, clamped. Never hardcoded. */
+function groupMatchday(
+  standings: Record<string, WCScheduleStandingLite[]>,
+): number {
+  let maxPlayed = 0;
+  for (const rows of Object.values(standings)) {
+    for (const r of rows) maxPlayed = Math.max(maxPlayed, r.played);
+  }
+  return Math.min(3, Math.max(1, maxPlayed || 1));
+}
+
+// Mono meta line, derived (never hardcoded). Group/pre → "48 TEAMS · GROUP
+// STAGE · MATCHDAY N OF 3"; knockout/concluded → "48 TEAMS · ROUND OF 16"
+// (the current round, from the schedule).
+function WCMetaLine({ phase }: { phase: TournamentPhase }) {
+  const { fixtures, standings } = useWCSchedule();
+  const teams = WC_COUNTRIES.length;
+
+  let stage: string;
+  if (phase === "knockout" || phase === "concluded") {
+    stage = buildKnockoutPreview(fixtures, KNOCKOUT_STATIC_DATES).roundLabel.toUpperCase();
+  } else {
+    stage = `GROUP STAGE · MATCHDAY ${groupMatchday(standings)} OF 3`;
+  }
+
+  return (
+    <p
+      className="mt-2 uppercase tabular-nums lining-nums"
+      style={{ ...MOBILE_META_STYLE, color: "var(--mute-1)" }}
+    >
+      {teams} TEAMS · {stage}
+    </p>
+  );
+}
+
+// OVERVIEW · GROUPS · BRACKET — a mono tab row cross-linking the EXISTING
+// routes (no new routes). OVERVIEW is the current page (active: ink + 2px
+// underline); GROUPS / BRACKET link out. From d-tournament `.tabs`.
+function TournamentTabs({ tournamentId }: { tournamentId: string }) {
+  const tabStyle = {
+    fontFamily: "var(--font-mono)",
+    fontSize: 11,
+    letterSpacing: "0.14em",
+    paddingBottom: 9,
+  } as const;
+
+  return (
+    <div
+      className="mt-[18px] flex gap-[22px]"
+      style={{ borderBottom: "1px solid var(--line)" }}
+    >
+      <span
+        className="uppercase"
+        style={{
+          ...tabStyle,
+          color: "var(--ink)",
+          fontWeight: 700,
+          borderBottom: "2px solid var(--ink)",
+          marginBottom: -1,
+        }}
+      >
+        Overview
+      </span>
+      <Link
+        href={`/tournament/${tournamentId}/groups`}
+        className="uppercase"
+        style={{ ...tabStyle, color: "var(--mute-2)", fontWeight: 600 }}
+      >
+        Groups
+      </Link>
+      <Link
+        href={`/tournament/${tournamentId}/bracket`}
+        className="uppercase"
+        style={{ ...tabStyle, color: "var(--mute-2)", fontWeight: 600 }}
+      >
+        Bracket
+      </Link>
+    </div>
   );
 }
 
@@ -481,6 +645,22 @@ function NBAPlayoffsBody() {
   }
 
   return (
+    <>
+      {/* Mobile — System D agate series rows. Same computed `series`; a
+          ruled row per matchup with the MiniSeriesStrip + momentum note. */}
+      <section className="mt-6 md:hidden">
+        <SecHead name="Series" count={String(series.length)} />
+        {series.map((s, i) => (
+          <NBASeriesAgateRow
+            key={s.id}
+            s={s}
+            idx={String(i + 1).padStart(2, "0")}
+          />
+        ))}
+      </section>
+
+      {/* Desktop — legacy series cards, pixel-frozen until D4. */}
+      <div className="hidden md:block">
     <section className="mt-5">
       <div className="mb-2 flex items-center gap-3">
         <Eyebrow>Series</Eyebrow>
@@ -624,6 +804,111 @@ function NBAPlayoffsBody() {
         })}
       </ul>
     </section>
+      </div>
+    </>
+  );
+}
+
+// ── NBA series agate row (mobile) ──────────────────────────────────────
+// The System D restyle of a playoff-series row: display matchup, a mono
+// round label, the inline MiniSeriesStrip, the momentum line as a note, and
+// a → to the existing /series/{id} page. Wrapped series read muted. Fed the
+// SAME computed `series` object as the desktop cards.
+
+type NBASeriesRow = {
+  id: string;
+  a: string;
+  b: string;
+  aIsTbd: boolean;
+  bIsTbd: boolean;
+  label: string;
+  wrapped: boolean;
+  gamesPlayed: number;
+  aWins: number;
+  bWins: number;
+  hasGameToday: boolean;
+};
+
+function NBASeriesAgateRow({ s, idx }: { s: NBASeriesRow; idx: string }) {
+  const titleA = s.aIsTbd ? "TBD" : s.a;
+  const titleB = s.bIsTbd ? "TBD" : s.b;
+  const ariaLabel =
+    s.aIsTbd || s.bIsTbd
+      ? `Open ${titleA} vs ${titleB} series (matchup not yet decided)`
+      : `Open ${titleA} vs ${titleB} series`;
+  const momentum =
+    s.aIsTbd || s.bIsTbd
+      ? null
+      : buildSeriesMomentumLine({
+          a: s.a,
+          b: s.b,
+          aWins: s.aWins,
+          bWins: s.bWins,
+          wrapped: s.wrapped,
+          hasGameToday: s.hasGameToday,
+        });
+
+  return (
+    <Link
+      href={`/series/${s.id}`}
+      aria-label={ariaLabel}
+      className="flex items-center gap-[10px] py-[14px] active:bg-[var(--paper)]"
+      style={{ borderBottom: "1px solid var(--line)" }}
+    >
+      <span
+        className="tabular-nums lining-nums"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: 600,
+          color: "var(--mute-2)",
+          minWidth: 18,
+        }}
+      >
+        {idx}
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span
+          className="block truncate"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 17,
+            fontWeight: 700,
+            letterSpacing: "-0.01em",
+            color: s.wrapped ? "var(--mute-1)" : "var(--ink)",
+          }}
+        >
+          {titleA} vs {titleB}
+        </span>
+        <span
+          className="mt-[2px] block truncate uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            color: "var(--mute-2)",
+          }}
+        >
+          {s.label}
+          {s.wrapped ? " · Wrapped" : ""}
+        </span>
+        <MiniSeriesStrip gamesPlayed={s.gamesPlayed} />
+        {momentum ? (
+          <span
+            className="mt-1.5 block truncate text-[12px] leading-snug"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            {momentum}
+          </span>
+        ) : null}
+      </span>
+
+      <span aria-hidden style={{ color: "var(--mute-2)" }}>
+        →
+      </span>
+    </Link>
   );
 }
 
@@ -712,32 +997,66 @@ function FIFAWorldCupBody({
     </Link>
   );
 
-  if (knockoutFirst) {
-    return (
-      <>
-        {bracketLink}
-        <div className="mt-8">
-          <WCKnockout />
-        </div>
-        <div className="mt-10">
-          <p
-            className="mb-2 text-[11px] uppercase"
-            style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--mute-1)" }}
-          >
-            Group stage
-          </p>
-          <WCGroups tournamentId={tournamentId} mode="preview" />
-        </div>
-      </>
-    );
-  }
-
-  return (
+  // Desktop keeps the phase-ordered legacy layout verbatim. Mobile gets the
+  // System D recomposition: YOUR PATH → knockout preview → groups preview.
+  const desktopBody = knockoutFirst ? (
+    <>
+      {bracketLink}
+      <div className="mt-8">
+        <WCKnockout />
+      </div>
+      <div className="mt-10">
+        <p
+          className="mb-2 text-[11px] uppercase"
+          style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--mute-1)" }}
+        >
+          Group stage
+        </p>
+        <WCGroups tournamentId={tournamentId} mode="preview" />
+      </div>
+    </>
+  ) : (
     <>
       <WCGroups tournamentId={tournamentId} mode="preview" />
       <div className="mt-8">{bracketLink}</div>
       <div className="mt-8">
         <WCKnockout />
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <div className="md:hidden">
+        <FIFAWorldCupMobile tournamentId={tournamentId} phase={phase} />
+      </div>
+      <div className="hidden md:block">{desktopBody}</div>
+    </>
+  );
+}
+
+// Mobile World Cup body — the ONE ink path field (personal, WC-follow only),
+// the current-round knockout preview, then the groups preview (kept as-is;
+// Task 5 restyles its innards).
+function FIFAWorldCupMobile({
+  tournamentId,
+  phase,
+}: {
+  tournamentId: string;
+  phase: TournamentPhase;
+}) {
+  const { fixtures } = useWCSchedule();
+  const { follows } = useFollows();
+  const followedCountry = follows.find((f) => f.kind === "country")?.id ?? null;
+  const rounds = buildKnockoutRounds(fixtures, KNOCKOUT_STATIC_DATES);
+  const pathData = buildPathData(followedCountry, phase, rounds);
+
+  return (
+    <>
+      {pathData ? <PathField data={pathData} /> : null}
+      <WCKnockoutPreview tournamentId={tournamentId} />
+      <div className="mt-8">
+        <WCGroups tournamentId={tournamentId} mode="preview" />
       </div>
     </>
   );

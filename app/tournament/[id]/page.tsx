@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../companion/game/DetailCrumbs";
 import { TournamentClient } from "../../companion/tournament/TournamentClient";
 import { getTournament } from "../../companion/following/data/tournaments";
 import { tournamentPhase } from "../../companion/following/data/tournament-phase";
@@ -40,11 +40,9 @@ export default async function TournamentPage({
 
   return (
     <CompanionFrame desktopNav="detail">
-      <CrumbBar
-        backHref="/following"
-        backLabel="Following"
-        title="Tournament"
-      />
+      {/* Leaf-screen chrome (§2): mobile renders the System D "← FOLLOWING /
+          TOURNAMENT" crumb; desktop keeps the legacy CrumbBar verbatim. */}
+      <DetailCrumbs backHref="/following" backLabel="Following" title="Tournament" />
       <TournamentClient tournamentId={id} phase={phase} />
     </CompanionFrame>
   );
