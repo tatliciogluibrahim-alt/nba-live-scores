@@ -6,6 +6,10 @@ import { SecHead } from "../../companion/system/SecHead";
 import { AgateRow } from "../../companion/system/AgateRow";
 import { BoardRow } from "../../companion/system/BoardRow";
 import { InkField } from "../../companion/system/InkField";
+import { Monument, StakesStamp } from "../../companion/system/Monument";
+import { Rail } from "../../companion/system/Rail";
+import { Masthead } from "../../companion/system/Masthead";
+import { GameSpoilerScope } from "../../companion/spoiler/reveal";
 
 // Dev-only visual QA gallery for the System D primitives. Not linked in the
 // app, noindex (see page.tsx). Static mock data — this page is the harness
@@ -59,6 +63,24 @@ function Matchup({
   );
 }
 
+// Breathing live dot for a kicker line, colored per surface.
+function KDot({ color }: { color: string }) {
+  return (
+    <span
+      aria-hidden
+      className="no-noise-live-fade inline-block rounded-full"
+      style={{ width: 6, height: 6, background: color }}
+    />
+  );
+}
+
+// Monument / Masthead render full-bleed in the app (negative margins against
+// the page gutter). The gallery negates its own 18px padding so these samples
+// get the real 390px column — the honest test for 3-digit numeral fit.
+function Bleed({ children }: { children: ReactNode }) {
+  return <div style={{ marginLeft: -18, marginRight: -18 }}>{children}</div>;
+}
+
 export function Gallery() {
   return (
     <main
@@ -75,7 +97,7 @@ export function Gallery() {
         System D primitives
       </h1>
       <p style={{ marginTop: 4, fontSize: 13, color: "var(--mute-1)", fontWeight: 500 }}>
-        Stamp, SecHead, AgateRow, BoardRow, InkField.
+        Stamp, SecHead, AgateRow, BoardRow, InkField, Masthead, Monument, Rail.
       </p>
 
       {/* 1 — stamp variants */}
@@ -160,6 +182,149 @@ export function Gallery() {
           <Stamp text="QUIET" variant="outline" />
           <Stamp text="COMPANION" variant="filled" />
           <Stamp text="FULL" variant="filledHeavy" />
+        </div>
+      </Section>
+
+      {/* 6 — masthead: count hidden at 0, shown at 3 */}
+      <Section title="Masthead — 0 live (count hidden) / 3 live">
+        <Bleed>
+          <Masthead liveCount={0} />
+          <div style={{ height: 22 }} />
+          <Masthead liveCount={3} />
+        </Bleed>
+      </Section>
+
+      {/* 7 — monument: live, WC tie (both scores full ink, HT tick) */}
+      <Section title="Monument — live (WC · tie)">
+        <Bleed>
+          <GameSpoilerScope gameId="wc-tur-usa" hidden={false}>
+            <Monument
+              sport="wc"
+              rung="live"
+              status="live"
+              awayName="Türkiye"
+              homeName="United States"
+              awayScore={1}
+              homeScore={1}
+              progress={50 / 90}
+              kicker={
+                <>
+                  <span style={{ color: "var(--mute-2)" }}>01</span>
+                  <KDot color="var(--wc)" />
+                  <span style={{ color: "var(--wc)", fontWeight: 700 }}>Live · 50′</span>
+                  <span>· Group D · Fox</span>
+                </>
+              }
+              deck="Second half underway. Güler 23′, Pulisic 41′."
+              href="/game/wc-tur-usa"
+              gameId="wc-tur-usa"
+              spoilerSubject="Türkiye vs United States"
+            />
+          </GameSpoilerScope>
+        </Bleed>
+      </Section>
+
+      {/* 8 — monument: final, winnerSide emphasis (winner ink, loser mute) */}
+      <Section title="Monument — final (WC · winner emphasis)">
+        <Bleed>
+          <GameSpoilerScope gameId="wc-bra-sco" hidden={false}>
+            <Monument
+              sport="wc"
+              rung="rest"
+              status="final"
+              awayName="Brazil"
+              homeName="Scotland"
+              awayScore={2}
+              homeScore={0}
+              progress={1}
+              kicker={
+                <>
+                  <span style={{ color: "var(--mute-2)" }}>04</span>
+                  <span>Full time · Group G</span>
+                </>
+              }
+              deck="Brazil through to the knockouts."
+            />
+          </GameSpoilerScope>
+        </Bleed>
+      </Section>
+
+      {/* 9 — monument: PEAK, NBA Game 7, 3-digit scores drop to 84px */}
+      <Section title="Monument — peak (NBA · Game 7 · 3-digit)">
+        <Bleed>
+          <GameSpoilerScope gameId="nba-okc-sa" hidden={false}>
+            <Monument
+              sport="nba"
+              rung="peak"
+              status="live"
+              awayName="Thunder"
+              homeName="Spurs"
+              awayScore={128}
+              homeScore={124}
+              progress={0.93}
+              kicker={
+                <>
+                  <span style={{ color: "var(--cream-on-acc-dim)" }}>01</span>
+                  <KDot color="var(--cream-on-acc)" />
+                  <span>LIVE · Q4 2:41 · ABC</span>
+                  <StakesStamp>Game 7</StakesStamp>
+                </>
+              }
+              deck="One possession. Series on the line."
+              agateLine="SGA 34 PTS · CASTLE 27 PTS"
+              href="/game/nba-okc-sa"
+              gameId="nba-okc-sa"
+              spoilerSubject="Thunder vs Spurs"
+            />
+          </GameSpoilerScope>
+        </Bleed>
+      </Section>
+
+      {/* 10 — monument: No-Spoilers redacted (scores blurred behind the scope) */}
+      <Section title="Monument — No-Spoilers (redacted)">
+        <Bleed>
+          <GameSpoilerScope gameId="nba-lal-bos" hidden={true}>
+            <Monument
+              sport="nba"
+              rung="live"
+              status="live"
+              awayName="Lakers"
+              homeName="Celtics"
+              awayScore={88}
+              homeScore={84}
+              progress={0.72}
+              kicker={
+                <>
+                  <span style={{ color: "var(--mute-2)" }}>02</span>
+                  <KDot color="var(--nba)" />
+                  <span style={{ color: "var(--nba)", fontWeight: 700 }}>Live · Q4 3:10</span>
+                  <span>· TNT</span>
+                </>
+              }
+              deck="Scores hidden. Tap a number to reveal this game."
+              href="/game/nba-lal-bos"
+              gameId="nba-lal-bos"
+              spoilerSubject="Lakers vs Celtics"
+            />
+          </GameSpoilerScope>
+        </Bleed>
+      </Section>
+
+      {/* 11 — rails, all three sports (cream surface, live) */}
+      <Section title="Rail — WC (HT tick) / NBA / NFL (quarter ticks)">
+        <div className="space-y-6">
+          <div>
+            <Label>WC · KICKOFF / 90′</Label>
+            <Rail progress={50 / 90} sport="wc" rung="live" />
+          </div>
+          <div>
+            <Label>NBA · Q1 / 0:00</Label>
+            <Rail progress={0.6} sport="nba" rung="live" />
+          </div>
+          <div>
+            <Label>NFL · Q1 / 0:00</Label>
+            <Rail progress={0.4} sport="nfl" rung="live" />
+          </div>
         </div>
       </Section>
     </main>

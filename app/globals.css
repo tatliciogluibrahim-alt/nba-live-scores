@@ -76,6 +76,15 @@ html, body {
   --line-on-ink:       rgba(241, 234, 216, 0.18);
   --ink-field-bg:      var(--ink);
 
+  /* System D peak-field tokens (the accent field, register rung 3). Cream
+     text + hairlines that sit on the sport accent when the monument goes
+     loud (d-nba `.peaklead`). Literal cream rgba so they hold their contrast
+     on the accent in both themes; only the Rail end labels are allowed to
+     use the dim value (spec §3 contrast law). */
+  --cream-on-acc:      #f1ead8;
+  --cream-on-acc-dim:  rgba(241, 234, 216, 0.72);
+  --line-on-acc:       rgba(241, 234, 216, 0.3);
+
   /* Fonts. Next.js (app/layout.tsx) replaces these CSS variables with
      real font-family values for Bricolage Grotesque (display), Inter
      (body), and JetBrains Mono (mono) when the web fonts are loaded.
