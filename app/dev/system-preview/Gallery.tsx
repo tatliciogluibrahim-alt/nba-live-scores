@@ -10,6 +10,7 @@ import { Monument, StakesStamp } from "../../companion/system/Monument";
 import { Rail } from "../../companion/system/Rail";
 import { Masthead } from "../../companion/system/Masthead";
 import { GameSpoilerScope } from "../../companion/spoiler/reveal";
+import { TrackControl } from "../../companion/game/TrackControl";
 import { AlsoLiveBand } from "../../companion/today/AlsoLiveBand";
 import type { ScoreboardTile } from "../../companion/today/today-data";
 
@@ -363,6 +364,63 @@ export function Gallery() {
           <div>
             <Label>NFL · Q1 / 0:00</Label>
             <Rail progress={0.4} sport="nfl" rung="live" />
+          </div>
+        </div>
+      </Section>
+
+      {/* 12 — docking control (spec §8): four TrackControl states + the slot
+           meter at 1/3 and 3/3. useIsNative() is false on this web page, so
+           the native states are forced via TrackControl's test-only __preview
+           prop; the meter still reads from real pinnedLiveIds arrays. */}
+      <Section title="DOCKING — TRACKCONTROL STATES">
+        <div className="space-y-7">
+          <div>
+            <Label>1 · DEFAULT (SLOTS FREE · METER 1/3)</Label>
+            <TrackControl
+              gameId="dock-x"
+              live
+              pinned={false}
+              onPin={() => {}}
+              onUnpin={() => {}}
+              pinnedLiveIds={["dock-a"]}
+              __preview={{ native: true, state: "default" }}
+            />
+          </div>
+          <div>
+            <Label>2 · TRACKING (HELD · HINT · METER 3/3)</Label>
+            <TrackControl
+              gameId="dock-x"
+              live
+              pinned
+              onPin={() => {}}
+              onUnpin={() => {}}
+              pinnedLiveIds={["dock-x", "dock-b", "dock-c"]}
+              __preview={{ native: true, state: "held" }}
+            />
+          </div>
+          <div>
+            <Label>3 · LOCK SCREEN FULL (METER 3/3)</Label>
+            <TrackControl
+              gameId="dock-x"
+              live
+              pinned={false}
+              onPin={() => {}}
+              onUnpin={() => {}}
+              pinnedLiveIds={["dock-a", "dock-b", "dock-c"]}
+              __preview={{ native: true, state: "full" }}
+            />
+          </div>
+          <div>
+            <Label>4 · LIVE ACTIVITIES OFF (DENIED · METER 2/3)</Label>
+            <TrackControl
+              gameId="dock-x"
+              live
+              pinned
+              onPin={() => {}}
+              onUnpin={() => {}}
+              pinnedLiveIds={["dock-x", "dock-b"]}
+              __preview={{ native: true, state: "denied" }}
+            />
           </div>
         </div>
       </Section>

@@ -68,6 +68,10 @@ type LiveActivityPlugin = {
   start(opts: LiveActivityStartInput): Promise<{ id: string }>;
   end(opts: { gameId: string }): Promise<void>;
   getActiveGameIds(): Promise<{ gameIds: string[] }>;
+  /** Preflight: are Live Activities enabled in iOS Settings? Optional so an
+   *  older native build shipped before this method degrades to `null`
+   *  (unknown) rather than crashing the dispatch. */
+  areActivitiesEnabled?(): Promise<{ enabled: boolean }>;
   addListener(
     eventName: "pushToken",
     listener: (data: LiveActivityPushTokenEvent) => void
@@ -113,6 +117,30 @@ export async function startLiveActivity(
   } catch (err) {
     console.warn("[LiveActivity] start failed:", err);
     return false;
+  }
+}
+
+/** Preflight for the docking control: whether the user has Live Activities
+ *  enabled in iOS Settings. Lets the UI show the honest "Turn on Live
+ *  Activities" state instead of a silent failure when a start would be
+ *  rejected. Returns:
+ *    • `null`  — can't know (off-native, or an older build without the
+ *                method). Callers treat null as "proceed and let start()
+ *                report the truth", never as denied.
+ *    • `true`  — enabled.
+ *    • `false` — the OS reports Live Activities are off in Settings.
+ *  getPlugin() is SYNC (see its comment) — do not await it, or the Capacitor
+ *  proxy's phantom `.then` dispatch hangs forever. */
+export async function areLiveActivitiesEnabled(): Promise<boolean | null> {
+  const plugin = getPlugin();
+  if (!plugin) return null;
+  try {
+    if (typeof plugin.areActivitiesEnabled !== "function") return null;
+    const res = await plugin.areActivitiesEnabled();
+    return res?.enabled ?? null;
+  } catch (err) {
+    console.warn("[LiveActivity] areActivitiesEnabled failed:", err);
+    return null;
   }
 }
 
