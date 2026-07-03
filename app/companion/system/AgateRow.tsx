@@ -15,7 +15,10 @@ type AgateRowProps = {
   idx?: string;
   main: ReactNode;
   note?: string;
-  score?: string;
+  /** A plain string in the mocks/gallery, or a <Spoiler>-wrapped node when
+   *  the row carries a No-Spoilers-gated score (QUIET WRAP). Mirrors
+   *  BoardRow's score contract so both registers share the same seam. */
+  score?: ReactNode;
   stamp?: ReactNode;
   href?: string;
   emphasize?: "away" | "home" | null;
@@ -47,7 +50,7 @@ export function AgateRow({ idx, main, note, score, stamp, href }: AgateRowProps)
         <span style={{ color: "var(--mute-1)", fontWeight: 500, fontSize: 12.5 }}>{note}</span>
       )}
 
-      {score && (
+      {score != null && score !== "" && (
         <span
           className="tabular-nums lining-nums"
           style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 16 }}

@@ -20,6 +20,21 @@ import type { ScoreboardTile } from "./today-data";
 
 const MAX_ROWS = 5;
 
+/** How many board rows the band actually renders for a given slate — the
+ *  live-and-not-the-lead games, capped at MAX_ROWS. Exported so the mobile
+ *  agate slate below (Task 8) can continue the running index AFTER the band
+ *  (lead 01, band 02..0N, then the slate). Keeps one source of truth for the
+ *  cap so the numbering can never drift from what the band shows. */
+export function bandShownCount(
+  items: ScoreboardTile[],
+  excludeGameId?: string
+): number {
+  const others = items.filter(
+    (t) => t.status === "live" && t.id !== excludeGameId
+  );
+  return Math.min(others.length, MAX_ROWS);
+}
+
 export function AlsoLiveBand({
   items,
   excludeGameId,

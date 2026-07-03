@@ -4,7 +4,24 @@ import Link from "next/link";
 import { Eyebrow } from "../../atoms/Eyebrow";
 import { NoSpoilerGameCard } from "../../spoiler/NoSpoilerGameCard";
 import { useNoSpoilers } from "../../providers";
+import { Spoiler } from "../../spoiler/Spoiler";
+import {
+  GameSpoilerScope,
+  useEffectiveNoSpoilers,
+  useFollowHidesGame,
+} from "../../spoiler/reveal";
+import { SecHead } from "../../system/SecHead";
+import { AgateRow } from "../../system/AgateRow";
+import { Stamp } from "../../system/Stamp";
+import { winnerSide } from "../../system/emphasis";
 import { SectionHeader } from "./section-header";
+import {
+  agateScore,
+  matchupCodes,
+  padIdx,
+  parseScoreLine,
+  wrapCountLabel,
+} from "../agate-slate";
 import type { QuietWrapItem } from "../today-data";
 
 // One-line-each finals from the last 3 days. Phase 8b extended the
@@ -23,10 +40,128 @@ import type { QuietWrapItem } from "../today-data";
 // dormant in app/companion/share/ so it can be revived later without
 // rebuilding from scratch.
 
-export function QuietWrap({ items }: { items: QuietWrapItem[] }) {
-  const noSpoilers = useNoSpoilers();
-
+export function QuietWrap({
+  items,
+  startIndex = 1,
+}: {
+  items: QuietWrapItem[];
+  /** First running index for the mobile agate rows (continues the slate). */
+  startIndex?: number;
+}) {
   if (items.length === 0) return null;
+
+  return (
+    <>
+      {/* Mobile: System D agate slate — FT stamps + winner emphasis */}
+      <section className="md:hidden">
+        <SecHead name="Quiet wrap" count={wrapCountLabel(items.length)} />
+        {items.map((item, i) => (
+          <QuietWrapAgateRow
+            key={item.id}
+            item={item}
+            idx={padIdx(startIndex + i)}
+          />
+        ))}
+      </section>
+
+      {/* Desktop: legacy card list, unchanged */}
+      <div className="hidden md:block">
+        <QuietWrapCards items={items} />
+      </div>
+    </>
+  );
+}
+
+// One wrapped game as an agate row. The No-Spoilers seam mirrors AlsoLiveBand
+// exactly: global toggle OR a per-follow hide computes `hidden`, wraps the row
+// in a GameSpoilerScope, and the score renders inside a <Spoiler> (one tap
+// reveals just this game, session-scoped). Winner emphasis lives in the inner
+// component so it can read the reveal-aware effective state — see the comment
+// there for why emphasis is itself a spoiler.
+function QuietWrapAgateRow({ item, idx }: { item: QuietWrapItem; idx: string }) {
+  const { away, home } = matchupCodes(item.matchup);
+  const globalNoSpoilers = useNoSpoilers();
+  const followHidden = useFollowHidesGame(
+    item.source === "wc"
+      ? { countryCodes: [away, home] }
+      : { teamCodes: [away, home] }
+  );
+  const hidden = globalNoSpoilers || followHidden;
+
+  return (
+    <GameSpoilerScope gameId={item.id} hidden={hidden}>
+      <QuietWrapAgateInner item={item} idx={idx} away={away} home={home} />
+    </GameSpoilerScope>
+  );
+}
+
+function QuietWrapAgateInner({
+  item,
+  idx,
+  away,
+  home,
+}: {
+  item: QuietWrapItem;
+  idx: string;
+  away: string;
+  home: string;
+}) {
+  const { away: awayScore, home: homeScore } = parseScoreLine(item.scoreLine);
+
+  // Winner emphasis (ink winner / muted loser) IS a spoiler — it silently
+  // reveals who won. Gate it on the reveal-aware effective state, not the raw
+  // toggle: useEffectiveNoSpoilers reads this row's GameSpoilerScope AND any
+  // session reveal, so when the user taps to reveal the frosted score the
+  // loser un-mutes at the same instant. While hidden we bake NO emphasis into
+  // `main` (both codes equal weight), leaving the frosted score as the only
+  // spoiler-gated surface.
+  const hiddenNow = useEffectiveNoSpoilers(item.id);
+  const winner = hiddenNow ? null : winnerSide(awayScore, homeScore, "final");
+
+  return (
+    <AgateRow
+      idx={idx}
+      main={<WrapMatchup away={away} home={home} winner={winner} />}
+      score={
+        <Spoiler gameId={item.id} ariaSubject={item.spoilerSubject}>
+          {agateScore(awayScore, homeScore)}
+        </Spoiler>
+      }
+      stamp={<Stamp text="FT" variant="faint" />}
+      href={item.href}
+    />
+  );
+}
+
+// Matchup with winner emphasis baked in by the caller (the AgateRow contract):
+// winner code 800/full-ink, loser muted, a draw (winner null) leaves both at
+// the row's base weight. Mirrors the gallery's Matchup sample + d-mix.
+function WrapMatchup({
+  away,
+  home,
+  winner,
+}: {
+  away: string;
+  home: string;
+  winner: "away" | "home" | null;
+}) {
+  const strong = { fontWeight: 800 };
+  const weak = { color: "var(--mute-1)" };
+  return (
+    <span style={{ fontFamily: "var(--font-mono)" }}>
+      <span style={winner === "away" ? strong : winner === "home" ? weak : undefined}>
+        {away}
+      </span>
+      {" · "}
+      <span style={winner === "home" ? strong : winner === "away" ? weak : undefined}>
+        {home}
+      </span>
+    </span>
+  );
+}
+
+function QuietWrapCards({ items }: { items: QuietWrapItem[] }) {
+  const noSpoilers = useNoSpoilers();
 
   return (
     <section>

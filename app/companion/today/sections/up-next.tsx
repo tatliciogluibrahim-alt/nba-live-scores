@@ -3,23 +3,88 @@
 import Link from "next/link";
 import { Eyebrow } from "../../atoms/Eyebrow";
 import { WatchLine } from "../../watch/WatchLine";
+import { SecHead } from "../../system/SecHead";
+import { AgateRow } from "../../system/AgateRow";
+import { Stamp } from "../../system/Stamp";
+import {
+  matchupCodes,
+  padIdx,
+  upNextCountLabel,
+} from "../agate-slate";
 import type { UpNextItem } from "../today-data";
 
 // Vertical list of upcoming games. Up-next rows stay fully visible under
 // No-Spoilers — future games can't be spoiled.
+//
+// Two renders share one filtered list (Task 8):
+//   Mobile (System D) — SecHead ("UP NEXT" + sport-correct count) over agate
+//   rows: codes · codes, competition + broadcast as the note, the kickoff
+//   time as a faint stamp. The idx continues the running slate ordinal passed
+//   from TodayClient (lead 01, band 02..0N, then here).
+//   Desktop (md+) — the legacy sticky-header card list, pixel-identical (D4
+//   owns the desktop restyle).
 
 export function UpNext({
   items,
   excludeHref,
+  startIndex = 1,
 }: {
   items: UpNextItem[];
   excludeHref?: string;
+  /** First running index for the mobile agate rows (continues the slate). */
+  startIndex?: number;
 }) {
   // The lead game is rendered as the Front Page deck above. Drop it from
   // this list so the same match doesn't appear twice on one screen.
   const list = excludeHref ? items.filter((i) => i.href !== excludeHref) : items;
   if (list.length === 0) return null;
 
+  return (
+    <>
+      {/* Mobile: System D agate slate */}
+      <section className="md:hidden">
+        <SecHead name="Up next" count={upNextCountLabel(list)} />
+        {list.map((item, i) => (
+          <UpNextAgateRow key={item.id} item={item} idx={padIdx(startIndex + i)} />
+        ))}
+      </section>
+
+      {/* Desktop: legacy card list, unchanged */}
+      <div className="hidden md:block">
+        <UpNextCards list={list} />
+      </div>
+    </>
+  );
+}
+
+// One upcoming game as an agate row. Upcoming games carry no winner emphasis
+// (nothing decided) — both codes read at the row's base weight.
+function UpNextAgateRow({ item, idx }: { item: UpNextItem; idx: string }) {
+  const { away, home } = matchupCodes(item.headline);
+  // detail arrives as "8:00 PM · Group Stage" / "8:00 PM · Game 6": the first
+  // segment is the kickoff time (the stamp), the rest is competition context
+  // that joins the broadcast to form the note ("Group Stage · Fox").
+  const parts = item.detail.split(" · ").map((s) => s.trim()).filter(Boolean);
+  const time = parts[0] ?? "";
+  const context = parts.slice(1).join(" · ");
+  const note = [context, item.watch?.channel].filter(Boolean).join(" · ");
+
+  return (
+    <AgateRow
+      idx={idx}
+      main={
+        <span style={{ fontFamily: "var(--font-mono)" }}>
+          {away} · {home}
+        </span>
+      }
+      note={note || undefined}
+      stamp={time ? <Stamp text={time} variant="faint" /> : undefined}
+      href={item.href}
+    />
+  );
+}
+
+function UpNextCards({ list }: { list: UpNextItem[] }) {
   // No count on this header. The list spans multiple days (today's games
   // + the next few), so any number here ("5 matches") read as a
   // contradiction against the today-scoped headline ("One game tonight.").

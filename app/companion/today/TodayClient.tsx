@@ -10,7 +10,9 @@ import { deriveTodayHeadline } from "./today-data";
 import { FrontPageLead } from "./FrontPageLead";
 import { LiveTrackHint } from "./LiveTrackHint";
 import { DesktopScoreboard } from "./DesktopScoreboard";
-import { AlsoLiveBand } from "./AlsoLiveBand";
+import { AlsoLiveBand, bandShownCount } from "./AlsoLiveBand";
+import { FollowLine } from "./FollowLine";
+import { slateStartIndex } from "./agate-slate";
 import { RestingState } from "./RestingState";
 import { BriefPromptCard } from "./BriefPromptCard";
 import { useSetupStep } from "./setup/useSetupStep";
@@ -74,6 +76,27 @@ export function TodayClient() {
   // without leaving the calm single-lead shape. liveCount also drives the
   // Masthead "N LIVE →". Desktop (md+) keeps the DesktopScoreboard grid.
   const liveCount = scoreboard.filter((t) => t.status === "live").length;
+
+  // ── System D mobile agate-slate index continuation (Task 8) ──────────
+  // The lead Monument is 01 and the ALSO LIVE band carries 02..0N; the slate
+  // sections below (UP NEXT, then QUIET WRAP) continue the SAME running
+  // ordinal so the whole mobile page reads as one numbered slate (see
+  // docs/superpowers/design-directions/d-mix). Desktop ignores these — the D4
+  // card renders have no ordinals. `leadHasMonument` mirrors FrontPageLead's
+  // mobile Monument branch (game && deck); only then does an "01" render.
+  const leadHasMonument = Boolean(lead?.game && lead?.deck);
+  const bandCount = hydrated
+    ? bandShownCount(scoreboard, lead?.game?.gameId)
+    : 0;
+  const slateStart = slateStartIndex(leadHasMonument, bandCount);
+  // UP NEXT renders (and consumes indices) only when it isn't folded into the
+  // resting state; QUIET WRAP picks up right after whatever UP NEXT showed.
+  const upNextVisible = payload.upNext.filter(
+    (i) => !lead?.deck?.href || i.href !== lead.deck.href
+  );
+  const upNextShown = payload.restingState ? 0 : upNextVisible.length;
+  const quietWrapStart = slateStart + upNextShown;
+
   const setup = useSetupStep();
 
   return (
@@ -226,12 +249,6 @@ export function TodayClient() {
             {/* The lead game is now the Front Page deck above; the old
                 WorthCheckingNow hero would just duplicate it. */}
 
-            {/* YouFollow appears here on mobile only — at md+ the sticky
-                aside in the right rail takes over. */}
-            <div className="md:hidden">
-              <YouFollow items={payload.youFollow} />
-            </div>
-
             {/* Setup — inline slot. Any post-follow nudge (install / enable
                 / recover / optional install) renders here, below the live
                 content, so scores come first. At most one ever shows. */}
@@ -241,16 +258,28 @@ export function TodayClient() {
                 RestingState above, so skip the standalone section to
                 avoid a duplicate "Upcoming" list. */}
             {!payload.restingState ? (
-              <UpNext items={payload.upNext} excludeHref={lead?.deck?.href} />
+              <UpNext
+                items={payload.upNext}
+                excludeHref={lead?.deck?.href}
+                startIndex={slateStart}
+              />
             ) : null}
 
-            <QuietWrap items={payload.quietWrap} />
+            <QuietWrap items={payload.quietWrap} startIndex={quietWrapStart} />
 
             {payload.reminder ? <ReminderRow reminder={payload.reminder} /> : null}
 
             {/* Quiet-day payoff: when nothing's live, nothing's next, nothing
                 just wrapped — and the reminder isn't already filling the page. */}
             {payload.isQuietDay && !payload.reminder ? <CalmCard /> : null}
+
+            {/* You follow — mobile only. The de-chipped System D follow line
+                sits below the slate (per d-mix), just above The Margin footer.
+                At md+ the sticky right-rail aside carries the chip version
+                instead, so this stays md:hidden. */}
+            <div className="md:hidden">
+              <FollowLine items={payload.youFollow} />
+            </div>
 
             {/* One-time, dismissible nudge to the Daily Brief email. Sits
                 at the bottom so it never competes with the live slate. */}
