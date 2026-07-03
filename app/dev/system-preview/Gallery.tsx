@@ -280,7 +280,8 @@ export function Gallery() {
         </Bleed>
       </Section>
 
-      {/* 10 — monument: No-Spoilers redacted (scores blurred behind the scope) */}
+      {/* 10 — monument: No-Spoilers redacted (scores + deck + agateLine
+           all blurred — exercises the full spoiler guard on the monument) */}
       <Section title="Monument — No-Spoilers (redacted)">
         <Bleed>
           <GameSpoilerScope gameId="nba-lal-bos" hidden={true}>
@@ -301,7 +302,8 @@ export function Gallery() {
                   <span>· TNT</span>
                 </>
               }
-              deck="Scores hidden. Tap a number to reveal this game."
+              deck="Two goals in four minutes. Tatum 31 PTS."
+              agateLine="SGA 34 PTS · CASTLE 27 PTS"
               href="/game/nba-lal-bos"
               gameId="nba-lal-bos"
               spoilerSubject="Lakers vs Celtics"

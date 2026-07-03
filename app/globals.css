@@ -81,7 +81,7 @@ html, body {
      loud (d-nba `.peaklead`). Literal cream rgba so they hold their contrast
      on the accent in both themes; only the Rail end labels are allowed to
      use the dim value (spec §3 contrast law). */
-  --cream-on-acc:      #f1ead8;
+  --cream-on-acc:      rgba(241,234,216,1);
   --cream-on-acc-dim:  rgba(241, 234, 216, 0.72);
   --line-on-acc:       rgba(241, 234, 216, 0.3);
 

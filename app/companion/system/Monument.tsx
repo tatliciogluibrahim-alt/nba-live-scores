@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { Spoiler } from "../spoiler/Spoiler";
 import { winnerSide } from "./emphasis";
@@ -24,8 +25,14 @@ import type { RegisterRung } from "./register";
 //
 // No-Spoilers is inherited, not reinvented: each score numeral is wrapped in
 // the same <Spoiler> primitive ScoreModule uses (shared `gameId` reveal,
-// `spoilerSubject` aria). A caller that knows the participants wraps the
-// Monument in a GameSpoilerScope; the Spoilers read that decision.
+// `spoilerSubject` aria). deck and agateLine are wrapped the same way when
+// a gameId is present, so one reveal tap un-hides scores + narrative together.
+// A caller that knows the participants wraps the Monument in a
+// GameSpoilerScope; the Spoilers read that decision.
+//
+// Navigation contract: navigation lives on the kicker row; the body hosts
+// interactive reveal targets. Spoiler reveal buttons must never nest inside
+// an anchor, which is why only the kicker row becomes a <Link>.
 
 export function Monument({
   awayName,
@@ -96,28 +103,36 @@ export function Monument({
     ? { background: accent, color: "var(--cream-on-acc)", padding: "24px 18px 22px" }
     : { padding: "22px 18px 0" };
 
+  // Shared kicker row style — applied to both the <p> (no href) and the
+  // <Link> (href present) so they look identical.
+  const kickerStyle = {
+    fontFamily: "var(--font-mono)",
+    fontSize: 11,
+    fontWeight: isPeak ? 700 : 600,
+    letterSpacing: "0.14em",
+    color: kickerColor,
+  } as const;
+  const kickerClass = "mb-4 flex items-center gap-2 uppercase";
+
   return (
     <section style={outerStyle}>
       {/* Kicker line — the caller composes the content (index, live text,
           channel, any StakesStamp) as flex children; the Monument owns the
-          type + the trailing tap affordance. */}
-      <p
-        className="mb-4 flex items-center gap-2 uppercase"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          fontWeight: isPeak ? 700 : 600,
-          letterSpacing: "0.14em",
-          color: kickerColor,
-        }}
-      >
-        {kicker}
-        {href && (
+          type + the trailing tap affordance.
+          Navigation lives on the kicker row; the body hosts interactive
+          reveal targets (Spoiler buttons must never nest in an anchor). */}
+      {href ? (
+        <Link href={href} className={kickerClass} style={kickerStyle}>
+          {kicker}
           <span aria-hidden style={{ marginLeft: "auto", color: arrowColor }}>
             →
           </span>
-        )}
-      </p>
+        </Link>
+      ) : (
+        <p className={kickerClass} style={kickerStyle}>
+          {kicker}
+        </p>
+      )}
 
       <ScoreRow
         first
@@ -149,7 +164,13 @@ export function Monument({
             color: deckColor,
           }}
         >
-          {deck}
+          {gameId ? (
+            <Spoiler ariaSubject={spoilerSubject} gameId={gameId}>
+              {deck}
+            </Spoiler>
+          ) : (
+            deck
+          )}
         </p>
       )}
 
@@ -165,7 +186,13 @@ export function Monument({
             color: deckColor,
           }}
         >
-          {agateLine}
+          {gameId ? (
+            <Spoiler ariaSubject={spoilerSubject} gameId={gameId}>
+              {agateLine}
+            </Spoiler>
+          ) : (
+            agateLine
+          )}
         </p>
       )}
 
