@@ -37,6 +37,18 @@ const pinned = [
   { gameId: "preview-wc-ned-mar", pinnedAt: now - 100 },
 ];
 
+// QA_STATE=onelive — single-monument verification state (System D Task 6):
+// one followed country with exactly one live game in the preview day
+// (JPN · GER, 25′) and no pins. The followed live count stays at 1, so
+// mobile Today keeps the calm single lead (the Monument) instead of the
+// multi-live scoreboard tiles. Task 9 adds quiet|fresh|nospoilers.
+const QA_STATE = process.env.QA_STATE || "";
+const oneLiveFollows = [
+  { kind: "country", id: "JPN", alertEnabled: true, alertTier: "companion", followedAt: now - 1000 },
+];
+const seedFollows = QA_STATE === "onelive" ? oneLiveFollows : follows;
+const seedPinned = QA_STATE === "onelive" ? [] : pinned;
+
 // Steady-state prefs: all first-run prompts pre-dismissed so screenshots
 // show the real product, not onboarding overlays.
 const prefsBase = {
@@ -87,8 +99,8 @@ function seedScript(theme) {
   const prefs = prefsBase;
   return `
     try {
-      localStorage.setItem('no-noise:follows:v1', ${JSON.stringify(JSON.stringify(follows))});
-      localStorage.setItem('no-noise:pinned:v1', ${JSON.stringify(JSON.stringify(pinned))});
+      localStorage.setItem('no-noise:follows:v1', ${JSON.stringify(JSON.stringify(seedFollows))});
+      localStorage.setItem('no-noise:pinned:v1', ${JSON.stringify(JSON.stringify(seedPinned))});
       localStorage.setItem('no-noise:prefs:v1', ${JSON.stringify(JSON.stringify(prefs))});
       localStorage.setItem('no-noise-theme', ${JSON.stringify(theme)});
       sessionStorage.setItem('nns:wc-preview', '1');

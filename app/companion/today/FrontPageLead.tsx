@@ -3,20 +3,32 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { TodayHeadline } from "./today-data";
+import { Monument } from "../system/Monument";
+import { rungFor, peakEligible } from "../system/register";
+import { GameSpoilerScope, useFollowHidesGame } from "../spoiler/reveal";
+import { useNoSpoilers } from "../providers";
+import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
 
 // The lead settles in once per page-load, not on every Today re-mount (each
 // tab return remounts the route). A module flag — reset on a full reload —
 // gates the rise so it's a first-impression, not a restless replay.
 let leadEntered = false;
 
-// Front Page lead (Concept A). The editorial top of Today: an accent
-// eyebrow, a big punchy state headline ("One game up next."), and a
-// single condensed "deck" card for the lead game (chips · AT · chips —
-// time / broadcast), with an optional stake line beneath.
+// Front Page lead. Two renders share the data plumbing (deriveTodayHeadline):
 //
-// The deck carries no score, so it's No-Spoilers-safe by construction.
-// The headline copy is real state-driven copy (deriveTodayHeadline),
-// not the old conversational brief sentence blown up large.
+//   Mobile (System D) — the lead Monument: kicker (index 01 · live clock ·
+//   context), stacked display-numeral scorerows, the calm deck sentence,
+//   and the progress rail. Score-forward; the enriched lead.game carries
+//   the real numerals + a parseable clock, and the whole monument sits in
+//   a GameSpoilerScope so No-Spoilers users keep their protection (scores
+//   + deck frost, one tap reveals the game).
+//
+//   Desktop (md+) — the legacy editorial render (accent eyebrow, big state
+//   headline, condensed deck card) stays pixel-identical until D4 owns the
+//   desktop restyle.
+//
+// Headline-only leads (quiet / countdown days: no deck, no game) keep the
+// legacy render at all widths — Task 9 restyles the states.
 
 const TONE_COLOR: Record<TodayHeadline["eyebrow"]["tone"], string> = {
   nba: "var(--nba)",
@@ -64,13 +76,41 @@ function deckLines(
   return { top, bottom };
 }
 
+/** "50'" → "50′" for the kicker's live segment (the typographic minute
+ *  mark the agate register uses). NBA clocks ("Q3 · 4:21") pass through. */
+function primeMinutes(s: string): string {
+  return s.replace(/'/g, "′");
+}
+
+/** Join short fragments into one deck line, closing each with a period
+ *  ("Fourth quarter underway. OKC leads series 3-2."). */
+function joinSentences(
+  ...parts: Array<string | undefined>
+): string | undefined {
+  const done = parts
+    .map((p) => p?.trim())
+    .filter((p): p is string => Boolean(p))
+    .map((p) => (/[.!?]$/.test(p) ? p : `${p}.`));
+  return done.length ? done.join(" ") : undefined;
+}
+
 export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
-  const eyebrowColor = TONE_COLOR[lead.eyebrow.tone];
-  const size = headlineSize(lead.headline.length);
+  const game = lead.game ?? null;
   const deck = lead.deck;
-  const chips = deck ? chipPair(deck.matchup) : null;
-  const chipBg = deck?.accent === "var(--wc)" ? "var(--wc-soft)" : "var(--nba-soft)";
-  const lines = deck ? deckLines(deck.detail, deck.broadcast) : null;
+
+  // No-Spoilers decision for the monument — the same baseHidden the game
+  // detail pages compute (global toggle OR a hide-spoilers follow covering
+  // a participant). GameSpoilerScope shares it with every Spoiler inside,
+  // so one reveal tap un-hides scores + deck together. Hooks run
+  // unconditionally (empty codes when there's no game).
+  const participantCodes = game ? [game.awayCode, game.homeCode] : [];
+  const globalNoSpoilers = useNoSpoilers();
+  const followHidden = useFollowHidesGame(
+    game?.source === "wc"
+      ? { countryCodes: participantCodes }
+      : { teamCodes: participantCodes }
+  );
+  const baseHidden = globalNoSpoilers || followHidden;
 
   // Animate only the first lead of the page-load; later re-mounts render static.
   const [animate] = useState(() => !leadEntered);
@@ -78,6 +118,122 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
     leadEntered = true;
   }, []);
   const rise = animate ? "no-noise-lead-rise" : "";
+
+  // ── Monument path (mobile) ──
+  // deck implies game everywhere the data layer builds a lead; the guard
+  // keeps a game-less deck (only constructible in tests) on the legacy path.
+  if (game && deck) {
+    const sport: "nba" | "wc" = game.source === "wc" ? "wc" : "nba";
+    const accent = sport === "wc" ? "var(--wc)" : "var(--nba)";
+    // Elimination law (spec §1): WC peaks from the quarterfinals when
+    // followed. Today's lead is the user's cared-about pick (pickHero
+    // prefers pinned/followed games), so followed=true here; D2 threads
+    // the real per-game flag. NBA Game 7 / clinch flags aren't on the
+    // lead payload yet.
+    const peak =
+      sport === "wc" && game.stage
+        ? peakEligible({ sport: "wc", stage: game.stage, followed: true })
+        : false; // D2: thread NBA gameContext flags for the elimination law
+    const rung = rungFor({ status: game.status, peak });
+    const progress = computeLiveActivityProgress(
+      sport,
+      game.statusLine,
+      game.status
+    );
+
+    // Kicker context: live leads show stage/round · channel (the accent
+    // segment already carries the clock); upcoming leads reuse the deck's
+    // "time · context" detail. The Monument uppercases the whole row.
+    const context = [
+      lead.live ? game.contextLabel : deck.detail,
+      deck.broadcast,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+    // Deck line: live = the calm status sentence plus the stake/context
+    // support; upcoming = the derived headline (it carries the day —
+    // "England vs Switzerland tomorrow.") plus the stake.
+    const deckText = lead.live
+      ? joinSentences(deck.detail, lead.support)
+      : joinSentences(lead.headline, lead.support);
+
+    return (
+      <>
+        <div className={`${rise} md:hidden -mx-4 mb-5`}>
+          <GameSpoilerScope gameId={game.gameId} hidden={baseHidden}>
+            <Monument
+              sport={sport}
+              rung={rung}
+              status={game.status}
+              awayName={game.awayName}
+              homeName={game.homeName}
+              awayScore={game.awayScore}
+              homeScore={game.homeScore}
+              progress={progress}
+              kicker={
+                <>
+                  <span style={{ color: "var(--mute-2)" }}>01</span>
+                  {lead.live ? (
+                    <span
+                      aria-hidden
+                      className="no-noise-live-fade inline-block h-[6px] w-[6px] shrink-0 rounded-full"
+                      style={{
+                        background:
+                          rung === "peak" ? "var(--cream-on-acc)" : accent,
+                      }}
+                    />
+                  ) : null}
+                  {lead.live ? (
+                    <span
+                      style={
+                        // On the peak field the kicker is already full
+                        // cream (contrast law) — no accent-on-accent.
+                        rung === "peak"
+                          ? undefined
+                          : { color: accent, fontWeight: 700 }
+                      }
+                    >
+                      Live · {primeMinutes(game.statusLine)}
+                    </span>
+                  ) : null}
+                  {context ? (
+                    <span className="min-w-0 truncate">· {context}</span>
+                  ) : null}
+                </>
+              }
+              deck={deckText}
+              href={deck.href}
+              gameId={game.gameId}
+              spoilerSubject={game.spoilerSubject}
+            />
+          </GameSpoilerScope>
+        </div>
+        {/* md+: the legacy Front Page render, unchanged (desktop is D4). */}
+        <div className="hidden md:block">
+          <LegacyLead lead={lead} rise={rise} />
+        </div>
+      </>
+    );
+  }
+
+  // Headline-only lead (quiet / countdown days) — legacy at all widths.
+  return <LegacyLead lead={lead} rise={rise} />;
+}
+
+// ── Legacy render (Concept A "Front Page") ───────────────────────────
+// The pre-System-D editorial lead: accent eyebrow, big punchy state
+// headline, condensed deck card (chips · AT · chips — time / broadcast),
+// optional stake line. Kept verbatim for md+ (desktop restyle is D4) and
+// for headline-only states (Task 9 restyles those).
+
+function LegacyLead({ lead, rise }: { lead: TodayHeadline; rise: string }) {
+  const eyebrowColor = TONE_COLOR[lead.eyebrow.tone];
+  const size = headlineSize(lead.headline.length);
+  const deck = lead.deck;
+  const chips = deck ? chipPair(deck.matchup) : null;
+  const chipBg = deck?.accent === "var(--wc)" ? "var(--wc-soft)" : "var(--nba-soft)";
+  const lines = deck ? deckLines(deck.detail, deck.broadcast) : null;
 
   return (
     <section className="mb-5">

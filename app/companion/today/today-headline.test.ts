@@ -228,4 +228,65 @@ describe("deriveTodayHeadline", () => {
     expect(r.headline).toBe("Quiet for now.");
     expect(r.deck).toBeNull();
   });
+
+  // ── Lead game enrichment (System D monument) ──
+  // The monument renders real numerals + a parseable clock; these lock
+  // the thread-through from the hero / up-next pick to the headline.
+
+  it("threads the live hero's game facts (scores + clock) through", () => {
+    const game = {
+      source: "wc" as const,
+      gameId: "g1",
+      awayCode: "JPN",
+      homeCode: "GER",
+      awayName: "Japan",
+      homeName: "Germany",
+      awayScore: 0,
+      homeScore: 0,
+      status: "live" as const,
+      statusLine: "25'",
+      stage: "Group Stage",
+      contextLabel: "Group E",
+      spoilerSubject: "JPN vs GER",
+    };
+    const r = deriveTodayHeadline(
+      base({
+        hero: {
+          kind: "wc-live",
+          eyebrow: "Summer Soccer · Group E",
+          headline: "First half underway.",
+          spoilerMatchup: "JPN vs GER",
+          live: true,
+          accent: "var(--wc)",
+          href: "/game/g1",
+          game,
+        },
+      })
+    );
+    expect(r.game).toEqual(game);
+  });
+
+  it("threads the up-next game's facts when the lead is upcoming (null scores)", () => {
+    const game = {
+      source: "nba" as const,
+      gameId: "g1",
+      awayCode: "OKC",
+      homeCode: "SA",
+      awayName: "Thunder",
+      homeName: "Spurs",
+      awayScore: null,
+      homeScore: null,
+      status: "upcoming" as const,
+      statusLine: "Upcoming",
+      contextLabel: "Game 6",
+      spoilerSubject: "OKC vs SA",
+    };
+    const r = deriveTodayHeadline(base({ upNext: [upNextItem({ game })] }));
+    expect(r.game).toEqual(game);
+    expect(r.game?.awayScore).toBeNull();
+  });
+
+  it("carries no game facts on quiet days", () => {
+    expect(deriveTodayHeadline(base()).game).toBeUndefined();
+  });
 });
