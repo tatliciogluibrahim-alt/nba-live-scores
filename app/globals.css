@@ -311,7 +311,9 @@ a {
    gates the class on a hidden→revealed transition), never on already-revealed
    scores. Reduced-motion shows it instantly. */
 @keyframes nns-reveal-in {
-  from { filter: blur(7px); opacity: 0.55; }
+  /* em-scaled to match the Spoiler frost at every type size (monument
+     numerals blur far heavier than agate scores). */
+  from { filter: blur(0.45em); opacity: 0.55; }
   to   { filter: blur(0); opacity: 1; }
 }
 .nns-reveal-in {
