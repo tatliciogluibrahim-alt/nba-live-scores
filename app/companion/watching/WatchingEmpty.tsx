@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { useIsNative } from "../dev/native-detect";
 
-// Calm empty state. Pin language is deliberate (vs "watch") so users
+// Calm empty state. "Track" language is deliberate (vs "watch") so users
 // understand this isn't a TV destination. Title kept short + standard;
 // body explains the verb without trying to sell the room.
 
@@ -22,16 +22,16 @@ export function WatchingEmpty() {
         className="mb-2 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Pin a game from Following to track it here.
+        Track a game from Following to see it here.
       </p>
       {native ? (
-        // Native only: teaches the lock-screen / widget payoff of pinning a
+        // Native only: teaches the lock-screen / widget payoff of tracking a
         // live game. The web/PWA has neither surface, so it stays hidden.
         <p
           className="mb-5 text-[13px] leading-snug"
           style={{ color: "var(--mute-2)", fontWeight: 500 }}
         >
-          Pin a live game to follow the score on your lock screen and
+          Track a live game to follow the score on your lock screen and
           home-screen widget.
         </p>
       ) : (
