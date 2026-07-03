@@ -351,9 +351,21 @@ async function main() {
           await page.goto(url, { waitUntil: "load", timeout: 45000 }).catch(() => {});
         }
         await sleep(1800); // let hydration + lead-rise animation settle
+        // Hide the Next.js dev overlay pill — dev-only chrome that
+        // photobombs captures (the "N Issues" badge is not the product).
+        await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
         const suffix = QA_STATE ? `-${QA_STATE}` : "";
         const file = `${OUT}/${pass.theme}-${name}${suffix}-${w}.png`;
         await page.screenshot({ path: file, fullPage: true });
+        // fullPage captures paint FIXED elements (the bottom TabBar) at the
+        // scroll offset, which reads as a mid-content overlap in tall shots.
+        // Take an honest viewport-anchored bottom capture at phone widths so
+        // every set shows the nav actually docked.
+        if (w < 768) {
+          await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+          await sleep(300);
+          await page.screenshot({ path: file.replace(/\.png$/, "-bottomnav.png"), fullPage: false });
+        }
         count++;
         console.log(`shot ${count}: ${file}`);
       }

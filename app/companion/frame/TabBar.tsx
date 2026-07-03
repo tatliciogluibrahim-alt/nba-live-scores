@@ -2,97 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactElement } from "react";
 
 // System D bottom TabBar (mobile only). Broadsheet chrome, not a filled
-// control strip: cream bar, a hairline top rule (--line), ink-register
-// icons, and 10px uppercase mono labels. The active tab is carried by the
-// ink register itself — full ink + heavier label weight — so no pill or
-// fill is needed (spec §2: "active tab ink-weight"). Inactive tabs sit at
-// --mute-1, the ink register's muted step, matching the masthead's chrome.
-// Three tabs, three jobs, real Next.js navigation. Pin icon for Watching
-// (NOT a TV — communicates pinned games, not streaming).
+// control strip: cream bar, a hairline top rule (--line), and mono
+// wordmark tabs. Founder call 2026-07-03: labels-only — the generic line
+// icons (sun/heart/pin) read as stock AI iconography; the editorial
+// register carries better as pure type. The active tab is carried by the
+// ink register itself — full ink + heavier weight + a short ink tick
+// under the word (spec §2: "active tab ink-weight"). Inactive tabs sit
+// at --mute-1. Three tabs, three jobs, real Next.js navigation.
 
 type Tab = {
   id: "today" | "following" | "watching";
   href: string;
   label: string;
   ariaLabel: string;
-  Icon: () => ReactElement;
 };
 
-function TabSun() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-    </svg>
-  );
-}
-
-function TabHeart() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-    </svg>
-  );
-}
-
-function TabPin() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 17v5" />
-      <path d="M9 10.76A2 2 0 0 1 8 9V4h8v5a2 2 0 0 1-1 1.76l-1 .57V17H10v-5.67l-1-.57z" />
-    </svg>
-  );
-}
-
 const TABS: Tab[] = [
-  { id: "today", href: "/", label: "Today", ariaLabel: "Today", Icon: TabSun },
-  {
-    id: "following",
-    href: "/following",
-    label: "Following",
-    ariaLabel: "Following",
-    Icon: TabHeart,
-  },
-  {
-    id: "watching",
-    href: "/watching",
-    label: "Watching",
-    ariaLabel: "Watching, pinned games",
-    Icon: TabPin,
-  },
+  { id: "today", href: "/", label: "Today", ariaLabel: "Today" },
+  { id: "following", href: "/following", label: "Following", ariaLabel: "Following" },
+  { id: "watching", href: "/watching", label: "Watching", ariaLabel: "Watching, pinned games" },
 ];
 
 function isActive(pathname: string | null, href: string) {
@@ -123,8 +53,8 @@ export function TabBar() {
         paddingRight: "env(safe-area-inset-right)",
       }}
     >
-      <ul className="mx-auto flex max-w-md items-stretch justify-around px-4 pt-2">
-        {TABS.map(({ id, href, label, ariaLabel, Icon }) => {
+      <ul className="mx-auto flex max-w-md items-stretch justify-around px-4 pt-1">
+        {TABS.map(({ id, href, label, ariaLabel }) => {
           const active = isActive(pathname, href);
           return (
             <li key={id} className="flex-1">
@@ -133,23 +63,29 @@ export function TabBar() {
                 aria-label={ariaLabel}
                 aria-current={active ? "page" : undefined}
                 prefetch
-                className="mx-auto flex min-h-[44px] flex-col items-center gap-[5px] px-2 py-1 transition-opacity active:opacity-70"
+                className="mx-auto flex min-h-[44px] flex-col items-center justify-center gap-[5px] px-2 py-1 transition-opacity active:opacity-70"
                 // Ink = here, mute = elsewhere. The active tab reads through
                 // the ink register, no pill or fill.
                 style={{ color: active ? "var(--ink)" : "var(--mute-1)" }}
               >
-                <Icon />
                 <span
                   className="uppercase"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: active ? 700 : 600,
-                    letterSpacing: "0.14em",
+                    letterSpacing: "0.16em",
                   }}
                 >
                   {label}
                 </span>
+                {/* Active tick — a short ink rule under the wordmark, so
+                    "where am I" reads even at a glance without an icon. */}
+                <span
+                  aria-hidden
+                  className="block h-[2px] w-5"
+                  style={{ background: active ? "var(--ink)" : "transparent" }}
+                />
               </Link>
             </li>
           );
