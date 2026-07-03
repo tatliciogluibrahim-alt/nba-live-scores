@@ -498,11 +498,6 @@ export function WCGameDetail({
         </div>
       ) : null}
 
-      {/* ── Match events (inline hidden at md+; rail carries them) ────── */}
-      {matchEventsSection ? (
-        <div className="mt-4 md:hidden">{matchEventsSection}</div>
-      ) : null}
-
       {/* ── Hero moment ──────────────────────────────────────────────── */}
       <div className="mt-3">
         <HeroMoment
@@ -551,11 +546,6 @@ export function WCGameDetail({
           ))}
         </div>
       </section>
-
-      {/* ── Highlights (inline hidden at md+; rail carries them) ──────── */}
-      {highlightsSection ? (
-        <div className="mt-4 md:hidden">{highlightsSection}</div>
-      ) : null}
 
       {/* ── Broadcast (bottom group: broadcast → pin → footnote) ──────── */}
       {channel ? (
@@ -687,8 +677,8 @@ function GoalStamp({ children }: { children: string }) {
         fontWeight: 700,
         letterSpacing: "0.1em",
         padding: "3px 7px",
-        background: "var(--cream)",
-        color: "var(--ink)",
+        background: "var(--cream-on-ink)",
+        color: "var(--ink-field-bg)",
       }}
     >
       {children}

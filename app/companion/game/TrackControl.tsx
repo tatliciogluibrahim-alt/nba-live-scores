@@ -57,7 +57,7 @@ export function TrackControl({
   pinned: boolean;
   onPin: () => void;
   onUnpin: () => void;
-  /** Ordered pinned-and-live game ids (soonest-pinned first). Drives the
+  /** Ordered pinned-and-live game ids (newest-pinned first). Drives the
    *  slot meter and the full state. */
   pinnedLiveIds: string[];
   /** The Live Activity start payload for this game, when live. Used for the

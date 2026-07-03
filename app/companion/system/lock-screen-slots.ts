@@ -5,7 +5,7 @@
 //
 // A "slot" is one of the concurrent Live Activities the app will run on the
 // lock screen. Callers pass `pinnedLiveIds` — the ordered list of pinned,
-// currently-live game ids — in the same soonest-pinned-first order the
+// currently-live game ids — in the same newest-pinned-first order the
 // LiveActivitySync poll uses to decide which games win a slot.
 
 // Cap on concurrent lock-screen Live Activities. Mirrors MAX_LIVE_ACTIVITIES
@@ -36,7 +36,7 @@ export function slotState(
 ): SlotState {
   const used = Math.min(pinnedLiveIds.length, max);
   // A game holds a slot only if it lands within the first `max` entries —
-  // the same order the sync poll grants tiles in (soonest-pinned win).
+  // the same order the sync poll grants tiles in (newest-pinned win).
   const holds = pinnedLiveIds.slice(0, max).includes(gameId);
   const full = pinnedLiveIds.length >= max && !holds;
   return { used, max, holds, full };

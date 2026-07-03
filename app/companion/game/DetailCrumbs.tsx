@@ -36,7 +36,10 @@ export function DetailCrumbs({
       <header
         className="flex items-baseline justify-between md:hidden"
         style={{
-          padding: "14px 18px 10px",
+          paddingTop: "max(env(safe-area-inset-top), 14px)",
+          paddingRight: "18px",
+          paddingBottom: "10px",
+          paddingLeft: "18px",
           borderBottom: "1px solid var(--line)",
         }}
       >
