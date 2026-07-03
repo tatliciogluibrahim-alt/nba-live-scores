@@ -6,6 +6,7 @@ import { FOLLOW_MOMENTS } from "./FollowChoice";
 import type { FollowMoment } from "./FollowChoice";
 import { MomentSection } from "./MomentSection";
 import { EmptyStateSync } from "./EmptyStateSync";
+import { tournamentPhase } from "./data/tournament-phase";
 
 // Following — empty / onboarding. Two compositions behind the md seam:
 //
@@ -26,6 +27,15 @@ import { EmptyStateSync } from "./EmptyStateSync";
 
 function EmptyMomentRow({ moment }: { moment: FollowMoment }) {
   const isComingSoon = Boolean(moment.comingSoon);
+  // A concluded tournament (e.g. NBA Playoffs in the offseason) is no longer
+  // followable, so mirror the desktop MomentSection: a muted, non-tappable row
+  // with a "Season wrapped" stamp instead of a live link row. Read the ONE
+  // derived phase signal, never a hardcoded date.
+  const isConcluded =
+    !isComingSoon &&
+    !!moment.tournamentId &&
+    tournamentPhase(moment.tournamentId) === "concluded";
+  const isInactive = isComingSoon || isConcluded;
 
   const inner = (
     <>
@@ -40,6 +50,8 @@ function EmptyMomentRow({ moment }: { moment: FollowMoment }) {
           flexShrink: 0,
           borderRadius: 1,
           marginRight: 2,
+          // Inactive moments mute the accent so live moments earn the eye.
+          opacity: isInactive ? 0.5 : 1,
         }}
       />
 
@@ -52,7 +64,7 @@ function EmptyMomentRow({ moment }: { moment: FollowMoment }) {
             fontSize: 17,
             fontWeight: 700,
             letterSpacing: "-0.01em",
-            color: "var(--ink)",
+            color: isInactive ? "var(--mute-1)" : "var(--ink)",
           }}
         >
           {moment.name}
@@ -72,9 +84,11 @@ function EmptyMomentRow({ moment }: { moment: FollowMoment }) {
         </span>
       </span>
 
-      {/* Right: "Coming Aug 2026" outline stamp for NFL, or mono → for live moments. */}
+      {/* Right: coming-soon / concluded stamp, or mono → for live moments. */}
       {isComingSoon ? (
         <Stamp text="Coming Aug 2026" variant="outline" />
+      ) : isConcluded ? (
+        <Stamp text="Season wrapped" variant="outline" />
       ) : (
         <span aria-hidden style={{ color: "var(--mute-2)" }}>
           →
@@ -88,7 +102,7 @@ function EmptyMomentRow({ moment }: { moment: FollowMoment }) {
     borderBottom: "1px solid var(--line)",
   };
 
-  const href = isComingSoon
+  const href = isInactive
     ? undefined
     : `/following/add#moment-${moment.id}`;
 

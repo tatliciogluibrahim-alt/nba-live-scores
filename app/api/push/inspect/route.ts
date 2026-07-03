@@ -23,6 +23,7 @@ import {
   countIosTokens,
 } from "../../../lib/push/ios-token-store";
 import { listActivityGameIds } from "../../../lib/push/live-activity-store";
+import { readLastScanAt } from "../../../lib/push/ops-metrics";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,6 +52,9 @@ export async function GET(req: Request) {
   const matches = allTokens.filter((t) => t.token.toLowerCase().startsWith(q));
 
   const activityGameIds = await listActivityGameIds();
+  // Scan heartbeat — when each cron last ran. A null or stale value means the
+  // external scheduler stopped and no alerts are firing (read-only, no secrets).
+  const lastScanAt = await readLastScanAt();
 
   return NextResponse.json({
     query: q,
@@ -59,6 +63,7 @@ export async function GET(req: Request) {
       iosMatches: matches.length,
       liveActivityGames: activityGameIds.length,
     },
+    lastScanAt,
     iosTokens: matches.map((t) => ({
       tokenPrefix: truncate(t.token),
       alerts: t.alerts,

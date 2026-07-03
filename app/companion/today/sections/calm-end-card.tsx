@@ -14,6 +14,13 @@ import type { ClosingMoment } from "../today-data";
 // series the user follows just wrapped) or "tournament" (the NBA
 // Finals just wrapped and the slate is quiet).
 //
+// System D (2026-07-03, D3 Task 6a): unboxed moment row — heavy top rule,
+// hairline bottom, mono eyebrow with × dismiss, Display headline, mono link
+// actions with →. Matches KnockoutMomentCard so every Today ending speaks one
+// grammar. No rounded card, no border box, no pills. Behavior is unchanged:
+// every eyebrow / detail / dot / CTA / circle variant and the dismiss+exit
+// animation are preserved; only the chrome moved to the editorial register.
+//
 // Voice: no urgency, no upsell, no FOMO. The card acknowledges, sums
 // up, offers at most one next action, and lets the user dismiss it.
 //
@@ -25,6 +32,14 @@ import type { ClosingMoment } from "../today-data";
 // Dismissal: client-side localStorage. Once dismissed for this
 // ClosingMoment.id, the card never renders again. Different moments
 // (new series, new season) get fresh ids and surface again.
+
+const monoLink = {
+  fontFamily: "var(--font-mono)",
+  fontSize: 12,
+  fontWeight: 600,
+  letterSpacing: "0.08em",
+  color: "var(--ink)",
+} as const;
 
 export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
   const noSpoilers = useNoSpoilers();
@@ -46,198 +61,184 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
       style={{ gridTemplateRows: exiting ? "0fr" : "1fr", opacity: exiting ? 0 : 1 }}
     >
       <div className="overflow-hidden">
-    <section
-      className="relative overflow-hidden rounded-[14px] border px-4 py-5"
-      style={{
-        background: "var(--paper)",
-        borderColor: "var(--line)",
-      }}
-      aria-label={
-        moment.kind === "series"
-          ? "Series wrapped"
-          : moment.kind === "deadzone"
-            ? "Quiet stretch"
-            : "Season wrapped"
-      }
-    >
-      {/* Dismiss control. Calm × in the top-right, no harsh weight. */}
-      <button
-        type="button"
-        onClick={begin}
-        className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full transition active:scale-[0.95]"
-        style={{ color: "var(--mute-1)" }}
-        aria-label="Dismiss"
-      >
-        <span aria-hidden className="text-[16px] leading-none">
-          ×
-        </span>
-      </button>
-
-      {/* Eyebrow — uppercase mono micro-label, same system as other
-          calm wayfinding chips ("Series wrapped" / "Season wrapped"). */}
-      <p
-        className="mb-2"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          fontWeight: 600,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          color: "var(--mute-1)",
-        }}
-      >
-        {moment.eyebrow}
-      </p>
-
-      <Display as="p" size="sm" className="mb-1">
-        {moment.headline}
-      </Display>
-
-      {moment.detail ? (
-        <p
-          className="text-[13px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          {moment.detail}
-        </p>
-      ) : null}
-
-      {/* Acknowledge an auto-retired follow so the removal isn't silent
-          ("you're in control"). Calm, factual, no upsell. */}
-      {moment.autoDropNote ? (
-        <p
-          className="mt-2 text-[12px] leading-snug"
-          style={{ color: "var(--mute-2)", fontWeight: 500 }}
-        >
-          {moment.autoDropNote}
-        </p>
-      ) : null}
-
-      {/* Dot strip (series only). Each played game gets a small chip
-          with the two abbreviations. Under No-Spoilers the winner mark
-          is hidden — the dot just shows "G1: NYK · CLE" without
-          indicating who won. */}
-      {isSeries && moment.dots.length > 0 ? (
-        <ol
-          className="mt-4 flex flex-wrap gap-1.5"
-          aria-label="Series games"
-        >
-          {moment.dots.map((dot) => {
-            const winnerVisible = !noSpoilers;
-            const awayWon = dot.winnerCode === dot.awayCode;
-            return (
-              <li
-                key={dot.number}
-                className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5"
-                style={{
-                  background: "var(--cream)",
-                  borderColor: "var(--line)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: "0.05em",
-                  color: "var(--mute-1)",
-                }}
-              >
-                <span aria-hidden style={{ opacity: 0.7 }}>
-                  G{dot.number}
-                </span>
-                <span
-                  style={{
-                    color:
-                      winnerVisible && awayWon ? "var(--ink)" : undefined,
-                    fontWeight: winnerVisible && awayWon ? 700 : 600,
-                  }}
-                >
-                  {dot.awayCode}
-                </span>
-                <span aria-hidden style={{ opacity: 0.5 }}>
-                  ·
-                </span>
-                <span
-                  style={{
-                    color:
-                      winnerVisible && !awayWon ? "var(--ink)" : undefined,
-                    fontWeight: winnerVisible && !awayWon ? 700 : 600,
-                  }}
-                >
-                  {dot.homeCode}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      ) : null}
-
-      {/* Spoilery summary line — only renders when NS is off. Always
-          calm prose, never marketing copy. */}
-      {!noSpoilers && moment.spoilerSummary && isSeries ? (
-        <p
-          className="mt-3 text-[13px] leading-snug"
-          style={{ color: "var(--ink-2)", fontWeight: 500 }}
-        >
-          {moment.spoilerSummary}
-        </p>
-      ) : null}
-
-      {/* Primary CTA. At most one. Series variant may offer "Follow
-          [winner]"; tournament variant has none. */}
-      {moment.primary ? (
-        <Link
-          href={moment.primary.href}
-          className="mt-4 inline-flex items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.97]"
+        <section
           style={{
-            background: "var(--ink)",
-            color: "var(--paper)",
+            borderTop: "2px solid var(--rule)",
+            borderBottom: "1px solid var(--line)",
+            padding: "12px 0 14px",
           }}
+          aria-label={
+            moment.kind === "series"
+              ? "Series wrapped"
+              : moment.kind === "deadzone"
+                ? "Quiet stretch"
+                : "Season wrapped"
+          }
         >
-          {moment.primary.label}
-        </Link>
-      ) : null}
-
-      {/* "Still in your circle" — Phase 21C. Redirects emotional
-          investment after a followed team is eliminated, and fills the
-          dead-zone bridge card. Calm chip list, each links to that
-          follow's detail page. Safe under No-Spoilers (names only, no
-          scores or outcomes). */}
-      {moment.circle && moment.circle.length > 0 ? (
-        <div className="mt-4">
-          {moment.circleHeading ? (
+          {/* Eyebrow row — mono micro-label, dismiss at the row edge. */}
+          <div className="mb-2 flex items-baseline justify-between">
             <p
-              className="mb-2"
+              className="uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 fontWeight: 600,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
+                letterSpacing: "0.14em",
                 color: "var(--mute-1)",
               }}
             >
-              {moment.circleHeading}
+              {moment.eyebrow}
+            </p>
+            <button
+              type="button"
+              onClick={begin}
+              className="inline-flex h-7 w-7 -translate-y-1 items-center justify-center transition active:opacity-60"
+              style={{ color: "var(--mute-1)" }}
+              aria-label="Dismiss"
+            >
+              <span aria-hidden className="text-[16px] leading-none">
+                ×
+              </span>
+            </button>
+          </div>
+
+          <Display as="p" size="sm" className="mb-1">
+            {moment.headline}
+          </Display>
+
+          {moment.detail ? (
+            <p
+              className="text-[13px] leading-snug"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              {moment.detail}
             </p>
           ) : null}
-          <ul className="flex flex-wrap gap-1.5">
-            {moment.circle.map((item) => (
-              <li key={item.key}>
-                <Link
-                  href={item.href}
-                  className="inline-flex items-center rounded-full border px-3 py-1.5 text-[12px] transition active:scale-[0.97]"
+
+          {/* Acknowledge an auto-retired follow so the removal isn't silent
+              ("you're in control"). Calm, factual, no upsell. */}
+          {moment.autoDropNote ? (
+            <p
+              className="mt-2 text-[12px] leading-snug"
+              style={{ color: "var(--mute-2)", fontWeight: 500 }}
+            >
+              {moment.autoDropNote}
+            </p>
+          ) : null}
+
+          {/* Dot strip (series only). Each played game as a mono token
+              (no pill): "G1 NYK · CLE". Under No-Spoilers the winner mark
+              is hidden — both codes read at equal weight. */}
+          {isSeries && moment.dots.length > 0 ? (
+            <ol
+              className="mt-3 flex flex-wrap gap-x-4 gap-y-1"
+              aria-label="Series games"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.04em",
+                color: "var(--mute-1)",
+              }}
+            >
+              {moment.dots.map((dot) => {
+                const winnerVisible = !noSpoilers;
+                const awayWon = dot.winnerCode === dot.awayCode;
+                return (
+                  <li key={dot.number} className="inline-flex items-center gap-1">
+                    <span aria-hidden style={{ opacity: 0.6 }}>
+                      G{dot.number}
+                    </span>
+                    <span
+                      style={{
+                        color: winnerVisible && awayWon ? "var(--ink)" : undefined,
+                        fontWeight: winnerVisible && awayWon ? 800 : 600,
+                      }}
+                    >
+                      {dot.awayCode}
+                    </span>
+                    <span aria-hidden style={{ opacity: 0.5 }}>
+                      ·
+                    </span>
+                    <span
+                      style={{
+                        color: winnerVisible && !awayWon ? "var(--ink)" : undefined,
+                        fontWeight: winnerVisible && !awayWon ? 800 : 600,
+                      }}
+                    >
+                      {dot.homeCode}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : null}
+
+          {/* Spoilery summary line — only renders when NS is off. Always
+              calm prose, never marketing copy. */}
+          {!noSpoilers && moment.spoilerSummary && isSeries ? (
+            <p
+              className="mt-3 text-[13px] leading-snug"
+              style={{ color: "var(--ink-2)", fontWeight: 500 }}
+            >
+              {moment.spoilerSummary}
+            </p>
+          ) : null}
+
+          {/* Primary CTA. At most one. Mono link, not a pill — this row is a
+              moment among several, never the screen's sole primary action. */}
+          {moment.primary ? (
+            <div className="mt-3">
+              <Link
+                href={moment.primary.href}
+                className="inline-flex min-h-[44px] items-center gap-1.5 uppercase transition active:opacity-70"
+                style={monoLink}
+              >
+                {moment.primary.label}
+                <span aria-hidden>→</span>
+              </Link>
+            </div>
+          ) : null}
+
+          {/* "Still in your circle" — Phase 21C. Redirects emotional
+              investment after a followed team is eliminated, and fills the
+              dead-zone bridge card. Mono links (no pills), each to that
+              follow's detail page. Safe under No-Spoilers (names only). */}
+          {moment.circle && moment.circle.length > 0 ? (
+            <div className="mt-4">
+              {moment.circleHeading ? (
+                <p
+                  className="mb-2 uppercase"
                   style={{
-                    background: "var(--cream)",
-                    borderColor: "var(--line)",
-                    color: "var(--ink)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
                     fontWeight: 600,
+                    letterSpacing: "0.12em",
+                    color: "var(--mute-1)",
                   }}
                 >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-    </section>
+                  {moment.circleHeading}
+                </p>
+              ) : null}
+              <ul className="flex flex-col">
+                {moment.circle.map((item) => (
+                  <li key={item.key}>
+                    <Link
+                      href={item.href}
+                      className="flex min-h-[44px] items-center justify-between gap-3 uppercase transition active:opacity-70"
+                      style={{ ...monoLink, borderTop: "1px solid var(--line)" }}
+                    >
+                      {item.label}
+                      <span aria-hidden style={{ color: "var(--mute-2)" }}>
+                        →
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
       </div>
     </div>
   );

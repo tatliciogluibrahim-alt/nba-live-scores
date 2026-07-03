@@ -9,7 +9,9 @@ import { useFollows } from "../providers";
 import { useWCSchedule } from "./WCGroups";
 import {
   buildBracketRounds,
+  groupBracketByDay,
   type BracketMatch,
+  type BracketRound,
   type BracketSlot,
 } from "./wc-bracket-data";
 import type { KnockoutRoundKey } from "./knockout-data";
@@ -48,6 +50,9 @@ export function WCBracket() {
   );
   const [active, setActive] = useState<KnockoutRoundKey>("r32");
   const round = rounds.find((r) => r.key === active) ?? rounds[0];
+  // Mobile view mode: the round-by-round bracket, or a chronological day
+  // schedule (D3 Task 6a). Client-side only, no new route.
+  const [mode, setMode] = useState<"bracket" | "byday">("bracket");
 
   return (
     <section className="mt-4">
@@ -61,62 +66,102 @@ export function WCBracket() {
         </p>
       ) : null}
 
-      {/* ── Mobile: one round at a time (System D, D3 Task 5) ──────────── */}
+      {/* ── Mobile: one round at a time, or a chronological day view ────── */}
       <div className="md:hidden">
-        <div
-          className="sticky top-0 z-10 -mx-4 mb-4 px-4 pb-0 pt-1"
-          style={{ background: "var(--bar-blur-bg, var(--cream))", backdropFilter: "blur(8px)" }}
-        >
-          {/* Round switcher — mono tabs, active carries the ink underline. */}
-          <div className="flex" style={{ borderBottom: "1px solid var(--line)" }}>
-            {rounds.map((r) => {
-              const on = r.key === active;
-              return (
-                <button
-                  key={r.key}
-                  type="button"
-                  onClick={() => setActive(r.key)}
-                  aria-pressed={on}
-                  className="flex-1 uppercase transition active:opacity-70"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    letterSpacing: "0.12em",
-                    fontWeight: on ? 700 : 600,
-                    color: on ? "var(--ink)" : "var(--mute-2)",
-                    paddingTop: 4,
-                    paddingBottom: 10,
-                    background: "transparent",
-                    borderBottom: on ? "2px solid var(--ink)" : "2px solid transparent",
-                    marginBottom: -1,
-                  }}
-                >
-                  {SHORT[r.key]}
-                </button>
-              );
-            })}
-          </div>
+        {/* View switch — mono segments, active carries the ink underline
+            (same grammar as the round tabs). Sits above the sticky tabs. */}
+        <div className="mb-3 flex" style={{ borderBottom: "1px solid var(--line)" }}>
+          {([
+            ["bracket", "Bracket"],
+            ["byday", "By day"],
+          ] as const).map(([key, label]) => {
+            const on = key === mode;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setMode(key)}
+                aria-pressed={on}
+                className="flex-1 uppercase transition active:opacity-70"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: "0.12em",
+                  fontWeight: on ? 700 : 600,
+                  color: on ? "var(--ink)" : "var(--mute-2)",
+                  paddingTop: 2,
+                  paddingBottom: 10,
+                  background: "transparent",
+                  borderBottom: on ? "2px solid var(--ink)" : "2px solid transparent",
+                  marginBottom: -1,
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
-        <SecHead name={round.label} count={round.dateLabel ?? undefined} />
+        {mode === "bracket" ? (
+          <>
+            <div
+              className="sticky top-0 z-10 -mx-4 mb-4 px-4 pb-0 pt-1"
+              style={{ background: "var(--bar-blur-bg, var(--cream))", backdropFilter: "blur(8px)" }}
+            >
+              {/* Round switcher — mono tabs, active carries the ink underline. */}
+              <div className="flex" style={{ borderBottom: "1px solid var(--line)" }}>
+                {rounds.map((r) => {
+                  const on = r.key === active;
+                  return (
+                    <button
+                      key={r.key}
+                      type="button"
+                      onClick={() => setActive(r.key)}
+                      aria-pressed={on}
+                      className="flex-1 uppercase transition active:opacity-70"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 11,
+                        letterSpacing: "0.12em",
+                        fontWeight: on ? 700 : 600,
+                        color: on ? "var(--ink)" : "var(--mute-2)",
+                        paddingTop: 4,
+                        paddingBottom: 10,
+                        background: "transparent",
+                        borderBottom: on ? "2px solid var(--ink)" : "2px solid transparent",
+                        marginBottom: -1,
+                      }}
+                    >
+                      {SHORT[r.key]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-        {round.matches.length === 0 ? (
-          <p
-            className="py-[13px] text-[13px]"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-            Not set yet.
-          </p>
+            <SecHead name={round.label} count={round.dateLabel ?? undefined} />
+
+            {round.matches.length === 0 ? (
+              <p
+                className="py-[13px] text-[13px]"
+                style={{ color: "var(--mute-1)", fontWeight: 500 }}
+              >
+                Not set yet.
+              </p>
+            ) : (
+              <div>
+                {round.matches.map((m) => (
+                  <BracketMatchRow
+                    key={`${m.round}-${m.number}`}
+                    match={m}
+                    idx={String(m.number).padStart(2, "0")}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         ) : (
-          <div>
-            {round.matches.map((m) => (
-              <BracketMatchRow
-                key={`${m.round}-${m.number}`}
-                match={m}
-                idx={String(m.number).padStart(2, "0")}
-              />
-            ))}
-          </div>
+          <ByDayView rounds={rounds} />
         )}
       </div>
 
@@ -155,6 +200,44 @@ export function WCBracket() {
         ))}
       </div>
     </section>
+  );
+}
+
+// ── Mobile BY DAY view (System D, D3 Task 6a) ─────────────────────────
+// The knockout schedule read chronologically: every dated fixture from today
+// forward, grouped under day heads (TODAY / TOMORROW / "SAT JUL 5"), reusing
+// the Task 5 agate row. Answers "what's on, and when" without walking the
+// round tabs. Day math is ET (matches the per-match dateLabel).
+
+function ByDayView({ rounds }: { rounds: BracketRound[] }) {
+  const groups = groupBracketByDay(rounds, new Date());
+
+  if (groups.length === 0) {
+    return (
+      <p
+        className="py-[13px] text-[13px]"
+        style={{ color: "var(--mute-1)", fontWeight: 500 }}
+      >
+        The knockout schedule fills in as the groups finish.
+      </p>
+    );
+  }
+
+  return (
+    <div>
+      {groups.map((g, gi) => (
+        <section key={g.key} className={gi === 0 ? "mt-1" : "mt-7"}>
+          <SecHead name={g.head} count={String(g.matches.length)} />
+          {g.matches.map((m) => (
+            <BracketMatchRow
+              key={`${m.round}-${m.number}`}
+              match={m}
+              idx={String(m.number).padStart(2, "0")}
+            />
+          ))}
+        </section>
+      ))}
+    </div>
   );
 }
 

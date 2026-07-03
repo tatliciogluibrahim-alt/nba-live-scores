@@ -813,7 +813,7 @@ export function WCGroups({
         ))}
         <Link
           href={`/tournament/${tournamentId}/groups`}
-          aria-label={`View all ${groups.length} Summer Soccer groups`}
+          aria-label={`View all ${groups.length} groups`}
           className="mt-[14px] inline-flex items-center gap-[6px] uppercase transition active:opacity-70"
           style={{
             fontFamily: "var(--font-mono)",

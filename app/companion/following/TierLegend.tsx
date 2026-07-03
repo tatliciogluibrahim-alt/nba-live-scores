@@ -34,7 +34,10 @@ export function TierLegend({
       aria-label="Alert tier key"
       style={{
         display: "flex",
-        alignItems: "baseline",
+        // Anchor the ✕ to the TOP-right. With baseline alignment a wrapped
+        // 2-line legend dropped the ✕ to the last line's baseline; flex-start
+        // keeps it beside the first line where the eye expects it.
+        alignItems: "flex-start",
         justifyContent: "space-between",
         gap: 8,
         borderTop: "1px solid var(--line)",
@@ -45,7 +48,8 @@ export function TierLegend({
       <span style={MONO_STYLE}>{LEGEND_COPY}</span>
 
       {/* ✕ dismiss. 44×44 tap target wraps a small glyph so taps
-          along the edge of the row don't miss. */}
+          along the edge of the row don't miss. A small negative top margin
+          nudges the glyph up to sit with the first line of copy. */}
       <button
         type="button"
         onClick={onDismiss}
@@ -57,7 +61,7 @@ export function TierLegend({
           justifyContent: "center",
           minWidth: 44,
           minHeight: 44,
-          margin: "-9px -4px -9px 0",
+          margin: "-2px -4px -14px 0",
           background: "transparent",
           border: "none",
           cursor: "pointer",

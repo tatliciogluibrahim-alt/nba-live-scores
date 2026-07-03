@@ -127,6 +127,11 @@ export type UpNextItem = {
   eyebrow: string;           // "NBA · Tonight" | "Summer Soccer · Sat"
   headline: string;          // "Knicks vs Cavaliers"
   detail: string;            // "8:00 PM · MSG"
+  /** Raw ISO kickoff time. Feeds the day-aware kickoff stamp (kickoffStamp)
+   *  so a later-day row shows "SAT 1:00 PM" instead of a bare, misleading
+   *  "1:00 PM". Kept alongside detail (which carries the pre-formatted time
+   *  + context) so the stamp can recompute against the current day. */
+  dateIso: string;
   /** True when this game is on the current calendar day. The Front Page
    *  headline counts only today's games ("One game tonight."), so a
    *  future "Game 7 if necessary" in the list doesn't inflate the count. */
@@ -905,6 +910,7 @@ function nbaToUpNext(g: NBAGame, pinned: boolean, personal: boolean): UpNextItem
     eyebrow: `NBA · ${formatGameDay(g.date)}`,
     headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     detail: `${formatGameTime(g.date)}${g.gameContext ? " · " + g.gameContext : ""}`,
+    dateIso: g.date,
     isToday: isSameDay(g.date),
     dayWord: headlineDayWord(g.date),
     stake: g.seriesSummary ? prettifySeriesSummary(g.seriesSummary) : undefined,
@@ -924,6 +930,7 @@ function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): UpNextIt
     eyebrow: `Summer Soccer · ${formatGameDay(g.date, new Date(), "wc")}`,
     headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     detail: `${formatGameTime(g.date)}${g.stage ? " · " + g.stage : ""}`,
+    dateIso: g.date,
     isToday: isSameDay(g.date),
     dayWord: headlineDayWord(g.date),
     watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,

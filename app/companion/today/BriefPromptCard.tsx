@@ -64,29 +64,39 @@ export function BriefPromptCard() {
           A calm morning recap of what your follows did. No noise.
         </p>
 
-        <div className="mt-3.5 flex items-center gap-2">
+        {/* Mono link actions (System D, D3 Task 6a) — this footer is a
+            moment among the Today slate, not the screen's sole CTA, so the
+            actions read as editorial links, not pills. */}
+        <div className="mt-3.5 flex items-center gap-6">
           <Link
             href="/brief/subscribe"
             onClick={dismiss}
             aria-label="Set up the Daily Brief email"
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] items-center gap-1.5 uppercase transition active:opacity-70"
             style={{
-              background: "var(--ink)",
-              color: "var(--cream)",
-              border: "1px solid var(--ink)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              color: "var(--ink)",
             }}
           >
             Set it up
+            <span aria-hidden>→</span>
           </Link>
           <button
             type="button"
             onClick={dismiss}
             aria-label="Dismiss the Brief prompt"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-4 py-2 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] items-center uppercase transition active:opacity-70"
             style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              color: "var(--mute-1)",
               background: "transparent",
-              color: "var(--ink)",
-              border: "1px solid var(--line)",
+              border: "none",
             }}
           >
             Not now

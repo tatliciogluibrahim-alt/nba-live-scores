@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { buildWCBracket } from "./wc-bracket-data";
+import {
+  buildWCBracket,
+  groupBracketByDay,
+  type BracketMatch,
+  type BracketRound,
+} from "./wc-bracket-data";
 import type { WCScheduleFixture } from "../../api/world-cup/schedule/route";
 
 function r32(
@@ -74,5 +79,79 @@ describe("buildWCBracket", () => {
     expect(b.resolved).toBe(false);
     // structure still renders (placeholders), 4 quarters present
     expect(b.quarters).toHaveLength(4);
+  });
+});
+
+describe("groupBracketByDay", () => {
+  let n = 0;
+  function match(
+    dateIso: string | null,
+    opts: { real?: boolean; href?: string | null } = {}
+  ): BracketMatch {
+    const { real = true, href = "/game/x" } = opts;
+    const slot: BracketSlot = {
+      code: real ? "MEX" : "R32-1",
+      label: real ? "Mexico" : "To be decided",
+      real,
+      followed: false,
+      score: null,
+    };
+    return {
+      round: "r32",
+      number: ++n,
+      away: slot,
+      home: { ...slot, code: real ? "POR" : "R32-1" },
+      status: "upcoming",
+      dateLabel: dateIso,
+      dateIso,
+      href,
+    };
+  }
+  const round = (matches: BracketMatch[]): BracketRound => ({
+    key: "r32",
+    label: "Round of 32",
+    matches,
+    dateLabel: null,
+  });
+
+  // Fixed clock: Sat Jul 4 2026, noon ET (16:00 UTC, EDT = UTC-4).
+  const now = new Date("2026-07-04T16:00:00Z");
+
+  it("labels today, tomorrow, and later days; drops the past", () => {
+    const past = match("2026-07-02T20:00:00Z"); // Thu — dropped
+    const todayEarly = match("2026-07-04T18:00:00Z"); // 2 PM ET
+    const todayLate = match("2026-07-04T23:00:00Z"); // 7 PM ET
+    const tomorrow = match("2026-07-05T20:00:00Z"); // Sun
+    const later = match("2026-07-08T20:00:00Z"); // Wed
+    const groups = groupBracketByDay(
+      [round([past, todayLate, todayEarly, tomorrow, later])],
+      now
+    );
+
+    expect(groups.map((g) => g.head)).toEqual([
+      "TODAY",
+      "TOMORROW",
+      "WED JUL 8",
+    ]);
+    // Chronological within the day (early before late).
+    expect(groups[0].matches.map((m) => m.number)).toEqual([
+      todayEarly.number,
+      todayLate.number,
+    ]);
+  });
+
+  it("collects real-but-undated fixtures under SCHEDULE TO COME, last", () => {
+    const today = match("2026-07-04T18:00:00Z");
+    const undated = match(null, { real: true, href: "/game/y" });
+    const groups = groupBracketByDay([round([today, undated])], now);
+
+    expect(groups.map((g) => g.head)).toEqual(["TODAY", "SCHEDULE TO COME"]);
+    expect(groups[1].matches).toHaveLength(1);
+  });
+
+  it("drops pure structural placeholders (no teams, no link, no date)", () => {
+    const placeholder = match(null, { real: false, href: null });
+    const groups = groupBracketByDay([round([placeholder])], now);
+    expect(groups).toEqual([]);
   });
 });

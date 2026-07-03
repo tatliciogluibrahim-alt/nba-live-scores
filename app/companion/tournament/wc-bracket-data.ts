@@ -63,6 +63,10 @@ export type BracketMatch = {
   home: BracketSlot;
   status: "live" | "upcoming" | "final";
   dateLabel: string | null;
+  /** Raw ISO kickoff (from the feed). Null for synthesized upper-round
+   *  placeholders that aren't scheduled yet. Feeds the BY DAY grouping so day
+   *  heads ("TODAY", "SAT JUL 5") stay in one timezone (America/New_York). */
+  dateIso: string | null;
   href: string | null;
 };
 
@@ -152,6 +156,7 @@ function fixtureToMatch(
           day: "numeric",
         })
       : null,
+    dateIso: f.date ?? null,
     href: f.id ? `/game/${f.id}` : null,
   };
 }
@@ -203,6 +208,7 @@ export function buildWCBracket(
       home: winnerSlot(feedRound, feeds[1]),
       status: "upcoming",
       dateLabel: null,
+      dateIso: null,
       href: null,
     };
   };
@@ -249,6 +255,7 @@ function placeholderR32(n: number, _followedCodes: Set<string>): BracketMatch {
     home: { ...blank },
     status: "upcoming",
     dateLabel: null,
+    dateIso: null,
     href: null,
   };
 }
@@ -288,4 +295,106 @@ export function buildBracketRounds(
 
   const hasFollowed = b.quarters.some((q) => q.hasFollowed);
   return { rounds, resolved: b.resolved, hasFollowed };
+}
+
+// ── BY DAY view (D3 Task 6a) ──────────────────────────────────────────
+// A chronological, day-grouped read of the knockout schedule for the
+// mobile bracket page's "BY DAY" toggle. Every dated fixture from today
+// forward (across all rounds) falls under a day head ("TODAY", "TOMORROW",
+// or "SAT JUL 5"); the day math is done in America/New_York so the heads
+// agree with the per-match dateLabel (also ET) and the US-centric framing.
+// Real-but-undated fixtures collect under "SCHEDULE TO COME" last; pure
+// structural placeholders (no teams, no link) are dropped — a day view of
+// "TBD · TBD" rows is noise, not schedule.
+
+export type BracketDayGroup = {
+  /** Stable key ("2026-07-05" or "no-date") for React lists. */
+  key: string;
+  /** Uppercase mono day head ("TODAY" | "TOMORROW" | "SAT JUL 5" | "SCHEDULE TO COME"). */
+  head: string;
+  matches: BracketMatch[];
+};
+
+/** ET calendar day key ("2026-07-05") for a given instant — the grouping
+ *  bucket. en-CA renders ISO-ordered YYYY-MM-DD, which also sorts correctly
+ *  as a plain string. */
+function etDayKey(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+/** "SAT JUL 5" from an instant, in ET, uppercase, comma stripped. */
+function etDayHead(d: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  })
+    .format(d)
+    .toUpperCase()
+    .replace(/,/g, "");
+}
+
+/** A match with no teams and no link is a pure structural placeholder — it
+ *  carries no schedule information, so it's excluded from the BY DAY view. */
+function isStructuralPlaceholder(m: BracketMatch): boolean {
+  return !m.away.real && !m.home.real && !m.href;
+}
+
+export function groupBracketByDay(
+  rounds: BracketRound[],
+  now: Date = new Date()
+): BracketDayGroup[] {
+  const nowKey = etDayKey(now);
+  const tomorrowKey = etDayKey(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+
+  const byDay = new Map<string, { sample: Date; matches: BracketMatch[] }>();
+  const undated: BracketMatch[] = [];
+
+  for (const r of rounds) {
+    for (const m of r.matches) {
+      const t = m.dateIso ? new Date(m.dateIso).getTime() : NaN;
+      if (!Number.isFinite(t)) {
+        // Only real-but-unscheduled fixtures reach "SCHEDULE TO COME".
+        if (!isStructuralPlaceholder(m)) undated.push(m);
+        continue;
+      }
+      const d = new Date(t);
+      const key = etDayKey(d);
+      // Today forward only — finished earlier-round days drop off so the view
+      // reads as the current + upcoming schedule.
+      if (key < nowKey) continue;
+      const bucket = byDay.get(key);
+      if (bucket) bucket.matches.push(m);
+      else byDay.set(key, { sample: d, matches: [m] });
+    }
+  }
+
+  const groups: BracketDayGroup[] = [...byDay.entries()]
+    .sort(([a], [z]) => (a < z ? -1 : a > z ? 1 : 0))
+    .map(([key, v]) => {
+      const head =
+        key === nowKey
+          ? "TODAY"
+          : key === tomorrowKey
+            ? "TOMORROW"
+            : etDayHead(v.sample);
+      // Chronological within the day, kickoff time then match number.
+      const matches = [...v.matches].sort((a, b) => {
+        const ta = a.dateIso ? new Date(a.dateIso).getTime() : 0;
+        const tb = b.dateIso ? new Date(b.dateIso).getTime() : 0;
+        return ta - tb || a.number - b.number;
+      });
+      return { key, head, matches };
+    });
+
+  if (undated.length > 0) {
+    groups.push({ key: "no-date", head: "SCHEDULE TO COME", matches: undated });
+  }
+  return groups;
 }
