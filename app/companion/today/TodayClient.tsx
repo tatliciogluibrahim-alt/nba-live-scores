@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { PullToRefresh } from "../atoms/PullToRefresh";
-import { BrandMark } from "../frame/BrandMark";
+import { Masthead } from "../system/Masthead";
 import { useFollows, useNoSpoilers } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveTodayHeadline } from "./today-data";
@@ -77,21 +77,28 @@ export function TodayClient() {
   return (
     <PullToRefresh onRefresh={refetch}>
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-5xl md:px-8 md:pt-6 2xl:max-w-7xl">
-      {/* ── Masthead (Concept A "Front Page"): date · No Noise wordmark ·
-          No-Spoilers state, with a full-width hairline beneath. The big
-          "Today" title is gone — the Brief headline below is the page's
-          dominant type ("one headline a day"). Stable sr-only h1 keeps
-          the landmark. The centered wordmark is mobile-only; on desktop
-          the sidebar already carries the brand. */}
+      {/* ── Masthead. System D broadsheet nameplate on mobile (date ·
+          BrandMark + "No Noise" wordmark · N LIVE →), the passive
+          No-Spoilers dot carried in the right slot. Stable sr-only h1
+          keeps the landmark. Desktop (md+) keeps the legacy date-row
+          header untouched (the sidebar carries the brand there, and D4
+          owns the desktop restyle) so the md+ shot stays pixel-identical.
+          The lead-monument swap that pairs with this masthead is blocked
+          on a data-source decision — see .superpowers/sdd/task-6-report.md. */}
       <h1 className="sr-only">Today</h1>
+
+      {/* Mobile: the System D masthead. -mx-4 bleeds the 2px rule to the
+          screen edges within the page's px-4 gutter. */}
+      <div className="md:hidden -mx-4 mb-5">
+        <Masthead liveCount={liveCount} rightExtra={<NoSpoilersAmbientDot />} />
+      </div>
+
+      {/* Desktop: legacy date-row header, unchanged (pixel-identical for
+          D4). Brand lives in the sidebar on desktop, so no wordmark here. */}
       <header
-        className="-mx-4 mb-5 flex items-center justify-between gap-2 border-b px-4 pb-3"
+        className="hidden md:flex -mx-4 mb-5 items-center justify-between gap-2 border-b px-4 pb-3"
         style={{
           borderColor: "var(--line)",
-          // Reserve the iOS status-bar / Dynamic Island height so the
-          // date row doesn't collide with the clock + battery. BrandBar
-          // does the same on the other tabs; Today's custom masthead
-          // was missing it. 0 on web / non-notch devices.
           paddingTop: "max(env(safe-area-inset-top), 10px)",
         }}
       >
@@ -120,20 +127,6 @@ export function TodayClient() {
               })
             : "Today"}
         </p>
-
-        <div className="flex shrink-0 items-center gap-2 md:hidden">
-          <BrandMark size={22} />
-          <span
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 15,
-              letterSpacing: "-0.01em",
-              color: "var(--ink)",
-            }}
-          >
-            No&nbsp;Noise
-          </span>
-        </div>
 
         {/* Ambient No-Spoilers indicator — only shown when active.
             Passive status display, not a per-visit toggle (set once in
