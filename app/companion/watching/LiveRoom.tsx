@@ -204,8 +204,13 @@ export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
   // tighter (single-digit margin) — the same "no ambiguity, no nag" gate the
   // desktop chip uses. closestLive is NBA-only by construction, and it's
   // suppressed under No-Spoilers (revealing "who's close" is a soft spoiler).
+  // ≥2 guard matches the desktop ClosestChip: with one live game there is
+  // nothing to switch to (the ≥1 room gate made single-live the common case).
   const showClosest =
-    !noSpoilers && payload.closestLive != null && payload.closestLive.margin <= 9;
+    !noSpoilers &&
+    liveItems.length >= 2 &&
+    payload.closestLive != null &&
+    payload.closestLive.margin <= 9;
 
   return (
     <div className="-mx-4 mb-5">
