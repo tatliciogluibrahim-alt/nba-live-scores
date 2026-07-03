@@ -230,6 +230,68 @@ export function buildWatchingPayload({
   return { items, stalePins, liveCount, closestLive };
 }
 
+// ── System D mobile copy helpers (D2 Task 5) ──────────────────────────
+
+/** Mobile pagehead meta line (System D). Mono caps, no trailing period —
+ *  the broadsheet register wants a stamp, not a sentence. `live` drives the
+ *  breathing dot. Derives from the SAME status buckets as
+ *  buildWatchingSummary (the desktop sentence) so the two presentations of
+ *  the same tracked set never disagree. Spoiler-safe: timing only, never a
+ *  winner or a margin. */
+export function buildWatchingMeta(
+  items: Pick<PinnedItem, "status">[],
+  staleCount: number
+): { text: string; live: boolean } {
+  const live = items.filter((i) => i.status === "live").length;
+  const upcoming = items.filter((i) => i.status === "upcoming").length;
+  const final = items.filter((i) => i.status === "final").length;
+
+  if (live > 0) {
+    return { text: live === 1 ? "1 GAME LIVE" : `${live} GAMES LIVE`, live: true };
+  }
+  if (items.length === 0) {
+    // Nothing resolved — either loading or truly gone. With stale pins,
+    // surface the unavailable count; otherwise a calm default.
+    if (staleCount > 0) {
+      return {
+        text:
+          staleCount === 1
+            ? "1 TRACKED GAME UNAVAILABLE"
+            : `${staleCount} TRACKED GAMES UNAVAILABLE`,
+        live: false,
+      };
+    }
+    return { text: "ONE GAME TRACKED", live: false };
+  }
+  if (upcoming > 0 && final === 0) {
+    return {
+      text: upcoming === 1 ? "1 TRACKED FOR LATER" : `${upcoming} TRACKED FOR LATER`,
+      live: false,
+    };
+  }
+  if (final > 0 && upcoming === 0) {
+    return { text: final === 1 ? "1 GAME WRAPPED" : "ALL WRAPPED", live: false };
+  }
+  return { text: `${upcoming} UPCOMING · ${final} WRAPPED`, live: false };
+}
+
+/** Compact right-edge stamp for a tracked (agate / board) row. Upcoming
+ *  shows the kickoff time parsed out of the detail line; final shows FT;
+ *  live shows the clock/period (already compact). Pure + testable. The
+ *  Stamp atom uppercases via CSS, so this returns the raw token. */
+export function trackedStampText(
+  item: Pick<PinnedItem, "status" | "detailLine">
+): string {
+  if (item.status === "final") return "FT";
+  if (item.status === "upcoming") {
+    // detailLine is "Tonight · 8:00 PM" (· stage). Pull the clock time; fall
+    // back to a calm "Soon" when the shape doesn't parse.
+    const m = item.detailLine.match(/\d{1,2}:\d{2}\s?(?:AM|PM)?/i);
+    return m ? m[0].trim() : "Soon";
+  }
+  return item.detailLine || "LIVE";
+}
+
 /** From the live pinned games, find the one with the tightest score
  *  margin. Returns null when nothing qualifies (no live, or a tie). The
  *  "tie" case intentionally returns null — we don't surface a chip when

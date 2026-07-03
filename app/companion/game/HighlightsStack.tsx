@@ -34,7 +34,16 @@ type Highlight = {
   spoilery?: boolean;
 };
 
-export function HighlightsStack({ game }: { game: Game }) {
+export function HighlightsStack({
+  game,
+  headless = false,
+}: {
+  game: Game;
+  /** System D (D2): the mobile column wraps this in a SecHead, so the
+   *  component drops its own Eyebrow header and outer <section>. Default
+   *  false keeps the desktop rail card pixel-identical. */
+  headless?: boolean;
+}) {
   const noSpoilers = useEffectiveNoSpoilers(game.id);
 
   const isFinal = game.status === "final";
@@ -43,14 +52,8 @@ export function HighlightsStack({ game }: { game: Game }) {
 
   const highlights = deriveHighlights(game, noSpoilers);
 
-  return (
-    <section>
-      <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>Highlights</Eyebrow>
-        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-      </div>
-
-      {highlights.length === 0 ? (
+  const body =
+    highlights.length === 0 ? (
         <p
           className="rounded-[14px] border px-4 py-3 text-[13px]"
           style={{
@@ -98,7 +101,17 @@ export function HighlightsStack({ game }: { game: Game }) {
             </li>
           ))}
         </ul>
-      )}
+      );
+
+  if (headless) return body;
+
+  return (
+    <section>
+      <div className="mb-2 flex items-center gap-3">
+        <Eyebrow>Highlights</Eyebrow>
+        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
+      </div>
+      {body}
     </section>
   );
 }

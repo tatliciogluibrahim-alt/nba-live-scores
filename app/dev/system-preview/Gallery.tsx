@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Stamp } from "../../companion/system/Stamp";
 import { SecHead } from "../../companion/system/SecHead";
 import { AgateRow } from "../../companion/system/AgateRow";
@@ -10,8 +10,13 @@ import { Monument, StakesStamp } from "../../companion/system/Monument";
 import { Rail } from "../../companion/system/Rail";
 import { Masthead } from "../../companion/system/Masthead";
 import { GameSpoilerScope } from "../../companion/spoiler/reveal";
+import { TrackControl } from "../../companion/game/TrackControl";
 import { AlsoLiveBand } from "../../companion/today/AlsoLiveBand";
+import { NBALiveCompanion } from "../../companion/game/NBALiveCompanion";
+import { StartingXI } from "../../companion/game/StartingXI";
+import type { Game, TeamPerformers } from "../../nba/types";
 import type { ScoreboardTile } from "../../companion/today/today-data";
+import type { WCLineups } from "../../lib/wc-lineups";
 
 // Dev-only visual QA gallery for the System D primitives. Not linked in the
 // app, noindex (see page.tsx). Static mock data — this page is the harness
@@ -112,6 +117,157 @@ const SEVEN_LIVE: ScoreboardTile[] = [
         ? "home"
         : null,
 }));
+
+// ── NBA DETAIL (D2) fixtures ──────────────────────────────────────────────
+// Static mock Games so the recomposed NBALiveCompanion mobile column has
+// permanent visual evidence in the gallery. The live /api/nba-game-detail
+// fetch returns nothing here (offseason / no live game), so performers are
+// injected via the previewPerformers seam and the hidden variant via
+// __previewHidden — both gallery-only props.
+const NBA_DEMO_LIVE: Game = {
+  id: "nba-demo-live",
+  date: new Date().toISOString(),
+  status: "live",
+  statusText: "Q4 4:21",
+  period: 4,
+  remaining: 261,
+  matchup: "Thunder vs Spurs",
+  gameContext: "Game 5",
+  seriesSummary: "OKC leads 3-1",
+  seriesConference: "West",
+  seriesRound: "Conference Finals",
+  home: { id: "SAS", name: "San Antonio Spurs", abbreviation: "SAS", score: 96, logo: "" },
+  away: { id: "OKC", name: "Oklahoma City Thunder", abbreviation: "OKC", score: 104, logo: "" },
+  periodScores: { away: [28, 24, 26, 26], home: [24, 25, 23, 24] },
+  broadcasts: ["ABC"],
+  line: null,
+  leaders: [
+    { label: "Points", name: "S. Gilgeous-Alexander", team: "OKC", value: "32" },
+    { label: "Rebounds", name: "V. Wembanyama", team: "SAS", value: "12" },
+    { label: "Assists", name: "S. Gilgeous-Alexander", team: "OKC", value: "7" },
+  ],
+  teamComparison: [
+    { label: "REB", away: "44", home: "35" },
+    { label: "AST", away: "26", home: "19" },
+  ],
+};
+
+const NBA_DEMO_FINAL: Game = {
+  id: "nba-demo-final",
+  date: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+  status: "final",
+  statusText: "Final",
+  period: 4,
+  remaining: 0,
+  matchup: "Thunder vs Spurs",
+  gameContext: "Game 6",
+  seriesSummary: "OKC wins series 4-2",
+  seriesConference: "West",
+  seriesRound: "Conference Finals",
+  home: { id: "SAS", name: "San Antonio Spurs", abbreviation: "SAS", score: 108, logo: "" },
+  away: { id: "OKC", name: "Oklahoma City Thunder", abbreviation: "OKC", score: 118, logo: "" },
+  periodScores: { away: [30, 28, 32, 28], home: [26, 27, 29, 26] },
+  broadcasts: ["ESPN"],
+  line: null,
+  leaders: [
+    { label: "Points", name: "S. Gilgeous-Alexander", team: "OKC", value: "34" },
+    { label: "Rebounds", name: "C. Holmgren", team: "OKC", value: "13" },
+    { label: "Assists", name: "S. Castle", team: "SAS", value: "8" },
+  ],
+  teamComparison: [
+    { label: "REB", away: "48", home: "39" },
+    { label: "AST", away: "28", home: "20" },
+  ],
+};
+
+const NBA_DEMO_PERFORMERS: TeamPerformers[] = [
+  {
+    teamAbbreviation: "OKC",
+    players: [
+      { name: "S. Gilgeous-Alexander", pts: 32, reb: 5, ast: 7, stl: 2, blk: 0, min: 38 },
+      { name: "J. Williams", pts: 21, reb: 6, ast: 3, stl: 1, blk: 1, min: 34 },
+      { name: "C. Holmgren", pts: 14, reb: 11, ast: 1, stl: 0, blk: 3, min: 31 },
+    ],
+  },
+  {
+    teamAbbreviation: "SAS",
+    players: [
+      { name: "V. Wembanyama", pts: 27, reb: 12, ast: 4, stl: 1, blk: 4, min: 37 },
+      { name: "D. Vassell", pts: 19, reb: 4, ast: 3, stl: 1, blk: 0, min: 33 },
+      { name: "S. Castle", pts: 16, reb: 3, ast: 6, stl: 2, blk: 0, min: 30 },
+    ],
+  },
+];
+
+// ── STARTING XI (D2 Task 6) fixtures ──────────────────────────────────────
+// Static mock lineups (the mapper's output shape) so the §17 programme module
+// has permanent visual evidence — announced grid + pre-match pending — without
+// hitting /api/wc-lineups. Matches the d-game.html mock (TUR · USA).
+const XI_ANNOUNCED: WCLineups = {
+  teams: [
+    {
+      code: "TUR",
+      formation: "4-2-3-1",
+      starters: [
+        { jersey: "23", name: "Çakır", captain: false },
+        { jersey: "2", name: "Müldür", captain: false },
+        { jersey: "3", name: "Demiral", captain: false },
+        { jersey: "14", name: "Bardakcı", captain: false },
+        { jersey: "20", name: "Kadıoğlu", captain: false },
+        { jersey: "6", name: "Kökçü", captain: false },
+        { jersey: "10", name: "Çalhanoğlu", captain: true },
+        { jersey: "8", name: "Güler", captain: false },
+        { jersey: "7", name: "Aktürkoğlu", captain: false },
+        { jersey: "21", name: "Yıldız", captain: false },
+        { jersey: "9", name: "Kılıçsoy", captain: false },
+      ],
+    },
+    {
+      code: "USA",
+      formation: "4-3-3",
+      starters: [
+        { jersey: "1", name: "Turner", captain: false },
+        { jersey: "2", name: "Dest", captain: false },
+        { jersey: "3", name: "Richards", captain: false },
+        { jersey: "13", name: "Ream", captain: false },
+        { jersey: "5", name: "Robinson", captain: false },
+        { jersey: "4", name: "Adams", captain: true },
+        { jersey: "8", name: "McKennie", captain: false },
+        { jersey: "6", name: "Musah", captain: false },
+        { jersey: "10", name: "Pulisic", captain: false },
+        { jersey: "21", name: "Weah", captain: false },
+        { jersey: "9", name: "Pepi", captain: false },
+      ],
+    },
+  ],
+};
+
+const XI_PENDING: WCLineups = { pending: true };
+
+// Sample wrapper — each NBALiveCompanion owns its pinned state so the
+// TrackControl toggles live in the gallery.
+function NBADetailSample({
+  game,
+  performers,
+  hidden,
+}: {
+  game: Game;
+  performers?: TeamPerformers[];
+  hidden?: boolean;
+}) {
+  const [pinned, setPinned] = useState(false);
+  return (
+    <NBALiveCompanion
+      game={game}
+      pinned={pinned}
+      onPin={() => setPinned(true)}
+      onUnpin={() => setPinned(false)}
+      pinnedLiveIds={[]}
+      previewPerformers={performers}
+      __previewHidden={hidden}
+    />
+  );
+}
 
 export function Gallery() {
   return (
@@ -365,6 +521,103 @@ export function Gallery() {
             <Rail progress={0.4} sport="nfl" rung="live" />
           </div>
         </div>
+      </Section>
+
+      {/* 12 — docking control (spec §8): four TrackControl states + the slot
+           meter at 1/3 and 3/3. useIsNative() is false on this web page, so
+           the native states are forced via TrackControl's test-only __preview
+           prop; the meter still reads from real pinnedLiveIds arrays. */}
+      <Section title="DOCKING — TRACKCONTROL STATES">
+        <div className="space-y-7">
+          <div>
+            <Label>1 · DEFAULT (SLOTS FREE · METER 1/3)</Label>
+            <TrackControl
+              gameId="dock-x"
+              live
+              pinned={false}
+              onPin={() => {}}
+              onUnpin={() => {}}
+              pinnedLiveIds={["dock-a"]}
+              __preview={{ native: true, state: "default" }}
+            />
+          </div>
+          <div>
+            <Label>2 · TRACKING (HELD · HINT · METER 3/3)</Label>
+            <TrackControl
+              gameId="dock-x"
+              live
+              pinned
+              onPin={() => {}}
+              onUnpin={() => {}}
+              pinnedLiveIds={["dock-x", "dock-b", "dock-c"]}
+              __preview={{ native: true, state: "held" }}
+            />
+          </div>
+          <div>
+            <Label>3 · LOCK SCREEN FULL (METER 3/3)</Label>
+            <TrackControl
+              gameId="dock-x"
+              live
+              pinned={false}
+              onPin={() => {}}
+              onUnpin={() => {}}
+              pinnedLiveIds={["dock-a", "dock-b", "dock-c"]}
+              __preview={{ native: true, state: "full" }}
+            />
+          </div>
+          <div>
+            <Label>4 · LIVE ACTIVITIES OFF (DENIED · METER 2/3)</Label>
+            <TrackControl
+              gameId="dock-x"
+              live
+              pinned
+              onPin={() => {}}
+              onUnpin={() => {}}
+              pinnedLiveIds={["dock-x", "dock-b"]}
+              __preview={{ native: true, state: "denied" }}
+            />
+          </div>
+        </div>
+      </Section>
+
+      {/* 13 — NBA game detail (D2 Task 4): the recomposed mobile column —
+           Monument + PERFORMERS/HIGHLIGHTS/PERIOD agate + series/stakes/recap
+           + WATCH agate + TrackControl. Live, final, and the No-Spoilers
+           collapse. previewPerformers/__previewHidden are gallery-only seams. */}
+      <Section title="NBA DETAIL (D2) — live / final / No-Spoilers">
+        <Label>1 · LIVE (Q4 · series lead)</Label>
+        <Bleed>
+          <NBADetailSample game={NBA_DEMO_LIVE} performers={NBA_DEMO_PERFORMERS} />
+        </Bleed>
+        <div style={{ height: 32 }} />
+        <Label>2 · FINAL (recap + who mattered)</Label>
+        <Bleed>
+          <NBADetailSample game={NBA_DEMO_FINAL} performers={NBA_DEMO_PERFORMERS} />
+        </Bleed>
+        <div style={{ height: 32 }} />
+        <Label>3 · NO-SPOILERS (redacted collapse)</Label>
+        <Bleed>
+          <NBADetailSample
+            game={NBA_DEMO_LIVE}
+            performers={NBA_DEMO_PERFORMERS}
+            hidden
+          />
+        </Bleed>
+      </Section>
+
+      {/* 14 — Starting XI (D2 Task 6, §17): the programme lineups module.
+           Announced grid (shirt numbers as index, captain marked) + the
+           pre-match pending state. Fixtures only — no /api/wc-lineups call. */}
+      <Section title="STARTING XI (D2) — announced / pending">
+        <Label>1 · ANNOUNCED (TUR · USA · captains marked)</Label>
+        <Bleed>
+          <StartingXI lineups={XI_ANNOUNCED} status="live" />
+        </Bleed>
+        <div style={{ height: 24 }} />
+        <Label>2 · PENDING (before announcement)</Label>
+        <Bleed>
+          <StartingXI lineups={XI_PENDING} status="upcoming" />
+        </Bleed>
       </Section>
     </main>
   );

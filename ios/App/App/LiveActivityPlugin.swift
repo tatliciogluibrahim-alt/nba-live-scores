@@ -20,6 +20,7 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "end", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getActiveGameIds", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "areActivitiesEnabled", returnType: CAPPluginReturnPromise),
     ]
 
     // Dictionary of active Live Activities keyed by gameId.
@@ -164,6 +165,18 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         } catch {
             call.reject("Failed to start Live Activity: \(error.localizedDescription)")
         }
+    }
+
+    // Preflight for the web docking control: whether the user has Live
+    // Activities enabled in iOS Settings. The web calls this before start()
+    // so it can show the honest "Turn on Live Activities" state instead of a
+    // silent failure. Mirrors the authInfo guard inside start().
+    @objc func areActivitiesEnabled(_ call: CAPPluginCall) {
+        guard #available(iOS 16.2, *) else {
+            call.resolve(["enabled": false])
+            return
+        }
+        call.resolve(["enabled": ActivityAuthorizationInfo().areActivitiesEnabled])
     }
 
     @objc func end(_ call: CAPPluginCall) {

@@ -47,7 +47,7 @@ const IDLE_INTERVAL_MS = 60_000;
 // Cap concurrent Live Activities. iOS allows several, but a calm app
 // shouldn't stack the lock screen — and it mirrors the "3" the user
 // already knows from the free alert slots. When more than 3 pinned
-// games are live at once, the soonest-pinned 3 get the Activity; the
+// games are live at once, the newest-pinned 3 get the Activity; the
 // rest are tracked in Watching + via push.
 const MAX_LIVE_ACTIVITIES = 3;
 

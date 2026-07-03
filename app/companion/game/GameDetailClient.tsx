@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { readFeed, FEED_KEYS } from "../hooks/feed-cache";
+import { buildWatchingPayload } from "../watching/watching-data";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 import type { Game } from "../../nba/types";
 import { NBALiveCompanion } from "./NBALiveCompanion";
@@ -103,12 +104,34 @@ function pageIsVisible(): boolean {
   return typeof document === "undefined" || document.visibilityState === "visible";
 }
 
+// Seed the raw live feeds from the shared cache so the docking slot meter
+// (pinned-and-live ids) is right on first paint. buildWatchingPayload is the
+// same source LiveActivitySync uses, so the meter and the lock-screen dock
+// agree on which games hold a slot.
+function seedFeeds(): { nba: NBAGame[]; wc: WCGameLite[] } {
+  try {
+    const ls = readFeed<{ games: NBAGame[]; recent: NBAGame[] }>(
+      FEED_KEYS.liveScores
+    );
+    const wc = readFeed<WCGameLite[]>(FEED_KEYS.worldCup);
+    return { nba: ls?.games ?? [], wc: wc ?? [] };
+  } catch {
+    return { nba: [], wc: [] };
+  }
+}
+
 export function GameDetailClient({ gameId }: { gameId: string }) {
-  const { isPinned, pinGame, unpinGame } = usePinned();
+  const { pinned, isPinned, pinGame, unpinGame } = usePinned();
   const [resolved, setResolved] = useState<Resolved | null>(() =>
     seedResolved(gameId)
   );
   const resolvedRef = useRef<Resolved | null>(resolved);
+  // Raw live feeds, refreshed each resolve tick, used only to derive the
+  // pinned-and-live ids for TrackControl's slot meter. Kept out of the resolve
+  // branch logic so the derivation reuses one shared source (watching-data).
+  const [feeds, setFeeds] = useState<{ nba: NBAGame[]; wc: WCGameLite[] }>(
+    seedFeeds
+  );
 
   useEffect(() => {
     const mounted = { current: true };
@@ -116,6 +139,9 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
     async function resolve() {
       const { nba, allNBA, wc } = await fetchGames();
       if (!mounted.current) return;
+
+      // Keep the slot-meter source fresh regardless of which game resolves.
+      setFeeds({ nba, wc });
 
       const nbaGame = nba.find((g) => g.id === gameId) ?? allNBA.find((g) => g.id === gameId);
       if (nbaGame) {
@@ -227,9 +253,21 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
     };
   }, [gameId]);
 
-  const pinned = isPinned(gameId);
+  const gamePinned = isPinned(gameId);
   const onPin = () => pinGame(gameId);
   const onUnpin = () => unpinGame(gameId);
+
+  // Ordered pinned-and-live game ids for TrackControl's slot meter. Same
+  // buildWatchingPayload path LiveActivitySync uses, so the meter matches the
+  // real lock-screen dock order.
+  const pinnedLiveIds = useMemo(() => {
+    const { items } = buildWatchingPayload({
+      nba: feeds.nba,
+      wc: feeds.wc,
+      pinned,
+    });
+    return items.filter((i) => i.status === "live").map((i) => i.id);
+  }, [feeds, pinned]);
 
   if (resolved === null) return <LoadingShell />;
 
@@ -240,9 +278,10 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
         <NBALiveCompanion
           game={resolved.game}
           allNBAGames={resolved.allNBAGames}
-          pinned={pinned}
+          pinned={gamePinned}
           onPin={onPin}
           onUnpin={onUnpin}
+          pinnedLiveIds={pinnedLiveIds}
         />
       </>
     );
@@ -254,15 +293,16 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
         <GameKeyboardNav gameId={gameId} />
         <WCGameDetail
           game={resolved.game}
-          pinned={pinned}
+          pinned={gamePinned}
           onPin={onPin}
           onUnpin={onUnpin}
+          pinnedLiveIds={pinnedLiveIds}
         />
       </>
     );
   }
 
-  return <NotFound gameId={gameId} pinned={pinned} onUnpin={onUnpin} />;
+  return <NotFound gameId={gameId} pinned={gamePinned} onUnpin={onUnpin} />;
 }
 
 // ── Fallback shells ─────────────────────────────────────────────────────
@@ -329,7 +369,7 @@ function NotFound({
           <button
             type="button"
             onClick={onUnpin}
-            aria-label="Unpin"
+            aria-label="Remove from Watching"
             className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
@@ -337,7 +377,7 @@ function NotFound({
               border: "1px solid var(--line)",
             }}
           >
-            Unpin
+            Remove
           </button>
         ) : (
           <Link

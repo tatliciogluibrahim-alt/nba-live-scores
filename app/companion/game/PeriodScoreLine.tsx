@@ -20,7 +20,16 @@ import type { Game } from "../../nba/types";
 // visible because "the game has reached Q3" is structural, not a
 // spoiler. The score itself is what the user opted to hide.
 
-export function PeriodScoreLine({ game }: { game: Game }) {
+export function PeriodScoreLine({
+  game,
+  headless = false,
+}: {
+  game: Game;
+  /** System D (D2): the mobile column wraps this in a SecHead, so the
+   *  component drops its own Eyebrow header. Default false keeps the
+   *  desktop rail card pixel-identical. */
+  headless?: boolean;
+}) {
   const noSpoilers = useEffectiveNoSpoilers(game.id);
   const away = game.periodScores?.away ?? [];
   const home = game.periodScores?.home ?? [];
@@ -45,10 +54,12 @@ export function PeriodScoreLine({ game }: { game: Game }) {
 
   return (
     <section aria-label="Per-quarter scoring">
-      <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>By quarter</Eyebrow>
-        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-      </div>
+      {headless ? null : (
+        <div className="mb-2 flex items-center gap-3">
+          <Eyebrow>By quarter</Eyebrow>
+          <div className="h-px flex-1" style={{ background: "var(--line)" }} />
+        </div>
+      )}
       <div
         className="overflow-hidden rounded-[14px] border"
         style={{ background: "var(--paper)", borderColor: "var(--line)" }}

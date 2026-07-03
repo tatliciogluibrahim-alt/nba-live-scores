@@ -2,6 +2,49 @@
 
 ---
 
+## System D — Game detail, Watching, Docking, Starting XI (mobile) — 2026-07-03
+
+D2 extends the editorial system from Today to the game detail and Watching
+surfaces, and ships the one-tap lock-screen docking model (spec §8) plus the
+World Cup Starting XI module (spec §17). Mobile only; desktop md+ stays
+legacy until D4.
+
+- **One-tap lock screen.** "Pin" is dead as a user-facing word. The game
+  detail ends in a single TrackControl: "Track on Lock Screen" on the
+  native app (tap adds the game to Watching AND starts the Live Activity
+  directly, with a Live Activities permission preflight), "Add to Watching"
+  on the web. Four honest states: default, held ("◉ On your lock screen ·
+  tap to remove" native, "✓ In Watching · tap to remove" web), full ("Lock
+  screen full · N of 3"), and denied ("Turn on Live Activities" guidance).
+  A failed native start never fakes success.
+- **Slot meter.** Native surfaces show "N OF 3 LOCK SCREEN SLOTS" pips
+  above the control and a promoted meter in the Watching Live Room, so the
+  3-slot budget is visible before it runs out.
+- **Game detail recomposed.** Crumb bar, the Today monument (score pair,
+  kicker, progress rail) at the top of both WC and NBA details, a MATCH
+  EVENTS ink field for WC (goals newest first, cream GOAL stamps), agate
+  GROUP/WATCH sections, then the TrackControl and share row. NBA keeps
+  performers, highlights, series and stakes blocks, restyled to agate.
+  Under No-Spoilers the events field collapses to one "Hidden · tap to
+  reveal" row and the monument numerals frost.
+- **Watching recomposed.** "Watching." pagehead, a full-ink Live Room that
+  now takes ANY live tracked game (a single live game no longer sits under
+  a "Tracked for later" heading), per-row progress rails, TRACKED FOR LATER
+  agate for non-live pins, and the footnote "Tracked games leave the lock
+  screen at final." on native.
+- **Starting XI.** WC game details show the confirmed XI as a two-column
+  programme (shirt number, surname, captain mark, formation per side) via
+  a new `/api/wc-lineups` route. Before the announcement the section reads
+  "Usually about an hour before kickoff"; once lineups land, an upcoming
+  match's deck gains a quiet "Lineups are in →" row. NBA STARTING FIVE is
+  a recorded follow-up.
+
+Verified by a scripted tap-through (detail → track → Watching → back to
+detail) plus the state matrix (default / one-live / No-Spoilers) at 390px.
+The harness game + watching routes are state-aware.
+
+---
+
 ## System D — Today (mobile) — 2026-07-03
 
 The editorial redesign lands its first phase (D1) on the Today tab, mobile
