@@ -4,6 +4,7 @@ import {
   groupBracketByDay,
   type BracketMatch,
   type BracketRound,
+  type BracketSlot,
 } from "./wc-bracket-data";
 import type { WCScheduleFixture } from "../../api/world-cup/schedule/route";
 

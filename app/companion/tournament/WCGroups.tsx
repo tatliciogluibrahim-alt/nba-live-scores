@@ -854,7 +854,7 @@ export function WCGroups({
               href={`/tournament/${tournamentId}/groups`}
               className="inline-flex min-h-[36px] items-center gap-1.5 text-[12px] underline decoration-dotted underline-offset-4"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
-              aria-label="View all 12 Summer Soccer groups"
+              aria-label={`View all ${groups.length} groups`}
             >
               View all {groups.length} groups →
             </Link>

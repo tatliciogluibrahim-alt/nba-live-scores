@@ -15,6 +15,8 @@ import { AlsoLiveBand } from "../../companion/today/AlsoLiveBand";
 import { NBALiveCompanion } from "../../companion/game/NBALiveCompanion";
 import { StartingXI } from "../../companion/game/StartingXI";
 import { TierLegend } from "../../companion/following/TierLegend";
+import { CalmEndCard } from "../../companion/today/sections/calm-end-card";
+import { CalmCard } from "../../companion/today/sections/calm-card";
 import { FOLLOW_MOMENTS } from "../../companion/following/FollowChoice";
 import type { FollowMoment } from "../../companion/following/FollowChoice";
 import type { Game, TeamPerformers } from "../../nba/types";
@@ -675,6 +677,34 @@ export function Gallery() {
             <GalleryEmptyMomentRow key={m.id} moment={m} />
           ))}
         </div>
+      </Section>
+
+      {/* 17 — Legacy-card wave (D3 Task 6a): CalmEndCard + CalmCard in the
+           moment-row grammar. Fixture moment (production-inert preview id —
+           dismiss writes localStorage for "gallery:series-preview" only). */}
+      <Section title="CALM ENDINGS (6a restyle) — moment rows">
+        <CalmEndCard
+          moment={{
+            id: "gallery:series-preview",
+            kind: "series",
+            eyebrow: "Series wrapped",
+            headline: "OKC and SA is in the books.",
+            detail: "Six games, three of them one-possession finishes.",
+            dots: [
+              { number: 1, awayCode: "SA", homeCode: "OKC", winnerCode: "OKC" },
+              { number: 2, awayCode: "SA", homeCode: "OKC", winnerCode: "SA" },
+              { number: 3, awayCode: "OKC", homeCode: "SA", winnerCode: "OKC" },
+              { number: 4, awayCode: "OKC", homeCode: "SA", winnerCode: "OKC" },
+              { number: 5, awayCode: "SA", homeCode: "OKC", winnerCode: "SA" },
+              { number: 6, awayCode: "OKC", homeCode: "SA", winnerCode: "OKC" },
+            ],
+            spoilerSummary: "OKC took it in 6.",
+            primary: { label: "Series recap", href: "/series/okc-sa" },
+            circle: [],
+          }}
+        />
+        <div style={{ height: 18 }} />
+        <CalmCard />
       </Section>
     </main>
   );
