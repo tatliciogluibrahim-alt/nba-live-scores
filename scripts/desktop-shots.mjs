@@ -276,6 +276,8 @@ const allRoutes = [
   ["game-detail", "/game/preview-wc-usa-tur"],
   ["settings", "/settings"],
   ["system", "/dev/system-preview"],
+  ["game", "/game/preview-wc-usa-tur"],
+  ["watching", "/watching"],
 ];
 // The state variants only meaningfully differ on Today, so default those runs
 // to the today route (keeps them fast + focused). QA_ROUTES still overrides.
