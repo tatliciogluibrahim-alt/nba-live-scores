@@ -281,6 +281,7 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
           pinned={gamePinned}
           onPin={onPin}
           onUnpin={onUnpin}
+          pinnedLiveIds={pinnedLiveIds}
         />
       </>
     );
