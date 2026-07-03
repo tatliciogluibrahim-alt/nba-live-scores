@@ -93,6 +93,10 @@ export type TodayHero = {
   spoilerKind?: "live" | "final" | "series";
   spoilerSubject?: string;
   watch?: { channel: string; stream?: string };
+  /** Raw display facts of the hero's game for the System D monument
+   *  (codes, names, scores, parseable clock). Unset for the countdown
+   *  hero (no game behind it). */
+  game?: TodayLeadGame;
 };
 
 export type YouFollowItem = {
@@ -137,6 +141,9 @@ export type UpNextItem = {
   watch?: { channel: string; stream?: string };
   href: string;
   spoilerSubject: string;
+  /** Raw display facts for when this item becomes the Front Page lead
+   *  (the System D monument needs names + a parseable status line). */
+  game?: TodayLeadGame;
 };
 
 export type QuietWrapItem = {
@@ -457,6 +464,79 @@ function pickRelevantGame<T extends { status: string; date: string }>(
   );
 }
 
+// ── Lead game view model (System D monument) ─────────────────────────
+// The lead's raw display facts — codes, names, scores, and a PARSEABLE
+// status line — lifted from the already-fetched game the hero / up-next
+// logic picked. View-model enrichment only: no new fetches, no store or
+// API changes. The System D monument renders real numerals and a real
+// clock; the headline/deck strings stay the calm editorial layer on top.
+
+export type TodayLeadGame = {
+  source: TodaySource;
+  gameId: string;
+  awayCode: string;
+  homeCode: string;
+  awayName: string;
+  homeName: string;
+  /** null for upcoming games — nothing to show yet. */
+  awayScore: number | null;
+  homeScore: number | null;
+  status: "live" | "upcoming" | "final";
+  /** Raw feed clock/status ("50'", "Q3 · 4:21") — parseable by
+   *  computeLiveActivityProgress, the same contract LiveActivitySync
+   *  uses for the lock-screen rail. */
+  statusLine: string;
+  /** Raw WC stage ("Group L", "Quarterfinals") — drives the
+   *  elimination-law peak check. Unset for NBA (gameContext flags land
+   *  in D2). */
+  stage?: string;
+  /** Kicker-ready context: WC "Group E" (falls back to the stage),
+   *  NBA gameContext ("Game 6"). */
+  contextLabel?: string;
+  spoilerSubject: string;
+};
+
+export function wcLeadGame(g: WCGameLite): TodayLeadGame {
+  const upcoming = g.status === "upcoming";
+  return {
+    source: "wc",
+    gameId: g.id,
+    awayCode: g.away.abbreviation,
+    homeCode: g.home.abbreviation,
+    awayName: g.away.name,
+    homeName: g.home.name,
+    awayScore: upcoming ? null : g.away.score,
+    homeScore: upcoming ? null : g.home.score,
+    status: g.status,
+    statusLine: g.statusText,
+    stage: g.stage || undefined,
+    // The live feed's stage already reads "Group L" during groups; the
+    // preview seed carries a generic stage plus a group letter, so
+    // prefer the letter when present.
+    contextLabel: g.group ? `Group ${g.group}` : g.stage || undefined,
+    spoilerSubject: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
+  };
+}
+
+export function nbaLeadGame(g: NBAGame): TodayLeadGame {
+  const upcoming = g.status === "upcoming";
+  return {
+    source: "nba",
+    gameId: g.id,
+    awayCode: g.away.abbreviation,
+    homeCode: g.home.abbreviation,
+    awayName: g.away.name,
+    homeName: g.home.name,
+    awayScore: upcoming ? null : g.away.score,
+    homeScore: upcoming ? null : g.home.score,
+    status: g.status,
+    statusLine: g.statusText,
+    // NBA peak flags (Game 7 / clinch) are D2 — no stage here.
+    contextLabel: g.gameContext || undefined,
+    spoilerSubject: g.matchup || `${g.away.abbreviation} vs ${g.home.abbreviation}`,
+  };
+}
+
 // ── Hero pick ─────────────────────────────────────────────────────────
 // One earned moment. Preference order:
 //   1. A live NBA game involving a followed team
@@ -563,6 +643,7 @@ function pickHero(
       watch: heroWcLive.broadcasts[0]
         ? { channel: heroWcLive.broadcasts[0] }
         : undefined,
+      game: wcLeadGame(heroWcLive),
     };
   }
 
@@ -595,6 +676,7 @@ function pickHero(
       spoilerKind: "live",
       spoilerSubject: heroLive.matchup,
       watch,
+      game: nbaLeadGame(heroLive),
     };
   }
 
@@ -625,6 +707,7 @@ function pickHero(
       watch: todayFollowed.broadcasts[0]
         ? { channel: todayFollowed.broadcasts[0] }
         : undefined,
+      game: nbaLeadGame(todayFollowed),
     };
   }
 
@@ -828,6 +911,7 @@ function nbaToUpNext(g: NBAGame, pinned: boolean, personal: boolean): UpNextItem
     watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
     href: `/game/${g.id}`,
     spoilerSubject: g.matchup,
+    game: nbaLeadGame(g),
   };
 }
 
@@ -848,6 +932,7 @@ function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): UpNextIt
     // fixture jumped to a country instead of the game.
     href: `/game/${g.id}`,
     spoilerSubject: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
+    game: wcLeadGame(g),
   };
 }
 
@@ -1823,6 +1908,9 @@ export type TodayHeadline = {
   /** True when the lead is a live game. Drives the pulsing dot on the
    *  Front Page deck so the user instantly sees something is happening. */
   live: boolean;
+  /** The lead game's raw facts (names, scores, parseable clock) for the
+   *  System D monument render. Unset on quiet / countdown days. */
+  game?: TodayLeadGame;
 };
 
 const HEADLINE_NUM = [
@@ -1842,9 +1930,10 @@ function spellCount(n: number): string {
 }
 
 /** The single lead game for the Front Page: a deck card plus its series
- *  stake (when one exists). Deck and stake always describe the SAME game
- *  so the support line can't drift from the card above it. */
-type LeadGame = { deck: TodayHeadlineDeck; stake?: string };
+ *  stake (when one exists), plus the raw game facts for the monument.
+ *  Deck, stake, and game always describe the SAME game so the support
+ *  line can't drift from the card above it. */
+type LeadGame = { deck: TodayHeadlineDeck; stake?: string; game?: TodayLeadGame };
 
 /** Build the lead game from the live hero (preferred), then the first
  *  up-next item, then any non-countdown hero. Returns null for non-game
@@ -1865,6 +1954,7 @@ function leadGame(payload: TodayPayload): LeadGame | null {
         href: hero.href,
       },
       stake: hero.stake,
+      game: hero.game,
     };
   }
 
@@ -1881,6 +1971,7 @@ function leadGame(payload: TodayPayload): LeadGame | null {
         href: up.href,
       },
       stake: up.stake,
+      game: up.game,
     };
   }
 
@@ -1895,6 +1986,7 @@ function leadGame(payload: TodayPayload): LeadGame | null {
         href: hero.href,
       },
       stake: hero.stake,
+      game: hero.game,
     };
   }
 
@@ -1964,6 +2056,7 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
       support: lead?.stake ?? payload.hero?.context,
       deck,
       live: true,
+      game: lead?.game,
     };
   }
 
@@ -1989,6 +2082,7 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
         support: lead?.stake,
         deck,
         live: false,
+        game: lead?.game,
       };
     }
 
@@ -2007,6 +2101,7 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
       support: lead?.stake,
       deck,
       live: false,
+      game: lead?.game,
     };
   }
 

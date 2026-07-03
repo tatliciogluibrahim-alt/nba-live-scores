@@ -2,6 +2,41 @@
 
 ---
 
+## System D — Today (mobile) — 2026-07-03
+
+The editorial redesign lands its first phase (D1) on the Today tab, mobile
+only. Calm is the baseline, loudness is earned by stakes. Spec:
+`docs/superpowers/specs/2026-07-02-system-d-editorial-redesign-design.md`.
+
+- **The front page.** Today reads top to bottom as a broadsheet: masthead
+  (mono date, brand chip, live count) over the lead monument, an ink ALSO
+  LIVE band for other live games, an agate slate (UP NEXT and QUIET WRAP),
+  the follow line, and The Margin footer.
+- **The monument.** The single live lead renders as stacked team rows with
+  one oversized score pair, a kicker (dot, LIVE, clock, context,
+  broadcaster) carrying slate index 01, and a progress rail. At final the
+  winner row is full ink and the loser muted.
+- **The register ladder.** Resting content sits on cream agate rows. Live
+  content moves up to the ink band. A quiet day is allowed to be entirely
+  agate with zero accent pixels.
+- **Three states.** Quiet day (resting lead plus NEXT UP), fresh install
+  (the lead slot becomes a single setup CTA), and No-Spoilers (numerals and
+  the deck fact string suppressed, reveal per game and session-scoped).
+- **Chrome restyle.** The bottom TabBar moves to the system: cream bar,
+  hairline top rule, ink-register icons, 10px mono labels, active tab
+  carried by full ink plus label weight (the old pill is gone). Same three
+  tabs, same links, same safe-area behavior.
+- **Primitives + gallery.** Reusable System D pieces (Masthead, Monument,
+  InkField, BoardRow, AgateRow, SecHead, Stamp, Rail, register + emphasis
+  logic) with a `/dev/system-preview` gallery for visual QA.
+
+Desktop (md+) is deliberately unchanged until D4. The harness
+(`scripts/desktop-shots.mjs`) gained `QA_STATE` seeds
+(quiet / fresh / nospoilers, on top of onelive) and a `system` gallery
+route so a single run captures every Today state deterministically.
+
+---
+
 ## Desktop polish pass — 2026-06-29
 
 A visual-QA-driven polish of the desktop app surface (`/app` at `md+`),

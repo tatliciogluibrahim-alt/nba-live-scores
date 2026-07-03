@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { deriveTodayHeadline, type TodayPayload } from "./today-data";
+import {
+  deriveTodayHeadline,
+  wcLeadGame,
+  nbaLeadGame,
+  type TodayPayload,
+  type WCGameLite,
+  type NBAGame,
+} from "./today-data";
 
 // Covers the Front Page headline copy + deck derivation. The headline
 // is real state-driven copy (not the conversational brief sentence), so
@@ -227,5 +234,196 @@ describe("deriveTodayHeadline", () => {
     );
     expect(r.headline).toBe("Quiet for now.");
     expect(r.deck).toBeNull();
+  });
+
+  // ── Lead game enrichment (System D monument) ──
+  // The monument renders real numerals + a parseable clock; these lock
+  // the thread-through from the hero / up-next pick to the headline.
+
+  it("threads the live hero's game facts (scores + clock) through", () => {
+    const game = {
+      source: "wc" as const,
+      gameId: "g1",
+      awayCode: "JPN",
+      homeCode: "GER",
+      awayName: "Japan",
+      homeName: "Germany",
+      awayScore: 0,
+      homeScore: 0,
+      status: "live" as const,
+      statusLine: "25'",
+      stage: "Group Stage",
+      contextLabel: "Group E",
+      spoilerSubject: "JPN vs GER",
+    };
+    const r = deriveTodayHeadline(
+      base({
+        hero: {
+          kind: "wc-live",
+          eyebrow: "Summer Soccer · Group E",
+          headline: "First half underway.",
+          spoilerMatchup: "JPN vs GER",
+          live: true,
+          accent: "var(--wc)",
+          href: "/game/g1",
+          game,
+        },
+      })
+    );
+    expect(r.game).toEqual(game);
+  });
+
+  it("threads the up-next game's facts when the lead is upcoming (null scores)", () => {
+    const game = {
+      source: "nba" as const,
+      gameId: "g1",
+      awayCode: "OKC",
+      homeCode: "SA",
+      awayName: "Thunder",
+      homeName: "Spurs",
+      awayScore: null,
+      homeScore: null,
+      status: "upcoming" as const,
+      statusLine: "Upcoming",
+      contextLabel: "Game 6",
+      spoilerSubject: "OKC vs SA",
+    };
+    const r = deriveTodayHeadline(base({ upNext: [upNextItem({ game })] }));
+    expect(r.game).toEqual(game);
+    expect(r.game?.awayScore).toBeNull();
+  });
+
+  it("carries no game facts on quiet days", () => {
+    expect(deriveTodayHeadline(base()).game).toBeUndefined();
+  });
+});
+
+// ── Builder unit tests: wcLeadGame + nbaLeadGame ──────────────────────
+// These tests exercise the mapping layer directly — the functions that
+// translate raw feed shapes into TodayLeadGame. The deriveTodayHeadline
+// tests above only thread a hand-built literal through; these lock the
+// real enrichment: codes from abbreviations, statusLine from statusText,
+// stage/group resolution, score-nulling for upcoming, and the gameId /
+// spoilerSubject contract.
+
+function makeWC(over: Partial<WCGameLite> = {}): WCGameLite {
+  return {
+    id: "wc-g1",
+    date: "2026-06-28T17:00Z",
+    status: "live",
+    statusText: "72'",
+    stage: "Quarterfinals",
+    group: "",
+    home: { abbreviation: "GER", name: "Germany", score: 1 },
+    away: { abbreviation: "JPN", name: "Japan", score: 2 },
+    broadcasts: [],
+    watchLabel: "",
+    ...over,
+  };
+}
+
+function makeNBA(over: Partial<NBAGame> = {}): NBAGame {
+  return {
+    id: "nba-g1",
+    date: "2026-06-12T01:00Z",
+    status: "live",
+    statusText: "Q3 · 4:21",
+    period: 3,
+    matchup: "OKC vs SA",
+    gameContext: "Game 6",
+    seriesSummary: "OKC LEADS SERIES 3-2",
+    seriesConference: "West",
+    seriesRound: "NBA Finals",
+    home: { name: "Spurs", abbreviation: "SA", score: 88, logo: "" },
+    away: { name: "Thunder", abbreviation: "OKC", score: 95, logo: "" },
+    broadcasts: ["ABC"],
+    ...over,
+  };
+}
+
+describe("wcLeadGame", () => {
+  it("(a) live: maps abbreviations to codes and statusText to statusLine", () => {
+    const r = wcLeadGame(makeWC());
+    expect(r.source).toBe("wc");
+    expect(r.awayCode).toBe("JPN");
+    expect(r.homeCode).toBe("GER");
+    expect(r.awayName).toBe("Japan");
+    expect(r.homeName).toBe("Germany");
+    expect(r.statusLine).toBe("72'");
+    expect(r.status).toBe("live");
+  });
+
+  it("(a) live: maps scores as numbers", () => {
+    const r = wcLeadGame(makeWC());
+    expect(r.awayScore).toBe(2);
+    expect(r.homeScore).toBe(1);
+  });
+
+  it("(a) stage mapping: knockout stage (no group) lands on contextLabel + stage", () => {
+    const r = wcLeadGame(makeWC({ stage: "Quarterfinals", group: "" }));
+    expect(r.stage).toBe("Quarterfinals");
+    expect(r.contextLabel).toBe("Quarterfinals");
+  });
+
+  it("(a) stage mapping: group letter produces 'Group X' contextLabel over raw stage", () => {
+    const r = wcLeadGame(makeWC({ stage: "Group Stage", group: "E" }));
+    expect(r.contextLabel).toBe("Group E");
+    // raw stage is still stored for the elimination-law peak check
+    expect(r.stage).toBe("Group Stage");
+  });
+
+  it("(b) upcoming: scores are null", () => {
+    const g = makeWC({
+      status: "upcoming",
+      home: { abbreviation: "GER", name: "Germany", score: 0 },
+      away: { abbreviation: "JPN", name: "Japan", score: 0 },
+    });
+    const r = wcLeadGame(g);
+    expect(r.awayScore).toBeNull();
+    expect(r.homeScore).toBeNull();
+    expect(r.status).toBe("upcoming");
+  });
+
+  it("(d) gameId and spoilerSubject are populated", () => {
+    const r = wcLeadGame(makeWC());
+    expect(r.gameId).toBe("wc-g1");
+    expect(r.spoilerSubject).toBe("JPN vs GER");
+  });
+});
+
+describe("nbaLeadGame", () => {
+  it("(c) live: maps abbreviations to codes and statusText to statusLine (clock)", () => {
+    const r = nbaLeadGame(makeNBA());
+    expect(r.source).toBe("nba");
+    expect(r.awayCode).toBe("OKC");
+    expect(r.homeCode).toBe("SA");
+    expect(r.awayName).toBe("Thunder");
+    expect(r.homeName).toBe("Spurs");
+    expect(r.statusLine).toBe("Q3 · 4:21");
+    expect(r.status).toBe("live");
+  });
+
+  it("(c) live: maps scores as numbers", () => {
+    const r = nbaLeadGame(makeNBA());
+    expect(r.awayScore).toBe(95);
+    expect(r.homeScore).toBe(88);
+  });
+
+  it("(c) gameContext maps to contextLabel", () => {
+    const r = nbaLeadGame(makeNBA());
+    expect(r.contextLabel).toBe("Game 6");
+  });
+
+  it("(b) upcoming: scores are null", () => {
+    const r = nbaLeadGame(makeNBA({ status: "upcoming" }));
+    expect(r.awayScore).toBeNull();
+    expect(r.homeScore).toBeNull();
+    expect(r.status).toBe("upcoming");
+  });
+
+  it("(d) gameId and spoilerSubject populated from matchup", () => {
+    const r = nbaLeadGame(makeNBA());
+    expect(r.gameId).toBe("nba-g1");
+    expect(r.spoilerSubject).toBe("OKC vs SA");
   });
 });

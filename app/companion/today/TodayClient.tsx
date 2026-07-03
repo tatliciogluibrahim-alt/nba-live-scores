@@ -3,13 +3,16 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { PullToRefresh } from "../atoms/PullToRefresh";
-import { BrandMark } from "../frame/BrandMark";
+import { Masthead } from "../system/Masthead";
 import { useFollows, useNoSpoilers } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveTodayHeadline } from "./today-data";
 import { FrontPageLead } from "./FrontPageLead";
 import { LiveTrackHint } from "./LiveTrackHint";
 import { DesktopScoreboard } from "./DesktopScoreboard";
+import { AlsoLiveBand, bandShownCount } from "./AlsoLiveBand";
+import { FollowLine } from "./FollowLine";
+import { slateStartIndex } from "./agate-slate";
 import { RestingState } from "./RestingState";
 import { BriefPromptCard } from "./BriefPromptCard";
 import { useSetupStep } from "./setup/useSetupStep";
@@ -66,32 +69,61 @@ export function TodayClient() {
   // quiet keep the lead.
   const scoreboard = hydrated ? payload.scoreboard : [];
   const hasScoreboard = scoreboard.length > 0;
-  // When 2+ games are live, a single hero can't represent the slate (it
-  // shows one game and merely counts the rest — "2 matches live now" while
-  // hiding the second). Surface the scoreboard on mobile too in that case;
-  // one live game (or none) keeps the calm single lead on mobile.
+  // System D mobile composition (Task 7): the lead Monument shows the one
+  // game worth checking now; the ALSO LIVE ink band carries every OTHER live
+  // followed game as board rows below it. A single hero can't represent a
+  // multi-live slate on its own — the band is what makes the rest visible
+  // without leaving the calm single-lead shape. liveCount also drives the
+  // Masthead "N LIVE →". Desktop (md+) keeps the DesktopScoreboard grid.
   const liveCount = scoreboard.filter((t) => t.status === "live").length;
-  const mobileScoreboard = liveCount >= 2;
+
+  // ── System D mobile agate-slate index continuation (Task 8) ──────────
+  // The lead Monument is 01 and the ALSO LIVE band carries 02..0N; the slate
+  // sections below (UP NEXT, then QUIET WRAP) continue the SAME running
+  // ordinal so the whole mobile page reads as one numbered slate (see
+  // docs/superpowers/design-directions/d-mix). Desktop ignores these — the D4
+  // card renders have no ordinals. `leadHasMonument` mirrors FrontPageLead's
+  // mobile Monument branch (game && deck); only then does an "01" render.
+  const leadHasMonument = Boolean(lead?.game && lead?.deck);
+  const bandCount = hydrated
+    ? bandShownCount(scoreboard, lead?.game?.gameId)
+    : 0;
+  const slateStart = slateStartIndex(leadHasMonument, bandCount);
+  // UP NEXT renders (and consumes indices) only when it isn't folded into the
+  // resting state; QUIET WRAP picks up right after whatever UP NEXT showed.
+  const upNextVisible = payload.upNext.filter(
+    (i) => !lead?.deck?.href || i.href !== lead.deck.href
+  );
+  const upNextShown = payload.restingState ? 0 : upNextVisible.length;
+  const quietWrapStart = slateStart + upNextShown;
+
   const setup = useSetupStep();
 
   return (
     <PullToRefresh onRefresh={refetch}>
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-5xl md:px-8 md:pt-6 2xl:max-w-7xl">
-      {/* ── Masthead (Concept A "Front Page"): date · No Noise wordmark ·
-          No-Spoilers state, with a full-width hairline beneath. The big
-          "Today" title is gone — the Brief headline below is the page's
-          dominant type ("one headline a day"). Stable sr-only h1 keeps
-          the landmark. The centered wordmark is mobile-only; on desktop
-          the sidebar already carries the brand. */}
+      {/* ── Masthead. System D broadsheet nameplate on mobile (date ·
+          BrandMark + "No Noise" wordmark · N LIVE →), the passive
+          No-Spoilers dot carried in the right slot. Stable sr-only h1
+          keeps the landmark. Desktop (md+) keeps the legacy date-row
+          header untouched (the sidebar carries the brand there, and D4
+          owns the desktop restyle) so the md+ shot stays pixel-identical.
+          The lead-monument swap that pairs with this masthead is blocked
+          on a data-source decision — see .superpowers/sdd/task-6-report.md. */}
       <h1 className="sr-only">Today</h1>
+
+      {/* Mobile: the System D masthead. -mx-4 bleeds the 2px rule to the
+          screen edges within the page's px-4 gutter. */}
+      <div className="md:hidden -mx-4 mb-5">
+        <Masthead liveCount={liveCount} rightExtra={<NoSpoilersAmbientDot />} />
+      </div>
+
+      {/* Desktop: legacy date-row header, unchanged (pixel-identical for
+          D4). Brand lives in the sidebar on desktop, so no wordmark here. */}
       <header
-        className="-mx-4 mb-5 flex items-center justify-between gap-2 border-b px-4 pb-3"
+        className="hidden md:flex -mx-4 mb-5 items-center justify-between gap-2 border-b px-4 pb-3"
         style={{
           borderColor: "var(--line)",
-          // Reserve the iOS status-bar / Dynamic Island height so the
-          // date row doesn't collide with the clock + battery. BrandBar
-          // does the same on the other tabs; Today's custom masthead
-          // was missing it. 0 on web / non-notch devices.
           paddingTop: "max(env(safe-area-inset-top), 10px)",
         }}
       >
@@ -120,20 +152,6 @@ export function TodayClient() {
               })
             : "Today"}
         </p>
-
-        <div className="flex shrink-0 items-center gap-2 md:hidden">
-          <BrandMark size={22} />
-          <span
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 15,
-              letterSpacing: "-0.01em",
-              color: "var(--ink)",
-            }}
-          >
-            No&nbsp;Noise
-          </span>
-        </div>
 
         {/* Ambient No-Spoilers indicator — only shown when active.
             Passive status display, not a per-visit toggle (set once in
@@ -164,7 +182,7 @@ export function TodayClient() {
           day (nothing live, games coming up) the calm "Quiet for now."
           state (design C) takes over instead, folding in the Next-up
           list. */}
-      <div className={mobileScoreboard ? "hidden" : hasScoreboard ? "md:hidden" : undefined}>
+      <div className={hasScoreboard ? "md:hidden" : undefined}>
         {hydrated && payload.restingState ? (
           <RestingState items={payload.upNext} />
         ) : lead ? (
@@ -175,6 +193,15 @@ export function TodayClient() {
             time a followed game is live (native only, dismissible). */}
         <LiveTrackHint active={Boolean(lead?.live)} />
       </div>
+
+      {/* ALSO LIVE ink band (System D, Task 7) — mobile only. The lead
+          Monument above is index 01; this carries every OTHER live followed
+          game as board rows (02, 03…). Self-gates to nothing when the lead
+          is the only live game (or none), so a 1-live day keeps the calm
+          single Monument. Desktop keeps the DesktopScoreboard grid below. */}
+      {hydrated ? (
+        <AlsoLiveBand items={scoreboard} excludeGameId={lead?.game?.gameId} />
+      ) : null}
 
       {/* Calm Ending — series wrapped or season wrapped. Sits above the
           install/notifications cards so the user sees the acknowledgment
@@ -210,22 +237,17 @@ export function TodayClient() {
           <div className="space-y-5">
             {/* Desktop scoreboard — at the top of the content column so the
                 You-Follow rail (right column) aligns with it instead of
-                starting below a full-width band. Desktop + games only;
-                the calm single lead below stays the mobile treatment. */}
+                starting below a full-width band. Desktop (md+) only: mobile
+                gets the lead Monument + ALSO LIVE ink band above instead.
+                D4 owns unifying the desktop surface with System D. */}
             {hasScoreboard ? (
-              <div className={mobileScoreboard ? undefined : "hidden md:block"}>
+              <div className="hidden md:block">
                 <DesktopScoreboard tiles={scoreboard} />
               </div>
             ) : null}
 
             {/* The lead game is now the Front Page deck above; the old
                 WorthCheckingNow hero would just duplicate it. */}
-
-            {/* YouFollow appears here on mobile only — at md+ the sticky
-                aside in the right rail takes over. */}
-            <div className="md:hidden">
-              <YouFollow items={payload.youFollow} />
-            </div>
 
             {/* Setup — inline slot. Any post-follow nudge (install / enable
                 / recover / optional install) renders here, below the live
@@ -236,16 +258,28 @@ export function TodayClient() {
                 RestingState above, so skip the standalone section to
                 avoid a duplicate "Upcoming" list. */}
             {!payload.restingState ? (
-              <UpNext items={payload.upNext} excludeHref={lead?.deck?.href} />
+              <UpNext
+                items={payload.upNext}
+                excludeHref={lead?.deck?.href}
+                startIndex={slateStart}
+              />
             ) : null}
 
-            <QuietWrap items={payload.quietWrap} />
+            <QuietWrap items={payload.quietWrap} startIndex={quietWrapStart} />
 
             {payload.reminder ? <ReminderRow reminder={payload.reminder} /> : null}
 
             {/* Quiet-day payoff: when nothing's live, nothing's next, nothing
                 just wrapped — and the reminder isn't already filling the page. */}
             {payload.isQuietDay && !payload.reminder ? <CalmCard /> : null}
+
+            {/* You follow — mobile only. The de-chipped System D follow line
+                sits below the slate (per d-mix), just above The Margin footer.
+                At md+ the sticky right-rail aside carries the chip version
+                instead, so this stays md:hidden. */}
+            <div className="md:hidden">
+              <FollowLine items={payload.youFollow} />
+            </div>
 
             {/* One-time, dismissible nudge to the Daily Brief email. Sits
                 at the bottom so it never competes with the live slate. */}
