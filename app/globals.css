@@ -31,6 +31,7 @@ html, body {
      secondary-text hierarchy holds. */
   --mute-2:   #746747;
   --line:     rgba(26, 22, 18, 0.14);
+  --rule:     var(--ink);
 
   /* Sport accents — used as accent only, never the chassis */
   --nba:        #e55b2a;

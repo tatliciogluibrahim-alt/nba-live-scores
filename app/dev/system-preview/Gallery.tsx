@@ -159,7 +159,7 @@ export function Gallery() {
           <Stamp text="OFF" variant="faint" />
           <Stamp text="QUIET" variant="outline" />
           <Stamp text="COMPANION" variant="filled" />
-          <Stamp text="FULL" variant="filled" />
+          <Stamp text="FULL" variant="filledHeavy" />
         </div>
       </Section>
     </main>
