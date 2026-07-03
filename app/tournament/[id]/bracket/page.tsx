@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CompanionFrame } from "../../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../../companion/game/DetailCrumbs";
 import { WCBracket } from "../../../companion/tournament/WCBracket";
 import { getTournament } from "../../../companion/following/data/tournaments";
 import { WC_KNOCKOUT_ROUNDS } from "../../../companion/following/data/wc-fixtures";
@@ -73,7 +73,7 @@ export default async function TournamentBracketPage({
         />
       ) : null}
       <CompanionFrame desktopNav="detail">
-      <CrumbBar
+      <DetailCrumbs
         backHref={`/tournament/${id}`}
         backLabel={tournament?.name ?? "Tournament"}
         title="Bracket"
