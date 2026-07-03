@@ -10,6 +10,7 @@ import { deriveTodayHeadline } from "./today-data";
 import { FrontPageLead } from "./FrontPageLead";
 import { LiveTrackHint } from "./LiveTrackHint";
 import { DesktopScoreboard } from "./DesktopScoreboard";
+import { AlsoLiveBand } from "./AlsoLiveBand";
 import { RestingState } from "./RestingState";
 import { BriefPromptCard } from "./BriefPromptCard";
 import { useSetupStep } from "./setup/useSetupStep";
@@ -66,12 +67,13 @@ export function TodayClient() {
   // quiet keep the lead.
   const scoreboard = hydrated ? payload.scoreboard : [];
   const hasScoreboard = scoreboard.length > 0;
-  // When 2+ games are live, a single hero can't represent the slate (it
-  // shows one game and merely counts the rest — "2 matches live now" while
-  // hiding the second). Surface the scoreboard on mobile too in that case;
-  // one live game (or none) keeps the calm single lead on mobile.
+  // System D mobile composition (Task 7): the lead Monument shows the one
+  // game worth checking now; the ALSO LIVE ink band carries every OTHER live
+  // followed game as board rows below it. A single hero can't represent a
+  // multi-live slate on its own — the band is what makes the rest visible
+  // without leaving the calm single-lead shape. liveCount also drives the
+  // Masthead "N LIVE →". Desktop (md+) keeps the DesktopScoreboard grid.
   const liveCount = scoreboard.filter((t) => t.status === "live").length;
-  const mobileScoreboard = liveCount >= 2;
   const setup = useSetupStep();
 
   return (
@@ -157,7 +159,7 @@ export function TodayClient() {
           day (nothing live, games coming up) the calm "Quiet for now."
           state (design C) takes over instead, folding in the Next-up
           list. */}
-      <div className={mobileScoreboard ? "hidden" : hasScoreboard ? "md:hidden" : undefined}>
+      <div className={hasScoreboard ? "md:hidden" : undefined}>
         {hydrated && payload.restingState ? (
           <RestingState items={payload.upNext} />
         ) : lead ? (
@@ -168,6 +170,15 @@ export function TodayClient() {
             time a followed game is live (native only, dismissible). */}
         <LiveTrackHint active={Boolean(lead?.live)} />
       </div>
+
+      {/* ALSO LIVE ink band (System D, Task 7) — mobile only. The lead
+          Monument above is index 01; this carries every OTHER live followed
+          game as board rows (02, 03…). Self-gates to nothing when the lead
+          is the only live game (or none), so a 1-live day keeps the calm
+          single Monument. Desktop keeps the DesktopScoreboard grid below. */}
+      {hydrated ? (
+        <AlsoLiveBand items={scoreboard} excludeGameId={lead?.game?.gameId} />
+      ) : null}
 
       {/* Calm Ending — series wrapped or season wrapped. Sits above the
           install/notifications cards so the user sees the acknowledgment
@@ -203,10 +214,11 @@ export function TodayClient() {
           <div className="space-y-5">
             {/* Desktop scoreboard — at the top of the content column so the
                 You-Follow rail (right column) aligns with it instead of
-                starting below a full-width band. Desktop + games only;
-                the calm single lead below stays the mobile treatment. */}
+                starting below a full-width band. Desktop (md+) only: mobile
+                gets the lead Monument + ALSO LIVE ink band above instead.
+                D4 owns unifying the desktop surface with System D. */}
             {hasScoreboard ? (
-              <div className={mobileScoreboard ? undefined : "hidden md:block"}>
+              <div className="hidden md:block">
                 <DesktopScoreboard tiles={scoreboard} />
               </div>
             ) : null}

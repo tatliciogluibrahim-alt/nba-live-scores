@@ -10,6 +10,8 @@ import { Monument, StakesStamp } from "../../companion/system/Monument";
 import { Rail } from "../../companion/system/Rail";
 import { Masthead } from "../../companion/system/Masthead";
 import { GameSpoilerScope } from "../../companion/spoiler/reveal";
+import { AlsoLiveBand } from "../../companion/today/AlsoLiveBand";
+import type { ScoreboardTile } from "../../companion/today/today-data";
 
 // Dev-only visual QA gallery for the System D primitives. Not linked in the
 // app, noindex (see page.tsx). Static mock data — this page is the harness
@@ -80,6 +82,36 @@ function KDot({ color }: { color: string }) {
 function Bleed({ children }: { children: ReactNode }) {
   return <div style={{ marginLeft: -18, marginRight: -18 }}>{children}</div>;
 }
+
+// Synthetic 7-live slate for the ALSO LIVE band's rung-2 bound (spec §1):
+// with the lead as index 01, seven other live games exceed the 5-row cap, so
+// the band shows rows 02–06 and collapses the surplus into "+2 more live →".
+const SEVEN_LIVE: ScoreboardTile[] = [
+  ["wc-a", "JPN", "GER", 0, 0, "25'", "E"],
+  ["wc-b", "NED", "MAR", 2, 1, "40'", "F"],
+  ["wc-c", "BRA", "SCO", 1, 0, "63'", "C"],
+  ["wc-d", "KOR", "RSA", 3, 1, "78'", "A"],
+  ["wc-e", "ARG", "MEX", 0, 0, "12'", "B"],
+  ["wc-f", "FRA", "SEN", 2, 2, "HT", "G"],
+  ["wc-g", "ESP", "CRO", 1, 1, "55'", "H"],
+].map(([id, awayCode, homeCode, awayScore, homeScore, statusLine, group]) => ({
+  id: id as string,
+  source: "wc",
+  awayCode: awayCode as string,
+  homeCode: homeCode as string,
+  awayScore: awayScore as number,
+  homeScore: homeScore as number,
+  status: "live",
+  statusLine: statusLine as string,
+  stageLine: `Summer Soccer · Group ${group}`,
+  href: `/game/${id}`,
+  lead:
+    (awayScore as number) > (homeScore as number)
+      ? "away"
+      : (homeScore as number) > (awayScore as number)
+        ? "home"
+        : null,
+}));
 
 export function Gallery() {
   return (
@@ -173,6 +205,11 @@ export function Gallery() {
           />
           <BoardRow idx="04" matchup="BRA · SCO" score="2–0" stamp={<Stamp text="FT" variant="onInk" />} />
         </InkField>
+      </Section>
+
+      {/* 4b — ALSO LIVE band: rung-2 bound (5-row cap + overflow) */}
+      <Section title="AlsoLiveBand — 7 live (cap + overflow)">
+        <AlsoLiveBand items={SEVEN_LIVE} />
       </Section>
 
       {/* 5 — tier ladder */}

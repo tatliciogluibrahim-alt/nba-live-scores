@@ -10,8 +10,11 @@ import type { ReactNode } from "react";
 
 type BoardRowProps = {
   idx?: string;
-  matchup: string;
-  score: string;
+  matchup: ReactNode;
+  /** A plain string in the mocks, or a <Spoiler>-wrapped node when the row
+   *  carries a No-Spoilers-gated score. Omitted on the "+N more" overflow
+   *  row (mono, no score). */
+  score?: ReactNode;
   stamp?: ReactNode;
   href?: string;
 };
@@ -27,7 +30,9 @@ export function BoardRow({ idx, matchup, score, stamp, href }: BoardRowProps) {
         {matchup}
       </span>
 
-      <span style={{ fontWeight: 700, fontSize: 17 }}>{score}</span>
+      {score != null && score !== "" && (
+        <span style={{ fontWeight: 700, fontSize: 17 }}>{score}</span>
+      )}
 
       {stamp}
 
