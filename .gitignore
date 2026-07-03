@@ -47,3 +47,5 @@ next-env.d.ts
 # Desktop visual-QA screenshot output (scripts/desktop-shots.mjs)
 desktop-qa/
 desktop-qa-*/
+qa-baseline-d1/
+qa-d1/

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System D — lock-screen docking (§8 states)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* §8 docking model, visualized. Native iOS game detail with the
+     "Track on Lock Screen" verb, the proactive slot meter, and the four
+     control states. Monument gap tightened per UX-M8. Watching's
+     promoted meter shown as a compact strip. */
+  :root{
+    --cream:#f1ead8; --paper:#faf5e8; --ink:#1a1612;
+    --mute-1:#6b6147; --mute-2:#8a7f63;
+    --line:rgba(26,22,18,.16); --rule:#1a1612;
+    --acc:#1e6b3c;
+    --cream-on-ink:rgba(241,234,216,.92); --cream-on-ink-dim:rgba(241,234,216,.55);
+    --line-on-ink:rgba(241,234,216,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--cream);color:var(--ink);font-family:Inter,sans-serif;
+       -webkit-font-smoothing:antialiased;width:390px}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .disp{font-family:"Bricolage Grotesque",sans-serif}
+  .num{font-variant-numeric:tabular-nums lining-nums}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+       background:var(--acc);animation:breathe 1.8s ease-in-out infinite}
+
+  .page{padding:0 0 28px}
+  .crumbs{display:flex;align-items:baseline;justify-content:space-between;
+          padding:14px 18px 10px;border-bottom:1px solid var(--line)}
+  .crumbs .back{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mute-1)}
+  .crumbs .here{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mute-2)}
+
+  /* monument — tightened row gap (UX-M8) */
+  .lead{padding:22px 18px 0}
+  .lead .kicker{display:flex;align-items:center;gap:8px;font-size:11px;
+                font-weight:600;letter-spacing:.14em;color:var(--mute-1);
+                text-transform:uppercase;margin-bottom:8px}
+  .lead .kicker .live{color:var(--acc);font-weight:700}
+  .lead .kicker .idx{color:var(--mute-2)}
+  .scorerow{display:flex;align-items:center;justify-content:space-between;
+            margin-top:-6px}
+  .scorerow:first-of-type{margin-top:0}
+  .scorerow .team{font-size:22px;font-weight:700;font-family:"Bricolage Grotesque"}
+  .scorerow .score{font-size:84px;font-weight:800;line-height:.84;
+                   letter-spacing:-.04em;font-family:"Bricolage Grotesque"}
+  .lead .deck{margin-top:10px;font-size:14px;color:var(--mute-1);font-weight:500}
+
+  /* the docking control block */
+  .dock{margin:22px 18px 0}
+  .meter{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:600;
+         letter-spacing:.14em;color:var(--mute-1);margin-bottom:10px}
+  .meter .pips{display:inline-flex;gap:4px}
+  .meter .pip{width:14px;height:5px;background:var(--ink)}
+  .meter .pip.empty{background:transparent;border:1px solid var(--mute-2)}
+  .cta{display:flex;align-items:center;justify-content:center;gap:8px;
+       background:var(--ink);color:var(--cream);font-size:14px;font-weight:600;
+       padding:15px;border-radius:999px}
+  .held{display:flex;align-items:center;justify-content:center;gap:8px;
+        border:1.5px solid var(--ink);color:var(--ink);font-size:12.5px;
+        font-weight:700;letter-spacing:.08em;padding:14px;text-transform:uppercase}
+  .disabled{border-color:var(--mute-2);color:var(--mute-2)}
+  .subnote{margin-top:9px;font-size:11.5px;color:var(--mute-1);font-weight:500;
+           text-align:center}
+
+  /* states strip (design study) */
+  .strip{margin-top:30px;padding:18px;background:var(--paper);
+         border-top:2px solid var(--rule)}
+  .strip h2{font-size:11px;font-weight:600;letter-spacing:.16em;
+            text-transform:uppercase;margin-bottom:2px}
+  .strip p.note{font-size:11px;color:var(--mute-1);font-weight:500;margin-bottom:16px}
+  .staterow{margin-top:16px}
+  .staterow .lbl{font-size:9px;font-weight:600;letter-spacing:.16em;
+                 color:var(--mute-2);text-transform:uppercase;margin-bottom:7px}
+
+  /* watching meter strip */
+  .lr{margin-top:26px;background:var(--ink);color:var(--cream-on-ink);
+      padding:14px 18px 6px}
+  .lr .label{display:flex;align-items:baseline;justify-content:space-between;
+             font-size:10px;letter-spacing:.16em;font-weight:600;
+             color:var(--cream-on-ink-dim);text-transform:uppercase;margin-bottom:4px}
+  .lr .label .l{display:flex;align-items:center;gap:8px}
+  .lr .label .dot{background:var(--cream-on-ink)}
+  .lr .label .slots{color:var(--cream-on-ink)}
+  .lrrow{display:flex;align-items:center;gap:10px;padding:12px 0;
+         border-top:1px solid var(--line-on-ink);font-size:15px;font-weight:600}
+  .lrrow:first-of-type{border-top:0}
+  .lrrow .ls{font-size:11px;min-width:22px;color:var(--cream-on-ink)}
+  .lrrow .ls.off{color:var(--cream-on-ink-dim)}
+  .lrrow .m{flex:1}
+  .lrrow .s{font-weight:700;font-size:17px}
+  .lrrow .stamp{font-size:10px;font-weight:700;letter-spacing:.1em;
+                border:1px solid var(--cream-on-ink-dim);padding:3px 6px;
+                color:var(--cream-on-ink);min-width:38px;text-align:center}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="crumbs mono">
+    <span class="back">← WATCHING</span>
+    <span class="here">GAME</span>
+  </header>
+
+  <!-- monument, tightened (M8): the score pair reads as one unit -->
+  <section class="lead">
+    <p class="kicker mono"><span class="dot"></span><span class="live">Live · 50′</span><span>· Group D · Fox</span></p>
+    <div class="scorerow"><span class="team">Türkiye</span><span class="score num">1</span></div>
+    <div class="scorerow"><span class="team">United States</span><span class="score num">1</span></div>
+    <p class="deck">Second half underway.</p>
+  </section>
+
+  <!-- §8: the verb + the proactive meter, in place -->
+  <div class="dock">
+    <p class="meter mono num">
+      <span class="pips"><span class="pip"></span><span class="pip"></span><span class="pip empty"></span></span>
+      2 OF 3 LOCK SCREEN SLOTS USED
+    </p>
+    <div class="cta">Track on Lock Screen</div>
+    <p class="subnote">Keeps the score on your lock screen and in Watching.</p>
+  </div>
+
+  <!-- the four control states (design study strip) -->
+  <section class="strip">
+    <h2 class="mono">Control states</h2>
+    <p class="note">The same control, four truths. Filled = action. Outlined = held state. No silent success.</p>
+
+    <div class="staterow">
+      <p class="lbl mono">1 · DEFAULT (SLOTS FREE)</p>
+      <div class="cta">Track on Lock Screen</div>
+    </div>
+
+    <div class="staterow">
+      <p class="lbl mono">2 · TRACKING (AFTER TAP · HAPTIC · INSTANT)</p>
+      <div class="held mono">◉ On your lock screen · tap to remove</div>
+      <p class="subnote">It’s on your lock screen. You can leave the app.</p>
+    </div>
+
+    <div class="staterow">
+      <p class="lbl mono">3 · LOCK SCREEN FULL</p>
+      <div class="held disabled mono">Lock screen full · 3 of 3</div>
+      <p class="subnote">Remove a game in Watching to track this one.</p>
+    </div>
+
+    <div class="staterow">
+      <p class="lbl mono">4 · LIVE ACTIVITIES OFF (NO FAKE SUCCESS)</p>
+      <div class="held mono">Turn on Live Activities</div>
+      <p class="subnote">Added to Watching. The lock screen needs Live Activities on in iOS Settings.</p>
+    </div>
+  </section>
+
+  <!-- Watching: the promoted meter + slot marks (M7) -->
+  <section class="lr">
+    <div class="label mono num">
+      <span class="l"><span class="dot"></span>LIVE ROOM</span>
+      <span class="slots">◉ 3 OF 3 LOCK SCREEN SLOTS</span>
+    </div>
+    <div class="lrrow mono num"><span class="ls">◉</span><span class="m">TUR · USA</span><span class="s">1–1</span><span class="stamp">50′</span></div>
+    <div class="lrrow mono num"><span class="ls">◉</span><span class="m">JPN · GER</span><span class="s">0–0</span><span class="stamp">25′</span></div>
+    <div class="lrrow mono num"><span class="ls">◉</span><span class="m">NED · MAR</span><span class="s">2–1</span><span class="stamp">40′</span></div>
+  </section>
+
+</div>
+</body>
+</html>

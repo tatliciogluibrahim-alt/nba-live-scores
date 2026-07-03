@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction B — The Matchday Programme</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Oswald:wght@500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Direction B — The Matchday Programme.
+     Register: mid-century matchday programme / scorecard. Enemy: the beige
+     hush on one side, nostalgia kitsch on the other.
+     Ink-heavy bands, wood-type numerals, accents used as overprint inks,
+     numbered fixture card with heavy rules. */
+  :root{
+    --cream:#f1ead8; --ink:#1a1612;
+    --mute-1:#6b6147; --mute-2:#8a7f63;
+    --line:rgba(26,22,18,.18); --rule-heavy:#1a1612;
+    --wc:#1e6b3c; --orange:#e55b2a;
+    --cream-on-ink:rgba(241,234,216,.94); --cream-on-ink-dim:rgba(241,234,216,.6);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--cream);color:var(--ink);width:390px;
+       font-family:Oswald,sans-serif;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .wood{font-family:"Archivo Black",sans-serif}
+  .num{font-variant-numeric:tabular-nums lining-nums}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+       background:var(--cream);animation:breathe 1.8s ease-in-out infinite}
+
+  /* halftone dot screen, kept subtle */
+  .halftone{background-image:radial-gradient(circle, rgba(26,22,18,.28) 1px, transparent 1.4px);
+            background-size:7px 7px}
+
+  /* ── masthead band ────────────────────────────── */
+  .mast{background:var(--ink);color:var(--cream-on-ink);padding:18px 18px 14px;
+        border-bottom:4px double var(--cream)}
+  .mast .row{display:flex;justify-content:space-between;align-items:baseline}
+  .mast h1{font-family:"Archivo Black";font-size:24px;letter-spacing:.01em;
+           text-transform:uppercase;line-height:1}
+  .mast .tag{font-size:10px;letter-spacing:.22em;color:var(--cream-on-ink-dim);
+             font-weight:600;margin-top:8px;text-transform:uppercase}
+  .mast .no{font-size:11px;color:var(--cream-on-ink-dim);letter-spacing:.14em}
+
+  /* ── lead block: overprint green field ────────── */
+  .leadblock{background:var(--wc);color:var(--cream);padding:24px 18px 22px;position:relative}
+  .leadblock .screen{position:absolute;inset:0;opacity:.12}
+  .leadblock > *{position:relative}
+  .leadblock .kicker{display:flex;align-items:center;gap:8px;font-size:11px;
+                     letter-spacing:.2em;font-weight:600;text-transform:uppercase;
+                     margin-bottom:16px}
+  .leadblock .names{font-size:17px;letter-spacing:.12em;text-transform:uppercase;
+                    font-weight:600;line-height:1.5}
+  .leadblock .bigscore{font-family:"Archivo Black";font-size:120px;line-height:.95;
+                       letter-spacing:-.02em;margin:6px 0 4px}
+  .leadblock .scorers{font-size:12px;font-weight:600;letter-spacing:.08em;
+                      color:rgba(241,234,216,.85)}
+  .leadblock .minute{position:absolute;top:22px;right:18px;background:var(--ink);
+                     color:var(--cream);font-size:13px;font-weight:700;
+                     padding:6px 10px;letter-spacing:.08em}
+
+  /* ── today's card: numbered fixture table ─────── */
+  .card{padding:22px 18px 0}
+  .card h2{font-size:13px;letter-spacing:.24em;text-transform:uppercase;
+           font-weight:600;padding-bottom:10px;border-bottom:3px solid var(--rule-heavy)}
+  .fixrow{display:flex;align-items:center;gap:12px;padding:14px 0;
+          border-bottom:1px solid var(--line)}
+  .fixrow .n{font-size:11px;color:var(--mute-2);font-weight:600;min-width:20px}
+  .fixrow .m{flex:1;font-size:15px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+  .fixrow .sc{font-family:"Archivo Black";font-size:18px;letter-spacing:.02em}
+  .fixrow .stamp{font-size:10px;font-weight:700;letter-spacing:.12em;padding:4px 7px;
+                 border:1.5px solid var(--ink);min-width:44px;text-align:center}
+  .fixrow .stamp.live{background:var(--ink);color:var(--cream)}
+  .fixrow .stamp.dim{border-color:var(--mute-2);color:var(--mute-2)}
+
+  /* ── earlier: ink band rows ───────────────────── */
+  .earlier{margin-top:24px;background:var(--ink);color:var(--cream-on-ink);padding:16px 18px}
+  .earlier .label{font-size:10px;letter-spacing:.24em;font-weight:600;
+                  color:var(--cream-on-ink-dim);text-transform:uppercase;margin-bottom:4px}
+  .erow{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;
+        border-top:1px solid rgba(241,234,216,.16);font-size:14px;letter-spacing:.1em;
+        text-transform:uppercase;font-weight:600}
+  .erow:first-of-type{border-top:0}
+  .erow .sc{font-family:"Archivo Black";font-size:16px;letter-spacing:.03em}
+
+  /* ── perforation + your side ──────────────────── */
+  .stub{margin:26px 18px 0;padding-top:16px;border-top:2px dashed var(--mute-2)}
+  .stub p{font-size:12px;font-weight:600;letter-spacing:.14em;color:var(--mute-1);
+          text-transform:uppercase}
+  .stub .on{color:var(--ink)}
+
+  /* ── brief: orange overprint block ────────────── */
+  .briefblock{margin:22px 18px 26px;background:var(--orange);color:var(--cream);
+              padding:18px;position:relative}
+  .briefblock .screen{position:absolute;inset:0;opacity:.1}
+  .briefblock > *{position:relative}
+  .briefblock h3{font-family:"Archivo Black";font-size:19px;text-transform:uppercase;
+                 letter-spacing:.01em;line-height:1.15}
+  .briefblock p{font-size:12.5px;font-weight:600;margin-top:6px;letter-spacing:.04em}
+  .briefblock .cta{display:inline-block;margin-top:14px;background:var(--ink);
+                   color:var(--cream);font-size:13px;font-weight:700;
+                   letter-spacing:.1em;text-transform:uppercase;padding:11px 18px}
+</style>
+</head>
+<body>
+
+  <header class="mast">
+    <div class="row">
+      <h1>No Noise<br>Scores</h1>
+      <span class="no mono num">Nº 14</span>
+    </div>
+    <p class="tag mono">Matchday · Wed 2 Jul · Summer Soccer</p>
+  </header>
+
+  <!-- lead: overprint green field, wood-type score -->
+  <section class="leadblock">
+    <div class="screen halftone"></div>
+    <span class="minute mono num">50′</span>
+    <p class="kicker mono"><span class="dot"></span>Live · Group D</p>
+    <p class="names">Türkiye v United States</p>
+    <p class="bigscore num">1–1</p>
+    <p class="scorers mono">Güler 23′ · Pulisic 41′ · Fox</p>
+  </section>
+
+  <!-- fixture card -->
+  <section class="card">
+    <h2>Today’s card</h2>
+    <div class="fixrow">
+      <span class="n mono num">02</span><span class="m">Japan v Germany</span>
+      <span class="sc num">0–0</span><span class="stamp live mono num">25′</span>
+    </div>
+    <div class="fixrow">
+      <span class="n mono num">03</span><span class="m">Netherlands v Morocco</span>
+      <span class="sc num">2–1</span><span class="stamp live mono num">40′</span>
+    </div>
+    <div class="fixrow">
+      <span class="n mono num">04</span><span class="m">England v Switzerland</span>
+      <span class="sc num" style="color:var(--mute-2)">–</span><span class="stamp dim mono num">00:51</span>
+    </div>
+  </section>
+
+  <!-- earlier: ink band -->
+  <section class="earlier">
+    <p class="label mono">Earlier · full time</p>
+    <div class="erow"><span>Brazil v Scotland</span><span class="sc num">2–0</span></div>
+    <div class="erow"><span>Korea v South Africa</span><span class="sc num">3–1</span></div>
+  </section>
+
+  <!-- ticket stub: your side -->
+  <div class="stub">
+    <p class="mono">Your side&nbsp;&nbsp;USA · TUR · BRA · GER · NED · +1</p>
+  </div>
+
+  <!-- brief: second overprint ink -->
+  <section class="briefblock">
+    <div class="screen halftone"></div>
+    <h3>The Margin</h3>
+    <p>A calm recap of what your follows did, every morning.</p>
+    <span class="cta">Set it up</span>
+  </section>
+
+</body>
+</html>

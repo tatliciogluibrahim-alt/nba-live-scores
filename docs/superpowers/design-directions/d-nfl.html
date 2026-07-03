@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System D — Today, NFL Sunday (density test)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* System D — NFL translation, on the hardest day: a Sunday with five
+     games live at once. Sport accent: NFL blue. The lead is the closest
+     late-window game (two-minute warning); the ink band absorbs the rest
+     of the live slate as board rows; the early window collapses into
+     agate. Possession: a small static square (▪) before the possessing team. */
+  :root{
+    --cream:#f1ead8; --paper:#faf5e8; --ink:#1a1612;
+    --mute-1:#6b6147; --mute-2:#8a7f63;
+    --line:rgba(26,22,18,.16); --rule:#1a1612;
+    --acc:#1f3a6b;
+    --cream-on-ink:rgba(241,234,216,.92); --cream-on-ink-dim:rgba(241,234,216,.55);
+    --line-on-ink:rgba(241,234,216,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--cream);color:var(--ink);font-family:Inter,sans-serif;
+       -webkit-font-smoothing:antialiased;width:390px}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .disp{font-family:"Bricolage Grotesque",sans-serif}
+  .num{font-variant-numeric:tabular-nums lining-nums}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+       background:var(--acc);animation:breathe 1.8s ease-in-out infinite}
+
+  .page{padding:0 0 28px}
+  .masthead{display:flex;align-items:baseline;justify-content:space-between;
+            padding:14px 18px 10px;border-bottom:2px solid var(--rule)}
+  .masthead .date{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mute-1)}
+  .masthead .brand{display:flex;align-items:center;gap:7px;font-size:15px;
+                   font-weight:700;letter-spacing:-.01em;font-family:"Bricolage Grotesque"}
+  .masthead .brand svg{display:block}
+  .masthead .right{font-size:11px;color:var(--mute-1);letter-spacing:.14em}
+
+  /* lead: closest late game, ink-on-cream monument */
+  .lead{padding:24px 18px 0}
+  .lead .kicker{display:flex;align-items:center;gap:8px;font-size:11px;
+                font-weight:600;letter-spacing:.14em;color:var(--mute-1);
+                text-transform:uppercase;margin-bottom:14px}
+  .lead .kicker .live{color:var(--acc);font-weight:700}
+  .scorerow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .scorerow .who{display:flex;align-items:center;gap:9px}
+  .scorerow .poss{width:6px;height:6px;background:var(--acc);flex:none}
+  .scorerow .poss.off{background:transparent}
+  .scorerow .team{font-size:23px;font-weight:700;font-family:"Bricolage Grotesque"}
+  .scorerow .score{font-size:92px;font-weight:800;line-height:.9;letter-spacing:-.04em;
+                   font-family:"Bricolage Grotesque"}
+  .lead .deck{margin-top:14px;font-size:14px;line-height:1.5;color:var(--mute-1);font-weight:500}
+  .rail{margin-top:18px}
+  .rail .bar{position:relative;height:2px;background:var(--line)}
+  .rail .fill{position:absolute;left:0;top:0;bottom:0;width:92%;background:var(--ink)}
+  .rail .tick{position:absolute;top:-3px;width:1px;height:8px;background:var(--line)}
+  .rail .pos{position:absolute;left:92%;top:50%;width:7px;height:7px;border-radius:50%;
+             background:var(--acc);transform:translate(-50%,-50%)}
+  .rail .ends{display:flex;justify-content:space-between;margin-top:7px;
+              font-size:10px;letter-spacing:.14em;color:var(--mute-2);font-weight:600}
+
+  /* ink band: the rest of the live window */
+  .inkband{margin-top:26px;background:var(--ink);color:var(--cream-on-ink);
+           padding:16px 18px 8px}
+  .inkband .label{display:flex;align-items:center;gap:8px;font-size:10px;
+                  letter-spacing:.16em;color:var(--cream-on-ink-dim);
+                  font-weight:600;margin-bottom:6px;text-transform:uppercase}
+  .inkband .label .dot{background:var(--cream-on-ink)}
+  .boardrow{display:flex;align-items:center;gap:10px;padding:13px 0;
+            border-top:1px solid var(--line-on-ink);font-size:15px;font-weight:600}
+  .boardrow:first-of-type{border-top:0}
+  .boardrow .idx{font-size:10px;color:var(--cream-on-ink-dim);min-width:18px}
+  .boardrow .m{flex:1;letter-spacing:.02em}
+  .boardrow .s{font-weight:700;font-size:17px}
+  .boardrow .stamp{font-size:10px;font-weight:700;letter-spacing:.1em;
+                   border:1px solid var(--cream-on-ink-dim);padding:3px 6px;
+                   color:var(--cream-on-ink);min-width:44px;text-align:center}
+
+  /* agate */
+  .section{padding:24px 18px 0}
+  .sechead{display:flex;align-items:baseline;justify-content:space-between;
+           padding-bottom:8px;border-bottom:2px solid var(--rule)}
+  .sechead .name{font-size:11px;font-weight:600;letter-spacing:.16em;
+                 color:var(--ink);text-transform:uppercase}
+  .sechead .count{font-size:10px;color:var(--mute-2);letter-spacing:.12em}
+  .agaterow{display:flex;align-items:center;gap:10px;padding:13px 0;
+            border-bottom:1px solid var(--line);font-size:14px}
+  .agaterow .idx{font-size:10px;color:var(--mute-2);min-width:18px;font-weight:600}
+  .agaterow .m{flex:1;font-weight:600;letter-spacing:.01em}
+  .agaterow .sc{font-weight:700;font-size:16px}
+  .agaterow .note{color:var(--mute-1);font-weight:500;font-size:12.5px}
+  .agaterow .stamp{font-size:10px;font-weight:700;letter-spacing:.1em;
+                   border:1px solid var(--mute-2);color:var(--mute-1);
+                   padding:3px 6px;min-width:44px;text-align:center}
+
+  .follow{padding:20px 18px 0}
+  .follow .lbl{font-size:10px;font-weight:600;letter-spacing:.16em;
+               color:var(--mute-2);margin-bottom:6px}
+  .follow .names{font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--mute-1)}
+  .follow .on{color:var(--ink)}
+  .follow .ldot{display:inline-block;width:5px;height:5px;border-radius:50%;
+                background:var(--acc);margin:0 3px 1px 0;
+                animation:breathe 1.8s ease-in-out infinite}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <span class="mono date num">SUN · SEP 13</span>
+    <span class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
+        <rect width="24" height="24" rx="5.5" fill="#1a1612"/>
+        <rect x="3.5" y="8" width="17" height="8" rx="1.8" fill="#f1ead8"/>
+        <circle cx="18.5" cy="10" r="1.2" fill="#b85a2a"/>
+      </svg>
+      <span>No Noise</span>
+    </span>
+    <span class="mono right num">5 LIVE →</span>
+  </header>
+
+  <!-- lead: the closest late-window game -->
+  <section class="lead">
+    <p class="kicker mono"><span style="color:var(--mute-2)">01</span><span class="dot"></span><span class="live">Live · Q4 2:00</span><span>· CBS</span><span style="margin-left:auto;color:var(--mute-2)">→</span></p>
+    <div class="scorerow">
+      <span class="who"><span class="poss"></span><span class="team">Chiefs</span></span>
+      <span class="score num">20</span>
+    </div>
+    <div class="scorerow">
+      <span class="who"><span class="poss off"></span><span class="team">Bills</span></span>
+      <span class="score num">17</span>
+    </div>
+    <p class="deck">Two-minute warning. Chiefs ball at the Bills 35.</p>
+    <div class="rail">
+      <div class="bar">
+        <span class="tick" style="left:25%"></span>
+        <span class="tick" style="left:50%"></span>
+        <span class="tick" style="left:75%"></span>
+        <div class="fill"></div><div class="pos"></div>
+      </div>
+      <div class="ends mono"><span>Q1</span><span>0:00</span></div>
+    </div>
+  </section>
+
+  <!-- ink band: the rest of the live window, board density -->
+  <section class="inkband">
+    <p class="label mono"><span class="dot"></span>Also live</p>
+    <div class="boardrow mono num"><span class="idx">02</span><span class="m">DAL · PHI</span><span class="s">24–21</span><span class="stamp">Q3</span> <span style="color:var(--cream-on-ink-dim)">→</span></div>
+    <div class="boardrow mono num"><span class="idx">03</span><span class="m">MIA · NYJ</span><span class="s">27–27</span><span class="stamp">Q4</span> <span style="color:var(--cream-on-ink-dim)">→</span></div>
+    <div class="boardrow mono num"><span class="idx">04</span><span class="m">GB · CHI</span><span class="s">14–10</span><span class="stamp">Q3</span> <span style="color:var(--cream-on-ink-dim)">→</span></div>
+    <div class="boardrow mono num"><span class="idx">05</span><span class="m">SEA · SF</span><span class="s">10–13</span><span class="stamp">Q3</span> <span style="color:var(--cream-on-ink-dim)">→</span></div>
+  </section>
+
+  <!-- agate: the early window, wrapped -->
+  <section class="section">
+    <div class="sechead"><span class="name mono">Early window</span><span class="count mono num">4 WRAPPED</span></div>
+    <div class="agaterow"><span class="idx mono num">06</span><span class="m mono"><span style="font-weight:800">DET</span> · <span style="color:var(--mute-1)">MIN</span></span><span class="sc mono num">31–17</span><span class="stamp mono">FT</span> <span style="color:var(--mute-2)">→</span></div>
+    <div class="agaterow"><span class="idx mono num">07</span><span class="m mono"><span style="font-weight:800">BAL</span> · <span style="color:var(--mute-1)">CIN</span></span><span class="sc mono num">28–24</span><span class="stamp mono">FT</span> <span style="color:var(--mute-2)">→</span></div>
+    <div class="agaterow"><span class="idx mono num">08</span><span class="m mono"><span style="font-weight:800">HOU</span> · <span style="color:var(--mute-1)">IND</span></span><span class="sc mono num">20–13</span><span class="stamp mono">FT</span> <span style="color:var(--mute-2)">→</span></div>
+    <div class="agaterow"><span class="idx mono num">09</span><span class="m mono"><span style="color:var(--mute-1)">ATL</span> · <span style="font-weight:800">NO</span></span><span class="sc mono num">17–34</span><span class="stamp mono">FT</span> <span style="color:var(--mute-2)">→</span></div>
+  </section>
+
+  <!-- agate: tonight + tomorrow -->
+  <section class="section">
+    <div class="sechead"><span class="name mono">Tonight</span><span class="count mono num">1 GAME</span></div>
+    <div class="agaterow"><span class="idx mono num">10</span><span class="m mono">LAC · LV</span><span class="note">NBC</span><span class="stamp mono num">20:20</span> <span style="color:var(--mute-2)">→</span></div>
+  </section>
+  <section class="section">
+    <div class="sechead"><span class="name mono">Monday</span><span class="count mono num">1 GAME</span></div>
+    <div class="agaterow"><span class="idx mono num">11</span><span class="m mono">TB · NYG</span><span class="note">ESPN</span><span class="stamp mono num">20:15</span> <span style="color:var(--mute-2)">→</span></div>
+  </section>
+
+  <div class="follow">
+    <p class="lbl mono">YOU FOLLOW</p>
+    <p class="names mono">
+      <span class="on"><span class="ldot"></span>KC</span> ·
+      <span class="on"><span class="ldot"></span>DAL</span> ·
+      DET · <span class="on"><span class="ldot"></span>GB</span> · +2
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction C — The Instrument</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Direction C — The Instrument.
+     Register: departures board / terminal instrument. Enemy: lifestyle-
+     magazine softness, decoration of any kind.
+     DELIBERATE BREAK, flagged: dark ground by direction (night register),
+     against the light-default invariant. Mono as full commitment. No lead
+     story: hierarchy comes from data state (live bright, final dim), not
+     from editorial size. Density is the virtue. */
+  :root{
+    --ground:#1d1812; --ground-2:#251f17;
+    --ink:#f1ead8; --dim:rgba(241,234,216,.42); --mid:rgba(241,234,216,.66);
+    --line:rgba(241,234,216,.14);
+    --wc:#3d9d5d; --nba:#f47743;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);width:390px;
+       font-family:"JetBrains Mono",monospace;-webkit-font-smoothing:antialiased;
+       font-variant-numeric:tabular-nums lining-nums}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.3}}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+       background:var(--wc);animation:breathe 1.8s ease-in-out infinite}
+
+  .wrap{padding:16px 14px 24px}
+
+  /* ── header line ──────────────────────────────── */
+  .hdr{display:flex;justify-content:space-between;font-size:11px;
+       letter-spacing:.12em;color:var(--dim);padding-bottom:12px;
+       border-bottom:1px solid var(--line)}
+  .hdr .l{color:var(--mid);font-weight:600}
+
+  /* ── column heads ─────────────────────────────── */
+  .cols{display:grid;grid-template-columns:34px 1fr 64px 44px 56px;gap:8px;
+        font-size:9px;letter-spacing:.18em;color:var(--dim);
+        padding:14px 2px 8px;text-transform:uppercase}
+  .cols :nth-child(3){text-align:right}
+  .cols :nth-child(4){text-align:right}
+
+  /* ── board rows ───────────────────────────────── */
+  .row{display:grid;grid-template-columns:34px 1fr 64px 44px 56px;gap:8px;
+       align-items:center;padding:15px 2px;border-top:1px solid var(--line);
+       font-size:14px}
+  .row .st{font-size:10px;letter-spacing:.1em}
+  .row .match{font-weight:600;letter-spacing:.04em}
+  .row .score{text-align:right;font-weight:800;font-size:19px;letter-spacing:.02em}
+  .row .min{text-align:right;font-size:12px;color:var(--mid)}
+  .row .prog .bar{height:2px;background:var(--line);position:relative}
+  .row .prog .fill{position:absolute;left:0;top:0;bottom:0;background:var(--wc)}
+
+  .row.live{color:var(--ink)}
+  .row.live .match{font-weight:700}
+  .row.live{border-left:2px solid var(--wc);padding-left:6px;margin-left:-8px}
+
+  .row.done{color:var(--dim)}
+  .row.done .score{color:var(--mid);font-weight:700}
+  .row.done .prog .fill{background:rgba(241,234,216,.28);width:100%!important}
+
+  .row.next{color:var(--dim)}
+  .row.next .score{color:var(--dim);font-weight:500}
+
+  /* ── events ticker line for the closest game ──── */
+  .tick{margin-top:2px;padding:10px 2px 12px;border-top:1px solid var(--line);
+        font-size:11px;color:var(--mid);letter-spacing:.06em}
+  .tick .k{color:var(--wc);font-weight:700}
+
+  /* ── filter line ──────────────────────────────── */
+  .filter{margin-top:20px;padding-top:14px;border-top:1px solid var(--line);
+          font-size:11px;letter-spacing:.12em;color:var(--dim)}
+  .filter .on{color:var(--ink);font-weight:600}
+
+  /* ── footer status ────────────────────────────── */
+  .status{margin-top:26px;display:flex;justify-content:space-between;
+          font-size:10px;letter-spacing:.14em;color:var(--dim)}
+  .status .cmd{color:var(--mid);text-decoration:underline;text-underline-offset:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr">
+    <span class="l">NO NOISE // BOARD</span>
+    <span>WED 02 JUL · 21:47</span>
+  </div>
+
+  <div class="cols">
+    <span>ST</span><span>MATCH</span><span>SCORE</span><span>MIN</span><span>PROG</span>
+  </div>
+
+  <div class="row live">
+    <span class="st"><span class="dot"></span></span>
+    <span class="match">TUR · USA</span>
+    <span class="score">1–1</span>
+    <span class="min">50′</span>
+    <span class="prog"><span class="bar"><span class="fill" style="width:55%"></span></span></span>
+  </div>
+  <div class="row live">
+    <span class="st"><span class="dot"></span></span>
+    <span class="match">JPN · GER</span>
+    <span class="score">0–0</span>
+    <span class="min">25′</span>
+    <span class="prog"><span class="bar"><span class="fill" style="width:28%"></span></span></span>
+  </div>
+  <div class="row live">
+    <span class="st"><span class="dot"></span></span>
+    <span class="match">NED · MAR</span>
+    <span class="score">2–1</span>
+    <span class="min">40′</span>
+    <span class="prog"><span class="bar"><span class="fill" style="width:44%"></span></span></span>
+  </div>
+
+  <div class="tick">
+    <span class="k">TUR·USA</span> ▸ 23′ GÜLER (TUR) · 41′ PULISIC ASST WEAH (USA) · 2ND HALF UNDERWAY
+  </div>
+
+  <div class="row next">
+    <span class="st">00:51</span>
+    <span class="match">ENG · SUI</span>
+    <span class="score">–</span>
+    <span class="min"></span>
+    <span class="prog"><span class="bar"></span></span>
+  </div>
+  <div class="row done">
+    <span class="st">FT</span>
+    <span class="match">BRA · SCO</span>
+    <span class="score">2–0</span>
+    <span class="min">90′</span>
+    <span class="prog"><span class="bar"><span class="fill"></span></span></span>
+  </div>
+  <div class="row done">
+    <span class="st">FT</span>
+    <span class="match">KOR · RSA</span>
+    <span class="score">3–1</span>
+    <span class="min">90′</span>
+    <span class="prog"><span class="bar"><span class="fill"></span></span></span>
+  </div>
+
+  <p class="filter">FILTER ▸ <span class="on">USA</span> <span class="on">TUR</span> BRA <span class="on">GER</span> <span class="on">NED</span> +1</p>
+
+  <div class="status">
+    <span>3 LIVE · SYNCED 21:47:33</span>
+    <span class="cmd">morning brief → subscribe</span>
+  </div>
+
+</div>
+</body>
+</html>

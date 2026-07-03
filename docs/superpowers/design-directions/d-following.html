@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System D — Following</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* System D applied to Following (Your sports circle).
+     Same chrome as Today. Follow rows are agate: unboxed, ruled, with
+     alert tiers as stamps (the stamp does semantic work: it IS the alert
+     state). Live is a status here, not content — dot + tag, no ink field.
+     One slim ink band cross-links to Watching (the live surface). */
+  :root{
+    --cream:#f1ead8; --paper:#faf5e8; --ink:#1a1612;
+    --mute-1:#6b6147; --mute-2:#8a7f63;
+    --line:rgba(26,22,18,.16); --rule:#1a1612;
+    --wc:#1e6b3c;
+    --cream-on-ink:rgba(241,234,216,.92); --cream-on-ink-dim:rgba(241,234,216,.55);
+    --line-on-ink:rgba(241,234,216,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--cream);color:var(--ink);font-family:Inter,sans-serif;
+       -webkit-font-smoothing:antialiased;width:390px}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .disp{font-family:"Bricolage Grotesque",sans-serif}
+  .num{font-variant-numeric:tabular-nums lining-nums}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+       background:var(--wc);animation:breathe 1.8s ease-in-out infinite}
+
+  .page{padding:0 0 28px}
+  .masthead{display:flex;align-items:baseline;justify-content:space-between;
+            padding:14px 18px 10px;border-bottom:2px solid var(--rule)}
+  .masthead .date{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mute-1)}
+  .masthead .brand{display:flex;align-items:center;gap:7px;font-size:15px;
+                   font-weight:700;letter-spacing:-.01em;font-family:"Bricolage Grotesque"}
+  .masthead .brand svg{display:block}
+  .masthead .right{font-size:11px;color:var(--mute-1);letter-spacing:.14em}
+
+  /* page head */
+  .pagehead{padding:22px 18px 0}
+  .pagehead h1{font-size:31px;font-weight:800;letter-spacing:-.02em;line-height:1.05}
+  .pagehead .meta{margin-top:8px;font-size:11px;font-weight:600;
+                  letter-spacing:.12em;color:var(--mute-1)}
+
+  /* slim ink cross-link band */
+  .inkband{margin:18px 18px 0;background:var(--ink);color:var(--cream-on-ink);
+           padding:13px 14px;display:flex;align-items:center;gap:9px}
+  .inkband .dot{background:var(--cream)}
+  .inkband .t{flex:1;font-size:12px;font-weight:700;letter-spacing:.1em}
+  .inkband .go{font-size:11px;color:var(--cream-on-ink-dim);letter-spacing:.08em}
+
+  /* sections */
+  .section{padding:24px 18px 0}
+  .sechead{display:flex;align-items:baseline;justify-content:space-between;
+           padding-bottom:8px;border-bottom:2px solid var(--rule)}
+  .sechead .name{font-size:11px;font-weight:600;letter-spacing:.16em;
+                 color:var(--ink);text-transform:uppercase}
+  .sechead .count{font-size:10px;color:var(--mute-2);letter-spacing:.12em}
+
+  .followrow{display:flex;align-items:center;gap:12px;padding:14px 0;
+             border-bottom:1px solid var(--line)}
+  .followrow .who{flex:1;min-width:0}
+  .followrow .who .n{font-size:17px;font-weight:700;letter-spacing:-.01em;
+                     font-family:"Bricolage Grotesque"}
+  .followrow .who .g{margin-top:2px;font-size:11px;font-weight:600;
+                     letter-spacing:.1em;color:var(--mute-2)}
+  .followrow .live{display:flex;align-items:center;gap:5px;font-size:10px;
+                   font-weight:700;letter-spacing:.12em;color:var(--wc)}
+  .stamp{font-size:10px;font-weight:700;letter-spacing:.1em;padding:4px 7px;
+         min-width:44px;text-align:center}
+  .stamp.on{background:var(--ink);color:var(--cream)}
+  .stamp.q{border:1.5px solid var(--ink);color:var(--ink)}
+  .stamp.off{border:1px solid var(--mute-2);color:var(--mute-2)}
+
+  /* bracket link */
+  .agaterow{display:flex;align-items:center;gap:10px;padding:14px 0;
+            border-bottom:1px solid var(--line);font-size:14px}
+  .agaterow .m{flex:1;font-weight:600}
+  .agaterow .note{color:var(--mute-1);font-weight:500;font-size:12.5px}
+  .agaterow .arr{color:var(--mute-1)}
+
+  /* actions */
+  .actions{padding:26px 18px 0}
+  .cta{display:block;text-align:center;background:var(--ink);color:var(--cream);
+       font-size:15px;font-weight:600;padding:14px;border-radius:999px}
+  .subactions{display:flex;justify-content:center;gap:26px;margin-top:16px;
+              font-size:12px;font-weight:600;letter-spacing:.1em;color:var(--mute-1)}
+  .subactions span{text-decoration:underline;text-underline-offset:3px;
+                   text-decoration-color:var(--line)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <span class="mono date num">WED · JUL 2</span>
+    <span class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
+        <rect width="24" height="24" rx="5.5" fill="#1a1612"/>
+        <rect x="3.5" y="8" width="17" height="8" rx="1.8" fill="#f1ead8"/>
+        <circle cx="18.5" cy="10" r="1.2" fill="#b85a2a"/>
+      </svg>
+      <span>No Noise</span>
+    </span>
+    <span class="mono right num">3 LIVE →</span>
+  </header>
+
+  <div class="pagehead">
+    <h1 class="disp">Your sports circle.</h1>
+    <p class="meta mono num">6 FOLLOWS · 3 OF 3 ALERT SLOTS USED</p>
+    <p class="meta mono" style="margin-top:3px;color:var(--mute-2)">ALERTS ON YOUR FIRST 3 FOLLOWS ARE FREE</p>
+  </div>
+
+  <!-- live games live on Watching; here it's one calm cross-link -->
+  <div class="inkband">
+    <span class="dot"></span>
+    <span class="t mono num">3 LIVE NOW</span>
+    <span class="go mono">OPEN WATCHING →</span>
+  </div>
+
+  <section class="section">
+    <div class="sechead"><span class="name mono">Live now</span><span class="count mono num">4 <span style="border:1px solid var(--mute-2);border-radius:999px;padding:0 5px;margin-left:6px">?</span></span></div>
+    <p class="mono" style="padding:9px 0 2px;font-size:10px;letter-spacing:.08em;color:var(--mute-2);border-bottom:1px solid var(--line)">QUIET: start and final. COMPANION: key moments. FULL DETAILS: everything. <span style="float:right">✕</span></p>
+    <div class="followrow">
+      <div class="who"><p class="n">United States</p><p class="g mono">GROUP D · SUMMER SOCCER</p></div>
+      <span class="live mono"><span class="dot"></span>LIVE</span>
+      <span class="stamp on mono">COMPANION</span>
+    </div>
+    <div class="followrow">
+      <div class="who"><p class="n">Türkiye</p><p class="g mono">GROUP D · SUMMER SOCCER</p></div>
+      <span class="live mono"><span class="dot"></span>LIVE</span>
+      <span class="stamp on mono">COMPANION</span>
+    </div>
+    <div class="followrow">
+      <div class="who"><p class="n">Germany</p><p class="g mono">GROUP E · SUMMER SOCCER</p></div>
+      <span class="live mono"><span class="dot"></span>LIVE</span>
+      <span class="stamp off mono">OFF</span>
+    </div>
+    <div class="followrow">
+      <div class="who"><p class="n">Netherlands</p><p class="g mono">GROUP F · SUMMER SOCCER</p></div>
+      <span class="live mono"><span class="dot"></span>LIVE</span>
+      <span class="stamp off mono">OFF</span>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sechead"><span class="name mono">Up next</span><span class="count mono num">2</span></div>
+    <div class="followrow">
+      <div class="who"><p class="n">Brazil</p><p class="g mono">GROUP C · SUMMER SOCCER</p></div>
+      <span class="stamp q mono">QUIET</span>
+    </div>
+    <div class="followrow">
+      <div class="who"><p class="n">England</p><p class="g mono">GROUP L · SUMMER SOCCER</p></div>
+      <span class="stamp off mono">OFF</span>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sechead"><span class="name mono">Summer soccer</span><span class="count mono"></span></div>
+    <div class="agaterow">
+      <span class="m">View the bracket</span>
+      <span class="note">See who’s through, round by round</span>
+      <span class="arr">→</span>
+    </div>
+  </section>
+
+  <div class="actions">
+    <span class="cta">Add follow</span>
+    <div class="subactions mono"><span>SHARE</span><span>SYNC DEVICES</span></div>
+  </div>
+
+</div>
+</body>
+</html>

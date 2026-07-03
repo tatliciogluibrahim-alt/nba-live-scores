@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System D — Tournament hub (bracket, path, groups)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* System D — tournament hub. Three devices:
+     1. YOUR PATH: the progress-rail device scaled from match minutes to
+        tournament rounds — personal, in the ink register.
+     2. The bracket as ruled tie rows (a 2D tree is desktop's luxury;
+        agate rows are the mobile-honest bracket).
+     3. The group table with the print cut line: a dashed rule between
+        2nd and 3rd place IS the qualification story. */
+  :root{
+    --cream:#f1ead8; --paper:#faf5e8; --ink:#1a1612;
+    --mute-1:#6b6147; --mute-2:#8a7f63;
+    --line:rgba(26,22,18,.16); --rule:#1a1612;
+    --acc:#1e6b3c;
+    --cream-on-ink:rgba(241,234,216,.92); --cream-on-ink-dim:rgba(241,234,216,.55);
+    --line-on-ink:rgba(241,234,216,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--cream);color:var(--ink);font-family:Inter,sans-serif;
+       -webkit-font-smoothing:antialiased;width:390px}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .disp{font-family:"Bricolage Grotesque",sans-serif}
+  .num{font-variant-numeric:tabular-nums lining-nums}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+       background:var(--acc);animation:breathe 1.8s ease-in-out infinite}
+
+  .page{padding:0 0 28px}
+  .masthead{display:flex;align-items:baseline;justify-content:space-between;
+            padding:14px 18px 10px;border-bottom:2px solid var(--rule)}
+  .masthead .date{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mute-1)}
+  .masthead .brand{display:flex;align-items:center;gap:7px;font-size:15px;
+                   font-weight:700;letter-spacing:-.01em;font-family:"Bricolage Grotesque"}
+  .masthead .brand svg{display:block}
+  .masthead .right{font-size:11px;color:var(--mute-1);letter-spacing:.14em}
+
+  .pagehead{padding:22px 18px 0}
+  .pagehead h1{font-size:31px;font-weight:800;letter-spacing:-.02em;line-height:1.05;
+               font-family:"Bricolage Grotesque"}
+  .pagehead .meta{margin-top:8px;font-size:11px;font-weight:600;
+                  letter-spacing:.12em;color:var(--mute-1)}
+
+  /* tab row: mono, ruled, active carries the ink */
+  .tabs{display:flex;gap:22px;padding:18px 18px 0;border-bottom:1px solid var(--line);
+        margin-bottom:0}
+  .tabs span{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mute-2);
+             padding-bottom:9px}
+  .tabs .on{color:var(--ink);font-weight:700;border-bottom:2px solid var(--ink);
+            margin-bottom:-1px}
+
+  /* your path: the rail device at tournament scale */
+  .path{margin:20px 18px 0;background:var(--ink);color:var(--cream-on-ink);
+        padding:16px 16px 18px}
+  .path .label{display:flex;justify-content:space-between;font-size:10px;
+               letter-spacing:.16em;font-weight:600;color:var(--cream-on-ink-dim);
+               text-transform:uppercase;margin-bottom:16px}
+  .path .label .who{color:var(--cream-on-ink)}
+  .pathrail{position:relative;height:2px;background:var(--line-on-ink);margin:0 6px}
+  .pathrail .fill{position:absolute;left:0;top:0;bottom:0;width:10%;background:var(--acc)}
+  .node{position:absolute;top:50%;transform:translate(-50%,-50%);width:7px;height:7px;
+        border-radius:50%;background:var(--ink);border:1.5px solid var(--cream-on-ink-dim)}
+  .node.done{background:var(--acc);border-color:var(--acc)}
+  .node.next{background:var(--cream-on-ink);border-color:var(--cream-on-ink);
+             animation:breathe 1.8s ease-in-out infinite}
+  .pathlabels{display:flex;justify-content:space-between;margin-top:12px;
+              font-size:9px;letter-spacing:.1em;color:var(--cream-on-ink-dim);font-weight:600}
+  .pathlabels .done{color:var(--acc)}
+  .pathlabels .next{color:var(--cream-on-ink)}
+  .path .nextline{margin-top:14px;font-size:12px;font-weight:600;
+                  color:var(--cream-on-ink)}
+
+  /* bracket: ruled tie rows */
+  .section{padding:24px 18px 0}
+  .sechead{display:flex;align-items:baseline;justify-content:space-between;
+           padding-bottom:8px;border-bottom:2px solid var(--rule)}
+  .sechead .name{font-size:11px;font-weight:600;letter-spacing:.16em;
+                 color:var(--ink);text-transform:uppercase}
+  .sechead .count{font-size:10px;color:var(--mute-2);letter-spacing:.12em}
+  .tierow{display:flex;align-items:center;gap:10px;padding:14px 0;
+          border-bottom:1px solid var(--line);font-size:14px}
+  .tierow .idx{font-size:10px;color:var(--mute-2);min-width:18px;font-weight:600}
+  .tierow .m{flex:1;font-weight:600;letter-spacing:.01em}
+  .tierow .m .you{font-weight:700}
+  .tierow .note{color:var(--mute-1);font-weight:500;font-size:12.5px}
+  .tierow .stamp{font-size:10px;font-weight:700;letter-spacing:.1em;
+                 border:1px solid var(--mute-2);color:var(--mute-1);
+                 padding:3px 6px;min-width:52px;text-align:center}
+  .tierow .stamp.you{border-color:var(--ink);color:var(--ink)}
+  .tierow.dim{color:var(--mute-2)}
+  .tierow.dim .m{font-weight:500;color:var(--mute-2)}
+  .alllink{display:inline-flex;gap:6px;margin-top:14px;font-size:12px;
+           font-weight:600;letter-spacing:.06em;color:var(--mute-1)}
+
+  /* group table with the cut line */
+  .table{margin-top:2px}
+  .thead{display:grid;grid-template-columns:22px 1fr 40px 40px 44px;gap:8px;
+         padding:10px 0 8px;font-size:9px;letter-spacing:.16em;color:var(--mute-2);
+         font-weight:600;text-transform:uppercase;border-bottom:1px solid var(--line)}
+  .thead :nth-child(n+3){text-align:right}
+  .trow{display:grid;grid-template-columns:22px 1fr 40px 40px 44px;gap:8px;
+        align-items:center;padding:12px 0;border-bottom:1px solid var(--line);
+        font-size:14px}
+  .trow .pos{font-size:10px;color:var(--mute-2);font-weight:600}
+  .trow .t{font-weight:600}
+  .trow .t .ldot{display:inline-block;width:5px;height:5px;border-radius:50%;
+                 background:var(--acc);margin:0 5px 1px 0;
+                 animation:breathe 1.8s ease-in-out infinite}
+  .trow .c{text-align:right;font-weight:600;color:var(--mute-1)}
+  .trow .pts{text-align:right;font-weight:800;font-size:15px}
+  .trow.you .t{font-weight:800}
+  .trow.cut{border-bottom:2px dashed var(--mute-2)}
+  .cutnote{margin-top:8px;font-size:10px;letter-spacing:.1em;color:var(--mute-2);
+           font-weight:600}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <span class="mono date num">WED · JUL 2</span>
+    <span class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
+        <rect width="24" height="24" rx="5.5" fill="#1a1612"/>
+        <rect x="3.5" y="8" width="17" height="8" rx="1.8" fill="#f1ead8"/>
+        <circle cx="18.5" cy="10" r="1.2" fill="#b85a2a"/>
+      </svg>
+      <span>No Noise</span>
+    </span>
+    <span class="mono right num">3 LIVE →</span>
+  </header>
+
+  <div class="pagehead">
+    <h1>Summer Soccer.</h1>
+    <p class="meta mono num">48 TEAMS · GROUP STAGE · MATCHDAY 3 OF 3</p>
+  </div>
+
+  <div class="tabs mono">
+    <span>GROUPS</span>
+    <span class="on">BRACKET</span>
+    <span>SCHEDULE</span>
+  </div>
+
+  <!-- your path: the rail device at tournament scale -->
+  <section class="path">
+    <div class="label mono"><span class="who">YOUR PATH · USA</span><span>GROUP STAGE · LIVE</span></div>
+    <div class="pathrail">
+      <span class="fill"></span>
+      <span class="node next" style="left:0%"></span>
+      <span class="node" style="left:20%"></span>
+      <span class="node" style="left:40%"></span>
+      <span class="node" style="left:60%"></span>
+      <span class="node" style="left:80%"></span>
+      <span class="node" style="left:100%"></span>
+    </div>
+    <div class="pathlabels mono">
+      <span class="next">GROUP</span><span>R32</span><span>R16</span>
+      <span>QF</span><span>SF</span><span>FINAL</span>
+    </div>
+    <p class="nextline">Round of 32 starts Saturday.</p>
+  </section>
+
+  <!-- the bracket as ruled ties -->
+  <section class="section">
+    <div class="sechead"><span class="name mono">Round of 32</span><span class="count mono num">SAT–MON</span></div>
+    <div class="tierow">
+      <span class="idx mono num">01</span>
+      <span class="m mono"><span class="you">USA</span> · CHI</span>
+      <span class="note">Los Angeles</span>
+      <span class="stamp you mono num">SAT 18:00</span> <span style="color:var(--mute-2)">→</span>
+    </div>
+    <div class="tierow">
+      <span class="idx mono num">02</span>
+      <span class="m mono"><span class="you">TUR</span> · POL</span>
+      <span class="note">Houston</span>
+      <span class="stamp you mono num">SAT 14:00</span> <span style="color:var(--mute-2)">→</span>
+    </div>
+    <div class="tierow">
+      <span class="idx mono num">03</span>
+      <span class="m mono">BRA · KOR</span>
+      <span class="note">Dallas</span>
+      <span class="stamp mono num">SUN 16:00</span> <span style="color:var(--mute-2)">→</span>
+    </div>
+    <div class="tierow dim">
+      <span class="idx mono num">04</span>
+      <span class="m mono">1E · 2G</span>
+      <span class="note">Decided tonight</span>
+      <span class="stamp mono num">SUN 12:00</span>
+    </div>
+    <div class="tierow dim">
+      <span class="idx mono num">05</span>
+      <span class="m mono">1F · 2H</span>
+      <span class="note">Decided tonight</span>
+      <span class="stamp mono num">MON 14:00</span>
+    </div>
+    <a class="alllink mono">ALL 16 MATCHES →</a>
+  </section>
+
+  <!-- the group table with the cut line -->
+  <section class="section">
+    <div class="sechead"><span class="name mono">Group D</span><span class="count mono num">AFTER MATCHDAY 2</span></div>
+    <div class="table">
+      <div class="thead mono"><span></span><span>TEAM</span><span>PLD</span><span>GD</span><span>PTS</span></div>
+      <div class="trow you">
+        <span class="pos mono num">1</span>
+        <span class="t"><span class="ldot"></span>United States</span>
+        <span class="c mono num">2</span><span class="c mono num">+3</span><span class="pts mono num">6</span>
+      </div>
+      <div class="trow cut">
+        <span class="pos mono num">2</span>
+        <span class="t"><span class="ldot"></span>Türkiye</span>
+        <span class="c mono num">2</span><span class="c mono num">+1</span><span class="pts mono num">4</span>
+      </div>
+      <div class="trow">
+        <span class="pos mono num">3</span>
+        <span class="t">Paraguay</span>
+        <span class="c mono num">2</span><span class="c mono num">-1</span><span class="pts mono num">1</span>
+      </div>
+      <div class="trow">
+        <span class="pos mono num">4</span>
+        <span class="t">Australia</span>
+        <span class="c mono num">2</span><span class="c mono num">-3</span><span class="pts mono num">1</span>
+      </div>
+      <p class="cutnote mono">– – QUALIFICATION LINE · TOP 2 GO THROUGH</p>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

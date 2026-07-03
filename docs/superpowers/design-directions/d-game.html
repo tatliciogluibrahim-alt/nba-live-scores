@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System D — Game detail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* System D applied to the live game detail.
+     The monument score is the page (same grammar as Today's lead, so the
+     tap from Today feels like zooming in, not switching apps). Match
+     events take the ink register: they ARE the live pulse. Pin state is a
+     stamped control: filled when it's an action, outlined when it's a
+     held state. */
+  :root{
+    --cream:#f1ead8; --paper:#faf5e8; --ink:#1a1612;
+    --mute-1:#6b6147; --mute-2:#8a7f63;
+    --line:rgba(26,22,18,.16); --rule:#1a1612;
+    --wc:#1e6b3c;
+    --cream-on-ink:rgba(241,234,216,.92); --cream-on-ink-dim:rgba(241,234,216,.55);
+    --line-on-ink:rgba(241,234,216,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--cream);color:var(--ink);font-family:Inter,sans-serif;
+       -webkit-font-smoothing:antialiased;width:390px}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .disp{font-family:"Bricolage Grotesque",sans-serif}
+  .num{font-variant-numeric:tabular-nums lining-nums}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+       background:var(--wc);animation:breathe 1.8s ease-in-out infinite}
+
+  .page{padding:0 0 28px}
+
+  /* crumb bar */
+  .crumbs{display:flex;align-items:baseline;justify-content:space-between;
+          padding:14px 18px 10px;border-bottom:1px solid var(--line)}
+  .crumbs .back{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mute-1)}
+  .crumbs .here{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mute-2)}
+
+  /* monument */
+  .lead{padding:24px 18px 0}
+  .lead .kicker{display:flex;align-items:center;gap:8px;font-size:11px;
+                font-weight:600;letter-spacing:.14em;color:var(--mute-1);
+                text-transform:uppercase;margin-bottom:14px}
+  .lead .kicker .live{color:var(--wc);font-weight:700}
+  .scorerow{display:flex;align-items:center;justify-content:space-between}
+  .scorerow .team{font-size:23px;font-weight:700}
+  .scorerow .score{font-size:100px;font-weight:800;line-height:.88;letter-spacing:-.04em}
+  .lead .deck{margin-top:14px;font-size:14px;line-height:1.5;color:var(--mute-1);font-weight:500}
+  .rail{margin-top:18px}
+  .rail .bar{position:relative;height:2px;background:var(--line)}
+  .rail .fill{position:absolute;left:0;top:0;bottom:0;width:55%;background:var(--ink)}
+  .rail .pos{position:absolute;left:55%;top:50%;width:7px;height:7px;border-radius:50%;
+             background:var(--wc);transform:translate(-50%,-50%)}
+  .rail .ends{display:flex;justify-content:space-between;margin-top:7px;
+              font-size:10px;letter-spacing:.14em;color:var(--mute-2);font-weight:600}
+
+  /* events: the ink register */
+  .inkband{margin-top:26px;background:var(--ink);color:var(--cream-on-ink);
+           padding:16px 18px 8px}
+  .inkband .label{display:flex;align-items:center;gap:8px;font-size:10px;
+                  letter-spacing:.16em;color:var(--cream-on-ink-dim);
+                  font-weight:600;margin-bottom:6px;text-transform:uppercase}
+  .inkband .label .dot{background:var(--cream)}
+  .evrow{display:flex;align-items:center;gap:12px;padding:13px 0;
+         border-top:1px solid var(--line-on-ink)}
+  .evrow:first-of-type{border-top:0}
+  .evrow .min{font-size:12px;font-weight:700;min-width:32px}
+  .evrow .who{flex:1;font-size:14px;font-weight:600}
+  .evrow .who .a{color:var(--cream-on-ink-dim);font-weight:500;font-size:12px}
+  .evrow .stamp{font-size:10px;font-weight:700;letter-spacing:.1em;
+                background:var(--cream);color:var(--ink);padding:3px 7px}
+
+  /* §17: the programme XI — two columns, shirt numbers as index */
+  .xi{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;padding-top:4px}
+  .xi .xihead{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--mute-1);
+              padding:10px 0 6px;border-bottom:1px solid var(--line)}
+  .xi .xirow{display:flex;gap:8px;align-items:baseline;padding:6.5px 0;
+             border-bottom:1px solid var(--line);font-size:12.5px;font-weight:600}
+  .xi .xirow .n{color:var(--mute-2);font-size:10px;min-width:16px}
+
+  /* agate sections */
+  .section{padding:24px 18px 0}
+  .sechead{display:flex;align-items:baseline;justify-content:space-between;
+           padding-bottom:8px;border-bottom:2px solid var(--rule)}
+  .sechead .name{font-size:11px;font-weight:600;letter-spacing:.16em;
+                 color:var(--ink);text-transform:uppercase}
+  .agaterow{display:flex;align-items:center;gap:10px;padding:14px 0;
+            border-bottom:1px solid var(--line);font-size:14px}
+  .agaterow .m{flex:1;font-weight:600}
+  .agaterow .note{color:var(--mute-1);font-weight:500;font-size:12.5px}
+  .agaterow .arr{color:var(--mute-1)}
+
+  /* pin control: stamp logic — outlined = held state */
+  .pinwrap{padding:26px 18px 0}
+  .pinned{display:flex;align-items:center;justify-content:center;gap:8px;
+          border:1.5px solid var(--ink);color:var(--ink);font-size:12.5px;
+          font-weight:700;letter-spacing:.08em;padding:13px;text-transform:uppercase}
+  .pinnote{margin-top:10px;font-size:11.5px;color:var(--mute-1);font-weight:500;
+           text-align:center}
+  .share{display:block;text-align:center;margin-top:18px;font-size:13px;
+         font-weight:600;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="crumbs mono">
+    <span class="back">← WATCHING</span>
+    <span class="here">GAME</span>
+  </header>
+
+  <section class="lead">
+    <p class="kicker mono"><span class="dot"></span><span class="live">Live · 50′</span><span>· Group D · Fox</span></p>
+    <div class="scorerow">
+      <span class="team disp">Türkiye</span>
+      <span class="score disp num">1</span>
+    </div>
+    <div class="scorerow">
+      <span class="team disp">United States</span>
+      <span class="score disp num">1</span>
+    </div>
+    <p class="deck">Second half underway.</p>
+    <div class="rail">
+      <div class="bar"><div class="fill"></div><div class="pos"></div></div>
+      <div class="ends mono"><span>KICKOFF</span><span>90′</span></div>
+    </div>
+  </section>
+
+  <!-- the live pulse: match events in the ink register -->
+  <section class="inkband">
+    <p class="label mono"><span class="dot"></span>Match events</p>
+    <div class="evrow mono num">
+      <span class="min">41′</span>
+      <span class="who">Pulisic <span class="a">· assist Weah · USA</span></span>
+      <span class="stamp">GOAL</span>
+    </div>
+    <div class="evrow mono num">
+      <span class="min">23′</span>
+      <span class="who">Güler <span class="a">· TUR</span></span>
+      <span class="stamp">GOAL</span>
+    </div>
+  </section>
+
+
+  <!-- §17: the programme XI — shirt numbers are the index numerals -->
+  <section class="section">
+    <div class="sechead"><span class="name mono">Starting XI</span></div>
+    <div class="xi">
+      <div>
+        <p class="xihead mono num">TUR · 4-2-3-1</p>
+        <p class="xirow"><span class="n mono num">23</span>Çakır</p>
+        <p class="xirow"><span class="n mono num">2</span>Müldür</p>
+        <p class="xirow"><span class="n mono num">3</span>Demiral</p>
+        <p class="xirow"><span class="n mono num">14</span>Bardakcı</p>
+        <p class="xirow"><span class="n mono num">20</span>Kadıoğlu</p>
+        <p class="xirow"><span class="n mono num">6</span>Kökçü</p>
+        <p class="xirow"><span class="n mono num">10</span>Çalhanoğlu (C)</p>
+        <p class="xirow"><span class="n mono num">8</span>Güler</p>
+        <p class="xirow"><span class="n mono num">7</span>Aktürkoğlu</p>
+        <p class="xirow"><span class="n mono num">21</span>Yıldız</p>
+        <p class="xirow"><span class="n mono num">9</span>Kılıçsoy</p>
+      </div>
+      <div>
+        <p class="xihead mono num">USA · 4-3-3</p>
+        <p class="xirow"><span class="n mono num">1</span>Turner</p>
+        <p class="xirow"><span class="n mono num">2</span>Dest</p>
+        <p class="xirow"><span class="n mono num">3</span>Richards</p>
+        <p class="xirow"><span class="n mono num">13</span>Ream</p>
+        <p class="xirow"><span class="n mono num">5</span>Robinson</p>
+        <p class="xirow"><span class="n mono num">4</span>Adams (C)</p>
+        <p class="xirow"><span class="n mono num">8</span>McKennie</p>
+        <p class="xirow"><span class="n mono num">6</span>Musah</p>
+        <p class="xirow"><span class="n mono num">10</span>Pulisic</p>
+        <p class="xirow"><span class="n mono num">21</span>Weah</p>
+        <p class="xirow"><span class="n mono num">9</span>Pepi</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sechead"><span class="name mono">Group D</span></div>
+    <div class="agaterow"><span class="m">Türkiye</span><span class="note">Group, path &amp; matches</span><span class="arr">→</span></div>
+    <div class="agaterow"><span class="m">United States</span><span class="note">Group, path &amp; matches</span><span class="arr">→</span></div>
+  </section>
+
+  <section class="section">
+    <div class="sechead"><span class="name mono">Watch</span></div>
+    <div class="agaterow"><span class="m">Fox</span><span class="note">U.S. broadcast</span></div>
+  </section>
+
+  <div class="pinwrap">
+    <div class="pinned mono">◉ On your lock screen · tap to remove</div>
+    <p class="pinnote">Also in Watching. Leaves the lock screen at final.</p>
+    <span class="share">Share this match →</span>
+  </div>
+
+</div>
+</body>
+</html>

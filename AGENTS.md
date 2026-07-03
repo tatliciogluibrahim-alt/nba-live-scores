@@ -140,8 +140,7 @@ When changing code:
 ## Current Phase
 
 **The iOS app is LIVE on the App Store.** v1.0 went live 2026-06-17.
-v1.0.1 (build 15) is in App Store review as of ~2026-06-23 (bug
-fixes and widget refinements). Phase 22.5 (iOS native via Capacitor)
+v1.0.1 (build 15) was approved and is live (shipped by 2026-07-02). Phase 22.5 (iOS native via Capacitor)
 is **shipped**, not in progress: Live Activity, the home-screen
 upcoming widget, the home-screen live-score widget, and lock-screen
 accessory widgets are all in production. Distribution is App Store +
@@ -159,7 +158,7 @@ for per-phase detail.
 Completed (most recent first):
 
 - **Phase 22.5 — iOS native shipped to the App Store.** v1.0 live
-  2026-06-17; v1.0.1 (build 15) submitted ~2026-06-23, in review.
+  2026-06-17; v1.0.1 approved and live (shipped by 2026-07-02).
   Capacitor 8 wrapper around the production PWA. Two custom Swift
   plugins: `LiveActivityPlugin` (ActivityKit bridge) and
   `WidgetBridgePlugin` (App Group snapshot writer). The
@@ -267,8 +266,8 @@ native (22.5) and the Brief (21) are shipped. See `docs/ROADMAP.md`.
   card. Not on the critical path; revisit post-launch only if users
   ask to share.
 - **Phase 22.5** — **iOS Native via Capacitor — SHIPPED. App is LIVE
-  on the App Store.** v1.0 live 2026-06-17; v1.0.1 (build 15) in
-  review ~2026-06-23. 22.5-1 (proof of life), 22.5-2 (dispatcher
+  on the App Store.** v1.0 live 2026-06-17; v1.0.1 live (approved by 2026-07-02). v1.0.2 planned
+  (System D redesign + new store screenshots/metadata). 22.5-1 (proof of life), 22.5-2 (dispatcher
   integration), 22.5-3 (Live Activity, Swift plugin + extension),
   22.5-4 (home-screen + live-score + lock-screen widgets), and 22.5-5
   (App Store submission) are all done. Native code in `ios/App/`:

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction A — The Broadsheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Direction A — The Broadsheet.
+     Register: newspaper front page. Enemy: the SaaS card stack.
+     Cream is newsprint. One lead story (the deviation). Ink band = the
+     second register carrying the other live games. Hairlines, no boxes.
+     Accent (WC green) only on live state. */
+  :root{
+    --cream:#f1ead8; --paper:#faf5e8; --ink:#1a1612;
+    --mute-1:#6b6147; --mute-2:#8a7f63;
+    --line:rgba(26,22,18,.16); --line-strong:rgba(26,22,18,.55);
+    --wc:#1e6b3c; --live:#1e6b3c;
+    --cream-on-ink:rgba(241,234,216,.92); --cream-on-ink-dim:rgba(241,234,216,.55);
+    --line-on-ink:rgba(241,234,216,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--cream);color:var(--ink);font-family:Inter,sans-serif;
+       -webkit-font-smoothing:antialiased;width:390px}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .disp{font-family:"Bricolage Grotesque",sans-serif}
+  .num{font-variant-numeric:tabular-nums lining-nums}
+
+  /* pulsing live dot */
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+       background:var(--live);animation:breathe 1.8s ease-in-out infinite}
+
+  .page{padding:0 0 28px}
+
+  /* ── masthead ─────────────────────────────────── */
+  .masthead{display:flex;align-items:baseline;justify-content:space-between;
+            padding:14px 18px 10px;border-bottom:1px solid var(--line-strong)}
+  .masthead .date{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mute-1)}
+  .masthead .brand{font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .masthead .right{font-size:11px;color:var(--mute-1);letter-spacing:.14em}
+
+  /* ── the lead (the one deviation, unboxed) ────── */
+  .lead{padding:26px 18px 0}
+  .lead .kicker{display:flex;align-items:center;gap:8px;font-size:11px;
+                font-weight:600;letter-spacing:.14em;color:var(--mute-1);
+                text-transform:uppercase;margin-bottom:18px}
+  .lead .kicker .live{color:var(--wc);font-weight:700}
+  .scorerow{display:flex;align-items:baseline;justify-content:space-between;
+            padding:2px 0}
+  .scorerow .team{font-size:22px;font-weight:700;letter-spacing:.01em}
+  .scorerow .score{font-size:84px;font-weight:750;line-height:.9;letter-spacing:-.03em}
+  .lead .deck{margin-top:16px;font-size:14px;line-height:1.5;color:var(--mute-1);
+              font-weight:500}
+  .rail{margin-top:20px}
+  .rail .bar{position:relative;height:2px;background:var(--line)}
+  .rail .fill{position:absolute;left:0;top:0;bottom:0;width:55%;background:var(--ink)}
+  .rail .pos{position:absolute;left:55%;top:50%;width:7px;height:7px;border-radius:50%;
+             background:var(--wc);transform:translate(-50%,-50%)}
+  .rail .ends{display:flex;justify-content:space-between;margin-top:7px;
+              font-size:10px;letter-spacing:.14em;color:var(--mute-2);font-weight:600}
+
+  /* ── ink band: the second register ────────────── */
+  .inkband{margin-top:30px;background:var(--ink);color:var(--cream-on-ink);
+           padding:16px 18px 6px}
+  .inkband .label{display:flex;align-items:center;gap:8px;font-size:10px;
+                  letter-spacing:.16em;color:var(--cream-on-ink-dim);
+                  font-weight:600;margin-bottom:6px;text-transform:uppercase}
+  .boardrow{display:flex;align-items:center;gap:10px;padding:13px 0;
+            border-top:1px solid var(--line-on-ink);font-size:15px;font-weight:600}
+  .boardrow:first-of-type{border-top:0}
+  .boardrow .m{flex:1;letter-spacing:.02em}
+  .boardrow .s{font-weight:700}
+  .boardrow .t{color:var(--cream-on-ink-dim);font-size:12px;font-weight:600;
+               min-width:32px;text-align:right}
+
+  /* ── agate sections ───────────────────────────── */
+  .section{padding:26px 18px 0}
+  .sechead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .sechead .name{font-size:11px;font-weight:600;letter-spacing:.16em;
+                 color:var(--mute-1);text-transform:uppercase}
+  .sechead .rule{flex:1;height:1px;background:var(--line)}
+  .agaterow{display:flex;align-items:baseline;gap:10px;padding:13px 0;
+            border-bottom:1px solid var(--line);font-size:14px}
+  .agaterow .m{flex:1;font-weight:600;letter-spacing:.01em}
+  .agaterow .sc{font-weight:700;font-size:15px}
+  .agaterow .st{color:var(--mute-2);font-size:11px;font-weight:600;
+                letter-spacing:.1em;min-width:40px;text-align:right}
+  .agaterow .note{color:var(--mute-1);font-weight:500}
+
+  /* ── you follow, de-chipped ───────────────────── */
+  .followline{padding:16px 18px 0;font-size:12px;font-weight:600;
+              letter-spacing:.06em;color:var(--mute-1)}
+  .followline .on{color:var(--ink)}
+  .followline .ldot{display:inline-block;width:5px;height:5px;border-radius:50%;
+                    background:var(--wc);margin:0 3px 1px 0;
+                    animation:breathe 1.8s ease-in-out infinite}
+
+  /* ── footer brief (a CTA earns its ink) ───────── */
+  .brief{margin:30px 18px 0;padding-top:18px;border-top:1px solid var(--line-strong)}
+  .brief p.q{font-size:15px;font-weight:700}
+  .brief p.a{font-size:13px;color:var(--mute-1);margin-top:4px;font-weight:500}
+  .brief .cta{display:inline-block;margin-top:14px;background:var(--ink);
+              color:var(--cream);font-size:14px;font-weight:600;
+              padding:12px 22px;border-radius:999px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <span class="mono date num">WED · JUL 2</span>
+    <span class="disp brand">No Noise</span>
+    <span class="mono right num">3 LIVE</span>
+  </header>
+
+  <!-- the lead: one story dominates, pure typography, no box -->
+  <section class="lead">
+    <p class="kicker mono"><span class="dot"></span><span class="live">Live · 50′</span><span>· Group D · Fox</span></p>
+    <div class="scorerow">
+      <span class="team disp">Türkiye</span>
+      <span class="score disp num">1</span>
+    </div>
+    <div class="scorerow">
+      <span class="team disp">United States</span>
+      <span class="score disp num">1</span>
+    </div>
+    <p class="deck">Second half underway. Güler 23′, Pulisic 41′.</p>
+    <div class="rail">
+      <div class="bar"><div class="fill"></div><div class="pos"></div></div>
+      <div class="ends mono"><span>KICKOFF</span><span>90′</span></div>
+    </div>
+  </section>
+
+  <!-- the second register: ink band, airport-board lines -->
+  <section class="inkband">
+    <p class="label mono"><span class="dot"></span>Also live</p>
+    <div class="boardrow mono num"><span class="m">JPN · GER</span><span class="s">0–0</span><span class="t">25′</span></div>
+    <div class="boardrow mono num"><span class="m">NED · MAR</span><span class="s">2–1</span><span class="t">40′</span></div>
+  </section>
+
+  <!-- agate: earlier, unboxed ruled rows -->
+  <section class="section">
+    <div class="sechead"><span class="name mono">Earlier</span><span class="rule"></span></div>
+    <div class="agaterow"><span class="m mono">BRA · SCO</span><span class="sc mono num">2–0</span><span class="st mono">FT</span></div>
+    <div class="agaterow"><span class="m mono">KOR · RSA</span><span class="sc mono num">3–1</span><span class="st mono">FT</span></div>
+  </section>
+
+  <!-- agate: tomorrow -->
+  <section class="section">
+    <div class="sechead"><span class="name mono">Tomorrow</span><span class="rule"></span></div>
+    <div class="agaterow"><span class="m mono">ENG · SUI</span><span class="note">Group L · Fox</span><span class="st mono num">12:51</span></div>
+  </section>
+
+  <!-- you follow, de-chipped -->
+  <p class="followline mono">YOU FOLLOW&nbsp;&nbsp;
+    <span class="on"><span class="ldot"></span>USA</span> ·
+    <span class="on"><span class="ldot"></span>TUR</span> ·
+    BRA · <span class="on"><span class="ldot"></span>GER</span> ·
+    <span class="on"><span class="ldot"></span>NED</span> · +1
+  </p>
+
+  <!-- morning brief -->
+  <div class="brief">
+    <p class="q">Want this as a morning email?</p>
+    <p class="a">A calm recap of what your follows did, once a day. No noise.</p>
+    <span class="cta">Set it up</span>
+  </div>
+
+</div>
+</body>
+</html>

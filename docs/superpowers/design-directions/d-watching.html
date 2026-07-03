@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System D — Watching</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* System D applied to Watching.
+     Watching IS the live surface, so the Live Room takes the full ink
+     register: a solid ink field holding one board row per live pin, each
+     with its own progress rail. The closest-game suggestion is a reversed
+     pill (a CTA earns its shape). Non-live pins stay agate on cream. */
+  :root{
+    --cream:#f1ead8; --paper:#faf5e8; --ink:#1a1612;
+    --mute-1:#6b6147; --mute-2:#8a7f63;
+    --line:rgba(26,22,18,.16); --rule:#1a1612;
+    --wc:#1e6b3c;
+    --cream-on-ink:rgba(241,234,216,.92); --cream-on-ink-dim:rgba(241,234,216,.55);
+    --line-on-ink:rgba(241,234,216,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--cream);color:var(--ink);font-family:Inter,sans-serif;
+       -webkit-font-smoothing:antialiased;width:390px}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .disp{font-family:"Bricolage Grotesque",sans-serif}
+  .num{font-variant-numeric:tabular-nums lining-nums}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+       background:var(--wc);animation:breathe 1.8s ease-in-out infinite}
+
+  .page{padding:0 0 28px}
+  .masthead{display:flex;align-items:baseline;justify-content:space-between;
+            padding:14px 18px 10px;border-bottom:2px solid var(--rule)}
+  .masthead .date{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mute-1)}
+  .masthead .brand{display:flex;align-items:center;gap:7px;font-size:15px;
+                   font-weight:700;letter-spacing:-.01em;font-family:"Bricolage Grotesque"}
+  .masthead .brand svg{display:block}
+  .masthead .right{font-size:11px;color:var(--mute-1);letter-spacing:.14em}
+
+  .pagehead{padding:22px 18px 0}
+  .pagehead h1{font-size:31px;font-weight:800;letter-spacing:-.02em;line-height:1.05}
+  .pagehead .meta{display:flex;align-items:center;gap:7px;margin-top:8px;
+                  font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--mute-1)}
+
+  /* ── the Live Room: full ink register ─────────── */
+  .liveroom{margin:18px 0 0;background:var(--ink);color:var(--cream-on-ink);
+            padding:16px 18px 18px}
+  .liveroom .label{display:flex;align-items:baseline;justify-content:space-between;
+                   font-size:10px;letter-spacing:.16em;font-weight:600;
+                   color:var(--cream-on-ink-dim);text-transform:uppercase;
+                   margin-bottom:4px}
+  .liveroom .label .l{display:flex;align-items:center;gap:8px}
+  .liveroom .label .dot{background:var(--cream)}
+  .lrgame{padding:14px 0 12px;border-top:1px solid var(--line-on-ink)}
+  .lrgame:first-of-type{border-top:0}
+  .lrtop{display:flex;align-items:center;gap:10px}
+  .lrtop .idx{font-size:10px;color:var(--cream-on-ink-dim);min-width:18px}
+  .lrtop .m{flex:1;font-size:16px;font-weight:700;letter-spacing:.02em}
+  .lrtop .s{font-size:21px;font-weight:800;letter-spacing:.01em}
+  .lrtop .stamp{font-size:10px;font-weight:700;letter-spacing:.1em;
+                border:1px solid var(--cream-on-ink-dim);padding:3px 6px;
+                color:var(--cream-on-ink);min-width:38px;text-align:center}
+  .lrrail{margin-top:10px;height:2px;background:var(--line-on-ink);position:relative}
+  .lrrail .fill{position:absolute;left:0;top:0;bottom:0;background:var(--wc)}
+  .lrrail .pos{position:absolute;top:50%;width:5px;height:5px;border-radius:50%;
+               background:var(--cream);transform:translate(-50%,-50%)}
+
+  .closest{margin-top:16px}
+  .closest .pill{display:inline-flex;align-items:center;gap:8px;
+                 background:var(--cream);color:var(--ink);font-size:12px;
+                 font-weight:700;padding:10px 16px;border-radius:999px}
+
+  /* ── pinned for later: agate on cream ─────────── */
+  .section{padding:24px 18px 0}
+  .sechead{display:flex;align-items:baseline;justify-content:space-between;
+           padding-bottom:8px;border-bottom:2px solid var(--rule)}
+  .sechead .name{font-size:11px;font-weight:600;letter-spacing:.16em;
+                 color:var(--ink);text-transform:uppercase}
+  .sechead .count{font-size:10px;color:var(--mute-2);letter-spacing:.12em}
+  .agaterow{display:flex;align-items:center;gap:10px;padding:14px 0;
+            border-bottom:1px solid var(--line);font-size:14px}
+  .agaterow .idx{font-size:10px;color:var(--mute-2);min-width:18px;font-weight:600}
+  .agaterow .m{flex:1;font-weight:600;letter-spacing:.01em}
+  .agaterow .note{color:var(--mute-1);font-weight:500;font-size:12.5px}
+  .agaterow .stamp{font-size:10px;font-weight:700;letter-spacing:.1em;
+                   border:1px solid var(--mute-2);color:var(--mute-1);
+                   padding:3px 6px;min-width:38px;text-align:center}
+
+  .pinmore{display:inline-flex;align-items:center;gap:6px;margin:18px 18px 0;
+           font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--mute-1)}
+
+  /* lock-screen status: mono agate footnote */
+  .lockline{margin:22px 18px 0;padding-top:14px;border-top:1px solid var(--line);
+            font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--mute-2)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <span class="mono date num">WED · JUL 2</span>
+    <span class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
+        <rect width="24" height="24" rx="5.5" fill="#1a1612"/>
+        <rect x="3.5" y="8" width="17" height="8" rx="1.8" fill="#f1ead8"/>
+        <circle cx="18.5" cy="10" r="1.2" fill="#b85a2a"/>
+      </svg>
+      <span>No Noise</span>
+    </span>
+    <span class="mono right num">3 LIVE →</span>
+  </header>
+
+  <div class="pagehead">
+    <h1 class="disp">Watching.</h1>
+    <p class="meta mono num"><span class="dot"></span>3 GAMES LIVE</p>
+  </div>
+
+  <!-- the Live Room: the ink register at full strength -->
+  <section class="liveroom">
+    <div class="label mono num">
+      <span class="l"><span class="dot"></span>LIVE ROOM</span>
+      <span style="color:var(--cream-on-ink)">◉ 3 OF 3 LOCK SCREEN SLOTS</span>
+    </div>
+
+    <div class="lrgame">
+      <div class="lrtop mono num">
+        <span class="idx">◉</span><span class="m">TUR · USA</span>
+        <span class="s">1–1</span><span class="stamp">50′</span> <span style="color:var(--cream-on-ink-dim)">→</span>
+      </div>
+      <div class="lrrail"><span class="fill" style="width:55%"></span><span class="pos" style="left:55%"></span></div>
+    </div>
+
+    <div class="lrgame">
+      <div class="lrtop mono num">
+        <span class="idx">◉</span><span class="m">JPN · GER</span>
+        <span class="s">0–0</span><span class="stamp">25′</span> <span style="color:var(--cream-on-ink-dim)">→</span>
+      </div>
+      <div class="lrrail"><span class="fill" style="width:28%"></span><span class="pos" style="left:28%"></span></div>
+    </div>
+
+    <div class="lrgame">
+      <div class="lrtop mono num">
+        <span class="idx">◉</span><span class="m">NED · MAR</span>
+        <span class="s">2–1</span><span class="stamp">40′</span> <span style="color:var(--cream-on-ink-dim)">→</span>
+      </div>
+      <div class="lrrail"><span class="fill" style="width:44%"></span><span class="pos" style="left:44%"></span></div>
+    </div>
+
+    <div class="closest">
+      <span class="pill"><span class="dot"></span>Switch to the closest game</span>
+    </div>
+  </section>
+
+  <!-- non-live pins: agate -->
+  <section class="section">
+    <div class="sechead"><span class="name mono">Tracked for later</span><span class="count mono num">1</span></div>
+    <div class="agaterow">
+      <span class="idx mono num">04</span>
+      <span class="m mono">ENG · SUI</span>
+      <span class="note">Group L · Fox</span>
+      <span class="stamp mono num">00:51</span> <span style="color:var(--mute-2)">→</span>
+    </div>
+  </section>
+
+  <a class="pinmore mono">TRACK MORE FROM FOLLOWING →</a>
+
+  <p class="lockline mono num">TRACKED GAMES LEAVE THE LOCK SCREEN AT FINAL.</p>
+
+</div>
+</body>
+</html>
