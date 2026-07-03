@@ -27,6 +27,8 @@ import { rungFor, peakEligible } from "../system/register";
 import { PinControls } from "./PinControls";
 import { TrackControl } from "./TrackControl";
 import { WCShareModal } from "../share/WCShareModal";
+import { StartingXI, LineupsAreInRow } from "./StartingXI";
+import { useWCLineups } from "./use-wc-lineups";
 
 // Summer Soccer game detail.
 //
@@ -85,6 +87,12 @@ export function WCGameDetail({
   const subject = `${game.away.abbreviation} vs ${game.home.abbreviation}`;
 
   const status = isLive ? "live" : isUpcoming ? "upcoming" : "final";
+
+  // Starting XI (§17) — the programme lineups. Fetched from ESPN's summary
+  // endpoint; renders nothing until it lands (or on hard failure, e.g. preview
+  // ids). `announced` gates the pre-match "Lineups are in" deck disclosure.
+  const lineups = useWCLineups(game.id, status, game.date);
+  const lineupsAnnounced = lineups != null && "teams" in lineups;
 
   // Soccer status labels. "HT" (halftime), "FT" (full time), "90'+3"
   // style strings come from the feed; we surface them verbatim when
@@ -333,6 +341,14 @@ export function WCGameDetail({
           spoilerSubject={subject}
         />
 
+        {/* Lineups-are-in — the §17 quiet deck disclosure. Only pre-match, and
+            only once the XI is announced; scrolls down to the Starting XI. */}
+        {isUpcoming && lineupsAnnounced ? (
+          <div className="px-[18px] pt-4">
+            <LineupsAreInRow />
+          </div>
+        ) : null}
+
         {/* MATCH EVENTS — the ink register (§9 collapse under No-Spoilers) */}
         {showInkField ? (
           <div className="mt-[26px]">
@@ -369,6 +385,11 @@ export function WCGameDetail({
             </InkField>
           </div>
         ) : null}
+
+        {/* STARTING XI (§17) — the programme lineups. Below the events field
+            (or below the monument when upcoming/no events). Not a spoiler;
+            renders nothing until the feed lands. */}
+        <StartingXI lineups={lineups} status={status} />
 
         {/* GROUP — agate section, two chevroned rows into each country page */}
         <section className="px-[18px] pt-6">

@@ -13,8 +13,10 @@ import { GameSpoilerScope } from "../../companion/spoiler/reveal";
 import { TrackControl } from "../../companion/game/TrackControl";
 import { AlsoLiveBand } from "../../companion/today/AlsoLiveBand";
 import { NBALiveCompanion } from "../../companion/game/NBALiveCompanion";
+import { StartingXI } from "../../companion/game/StartingXI";
 import type { Game, TeamPerformers } from "../../nba/types";
 import type { ScoreboardTile } from "../../companion/today/today-data";
+import type { WCLineups } from "../../lib/wc-lineups";
 
 // Dev-only visual QA gallery for the System D primitives. Not linked in the
 // app, noindex (see page.tsx). Static mock data — this page is the harness
@@ -196,6 +198,51 @@ const NBA_DEMO_PERFORMERS: TeamPerformers[] = [
     ],
   },
 ];
+
+// ── STARTING XI (D2 Task 6) fixtures ──────────────────────────────────────
+// Static mock lineups (the mapper's output shape) so the §17 programme module
+// has permanent visual evidence — announced grid + pre-match pending — without
+// hitting /api/wc-lineups. Matches the d-game.html mock (TUR · USA).
+const XI_ANNOUNCED: WCLineups = {
+  teams: [
+    {
+      code: "TUR",
+      formation: "4-2-3-1",
+      starters: [
+        { jersey: "23", name: "Çakır", captain: false },
+        { jersey: "2", name: "Müldür", captain: false },
+        { jersey: "3", name: "Demiral", captain: false },
+        { jersey: "14", name: "Bardakcı", captain: false },
+        { jersey: "20", name: "Kadıoğlu", captain: false },
+        { jersey: "6", name: "Kökçü", captain: false },
+        { jersey: "10", name: "Çalhanoğlu", captain: true },
+        { jersey: "8", name: "Güler", captain: false },
+        { jersey: "7", name: "Aktürkoğlu", captain: false },
+        { jersey: "21", name: "Yıldız", captain: false },
+        { jersey: "9", name: "Kılıçsoy", captain: false },
+      ],
+    },
+    {
+      code: "USA",
+      formation: "4-3-3",
+      starters: [
+        { jersey: "1", name: "Turner", captain: false },
+        { jersey: "2", name: "Dest", captain: false },
+        { jersey: "3", name: "Richards", captain: false },
+        { jersey: "13", name: "Ream", captain: false },
+        { jersey: "5", name: "Robinson", captain: false },
+        { jersey: "4", name: "Adams", captain: true },
+        { jersey: "8", name: "McKennie", captain: false },
+        { jersey: "6", name: "Musah", captain: false },
+        { jersey: "10", name: "Pulisic", captain: false },
+        { jersey: "21", name: "Weah", captain: false },
+        { jersey: "9", name: "Pepi", captain: false },
+      ],
+    },
+  ],
+};
+
+const XI_PENDING: WCLineups = { pending: true };
 
 // Sample wrapper — each NBALiveCompanion owns its pinned state so the
 // TrackControl toggles live in the gallery.
@@ -555,6 +602,21 @@ export function Gallery() {
             performers={NBA_DEMO_PERFORMERS}
             hidden
           />
+        </Bleed>
+      </Section>
+
+      {/* 14 — Starting XI (D2 Task 6, §17): the programme lineups module.
+           Announced grid (shirt numbers as index, captain marked) + the
+           pre-match pending state. Fixtures only — no /api/wc-lineups call. */}
+      <Section title="STARTING XI (D2) — announced / pending">
+        <Label>1 · ANNOUNCED (TUR · USA · captains marked)</Label>
+        <Bleed>
+          <StartingXI lineups={XI_ANNOUNCED} status="live" />
+        </Bleed>
+        <div style={{ height: 24 }} />
+        <Label>2 · PENDING (before announcement)</Label>
+        <Bleed>
+          <StartingXI lineups={XI_PENDING} status="upcoming" />
         </Bleed>
       </Section>
     </main>

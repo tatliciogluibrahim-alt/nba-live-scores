@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
+import { WC_LEAGUE } from "../../../lib/wc-league";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,6 @@ export const dynamic = "force-dynamic";
 // KV-cached briefly so a busy groups page doesn't hammer ESPN; the cache
 // degrades to a live fetch when KV isn't configured (local dev).
 
-const WC_LEAGUE = "fifa.world";
 // Group stage + knockouts. June 11 first whistle → July 19 final.
 const WC_DATE_RANGE = "20260611-20260719";
 const SCOREBOARD_URL = `https://site.api.espn.com/apis/site/v2/sports/soccer/${WC_LEAGUE}/scoreboard?dates=${WC_DATE_RANGE}`;

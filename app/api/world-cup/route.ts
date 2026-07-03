@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
+import { WC_LEAGUE } from "../../lib/wc-league";
 
 export const dynamic = "force-dynamic";
 
 const ESPN_TIMEOUT_MS = 8000;
-const WC_LEAGUE = "fifa.world";
 
 // Server-internal snapshot cache. Every surface (Today, Watching, the widget +
 // Live Activity sync, the scan-wc cron) hits this route on its own timer, so
