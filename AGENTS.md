@@ -114,12 +114,20 @@ Preserve:
 
 - typography direction
 - cream/dark/orange/green palette
-- card style
-- rounded corners
+- card style (see System D note below)
+- rounded corners (see System D note below)
 - No Noise logo
 - team logos on web
 - current sponsor placement
 - current sports picker structure
+
+System D note: on the **app surfaces** (Today shipped in D1, more phases
+following), the card-style and rounded-corners bullets are superseded by the
+System D editorial grammar (unboxed ruled agate rows, ink register fields,
+hairline and heavy rules) per
+`docs/superpowers/specs/2026-07-02-system-d-editorial-redesign-design.md`.
+The palette, No Noise logo, typography direction, and team-logos bullets are
+unchanged. Marketing/web surfaces keep the current card style until D4.
 
 ## Coding Rule
 

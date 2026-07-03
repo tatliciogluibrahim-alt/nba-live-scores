@@ -4,9 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactElement } from "react";
 
-// Three tabs, three jobs. Real Next.js navigation.
-// Pin icon for Watching (NOT a TV — communicates pinned games, not streaming).
-// Active tab gets a 3px ink pill above the icon + bolder label weight.
+// System D bottom TabBar (mobile only). Broadsheet chrome, not a filled
+// control strip: cream bar, a hairline top rule (--line), ink-register
+// icons, and 10px uppercase mono labels. The active tab is carried by the
+// ink register itself — full ink + heavier label weight — so no pill or
+// fill is needed (spec §2: "active tab ink-weight"). Inactive tabs sit at
+// --mute-1, the ink register's muted step, matching the masthead's chrome.
+// Three tabs, three jobs, real Next.js navigation. Pin icon for Watching
+// (NOT a TV — communicates pinned games, not streaming).
 
 type Tab = {
   id: "today" | "following" | "watching";
@@ -107,6 +112,8 @@ export function TabBar() {
       className="fixed inset-x-0 bottom-0 z-40 border-t md:hidden"
       style={{
         background: "var(--cream)",
+        // Hairline top rule — System D chrome (not the heavy 2px --rule the
+        // masthead / section heads carry).
         borderColor: "var(--line)",
         paddingBottom: "max(env(safe-area-inset-bottom), 12px)",
         // In landscape on Dynamic-Island devices, the island sits on
@@ -126,26 +133,20 @@ export function TabBar() {
                 aria-label={ariaLabel}
                 aria-current={active ? "page" : undefined}
                 prefetch
-                className="relative mx-auto flex min-h-[44px] flex-col items-center gap-1 px-2 py-1 transition-opacity"
-                style={{
-                  color: active ? "var(--ink)" : "var(--mute-1)",
-                  opacity: active ? 1 : 0.85,
-                }}
+                className="mx-auto flex min-h-[44px] flex-col items-center gap-[5px] px-2 py-1 transition-opacity active:opacity-70"
+                // Ink = here, mute = elsewhere. The active tab reads through
+                // the ink register, no pill or fill.
+                style={{ color: active ? "var(--ink)" : "var(--mute-1)" }}
               >
-                {/* Active indicator pill — 3px ink */}
-                <span
-                  aria-hidden
-                  className="absolute left-1/2 top-0 -translate-x-1/2 rounded-full transition-[width] duration-200"
-                  style={{
-                    width: active ? 18 : 0,
-                    height: 3,
-                    background: "var(--ink)",
-                  }}
-                />
                 <Icon />
                 <span
-                  className="text-[10px] uppercase tracking-[0.06em]"
-                  style={{ fontWeight: active ? 800 : 600 }}
+                  className="uppercase"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    fontWeight: active ? 700 : 600,
+                    letterSpacing: "0.14em",
+                  }}
                 >
                   {label}
                 </span>

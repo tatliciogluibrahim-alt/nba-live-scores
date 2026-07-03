@@ -62,10 +62,13 @@ const pinned = [
 //                 in the lead slot. Feeds mocked empty + preview OFF so no live
 //                 monument competes with the one setup CTA. Brief footer
 //                 pre-dismissed to keep it to a single CTA.
-//   nospoilers  — default follows + pins, prefs.noSpoilers=true, real preview
-//                 feed (the live match day). The lead pinned/followed live
-//                 game frosts (scores + deck) via the inherited Spoiler scope;
-//                 NBA feed mocked empty for determinism.
+//   nospoilers  — default follows + pins, prefs.noSpoilers=true. The WC
+//                 preview feed is MOCKED to a canned live match day (USA-TUR
+//                 live 50', GER-JPN live 25', NED-MAR live 40', a final, an
+//                 upcoming) so the shot is fully deterministic and never leans
+//                 on the live dev route. The lead pinned/followed live game
+//                 frosts (scores + deck) via the inherited Spoiler scope; NBA
+//                 feed mocked empty too.
 const QA_STATE = process.env.QA_STATE || "";
 const MOBILE_STATES = new Set(["quiet", "fresh", "nospoilers"]);
 
@@ -151,6 +154,92 @@ function quietWcFeed() {
     ],
   };
 }
+// ── No-Spoilers feed: the standard live match day, canned ──────────────
+// Mirrors app/api/preview/world-cup/route.ts FeedGame shapes exactly (the
+// three pinned lives keep their ids so the pins resolve), but pins the data
+// in-script so the nospoilers shot never depends on the live preview route.
+function nospoilersWcFeed() {
+  return {
+    games: [
+      {
+        // USA vs TUR — live, 50', 1–1. The pinned + followed lead; frosts.
+        id: "preview-wc-usa-tur",
+        date: offsetIso(-50 * 60 * 1000),
+        status: "live",
+        statusText: "50'",
+        stage: "Group Stage",
+        group: "D",
+        home: { name: "United States", abbreviation: "USA", score: 1 },
+        away: { name: "Türkiye", abbreviation: "TUR", score: 1 },
+        broadcasts: ["FOX"],
+        watchLabel: "FOX",
+        events: [
+          { minute: "23'", type: "goal", playerName: "Güler", teamId: "TUR" },
+          { minute: "41'", type: "goal", playerName: "Pulisic", assistName: "Weah", teamId: "USA" },
+        ],
+      },
+      {
+        // GER vs JPN — second live, 25', 0–0. Pinned.
+        id: "preview-wc-ger-jpn",
+        date: offsetIso(-25 * 60 * 1000),
+        status: "live",
+        statusText: "25'",
+        stage: "Group Stage",
+        group: "E",
+        home: { name: "Germany", abbreviation: "GER", score: 0 },
+        away: { name: "Japan", abbreviation: "JPN", score: 0 },
+        broadcasts: ["FS1"],
+        watchLabel: "FS1",
+      },
+      {
+        // NED vs MAR — third live, 40', NED 2–1 MAR. Pinned.
+        id: "preview-wc-ned-mar",
+        date: offsetIso(-40 * 60 * 1000),
+        status: "live",
+        statusText: "40'",
+        stage: "Group Stage",
+        group: "F",
+        home: { name: "Morocco", abbreviation: "MAR", score: 1 },
+        away: { name: "Netherlands", abbreviation: "NED", score: 2 },
+        broadcasts: ["FOX"],
+        watchLabel: "FOX",
+        events: [
+          { minute: "12'", type: "goal", playerName: "Gakpo", teamId: "NED" },
+          { minute: "31'", type: "goal", playerName: "En-Nesyri", teamId: "MAR" },
+          { minute: "38'", type: "goal", playerName: "Simons", assistName: "Frimpong", teamId: "NED" },
+        ],
+      },
+      {
+        // BRA vs SCO — final earlier today, 2–0. Drives QUIET WRAP; BRA is
+        // followed, so it must also frost under No-Spoilers.
+        id: "preview-wc-bra-sco",
+        date: offsetIso(-4 * 60 * 60 * 1000),
+        status: "final",
+        statusText: "Full time",
+        stage: "Group Stage",
+        group: "C",
+        home: { name: "Scotland", abbreviation: "SCO", score: 0 },
+        away: { name: "Brazil", abbreviation: "BRA", score: 2 },
+        broadcasts: ["FOX"],
+        watchLabel: "FOX",
+      },
+      {
+        // PAR vs AUS — upcoming later tonight. Drives an UP NEXT slot (no
+        // score, so nothing to redact).
+        id: "preview-wc-par-aus",
+        date: offsetIso(3 * 60 * 60 * 1000),
+        status: "upcoming",
+        statusText: "Upcoming",
+        stage: "Group Stage",
+        group: "D",
+        home: { name: "Australia", abbreviation: "AUS", score: 0 },
+        away: { name: "Paraguay", abbreviation: "PAR", score: 0 },
+        broadcasts: ["FS1"],
+        watchLabel: "FS1",
+      },
+    ],
+  };
+}
 const EMPTY_NBA = JSON.stringify({ games: [], seriesGames: [] });
 
 // Register per-state network mocks on a context so the feed is deterministic
@@ -170,8 +259,12 @@ async function applyStateRoutes(context) {
     await context.route("**/api/world-cup", json(empty));
     await context.route("**/api/live-scores", json(EMPTY_NBA));
   } else if (QA_STATE === "nospoilers") {
-    // Keep the real WC preview feed (the live match day); only pin NBA to
-    // empty so an out-of-season live-scores blip can't perturb the shot.
+    // Pin the WC preview feed to the canned live match day (not the live
+    // dev route) so the frosted-monument shot is fully deterministic, and
+    // pin NBA to empty so an out-of-season live-scores blip can't perturb it.
+    const feed = JSON.stringify(nospoilersWcFeed());
+    await context.route("**/api/preview/world-cup", json(feed));
+    await context.route("**/api/world-cup", json(feed));
     await context.route("**/api/live-scores", json(EMPTY_NBA));
   }
 }
