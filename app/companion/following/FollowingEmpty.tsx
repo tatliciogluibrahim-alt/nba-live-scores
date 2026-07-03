@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Display } from "../atoms/Display";
+import { Masthead } from "../system/Masthead";
 import { FOLLOW_MOMENTS } from "./FollowChoice";
 import { MomentSection } from "./MomentSection";
 import { EmptyStateSync } from "./EmptyStateSync";
@@ -13,6 +14,13 @@ import { EmptyStateSync } from "./EmptyStateSync";
 export function FollowingEmpty() {
   return (
     <section>
+      {/* Mobile app-tab chrome — the Masthead replaces the removed BrandBar
+          (no follows yet, so no live count). Task 3 recomposes the empty
+          body below into System D agate; this keeps the header present. */}
+      <div className="md:hidden -mx-4 mb-5">
+        <Masthead liveCount={0} />
+      </div>
+
       <Display as="h1" size="lg" className="mb-2">
         Build your sports circle.
       </Display>

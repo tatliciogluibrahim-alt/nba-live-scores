@@ -91,7 +91,23 @@ function detailHrefFor(follow: Follow): string | null {
   }
 }
 
-export function FollowCard({ data }: { data: FollowCardData }) {
+// ── Drawer body — the shared alert/No-Spoilers/unfollow controls ────────
+//
+// Extracted verbatim from FollowCard's expandable drawer so the System D
+// mobile FollowRow (D3) can reuse the SAME panel as its row expansion
+// instead of rebuilding it. FollowCard (desktop, until D4) and FollowRow
+// (mobile) both render this inside their own enclosure. Every feature —
+// the alert on/off toggle, the tier PresetRow, per-follow No-Spoilers, and
+// unfollow — lives here so neither surface can drift from the other.
+export function FollowDrawerBody({
+  follow,
+  name,
+  wrapped,
+}: {
+  follow: Follow;
+  name: string;
+  wrapped?: boolean;
+}) {
   const {
     alertSlotCount,
     alertSlotCap,
@@ -100,14 +116,14 @@ export function FollowCard({ data }: { data: FollowCardData }) {
     setFollowHideSpoilers,
     removeFollow,
   } = useFollows();
-  const [expanded, setExpanded] = useState(false);
 
-  const { follow, kindLabel, identityMark, name, detail, accent, wrapped, isLive } =
-    data;
-  const presetMeta = PRESETS[follow.alertTier];
   const slotsFull = alertSlotCount >= alertSlotCap;
   const canEnable = follow.alertEnabled || !slotsFull;
-  const detailHref = detailHrefFor(follow);
+  // Per-follow No-Spoilers only makes sense for the kinds we can match to
+  // a game's participants (team / country / series). Tournament follows
+  // are too broad — that's what the global toggle is for.
+  const canSelectiveHide = follow.kind !== "tournament";
+  const presetMeta = PRESETS[follow.alertTier];
 
   function handlePreset(next: AlertPreset) {
     setFollowAlertTier(follow.kind, follow.id, next);
@@ -125,10 +141,139 @@ export function FollowCard({ data }: { data: FollowCardData }) {
     setFollowHideSpoilers(follow.kind, follow.id, !follow.hideSpoilers);
   }
 
-  // Per-follow No-Spoilers only makes sense for the kinds we can match to
-  // a game's participants (team / country / series). Tournament follows
-  // are too broad — that's what the global toggle is for.
-  const canSelectiveHide = follow.kind !== "tournament";
+  return (
+    <>
+      {wrapped ? (
+        <p
+          className="mb-2 text-[12px] leading-snug"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          Season wrapped. There are no alerts left to send. Keep this for
+          posterity, or unfollow below.
+        </p>
+      ) : null}
+      <Eyebrow>Alerts</Eyebrow>
+      <button
+        type="button"
+        onClick={handleAlertToggle}
+        disabled={!canEnable || wrapped}
+        aria-label={`${follow.alertEnabled ? "Disable" : "Enable"} alerts for ${name}`}
+        // Disabled state used to rely on opacity alone, which read
+        // as just "slightly faded" rather than "you can't do this
+        // right now." The dashed border makes the affordance
+        // visibly different from an enabled button — same pattern
+        // the dashed Watch+Alerts shortcut uses on Following.
+        className="mt-2 inline-flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
+        style={{
+          background: follow.alertEnabled ? "var(--cream-2)" : "transparent",
+          borderColor: follow.alertEnabled ? "var(--ink)" : "var(--line)",
+          borderStyle: canEnable ? "solid" : "dashed",
+          opacity: canEnable ? 1 : 0.6,
+          cursor: canEnable ? "pointer" : "not-allowed",
+        }}
+      >
+        <span
+          className="text-[13px]"
+          style={{ color: "var(--ink)", fontWeight: 700 }}
+        >
+          {follow.alertEnabled
+            ? `${presetMeta.label} alerts on`
+            : "Alerts off"}
+        </span>
+        <span
+          className="text-[11px]"
+          style={{ color: "var(--mute-1)", fontWeight: 600 }}
+        >
+          {follow.alertEnabled ? "Manage" : canEnable ? "Turn on" : "Full"}
+        </span>
+      </button>
+      {!canEnable ? (
+        <p
+          className="mt-2 text-[12px] leading-snug"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          Alert slots are full ({alertSlotCount} of {alertSlotCap} on
+          the free plan). Turn one off to enable this. Unlimited
+          alerts land in a paid tier later.
+        </p>
+      ) : null}
+      <div className="mt-2">
+        {follow.alertEnabled ? (
+          <PresetRow
+            value={follow.alertTier}
+            onChange={handlePreset}
+            subjectLabel={name}
+          />
+        ) : null}
+      </div>
+
+      {/* Per-follow No-Spoilers (the premium "selective" control).
+          The global toggle in Settings hides everything; this hides
+          only this follow's games, even with the global toggle off.
+          Tap-to-reveal still applies on each game. */}
+      {canSelectiveHide ? (
+        <div className="mt-3">
+          <Eyebrow>No-Spoilers</Eyebrow>
+          <button
+            type="button"
+            onClick={handleHideSpoilersToggle}
+            aria-label={`${follow.hideSpoilers ? "Stop hiding" : "Hide"} spoilers for ${name}`}
+            className="mt-2 inline-flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
+            style={{
+              background: follow.hideSpoilers ? "var(--cream-2)" : "transparent",
+              borderColor: follow.hideSpoilers ? "var(--ink)" : "var(--line)",
+            }}
+          >
+            <span
+              className="text-[13px]"
+              style={{ color: "var(--ink)", fontWeight: 700 }}
+            >
+              {follow.hideSpoilers ? "Hiding spoilers" : "Spoilers shown"}
+            </span>
+            <span
+              className="text-[11px]"
+              style={{ color: "var(--mute-1)", fontWeight: 600 }}
+            >
+              {follow.hideSpoilers ? "Tap to show" : "Tap to hide"}
+            </span>
+          </button>
+          <p
+            className="mt-2 text-[12px] leading-snug"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            {follow.hideSpoilers
+              ? `Scores and results for ${name} stay hidden until you reveal them.`
+              : `Hide scores and results for ${name} until you tap to reveal.`}
+          </p>
+        </div>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={handleRemove}
+        aria-label={`Unfollow ${name}`}
+        className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+        style={{
+          background: "transparent",
+          color: "var(--ink)",
+          border: "1px solid var(--line)",
+        }}
+      >
+        Unfollow
+      </button>
+    </>
+  );
+}
+
+export function FollowCard({ data }: { data: FollowCardData }) {
+  const { alertSlotCount, alertSlotCap } = useFollows();
+  const [expanded, setExpanded] = useState(false);
+
+  const { follow, kindLabel, identityMark, name, detail, accent, wrapped, isLive } =
+    data;
+  const presetMeta = PRESETS[follow.alertTier];
+  const slotsFull = alertSlotCount >= alertSlotCap;
+  const detailHref = detailHrefFor(follow);
 
   const identityChip = (
     <span
@@ -313,124 +458,7 @@ export function FollowCard({ data }: { data: FollowCardData }) {
             className="border-t px-3 py-3"
             style={{ borderColor: "var(--line)" }}
           >
-          {wrapped ? (
-            <p
-              className="mb-2 text-[12px] leading-snug"
-              style={{ color: "var(--mute-1)", fontWeight: 500 }}
-            >
-              Season wrapped. There are no alerts left to send — keep this for
-              posterity, or unfollow below.
-            </p>
-          ) : null}
-          <Eyebrow>Alerts</Eyebrow>
-          <button
-            type="button"
-            onClick={handleAlertToggle}
-            disabled={!canEnable || wrapped}
-            aria-label={`${follow.alertEnabled ? "Disable" : "Enable"} alerts for ${name}`}
-            // Disabled state used to rely on opacity alone, which read
-            // as just "slightly faded" rather than "you can't do this
-            // right now." The dashed border makes the affordance
-            // visibly different from an enabled button — same pattern
-            // the dashed Watch+Alerts shortcut uses on Following.
-            className="mt-2 inline-flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
-            style={{
-              background: follow.alertEnabled ? "var(--cream-2)" : "transparent",
-              borderColor: follow.alertEnabled ? "var(--ink)" : "var(--line)",
-              borderStyle: canEnable ? "solid" : "dashed",
-              opacity: canEnable ? 1 : 0.6,
-              cursor: canEnable ? "pointer" : "not-allowed",
-            }}
-          >
-            <span
-              className="text-[13px]"
-              style={{ color: "var(--ink)", fontWeight: 700 }}
-            >
-              {follow.alertEnabled
-                ? `${presetMeta.label} alerts on`
-                : "Alerts off"}
-            </span>
-            <span
-              className="text-[11px]"
-              style={{ color: "var(--mute-1)", fontWeight: 600 }}
-            >
-              {follow.alertEnabled ? "Manage" : canEnable ? "Turn on" : "Full"}
-            </span>
-          </button>
-          {!canEnable ? (
-            <p
-              className="mt-2 text-[12px] leading-snug"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-              Alert slots are full ({alertSlotCount} of {alertSlotCap} on
-              the free plan). Turn one off to enable this. Unlimited
-              alerts land in a paid tier later.
-            </p>
-          ) : null}
-          <div className="mt-2">
-            {follow.alertEnabled ? (
-              <PresetRow
-                value={follow.alertTier}
-                onChange={handlePreset}
-                subjectLabel={name}
-              />
-            ) : null}
-          </div>
-
-          {/* Per-follow No-Spoilers (the premium "selective" control).
-              The global toggle in Settings hides everything; this hides
-              only this follow's games, even with the global toggle off.
-              Tap-to-reveal still applies on each game. */}
-          {canSelectiveHide ? (
-            <div className="mt-3">
-              <Eyebrow>No-Spoilers</Eyebrow>
-              <button
-                type="button"
-                onClick={handleHideSpoilersToggle}
-                aria-label={`${follow.hideSpoilers ? "Stop hiding" : "Hide"} spoilers for ${name}`}
-                className="mt-2 inline-flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
-                style={{
-                  background: follow.hideSpoilers ? "var(--cream-2)" : "transparent",
-                  borderColor: follow.hideSpoilers ? "var(--ink)" : "var(--line)",
-                }}
-              >
-                <span
-                  className="text-[13px]"
-                  style={{ color: "var(--ink)", fontWeight: 700 }}
-                >
-                  {follow.hideSpoilers ? "Hiding spoilers" : "Spoilers shown"}
-                </span>
-                <span
-                  className="text-[11px]"
-                  style={{ color: "var(--mute-1)", fontWeight: 600 }}
-                >
-                  {follow.hideSpoilers ? "Tap to show" : "Tap to hide"}
-                </span>
-              </button>
-              <p
-                className="mt-2 text-[12px] leading-snug"
-                style={{ color: "var(--mute-1)", fontWeight: 500 }}
-              >
-                {follow.hideSpoilers
-                  ? `Scores and results for ${name} stay hidden until you reveal them.`
-                  : `Hide scores and results for ${name} until you tap to reveal.`}
-              </p>
-            </div>
-          ) : null}
-
-          <button
-            type="button"
-            onClick={handleRemove}
-            aria-label={`Unfollow ${name}`}
-            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
-            style={{
-              background: "transparent",
-              color: "var(--ink)",
-              border: "1px solid var(--line)",
-            }}
-          >
-            Unfollow
-          </button>
+            <FollowDrawerBody follow={follow} name={name} wrapped={wrapped} />
           </div>
         </div>
       </div>
