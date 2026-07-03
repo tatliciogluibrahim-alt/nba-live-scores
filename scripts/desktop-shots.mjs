@@ -276,6 +276,9 @@ const allRoutes = [
   ["game", "/game/preview-wc-usa-tur"],
   ["settings", "/settings"],
   ["system", "/dev/system-preview"],
+  ["tournament", "/tournament/fifa-world-cup-2026"],
+  ["groups", "/tournament/fifa-world-cup-2026/groups"],
+  ["bracket", "/tournament/fifa-world-cup-2026/bracket"],
 ];
 // The state variants default to Today but the game + watching routes are
 // state-aware too (D2): QA_STATE=nospoilers QA_ROUTES=game,watching shoots
