@@ -14,6 +14,9 @@ import { TrackControl } from "../../companion/game/TrackControl";
 import { AlsoLiveBand } from "../../companion/today/AlsoLiveBand";
 import { NBALiveCompanion } from "../../companion/game/NBALiveCompanion";
 import { StartingXI } from "../../companion/game/StartingXI";
+import { TierLegend } from "../../companion/following/TierLegend";
+import { FOLLOW_MOMENTS } from "../../companion/following/FollowChoice";
+import type { FollowMoment } from "../../companion/following/FollowChoice";
 import type { Game, TeamPerformers } from "../../nba/types";
 import type { ScoreboardTile } from "../../companion/today/today-data";
 import type { WCLineups } from "../../lib/wc-lineups";
@@ -619,6 +622,151 @@ export function Gallery() {
           <StartingXI lineups={XI_PENDING} status="upcoming" />
         </Bleed>
       </Section>
+
+      {/* 15 — TierLegend (D3 Task 3): the self-gating educational row that
+           appears under the first tier-stamped section head. Two states:
+           visible (with dismissible ✕) and dismissed (renders nothing).
+           The "?" on the section head re-opens it. */}
+      <Section title="TIER LEGEND (D3) — visible / dismissed / ? re-open">
+        <Label>1 · VISIBLE (fresh user, first time)</Label>
+        <SecHead name="Live now" count="4" onHelp={() => {}} />
+        <TierLegendPreview />
+        <div style={{ height: 24 }} />
+        <Label>2 · DISMISSED (legend hidden, ? affordance active)</Label>
+        <SecHead name="Live now" count="4" onHelp={() => {}} />
+        <TierLegend visible={false} onDismiss={() => {}} />
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--mute-2)",
+            letterSpacing: "0.08em",
+            paddingTop: 4,
+          }}
+        >
+          (dismissed — nothing rendered below the head)
+        </p>
+      </Section>
+
+      {/* 16 — Following empty state mobile composition (D3 Task 3): the
+           System D agate row version of the onboarding screen. Moment rows
+           with sport-accent left ticks, "Coming Aug 2026" stamp on NFL.
+           Static mock — no live hooks (EmptyStateSync / useFollows). */}
+      <Section title="FOLLOWING EMPTY (D3 mobile) — moment agate rows">
+        <Bleed>
+          <Masthead liveCount={0} />
+        </Bleed>
+        <div style={{ height: 20 }} />
+        <h1
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "31px",
+            fontWeight: 800,
+            letterSpacing: "-0.02em",
+            lineHeight: 1.05,
+            color: "var(--ink)",
+            margin: 0,
+          }}
+        >
+          Build your sports circle.
+        </h1>
+        <div style={{ marginTop: 20 }}>
+          {FOLLOW_MOMENTS.map((m) => (
+            <GalleryEmptyMomentRow key={m.id} moment={m} />
+          ))}
+        </div>
+      </Section>
     </main>
+  );
+}
+
+// ── Gallery-only helpers (D3 Task 3) ─────────────────────────────────────
+
+/** Interactive TierLegend preview — owns its own dismiss state so the
+ *  gallery shows both transitions without wiring to real localStorage. */
+function TierLegendPreview() {
+  const [visible, setVisible] = useState(true);
+  return (
+    <>
+      <TierLegend visible={visible} onDismiss={() => setVisible(false)} />
+      {!visible && (
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--mute-2)",
+            letterSpacing: "0.08em",
+            paddingTop: 4,
+          }}
+        >
+          (tapped ✕ — legend dismissed)
+        </p>
+      )}
+    </>
+  );
+}
+
+/** Static agate row for the empty-state moment list (mirrors EmptyMomentRow
+ *  in FollowingEmpty.tsx, gallery-safe: no router Link, no hooks). */
+function GalleryEmptyMomentRow({ moment }: { moment: FollowMoment }) {
+  const isComingSoon = Boolean(moment.comingSoon);
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        paddingTop: 14,
+        paddingBottom: 14,
+        borderBottom: "1px solid var(--line)",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          display: "block",
+          width: 3,
+          alignSelf: "stretch",
+          background: moment.accent,
+          flexShrink: 0,
+          borderRadius: 1,
+          marginRight: 2,
+        }}
+      />
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span
+          style={{
+            display: "block",
+            fontFamily: "var(--font-display)",
+            fontSize: 17,
+            fontWeight: 700,
+            letterSpacing: "-0.01em",
+            color: "var(--ink)",
+          }}
+        >
+          {moment.name}
+        </span>
+        <span
+          style={{
+            display: "block",
+            marginTop: 2,
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            color: "var(--mute-2)",
+          }}
+        >
+          {moment.description}
+        </span>
+      </span>
+      {isComingSoon ? (
+        <Stamp text="Coming Aug 2026" variant="outline" />
+      ) : (
+        <span aria-hidden style={{ color: "var(--mute-2)" }}>
+          →
+        </span>
+      )}
+    </div>
   );
 }

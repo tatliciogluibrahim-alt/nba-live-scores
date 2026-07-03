@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { Masthead } from "../system/Masthead";
@@ -18,6 +18,14 @@ import { useLiveFollows, isFollowLive } from "./use-live-follows";
 import { SportsCircleShareModal } from "../share/SportsCircleShareModal";
 import { SyncCircleModal } from "./SyncCircleModal";
 import { FirstFollowTierCard } from "../follow/FirstFollowTierCard";
+import { TierLegend } from "./TierLegend";
+import { readLegendSeen, writeLegendSeen } from "./tier-legend-storage";
+
+// Stable no-op subscriber for useSyncExternalStore. localStorage has no
+// observable events; the legend-seen flag is read once per mount.
+function legendStorageSubscribe() {
+  return () => {};
+}
 
 /** Detect "overlapping" follow combinations — these aren't bugs but
  *  they raise the "am I getting two notifications per event?" worry.
@@ -435,16 +443,59 @@ function FollowingMobile({
       return next;
     });
 
+  // Tier legend visibility — lint-compliant SSR-safe approach:
+  //   useSyncExternalStore reads localStorage on the client and returns the
+  //   server snapshot (false = never seen → show) during SSR. If snapshots
+  //   differ after hydration, React remounts to sync. No useEffect needed.
+  const legendSeenInStorage = useSyncExternalStore(
+    legendStorageSubscribe,
+    () => readLegendSeen(), // client snapshot
+    () => false             // server snapshot: never seen → show legend
+  );
+  // Within-session override flags: dismiss hides, re-open shows.
+  const [dismissedThisSession, setDismissedThisSession] = useState(false);
+  const [reopenedThisSession, setReopenedThisSession] = useState(false);
+  const legendOpen =
+    (!legendSeenInStorage && !dismissedThisSession) || reopenedThisSession;
+
+  function handleLegendDismiss() {
+    writeLegendSeen();
+    setDismissedThisSession(true);
+    setReopenedThisSession(false);
+  }
+
+  function handleLegendReopen() {
+    setReopenedThisSession(true);
+  }
+
+  // Which section head hosts the "?" and the legend panel — the first
+  // non-empty tier-stamped section (LIVE NOW > UP NEXT > WRAPPED).
+  const firstKey: "live" | "next" | "wrapped" | null =
+    liveNow.length > 0 ? "live" : upNext.length > 0 ? "next" : wrapped.length > 0 ? "wrapped" : null;
+
   const followCount = follows.length;
   const countLine = `${followCount} ${followCount === 1 ? "follow" : "follows"} · ${alertSlotCount} of ${alertSlotCap} alert slots used`;
 
   const overlap = hasOverlappingFollows(follows);
 
-  function renderSection(label: string, items: FollowCardData[]) {
+  function renderSection(
+    label: string,
+    items: FollowCardData[],
+    sectionKey: "live" | "next" | "wrapped"
+  ) {
     if (items.length === 0) return null;
+    const isFirst = sectionKey === firstKey;
     return (
       <section className="mt-6">
-        <SecHead name={label} count={String(items.length)} />
+        <SecHead
+          name={label}
+          count={String(items.length)}
+          onHelp={isFirst ? handleLegendReopen : undefined}
+        />
+        {/* Tier legend — only under the first populated section head. */}
+        {isFirst && (
+          <TierLegend visible={legendOpen} onDismiss={handleLegendDismiss} />
+        )}
         {items.map((c) => {
           const key = keyOf(c);
           return (
@@ -567,9 +618,9 @@ function FollowingMobile({
         </Link>
       ) : null}
 
-      {renderSection("Live now", liveNow)}
-      {renderSection("Up next", upNext)}
-      {renderSection("Wrapped", wrapped)}
+      {renderSection("Live now", liveNow, "live")}
+      {renderSection("Up next", upNext, "next")}
+      {renderSection("Wrapped", wrapped, "wrapped")}
 
       {/* Per-sport cross-link — the bracket destination, WC followers only. */}
       {followsWC ? (
