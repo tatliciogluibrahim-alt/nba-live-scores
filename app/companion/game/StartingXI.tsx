@@ -83,7 +83,8 @@ function XIColumn({ team }: { team: StartingXITeam }) {
               minWidth: 16,
             }}
           >
-            {player.jersey}
+            {/* Zero-padded per spec §17 ("09 GÜLER") — index-numeral device. */}
+            {player.jersey ? player.jersey.padStart(2, "0") : player.jersey}
           </span>
           <span className="min-w-0">
             {player.name}

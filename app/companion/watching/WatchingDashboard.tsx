@@ -85,9 +85,11 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
   const native = useIsNative();
   const meta = buildWatchingMeta(items, stalePins.length);
 
-  // Live Room gate is unchanged from the dock: ≥2 live pins. Non-dock pins
-  // (non-live when the room is on, else every pin) fall to the TRACKED list.
-  const liveRoomMode = liveCount >= 2;
+  // Mobile Live Room takes ANY live pin (≥1). Watching is the tracking
+  // surface — a live tracked game under a "Tracked for later" heading reads
+  // as a contradiction (the §8 single-game flow hits this constantly).
+  // Desktop keeps its legacy ≥2 gate until D4.
+  const liveRoomMode = liveCount >= 1;
   const restItems = liveRoomMode ? items.filter((i) => i.status !== "live") : items;
 
   return (
@@ -120,7 +122,7 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
         <span className="tabular-nums lining-nums">{meta.text}</span>
       </p>
 
-      {/* Live Room ink field — self-gates to nothing below 2 live pins */}
+      {/* Live Room ink field — self-gates to nothing when no pin is live */}
       <LiveRoomField payload={payload} />
 
       {/* Tracked for later — the non-dock pins as agate rows */}

@@ -177,17 +177,18 @@ function parseScoreLine(line: string | null): [number | null, number | null] {
 // meter in the label row, and a cream "switch to the closest game" pill.
 // Mirrors docs/superpowers/design-directions/d-watching.html + d-docking.html.
 //
-// Gating is unchanged from the desktop dock: ≥2 live pins. Non-dock pins
-// (upcoming / final, or the single-live case) render in the TRACKED list
-// below via WatchingDashboard. Rendered inside WatchingDashboard's md:hidden
-// branch, so no md:hidden here; it bleeds edge-to-edge with -mx-4 like the
-// Today ALSO LIVE band.
+// Gates on ANY live pin (≥1) — Watching is the tracking surface, so a live
+// tracked game always sits in the room (the single-game §8 flow is the
+// common case). Non-live pins render in the TRACKED list below via
+// WatchingDashboard. Rendered inside WatchingDashboard's md:hidden branch,
+// so no md:hidden here; it bleeds edge-to-edge with -mx-4 like the Today
+// ALSO LIVE band.
 
 export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
   const noSpoilers = useNoSpoilers();
   const native = useIsNative();
   const liveItems = payload.items.filter((i) => i.status === "live");
-  if (liveItems.length < 2) return null;
+  if (liveItems.length < 1) return null;
 
   // payload.items keeps live in newest-pinned-first order — the same order the
   // LiveActivitySync poll grants lock-screen slots in.

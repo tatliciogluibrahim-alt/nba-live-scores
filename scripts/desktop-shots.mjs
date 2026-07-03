@@ -273,14 +273,14 @@ const allRoutes = [
   ["today", "/app"],
   ["following", "/following"],
   ["watching", "/watching"],
-  ["game-detail", "/game/preview-wc-usa-tur"],
+  ["game", "/game/preview-wc-usa-tur"],
   ["settings", "/settings"],
   ["system", "/dev/system-preview"],
-  ["game", "/game/preview-wc-usa-tur"],
-  ["watching", "/watching"],
 ];
-// The state variants only meaningfully differ on Today, so default those runs
-// to the today route (keeps them fast + focused). QA_ROUTES still overrides.
+// The state variants default to Today but the game + watching routes are
+// state-aware too (D2): QA_STATE=nospoilers QA_ROUTES=game,watching shoots
+// the frosted monument + collapsed events field + slot-marked Live Room.
+// QA_ROUTES overrides the default route list for any state.
 const stateDefaultRoutes = MOBILE_STATES.has(QA_STATE) ? ["today"] : null;
 const onlyRoutes = process.env.QA_ROUTES
   ? process.env.QA_ROUTES.split(",").map((s) => s.trim())
