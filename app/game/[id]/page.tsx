@@ -1,5 +1,5 @@
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../companion/game/DetailCrumbs";
 import { GameDetailClient } from "../../companion/game/GameDetailClient";
 
 export const metadata = {
@@ -15,7 +15,7 @@ export default async function GamePage({
 
   return (
     <CompanionFrame desktopNav="detail">
-      <CrumbBar backHref="/watching" backLabel="Watching" title="Game" />
+      <DetailCrumbs backHref="/watching" backLabel="Watching" title="Game" />
       <GameDetailClient gameId={id} />
     </CompanionFrame>
   );
