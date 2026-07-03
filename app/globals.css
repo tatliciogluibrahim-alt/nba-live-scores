@@ -65,6 +65,16 @@ html, body {
   --cream-on-dark-tertiary:   rgba(241, 234, 216, 0.6);
   --cream-on-dark-hairline:   rgba(241, 234, 216, 0.35);
 
+  /* System D ink-field tokens. Cream text + hairlines that sit on the ink
+     field (the third register rung). Values are literal cream rgba so they
+     stay correct on the panel in both themes. --ink-field-bg is the panel
+     surface itself: solid ink in light, the raised --paper panel in dark
+     (overridden below) so the field reads as elevation, not a black hole. */
+  --cream-on-ink:      rgba(241, 234, 216, 0.92);
+  --cream-on-ink-dim:  rgba(241, 234, 216, 0.55);
+  --line-on-ink:       rgba(241, 234, 216, 0.18);
+  --ink-field-bg:      var(--ink);
+
   /* Fonts. Next.js (app/layout.tsx) replaces these CSS variables with
      real font-family values for Bricolage Grotesque (display), Inter
      (body), and JetBrains Mono (mono) when the web fonts are loaded.
@@ -143,6 +153,11 @@ html, body {
   --cream-on-dark-secondary:   rgba(241, 234, 216, 0.78);
   --cream-on-dark-tertiary:    rgba(241, 234, 216, 0.6);
   --cream-on-dark-hairline:    rgba(241, 234, 216, 0.35);
+
+  /* Dark rung-2: the ink field renders as the raised --paper panel with
+     cream rules (spec §9). Cream-on-ink text tokens keep their light values
+     — they sit on this panel and stay legible. */
+  --ink-field-bg:              var(--paper);
 
   --bar-blur-bg:               rgba(29, 24, 18, 0.85);
 

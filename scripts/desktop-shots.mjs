@@ -59,6 +59,7 @@ const allRoutes = [
   ["watching", "/watching"],
   ["game-detail", "/game/preview-wc-usa-tur"],
   ["settings", "/settings"],
+  ["system", "/dev/system-preview"],
 ];
 // QA_ROUTES=watching,game-detail limits the run (faster re-shoots).
 const onlyRoutes = process.env.QA_ROUTES
