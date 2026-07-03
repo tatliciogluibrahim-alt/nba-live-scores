@@ -7,6 +7,7 @@ import { Spoiler } from "../spoiler/Spoiler";
 import { GameSpoilerScope, useFollowHidesGame } from "../spoiler/reveal";
 import { useNoSpoilers } from "../providers";
 import type { ScoreboardTile } from "./today-data";
+import { BAND_MAX_ROWS, bandShownCount } from "./agate-slate";
 
 // System D "Also live" ink band (Task 7). The mobile companion to the lead
 // Monument: the lead is index 01, and every OTHER live followed game renders
@@ -15,25 +16,12 @@ import type { ScoreboardTile } from "./today-data";
 // band is md:hidden — it is the mobile-only multi-live surface until D4
 // unifies desktop.
 //
-// Rung-2 bound (spec §1): at most MAX_ROWS game rows; any surplus collapses
-// into one final "+N more live →" row linking /watching (mono, no score).
+// Rung-2 bound (spec §1): at most BAND_MAX_ROWS game rows; any surplus
+// collapses into one "+N MORE LIVE →" row linking /watching (mono, no score).
+// BAND_MAX_ROWS and bandShownCount live in agate-slate.ts so the running
+// index logic (lead 01, band 02..0N, then the slate) is testable in one place.
 
-const MAX_ROWS = 5;
-
-/** How many board rows the band actually renders for a given slate — the
- *  live-and-not-the-lead games, capped at MAX_ROWS. Exported so the mobile
- *  agate slate below (Task 8) can continue the running index AFTER the band
- *  (lead 01, band 02..0N, then the slate). Keeps one source of truth for the
- *  cap so the numbering can never drift from what the band shows. */
-export function bandShownCount(
-  items: ScoreboardTile[],
-  excludeGameId?: string
-): number {
-  const others = items.filter(
-    (t) => t.status === "live" && t.id !== excludeGameId
-  );
-  return Math.min(others.length, MAX_ROWS);
-}
+export { bandShownCount };
 
 export function AlsoLiveBand({
   items,
@@ -50,7 +38,7 @@ export function AlsoLiveBand({
   );
   if (others.length === 0) return null;
 
-  const shown = others.slice(0, MAX_ROWS);
+  const shown = others.slice(0, BAND_MAX_ROWS);
   const overflow = others.length - shown.length;
 
   return (
@@ -65,7 +53,7 @@ export function AlsoLiveBand({
           />
         ))}
         {overflow > 0 ? (
-          <BoardRow matchup={`+${overflow} more live`} href="/watching" />
+          <BoardRow matchup={`+${overflow} MORE LIVE`} href="/watching" />
         ) : null}
       </InkField>
     </div>

@@ -196,7 +196,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
                     style={{
                       color:
                         rung === "peak"
-                          ? "var(--cream-on-acc-dim)"
+                          ? "var(--cream-on-acc)"
                           : "var(--mute-2)",
                     }}
                   >01</span>

@@ -6,7 +6,7 @@
 // functions only — no React, no data fetching — so the render layer stays a
 // layout and the index math + parsing are unit-testable.
 
-import type { TodaySource } from "./today-data";
+import type { TodaySource, ScoreboardTile } from "./today-data";
 
 /** Zero-padded 2-digit ordinal for an agate idx ("04"). Numbers past 99
  *  (never realistic on a single day's slate) fall through un-padded. */
@@ -58,6 +58,26 @@ export function upNextCountLabel(items: { source: TodaySource }[]): string {
 /** QUIET WRAP count label — sport-neutral wrapped noun ("2 WRAPPED"). */
 export function wrapCountLabel(n: number): string {
   return `${n} WRAPPED`;
+}
+
+/** Maximum board rows the ALSO LIVE band renders before the "+N MORE LIVE"
+ *  overflow row. Exported so bandShownCount and AlsoLiveBand share one value. */
+export const BAND_MAX_ROWS = 5;
+
+/** How many board rows the ALSO LIVE band actually renders for a given slate
+ *  — the live-and-not-the-lead games, capped at BAND_MAX_ROWS. Exported so
+ *  the mobile agate slate can continue the running index after the band (lead
+ *  01, band 02..0N, then the slate) without duplicating the cap logic.
+ *  Moved here from AlsoLiveBand.tsx to keep all pure slate helpers testable
+ *  in one place (see agate-slate.test.ts). */
+export function bandShownCount(
+  items: ScoreboardTile[],
+  excludeGameId?: string
+): number {
+  const others = items.filter(
+    (t) => t.status === "live" && t.id !== excludeGameId
+  );
+  return Math.min(others.length, BAND_MAX_ROWS);
 }
 
 /** Day-word label for a resting-day UP NEXT row stamp. "Today" when the

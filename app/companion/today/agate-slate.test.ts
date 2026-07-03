@@ -8,7 +8,9 @@ import {
   upNextCountLabel,
   wrapCountLabel,
   upNextDayLabel,
+  bandShownCount,
 } from "./agate-slate";
+import type { ScoreboardTile } from "./today-data";
 
 describe("padIdx", () => {
   it("zero-pads to 2 digits", () => {
@@ -103,5 +105,44 @@ describe("upNextDayLabel (resting-day stamp)", () => {
   it("falls back to Upcoming when no day word is known", () => {
     expect(upNextDayLabel({ isToday: false, dayWord: "" })).toBe("Upcoming");
     expect(upNextDayLabel({ isToday: false })).toBe("Upcoming");
+  });
+});
+
+describe("bandShownCount (ALSO LIVE band row count)", () => {
+  function tile(id: string): ScoreboardTile {
+    return {
+      id,
+      status: "live",
+      source: "nba",
+      awayCode: "A",
+      homeCode: "B",
+      awayScore: null,
+      homeScore: null,
+      statusLine: "",
+      stageLine: "",
+      href: "/",
+      lead: null,
+    };
+  }
+
+  it("under cap: 3 live items → 3", () => {
+    expect(bandShownCount([tile("g1"), tile("g2"), tile("g3")])).toBe(3);
+  });
+
+  it("at cap: 5 live items → 5", () => {
+    const items = ["g1", "g2", "g3", "g4", "g5"].map(tile);
+    expect(bandShownCount(items)).toBe(5);
+  });
+
+  it("over cap: 7 live items → 5", () => {
+    const items = Array.from({ length: 7 }, (_, i) => tile(`g${i + 1}`));
+    expect(bandShownCount(items)).toBe(5);
+  });
+
+  it("lead exclusion: 7 items incl. lead id → 5 after exclusion", () => {
+    // 7 live items, g1 is the lead Monument. After excluding g1: 6 remain,
+    // capped at 5 → 5 rows rendered.
+    const items = Array.from({ length: 7 }, (_, i) => tile(`g${i + 1}`));
+    expect(bandShownCount(items, "g1")).toBe(5);
   });
 });

@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Spoiler } from "../spoiler/Spoiler";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import { winnerSide } from "./emphasis";
 import { Rail } from "./Rail";
 import type { RegisterRung } from "./register";
@@ -71,6 +74,16 @@ export function Monument({
 
   const hasScores = typeof awayScore === "number" && typeof homeScore === "number";
 
+  // No-Spoilers gate for winner/leader emphasis. Emphasis (ink winner, mute
+  // loser) IS itself a spoiler — the tone difference silently reveals who won.
+  // Gate it on the reveal-aware effective state so the moment the user taps to
+  // reveal, the muted loser un-mutes at the same instant. When hidden we render
+  // BOTH scores at equal base ink — no differentiation until revealed.
+  // Hook called unconditionally (React rules); empty-string fallback matches
+  // the quiet-wrap precedent for hooks with an optional gameId.
+  // See: app/companion/today/sections/quiet-wrap.tsx QuietWrapAgateInner.
+  const hiddenNow = useEffectiveNoSpoilers(gameId ?? "");
+
   // Final winner (spec §2). Live uses the leader pulse instead.
   const win = winnerSide(awayScore, homeScore, status);
   const awayLeads = hasScores && (awayScore as number) > (homeScore as number);
@@ -81,11 +94,12 @@ export function Monument({
   const homeFull = status === "final" ? win !== "away" : !awayLeads;
 
   // Contrast law: the peak field never dims a score. On cream, the trailing
-  // side mutes back.
+  // side mutes back. When hidden by No-Spoilers both scores render at equal
+  // base ink — no leader/winner differentiation until revealed.
   const fullColor = isPeak ? "var(--cream-on-acc)" : "var(--ink)";
   const muteColor = "var(--mute-1)";
-  const awayColor = isPeak ? fullColor : awayFull ? fullColor : muteColor;
-  const homeColor = isPeak ? fullColor : homeFull ? fullColor : muteColor;
+  const awayColor = isPeak || hiddenNow ? fullColor : awayFull ? fullColor : muteColor;
+  const homeColor = isPeak || hiddenNow ? fullColor : homeFull ? fullColor : muteColor;
 
   // Three-digit scores (128–124) drop the numeral a notch so the pair fits
   // the 390px column.
@@ -97,7 +111,7 @@ export function Monument({
   const teamColor = isPeak ? "var(--cream-on-acc)" : "var(--ink)";
   const deckColor = isPeak ? "var(--cream-on-acc)" : "var(--mute-1)";
   const kickerColor = isPeak ? "var(--cream-on-acc)" : "var(--mute-1)";
-  const arrowColor = isPeak ? "var(--cream-on-acc-dim)" : "var(--mute-2)";
+  const arrowColor = isPeak ? "var(--cream-on-acc)" : "var(--mute-2)";
 
   const outerStyle = isPeak
     ? { background: accent, color: "var(--cream-on-acc)", padding: "24px 18px 22px" }
