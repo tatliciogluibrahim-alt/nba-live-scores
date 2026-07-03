@@ -62,7 +62,7 @@ export function PathField({ data }: { data: PathData }) {
               <span
                 aria-hidden
                 className="no-noise-live-fade inline-block rounded-full"
-                style={{ width: 5, height: 5, background: "var(--cream)" }}
+                style={{ width: 5, height: 5, background: "var(--cream-on-ink)" }}
               />
               <span style={{ color: "var(--cream-on-ink)" }}>LIVE</span>
             </>
@@ -94,7 +94,9 @@ export function PathField({ data }: { data: PathData }) {
             <span
               key={i}
               aria-hidden
-              className={`absolute rounded-full ${state === "next" ? "no-noise-live-fade" : ""}`}
+              // Glyph law (§5): the pulse means live, exclusively. The
+              // current-stage node only breathes while the country plays.
+              className={`absolute rounded-full ${state === "next" && live ? "no-noise-live-fade" : ""}`}
               style={{
                 left: `${i * 20}%`,
                 top: "50%",
