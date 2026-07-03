@@ -22,7 +22,7 @@ import {
   wcStateChanged,
 } from "../../../lib/push/wc-state-cache";
 import { isStateRelevant } from "../../../lib/push/scan-relevance";
-import { incrCounter } from "../../../lib/push/ops-metrics";
+import { incrCounter, writeLastScanAt } from "../../../lib/push/ops-metrics";
 import {
   pushLiveActivityUpdates,
   type ActivityUpdateInput,
@@ -200,6 +200,9 @@ export async function GET(req: Request) {
   const relevant = games.filter((g) => isStateRelevant(g.status, g.date, nowMs));
 
   await incrCounter("cron.scans");
+  // Heartbeat — stamp that the WC scan ran this tick, so a dead scheduler
+  // is visible on /api/push/inspect.
+  await writeLastScanAt("wc");
 
   for (const game of relevant) {
     try {

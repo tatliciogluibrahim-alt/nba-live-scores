@@ -91,9 +91,13 @@ export function Spoiler({
         fontVariantNumeric: "tabular-nums",
       }}
     >
+      {/* Blur scales with the type size (em, not px): 7px hid a 14px agate
+          score but left the 100px monument numerals readable through the
+          frost — a spoiler leak on real devices. 0.45em ≈ 6px at agate
+          sizes and ≈ 45px on the monument, unreadable at any size. */}
       <span
         aria-hidden
-        style={{ filter: "blur(7px)", opacity: 0.85, display: "inline-block" }}
+        style={{ filter: "blur(0.45em)", opacity: 0.85, display: "inline-block" }}
       >
         {children}
       </span>

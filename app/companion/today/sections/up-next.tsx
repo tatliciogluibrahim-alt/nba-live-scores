@@ -10,6 +10,7 @@ import {
   matchupCodes,
   padIdx,
   upNextCountLabel,
+  kickoffStamp,
 } from "../agate-slate";
 import type { UpNextItem } from "../today-data";
 
@@ -62,12 +63,14 @@ export function UpNext({
 function UpNextAgateRow({ item, idx }: { item: UpNextItem; idx: string }) {
   const { away, home } = matchupCodes(item.headline);
   // detail arrives as "8:00 PM · Group Stage" / "8:00 PM · Game 6": the first
-  // segment is the kickoff time (the stamp), the rest is competition context
-  // that joins the broadcast to form the note ("Group Stage · Fox").
+  // segment is the kickoff time, the rest is competition context that joins the
+  // broadcast to form the note ("Group Stage · Fox"). The stamp is rebuilt
+  // day-aware from the raw ISO (kickoffStamp) so a later-day game reads
+  // "SAT 1:00 PM", not a bare "1:00 PM" that looks like tonight.
   const parts = item.detail.split(" · ").map((s) => s.trim()).filter(Boolean);
-  const time = parts[0] ?? "";
   const context = parts.slice(1).join(" · ");
   const note = [context, item.watch?.channel].filter(Boolean).join(" · ");
+  const time = item.dateIso ? kickoffStamp(item.dateIso, new Date()) : parts[0] ?? "";
 
   return (
     <AgateRow

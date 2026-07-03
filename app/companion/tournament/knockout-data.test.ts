@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   buildKnockoutRounds,
+  buildKnockoutPreview,
+  KNOCKOUT_STATIC_DATES,
   roundKeyFromStage,
   knockoutResult,
   countryKnockoutOutcome,
@@ -198,5 +200,94 @@ describe("nextStageLabel", () => {
     expect(nextStageLabel("qf")).toBe("Semifinals");
     expect(nextStageLabel("sf")).toBe("Final");
     expect(nextStageLabel("final")).toBe("Champions");
+  });
+});
+
+describe("KNOCKOUT_STATIC_DATES", () => {
+  it("maps every round key to its scheduled ISO date", () => {
+    expect(KNOCKOUT_STATIC_DATES.r32).toBe("2026-06-28T00:00:00Z");
+    expect(KNOCKOUT_STATIC_DATES.final).toBe("2026-07-19T00:00:00Z");
+    expect(Object.keys(KNOCKOUT_STATIC_DATES).sort()).toEqual([
+      "final",
+      "qf",
+      "r16",
+      "r32",
+      "sf",
+    ]);
+  });
+});
+
+describe("buildKnockoutPreview", () => {
+  it("picks the earliest round with an unplayed match (the one up next)", () => {
+    const fixtures = [
+      fx({ id: "a", stage: "Round of 32", status: "final",
+        away: { name: "USA", abbreviation: "USA", score: 2 },
+        home: { name: "Chile", abbreviation: "CHI", score: 1 } }),
+      fx({ id: "b", stage: "Round of 16", status: "upcoming",
+        away: { name: "USA", abbreviation: "USA", score: 0 },
+        home: { name: "Mexico", abbreviation: "MEX", score: 0 } }),
+    ];
+    const p = buildKnockoutPreview(fixtures, STATIC, "USA");
+    expect(p.roundKey).toBe("r16");
+    expect(p.roundLabel).toBe("Round of 16");
+    expect(p.hasFixtures).toBe(true);
+    expect(p.total).toBe(1);
+  });
+
+  it("marks the followed side and keeps real matchups tappable", () => {
+    const fixtures = [
+      fx({ id: "g1", stage: "Round of 16", status: "upcoming",
+        away: { name: "United States", abbreviation: "USA", score: 0 },
+        home: { name: "Mexico", abbreviation: "MEX", score: 0 } }),
+    ];
+    const p = buildKnockoutPreview(fixtures, STATIC, "USA");
+    const row = p.rows[0];
+    expect(row.followedSide).toBe("away");
+    expect(row.placeholder).toBe(false);
+    expect(row.href).toBe("/game/g1");
+  });
+
+  it("keeps ESPN slot placeholders (muted, non-tappable) without fabricating", () => {
+    const fixtures = [
+      fx({ id: "p1", stage: "Round of 32", status: "upcoming",
+        away: { name: "Group E winner", abbreviation: "1E", score: 0 },
+        home: { name: "Group G runner-up", abbreviation: "2G", score: 0 } }),
+    ];
+    const p = buildKnockoutPreview(fixtures, STATIC, "USA");
+    const row = p.rows[0];
+    expect(row.placeholder).toBe(true);
+    expect(row.href).toBe("");
+    expect(row.awayCode).toBe("1E");
+    expect(row.homeCode).toBe("2G");
+  });
+
+  it("flags a level played score (no winner emphasis) and en-dash score line", () => {
+    const fixtures = [
+      fx({ id: "d1", stage: "Round of 16", status: "final",
+        away: { name: "USA", abbreviation: "USA", score: 1 },
+        home: { name: "Mexico", abbreviation: "MEX", score: 1 } }),
+    ];
+    const p = buildKnockoutPreview(fixtures, STATIC, "USA");
+    expect(p.rows[0].level).toBe(true);
+    expect(p.rows[0].scoreLine).toBe("1 – 1");
+  });
+
+  it("falls back to R32 with the static date range when no fixtures exist", () => {
+    const p = buildKnockoutPreview([], STATIC, "USA");
+    expect(p.roundKey).toBe("r32");
+    expect(p.hasFixtures).toBe(false);
+    expect(p.rows).toHaveLength(0);
+    expect(p.dateRange).toBeTruthy();
+  });
+
+  it("caps the preview at the requested limit", () => {
+    const fixtures = Array.from({ length: 8 }, (_, i) =>
+      fx({ id: `r${i}`, stage: "Round of 32", status: "upcoming",
+        away: { name: "A", abbreviation: "USA", score: 0 },
+        home: { name: "B", abbreviation: "MEX", score: 0 } }),
+    );
+    const p = buildKnockoutPreview(fixtures, STATIC, null, 5);
+    expect(p.rows).toHaveLength(5);
+    expect(p.total).toBe(8);
   });
 });

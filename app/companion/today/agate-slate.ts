@@ -80,6 +80,30 @@ export function bandShownCount(
   return Math.min(others.length, BAND_MAX_ROWS);
 }
 
+/** Day-aware kickoff stamp for a listable game on Today. Returns the bare
+ *  local time ("9:30 PM") when the fixture falls on the SAME local calendar
+ *  day as `now`; otherwise it prefixes the weekday abbrev ("SAT 1:00 PM") so a
+ *  later-day game in a mixed UP NEXT list never reads as tonight. Pure — `now`
+ *  is injected (render passes new Date(); tests pass a fixed clock). The time
+ *  format matches formatGameTime (hour + 2-digit minute) so the stamp stays
+ *  visually consistent with the rest of the app. */
+export function kickoffStamp(dateIso: string, now: Date): string {
+  const d = new Date(dateIso);
+  const time = d.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  if (sameDay) return time;
+  const weekday = d
+    .toLocaleDateString(undefined, { weekday: "short" })
+    .toUpperCase();
+  return `${weekday} ${time}`;
+}
+
 /** Day-word label for a resting-day UP NEXT row stamp. "Today" when the
  *  fixture is on the current day, otherwise the capitalized dayWord
  *  ("Tomorrow", "Saturday"), falling back to "Upcoming" when neither is

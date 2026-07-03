@@ -16,6 +16,45 @@ import { EVENT_TYPES } from "./event-detector";
 const COUNTER_PREFIX = "nns:ops:counter:v1:";
 const BUCKET_TTL_SECONDS = 7 * 24 * 60 * 60;
 
+// ── Scan heartbeat (D3 Task 6a) ───────────────────────────────────────
+// Each scan tick stamps "I ran" so a dead external scheduler is observable
+// in one curl of /api/push/inspect. A single key per scope (no TTL) — we
+// WANT a stale timestamp to persist so an outage is visible, not expire.
+const LAST_SCAN_PREFIX = "nns:ops:last-scan:v1:";
+
+export type ScanScope = "wc" | "nba";
+
+/** Stamp the wall-clock time of a scan tick for a scope. Fire-and-forget;
+ *  logs but never throws so a heartbeat write can't break the scan. */
+export async function writeLastScanAt(
+  scope: ScanScope,
+  iso: string = new Date().toISOString()
+): Promise<void> {
+  try {
+    await kv.set(`${LAST_SCAN_PREFIX}${scope}`, iso);
+  } catch (err) {
+    console.error("ops.writeLastScanAt failed", { scope, err });
+  }
+}
+
+/** Read the last scan timestamp per scope (for /api/push/inspect). Null when
+ *  a scope has never scanned (or KV is unreachable). */
+export async function readLastScanAt(): Promise<{
+  wc: string | null;
+  nba: string | null;
+}> {
+  try {
+    const [wc, nba] = await Promise.all([
+      kv.get<string>(`${LAST_SCAN_PREFIX}wc`),
+      kv.get<string>(`${LAST_SCAN_PREFIX}nba`),
+    ]);
+    return { wc: wc ?? null, nba: nba ?? null };
+  } catch (err) {
+    console.error("ops.readLastScanAt failed", { err });
+    return { wc: null, nba: null };
+  }
+}
+
 export type OpsCounter =
   | "cron.scans"
   | "cron.scan.error"

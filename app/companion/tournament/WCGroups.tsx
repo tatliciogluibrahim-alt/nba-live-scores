@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { Spoiler } from "../spoiler/Spoiler";
+import { SecHead } from "../system/SecHead";
 import { useFollows } from "../providers";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
+import { buildGroupTable, type GroupTableRow } from "./group-table";
 import {
   buildAllGroupsFromSchedule,
   type GroupDetail,
@@ -504,6 +506,212 @@ function GroupCard({
   );
 }
 
+// ── System D mobile tables (D3 Task 5) ─────────────────────────────────
+// The cut-line standings table from d-tournament: mono column heads, a pos
+// numeral, the followed country in full ink, right-aligned tabular numerics,
+// and a 2px dashed rule after the 2nd row (the qualification cut). The
+// footnote runs ONCE per page (under the first table) and tells the honest
+// WC-2026 rule: top 2 qualify AND the 8 best third-placed teams join, so 3rd
+// is never marked out. No "advancing" dots (§5 accent law — the dashed rule
+// alone carries the story; the pulse means live, exclusively).
+
+const GROUP_GRID = "22px 1fr 40px 40px 44px";
+
+const CUT_NOTE = "– – QUALIFICATION LINE · TOP 2 GO THROUGH · 8 BEST 3RDS JOIN";
+
+const NUM_CELL = {
+  fontFamily: "var(--font-mono)",
+  fontWeight: 600,
+  color: "var(--mute-1)",
+} as const;
+
+function GroupTableHead() {
+  return (
+    <div
+      className="grid items-center uppercase"
+      style={{
+        gridTemplateColumns: GROUP_GRID,
+        gap: 8,
+        padding: "10px 0 8px",
+        borderBottom: "1px solid var(--line)",
+        fontFamily: "var(--font-mono)",
+        fontSize: 9,
+        letterSpacing: "0.16em",
+        fontWeight: 600,
+        color: "var(--mute-2)",
+      }}
+    >
+      <span aria-hidden />
+      <span>Team</span>
+      <span className="text-right">Pld</span>
+      <span className="text-right">GD</span>
+      <span className="text-right">Pts</span>
+    </div>
+  );
+}
+
+function GroupTableRowView({
+  row,
+  cut,
+  href,
+}: {
+  row: GroupTableRow;
+  cut: boolean;
+  href?: string;
+}) {
+  // Cut row (2nd place) carries the 2px dashed qualification line in place of
+  // the 1px hairline; every other row keeps the hairline (matches the mock).
+  const rowStyle = {
+    gridTemplateColumns: GROUP_GRID,
+    gap: 8,
+    padding: "12px 0",
+    borderBottom: cut ? "2px dashed var(--mute-2)" : "1px solid var(--line)",
+    fontSize: 14,
+  } as const;
+
+  const inner = (
+    <>
+      <span
+        className="tabular-nums lining-nums"
+        style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--mute-2)" }}
+      >
+        {row.pos}
+      </span>
+      <span
+        className="min-w-0 truncate"
+        style={{ color: "var(--ink)", fontWeight: row.followed ? 800 : 600, letterSpacing: "-0.005em" }}
+      >
+        {row.name}
+      </span>
+      <span className="text-right tabular-nums lining-nums" style={NUM_CELL}>
+        {row.pld}
+      </span>
+      <span className="text-right tabular-nums lining-nums" style={NUM_CELL}>
+        {row.gd}
+      </span>
+      <span
+        className="text-right tabular-nums lining-nums"
+        style={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: 15, color: "var(--ink)" }}
+      >
+        {row.pts}
+      </span>
+    </>
+  );
+
+  // Tappable to the country page (the "tap a country" page promise + the
+  // legacy desktop behaviour). A standings table is a cohesive unit, so the
+  // pressed state carries the affordance without a per-row → in the grid.
+  if (href) {
+    return (
+      <Link
+        href={href}
+        aria-label={`Open ${row.name}`}
+        className="grid items-center transition active:bg-[var(--paper)]"
+        style={rowStyle}
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <div className="grid items-center" style={rowStyle}>
+      {inner}
+    </div>
+  );
+}
+
+function GroupCutNote() {
+  return (
+    <p
+      style={{
+        marginTop: 8,
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        letterSpacing: "0.1em",
+        color: "var(--mute-2)",
+        fontWeight: 600,
+      }}
+    >
+      {CUT_NOTE}
+    </p>
+  );
+}
+
+// One group as an unboxed System D cut-line table. `withSchedule` mounts the
+// expandable matches toggle (full mode only; preview stays a glance). The
+// footnote is caller-gated so it renders once per page.
+function GroupTableSection({
+  block,
+  fromParam,
+  showFootnote,
+  withSchedule,
+  topClass,
+}: {
+  block: GroupDetail;
+  fromParam: string;
+  showFootnote: boolean;
+  withSchedule: boolean;
+  topClass: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const table = buildGroupTable(block);
+  const codeByName = new Map(block.rows.map((r) => [r.name, r.code]));
+  const maxPlayed = block.rows.reduce(
+    (m, r) => Math.max(m, r.standing?.played ?? 0),
+    0
+  );
+  const count =
+    maxPlayed > 0 ? `AFTER MATCHDAY ${Math.min(3, maxPlayed)}` : "UPCOMING";
+
+  return (
+    <section className={topClass}>
+      <SecHead name={`Group ${block.letter}`} count={count} />
+      <GroupTableHead />
+      {table.rows.map((r, idx) => (
+        <GroupTableRowView
+          key={r.name}
+          row={r}
+          cut={idx + 1 === table.cutAfter}
+          href={`/country/${codeByName.get(r.name) ?? ""}?from=${fromParam}`}
+        />
+      ))}
+      {showFootnote ? <GroupCutNote /> : null}
+
+      {withSchedule ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            aria-label={`${open ? "Hide" : "Show"} Group ${block.letter} matches`}
+            className="mt-[12px] flex min-h-[36px] w-full items-center justify-between gap-3 text-left transition active:opacity-70"
+          >
+            <span
+              className="min-w-0 truncate text-[12px]"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              {nextLine(block)}
+            </span>
+            <span
+              className="shrink-0 uppercase"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.1em",
+                fontWeight: 600,
+                color: "var(--ink)",
+              }}
+            >
+              {open ? "Matches ↑" : "Matches ↓"}
+            </span>
+          </button>
+          {open ? <ScheduleList schedule={block.schedule} /> : null}
+        </>
+      ) : null}
+    </section>
+  );
+}
+
 // ── Component ──────────────────────────────────────────────────────────
 
 export function WCGroups({
@@ -539,18 +747,39 @@ export function WCGroups({
 
   if (mode === "full") {
     return (
-      <section className="mt-6 pb-2">
-        <GroupsHeader count={"Group stage"} />
-        <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
-          {groups.map((block) => (
-            <GroupCard
+      <>
+        {/* Mobile — System D unboxed cut-line tables (D3 Task 5). One SecHead
+            per group, the shared table rows, the cut line after 2nd, and the
+            qualification footnote once under the first table. */}
+        <div className="md:hidden">
+          {groups.map((block, i) => (
+            <GroupTableSection
               key={block.letter}
               block={block}
               fromParam={fromParam}
+              showFootnote={i === 0}
+              withSchedule
+              topClass={i === 0 ? "mt-6" : "mt-8"}
             />
           ))}
         </div>
-      </section>
+
+        {/* Desktop — legacy card grid, pixel-frozen until D4. */}
+        <div className="hidden md:block">
+          <section className="mt-6 pb-2">
+            <GroupsHeader count={"Group stage"} />
+            <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
+              {groups.map((block) => (
+                <GroupCard
+                  key={block.letter}
+                  block={block}
+                  fromParam={fromParam}
+                />
+              ))}
+            </div>
+          </section>
+        </div>
+      </>
     );
   }
 
@@ -562,33 +791,76 @@ export function WCGroups({
 
   const others = groups.filter((g) => g !== followedBlock);
   const previewOthers = others.slice(0, 2);
+  // Mobile preview leads with the personal group table (per the d-tournament
+  // mock, which shows the followed group on the overview). No follow yet →
+  // show the first two groups so the overview never reads empty. Every group
+  // stays reachable via "View all groups".
+  const mobilePreviewBlocks = followedBlock ? [followedBlock] : groups.slice(0, 2);
 
   return (
-    <section className="mt-5">
-      <GroupsHeader count={"Group stage"} />
-
-      {followedBlock ? (
-        <div className="mb-5">
-          <GroupColumn block={followedBlock} fromParam={fromParam} />
-        </div>
-      ) : null}
-
-      <div className="grid grid-cols-2 gap-x-6 gap-y-5">
-        {previewOthers.map((block) => (
-          <GroupColumn key={block.letter} block={block} fromParam={fromParam} />
+    <>
+      {/* Mobile — the personal group table (System D), then a link to all. */}
+      <div className="md:hidden">
+        {mobilePreviewBlocks.map((block, i) => (
+          <GroupTableSection
+            key={block.letter}
+            block={block}
+            fromParam={fromParam}
+            showFootnote={i === 0}
+            withSchedule={false}
+            topClass={i === 0 ? "mt-2" : "mt-8"}
+          />
         ))}
-      </div>
-
-      <div className="mt-4 flex justify-center">
         <Link
           href={`/tournament/${tournamentId}/groups`}
-          className="inline-flex min-h-[36px] items-center gap-1.5 text-[12px] underline decoration-dotted underline-offset-4"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          aria-label="View all 12 Summer Soccer groups"
+          aria-label={`View all ${groups.length} groups`}
+          className="mt-[14px] inline-flex items-center gap-[6px] uppercase transition active:opacity-70"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            color: "var(--mute-1)",
+          }}
         >
-          View all {groups.length} groups →
+          View all {groups.length} groups
+          <span aria-hidden>→</span>
         </Link>
       </div>
-    </section>
+
+      {/* Desktop — legacy preview columns, pixel-frozen until D4. */}
+      <div className="hidden md:block">
+        <section className="mt-5">
+          <GroupsHeader count={"Group stage"} />
+
+          {followedBlock ? (
+            <div className="mb-5">
+              <GroupColumn block={followedBlock} fromParam={fromParam} />
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+            {previewOthers.map((block) => (
+              <GroupColumn
+                key={block.letter}
+                block={block}
+                fromParam={fromParam}
+              />
+            ))}
+          </div>
+
+          <div className="mt-4 flex justify-center">
+            <Link
+              href={`/tournament/${tournamentId}/groups`}
+              className="inline-flex min-h-[36px] items-center gap-1.5 text-[12px] underline decoration-dotted underline-offset-4"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+              aria-label={`View all ${groups.length} groups`}
+            >
+              View all {groups.length} groups →
+            </Link>
+          </div>
+        </section>
+      </div>
+    </>
   );
 }

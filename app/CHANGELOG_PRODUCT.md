@@ -2,6 +2,45 @@
 
 ---
 
+## System D — Following, Tournament, device-feedback wave (mobile) — 2026-07-03
+
+D3 extends the editorial system to Following and the tournament surfaces,
+and folds in a wave of touch-ups from real-device screenshots. Mobile
+only; desktop md+ stays legacy until D4.
+
+- **Following recomposed.** "Your sports circle." pagehead with honest
+  meta ("6 FOLLOWS · 3 OF 3 ALERT SLOTS USED", "Alerts on your first 3
+  follows are free."), one ink cross-link band ("N LIVE NOW · OPEN
+  WATCHING") when follows are live, and tier-stamped agate rows grouped
+  LIVE NOW / UP NEXT / WRAPPED. The stamp fill teaches loudness: OFF
+  faint, QUIET outlined, COMPANION filled, FULL heavy. Tapping a row
+  opens the same drawer as before (tier picker, per-follow No-Spoilers,
+  unfollow). A one-time legend explains the tiers ("QUIET: start and
+  final. COMPANION: key moments. FULL DETAILS: everything."),
+  dismissible, re-openable from the "?" on the section head.
+- **Tournament pages recomposed.** Crumb bar, "Summer Soccer." pagehead
+  with data-derived meta, OVERVIEW / GROUPS / BRACKET tabs. YOUR PATH ink
+  field for the followed country (stage rail GROUP → FINAL, next-round
+  note). Knockout rounds as agate rows ("ALL 16 MATCHES", never "ties").
+  Group tables with a dashed qualification cut line and the truthful
+  footnote: top 2 go through, the 8 best third-place teams join them.
+  No decorative "advancing" dots.
+- **Bracket BY DAY.** The bracket page gains a BRACKET | BY DAY toggle:
+  the same matches grouped under TODAY / TOMORROW / date heads, for
+  "what's on tonight" without reading a tree.
+- **Device-feedback fixes.** Spoiler frost now scales with type size (the
+  monument numerals were readable through the old fixed blur). The whole
+  lead monument on Today is tappable, not just the kicker arrow. Finished
+  games moved out of "Tracked for later" into their own WRAPPED section
+  on Watching. Today's UP NEXT stamps are day-aware ("SAT 1:00 PM" when a
+  game isn't today). The knockout moment, calm endings, quiet-day card,
+  and setup strip all speak the System D moment-row grammar (no more
+  rounded legacy cards).
+- **Ops.** Scan crons write a heartbeat; /api/push/inspect exposes
+  lastScanAt so a dead external scheduler is visible in one request.
+
+---
+
 ## System D — Game detail, Watching, Docking, Starting XI (mobile) — 2026-07-03
 
 D2 extends the editorial system from Today to the game detail and Watching

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CompanionFrame } from "../../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../../companion/game/DetailCrumbs";
 import { WCGroups } from "../../../companion/tournament/WCGroups";
 import { getTournament } from "../../../companion/following/data/tournaments";
 import { WC_GROUP_FIXTURES } from "../../../companion/following/data/wc-fixtures";
@@ -76,7 +76,7 @@ export default async function TournamentGroupsPage({
         />
       ) : null}
       <CompanionFrame desktopNav="detail">
-      <CrumbBar
+      <DetailCrumbs
         backHref={`/tournament/${id}`}
         backLabel={tournament?.name ?? "Tournament"}
         title="Groups"

@@ -33,9 +33,12 @@ import type { RegisterRung } from "./register";
 // A caller that knows the participants wraps the Monument in a
 // GameSpoilerScope; the Spoilers read that decision.
 //
-// Navigation contract: navigation lives on the kicker row; the body hosts
-// interactive reveal targets. Spoiler reveal buttons must never nest inside
-// an anchor, which is why only the kicker row becomes a <Link>.
+// Navigation contract: the WHOLE monument is the tap target (spec §2 — the
+// kicker chevron is the affordance marker, not the hit area). The kicker
+// <Link> stretches over the section via an absolute overlay. Spoiler reveal
+// buttons must never nest inside an anchor, so while a game is hidden the
+// spoiler-bearing rows are raised above the overlay (reveal tap wins there);
+// once revealed they drop back under it and every tap navigates.
 
 export function Monument({
   awayName,
@@ -128,15 +131,26 @@ export function Monument({
   } as const;
   const kickerClass = "mb-4 flex items-center gap-2 uppercase";
 
+  // While hidden, spoiler-bearing rows float above the overlay link so the
+  // reveal tap wins on them; revealed, they drop back and taps navigate.
+  const raiseWhenHidden = hiddenNow
+    ? ({ position: "relative", zIndex: 1 } as const)
+    : undefined;
+
   return (
-    <section style={outerStyle}>
+    <section className="relative" style={outerStyle}>
       {/* Kicker line — the caller composes the content (index, live text,
           channel, any StakesStamp) as flex children; the Monument owns the
-          type + the trailing tap affordance.
-          Navigation lives on the kicker row; the body hosts interactive
-          reveal targets (Spoiler buttons must never nest in an anchor). */}
+          type + the trailing tap affordance. The Link stretches over the
+          whole monument (spec §2: the monument is tappable as a whole). */}
       {href ? (
-        <Link href={href} className={kickerClass} style={kickerStyle}>
+        <Link
+          href={href}
+          className={kickerClass}
+          style={kickerStyle}
+          aria-label={`${awayName} · ${homeName}. Open ${sport === "wc" ? "match" : "game"} details.`}
+        >
+          <span aria-hidden className="absolute inset-0" />
           {kicker}
           <span aria-hidden style={{ marginLeft: "auto", color: arrowColor }}>
             →
@@ -157,6 +171,7 @@ export function Monument({
         fontSize={scoreFontSize}
         gameId={gameId}
         spoilerSubject={spoilerSubject}
+        raiseStyle={raiseWhenHidden}
       />
       <ScoreRow
         name={homeName}
@@ -166,6 +181,7 @@ export function Monument({
         fontSize={scoreFontSize}
         gameId={gameId}
         spoilerSubject={spoilerSubject}
+        raiseStyle={raiseWhenHidden}
       />
 
       {deck && (
@@ -176,6 +192,7 @@ export function Monument({
             lineHeight: 1.5,
             fontWeight: isPeak ? 600 : 500,
             color: deckColor,
+            ...raiseWhenHidden,
           }}
         >
           {gameId ? (
@@ -198,6 +215,7 @@ export function Monument({
             fontWeight: 600,
             letterSpacing: "0.08em",
             color: deckColor,
+            ...raiseWhenHidden,
           }}
         >
           {gameId ? (
@@ -228,6 +246,7 @@ function ScoreRow({
   fontSize,
   gameId,
   spoilerSubject,
+  raiseStyle,
 }: {
   first?: boolean;
   name: string;
@@ -237,6 +256,7 @@ function ScoreRow({
   fontSize: number;
   gameId?: string;
   spoilerSubject?: string;
+  raiseStyle?: { position: "relative"; zIndex: number };
 }) {
   return (
     <div
@@ -266,6 +286,7 @@ function ScoreRow({
             lineHeight: 0.88,
             letterSpacing: "-0.04em",
             color,
+            ...raiseStyle,
           }}
         >
           <Spoiler ariaSubject={spoilerSubject} gameId={gameId}>

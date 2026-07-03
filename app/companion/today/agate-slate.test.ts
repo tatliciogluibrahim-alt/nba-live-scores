@@ -9,8 +9,47 @@ import {
   wrapCountLabel,
   upNextDayLabel,
   bandShownCount,
+  kickoffStamp,
 } from "./agate-slate";
 import type { ScoreboardTile } from "./today-data";
+
+describe("kickoffStamp", () => {
+  // Local-constructed dates so the same-day comparison and the localized
+  // time render deterministically regardless of the test runner's timezone.
+  // July 4, 2026 is a Saturday (weekday abbrev "SAT").
+  const iso = (
+    y: number,
+    m: number,
+    d: number,
+    h: number,
+    min: number
+  ): string => new Date(y, m, d, h, min).toISOString();
+
+  it("same local day → bare time, no weekday prefix", () => {
+    const now = new Date(2026, 6, 4, 12, 0); // Sat Jul 4, noon
+    expect(kickoffStamp(iso(2026, 6, 4, 21, 30), now)).toBe("9:30 PM");
+  });
+
+  it("tomorrow → weekday abbrev + time", () => {
+    const now = new Date(2026, 6, 3, 20, 0); // Fri Jul 3
+    expect(kickoffStamp(iso(2026, 6, 4, 13, 0), now)).toBe("SAT 1:00 PM");
+  });
+
+  it("+3 days → weekday abbrev + time", () => {
+    const now = new Date(2026, 6, 1, 9, 0); // Wed Jul 1
+    expect(kickoffStamp(iso(2026, 6, 4, 13, 0), now)).toBe("SAT 1:00 PM");
+  });
+
+  it("late-night same day stays bare (no false weekday)", () => {
+    const now = new Date(2026, 6, 4, 23, 0); // Sat Jul 4, 11 PM
+    expect(kickoffStamp(iso(2026, 6, 4, 23, 30), now)).toBe("11:30 PM");
+  });
+
+  it("just past midnight is the next day → weekday prefix", () => {
+    const now = new Date(2026, 6, 4, 23, 0); // Sat Jul 4, 11 PM
+    expect(kickoffStamp(iso(2026, 6, 5, 0, 30), now)).toBe("SUN 12:30 AM");
+  });
+});
 
 describe("padIdx", () => {
   it("zero-pads to 2 digits", () => {

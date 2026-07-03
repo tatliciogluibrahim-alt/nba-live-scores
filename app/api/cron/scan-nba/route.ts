@@ -28,7 +28,7 @@ import { detectEvents, type FreshGameState, type PushEvent } from "../../../lib/
 import { dispatchEvents } from "../../../lib/push/dispatcher";
 import { readCachedState, writeCachedState, nbaStateChanged } from "../../../lib/push/state-cache";
 import { isStateRelevant } from "../../../lib/push/scan-relevance";
-import { incrCounter } from "../../../lib/push/ops-metrics";
+import { incrCounter, writeLastScanAt } from "../../../lib/push/ops-metrics";
 import {
   pushLiveActivityUpdates,
   type ActivityUpdateInput,
@@ -258,6 +258,9 @@ export async function GET(req: Request) {
   // Bump the scan counter once per successful upstream fetch. The
   // dashboard divides by this to compute "events per scan" etc.
   await incrCounter("cron.scans");
+  // Heartbeat — stamp that the NBA scan ran this tick, so a dead scheduler
+  // is visible on /api/push/inspect.
+  await writeLastScanAt("nba");
 
   for (const game of relevant) {
     try {

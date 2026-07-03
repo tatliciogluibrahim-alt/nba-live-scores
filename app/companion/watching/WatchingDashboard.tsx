@@ -92,6 +92,14 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
   const liveRoomMode = liveCount >= 1;
   const restItems = liveRoomMode ? items.filter((i) => i.status !== "live") : items;
 
+  // Split the non-live pins by status. A finished game must never sit under
+  // "Tracked for later" — upcoming pins are still ahead of you, wrapped pins
+  // are done. Each section renders only when it has rows; the Wrapped index
+  // continues the running numeral after the later section so the whole tracked
+  // list reads as one ordered ledger.
+  const laterItems = restItems.filter((i) => i.status === "upcoming");
+  const wrappedItems = restItems.filter((i) => i.status === "final");
+
   return (
     <>
       {/* Pagehead — "Watching." + mono meta (breathing dot when live) */}
@@ -125,15 +133,30 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
       {/* Live Room ink field — self-gates to nothing when no pin is live */}
       <LiveRoomField payload={payload} />
 
-      {/* Tracked for later — the non-dock pins as agate rows */}
-      {restItems.length > 0 ? (
+      {/* Tracked for later — upcoming pins as agate rows */}
+      {laterItems.length > 0 ? (
         <section className="mt-2">
-          <SecHead name="Tracked for later" count={String(restItems.length)} />
-          {restItems.map((item, i) => (
+          <SecHead name="Tracked for later" count={String(laterItems.length)} />
+          {laterItems.map((item, i) => (
             <TrackedAgateRow
               key={item.id}
               item={item}
               idx={String(i + 1).padStart(2, "0")}
+            />
+          ))}
+        </section>
+      ) : null}
+
+      {/* Wrapped — finished pins, their own section (winner emphasis + FT
+          stamps unchanged). Index continues after the later section. */}
+      {wrappedItems.length > 0 ? (
+        <section className="mt-6">
+          <SecHead name="Wrapped" count={String(wrappedItems.length)} />
+          {wrappedItems.map((item, i) => (
+            <TrackedAgateRow
+              key={item.id}
+              item={item}
+              idx={String(laterItems.length + i + 1).padStart(2, "0")}
             />
           ))}
         </section>

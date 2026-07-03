@@ -8,6 +8,7 @@
 // sides are real country codes and the matchup renders. Nothing fabricated.
 
 import { WC_COUNTRIES } from "../following/data/countries";
+import { WC_KNOCKOUT_ROUNDS } from "../following/data/wc-fixtures";
 import type { WCScheduleFixtureLite } from "../country/country-data";
 
 export type KnockoutRoundKey = "r32" | "r16" | "qf" | "sf" | "final";
@@ -31,6 +32,11 @@ export type KnockoutRound = {
   label: string;
   /** Earliest fixture date for the round ("Jun 28"), or null if unknown. */
   dateLabel: string | null;
+  /** The same earliest fixture date as a raw ISO string (or null). Used by
+   *  YOUR PATH (path-data.ts) to phrase the "next round starts …" note with
+   *  day-name-vs-date logic. dateLabel is the pre-formatted display string;
+   *  startISO is the machine value. */
+  startISO: string | null;
   /** Resolved matchups (both teams are real countries). Empty until the
    *  bracket sets that round. */
   matches: KnockoutMatch[];
@@ -48,6 +54,25 @@ const ROUND_ORDER: { key: KnockoutRoundKey; label: string }[] = [
 
 const REAL_CODES = new Set(WC_COUNTRIES.map((c) => c.id));
 const NAME_BY_CODE = new Map(WC_COUNTRIES.map((c) => [c.id, c.name]));
+
+// Scheduled round dates from wc-fixtures.ts, keyed for the builder's
+// static-date fallback so a round with no feed fixtures still shows when.
+// Exported so every knockout surface (the desktop stack in WCKnockout, the
+// mobile preview in TournamentClient) shares one source of round dates.
+const SHORT_TO_KEY: Record<string, KnockoutRoundKey> = {
+  R32: "r32",
+  R16: "r16",
+  QF: "qf",
+  SF: "sf",
+  F: "final",
+};
+
+export const KNOCKOUT_STATIC_DATES: Partial<Record<KnockoutRoundKey, string>> =
+  Object.fromEntries(
+    WC_KNOCKOUT_ROUNDS.map(
+      (r) => [SHORT_TO_KEY[r.short], r.kickoffISO] as const,
+    ).filter(([k]) => Boolean(k)),
+  ) as Partial<Record<KnockoutRoundKey, string>>;
 
 // Match a stage string to a round key. Handles both the headline form
 // ("Round of 32", "Quarterfinals") and the slug form ("round-of-32",
@@ -210,8 +235,145 @@ export function buildKnockoutRounds(
       key,
       label,
       dateLabel: dateISO ? fmtShortDate(dateISO) : null,
+      startISO: dateISO,
       matches,
       resolved: matches.length > 0,
     };
   });
+}
+
+// ── Mobile knockout preview (System D, D3 Task 4) ─────────────────────
+// The tournament overview page shows ONE round (the current one) as a short
+// agate list, not the full five-round stack. This builder shapes that: it
+// picks the current round, includes BOTH resolved matchups (real country
+// codes) and ESPN's slot placeholders ("2A" = Group A runner-up) — the
+// placeholders come from the feed, nothing is fabricated — and reports the
+// round total so the caller can say "ALL N MATCHES →".
+
+export type KnockoutPreviewRow = {
+  id: string;
+  awayCode: string;
+  homeCode: string;
+  awayName: string;
+  homeName: string;
+  /** True when either side is not yet a real country (an ESPN slot
+   *  placeholder) — the caller renders it muted and non-tappable. */
+  placeholder: boolean;
+  /** Which side is the followed country, for ink emphasis. */
+  followedSide: "away" | "home" | null;
+  status: "live" | "upcoming" | "final";
+  /** "2 – 1" (en-dash), spoilery; null until the match is played. */
+  scoreLine: string | null;
+  /** Played and level on the scoreboard — no winner emphasis (§10). A true
+   *  knockout tie resolves via ET/penalties, but knockout-data does not yet
+   *  carry penalty fields (KnockoutMatch/WCScheduleFixtureLite have none), so
+   *  AET/PENS stamps are intentionally NOT wired — comment left for when the
+   *  feed exposes them. */
+  level: boolean;
+  /** ISO kickoff — the caller formats the day-time stamp from it. */
+  dateISO: string;
+  /** /game/{id} when tappable, else "" (placeholder or missing id). */
+  href: string;
+};
+
+export type KnockoutPreview = {
+  roundKey: KnockoutRoundKey;
+  roundLabel: string;
+  /** "Jun 28 – Jul 2", a single "Jul 3", or null when unknown. */
+  dateRange: string | null;
+  /** Up to `limit` rows from the current round. */
+  rows: KnockoutPreviewRow[];
+  /** Total fixtures in the round — drives "ALL N MATCHES". */
+  total: number;
+  /** Whether any fixture (resolved or placeholder) exists for the round. */
+  hasFixtures: boolean;
+};
+
+/** The round to preview: the earliest round with an unplayed match (the one
+ *  in progress / up next), else the deepest round that has fixtures (the
+ *  tournament is winding down), else R32 as the honest knockout entry. */
+function pickCurrentRound(
+  byRound: Map<KnockoutRoundKey, WCScheduleFixtureLite[]>,
+): KnockoutRoundKey {
+  for (const { key } of ROUND_ORDER) {
+    const fx = byRound.get(key);
+    if (fx && fx.some((f) => f.status !== "final")) return key;
+  }
+  for (let i = ROUND_ORDER.length - 1; i >= 0; i--) {
+    const key = ROUND_ORDER[i].key;
+    if ((byRound.get(key) ?? []).length > 0) return key;
+  }
+  return "r32";
+}
+
+function buildDateRange(firstISO: string | null, lastISO: string | null): string | null {
+  if (!firstISO) return null;
+  const first = fmtShortDate(firstISO);
+  const last = lastISO ? fmtShortDate(lastISO) : first;
+  if (!first) return null;
+  return first === last ? first : `${first} – ${last}`;
+}
+
+export function buildKnockoutPreview(
+  fixtures: WCScheduleFixtureLite[],
+  staticDates: Partial<Record<KnockoutRoundKey, string>> = {},
+  followedCode?: string | null,
+  limit = 5,
+): KnockoutPreview {
+  const followed = followedCode ? followedCode.toUpperCase() : null;
+
+  const byRound = new Map<KnockoutRoundKey, WCScheduleFixtureLite[]>();
+  for (const f of fixtures) {
+    const k = roundKeyFromStage(f.stage);
+    if (!k) continue;
+    const list = byRound.get(k);
+    if (list) list.push(f);
+    else byRound.set(k, [f]);
+  }
+
+  const roundKey = pickCurrentRound(byRound);
+  const roundLabel = ROUND_ORDER.find((r) => r.key === roundKey)?.label ?? "Round of 32";
+  const fx = (byRound.get(roundKey) ?? [])
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const rows: KnockoutPreviewRow[] = fx.slice(0, limit).map((f) => {
+    const awayCode = f.away.abbreviation;
+    const homeCode = f.home.abbreviation;
+    const placeholder = !REAL_CODES.has(awayCode) || !REAL_CODES.has(homeCode);
+    const played = f.status !== "upcoming";
+    const followedSide =
+      followed && awayCode === followed
+        ? "away"
+        : followed && homeCode === followed
+          ? "home"
+          : null;
+    return {
+      id: f.id,
+      awayCode,
+      homeCode,
+      awayName: NAME_BY_CODE.get(awayCode) ?? f.away.name,
+      homeName: NAME_BY_CODE.get(homeCode) ?? f.home.name,
+      placeholder,
+      followedSide,
+      status: f.status,
+      scoreLine: played ? `${f.away.score} – ${f.home.score}` : null,
+      level: played && f.away.score === f.home.score,
+      dateISO: f.date,
+      href: f.id && !placeholder ? `/game/${f.id}` : "",
+    };
+  });
+
+  const dates = fx.map((f) => f.date).filter(Boolean).sort();
+  const firstISO = dates[0] ?? staticDates[roundKey] ?? null;
+  const lastISO = dates[dates.length - 1] ?? firstISO;
+
+  return {
+    roundKey,
+    roundLabel,
+    dateRange: buildDateRange(firstISO, lastISO),
+    rows,
+    total: fx.length,
+    hasFixtures: fx.length > 0,
+  };
 }

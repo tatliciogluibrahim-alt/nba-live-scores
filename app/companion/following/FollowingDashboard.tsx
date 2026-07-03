@@ -1,18 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Display } from "../atoms/Display";
+import { Masthead } from "../system/Masthead";
+import { SecHead } from "../system/SecHead";
+import { AgateRow } from "../system/AgateRow";
 import { resolveFollowIdentity } from "../follow/identity";
 import { useFollows } from "../providers";
 import type { Follow } from "../state/types";
 import { FollowCard, type FollowCardData } from "./FollowCard";
+import { FollowRow } from "./FollowRow";
+import { buildFollowingView } from "./following-view";
 import { useWrappedSeries, NBA_PLAYOFFS_WRAPPED } from "./use-wrapped-series";
 import { tournamentPhase } from "./data/tournament-phase";
 import { useLiveFollows, isFollowLive } from "./use-live-follows";
 import { SportsCircleShareModal } from "../share/SportsCircleShareModal";
 import { SyncCircleModal } from "./SyncCircleModal";
 import { FirstFollowTierCard } from "../follow/FirstFollowTierCard";
+import { TierLegend } from "./TierLegend";
+import { readLegendSeen, writeLegendSeen } from "./tier-legend-storage";
+
+// Stable no-op subscriber for useSyncExternalStore. localStorage has no
+// observable events; the legend-seen flag is read once per mount.
+function legendStorageSubscribe() {
+  return () => {};
+}
 
 /** Detect "overlapping" follow combinations — these aren't bugs but
  *  they raise the "am I getting two notifications per event?" worry.
@@ -152,200 +165,221 @@ export function FollowingDashboard() {
   );
 
   return (
-    <section>
-      {/* Title row + a settings gear. Global alerts/notifications/theme
-          live in Settings; per-follow alerts live on each card's bell.
-          The gear keeps the bottom action row focused on the circle
-          itself (Add / Share / Sync) without a jargon "Alerts &
-          Notifications" button competing with them. */}
-      <div className="mb-2 flex items-start justify-between gap-3">
-        <Display as="h1" size="lg">
-          Your sports circle.
-        </Display>
-        <Link
-          href="/settings"
-          aria-label="Alerts & Notifications"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full transition active:scale-[0.95]"
-          style={{ color: "var(--mute-1)" }}
-        >
-          <GearIcon />
-        </Link>
+    <>
+      {/* ── Mobile: System D recomposition (D3). Masthead chrome, display
+          pagehead, the ONE cross-link ink band, tier-stamped agate rows. */}
+      <div className="md:hidden">
+        <FollowingMobile
+          follows={follows}
+          cards={cards}
+          alertSlotCount={alertSlotCount}
+          alertSlotCap={alertSlotCap}
+          followsWC={followsWC}
+          wrappedHoldingSlot={wrappedHoldingSlot}
+          onShare={() => setShareOpen(true)}
+          onSync={() => setSyncOpen(true)}
+        />
       </div>
-      <p
-        className="mb-2 text-[14px] leading-snug"
-        style={{ color: "var(--mute-1)", fontWeight: 500 }}
-      >
-        {buildFollowSummary(follows) ||
-          "Add what you care about. Nothing else surfaces here."}
-      </p>
-      {/* The pin / follow distinction used to get its own standalone line
-          here, but stacked under the summary it read as over-explaining
-          before the user saw a single follow. Pinning is taught where it
-          happens (the Watching empty state + the game-detail pin
-          footnote), so the dashboard stays to the count + alert slots. */}
-      <div className="mb-2" />
-      {/* First-follow alert-tier education. Self-gates on
-          follows.length === 1 + !firstFollowEducated, so on every
-          subsequent visit it's a no-op. Sits above the slot counter
-          + the per-card grid so a user who just added their first
-          follow reads "here's what alerts can sound like" before
-          drilling into any one card. */}
-      <FirstFollowTierCard />
 
-      {/* Alert-slot counter only renders when at least one follow is
-          alert-enabled. With zero alerts the line read as "you haven't
-          done anything" rather than a useful status; the full
-          breakdown lives in Alerts & Notifications anyway. */}
-      {alertSlotCount > 0 ? (
-        <p
-          className="mb-3 text-[12px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          {alertSlotCount} of {alertSlotCap} alert slots used.
-        </p>
-      ) : null}
-
-      {/* A wrapped season can't fire more alerts, so its slot is dead
-          weight on the free tier. Nudge (don't auto-flip) so a live
-          follow can take the slot. */}
-      {wrappedHoldingSlot.length > 0 ? (
-        <p
-          className="mb-3 text-[12px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          {wrappedHoldingSlot.length === 1
-            ? `${wrappedHoldingSlot[0].name} wrapped. Turn its alerts off to free a slot.`
-            : "Some wrapped follows are holding alert slots. Turn their alerts off to free them."}
-        </p>
-      ) : null}
-
-      {/* Overlap hint. When the user follows broader + narrower things
-          (e.g. NBA Playoffs tournament + Knicks team), each event
-          matches multiple of their follows. The dispatcher's dedupe
-          guarantees one push per event-per-device, but the user has
-          no way to know that — this one-liner defuses the "am I
-          double-subscribing?" question. */}
-      {hasOverlappingFollows(follows) ? (
-        <p
-          className="mb-3 text-[12px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          Some of these overlap. You&apos;ll still only get one alert per
-          game.
-        </p>
-      ) : null}
-
-      {/* Grouped by state (design study D, "By state"): Live now / In a
-          series / Coming up / Season over. The circle reads as "where
-          things stand," not a flat list. Each card keeps its full alert
-          controls (bell + tier + per-follow No-Spoilers) — the grouping
-          is purely an ordering over the same cards. Empty groups are
-          hidden. */}
-      <FollowGroups cards={cards} />
-      {cards.length === 0 ? (
-        <p
-          className="text-[13px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          Nothing yet. Add a team, country, or series below.
-        </p>
-      ) : null}
-
-      {/* World Cup bracket entry — a destination link, shown only to WC
-          followers, kept out of the core nav. */}
-      {followsWC ? (
-        <Link
-          href="/tournament/fifa-world-cup-2026/bracket"
-          aria-label="View the Summer Soccer bracket"
-          className="mt-5 flex items-center justify-between gap-3 rounded-[16px] border px-4 py-3.5 transition active:scale-[0.99]"
-          style={{ background: "var(--paper)", borderColor: "var(--line)", borderLeft: "3px solid var(--wc)" }}
-        >
-          <span className="flex min-w-0 flex-col">
-            <span
-              className="text-[10px] uppercase"
-              style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--wc)" }}
+      {/* ── Desktop: legacy layout, pixel-frozen until D4. Verbatim. ─────── */}
+      <div className="hidden md:block">
+        <section>
+          {/* Title row + a settings gear. Global alerts/notifications/theme
+              live in Settings; per-follow alerts live on each card's bell.
+              The gear keeps the bottom action row focused on the circle
+              itself (Add / Share / Sync) without a jargon "Alerts &
+              Notifications" button competing with them. */}
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <Display as="h1" size="lg">
+              Your sports circle.
+            </Display>
+            <Link
+              href="/settings"
+              aria-label="Alerts & Notifications"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full transition active:scale-[0.95]"
+              style={{ color: "var(--mute-1)" }}
             >
-              Summer Soccer
-            </span>
-            <span className="mt-0.5 text-[14px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
-              View the bracket
-            </span>
-            <span className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
-              See who&apos;s through, round by round
-            </span>
-          </span>
-          <span aria-hidden style={{ color: "var(--mute-1)", fontSize: 16 }}>
-            →
-          </span>
-        </Link>
-      ) : null}
+              <GearIcon />
+            </Link>
+          </div>
+          <p
+            className="mb-2 text-[14px] leading-snug"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            {buildFollowSummary(follows) ||
+              "Add what you care about. Nothing else surfaces here."}
+          </p>
+          {/* The pin / follow distinction used to get its own standalone line
+              here, but stacked under the summary it read as over-explaining
+              before the user saw a single follow. Pinning is taught where it
+              happens (the Watching empty state + the game-detail pin
+              footnote), so the dashboard stays to the count + alert slots. */}
+          <div className="mb-2" />
+          {/* First-follow alert-tier education. Self-gates on
+              follows.length === 1 + !firstFollowEducated, so on every
+              subsequent visit it's a no-op. Sits above the slot counter
+              + the per-card grid so a user who just added their first
+              follow reads "here's what alerts can sound like" before
+              drilling into any one card. */}
+          <FirstFollowTierCard />
 
-      {/* Circle actions — Add is the primary action; Share + Sync are
-          a quieter secondary row beneath. Used to be three equal-weight
-          outline buttons in a grid, which read as a utility toolbar
-          rather than an editorial page. Now Add gets the full-width
-          filled treatment used elsewhere ("Open game" on game detail,
-          "Looks good" on first-follow card), and Share + Sync sit
-          underneath as smaller outline pills — visible options, not
-          calls to action. Share still only appears once there's a
-          circle to export; Sync is always available so a fresh device
-          can pull a code. */}
-      <div className="mt-5 space-y-2">
-        <Link
-          href="/following/add"
-          aria-label="Follow more (NBA Playoffs or Summer Soccer)"
-          className="flex min-h-[52px] w-full items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
-          style={{
-            background: "var(--ink)",
-            color: "var(--cream)",
-            border: "1px solid var(--ink)",
-          }}
-        >
-          Add follow
-        </Link>
-
-        {/* Secondary row. Match the existing outlined-pill style used
-            on the "Unfollow series" / "Unfollow country" buttons in
-            the preset sections — quieter, smaller min-height, ink
-            text on a transparent fill with a thin line border. */}
-        <div
-          className="grid gap-2"
-          style={{
-            gridTemplateColumns: `repeat(${follows.length > 0 ? 2 : 1}, minmax(0, 1fr))`,
-          }}
-        >
-          {follows.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => setShareOpen(true)}
-              aria-label="Share your sports circle as an image"
-              className="flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
-              style={{
-                background: "transparent",
-                color: "var(--ink)",
-                border: "1px solid var(--line)",
-              }}
+          {/* Alert-slot counter only renders when at least one follow is
+              alert-enabled. With zero alerts the line read as "you haven't
+              done anything" rather than a useful status; the full
+              breakdown lives in Alerts & Notifications anyway. */}
+          {alertSlotCount > 0 ? (
+            <p
+              className="mb-3 text-[12px] leading-snug"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              Share
-            </button>
+              {alertSlotCount} of {alertSlotCap} alert slots used.
+            </p>
           ) : null}
 
-          <button
-            type="button"
-            onClick={() => setSyncOpen(true)}
-            aria-label="Sync your follows across devices with a code"
-            className="flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
-            style={{
-              background: "transparent",
-              color: "var(--ink)",
-              border: "1px solid var(--line)",
-            }}
-          >
-            Sync
-          </button>
-        </div>
+          {/* A wrapped season can't fire more alerts, so its slot is dead
+              weight on the free tier. Nudge (don't auto-flip) so a live
+              follow can take the slot. */}
+          {wrappedHoldingSlot.length > 0 ? (
+            <p
+              className="mb-3 text-[12px] leading-snug"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              {wrappedHoldingSlot.length === 1
+                ? `${wrappedHoldingSlot[0].name} wrapped. Turn its alerts off to free a slot.`
+                : "Some wrapped follows are holding alert slots. Turn their alerts off to free them."}
+            </p>
+          ) : null}
+
+          {/* Overlap hint. When the user follows broader + narrower things
+              (e.g. NBA Playoffs tournament + Knicks team), each event
+              matches multiple of their follows. The dispatcher's dedupe
+              guarantees one push per event-per-device, but the user has
+              no way to know that — this one-liner defuses the "am I
+              double-subscribing?" question. */}
+          {hasOverlappingFollows(follows) ? (
+            <p
+              className="mb-3 text-[12px] leading-snug"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              Some of these overlap. You&apos;ll still only get one alert per
+              game.
+            </p>
+          ) : null}
+
+          {/* Grouped by state (design study D, "By state"): Live now / In a
+              series / Coming up / Season over. The circle reads as "where
+              things stand," not a flat list. Each card keeps its full alert
+              controls (bell + tier + per-follow No-Spoilers) — the grouping
+              is purely an ordering over the same cards. Empty groups are
+              hidden. */}
+          <FollowGroups cards={cards} />
+          {cards.length === 0 ? (
+            <p
+              className="text-[13px] leading-snug"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              Nothing yet. Add a team, country, or series below.
+            </p>
+          ) : null}
+
+          {/* World Cup bracket entry — a destination link, shown only to WC
+              followers, kept out of the core nav. */}
+          {followsWC ? (
+            <Link
+              href="/tournament/fifa-world-cup-2026/bracket"
+              aria-label="View the Summer Soccer bracket"
+              className="mt-5 flex items-center justify-between gap-3 rounded-[16px] border px-4 py-3.5 transition active:scale-[0.99]"
+              style={{ background: "var(--paper)", borderColor: "var(--line)", borderLeft: "3px solid var(--wc)" }}
+            >
+              <span className="flex min-w-0 flex-col">
+                <span
+                  className="text-[10px] uppercase"
+                  style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--wc)" }}
+                >
+                  Summer Soccer
+                </span>
+                <span className="mt-0.5 text-[14px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
+                  View the bracket
+                </span>
+                <span className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+                  See who&apos;s through, round by round
+                </span>
+              </span>
+              <span aria-hidden style={{ color: "var(--mute-1)", fontSize: 16 }}>
+                →
+              </span>
+            </Link>
+          ) : null}
+
+          {/* Circle actions — Add is the primary action; Share + Sync are
+              a quieter secondary row beneath. Used to be three equal-weight
+              outline buttons in a grid, which read as a utility toolbar
+              rather than an editorial page. Now Add gets the full-width
+              filled treatment used elsewhere ("Open game" on game detail,
+              "Looks good" on first-follow card), and Share + Sync sit
+              underneath as smaller outline pills — visible options, not
+              calls to action. Share still only appears once there's a
+              circle to export; Sync is always available so a fresh device
+              can pull a code. */}
+          <div className="mt-5 space-y-2">
+            <Link
+              href="/following/add"
+              aria-label="Follow more (NBA Playoffs or Summer Soccer)"
+              className="flex min-h-[52px] w-full items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+              style={{
+                background: "var(--ink)",
+                color: "var(--cream)",
+                border: "1px solid var(--ink)",
+              }}
+            >
+              Add follow
+            </Link>
+
+            {/* Secondary row. Match the existing outlined-pill style used
+                on the "Unfollow series" / "Unfollow country" buttons in
+                the preset sections — quieter, smaller min-height, ink
+                text on a transparent fill with a thin line border. */}
+            <div
+              className="grid gap-2"
+              style={{
+                gridTemplateColumns: `repeat(${follows.length > 0 ? 2 : 1}, minmax(0, 1fr))`,
+              }}
+            >
+              {follows.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setShareOpen(true)}
+                  aria-label="Share your sports circle as an image"
+                  className="flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+                  style={{
+                    background: "transparent",
+                    color: "var(--ink)",
+                    border: "1px solid var(--line)",
+                  }}
+                >
+                  Share
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => setSyncOpen(true)}
+                aria-label="Sync your follows across devices with a code"
+                className="flex min-h-[40px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+                style={{
+                  background: "transparent",
+                  color: "var(--ink)",
+                  border: "1px solid var(--line)",
+                }}
+              >
+                Sync
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
 
+      {/* Modals — shared by both branches (fixed overlays; layout-neutral). */}
       {shareOpen ? (
         <SportsCircleShareModal
           follows={follows}
@@ -356,6 +390,306 @@ export function FollowingDashboard() {
       {syncOpen ? (
         <SyncCircleModal follows={follows} onClose={() => setSyncOpen(false)} />
       ) : null}
+    </>
+  );
+}
+
+// ── Mobile (System D, D3) ───────────────────────────────────────────────
+//
+// The agate recomposition per docs/superpowers/design-directions/d-following.
+// Order: Masthead → "Your sports circle." pagehead → count meta + the
+// free-alerts why-line → (edge-case mono nudges) → the ONE cross-link ink
+// band (live only) → LIVE NOW / UP NEXT / WRAPPED sections of tier-stamped
+// FollowRows → the per-sport bracket cross-link → Add follow → SHARE · SYNC
+// DEVICES footer. The tier legend + "?" affordance land in Task 3.
+
+const MOBILE_META_STYLE = {
+  fontFamily: "var(--font-mono)",
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: "0.12em",
+} as const;
+
+function FollowingMobile({
+  follows,
+  cards,
+  alertSlotCount,
+  alertSlotCap,
+  followsWC,
+  wrappedHoldingSlot,
+  onShare,
+  onSync,
+}: {
+  follows: Follow[];
+  cards: FollowCardData[];
+  alertSlotCount: number;
+  alertSlotCap: number;
+  followsWC: boolean;
+  wrappedHoldingSlot: FollowCardData[];
+  onShare: () => void;
+  onSync: () => void;
+}) {
+  const { liveNow, upNext, wrapped } = buildFollowingView(cards);
+  // Which rows are expanded. Lifted here so the mobile column owns it; each
+  // FollowRow is a controlled expander (its drawer is the shared FollowCard
+  // panel). Independent per row (not an accordion) to match FollowCard.
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const keyOf = (c: FollowCardData) => `${c.follow.kind}-${c.follow.id}`;
+  const toggle = (key: string) =>
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  // Tier legend visibility — lint-compliant SSR-safe approach:
+  //   useSyncExternalStore reads localStorage on the client and returns the
+  //   server snapshot (false = never seen → show) during SSR. If snapshots
+  //   differ after hydration, React remounts to sync. No useEffect needed.
+  const legendSeenInStorage = useSyncExternalStore(
+    legendStorageSubscribe,
+    () => readLegendSeen(), // client snapshot
+    () => false             // server snapshot: never seen → show legend
+  );
+  // Within-session override flags: dismiss hides, re-open shows.
+  const [dismissedThisSession, setDismissedThisSession] = useState(false);
+  const [reopenedThisSession, setReopenedThisSession] = useState(false);
+  const legendOpen =
+    (!legendSeenInStorage && !dismissedThisSession) || reopenedThisSession;
+
+  function handleLegendDismiss() {
+    writeLegendSeen();
+    setDismissedThisSession(true);
+    setReopenedThisSession(false);
+  }
+
+  function handleLegendReopen() {
+    setReopenedThisSession(true);
+  }
+
+  // Which section head hosts the "?" and the legend panel — the first
+  // non-empty tier-stamped section (LIVE NOW > UP NEXT > WRAPPED).
+  const firstKey: "live" | "next" | "wrapped" | null =
+    liveNow.length > 0 ? "live" : upNext.length > 0 ? "next" : wrapped.length > 0 ? "wrapped" : null;
+
+  const followCount = follows.length;
+  const countLine = `${followCount} ${followCount === 1 ? "follow" : "follows"} · ${alertSlotCount} of ${alertSlotCap} alert slots used`;
+
+  const overlap = hasOverlappingFollows(follows);
+
+  function renderSection(
+    label: string,
+    items: FollowCardData[],
+    sectionKey: "live" | "next" | "wrapped"
+  ) {
+    if (items.length === 0) return null;
+    const isFirst = sectionKey === firstKey;
+    return (
+      <section className="mt-6">
+        <SecHead
+          name={label}
+          count={String(items.length)}
+          onHelp={isFirst ? handleLegendReopen : undefined}
+        />
+        {/* Tier legend — only under the first populated section head. */}
+        {isFirst && (
+          <TierLegend visible={legendOpen} onDismiss={handleLegendDismiss} />
+        )}
+        {items.map((c) => {
+          const key = keyOf(c);
+          return (
+            <FollowRow
+              key={key}
+              data={c}
+              expanded={expandedKeys.has(key)}
+              onToggleExpand={() => toggle(key)}
+            />
+          );
+        })}
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      {/* Masthead — the broadsheet nameplate. -mx-4 bleeds the 2px rule to
+          the screen edges within the page's px-4 gutter. Live count derives
+          from the follow cards' live status (the same signal LIVE NOW uses). */}
+      <div className="-mx-4 mb-5">
+        <Masthead liveCount={liveNow.length} />
+      </div>
+
+      <Display
+        as="h1"
+        size="lg"
+        style={{
+          fontWeight: 800,
+          fontSize: "31px",
+          letterSpacing: "-0.02em",
+          lineHeight: 1.05,
+        }}
+      >
+        Your sports circle.
+      </Display>
+
+      <p
+        className="mt-2 uppercase tabular-nums lining-nums"
+        style={{ ...MOBILE_META_STYLE, color: "var(--mute-1)" }}
+      >
+        {countLine}
+      </p>
+      <p
+        className="mt-[3px] uppercase"
+        style={{ ...MOBILE_META_STYLE, color: "var(--mute-2)" }}
+      >
+        Alerts on your first 3 follows are free
+      </p>
+
+      {/* Wrapped-slot nudge — a wrapped season can't fire alerts, so its
+          slot is dead weight. Mono/muted line, no box (restyle-light). */}
+      {wrappedHoldingSlot.length > 0 ? (
+        <p
+          className="mt-2 uppercase"
+          style={{ ...MOBILE_META_STYLE, color: "var(--mute-2)" }}
+        >
+          {wrappedHoldingSlot.length === 1
+            ? `${wrappedHoldingSlot[0].name} wrapped. Turn its alerts off to free a slot.`
+            : "Some wrapped follows hold alert slots. Turn them off to free them."}
+        </p>
+      ) : null}
+
+      {/* Overlap hint — one push per event even when follows overlap. */}
+      {overlap ? (
+        <p
+          className="mt-2 uppercase"
+          style={{ ...MOBILE_META_STYLE, color: "var(--mute-2)" }}
+        >
+          Some overlap. You still get one alert per game.
+        </p>
+      ) : null}
+
+      {/* First-follow tier education — self-gates to the first follow. */}
+      <div className="mt-4">
+        <FirstFollowTierCard />
+      </div>
+
+      {/* The ONE ink band (spec §6): a calm cross-link to Watching, the live
+          surface. Only when a followed game is live. Inset like the sections
+          (not edge-bleeding) per the mock. */}
+      {liveNow.length > 0 ? (
+        <Link
+          href="/watching"
+          aria-label={`${liveNow.length} live now. Open Watching.`}
+          className="mt-[18px] flex items-center gap-[9px] transition active:opacity-90"
+          style={{
+            background: "var(--ink-field-bg)",
+            color: "var(--cream-on-ink)",
+            padding: "13px 14px",
+          }}
+        >
+          <span
+            aria-hidden
+            className="no-noise-live-fade inline-block shrink-0 rounded-full"
+            style={{ width: 6, height: 6, background: "var(--cream-on-ink)" }}
+          />
+          <span
+            className="flex-1 uppercase tabular-nums lining-nums"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+            }}
+          >
+            {liveNow.length} LIVE NOW
+          </span>
+          <span
+            className="uppercase"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.08em",
+              color: "var(--cream-on-ink-dim)",
+            }}
+          >
+            OPEN WATCHING →
+          </span>
+        </Link>
+      ) : null}
+
+      {renderSection("Live now", liveNow, "live")}
+      {renderSection("Up next", upNext, "next")}
+      {renderSection("Wrapped", wrapped, "wrapped")}
+
+      {/* Per-sport cross-link — the bracket destination, WC followers only. */}
+      {followsWC ? (
+        <section className="mt-6">
+          <SecHead name="Summer soccer" />
+          <AgateRow
+            main="View the bracket"
+            note="See who's through, round by round"
+            href="/tournament/fifa-world-cup-2026/bracket"
+          />
+        </section>
+      ) : null}
+
+      {/* Add follow — the primary action, filled pill. Then the SHARE ·
+          SYNC DEVICES footer wiring the existing two modals. */}
+      <div className="mt-[26px]">
+        <Link
+          href="/following/add"
+          aria-label="Follow more (NBA Playoffs or Summer Soccer)"
+          className="flex w-full items-center justify-center rounded-full transition active:scale-[0.98]"
+          style={{
+            background: "var(--ink)",
+            color: "var(--cream)",
+            fontSize: 15,
+            fontWeight: 600,
+            padding: 14,
+          }}
+        >
+          Add follow
+        </Link>
+
+        <div
+          className="mt-4 flex justify-center gap-[26px] uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            color: "var(--mute-1)",
+          }}
+        >
+          {follows.length > 0 ? (
+            <button
+              type="button"
+              onClick={onShare}
+              aria-label="Share your sports circle as an image"
+              className="underline transition active:opacity-70"
+              style={{
+                textUnderlineOffset: 3,
+                textDecorationColor: "var(--line)",
+              }}
+            >
+              Share
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onSync}
+            aria-label="Sync your follows across devices with a code"
+            className="underline transition active:opacity-70"
+            style={{
+              textUnderlineOffset: 3,
+              textDecorationColor: "var(--line)",
+            }}
+          >
+            Sync devices
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
