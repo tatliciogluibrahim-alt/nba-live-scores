@@ -38,46 +38,62 @@ export function WatchingEmpty() {
         <div className="mb-5" />
       )}
 
-      <div className="space-y-2">
+      {/* Suggestions — agate rows, not cards. Hairline-ruled, unboxed, each
+          a mono note under the label with a → chevron at the row edge. */}
+      <div style={{ borderBottom: "1px solid var(--line)" }}>
         <Link
           href="/"
-          className="flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border px-4 py-3 transition active:scale-[0.99]"
-          style={{
-            background: "var(--paper)",
-            borderColor: "var(--line)",
-            color: "var(--ink)",
-          }}
+          className="flex min-h-[52px] items-center justify-between gap-3 border-t py-3 transition active:opacity-70"
+          style={{ borderColor: "var(--line)", color: "var(--ink)" }}
           aria-label="Go to Today"
         >
-          <span className="text-[13px]" style={{ fontWeight: 700 }}>
-            See what&apos;s on Today
+          <span className="flex flex-col gap-1">
+            <span className="text-[14px]" style={{ fontWeight: 600 }}>
+              See what&apos;s on Today
+            </span>
+            <span
+              className="uppercase"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.12em",
+                color: "var(--mute-2)",
+              }}
+            >
+              Worth checking now
+            </span>
           </span>
-          <span
-            className="text-[11px]"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-            Worth checking now
+          <span aria-hidden className="text-[16px]" style={{ color: "var(--mute-1)" }}>
+            →
           </span>
         </Link>
 
         <Link
           href="/following"
-          className="flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border px-4 py-3 transition active:scale-[0.99]"
-          style={{
-            background: "var(--paper)",
-            borderColor: "var(--line)",
-            color: "var(--ink)",
-          }}
+          className="flex min-h-[52px] items-center justify-between gap-3 border-t py-3 transition active:opacity-70"
+          style={{ borderColor: "var(--line)", color: "var(--ink)" }}
           aria-label="Go to Following"
         >
-          <span className="text-[13px]" style={{ fontWeight: 700 }}>
-            Set up Following
+          <span className="flex flex-col gap-1">
+            <span className="text-[14px]" style={{ fontWeight: 600 }}>
+              Set up Following
+            </span>
+            <span
+              className="uppercase"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.12em",
+                color: "var(--mute-2)",
+              }}
+            >
+              Teams, countries, series, tournaments
+            </span>
           </span>
-          <span
-            className="text-[11px]"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-            Teams, countries, series, tournaments
+          <span aria-hidden className="text-[16px]" style={{ color: "var(--mute-1)" }}>
+            →
           </span>
         </Link>
       </div>
