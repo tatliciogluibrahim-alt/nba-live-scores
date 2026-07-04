@@ -9,12 +9,13 @@ import { useNoSpoilers } from "../providers";
 import type { ScoreboardTile } from "./today-data";
 import { BAND_MAX_ROWS, bandShownCount } from "./agate-slate";
 
-// System D "Also live" ink band (Task 7). The mobile companion to the lead
+// System D "Also live" ink band (Task 7). The companion to the lead
 // Monument: the lead is index 01, and every OTHER live followed game renders
 // here as a board row (02, 03…), matching docs/superpowers/design-directions/
-// d-mix. Desktop keeps the DesktopScoreboard grid untouched (md+), so this
-// band is md:hidden — it is the mobile-only multi-live surface until D4
-// unifies desktop.
+// d-mix. Renders at every width (D4b): on desktop it sits beneath the lead
+// Monument in the main column and carries the multi-live slate the legacy
+// DesktopScoreboard grid used to (the grid is retired). The mobile screen-
+// gutter bleed (-mx-4) relaxes to mx-0 inside the desktop main column.
 //
 // Rung-2 bound (spec §1): at most BAND_MAX_ROWS game rows; any surplus
 // collapses into one "+N MORE LIVE →" row linking /watching (mono, no score).
@@ -27,7 +28,7 @@ export function AlsoLiveBand({
   items,
   excludeGameId,
 }: {
-  /** The same live scoreboard tiles the DesktopScoreboard renders on md+. */
+  /** The live scoreboard tiles for the day (the multi-live slate). */
   items: ScoreboardTile[];
   /** The lead game (the Monument, index 01) — excluded so the band never
    *  repeats it. */
@@ -42,7 +43,7 @@ export function AlsoLiveBand({
   const overflow = others.length - shown.length;
 
   return (
-    <div className="md:hidden -mx-4 mb-5">
+    <div className="-mx-4 md:mx-0 mb-5">
       <InkField label="Also live" live>
         {shown.map((tile, i) => (
           <BandRow
@@ -63,9 +64,8 @@ export function AlsoLiveBand({
 // One live game as a board row. Its own GameSpoilerScope + Spoiler mirror the
 // lead Monument's No-Spoilers protection: the score honors the global toggle
 // AND any selective per-follow hide, and one tap reveals just this game
-// (session-scoped via RevealProvider). This is stricter than DesktopScoreboard
-// (global-toggle only) — chosen so the band never leaks a score the Monument
-// on the same screen would hide.
+// (session-scoped via RevealProvider), so the band never leaks a score the
+// Monument on the same screen would hide.
 function BandRow({ tile, idx }: { tile: ScoreboardTile; idx: string }) {
   const subject = `${tile.awayCode} vs ${tile.homeCode}`;
   const globalNoSpoilers = useNoSpoilers();

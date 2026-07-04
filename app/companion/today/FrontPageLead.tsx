@@ -15,21 +15,20 @@ import { computeLiveActivityProgress } from "../../lib/push/live-activity-progre
 // gates the rise so it's a first-impression, not a restless replay.
 let leadEntered = false;
 
-// Front Page lead. Two renders share the data plumbing (deriveTodayHeadline):
+// Front Page lead. Two render paths share the data plumbing
+// (deriveTodayHeadline):
 //
-//   Mobile (System D) — the lead Monument: kicker (index 01 · live clock ·
-//   context), stacked display-numeral scorerows, the calm deck sentence,
-//   and the progress rail. Score-forward; the enriched lead.game carries
-//   the real numerals + a parseable clock, and the whole monument sits in
-//   a GameSpoilerScope so No-Spoilers users keep their protection (scores
-//   + deck frost, one tap reveals the game).
+//   Game lead (all widths, System D) — the lead Monument: kicker (index 01 ·
+//   live clock · context), stacked display-numeral scorerows, the calm deck
+//   sentence, and the progress rail. Score-forward; the enriched lead.game
+//   carries the real numerals + a parseable clock, and the whole monument
+//   sits in a GameSpoilerScope so No-Spoilers users keep their protection
+//   (scores + deck frost, one tap reveals the game). On desktop the mobile
+//   bleed relaxes to the main column's left edge (D4b).
 //
-//   Desktop (md+) — the legacy editorial render (accent eyebrow, big state
-//   headline, condensed deck card) stays pixel-identical until D4 owns the
-//   desktop restyle.
-//
-// Headline-only leads (quiet / countdown days: no deck, no game) keep the
-// legacy render at all widths — Task 9 restyles the states.
+//   Headline-only leads (quiet / countdown days: no deck, no game) keep the
+//   legacy editorial render (accent eyebrow, big state headline, optional
+//   support) at all widths — no boxed deck card is drawn without a game.
 
 const TONE_COLOR: Record<TodayHeadline["eyebrow"]["tone"], string> = {
   nba: "var(--nba)",
@@ -178,72 +177,71 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
       : undefined;
 
     return (
-      <>
-        <div className={`${rise} md:hidden -mx-4 mb-5`}>
-          <GameSpoilerScope gameId={game.gameId} hidden={baseHidden}>
-            <Monument
-              sport={sport}
-              rung={rung}
-              status={game.status}
-              awayName={game.awayName}
-              homeName={game.homeName}
-              awayScore={game.awayScore}
-              homeScore={game.homeScore}
-              progress={progress}
-              kicker={
-                <>
+      // System D lead Monument at every width (D4b): the mobile bleed
+      // (-mx-4 to the screen gutter) relaxes to mx-0 in the desktop main
+      // column, where the Monument sits at the column's left edge with its
+      // own 18px inset. The legacy md-only Front Page card render is gone —
+      // D4b ends the desktop-frozen law for Today.
+      <div className={`${rise} -mx-4 md:mx-0 mb-5`}>
+        <GameSpoilerScope gameId={game.gameId} hidden={baseHidden}>
+          <Monument
+            sport={sport}
+            rung={rung}
+            status={game.status}
+            awayName={game.awayName}
+            homeName={game.homeName}
+            awayScore={game.awayScore}
+            homeScore={game.homeScore}
+            progress={progress}
+            kicker={
+              <>
+                <span
+                  style={{
+                    // C4 (§5 v3): the lead index is brand chrome on cream.
+                    // On the peak accent field it stays full cream (vermilion
+                    // is a cream-ground color; contrast law wins on the field).
+                    color:
+                      rung === "peak"
+                        ? "var(--cream-on-acc)"
+                        : "var(--brand)",
+                    fontWeight: 700,
+                  }}
+                >01</span>
+                {lead.live ? (
                   <span
+                    aria-hidden
+                    className="no-noise-live-fade inline-block h-[6px] w-[6px] shrink-0 rounded-full"
                     style={{
-                      // C4 (§5 v3): the lead index is brand chrome on cream.
-                      // On the peak accent field it stays full cream (vermilion
-                      // is a cream-ground color; contrast law wins on the field).
-                      color:
-                        rung === "peak"
-                          ? "var(--cream-on-acc)"
-                          : "var(--brand)",
-                      fontWeight: 700,
+                      background:
+                        rung === "peak" ? "var(--cream-on-acc)" : accent,
                     }}
-                  >01</span>
-                  {lead.live ? (
-                    <span
-                      aria-hidden
-                      className="no-noise-live-fade inline-block h-[6px] w-[6px] shrink-0 rounded-full"
-                      style={{
-                        background:
-                          rung === "peak" ? "var(--cream-on-acc)" : accent,
-                      }}
-                    />
-                  ) : null}
-                  {lead.live ? (
-                    <span
-                      style={
-                        // On the peak field the kicker is already full
-                        // cream (contrast law) — no accent-on-accent.
-                        rung === "peak"
-                          ? undefined
-                          : { color: accent, fontWeight: 700 }
-                      }
-                    >
-                      Live · {primeMinutes(game.statusLine)}
-                    </span>
-                  ) : null}
-                  {context ? (
-                    <span className="min-w-0 truncate">· {context}</span>
-                  ) : null}
-                </>
-              }
-              deck={safeDeck}
-              href={deck.href}
-              gameId={game.gameId}
-              spoilerSubject={game.spoilerSubject}
-            />
-          </GameSpoilerScope>
-        </div>
-        {/* md+: the legacy Front Page render, unchanged (desktop is D4). */}
-        <div className="hidden md:block">
-          <LegacyLead lead={lead} rise={rise} />
-        </div>
-      </>
+                  />
+                ) : null}
+                {lead.live ? (
+                  <span
+                    style={
+                      // On the peak field the kicker is already full
+                      // cream (contrast law) — no accent-on-accent.
+                      rung === "peak"
+                        ? undefined
+                        : { color: accent, fontWeight: 700 }
+                    }
+                  >
+                    Live · {primeMinutes(game.statusLine)}
+                  </span>
+                ) : null}
+                {context ? (
+                  <span className="min-w-0 truncate">· {context}</span>
+                ) : null}
+              </>
+            }
+            deck={safeDeck}
+            href={deck.href}
+            gameId={game.gameId}
+            spoilerSubject={game.spoilerSubject}
+          />
+        </GameSpoilerScope>
+      </div>
     );
   }
 
@@ -254,8 +252,10 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
 // ── Legacy render (Concept A "Front Page") ───────────────────────────
 // The pre-System-D editorial lead: accent eyebrow, big punchy state
 // headline, condensed deck card (chips · AT · chips — time / broadcast),
-// optional stake line. Kept verbatim for md+ (desktop restyle is D4) and
-// for headline-only states (Task 9 restyles those).
+// optional stake line. Now only reached for headline-only states (quiet /
+// countdown days) where there's no game behind the lead, so the deck-card
+// branch never draws — it renders as a clean eyebrow + display headline +
+// support at every width.
 
 function LegacyLead({ lead, rise }: { lead: TodayHeadline; rise: string }) {
   const eyebrowColor = TONE_COLOR[lead.eyebrow.tone];

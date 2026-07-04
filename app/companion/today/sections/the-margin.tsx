@@ -1,44 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useBriefPrompt } from "./use-brief-prompt";
+import { SecHead } from "../../system/SecHead";
+import { useBriefPrompt } from "../use-brief-prompt";
 
-// One-time, dismissible nudge toward the Daily Brief ("The Margin"). Calm,
-// no FOMO — it states the value once and gets out of the way. Dismissal (and
-// tapping through to set it up) are both one-way: the nudge never returns for
-// that install.
-//
-// This is the MOBILE surface: The Margin footer at the foot of the Today
-// slate (System D, d-mix) — a hairline-topped footer, not a card. On desktop
-// (md+) it hides; the right-rail TheMargin carries the same nudge instead,
-// sharing the dismiss state via useBriefPrompt.
+// The Margin — desktop right-rail footer for the Daily Brief nudge (D4b).
+// The unboxed agate counterpart to the mobile BriefPromptCard footer: a
+// SecHead over a calm body line and two mono link actions, no card. Shares
+// dismissal with the mobile footer via useBriefPrompt, so setting it up (or
+// dismissing) on either surface sticks. Mounted only in TodayClient's desktop
+// aside; the mobile footer owns the same nudge below md.
 
-export function BriefPromptCard() {
+export function TheMargin() {
   const { ready, dismissed, dismiss } = useBriefPrompt();
 
   if (!ready || dismissed) return null;
 
   return (
-    <section
-      className="md:hidden"
-      style={{ borderTop: "1px solid var(--line)", paddingTop: 16 }}
-    >
+    <section>
+      <SecHead name="The Margin" />
       <p
-        className="text-[15px] leading-snug"
-        style={{ color: "var(--ink)", fontWeight: 700 }}
-      >
-        Want The Margin?
-      </p>
-      <p
-        className="mt-1 text-[13px] leading-snug"
+        className="mt-3 text-[13px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         A calm morning recap of what your follows did. No noise.
       </p>
 
-      {/* Mono link actions (System D, D3 Task 6a) — this footer is a moment
-          among the Today slate, not the screen's sole CTA, so the actions
-          read as editorial links, not pills. */}
       <div className="mt-3.5 flex items-center gap-6">
         <Link
           href="/brief/subscribe"
