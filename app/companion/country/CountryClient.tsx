@@ -403,7 +403,7 @@ function CountryMobile({
                 <Stamp text="FT" variant="outline" />
               ) : (
                 <Stamp
-                  text={`${f.dateLabel.split(", ")[1] ?? f.dateLabel} · ${f.timeLabel}`}
+                  text={`${f.dateLabel.split(",")[0] ?? f.dateLabel} ${f.timeLabel}`}
                   variant="outline"
                 />
               );
