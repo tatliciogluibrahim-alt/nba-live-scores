@@ -341,9 +341,13 @@ function wcGameMatchesFollow(game: BriefWCGame, follow: Follow): boolean {
 // ── Format helpers ───────────────────────────────────────────────────
 
 function formatGameTime(date: string): string {
-  return new Date(date).toLocaleTimeString(undefined, {
+  // timeZone was missing here (alone among this file's formatters), so the
+  // Vercel server rendered UTC hours — user saw "3:00 AM" for an 11 PM ET
+  // kickoff. The brief speaks ET everywhere, like its day windowing.
+  return new Date(date).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    timeZone: SPORTS_TZ,
   });
 }
 
