@@ -1,5 +1,5 @@
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../companion/game/DetailCrumbs";
 import { FollowingAdd } from "../../companion/following/FollowingAdd";
 
 export const metadata = {
@@ -10,7 +10,7 @@ export const metadata = {
 export default function FollowingAddPage() {
   return (
     <CompanionFrame>
-      <CrumbBar backHref="/following" backLabel="Following" title="Follow more" />
+      <DetailCrumbs backHref="/following" backLabel="Following" title="Follow more" />
       <FollowingAdd />
     </CompanionFrame>
   );

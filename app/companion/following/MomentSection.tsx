@@ -32,13 +32,139 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
   const isInactive = isComingSoon || isConcluded;
 
   return (
-    <section
-      // Anchor target for Pick Your Moment's scroll-into-view links
-      // (Phase 21C-3). Stable, predictable per moment id so the
-      // PickYourMoment component can deep-link without coupling to
-      // the section's internal structure.
-      id={`moment-${moment.id}`}
-      className="overflow-hidden rounded-[14px] border scroll-mt-4"
+    <>
+      {/* ── Mobile: System D moment section (D4b, user-flagged) ────── */}
+      <section
+        id={`moment-${moment.id}`}
+        className="scroll-mt-4 md:hidden"
+        style={{ opacity: isInactive ? 0.85 : 1 }}
+      >
+        {/* Head — heavy rule, mono name, accent tick, state stamp. */}
+        <div
+          className="flex items-baseline justify-between gap-3"
+          style={{
+            borderBottom: "2px solid var(--rule)",
+            paddingBottom: 6,
+            marginTop: 22,
+          }}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <span
+              aria-hidden
+              className="inline-block shrink-0"
+              style={{ width: 3, height: 12, background: moment.accent }}
+            />
+            <span
+              className="truncate uppercase"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.14em",
+                color: "var(--ink)",
+              }}
+            >
+              {moment.name}
+            </span>
+          </span>
+          {isInactive ? (
+            <span
+              className="shrink-0 uppercase"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.1em",
+                color: "var(--mute-1)",
+                border: "1px solid var(--line)",
+                padding: "3px 7px",
+              }}
+            >
+              {moment.comingSoon ? moment.comingSoon.label : "Season wrapped"}
+            </span>
+          ) : null}
+        </div>
+        <p
+          className="mt-2 text-[12.5px] leading-snug"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          {moment.description}
+        </p>
+        <ul>
+          {moment.granularities.map((g) => {
+            const inner = (
+              <>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="uppercase"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 9.5,
+                      fontWeight: 600,
+                      letterSpacing: "0.14em",
+                      color: "var(--mute-2)",
+                    }}
+                  >
+                    {g.eyebrow}
+                  </p>
+                  <p
+                    className="mt-0.5 text-[15px]"
+                    style={{ fontWeight: 700, letterSpacing: "-0.005em", color: "var(--ink)" }}
+                  >
+                    {g.title}
+                  </p>
+                  <p
+                    className="mt-0.5 text-[12px]"
+                    style={{ color: "var(--mute-1)", fontWeight: 500 }}
+                  >
+                    {g.detail}
+                  </p>
+                </div>
+                <span
+                  className="shrink-0 uppercase"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: isInactive ? 10 : 12,
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    color: "var(--mute-2)",
+                  }}
+                  aria-hidden={!isInactive}
+                >
+                  {isInactive ? (isConcluded ? "Wrapped" : "Not yet") : "→"}
+                </span>
+              </>
+            );
+            return (
+              <li key={g.href + g.eyebrow}>
+                {isInactive ? (
+                  <div
+                    className="flex min-h-[56px] items-center gap-3 py-3"
+                    style={{ borderBottom: "1px solid var(--line)" }}
+                    aria-label={`${moment.name}: ${g.title} (${isConcluded ? "season wrapped" : "coming soon"})`}
+                  >
+                    {inner}
+                  </div>
+                ) : (
+                  <Link
+                    href={g.href}
+                    aria-label={`${moment.name}: ${g.title}`}
+                    className="flex min-h-[56px] items-center gap-3 py-3 transition active:bg-[var(--paper)]"
+                    style={{ borderBottom: "1px solid var(--line)" }}
+                  >
+                    {inner}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      {/* ── Desktop: legacy card, unchanged until the desktop pass ──── */}
+      <section
+      id={`moment-${moment.id}-desktop`}
+      className="hidden overflow-hidden rounded-[14px] border scroll-mt-4 md:block"
       style={{
         background: "var(--paper)",
         borderColor: "var(--line)",
@@ -171,5 +297,6 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
         })}
       </ul>
     </section>
+    </>
   );
 }
