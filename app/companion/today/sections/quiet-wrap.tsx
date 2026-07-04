@@ -1,8 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { Eyebrow } from "../../atoms/Eyebrow";
-import { NoSpoilerGameCard } from "../../spoiler/NoSpoilerGameCard";
 import { useNoSpoilers } from "../../providers";
 import { Spoiler } from "../../spoiler/Spoiler";
 import {
@@ -14,7 +11,6 @@ import { SecHead } from "../../system/SecHead";
 import { AgateRow } from "../../system/AgateRow";
 import { Stamp } from "../../system/Stamp";
 import { winnerSide } from "../../system/emphasis";
-import { SectionHeader } from "./section-header";
 import {
   agateScore,
   matchupCodes,
@@ -31,8 +27,9 @@ import type { QuietWrapItem } from "../today-data";
 // current-week feed. The eyebrow auto-formats per day ("Earlier",
 // "Yesterday", "Sat", "Fri") so the list reads as a calm timeline.
 //
-// When No-Spoilers is on, each row swaps to a NoSpoilerGameCard with
-// context-aware reveal copy.
+// No-Spoilers is handled inline per row (GameSpoilerScope + Spoiler), so the
+// same agate render is safe at every width — a spoilery score frosts and one
+// tap reveals just that game.
 //
 // Note: the share-as-image affordance was removed in an earlier
 // polish pass — the calm companion direction shouldn't lean on
@@ -45,37 +42,30 @@ export function QuietWrap({
   startIndex = 1,
 }: {
   items: QuietWrapItem[];
-  /** First running index for the mobile agate rows (continues the slate). */
+  /** First running index for the agate rows (continues the slate). */
   startIndex?: number;
 }) {
   if (items.length === 0) return null;
 
+  // System D agate slate on the C4 blush plate (--plate-wrap), all widths
+  // (D4b). Full-bleed: on mobile -mx-4 bleeds to the screen gutter; on
+  // desktop mx-0 fills the main column and the tint runs to its edges.
   return (
-    <>
-      {/* Mobile: System D agate slate on blush plate. Full-bleed: -mx-4 bleeds
-          to screen edges against the page's px-4 container; inner px-4 realigns
-          content. Padding matches c4 mock (.sec = 18px 18px 6px). */}
-      <section
-        className="md:hidden -mx-4"
-        style={{ background: "var(--plate-wrap)" }}
-      >
-        <div className="px-4 pt-[18px] pb-[6px]">
-          <SecHead name="Quiet wrap" count={wrapCountLabel(items.length)} />
-          {items.map((item, i) => (
-            <QuietWrapAgateRow
-              key={item.id}
-              item={item}
-              idx={padIdx(startIndex + i)}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Desktop: legacy card list, unchanged */}
-      <div className="hidden md:block">
-        <QuietWrapCards items={items} />
+    <section
+      className="-mx-4 md:mx-0"
+      style={{ background: "var(--plate-wrap)" }}
+    >
+      <div className="px-4 md:px-[18px] pt-[18px] pb-[6px]">
+        <SecHead name="Quiet wrap" count={wrapCountLabel(items.length)} />
+        {items.map((item, i) => (
+          <QuietWrapAgateRow
+            key={item.id}
+            item={item}
+            idx={padIdx(startIndex + i)}
+          />
+        ))}
       </div>
-    </>
+    </section>
   );
 }
 
@@ -164,85 +154,5 @@ function WrapMatchup({
         {home}
       </span>
     </span>
-  );
-}
-
-function QuietWrapCards({ items }: { items: QuietWrapItem[] }) {
-  const noSpoilers = useNoSpoilers();
-
-  return (
-    <section>
-      <SectionHeader label="Quiet wrap" />
-      <ul className="space-y-2">
-        {items.map((item) => (
-          <li key={item.id}>
-            {noSpoilers ? (
-              <NoSpoilerGameCard
-                kind={item.kind}
-                matchup={item.matchup}
-                ariaSubject={item.spoilerSubject}
-              >
-                <QuietRowRevealed item={item} />
-              </NoSpoilerGameCard>
-            ) : (
-              <QuietRowRevealed item={item} />
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function QuietRowRevealed({ item }: { item: QuietWrapItem }) {
-  // Quiet Wrap = yesterday's finals = *reference*, not action. We
-  // deliberately strip the sport accent rail (which Up Next uses for
-  // active games) and mute the matchup heading + score line so these
-  // rows read calmly under Up Next without competing for attention.
-  return (
-    <Link
-      href={item.href}
-      aria-label={`${item.matchup} final, ${item.scoreLine}`}
-      className="block rounded-[14px] border px-3 py-3 transition active:scale-[0.99]"
-      style={{
-        background: "var(--paper)",
-        borderColor: "var(--line)",
-      }}
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <div className="min-w-0">
-          <Eyebrow>{item.eyebrow}</Eyebrow>
-          <p
-            className="mt-1 truncate text-[14px] leading-snug"
-            style={{
-              color: "var(--mute-1)",
-              fontWeight: 600,
-              letterSpacing: "-0.005em",
-            }}
-          >
-            {item.matchup}
-          </p>
-        </div>
-        <span
-          className="tabular-nums shrink-0 text-[14px]"
-          style={{
-            color: "var(--mute-1)",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 600,
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {item.scoreLine}
-        </span>
-      </div>
-      {item.context ? (
-        <p
-          className="mt-1 text-[12px]"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          {item.context}
-        </p>
-      ) : null}
-    </Link>
   );
 }

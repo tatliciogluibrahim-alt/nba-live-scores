@@ -16,7 +16,7 @@ export type TournamentEntry = {
    *  detection isn't wired yet. Used for NFL Season 2026 between Phase
    *  9 scaffolding and Phase 12 build. */
   comingSoon?: {
-    /** Short label rendered in the picker, e.g. "Kicks off September". */
+    /** Short label rendered in the picker, e.g. "Coming Aug 2026". */
     label: string;
   };
 };
@@ -52,7 +52,7 @@ export const TOURNAMENTS: TournamentEntry[] = [
     accent: "var(--nfl)",
     chip: "NFL",
     comingSoon: {
-      label: "Kicks off September",
+      label: "Coming Aug 2026",
     },
   },
 ];

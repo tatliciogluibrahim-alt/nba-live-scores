@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import { Eyebrow } from "../atoms/Eyebrow";
 import { Spoiler } from "../spoiler/Spoiler";
 import { SecHead } from "../system/SecHead";
 import { useFollows } from "../providers";
@@ -11,7 +10,6 @@ import { buildGroupTable, type GroupTableRow } from "./group-table";
 import {
   buildAllGroupsFromSchedule,
   type GroupDetail,
-  type GroupRow,
   type GroupScheduleRow,
   type WCScheduleFixtureLite,
   type WCScheduleStandingLite,
@@ -103,206 +101,8 @@ export function useWCSchedule(): {
   };
 }
 
-// ── Preview mode (tournament page) — compact group columns ─────────────
-
-function CountryRow({
-  row,
-  fromParam,
-  isLast,
-}: {
-  row: GroupRow;
-  fromParam: string;
-  isLast: boolean;
-}) {
-  const nameColor = row.isSelected ? "var(--wc)" : "var(--ink)";
-  const codeColor = row.isSelected ? "var(--wc)" : "var(--mute-1)";
-  const standing = row.standing;
-
-  return (
-    <Link
-      href={`/country/${row.code}?from=${fromParam}`}
-      aria-label={`Open ${row.name}`}
-      className="flex items-center justify-between gap-2 py-2 transition active:scale-[0.99]"
-      style={{ borderBottom: isLast ? "none" : "1px solid var(--line)" }}
-    >
-      <div className="min-w-0">
-        <div
-          className="truncate text-[14px] leading-tight"
-          style={{
-            color: nameColor,
-            fontWeight: row.isSelected ? 700 : 600,
-            letterSpacing: "-0.005em",
-          }}
-        >
-          {row.name}
-        </div>
-        {standing && standing.played > 0 ? (
-          <div
-            className="mt-0.5 text-[10px] uppercase"
-            style={{
-              fontFamily: "var(--font-mono)",
-              letterSpacing: "0.06em",
-              color: "var(--mute-1)",
-              fontWeight: 600,
-            }}
-          >
-            {standing.played} GP · {standing.points} PTS
-          </div>
-        ) : null}
-      </div>
-      <span
-        className="shrink-0 text-[10px] uppercase"
-        style={{
-          fontFamily: "var(--font-mono)",
-          letterSpacing: "0.06em",
-          color: codeColor,
-          fontWeight: 700,
-        }}
-      >
-        {row.code}
-      </span>
-    </Link>
-  );
-}
-
-function GroupColumn({
-  block,
-  fromParam,
-}: {
-  block: { letter: string; rows: GroupRow[] };
-  fromParam: string;
-}) {
-  const hasSelected = block.rows.some((r) => r.isSelected);
-  return (
-    <div>
-      <div className="mb-1 flex items-center gap-2">
-        <Eyebrow color={hasSelected ? "var(--wc)" : undefined}>
-          Group {block.letter}
-        </Eyebrow>
-      </div>
-      <div>
-        {block.rows.map((row, idx) => (
-          <CountryRow
-            key={row.code}
-            row={row}
-            fromParam={fromParam}
-            isLast={idx === block.rows.length - 1}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function GroupsHeader({ count }: { count: string }) {
-  return (
-    <div className="mb-3 flex items-center gap-3">
-      <Eyebrow>Groups</Eyebrow>
-      <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-      <span
-        className="text-[10px] uppercase"
-        style={{
-          fontFamily: "var(--font-mono)",
-          letterSpacing: "0.08em",
-          color: "var(--mute-2)",
-          fontWeight: 600,
-        }}
-      >
-        {count}
-      </span>
-    </div>
-  );
-}
-
 // ── Full mode (groups page) — stacked schedule-first cards ─────────────
 
-const ORDINAL = ["", "1st", "2nd", "3rd", "4th"];
-
-function GroupStatusChip({ phase }: { phase: GroupDetail["phase"] }) {
-  const label =
-    phase === "complete"
-      ? "Complete"
-      : phase === "live"
-        ? "In progress"
-        : "Upcoming";
-  return (
-    <span
-      className="shrink-0 text-[10px] uppercase"
-      style={{
-        fontFamily: "var(--font-mono)",
-        letterSpacing: "0.08em",
-        color: "var(--mute-1)",
-        fontWeight: 600,
-      }}
-    >
-      {label}
-    </span>
-  );
-}
-
-function GroupTeamRow({
-  row,
-  fromParam,
-  isLast,
-}: {
-  row: GroupRow;
-  fromParam: string;
-  isLast: boolean;
-}) {
-  const nameColor = row.isSelected ? "var(--wc)" : "var(--ink)";
-  const codeColor = row.isSelected ? "var(--wc)" : "var(--mute-1)";
-  const s = row.standing;
-  const standingLine =
-    s && s.played > 0
-      ? `${ORDINAL[s.position] ?? `${s.position}th`} · ${s.played} GP · ${s.points} PTS · ${s.gd > 0 ? "+" : ""}${s.gd} GD`
-      : null;
-
-  return (
-    <Link
-      href={`/country/${row.code}?from=${fromParam}`}
-      aria-label={`Open ${row.name}`}
-      className="flex items-center justify-between gap-2 py-2 transition active:scale-[0.99]"
-      style={{ borderBottom: isLast ? "none" : "1px solid var(--line)" }}
-    >
-      <div className="min-w-0">
-        <div
-          className="truncate text-[14px] leading-tight"
-          style={{
-            color: nameColor,
-            fontWeight: row.isSelected ? 700 : 600,
-            letterSpacing: "-0.005em",
-          }}
-        >
-          {row.name}
-        </div>
-        {standingLine ? (
-          <div
-            className="mt-0.5 text-[10px] uppercase"
-            style={{
-              fontFamily: "var(--font-mono)",
-              letterSpacing: "0.05em",
-              color: "var(--mute-1)",
-              fontWeight: 600,
-            }}
-          >
-            {standingLine}
-          </div>
-        ) : null}
-      </div>
-      <span
-        className="shrink-0 text-[11px] uppercase"
-        style={{
-          fontFamily: "var(--font-mono)",
-          letterSpacing: "0.06em",
-          color: codeColor,
-          fontWeight: 700,
-        }}
-      >
-        {row.code}
-      </span>
-    </Link>
-  );
-}
 
 // Right-aligned state word. Calm, user-facing — no admin "RESULT PENDING".
 // Carries the live minute ("Live · 67'") but never a score (safe under
@@ -436,74 +236,6 @@ function nextLine(block: GroupDetail): string {
     return `Next · ${block.next.awayCode} vs ${block.next.homeCode} · ${block.next.timeLabel}`;
   }
   return "Schedule";
-}
-
-function GroupCard({
-  block,
-  fromParam,
-}: {
-  block: GroupDetail;
-  fromParam: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const hasSelected = block.rows.some((r) => r.isSelected);
-
-  return (
-    <article
-      className="rounded-[16px] border"
-      style={{
-        background: "var(--paper)",
-        borderColor: hasSelected ? "var(--wc)" : "var(--line)",
-      }}
-    >
-      <div className="px-4 pb-3 pt-3.5">
-        <div className="flex items-center justify-between gap-3">
-          <Eyebrow color={hasSelected ? "var(--wc)" : undefined}>
-            Group {block.letter}
-          </Eyebrow>
-          <GroupStatusChip phase={block.phase} />
-        </div>
-
-        <div className="mt-2.5">
-          {block.rows.map((row, idx) => (
-            <GroupTeamRow
-              key={row.code}
-              row={row}
-              fromParam={fromParam}
-              isLast={idx === block.rows.length - 1}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div
-        className="border-t px-4 py-2.5"
-        style={{ borderColor: "var(--line)" }}
-      >
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          aria-label={`${open ? "Hide" : "Show"} Group ${block.letter} matches`}
-          className="flex min-h-[32px] w-full items-center justify-between gap-3 text-left"
-        >
-          <span
-            className="min-w-0 truncate text-[12px]"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-            {nextLine(block)}
-          </span>
-          <span
-            className="shrink-0 text-[11px]"
-            style={{ color: "var(--ink)", fontWeight: 600 }}
-          >
-            {open ? "Matches ↑" : "Matches ↓"}
-          </span>
-        </button>
-        {open ? <ScheduleList schedule={block.schedule} /> : null}
-      </div>
-    </article>
-  );
 }
 
 // ── System D mobile tables (D3 Task 5) ─────────────────────────────────
@@ -751,7 +483,7 @@ export function WCGroups({
         {/* Mobile — System D unboxed cut-line tables (D3 Task 5). One SecHead
             per group, the shared table rows, the cut line after 2nd, and the
             qualification footnote once under the first table. */}
-        <div className="md:hidden">
+        <div className="">
           {groups.map((block, i) => (
             <GroupTableSection
               key={block.letter}
@@ -765,42 +497,27 @@ export function WCGroups({
         </div>
 
         {/* Desktop — legacy card grid, pixel-frozen until D4. */}
-        <div className="hidden md:block">
-          <section className="mt-6 pb-2">
-            <GroupsHeader count={"Group stage"} />
-            <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
-              {groups.map((block) => (
-                <GroupCard
-                  key={block.letter}
-                  block={block}
-                  fromParam={fromParam}
-                />
-              ))}
-            </div>
-          </section>
-        </div>
       </>
     );
   }
 
   // Preview mode. Lead with the followed group (when present), then show
   // one row (two columns) of the next groups, then a "View all" link.
-  const followedBlock = followedCountry
-    ? groups.find((g) => g.rows.some((r) => r.isSelected)) ?? null
-    : null;
 
-  const others = groups.filter((g) => g !== followedBlock);
-  const previewOthers = others.slice(0, 2);
   // Mobile preview leads with the personal group table (per the d-tournament
   // mock, which shows the followed group on the overview). No follow yet →
   // show the first two groups so the overview never reads empty. Every group
   // stays reachable via "View all groups".
+  const followedBlock = followedCountry
+    ? groups.find((g) => g.rows.some((r) => r.isSelected)) ?? null
+    : null;
+
   const mobilePreviewBlocks = followedBlock ? [followedBlock] : groups.slice(0, 2);
 
   return (
     <>
       {/* Mobile — the personal group table (System D), then a link to all. */}
-      <div className="md:hidden">
+      <div className="">
         {mobilePreviewBlocks.map((block, i) => (
           <GroupTableSection
             key={block.letter}
@@ -829,38 +546,6 @@ export function WCGroups({
       </div>
 
       {/* Desktop — legacy preview columns, pixel-frozen until D4. */}
-      <div className="hidden md:block">
-        <section className="mt-5">
-          <GroupsHeader count={"Group stage"} />
-
-          {followedBlock ? (
-            <div className="mb-5">
-              <GroupColumn block={followedBlock} fromParam={fromParam} />
-            </div>
-          ) : null}
-
-          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
-            {previewOthers.map((block) => (
-              <GroupColumn
-                key={block.letter}
-                block={block}
-                fromParam={fromParam}
-              />
-            ))}
-          </div>
-
-          <div className="mt-4 flex justify-center">
-            <Link
-              href={`/tournament/${tournamentId}/groups`}
-              className="inline-flex min-h-[36px] items-center gap-1.5 text-[12px] underline decoration-dotted underline-offset-4"
-              style={{ color: "var(--mute-1)", fontWeight: 500 }}
-              aria-label={`View all ${groups.length} groups`}
-            >
-              View all {groups.length} groups →
-            </Link>
-          </div>
-        </section>
-      </div>
     </>
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../companion/game/DetailCrumbs";
 import { Display } from "../../companion/atoms/Display";
 import { Eyebrow } from "../../companion/atoms/Eyebrow";
 
@@ -46,7 +46,7 @@ export default async function BriefUnsubscribedPage({
 
   return (
     <CompanionFrame>
-      <CrumbBar backHref="/" backLabel="Today" title="Brief" />
+      <DetailCrumbs backHref="/" backLabel="Today" title="Brief" />
       <main className="mx-auto max-w-md px-4 pb-4 pt-1">
         <Eyebrow>{eyebrow}</Eyebrow>
         <Display as="h1" size="lg" className="mt-2">

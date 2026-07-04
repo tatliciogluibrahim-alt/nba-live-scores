@@ -1,188 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { ScoreModule } from "../atoms/ScoreModule";
-import { Eyebrow } from "../atoms/Eyebrow";
 import { Stamp } from "../system/Stamp";
 import { Spoiler } from "../spoiler/Spoiler";
-import { safeText } from "../spoiler/safe-text";
 import { useNoSpoilers } from "../providers";
-import {
-  GameSpoilerScope,
-  useEffectiveNoSpoilers,
-  useFollowHidesGame,
-} from "../spoiler/reveal";
+import { GameSpoilerScope, useFollowHidesGame } from "../spoiler/reveal";
 import { useIsNative } from "../dev/native-detect";
 import { slotState, MAX_LOCK_SCREEN_SLOTS } from "../system/lock-screen-slots";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
-import { trackedStampText } from "./watching-data";
+import { parseScoreLine, trackedStampText } from "./watching-data";
 import type { PinnedItem, WatchingPayload } from "./watching-data";
 
-// LiveRoom — Stage 15E.
+// LiveRoom — the live tracking register.
 //
-// When ≥2 pinned games are live, Watching shifts to a "Live Room" layout:
-// a stacked dock of compact ScoreModule cards at the top of the surface,
-// each linking through to its game detail with one tap.
+// The full-ink LiveRoomField renders at every width now (D4b): mobile bleeds
+// it to the screen gutter, desktop bleeds it to the content-box edge. The
+// legacy ≥2-pin ScoreModule card dock (LiveRoom / LiveRoomCard / ClosestChip)
+// is retired — both widths use the ink field below.
+
+// ── Live Room — the full-ink field (System D) ──────────────────────────
 //
-// When the adapter has identified a single "closest" live game (the one
-// with the tightest margin), a small chip suggests switching to it.
-// The chip never appears if there's no clear answer — no ambiguity,
-// no nag.
-//
-// Under No-Spoilers, the score row inside each card is still gated by
-// the Spoiler primitive (ScoreModule does this for us); the dock chrome
-// remains so the user can see *what* is live without leaking *who's*
-// winning.
-
-export function LiveRoom({ payload }: { payload: WatchingPayload }) {
-  const noSpoilers = useNoSpoilers();
-  const liveItems = payload.items.filter((i) => i.status === "live");
-  if (liveItems.length < 2) return null;
-
-  return (
-    <section className="mb-5">
-      <div className="mb-2 flex items-center gap-3">
-        <span
-          aria-hidden
-          className="no-noise-live-fade h-1.5 w-1.5 shrink-0 rounded-full"
-          style={{ background: "var(--live)" }}
-        />
-        <Eyebrow color="var(--live)">Live room</Eyebrow>
-        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-        <span
-          className="text-[11px] uppercase tabular-nums"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontWeight: 600,
-            letterSpacing: "0.1em",
-            color: "var(--mute-1)",
-          }}
-        >
-          {liveItems.length} live
-        </span>
-      </div>
-
-      <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-        {liveItems.map((item) => (
-          <li key={item.id}>
-            <LiveRoomCard item={item} />
-          </li>
-        ))}
-      </ul>
-
-      {!noSpoilers && payload.closestLive ? (
-        <ClosestChip
-          targetId={payload.closestLive.id}
-          margin={payload.closestLive.margin}
-          totalLive={liveItems.length}
-        />
-      ) : null}
-    </section>
-  );
-}
-
-function LiveRoomCard({ item }: { item: PinnedItem }) {
-  const noSpoilers = useEffectiveNoSpoilers(item.id);
-  const detail = safeText(item.detailLine, noSpoilers);
-  const [awayScore, homeScore] = parseScoreLine(item.scoreLine);
-
-  return (
-    <Link
-      href={item.href}
-      aria-label={`Open ${item.spoilerSubject}, live`}
-      className="block rounded-[14px] border px-3 py-3 transition active:scale-[0.99]"
-      style={{
-        background: "var(--paper)",
-        borderColor: "var(--line)",
-      }}
-    >
-      <ScoreModule
-        eyebrow={item.contextEyebrow}
-        away={{ code: item.awayCode, name: item.awayName }}
-        home={{ code: item.homeCode, name: item.homeName }}
-        awayScore={awayScore}
-        homeScore={homeScore}
-        status={item.status}
-        statusLabel={item.statusLabel}
-        contextLine={detail || undefined}
-        spoilerSubject={item.spoilerSubject}
-        gameId={item.id}
-        size="md"
-      />
-    </Link>
-  );
-}
-
-/** "Closest game" chip — when one Live Room game is meaningfully tighter
- *  than the others, suggest a single-tap switch. We avoid telling users
- *  who is winning or the actual score gap; the chip says "one-possession"
- *  or "tight game" depending on margin, all neutral, all safe under
- *  No-Spoilers. */
-function ClosestChip({
-  targetId,
-  margin,
-  totalLive,
-}: {
-  targetId: string;
-  margin: number;
-  totalLive: number;
-}) {
-  // Only surface the chip when there's a *meaningful* gap difference. If
-  // every game is within 1–2 points (e.g. all opening-quarter), the chip
-  // adds noise instead of signal. Threshold tuned for NBA — single-digit
-  // margin only.
-  if (margin > 9) return null;
-  if (totalLive < 2) return null;
-
-  const label =
-    margin <= 3
-      ? "Switch to one-possession game"
-      : "Switch to tight game";
-
-  return (
-    <div className="mt-3 flex items-center">
-      <Link
-        href={`/game/${targetId}`}
-        aria-label={label}
-        className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
-        style={{
-          background: "var(--ink)",
-          color: "var(--cream)",
-          border: "1px solid var(--ink)",
-        }}
-      >
-        <span
-          aria-hidden
-          className="no-noise-live-fade h-1.5 w-1.5 rounded-full"
-          style={{ background: "var(--live)" }}
-        />
-        {label}
-      </Link>
-    </div>
-  );
-}
-
-function parseScoreLine(line: string | null): [number | null, number | null] {
-  if (!line) return [null, null];
-  const m = line.match(/(\d+)\s*[–\-—]\s*(\d+)/);
-  if (!m) return [null, null];
-  return [Number(m[1]), Number(m[2])];
-}
-
-// ── Mobile Live Room — the full-ink field (System D, D2 Task 5) ─────────
-//
-// Watching IS the live surface, so on mobile the Live Room takes the ink
-// register at full strength: a solid ink field holding one board row per
-// live pin, each with its own progress rail, a promoted lock-screen slot
-// meter in the label row, and a cream "switch to the closest game" pill.
-// Mirrors docs/superpowers/design-directions/d-watching.html + d-docking.html.
+// Watching IS the live surface, so the Live Room takes the ink register at
+// full strength: a solid ink field holding one board row per live pin, each
+// with its own progress rail, a promoted lock-screen slot meter in the label
+// row, and a cream "switch to the closest game" pill. Mirrors
+// docs/superpowers/design-directions/d-watching.html + d-docking.html.
 //
 // Gates on ANY live pin (≥1) — Watching is the tracking surface, so a live
 // tracked game always sits in the room (the single-game §8 flow is the
 // common case). Non-live pins render in the TRACKED list below via
-// WatchingDashboard. Rendered inside WatchingDashboard's md:hidden branch,
-// so no md:hidden here; it bleeds edge-to-edge with -mx-4 like the Today
-// ALSO LIVE band.
+// WatchingDashboard. Rendered in both the mobile and desktop branches (D4b);
+// the wrapper bleeds edge-to-edge with -mx-4 on mobile and md:-mx-[18px] on
+// desktop, like the Today ALSO LIVE band.
 
 export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
   const noSpoilers = useNoSpoilers();
@@ -201,11 +50,11 @@ export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
     : `${liveItems.length} live`;
 
   // Only surface the closest-game pill when one live game is meaningfully
-  // tighter (single-digit margin) — the same "no ambiguity, no nag" gate the
-  // desktop chip uses. closestLive is NBA-only by construction, and it's
-  // suppressed under No-Spoilers (revealing "who's close" is a soft spoiler).
-  // ≥2 guard matches the desktop ClosestChip: with one live game there is
-  // nothing to switch to (the ≥1 room gate made single-live the common case).
+  // tighter (single-digit margin) — a "no ambiguity, no nag" gate.
+  // closestLive is NBA-only by construction, and it's suppressed under
+  // No-Spoilers (revealing "who's close" is a soft spoiler). The ≥2 guard
+  // means with one live game there is nothing to switch to (the ≥1 room gate
+  // made single-live the common case).
   const showClosest =
     !noSpoilers &&
     liveItems.length >= 2 &&
@@ -213,7 +62,11 @@ export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
     payload.closestLive.margin <= 9;
 
   return (
-    <div className="-mx-4 mb-5">
+    // -mx-4 bleeds to the mobile screen gutter; md:-mx-[18px] bleeds to the
+    // desktop content-box edge out of the 18px editorial gutter (D4b). The
+    // inner 18px padding realigns the rows either way. Inert below md, so the
+    // mobile render is unchanged.
+    <div className="-mx-4 md:-mx-[18px] mb-5">
       <div
         style={{
           background: "var(--ink-field-bg)",

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../companion/game/DetailCrumbs";
 import { WCGamePreviewClient } from "./WCGamePreviewClient";
 
 // Preview route — lets the operator see what a fully-built WC game
@@ -22,7 +22,7 @@ export default function WCPreviewPage() {
   if (process.env.NODE_ENV === "production") notFound();
   return (
     <CompanionFrame>
-      <CrumbBar
+      <DetailCrumbs
         backHref="/following"
         backLabel="Following"
         title="Preview: WC game"

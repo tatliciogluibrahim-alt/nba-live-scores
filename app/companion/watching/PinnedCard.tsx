@@ -1,267 +1,27 @@
 "use client";
 
-import Link from "next/link";
-import { Eyebrow } from "../atoms/Eyebrow";
-import { ScoreModule } from "../atoms/ScoreModule";
 import { AgateRow } from "../system/AgateRow";
 import { Stamp } from "../system/Stamp";
 import { winnerSide } from "../system/emphasis";
 import { Spoiler } from "../spoiler/Spoiler";
-import { safeText } from "../spoiler/safe-text";
 import {
   GameSpoilerScope,
   useEffectiveNoSpoilers,
   useFollowHidesGame,
 } from "../spoiler/reveal";
-import { WatchLine } from "../watch/WatchLine";
 import { usePinned, useNoSpoilers } from "../providers";
-import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
-import { trackedStampText } from "./watching-data";
+import { parseScoreLine, trackedStampText } from "./watching-data";
 import type { PinnedItem, StalePin } from "./watching-data";
 
-// One pinned game. The score is wrapped in <Spoiler> keyed to the game
-// id, so a single tap reveals the score AND the spoilery detail line on
-// this card — and that reveal carries through to the game detail page
-// this session. Schedule, watch, and the View game / Unpin actions
-// always stay visible.
-
-export function PinnedCard({ item }: { item: PinnedItem }) {
-  const { unpinGame } = usePinned();
-  const noSpoilers = useEffectiveNoSpoilers(item.id);
-
-  const isUpcoming = item.status === "upcoming";
-  const detailToShow = safeText(item.detailLine, noSpoilers);
-
-  // Parse the adapter's `scoreLine` ("75 – 87") into numbers so the
-  // ScoreModule can render them through its tabular-nums layer. Falls
-  // back gracefully if the adapter ever changes shape.
-  const [awayScore, homeScore] = parseScoreLine(item.scoreLine);
-
-  // Live pins get the same warm --nba-soft (or --wc-soft for WC) tint as
-  // the game-detail scoreboard so the Watching surface visibly "breathes"
-  // when one of your pins is in progress. Upcoming/final keep paper.
-  const isLive = item.status === "live";
-  const liveTint = item.source === "wc" ? "var(--wc-soft)" : "var(--nba-soft)";
-  // Chip text accent per sport — WC green, NBA orange.
-  const chipAccent = item.source === "wc" ? "var(--wc)" : "var(--nba)";
-
-  return (
-    <article
-      className="rounded-[14px] border"
-      style={{
-        background: isLive ? liveTint : "var(--paper)",
-        borderColor: "var(--line)",
-      }}
-    >
-      <div className="px-3 py-3">
-        {/* Team identity marks — same chip style as Following tab, two
-            across for the matchup. Gives the eye an anchor before the
-            score module below. Shown for NBA and WC alike now that WC
-            uses readable country codes (flags were dropped from the
-            sports circle); the contextEyebrow still carries "Summer Soccer". */}
-        {item.awayCode && item.homeCode ? (
-          <div className="mb-3 flex items-center gap-2">
-            <TeamChip code={item.awayCode} accent={chipAccent} />
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                fontWeight: 500,
-                color: "var(--mute-2)",
-                letterSpacing: "0.06em",
-              }}
-            >
-              vs
-            </span>
-            <TeamChip code={item.homeCode} accent={chipAccent} />
-          </div>
-        ) : null}
-
-        {/* Named view transition — when you tap this card and navigate to
-            /game/[id], the scoreboard block morphs to the detail page's
-            scoreboard rather than cross-fading. Game ID in the name keeps
-            multiple pinned cards on the same screen from conflicting. */}
-        <div
-          style={
-            { viewTransitionName: `score-${item.id}` } as React.CSSProperties
-          }
-        >
-          <ScoreModule
-            eyebrow={item.contextEyebrow}
-            away={{ code: item.awayCode, name: item.awayName }}
-            home={{ code: item.homeCode, name: item.homeName }}
-            awayScore={awayScore}
-            homeScore={homeScore}
-            status={item.status}
-            statusLabel={item.statusLabel}
-            contextLine={detailToShow || undefined}
-            spoilerSubject={item.spoilerSubject}
-            gameId={item.id}
-            size="md"
-            // The TeamChip row above the ScoreModule already carries
-            // the matchup identity ("SA  vs  OKC"). Letting the score
-            // module render its own internal "SA · OKC" row meant
-            // every pinned card showed the matchup twice on top of
-            // each other — same pattern the game-detail H1 + ScoreModule
-            // already solves with hideMatchup.
-            hideMatchup
-            // Game Pulse rail — same lock-screen parity element as the
-            // game-detail scoreboard, so a live pin reads as the expanded
-            // lock-screen tile. Structural (no score leak), so it's safe
-            // under No-Spoilers. Upcoming pins omit it.
-            progress={
-              isUpcoming
-                ? undefined
-                : {
-                    value: computeLiveActivityProgress(
-                      item.source === "wc" ? "wc" : "nba",
-                      item.detailLine ?? "",
-                      item.status
-                    ),
-                    sport: item.source === "wc" ? "wc" : "nba",
-                    accent: chipAccent,
-                  }
-            }
-          />
-        </div>
-
-        {item.watch ? (
-          <div className="mt-3">
-            <WatchLine
-              channel={item.watch.channel}
-              stream={item.watch.stream}
-              ariaSubject={item.spoilerSubject}
-            />
-          </div>
-        ) : null}
-
-        <div className="mt-3 flex items-center gap-2">
-          <Link
-            href={item.href}
-            aria-label={`Open ${item.spoilerSubject} detail`}
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
-            style={{
-              background: "var(--ink)",
-              color: "var(--cream)",
-              border: "1px solid var(--ink)",
-            }}
-          >
-            {/* Sport-aware noun: soccer pins say "match", NBA "game". */}
-            {item.source === "wc"
-              ? isUpcoming
-                ? "Open match"
-                : "View match"
-              : isUpcoming
-                ? "Open game"
-                : "View game"}
-          </Link>
-          <button
-            type="button"
-            onClick={() => unpinGame(item.id)}
-            aria-label={`Remove ${item.spoilerSubject}`}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
-            style={{
-              background: "transparent",
-              color: "var(--ink)",
-              border: "1px solid var(--line)",
-            }}
-          >
-            Remove
-          </button>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-// Parse a "75 – 87" string into [75, 87]. Tolerant: an en-dash, hyphen,
-// or em-dash all parse. Returns [null, null] for upcoming pins (no score
-// yet) or unexpected shapes.
-function parseScoreLine(line: string | null): [number | null, number | null] {
-  if (!line) return [null, null];
-  const m = line.match(/(\d+)\s*[–\-—]\s*(\d+)/);
-  if (!m) return [null, null];
-  return [Number(m[1]), Number(m[2])];
-}
-
-// ── Team identity chip ────────────────────────────────────────────────
-// Small round chip carrying the team abbreviation. Mirrors the mark used
-// on the Following tab's FollowCard so the same team looks the same
-// across every surface.
-
-function TeamChip({ code, accent = "var(--nba)" }: { code: string; accent?: string }) {
-  return (
-    <span
-      aria-hidden
-      className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px]"
-      style={{
-        background: "var(--cream-2)",
-        fontFamily: "var(--font-mono)",
-        fontSize: code.length > 3 ? 10 : 12,
-        fontWeight: 700,
-        letterSpacing: "0.02em",
-        color: accent,
-      }}
-    >
-      {code}
-    </span>
-  );
-}
-
-// Stale pin — game we couldn't resolve from either feed. Keep the unpin
-// action so users aren't stuck with ghost rows.
-
-export function StalePinCard({ pin }: { pin: StalePin }) {
-  const { unpinGame } = usePinned();
-  return (
-    <article
-      className="rounded-[14px] border border-dashed"
-      style={{
-        background: "transparent",
-        borderColor: "var(--mute-2)",
-      }}
-    >
-      <div className="flex items-center justify-between gap-3 px-3 py-3">
-        <div className="min-w-0">
-          <Eyebrow>Archived game</Eyebrow>
-          <p
-            className="mt-1 truncate text-[13px]"
-            style={{ color: "var(--ink)", fontWeight: 600 }}
-          >
-            This game isn&apos;t in the live feed right now.
-          </p>
-          <p
-            className="mt-0.5 text-[12px]"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
-          >
-            We&apos;ll surface it again if it returns.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => unpinGame(pin.id)}
-          aria-label="Remove this archived game"
-          className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
-          style={{
-            background: "transparent",
-            color: "var(--ink)",
-            border: "1px solid var(--line)",
-          }}
-        >
-          Remove
-        </button>
-      </div>
-    </article>
-  );
-}
-
-// ── Mobile tracked rows — System D agate (D2 Task 5) ───────────────────
+// Tracked rows — System D agate (D2 Task 5, all widths in D4b).
 //
 // The non-live pins (upcoming / final, and the single-live case) render as
-// calm agate rows under TRACKED FOR LATER, replacing the PinnedCard grid on
-// mobile. Upcoming rows carry a kickoff stamp and no score. Live / final rows
-// carry a Spoiler-gated score, and finals get winner emphasis — both gated
-// exactly like Today's QUIET WRAP so a followed team's result never leaks.
+// calm agate rows under TRACKED FOR LATER / WRAPPED, and stale pins under
+// ARCHIVED — the same rows on mobile and desktop. The legacy PinnedCard /
+// StalePinCard ScoreModule cards are retired; both widths use these rows.
+// Upcoming rows carry a kickoff stamp and no score. Live / final rows carry a
+// Spoiler-gated score, and finals get winner emphasis — both gated exactly
+// like Today's QUIET WRAP so a followed team's result never leaks.
 
 export function TrackedAgateRow({ item, idx }: { item: PinnedItem; idx: string }) {
   // Hooks run unconditionally (rules-of-hooks); the upcoming branch just

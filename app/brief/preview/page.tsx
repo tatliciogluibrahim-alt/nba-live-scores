@@ -1,5 +1,5 @@
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../companion/game/DetailCrumbs";
 import { BriefPreviewClient } from "../../companion/brief/BriefPreviewClient";
 
 export const metadata = {
@@ -10,7 +10,7 @@ export const metadata = {
 export default function BriefPreviewPage() {
   return (
     <CompanionFrame desktopNav="detail">
-      <CrumbBar backHref="/brief/subscribe" backLabel="Brief" title="Preview" />
+      <DetailCrumbs backHref="/brief/subscribe" backLabel="Brief" title="Preview" />
       <BriefPreviewClient />
     </CompanionFrame>
   );

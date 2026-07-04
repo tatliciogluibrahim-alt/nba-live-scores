@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../companion/game/DetailCrumbs";
 import { TeamClient } from "../../companion/team/TeamClient";
 
 // Dynamic per-team title. Uses the abbreviation directly since most
@@ -29,7 +29,7 @@ export default async function TeamPage({
 
   return (
     <CompanionFrame desktopNav="detail">
-      <CrumbBar backHref="/following" backLabel="Following" title="Team" />
+      <DetailCrumbs backHref="/following" backLabel="Following" title="Team" />
       <TeamClient teamAbbr={upper} />
     </CompanionFrame>
   );

@@ -46,8 +46,10 @@ export type FollowMoment = {
    *  pre-season so users can see "NFL is coming" without being able
    *  to follow into a dead pipeline. */
   comingSoon?: {
-    /** Short uppercase label rendered as a chip on the section
-     *  header, e.g. "Kicks off September". */
+    /** Short uppercase label rendered as a chip on the section header,
+     *  e.g. "Coming Aug 2026". The single source of truth for the coming-
+     *  soon label across the picker, FollowingEmpty, MomentSection, and the
+     *  system-preview Gallery. */
     label: string;
   };
   /** Canonical tournament id this moment maps to, used to read its lifecycle
@@ -109,18 +111,18 @@ export const FOLLOW_MOMENTS: FollowMoment[] = [
   },
   {
     // NFL Season 2026 — scaffolding-only in Phase 9. Picker shows the
-    // section + ladder, but rows are static and a "Kicks off
-    // September" chip sits on the header. Per-play touchdown + big-play
-    // events arrive in Phase 12 ahead of kickoff. See
-    // docs/nfl-design.md for the full event taxonomy and fantasy-tier
-    // model.
+    // section + ladder, but rows are static and a "Coming Aug 2026" chip
+    // sits on the header (the app build lands Aug 2026; the season kicks
+    // off in September). Per-play touchdown + big-play events arrive in
+    // Phase 12 ahead of kickoff. See docs/nfl-design.md for the full event
+    // taxonomy and fantasy-tier model.
     id: "nfl-season-2026",
     name: "NFL Season 2026",
     description: "Regular season and playoffs · 32 teams.",
     accent: "var(--nfl)",
     icon: "🏈",
     comingSoon: {
-      label: "Kicks off September",
+      label: "Coming Aug 2026",
     },
     granularities: [
       {

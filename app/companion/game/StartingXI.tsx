@@ -191,30 +191,42 @@ export function StartingXI({
 
   return (
     <section id={STARTING_XI_ANCHOR} className="px-[18px] pt-6">
-      <SecHead name="Starting XI" />
       {pending ? (
-        <p
-          className="uppercase"
+        // Pre-match, no roster yet. One muted SecHead-style line carries the
+        // section name AND the timing note together, so an absent section
+        // isn't a confident ink head sitting over a separate muted sub-label.
+        <div
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: "0.12em",
-            color: "var(--mute-1)",
-            paddingTop: 12,
+            paddingBottom: 8,
+            borderBottom: "2px solid var(--ink)",
+            marginBottom: 2,
           }}
         >
-          Usually about an hour before kickoff
-        </p>
-      ) : (
-        <div
-          className="grid grid-cols-2"
-          style={{ gap: "0 18px", paddingTop: 4 }}
-        >
-          {lineups.teams.map((team, index) => (
-            <XIColumn key={team.code || index} team={team} />
-          ))}
+          <span
+            className="uppercase"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.16em",
+              color: "var(--mute-1)",
+            }}
+          >
+            Starting XI · Usually about an hour before kickoff
+          </span>
         </div>
+      ) : (
+        <>
+          <SecHead name="Starting XI" />
+          <div
+            className="grid grid-cols-2"
+            style={{ gap: "0 18px", paddingTop: 4 }}
+          >
+            {lineups.teams.map((team, index) => (
+              <XIColumn key={team.code || index} team={team} />
+            ))}
+          </div>
+        </>
       )}
     </section>
   );

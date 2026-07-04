@@ -29,7 +29,6 @@ const C_MUTE2 = "#a89c7a";
 const C_HAIR = "#e9e0c9";
 const C_HAIR_STRONG = "#c8bd9f"; // link underlines
 const C_SLUG = "#ebe1c8"; // redaction slug fill
-const C_NBA = "#e55b2a";
 const C_WC = "#1e6b3c";
 const C_BRAND = "#b4361d"; // C4 vermilion — chrome only (rules, counts)
 

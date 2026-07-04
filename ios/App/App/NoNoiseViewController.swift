@@ -44,6 +44,11 @@ class NoNoiseViewController: CAPBridgeViewController {
         if let wv = webView {
             wv.scrollView.bounces = false
             wv.scrollView.backgroundColor = cream
+
+            // §6d shell fix — enable together with the web inner-scroller
+            // re-land; must ship as a TestFlight-verified pair (see
+            // docs/superpowers/research/2026-07-03-ios-tabbar-detach.md).
+            // wv.scrollView.contentInsetAdjustmentBehavior = .never
             wv.backgroundColor = cream
             wv.isOpaque = false
 

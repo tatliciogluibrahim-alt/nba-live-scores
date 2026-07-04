@@ -4,20 +4,21 @@ import { Masthead } from "../system/Masthead";
 import { Stamp } from "../system/Stamp";
 import { FOLLOW_MOMENTS } from "./FollowChoice";
 import type { FollowMoment } from "./FollowChoice";
-import { MomentSection } from "./MomentSection";
 import { EmptyStateSync } from "./EmptyStateSync";
 import { tournamentPhase } from "./data/tournament-phase";
 
-// Following — empty / onboarding. Two compositions behind the md seam:
+// Following — empty / onboarding. One System D agate composition per width
+// behind the md seam — same rows, same registers:
 //
-//   Mobile (md:hidden): System D agate rows — each FOLLOW_MOMENT as a ruled
-//     row with a sport-accent left tick, name, one-line detail, and mono →.
-//     NFL keeps its outline stamp. Masthead, Display head, EmptyStateSync,
-//     and settings link all stay mounted.
+//   Mobile (md:hidden): each FOLLOW_MOMENT as a ruled agate row with a sport-
+//     accent left tick, name, one-line detail, and mono →. NFL keeps its
+//     outline stamp. Masthead, Display head, EmptyStateSync, and settings
+//     link all stay mounted.
 //
-//   Desktop (hidden md:block): verbatim pre-D3 layout — moment-grouped
-//     picker cards (MomentSection) with the granularity ladder inside each.
-//     Unchanged until D4.
+//   Desktop (hidden md:block, D4b): the same EmptyMomentRow agate rows at the
+//     broadsheet measure — Masthead full width, content in the 18px editorial
+//     gutter. The legacy moment-grouped picker cards (MomentSection) are
+//     retired here; MomentSection still powers the /following/add picker.
 
 // ── Mobile moment row ──────────────────────────────────────────────────────
 //
@@ -84,9 +85,10 @@ function EmptyMomentRow({ moment }: { moment: FollowMoment }) {
         </span>
       </span>
 
-      {/* Right: coming-soon / concluded stamp, or mono → for live moments. */}
-      {isComingSoon ? (
-        <Stamp text="Coming Aug 2026" variant="outline" />
+      {/* Right: coming-soon / concluded stamp, or mono → for live moments.
+          The coming-soon label reads from the moment (single source). */}
+      {moment.comingSoon ? (
+        <Stamp text={moment.comingSoon.label} variant="outline" />
       ) : isConcluded ? (
         <Stamp text="Season wrapped" variant="outline" />
       ) : (
@@ -185,47 +187,61 @@ export function FollowingEmpty() {
         <EmptyStateSync />
       </div>
 
-      {/* ── Desktop: pre-D3 layout, pixel-frozen until D4. Verbatim. ─── */}
+      {/* ── Desktop: System D agate composition (D4b) ────────────────── */}
       <div className="hidden md:block">
-        <Display as="h1" size="lg" className="mb-2">
-          Build your sports circle.
-        </Display>
-        <p
-          className="mb-4 text-[14px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          Pick a moment, then who in it. Only what you follow surfaces in
-          this app. Everything else stays quiet.
-        </p>
-
-        <div className="space-y-3">
-          {FOLLOW_MOMENTS.map((moment) => (
-            <MomentSection key={moment.id} moment={moment} />
-          ))}
+        {/* Masthead — broadsheet nameplate, no live count on empty state.
+            Full width; the 2px rule spans the content measure (mx-0). */}
+        <div className="mb-5">
+          <Masthead liveCount={0} />
         </div>
 
-        <Link
-          href="/settings"
-          className="mt-5 flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
-          style={{
-            background: "transparent",
-            borderColor: "var(--mute-2)",
-            color: "var(--ink)",
-          }}
-          aria-label="Open Alerts & Notifications"
-        >
-          <span className="text-[13px]" style={{ fontWeight: 600 }}>
-            Alerts & Notifications
-          </span>
-          <span
-            className="text-[11px]"
-            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        {/* 18px editorial gutter — the D4b desktop inset (matches Today). */}
+        <div className="px-[18px]">
+          <Display
+            as="h1"
+            size="lg"
+            style={{
+              fontWeight: 800,
+              fontSize: "31px",
+              letterSpacing: "-0.02em",
+              lineHeight: 1.05,
+            }}
           >
-            Notifications · No-Spoilers · Quiet hours
-          </span>
-        </Link>
+            Build your sports circle.
+          </Display>
 
-        <EmptyStateSync />
+          {/* The same three FOLLOW_MOMENTS as agate rows. */}
+          <div className="mt-5">
+            {FOLLOW_MOMENTS.map((moment) => (
+              <EmptyMomentRow key={moment.id} moment={moment} />
+            ))}
+          </div>
+
+          {/* Settings shortcut — always reachable so push can be enabled
+              even before the user has followed anything. */}
+          <Link
+            href="/settings"
+            className="mt-5 flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-dashed px-3 py-2.5 transition active:scale-[0.99]"
+            style={{
+              background: "transparent",
+              borderColor: "var(--mute-2)",
+              color: "var(--ink)",
+            }}
+            aria-label="Open Alerts & Notifications"
+          >
+            <span className="text-[13px]" style={{ fontWeight: 600 }}>
+              Alerts & Notifications
+            </span>
+            <span
+              className="text-[11px]"
+              style={{ color: "var(--mute-1)", fontWeight: 500 }}
+            >
+              Notifications · No-Spoilers · Quiet hours
+            </span>
+          </Link>
+
+          <EmptyStateSync />
+        </div>
       </div>
     </section>
   );
