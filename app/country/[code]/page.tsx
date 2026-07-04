@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../companion/game/DetailCrumbs";
 import { CountryClient } from "../../companion/country/CountryClient";
 import { getCountry } from "../../companion/following/data/countries";
 import { getTournament } from "../../companion/following/data/tournaments";
@@ -86,7 +86,7 @@ export default async function CountryPage({
 
   return (
     <CompanionFrame desktopNav="detail">
-      <CrumbBar backHref={back.href} backLabel={back.label} title="Country" />
+      <DetailCrumbs backHref={back.href} backLabel={back.label} title="Country" />
       <CountryClient countryCode={upper} />
     </CompanionFrame>
   );
