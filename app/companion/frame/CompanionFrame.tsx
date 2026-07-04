@@ -75,7 +75,9 @@ export function CompanionFrame({
       <ScrollReset />
       {desktopNav ? <DesktopSidebarNav active={activeTab} /> : null}
       {desktopNav ? <KeyboardShortcuts /> : null}
-      <main
+      {/* Structural scroller, not the page landmark — route clients own
+          their own <main> (one landmark per page, as before the shell). */}
+      <div
         id="nns-scroll"
         className={
           `min-h-0 flex-1 overflow-y-auto overscroll-contain ${padClass} ` +
@@ -84,7 +86,7 @@ export function CompanionFrame({
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         <div className={desktopNav ? "md:pl-[220px]" : ""}>{children}</div>
-      </main>
+      </div>
       {!hideTabBar ? <TabBar /> : null}
     </div>
   );
