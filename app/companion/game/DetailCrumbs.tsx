@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { CrumbBar } from "../frame/CrumbBar";
 
 // Detail-screen crumb, System D. One call site (the /game page) renders both
 // breakpoints:
@@ -12,12 +11,11 @@ import { CrumbBar } from "../frame/CrumbBar";
 //     page IS the scroll and the rule is the separator (matches the mock). It
 //     spans the column with 18px insets so it lines up with the Monument.
 //
-//   Desktop (hidden md:block) — the legacy CrumbBar, pixel-preserved until D4.
 //
 // Shared chrome: the NBA + WC detail (and later /series, /country) reuse this
 // so the mobile masthead is one component. Back target defaults to the
 // existing affordance (Watching); origin-aware routing isn't trivial here, so
-// we keep the static parent target the CrumbBar already used.
+// we keep the static parent target the legacy crumb already used.
 
 export function DetailCrumbs({
   backHref = "/watching",
@@ -72,7 +70,6 @@ export function DetailCrumbs({
         </span>
       </header>
 
-      {/* Desktop — legacy CrumbBar, pixel-preserved */}
     </>
   );
 }
