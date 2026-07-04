@@ -336,8 +336,9 @@ function BracketMatchRow({ match, idx }: { match: BracketMatch; idx: string }) {
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 10,
-          fontWeight: 600,
-          color: "var(--mute-2)",
+          // C4 (§5 v3): index numerals on cream ground carry the brand.
+          fontWeight: 700,
+          color: "var(--brand)",
           minWidth: 18,
         }}
       >

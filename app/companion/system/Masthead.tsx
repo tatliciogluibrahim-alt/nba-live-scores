@@ -49,7 +49,8 @@ export function Masthead({
         // Reserve the iOS status-bar / Dynamic Island height so the date
         // doesn't collide with the clock. 0 on web / non-notch devices.
         paddingTop: "max(env(safe-area-inset-top), 10px)",
-        borderBottom: "2px solid var(--rule)",
+        // C4 (§5 v3): the heavy nameplate rule carries the vermilion brand.
+        borderBottom: "2px solid var(--brand)",
       }}
     >
       <p
@@ -89,9 +90,10 @@ export function Masthead({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              fontWeight: 600,
+              // C4 (§5 v3): the live count is confident brand chrome (700).
+              fontWeight: 700,
               letterSpacing: "0.14em",
-              color: "var(--mute-1)",
+              color: "var(--brand)",
             }}
             aria-label={`${liveCount} live now. Open Watching.`}
           >

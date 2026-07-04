@@ -1,7 +1,7 @@
 //
 // System D section head — the heavy 2px rule with an uppercase mono label
 // and an optional right-aligned count. From d-mix / d-following `.sechead`:
-// label 11px mono/600, ls .16em; count 10px mono, ls .12em, --mute-2;
+// label 11px mono/600, ls .16em; count 10px mono, ls .12em, --brand (C4 §5 v3);
 // bottom rule 2px solid ink (the mock's --rule === --ink value, and in dark
 // --ink flips to cream so the heavy rule stays visible).
 //
@@ -52,7 +52,11 @@ export function SecHead({
             color: "var(--mute-2)",
           }}
         >
-          {count}
+          {/* C4 (§5 v3): the section count is confident brand chrome. The "?"
+              help affordance stays muted (it's a control, not a count). */}
+          {count && (
+            <span style={{ color: "var(--brand)", fontWeight: 700 }}>{count}</span>
+          )}
           {showHelp && (
             onHelp ? (
               /* Interactive "?" — 44px tap target per §affordance law. */
