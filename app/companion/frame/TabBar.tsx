@@ -39,7 +39,9 @@ export function TabBar() {
       aria-label="Primary"
       // Mobile-only. At md+ the DesktopSidebarNav takes over as the
       // primary nav surface (Phase 22.5-D).
-      className="fixed inset-x-0 bottom-0 z-40 border-t md:hidden"
+      // Static flex child of the app-shell column (no position:fixed —
+      // iOS 26 WebKit bug 297779 detaches fixed bars in WKWebView).
+      className="z-40 shrink-0 border-t md:hidden"
       style={{
         background: "var(--cream)",
         // Hairline top rule — System D chrome (not the heavy 2px --rule the
