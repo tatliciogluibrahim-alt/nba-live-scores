@@ -111,7 +111,33 @@ dismissible, and permanently reachable via a small "?" affordance on
 the section head. Stamp text `FULL` is the abbreviation of the locked
 label "Full Details"; the legend always spells it out.
 
-## 5. Accent law (v2)
+## 5. Accent law (v3 — C4 color lock, 2026-07-03)
+
+Ibrahim locked direction C4 after the shipped v2 system read "too
+beige" on device (docs/superpowers/design-directions/color-c4.html is
+the visual source of truth; color-index.html holds the losing
+candidates).
+
+Three additions to the palette, all tokens:
+- **Brand chrome — vermilion `--brand: #b8391f`.** Lives on chrome,
+  confidently: the masthead rule, the masthead live count, index
+  numerals, section-head counts, the active TabBar tick. NOT on
+  stamps (kickoff/FT stamps stay ink-outlined), NOT on body content.
+- **Section plates.** The not-now registers sit on tinted paper:
+  `--plate-next` (sage #e4e6d3) under UP NEXT-class sections,
+  `--plate-wrap` (blush #eddfd0) under QUIET WRAP / WRAPPED-class
+  sections. Full-bleed stock changes, never boxes. The lead and live
+  registers stay cream/ink.
+- **Sport accents pull back to live-only** (their v2 slots: breathing
+  dot, LIVE·clock kicker segment, rail fill, rung-3 peak fields).
+  Brand chrome replaces the sport color in at-rest chrome.
+
+Dark mode: variants are DESIGNED, not auto-flipped — vermilion
+brightens for dark ground legibility; plates become elevated warm-dark
+steps; the BrandMark stays literal. Glyph law unchanged (pulse = live,
+exclusively).
+
+## 5-old. Accent law (v2, superseded)
 
 Accent slots: (1) breathing live dot, (2) LIVE·clock kicker segment,
 (3) rail position/fill in fields, (4) rung-3 peak fields (live only).

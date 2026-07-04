@@ -2,6 +2,32 @@
 
 ---
 
+## System D — Color, the un-detachable tab bar, country page, XI subs (mobile) — 2026-07-03
+
+D4a ships the locked color direction and the highest-priority device
+fixes. Desktop propagation and consolidation follow as D4b.
+
+- **The C4 palette.** Vermilion brand chrome (masthead rule, live
+  count, index numerals, section counts, active tab tick) over cream;
+  UP NEXT-class sections sit on sage paper, wrapped sections on blush,
+  full-bleed. Sport accents pull back to live signals only. Dark mode
+  variants designed for contrast, not auto-flipped.
+- **The tab bar can no longer leave the bottom.** iOS 26's WebKit
+  detaches fixed bars in the embedded engine (Apple bug, unfixed in
+  that path). The app shell now scrolls an inner container and the tab
+  bar sits in normal flow beneath it. No fixed element, no bug.
+- **Country pages join the system.** Editorial pagehead, matches as
+  agate rows with true country-first scores, the qualification cut
+  line in the group table, and YOUR PATH as an ink field.
+- **Substitutions in the Starting XI.** Subbed-off starters keep their
+  row with the minute they left; entrants appear in a quiet SUBS list.
+  Lineups refresh during the match so subs land while you watch.
+- **Extra time reads correctly.** A 100th-minute match no longer says
+  "First half underway." — the phase ladder now knows stoppage, extra
+  time, and penalty shootouts. Settings returned to Following's footer.
+
+---
+
 ## System D — Following, Tournament, device-feedback wave (mobile) — 2026-07-03
 
 D3 extends the editorial system to Following and the tournament surfaces,

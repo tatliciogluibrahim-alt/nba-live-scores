@@ -915,7 +915,7 @@ function deriveWCHighlights(
 
 // Soccer-bespoke HeroMoment derivation. Mirrors NBA's deriveHero shape
 // but uses kickoff / halftime / full-time / late-goal language.
-function deriveWCHero(game: WCGameLite): {
+export function deriveWCHero(game: WCGameLite): {
   eyebrow: string;
   headline: string;
   context?: string;
@@ -963,14 +963,25 @@ function deriveWCHero(game: WCGameLite): {
   if (text.includes("ht") || text.includes("half")) {
     return { eyebrow: "Halftime", headline: "Halftime.", live: true };
   }
-  if (text.match(/9\d/)) {
+  if (text.includes("pen")) {
+    return { eyebrow: "Shootout", headline: "Penalty shootout.", live: true };
+  }
+  // Parse the minute numerically — regex prefix matching called 100' "first
+  // half" (the "10" matched ^[1-4]\d). Knockout matches run past 90.
+  const minMatch = text.match(/(\d{1,3})/);
+  const min = minMatch ? Number(minMatch[1]) : null;
+  const isStoppage = /\d\s*'?\s*\+/.test(text);
+  if (min != null && min > 90 && !isStoppage) {
+    return { eyebrow: "Extra time", headline: "Extra time.", live: true };
+  }
+  if (min != null && min >= 90) {
     return { eyebrow: "Stoppage", headline: "Stoppage time.", live: true };
   }
-  if (text.match(/^[1-4]\d/)) {
-    return { eyebrow: "First half", headline: "First half underway.", live: true };
-  }
-  if (text.match(/^[5-8]\d/)) {
+  if (min != null && min > 45) {
     return { eyebrow: "Second half", headline: "Second half underway.", live: true };
+  }
+  if (min != null && min >= 1) {
+    return { eyebrow: "First half", headline: "First half underway.", live: true };
   }
   return { eyebrow: "Live", headline: "Match underway.", live: true };
 }

@@ -56,6 +56,20 @@ html, body {
      stay separate so basketball / football cards retain their identity. */
   --live:       #b85a2a;
 
+  /* System D brand chrome (C4 color lock — spec §5 v3, color-c4.html is the
+     source of truth). Vermilion lives on CHROME, confidently: the masthead
+     rule, the masthead live count, index numerals, section-head counts, the
+     active TabBar tick. NOT on stamps (they stay ink-outlined), NOT on body
+     content. --plate-next (sage) / --plate-wrap (blush) are the tinted paper
+     STOCK the not-now registers sit on (UP NEXT-class → next, WRAPPED-class →
+     wrap); full-bleed stock changes, never boxes. Plates land in D4 Task 3.
+     Brand darkened from #b8391f to #b4361d (Task 3 carry-in): index numerals
+     on --plate-wrap (#eddfd0) now clear WCAG AA at 4.61:1 (was 4.41:1).
+     Also passes on --plate-next: 4.76:1, on --cream: 5.02:1. */
+  --brand:       #b4361d;
+  --plate-next:  #e4e6d3;
+  --plate-wrap:  #eddfd0;
+
   /* Cream-on-dark scale. Used by components that flip the chassis
      (QuietRecap's end-of-night card, future dark surfaces). Three
      tiers — primary text, secondary text, tertiary text / hairlines —
@@ -158,6 +172,17 @@ html, body {
   --critical:                  #e2554a;
   --pos:                       #3d9d5d;
   --live:                      #f47743;
+
+  /* System D brand chrome — DESIGNED for the dark ground, not auto-flipped
+     (spec §5 v3 / §9). Vermilion brightens to #ec5f42 so 10-11px index/count
+     chrome clears WCAG AA on warm-dark: 5.27:1 on --cream #1d1812, 4.88:1 on
+     --paper #251f17, ≥4.6:1 on the dark plates below. It stays clearly redder
+     than --nba #f47743 so brand chrome ≠ live sport signal at night. Plates
+     become subtle elevated warm-dark steps just above the ground (sage-cool /
+     blush-warm, echoing the light stock), not tinted-cream lightening. */
+  --brand:                     #ec5f42;
+  --plate-next:                #21261d;
+  --plate-wrap:                #262019;
 
   --cream-on-dark-primary:     var(--ink);
   --cream-on-dark-secondary:   rgba(241, 234, 216, 0.78);

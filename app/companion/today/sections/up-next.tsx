@@ -42,12 +42,19 @@ export function UpNext({
 
   return (
     <>
-      {/* Mobile: System D agate slate */}
-      <section className="md:hidden">
-        <SecHead name="Up next" count={upNextCountLabel(list)} />
-        {list.map((item, i) => (
-          <UpNextAgateRow key={item.id} item={item} idx={padIdx(startIndex + i)} />
-        ))}
+      {/* Mobile: System D agate slate on sage plate. Full-bleed: -mx-4 bleeds
+          to screen edges against the page's px-4 container; inner px-4 realigns
+          content. Padding matches c4 mock (.sec = 18px 18px 6px). */}
+      <section
+        className="md:hidden -mx-4"
+        style={{ background: "var(--plate-next)" }}
+      >
+        <div className="px-4 pt-[18px] pb-[6px]">
+          <SecHead name="Up next" count={upNextCountLabel(list)} />
+          {list.map((item, i) => (
+            <UpNextAgateRow key={item.id} item={item} idx={padIdx(startIndex + i)} />
+          ))}
+        </div>
       </section>
 
       {/* Desktop: legacy card list, unchanged */}

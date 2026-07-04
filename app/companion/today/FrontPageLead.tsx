@@ -194,10 +194,14 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
                 <>
                   <span
                     style={{
+                      // C4 (§5 v3): the lead index is brand chrome on cream.
+                      // On the peak accent field it stays full cream (vermilion
+                      // is a cream-ground color; contrast law wins on the field).
                       color:
                         rung === "peak"
                           ? "var(--cream-on-acc)"
-                          : "var(--mute-2)",
+                          : "var(--brand)",
+                      fontWeight: 700,
                     }}
                   >01</span>
                   {lead.live ? (

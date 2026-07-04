@@ -768,11 +768,15 @@ function deriveLiveHeadline(g: NBAGame): string {
 }
 
 // Soccer-bespoke live headline for the hero. Calm, score-free.
-function deriveWCLiveHeadline(g: WCGameLite): string {
+export function deriveWCLiveHeadline(g: WCGameLite): string {
   const text = (g.statusText ?? "").toLowerCase();
   if (text.includes("ht") || text.includes("half")) return "Halftime.";
+  if (text.includes("pen")) return "Penalty shootout.";
   const m = text.match(/(\d{1,3})/);
   const min = m ? Number(m[1]) : null;
+  // Past 90 with no "+" is extra time (knockouts), not stoppage.
+  const isStoppage = /\d\s*'?\s*\+/.test(text);
+  if (min != null && min > 90 && !isStoppage) return "Extra time.";
   if (min != null && min >= 90) return "Stoppage time.";
   if (min != null && min > 45) return "Second half underway.";
   if (min != null && min >= 1) return "First half underway.";

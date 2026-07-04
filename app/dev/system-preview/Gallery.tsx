@@ -226,6 +226,7 @@ const XI_ANNOUNCED: WCLineups = {
         { jersey: "21", name: "Yıldız", captain: false },
         { jersey: "9", name: "Kılıçsoy", captain: false },
       ],
+      subs: [{ jersey: "12", name: "Reyna", minute: "62'" }],
     },
     {
       code: "USA",
@@ -243,6 +244,7 @@ const XI_ANNOUNCED: WCLineups = {
         { jersey: "21", name: "Weah", captain: false },
         { jersey: "9", name: "Pepi", captain: false },
       ],
+      subs: [],
     },
   ],
 };

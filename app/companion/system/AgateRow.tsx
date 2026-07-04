@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 // System D agate row — unboxed, ruled, calm. From d-mix `.agaterow`:
 // 13px padding-block, 1px --line bottom rule, 14px base, 10px mono idx
-// (--mute-2), flex-1 main (600/ls .01em), 12.5px --mute-1 note, 16px/700
+// (--brand — C4 §5 v3), flex-1 main (600/ls .01em), 12.5px --mute-1 note, 16px/700
 // mono score. The right chevron + pressed state appear ONLY when `href`
 // is set (affordance law: a row is tappable iff it shows the arrow).
 //
@@ -33,8 +33,9 @@ export function AgateRow({ idx, main, note, score, stamp, href }: AgateRowProps)
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            fontWeight: 600,
-            color: "var(--mute-2)",
+            // C4 (§5 v3): index numerals on cream ground carry the brand.
+            fontWeight: 700,
+            color: "var(--brand)",
             minWidth: 18,
           }}
         >

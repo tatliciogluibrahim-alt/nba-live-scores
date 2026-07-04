@@ -8,8 +8,8 @@ import { usePathname } from "next/navigation";
 // wordmark tabs. Founder call 2026-07-03: labels-only — the generic line
 // icons (sun/heart/pin) read as stock AI iconography; the editorial
 // register carries better as pure type. The active tab is carried by the
-// ink register itself — full ink + heavier weight + a short ink tick
-// under the word (spec §2: "active tab ink-weight"). Inactive tabs sit
+// ink register itself — full ink + heavier weight + a short brand tick
+// under the word (spec §2 + §5 v3). Inactive tabs sit
 // at --mute-1. Three tabs, three jobs, real Next.js navigation.
 
 type Tab = {
@@ -39,7 +39,9 @@ export function TabBar() {
       aria-label="Primary"
       // Mobile-only. At md+ the DesktopSidebarNav takes over as the
       // primary nav surface (Phase 22.5-D).
-      className="fixed inset-x-0 bottom-0 z-40 border-t md:hidden"
+      // Static flex child of the app-shell column (no position:fixed —
+      // iOS 26 WebKit bug 297779 detaches fixed bars in WKWebView).
+      className="z-40 shrink-0 border-t md:hidden"
       style={{
         background: "var(--cream)",
         // Hairline top rule — System D chrome (not the heavy 2px --rule the
@@ -79,12 +81,13 @@ export function TabBar() {
                 >
                   {label}
                 </span>
-                {/* Active tick — a short ink rule under the wordmark, so
-                    "where am I" reads even at a glance without an icon. */}
+                {/* Active tick — a short brand rule under the wordmark (C4
+                    §5 v3), so "where am I" reads at a glance without an icon.
+                    The word stays ink; only the tick carries the vermilion. */}
                 <span
                   aria-hidden
                   className="block h-[2px] w-5"
-                  style={{ background: active ? "var(--ink)" : "transparent" }}
+                  style={{ background: active ? "var(--brand)" : "transparent" }}
                 />
               </Link>
             </li>

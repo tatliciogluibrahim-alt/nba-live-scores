@@ -361,13 +361,26 @@ async function main() {
         await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
         const suffix = QA_STATE ? `-${QA_STATE}` : "";
         const file = `${OUT}/${pass.theme}-${name}${suffix}-${w}.png`;
+        // App-shell (D4 6d): below md the frame doesn't document-scroll, so
+        // fullPage would capture one viewport. Unlock it for the capture —
+        // the TabBar then sits in-flow at the document end (no more
+        // mid-scroll fixed-bar artifact).
+        await page.addStyleTag({
+          content:
+            "#nns-frame{height:auto!important;overflow:visible!important}" +
+            "#nns-scroll{overflow:visible!important}",
+        }).catch(() => {});
         await page.screenshot({ path: file, fullPage: true });
         // fullPage captures paint FIXED elements (the bottom TabBar) at the
         // scroll offset, which reads as a mid-content overlap in tall shots.
         // Take an honest viewport-anchored bottom capture at phone widths so
         // every set shows the nav actually docked.
         if (w < 768) {
-          await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+          await page.evaluate(() => {
+            const sc = document.getElementById("nns-scroll");
+            if (sc) sc.scrollTo(0, sc.scrollHeight);
+            window.scrollTo(0, document.body.scrollHeight);
+          });
           await sleep(300);
           await page.screenshot({ path: file.replace(/\.png$/, "-bottomnav.png"), fullPage: false });
         }

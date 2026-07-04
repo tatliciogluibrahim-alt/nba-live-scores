@@ -20,6 +20,17 @@ export type ESPNRosterEntry = {
   captain?: boolean;
   athlete?: ESPNRosterAthlete;
   position?: { abbreviation?: string };
+  // Substitutions (verified live 2026-07-03 against event 760494): the
+  // leaver carries subbedOut:true + subbedOutFor:{jersey, athlete}; the
+  // entrant carries starter:false + subbedIn:true. The sub minute lives in
+  // plays[] on BOTH sides as { substitution: true, clock.displayValue }.
+  subbedIn?: boolean;
+  subbedOut?: boolean;
+  subbedOutFor?: { jersey?: string; athlete?: ESPNRosterAthlete };
+  plays?: Array<{
+    substitution?: boolean;
+    clock?: { displayValue?: string };
+  }>;
 };
 
 export type ESPNRoster = {
@@ -38,12 +49,24 @@ export type StartingXIPlayer = {
   /** Surname for the programme row (see surnameOf for the extraction law). */
   name: string;
   captain: boolean;
+  /** Set when this starter was substituted off — the match minute as the
+   *  feed writes it ("62'", "90'+5'"). Absent = played on / not yet subbed. */
+  subbedOffMinute?: string;
+};
+
+export type XISub = {
+  jersey: string;
+  name: string;
+  /** Minute the entrant came on, from their plays[] substitution entry. */
+  minute: string;
 };
 
 export type StartingXITeam = {
   code: string;
   formation: string;
   starters: StartingXIPlayer[];
+  /** Entrants, feed order (chronological). Empty until subs happen. */
+  subs: XISub[];
 };
 
 export type WCLineups = { teams: StartingXITeam[] } | { pending: true };
@@ -70,13 +93,25 @@ function isGoalkeeper(positionAbbr: string | undefined): boolean {
 
 type MappedPlayer = StartingXIPlayer & { isGK: boolean };
 
+/** Minute of the substitution play, when the feed carries one. */
+function subMinuteOf(entry: ESPNRosterEntry): string | undefined {
+  const play = (entry.plays ?? []).find((p) => p.substitution === true);
+  const raw = (play?.clock?.displayValue ?? "").trim();
+  return raw || undefined;
+}
+
 function mapEntry(entry: ESPNRosterEntry): MappedPlayer {
-  return {
+  const player: MappedPlayer = {
     jersey: (entry.jersey ?? "").toString().trim(),
     name: surnameOf(entry.athlete?.displayName),
     captain: entry.captain === true || entry.athlete?.captain === true,
     isGK: isGoalkeeper(entry.position?.abbreviation),
   };
+  if (entry.subbedOut === true) {
+    const minute = subMinuteOf(entry);
+    if (minute) player.subbedOffMinute = minute;
+  }
+  return player;
 }
 
 // GK-first ordering (spec §17: "GK first, defense → attack order"). We only
@@ -91,9 +126,19 @@ function orderGKFirst(players: MappedPlayer[]): MappedPlayer[] {
 }
 
 function mapTeam(roster: ESPNRoster): StartingXITeam {
-  const starters = (roster.roster ?? [])
+  const entries = roster.roster ?? [];
+  const starters = entries
     .filter((entry) => entry.starter === true)
     .map(mapEntry);
+  // Entrants: bench players the feed marks subbedIn. Feed order is
+  // chronological; minute comes from their own substitution play.
+  const subs: XISub[] = entries
+    .filter((entry) => entry.starter !== true && entry.subbedIn === true)
+    .map((entry) => ({
+      jersey: (entry.jersey ?? "").toString().trim(),
+      name: surnameOf(entry.athlete?.displayName),
+      minute: subMinuteOf(entry) ?? "",
+    }));
   return {
     code: (roster.team?.abbreviation ?? "").trim(),
     formation: (roster.formation ?? "").trim(),
@@ -102,7 +147,9 @@ function mapTeam(roster: ESPNRoster): StartingXITeam {
       jersey: p.jersey,
       name: p.name,
       captain: p.captain,
+      ...(p.subbedOffMinute ? { subbedOffMinute: p.subbedOffMinute } : {}),
     })),
+    subs,
   };
 }
 

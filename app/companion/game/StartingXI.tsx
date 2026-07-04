@@ -71,7 +71,8 @@ function XIColumn({ team }: { team: StartingXITeam }) {
             borderBottom: "1px solid var(--line)",
             fontSize: 12.5,
             fontWeight: 600,
-            color: "var(--ink)",
+            // Subbed-off starters keep their row, muted (D4 6c).
+            color: player.subbedOffMinute ? "var(--mute-1)" : "var(--ink)",
           }}
         >
           <span
@@ -86,12 +87,89 @@ function XIColumn({ team }: { team: StartingXITeam }) {
             {/* Zero-padded per spec §17 ("09 GÜLER") — index-numeral device. */}
             {player.jersey ? player.jersey.padStart(2, "0") : player.jersey}
           </span>
-          <span className="min-w-0">
+          <span className="min-w-0 flex-1 truncate">
             {player.name}
             {player.captain ? " (C)" : ""}
           </span>
+          {player.subbedOffMinute ? (
+            <span
+              className="shrink-0 tabular-nums lining-nums"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                color: "var(--mute-2)",
+              }}
+            >
+              → {player.subbedOffMinute}
+            </span>
+          ) : null}
         </div>
       ))}
+
+      {/* Entrants — quiet SUBS block beneath the column. Nothing renders
+          until a sub actually happens (no empty head). */}
+      {team.subs && team.subs.length > 0 ? (
+        <>
+          <p
+            className="uppercase"
+            style={{
+              margin: "10px 0 2px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              fontWeight: 600,
+              letterSpacing: "0.14em",
+              color: "var(--mute-2)",
+            }}
+          >
+            Subs
+          </p>
+          {team.subs.map((sub, i) => (
+            <div
+              key={`${sub.jersey}-${sub.name}-${i}`}
+              className="flex items-baseline gap-2"
+              style={{
+                padding: "5px 0",
+                borderBottom: "1px solid var(--line)",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--ink)",
+              }}
+            >
+              <span
+                aria-hidden
+                className="shrink-0"
+                style={{ fontSize: 10, color: "var(--mute-2)" }}
+              >
+                ↳
+              </span>
+              <span
+                className="tabular-nums lining-nums shrink-0"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: "var(--mute-2)",
+                  minWidth: 16,
+                }}
+              >
+                {sub.jersey ? sub.jersey.padStart(2, "0") : sub.jersey}
+              </span>
+              <span className="min-w-0 flex-1 truncate">{sub.name}</span>
+              {sub.minute ? (
+                <span
+                  className="shrink-0 tabular-nums lining-nums"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 9,
+                    color: "var(--mute-2)",
+                  }}
+                >
+                  {sub.minute}
+                </span>
+              ) : null}
+            </div>
+          ))}
+        </>
+      ) : null}
     </div>
   );
 }

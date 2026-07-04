@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PreviewModeBanner } from "../dev/PreviewModeBanner";
+import { ScrollReset } from "./ScrollReset";
 import { TabBar } from "./TabBar";
 import { DesktopSidebarNav } from "./DesktopSidebarNav";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
@@ -16,8 +17,13 @@ import { KeyboardShortcuts } from "./KeyboardShortcuts";
 // their mobile-shaped layout on desktop (intentional — those screens
 // are already content-shell-based and look fine narrow).
 
-const MOBILE_BOTTOM_PAD =
-  "pb-[calc(max(env(safe-area-inset-bottom),12px)+84px)] md:pb-[max(env(safe-area-inset-bottom),16px)]";
+// App shell (D4 Task 6d, iOS 26 WebKit bug 297779): below md the frame is a
+// non-scrolling flex column — an inner <main id="nns-scroll"> scrolls and the
+// TabBar sits after it in normal flow, so no position:fixed element exists to
+// detach. Desktop (md+) keeps document scroll untouched. The old 84px bottom
+// padding that reserved space under the fixed bar is gone; the bar now takes
+// real layout space. See docs/superpowers/research/2026-07-03-ios-tabbar-detach.md.
+const SCROLLER_PAD = "pb-4 md:pb-[max(env(safe-area-inset-bottom),16px)]";
 const HIDE_BOTTOM_PAD = "pb-[max(env(safe-area-inset-bottom),16px)]";
 
 export function CompanionFrame({
@@ -37,7 +43,7 @@ export function CompanionFrame({
    *  surfaces (marketing, onboarding) that shouldn't show app chrome. */
   desktopNav?: "today" | "following" | "watching" | "detail";
 }) {
-  const padClass = hideTabBar ? HIDE_BOTTOM_PAD : MOBILE_BOTTOM_PAD;
+  const padClass = hideTabBar ? HIDE_BOTTOM_PAD : SCROLLER_PAD;
   // "detail" renders the rail without a highlighted tab — pass through
   // the literal tab ids only; the sidebar's own pathname check handles
   // highlighting and correctly highlights nothing on detail routes.
@@ -47,7 +53,11 @@ export function CompanionFrame({
       : undefined;
   return (
     <div
-      className={`relative min-h-[100svh] ${padClass}`}
+      id="nns-frame"
+      className={
+        "relative flex h-[100svh] flex-col overflow-hidden " +
+        "md:block md:h-auto md:min-h-[100svh] md:overflow-visible"
+      }
       style={{
         background: "var(--cream)",
         color: "var(--ink)",
@@ -62,9 +72,21 @@ export function CompanionFrame({
       }}
     >
       <PreviewModeBanner />
+      <ScrollReset />
       {desktopNav ? <DesktopSidebarNav active={activeTab} /> : null}
       {desktopNav ? <KeyboardShortcuts /> : null}
-      <div className={desktopNav ? "md:pl-[220px]" : ""}>{children}</div>
+      {/* Structural scroller, not the page landmark — route clients own
+          their own <main> (one landmark per page, as before the shell). */}
+      <div
+        id="nns-scroll"
+        className={
+          `min-h-0 flex-1 overflow-y-auto overscroll-contain ${padClass} ` +
+          "md:flex-none md:overflow-visible md:overscroll-auto"
+        }
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        <div className={desktopNav ? "md:pl-[220px]" : ""}>{children}</div>
+      </div>
       {!hideTabBar ? <TabBar /> : null}
     </div>
   );

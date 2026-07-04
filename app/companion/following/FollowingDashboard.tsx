@@ -485,8 +485,19 @@ function FollowingMobile({
   ) {
     if (items.length === 0) return null;
     const isFirst = sectionKey === firstKey;
-    return (
-      <section className="mt-6">
+
+    // UP NEXT → sage plate, WRAPPED → blush plate, LIVE NOW → no plate (cream).
+    // Full-bleed: -mx-4 bleeds to screen edges; inner px-4 realigns content.
+    // Padding matches c4 mock (.sec = 18px 18px 6px).
+    const plateBg =
+      sectionKey === "next"
+        ? "var(--plate-next)"
+        : sectionKey === "wrapped"
+        ? "var(--plate-wrap)"
+        : null;
+
+    const inner = (
+      <>
         <SecHead
           name={label}
           count={String(items.length)}
@@ -507,8 +518,18 @@ function FollowingMobile({
             />
           );
         })}
-      </section>
+      </>
     );
+
+    if (plateBg) {
+      return (
+        <section className="mt-6 -mx-4" style={{ background: plateBg }}>
+          <div className="px-4 pt-[18px] pb-[6px]">{inner}</div>
+        </section>
+      );
+    }
+
+    return <section className="mt-6">{inner}</section>;
   }
 
   return (
@@ -688,6 +709,20 @@ function FollowingMobile({
           >
             Sync devices
           </button>
+          {/* Settings — the D3 recomposition dropped the legacy pagehead
+              gear; the entry point lives here now (founder call
+              2026-07-03: with the other utility links, not app chrome). */}
+          <Link
+            href="/settings"
+            aria-label="Alerts and notification settings"
+            className="underline transition active:opacity-70"
+            style={{
+              textUnderlineOffset: 3,
+              textDecorationColor: "var(--line)",
+            }}
+          >
+            Settings
+          </Link>
         </div>
       </div>
     </section>
