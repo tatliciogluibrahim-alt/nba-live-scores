@@ -879,17 +879,11 @@ function TournamentPresetSection({
   }
 
   return (
-    <section>
-      <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>Alerts</Eyebrow>
-        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-      </div>
+    <section style={{ borderTop: "2px solid var(--rule)", paddingTop: 12 }}>
+      <Eyebrow style={{ display: "block", marginBottom: 8 }}>Alerts</Eyebrow>
 
       {isFollowed && existing ? (
-        <div
-          className="rounded-[14px] border px-3 py-3"
-          style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-        >
+        <div>
           <button
             type="button"
             onClick={() =>
@@ -923,31 +917,29 @@ function TournamentPresetSection({
               {existing.alertEnabled ? "Manage" : "Turn on"}
             </span>
           </button>
+          {/* Unfollow — a mono link action, not a pill. Secondary to the
+              toggle above (the section's primary control). */}
           <button
             type="button"
             onClick={handleUnfollow}
             aria-label={`Unfollow ${tournament.name}`}
-            className="mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="mt-2 inline-flex min-h-[44px] items-center uppercase transition active:opacity-70"
             style={{
-              background: "transparent",
-              color: "var(--ink)",
-              border: "1px solid var(--line)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              color: "var(--mute-1)",
             }}
           >
             Unfollow
           </button>
         </div>
       ) : (
-        <div
-          className="rounded-[14px] border px-3 py-3"
-          style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-        >
-          <p
-            className="text-[13px]"
-            style={{ color: "var(--ink)", fontWeight: 600 }}
-          >
+        <div>
+          <Display as="p" size="sm">
             Follow {tournament.name}.
-          </p>
+          </Display>
           <p
             className="mt-1 text-[12px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
@@ -955,6 +947,8 @@ function TournamentPresetSection({
             Every game across the tournament. Tier defaults to your
             preference; change it in Alerts & Notifications.
           </p>
+          {/* The section's single primary action — stays a filled pill
+              (dashed + muted when the tournament isn't live yet). */}
           <button
             type="button"
             onClick={handleFollow}

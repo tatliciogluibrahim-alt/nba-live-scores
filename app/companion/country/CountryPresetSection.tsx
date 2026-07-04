@@ -1,5 +1,6 @@
 "use client";
 
+import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PresetRow } from "../following/PresetRow";
 import { useFollows } from "../providers";
@@ -40,17 +41,11 @@ export function CountryPresetSection({
   }
 
   return (
-    <section>
-      <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>Alerts</Eyebrow>
-        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-      </div>
+    <section style={{ borderTop: "2px solid var(--rule)", paddingTop: 12 }}>
+      <Eyebrow style={{ display: "block", marginBottom: 8 }}>Alerts</Eyebrow>
 
       {isFollowed && existing ? (
-        <div
-          className="rounded-[14px] border px-3 py-3"
-          style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-        >
+        <div>
           <button
             type="button"
             onClick={() => setFollowAlertEnabled("country", countryCode, !existing.alertEnabled)}
@@ -77,37 +72,36 @@ export function CountryPresetSection({
               subjectLabel={countryName}
             />
           ) : null}
+          {/* Unfollow — a mono link action, not a pill. Secondary to the
+              toggle above (the section's primary control). */}
           <button
             type="button"
             onClick={handleUnfollow}
             aria-label={`Unfollow ${countryName}`}
-            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="mt-3 inline-flex min-h-[44px] items-center uppercase transition active:opacity-70"
             style={{
-              background: "transparent",
-              color: "var(--ink)",
-              border: "1px solid var(--line)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              color: "var(--mute-1)",
             }}
           >
             Unfollow country
           </button>
         </div>
       ) : (
-        <div
-          className="rounded-[14px] border px-3 py-3"
-          style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-        >
-          <p
-            className="text-[13px]"
-            style={{ color: "var(--ink)", fontWeight: 600 }}
-          >
+        <div>
+          <Display as="p" size="sm">
             Get told when {countryName} plays.
-          </p>
+          </Display>
           <p
             className="mt-1 text-[12px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             New follows use your default alert level. Change it later.
           </p>
+          {/* The section's single primary action — stays a filled pill. */}
           <button
             type="button"
             onClick={handleFollow}
