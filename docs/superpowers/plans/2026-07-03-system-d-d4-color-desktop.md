@@ -1,0 +1,28 @@
+# System D — D4: Color propagation + Desktop + Dark + Consolidation
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
+
+**Goal:** Propagate the locked C4 color direction (spec §5 v3) through the mobile app surfaces, recompose the desktop (md+) app surfaces in System D, design the dark registers deliberately, and burn down the D2/D3 deferral list.
+
+**Architecture:** Tokens first (`--brand`, `--plate-next`, `--plate-wrap` + designed dark variants in globals.css), then chrome/plate application on the shipped mobile surfaces, then desktop recomposition that REPLACES the `hidden md:block` legacy branches (the desktop-frozen law ends here, by design), then consolidation. Visual source of truth: `docs/superpowers/design-directions/color-c4.html`. Marketing/web/SEO surfaces are OUT of scope (separate later pass; record in AGENTS.md at close).
+
+**Tech Stack:** unchanged (Next.js + React 19 + Tailwind + tokens, Vitest, Playwright harness).
+
+## Global Constraints
+- Spec §5 v3 binds: vermilion on chrome ONLY (masthead rule, live count, indices, section counts, active tab tick); stamps stay ink; plates on not-now registers full-bleed (UP NEXT-class → `--plate-next`, WRAPPED-class → `--plate-wrap`); sport accents live-only; glyph law (pulse = live) unchanged.
+- Dark variants designed, not flipped: brand brightens on dark ground (target WCAG AA on `--paper`-dark); plates become elevated warm-dark steps; BrandMark literal.
+- All D1-D3 copy laws, register ladder, affordance law, No-Spoilers gating, sport nouns remain binding.
+- Desktop recomposition REPLACES legacy `hidden md:block` branches per surface. Every feature stays mounted (the D2/D3 preservation lists apply verbatim). PinControls dies with the desktop game rail (grep importers first).
+- Gates per task: lint 0 warnings, build (page count must not drop), full vitest (352 baseline), harness shots read light+dark at 390 AND 1280.
+
+### Task 1 (controller): branch, ledger, baselines — DONE at branch creation (337fcf0).
+### Task 2: tokens + mobile brand chrome (light+dark). globals.css gains --brand/--plate-next/--plate-wrap + dark values; apply chrome slots on Masthead (rule + live count), SecHead counts, index numerals (Monument kicker, AgateRow/BoardRow idx, FollowRow, knockout/bracket/watching rows), TabBar active tick. Stamps stay ink. Tests: token presence in globals (string test) is enough; visual matrix is the real gate.
+### Task 3: section plates mobile. Today UP NEXT + QUIET WRAP, Following UP NEXT + WRAPPED, Watching TRACKED FOR LATER + WRAPPED sit on their plates (full-bleed -mx-4 pattern per c4 mock, padding per mock, hairline internals unchanged). Live/lead/ink registers untouched. Dark plate variants applied.
+### Task 4: desktop Today recomposition (broadsheet columns per spec §2, Masthead spanning, lead monument left column, ALSO LIVE band, agate slate right rail; DesktopScoreboard/YouFollow content survives restyled). Replaces the legacy md branch.
+### Task 5: desktop Following + Watching recomposition (same grammar; FollowDrawerBody reused; Live Room ink field full-width; slot meter; legacy FollowGroups/desktop cards die).
+### Task 6: desktop game detail + tournament (detail rail dies, PinControls DELETED, DetailCrumbs desktop variant restyled, WCBracket desktop columns restyled to agate, GroupCard/GroupTeamRow legacy deleted, WCGroups desktop = cut-line tables).
+### Task 7: consolidation + copy nits: one date module (kickoffStamp/dayTimeStamp/whenPhrase/etDayKey policies documented per §10), useWCSchedule provider (one poll per page), BracketMatchRow/KnockoutPreviewRow share, buildFollowingView as the single bucketing source, parseScoreLine dedup, BriefPromptCard desktop unbox, double Hidden rows collapse (NBA detail), XI repoll pending-gate + muted pending head (§17 nits), Watching empty-state suggestion rows de-carded, "Coming Aug 2026" single source, overlap-hint sport noun, dev-gallery dup extraction.
+### Task 8: states + final gate + docs. Full matrix (default/fresh/nospoilers/onelive × all routes × 390+1280 × light+dark), tap-throughs rerun, CHANGELOG D4 entry, AGENTS.md System D note (D4 shipped; marketing pass explicitly deferred), ledger close. STOP unmerged for controller review + merge.
+
+## Self-Review
+Spec coverage: §5 v3 (T2/T3), §2 desktop grammar (T4-6), §9 dark (T2/T3 + T8 matrix), deferral ledger (T7). Placeholders: none — exact hexes in spec, mock is source of truth. Types: tokens are CSS-only; T7 consolidations name their existing functions.
