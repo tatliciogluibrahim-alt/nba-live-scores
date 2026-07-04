@@ -31,6 +31,7 @@ const C_HAIR_STRONG = "#c8bd9f"; // link underlines
 const C_SLUG = "#ebe1c8"; // redaction slug fill
 const C_NBA = "#e55b2a";
 const C_WC = "#1e6b3c";
+const C_BRAND = "#b4361d"; // C4 vermilion — chrome only (rules, counts)
 
 const BODY_FONT =
   "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
@@ -133,12 +134,15 @@ function mastheadHtml(payload: BriefPayload): string {
             <td align="left" valign="middle" class="mono" style="font-family: ${MONO_FONT}; font-size:10.5px; color:${C_INK}; letter-spacing:2.4px; text-transform:uppercase; font-weight:700; padding-left:8px;">
               No Noise
             </td>
-            <td align="right" valign="middle" class="mono" style="font-family: ${MONO_FONT}; font-size:10.5px; color:${C_MUTE}; letter-spacing:2.2px; text-transform:uppercase; font-weight:500;">
+            <td align="right" valign="middle" class="mono" style="font-family: ${MONO_FONT}; font-size:10.5px; color:${C_BRAND}; letter-spacing:2.2px; text-transform:uppercase; font-weight:600;">
               Your Brief &middot; ${payload.issueNumber}
             </td>
           </tr>
         </table>
       </td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 32px 0 32px;"><div style="height:2px; line-height:2px; font-size:0; background-color:${C_BRAND};">&nbsp;</div></td>
     </tr>
 
     <tr>
@@ -181,7 +185,7 @@ function yesterdayShownGame(row: BriefGameRow, idx: number): string {
           : ""
       }
       <div class="mono" style="margin-top: 14px; font-family: ${MONO_FONT}; font-size: 10.5px; color: ${C_INK}; letter-spacing: 2.3px; text-transform: uppercase; font-weight: 600;">
-        <span style="color:${C_NBA};">&bull;</span>&nbsp;&nbsp;${escape(row.context)}
+        <span style="color:${C_MUTE2};">&bull;</span>&nbsp;&nbsp;${escape(row.context)}
       </div>
       ${
         blurbs
