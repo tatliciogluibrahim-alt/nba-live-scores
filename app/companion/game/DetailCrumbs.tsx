@@ -21,12 +21,10 @@ export function DetailCrumbs({
   backHref = "/watching",
   backLabel = "Watching",
   title = "Game",
-  trailing,
 }: {
   backHref?: string;
   backLabel?: string;
   title?: ReactNode;
-  trailing?: ReactNode;
 }) {
   return (
     <>

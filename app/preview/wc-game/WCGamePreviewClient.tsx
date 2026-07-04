@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { WCGameDetail, type WCHighlight } from "../../companion/game/WCGameDetail";
+import { WCGameDetail } from "../../companion/game/WCGameDetail";
 import type { WCGameLite } from "../../companion/today/today-data";
 
 // Three mock scenarios so the operator can preview the WC game UI
@@ -62,13 +62,7 @@ const MOCK_UPCOMING: WCGameLite = {
   watchLabel: "FOX",
 };
 
-const HIGHLIGHTS_LIVE: WCHighlight[] = [
-  { eyebrow: "Possession", body: "TUR 54% · BRA 46%" },
-];
 
-const HIGHLIGHTS_FINAL: WCHighlight[] = [
-  { eyebrow: "Possession", body: "TUR 54% · BRA 46%" },
-];
 
 export function WCGamePreviewClient() {
   const [scenario, setScenario] = useState<Scenario>("live");
@@ -80,12 +74,6 @@ export function WCGamePreviewClient() {
       : scenario === "final"
         ? MOCK_FINAL
         : MOCK_UPCOMING;
-  const highlights =
-    scenario === "live"
-      ? HIGHLIGHTS_LIVE
-      : scenario === "final"
-        ? HIGHLIGHTS_FINAL
-        : [];
 
   return (
     <>
@@ -124,7 +112,6 @@ export function WCGamePreviewClient() {
         pinned={pinned}
         onPin={() => setPinned(true)}
         onUnpin={() => setPinned(false)}
-        highlights={highlights}
       />
 
       <p

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
-import { HeroMoment } from "../moments/HeroMoment";
 import { SevenDotStrip } from "../series/SevenDotStrip";
 import { HIDDEN_CAPTIONS, isSpoilery, safeText } from "../spoiler/safe-text";
 import { RevealResultsButton } from "../spoiler/RevealResultsButton";
@@ -17,7 +16,6 @@ import type { Game, TeamPerformers, PlayerStatLine } from "../../nba/types";
 import { TrackControl } from "./TrackControl";
 import { deriveHero, deriveSeriesContext, deriveSeriesDots } from "./nba-moments";
 import { HighlightsStack } from "./HighlightsStack";
-import { TopPerformers } from "./TopPerformers";
 import { PeriodScoreLine } from "./PeriodScoreLine";
 import { StakesLine } from "../stakes/StakesLine";
 import { deriveNBASeriesStake } from "../stakes/derive-stakes";

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eyebrow } from "../atoms/Eyebrow";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
-import { Spoiler } from "../spoiler/Spoiler";
 import { safeText } from "../spoiler/safe-text";
 import {
   GameSpoilerScope,
@@ -55,7 +53,6 @@ export function WCGameDetail({
   onPin,
   onUnpin,
   pinnedLiveIds = [],
-  highlights = [],
 }: {
   game: WCGameLite;
   pinned: boolean;
@@ -63,7 +60,6 @@ export function WCGameDetail({
   onUnpin: () => void;
   /** Ordered pinned-and-live game ids for TrackControl's slot meter. */
   pinnedLiveIds?: string[];
-  highlights?: WCHighlight[];
 }) {
   // Hidden when the global toggle is on OR a hide-spoilers country/series
   // follow covers this match (selective), minus a session reveal. The
@@ -110,7 +106,6 @@ export function WCGameDetail({
 
   const channel = game.broadcasts[0] ?? game.watchLabel ?? null;
   const matchEvents = relevantMatchEvents(game.events ?? []);
-  const derivedHighlights = deriveWCHighlights(game, highlights);
 
   // Live-Activity progress rail value — shared by the Monument (mobile) and
   // the ScoreModule (desktop) so both read the same point in the match.
@@ -503,145 +498,8 @@ function eventLabel(event: WCMatchEventLite): string {
   return "Goal";
 }
 
-function formatEventText(event: WCMatchEventLite, game: WCGameLite): string {
-  const team = teamCodeForEvent(game, event);
-  const minute = formatMinute(event.minute);
-  const assist = event.assistName ? `, assist ${event.assistName}` : "";
-  return [
-    minute,
-    eventLabel(event),
-    event.playerName || team,
-    team ? `(${team})` : "",
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .concat(assist);
-}
 
-function MatchEventRow({
-  event,
-  game,
-}: {
-  event: WCMatchEventLite;
-  game: WCGameLite;
-}) {
-  const teamCode = teamCodeForEvent(game, event);
-  return (
-    <div className="flex items-center gap-3">
-      <span
-        className="w-10 shrink-0 text-[12px]"
-        style={{
-          color: "var(--ink)",
-          fontFamily: "var(--font-mono)",
-          fontWeight: 700,
-        }}
-      >
-        {formatMinute(event.minute)}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p
-          className="truncate text-[13px]"
-          style={{ color: "var(--ink)", fontWeight: 700 }}
-        >
-          {event.playerName || eventLabel(event)}
-          {teamCode ? ` · ${teamCode}` : ""}
-        </p>
-        <p
-          className="mt-0.5 text-[11px]"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          {eventLabel(event)}
-          {event.assistName ? ` · Assist ${event.assistName}` : ""}
-        </p>
-      </div>
-    </div>
-  );
-}
 
-function deriveWCHighlights(
-  game: WCGameLite,
-  supplied: WCHighlight[]
-): WCHighlight[] {
-  const derived: WCHighlight[] = [];
-  const events = relevantMatchEvents(game.events ?? []);
-  // Positive goal filter — now that yellow_card flows through
-  // relevantMatchEvents, a "!== red_card" filter would miscount yellows
-  // as goals.
-  const goals = events.filter(
-    (e) => e.type === "goal" || e.type === "pen_goal" || e.type === "own_goal"
-  );
-  const reds = events.filter((e) => e.type === "red_card");
-
-  // When the Match Events timeline is showing, it already narrates every
-  // goal/card. Highlights should only add what the timeline DOESN'T —
-  // multi-goal stories (brace/hat-trick), multi-assist games — not a
-  // "Scorer · 1 goal" line that just repeats a row above. When there's
-  // no timeline (no events, e.g. supplied-data-only path), the derived
-  // lines act as the fallback.
-  const hasTimeline = events.length > 0;
-
-  const scorerCounts = new Map<string, { name: string; team: string; goals: number }>();
-  for (const event of goals) {
-    if (event.type === "own_goal") continue;
-    const team = teamCodeForEvent(game, event);
-    const key = `${event.playerName}-${team}`;
-    const prev = scorerCounts.get(key) ?? { name: event.playerName, team, goals: 0 };
-    scorerCounts.set(key, { ...prev, goals: prev.goals + 1 });
-  }
-  const topScorer = Array.from(scorerCounts.values()).sort(
-    (a, b) => b.goals - a.goals
-  )[0];
-  if (topScorer?.name && topScorer.goals >= 2) {
-    // A brace/hat-trick is a story the timeline doesn't tell in one line.
-    derived.push({
-      eyebrow: topScorer.goals >= 3 ? "Hat-trick" : "Brace",
-      body: `${topScorer.name}${topScorer.team ? ` (${topScorer.team})` : ""} · ${topScorer.goals} goals`,
-      spoilery: true,
-    });
-  } else if (topScorer?.name && !hasTimeline) {
-    // Fallback only: no timeline to carry the goal, so name the scorer.
-    derived.push({
-      eyebrow: "Scorer",
-      body: `${topScorer.name}${topScorer.team ? ` (${topScorer.team})` : ""} · ${topScorer.goals} ${topScorer.goals === 1 ? "goal" : "goals"}`,
-      spoilery: true,
-    });
-  }
-
-  const assistCounts = new Map<string, { name: string; assists: number }>();
-  for (const event of goals) {
-    if (!event.assistName) continue;
-    const prev = assistCounts.get(event.assistName) ?? {
-      name: event.assistName,
-      assists: 0,
-    };
-    assistCounts.set(event.assistName, { ...prev, assists: prev.assists + 1 });
-  }
-  const topAssist = Array.from(assistCounts.values()).sort(
-    (a, b) => b.assists - a.assists
-  )[0];
-  // A multi-assist game is a distinct aggregate the per-goal timeline
-  // doesn't surface; a single assist already shows on its goal row.
-  if (topAssist?.name && (topAssist.assists >= 2 || !hasTimeline)) {
-    derived.push({
-      eyebrow: "Playmaker",
-      body: `${topAssist.name} · ${topAssist.assists} ${topAssist.assists === 1 ? "assist" : "assists"}`,
-      spoilery: true,
-    });
-  }
-
-  // The red card is already a row in the timeline — only call it out
-  // separately when there's no timeline to carry it.
-  if (reds[0] && !hasTimeline) {
-    const team = teamCodeForEvent(game, reds[0]);
-    derived.push({
-      eyebrow: "Discipline",
-      body: `${reds[0].playerName || team} saw red${formatMinute(reds[0].minute) ? ` at ${formatMinute(reds[0].minute)}` : ""}.`,
-      spoilery: true,
-    });
-  }
-
-  return [...derived, ...supplied].slice(0, 3);
-}
 
 // Soccer-bespoke HeroMoment derivation. Mirrors NBA's deriveHero shape
 // but uses kickoff / halftime / full-time / late-goal language.
