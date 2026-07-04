@@ -57,51 +57,62 @@ export function useWCLineups(
 ): WCLineups | null {
   const [lineups, setLineups] = useState<WCLineups | null>(null);
 
+  // Initial fetch — one shot when the game identity changes. Repeats are
+  // driven by the polling effect below, so this never sets up an interval.
   useEffect(() => {
     if (!eventId || !isRealEventId(eventId)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLineups(null);
       return;
     }
-
     const mounted = { current: true };
-    let interval: ReturnType<typeof setInterval> | null = null;
-
     async function load() {
       const next = await fetchLineups(eventId as string);
-      if (!mounted.current) return;
-      setLineups(next);
-      // Pre-kickoff tier only: announced → stop polling. The live tier
-      // keeps its interval (subs keep landing until full time).
-      if (status === "upcoming" && next && "teams" in next && interval) {
-        clearInterval(interval);
-        interval = null;
-      }
+      if (mounted.current) setLineups(next);
     }
-
     if (pageIsVisible()) load();
+    return () => {
+      mounted.current = false;
+    };
+  }, [eventId, status, kickoff]);
 
-    // Pre-kickoff tier: repoll only while the announcement is pending and
-    // kickoff is within the window. Live tier (D4 6c): repoll every 90s so
-    // substitutions land mid-match; stops when the effect re-runs at final.
+  // The pre-kickoff poll exists only to catch the XI landing. Gate it on the
+  // result actually being pending: an already-announced XI should never spin
+  // up a throwaway interval that fires one poll and self-terminates.
+  const isPending =
+    lineups !== null && "pending" in lineups && lineups.pending === true;
+
+  // Polling. Live (D4 6c): repoll every 90s so substitutions land mid-match.
+  // Pre-kickoff: repoll every 60s ONLY while the announcement is still pending
+  // and kickoff is within the window; stops the moment teams arrive (isPending
+  // flips false → this effect re-runs and tears the interval down).
+  useEffect(() => {
+    if (!eventId || !isRealEventId(eventId)) return;
+
     const kickoffMs = new Date(kickoff).getTime();
     const withinWindow =
       Number.isFinite(kickoffMs) && kickoffMs - Date.now() <= KICKOFF_WINDOW_MS;
-    if (status === "upcoming" && withinWindow) {
-      interval = setInterval(() => {
-        if (pageIsVisible()) load();
-      }, POLL_MS);
-    } else if (status === "live") {
-      interval = setInterval(() => {
-        if (pageIsVisible()) load();
-      }, LIVE_POLL_MS);
-    }
+
+    let intervalMs: number | null = null;
+    if (status === "live") intervalMs = LIVE_POLL_MS;
+    else if (status === "upcoming" && withinWindow && isPending)
+      intervalMs = POLL_MS;
+    if (intervalMs === null) return;
+
+    const mounted = { current: true };
+    const interval = setInterval(() => {
+      if (!pageIsVisible()) return;
+      void (async () => {
+        const next = await fetchLineups(eventId as string);
+        if (mounted.current) setLineups(next);
+      })();
+    }, intervalMs);
 
     return () => {
       mounted.current = false;
-      if (interval) clearInterval(interval);
+      clearInterval(interval);
     };
-  }, [eventId, status, kickoff]);
+  }, [eventId, status, kickoff, isPending]);
 
   return lineups;
 }
