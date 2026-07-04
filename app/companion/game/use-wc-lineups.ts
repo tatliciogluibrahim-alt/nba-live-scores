@@ -14,6 +14,7 @@ import type { WCLineups } from "../../lib/wc-lineups";
 //
 // Follows the fetch/mounted idiom of useNBADetail.
 
+const LIVE_POLL_MS = 90_000;
 const POLL_MS = 60_000;
 // Only repoll inside the announcement window: XIs land ~1h before kickoff, so
 // we start polling once kickoff is within ~2h and stop the moment they arrive.
@@ -70,8 +71,9 @@ export function useWCLineups(
       const next = await fetchLineups(eventId as string);
       if (!mounted.current) return;
       setLineups(next);
-      // Announced — stop polling.
-      if (next && "teams" in next && interval) {
+      // Pre-kickoff tier only: announced → stop polling. The live tier
+      // keeps its interval (subs keep landing until full time).
+      if (status === "upcoming" && next && "teams" in next && interval) {
         clearInterval(interval);
         interval = null;
       }
@@ -79,9 +81,9 @@ export function useWCLineups(
 
     if (pageIsVisible()) load();
 
-    // Repoll only for an upcoming match whose kickoff is within the window.
-    // Once it flips to live/final the effect re-runs (status dep) and this
-    // branch is skipped, so the single on-mount fetch carries live/final.
+    // Pre-kickoff tier: repoll only while the announcement is pending and
+    // kickoff is within the window. Live tier (D4 6c): repoll every 90s so
+    // substitutions land mid-match; stops when the effect re-runs at final.
     const kickoffMs = new Date(kickoff).getTime();
     const withinWindow =
       Number.isFinite(kickoffMs) && kickoffMs - Date.now() <= KICKOFF_WINDOW_MS;
@@ -89,6 +91,10 @@ export function useWCLineups(
       interval = setInterval(() => {
         if (pageIsVisible()) load();
       }, POLL_MS);
+    } else if (status === "live") {
+      interval = setInterval(() => {
+        if (pageIsVisible()) load();
+      }, LIVE_POLL_MS);
     }
 
     return () => {

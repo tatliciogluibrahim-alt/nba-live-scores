@@ -186,3 +186,63 @@ describe("mapLineups — pending", () => {
     expect(mapLineups({})).toEqual({ pending: true });
   });
 });
+
+// ── Substitutions (D4 6c) — shape verified live 2026-07-03, event 760494 ──
+import { mapLineups as mapLineupsSubs } from "./wc-lineups";
+
+function subFixture() {
+  const starters = (names: string[], subOutIdx: number) =>
+    names.map((n, i) => ({
+      starter: true,
+      jersey: String(i + 1),
+      athlete: { displayName: n },
+      position: { abbreviation: i === 0 ? "G" : "M" },
+      ...(i === subOutIdx
+        ? {
+            subbedOut: true,
+            subbedOutFor: { jersey: "12", athlete: { displayName: "Gio Reyna" } },
+            plays: [{ substitution: true, clock: { displayValue: "62'" } }],
+          }
+        : {}),
+    }));
+  const bench = [
+    {
+      starter: false,
+      jersey: "12",
+      athlete: { displayName: "Gio Reyna" },
+      subbedIn: true,
+      plays: [{ substitution: true, clock: { displayValue: "62'" } }],
+    },
+    { starter: false, jersey: "20", athlete: { displayName: "Unused Bench" } },
+  ];
+  const eleven = ["A Keeper", "B Two", "C Three", "D Four", "E Five", "F Six", "G Seven", "H Eight", "I Nine", "J Ten", "K Eleven"];
+  return {
+    rosters: [
+      { team: { abbreviation: "USA" }, formation: "4-3-3", roster: [...starters(eleven, 5), ...bench] },
+      { team: { abbreviation: "BIH" }, formation: "5-3-2", roster: starters(eleven, -1) },
+    ],
+  };
+}
+
+describe("substitutions", () => {
+  it("marks the subbed-off starter with the play minute", () => {
+    const r = mapLineupsSubs(subFixture() as never);
+    if (!("teams" in r)) throw new Error("expected teams");
+    const usa = r.teams.find((t) => t.code === "USA")!;
+    const off = usa.starters.find((p) => p.subbedOffMinute);
+    expect(off?.subbedOffMinute).toBe("62'");
+  });
+  it("lists entrants under subs with jersey, surname, minute", () => {
+    const r = mapLineupsSubs(subFixture() as never);
+    if (!("teams" in r)) throw new Error("expected teams");
+    const usa = r.teams.find((t) => t.code === "USA")!;
+    expect(usa.subs).toEqual([{ jersey: "12", name: "Reyna", minute: "62'" }]);
+  });
+  it("no subs → empty subs array, no starter marks", () => {
+    const r = mapLineupsSubs(subFixture() as never);
+    if (!("teams" in r)) throw new Error("expected teams");
+    const bih = r.teams.find((t) => t.code === "BIH")!;
+    expect(bih.subs).toEqual([]);
+    expect(bih.starters.every((p) => !p.subbedOffMinute)).toBe(true);
+  });
+});
