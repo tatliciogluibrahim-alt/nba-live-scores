@@ -265,7 +265,11 @@ function NoSpoilersAmbientDot() {
         className="h-1.5 w-1.5 shrink-0 rounded-full"
         style={{ background: "var(--mute-2)" }}
       />
+      {/* Label is desktop-only: at 390 it collided with the centered
+          wordmark (store-shot QA, 2026-07-04). The dot alone carries the
+          ambient state on phones; aria-label carries it for readers. */}
       <span
+        className="hidden md:inline"
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 10,

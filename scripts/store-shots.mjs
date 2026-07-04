@@ -76,6 +76,14 @@ function feed(stage) {
         away: { name: "Paraguay", abbreviation: "PAR", score: 0 },
         broadcasts: ["FS1"], watchLabel: "FS1",
       },
+      {
+        // Numeric id so the Starting XI hook fetches (route-mocked below).
+        id: "760777", date: iso(50 * 60 * 1000), status: "upcoming", statusText: "Upcoming",
+        stage: "Round of 16",
+        home: { name: "Paraguay", abbreviation: "PAR", score: 0 },
+        away: { name: "France", abbreviation: "FRA", score: 0 },
+        broadcasts: ["FOX"], watchLabel: "FOX",
+      },
     ],
   };
 }
@@ -95,12 +103,12 @@ const SHOTS = [
   { n: 5, name: "watching", path: "/watching",
     headline: "Track up to three at once.",
     sub: "A quiet room for the games you are actually watching." },
-  { n: 6, name: "following", path: "/following",
+  { n: 6, name: "following", path: "/following", mixedCircle: true,
     headline: "Alerts exactly as loud as you want.",
     sub: "Quiet, Companion, or Full Details. Per team. Your call." },
-  { n: 7, name: "tournament", path: "/tournament/fifa-world-cup-2026",
-    headline: "Your team's road to the final.",
-    sub: "The bracket, the group, the path. No feeds, no noise." },
+  { n: 7, name: "lineups", path: "/game/760777", lineups: true,
+    headline: "Lineups, an hour before kickoff.",
+    sub: "Starting XI and formations, right on the match page." },
   { n: 8, name: "widgets", mock: "docs/superpowers/design-directions/native-15-sizes.html", crop: ".lrg",
     headline: "At a glance, from your home screen.",
     sub: "Widgets that read like the front page, not a dashboard." },
@@ -157,9 +165,16 @@ async function main() {
         viewport: { width: 390, height: 844 }, deviceScaleFactor: 3,
       });
       const prefs = { ...prefsBase, noSpoilers: !!shot.noSpoilers };
+      const shotFollows = shot.mixedCircle
+        ? [
+            { kind: "team", id: "OKC", alertEnabled: true, alertTier: "all", followedAt: now - 8000 },
+            { kind: "series", id: "IND-OKC", alertEnabled: false, alertTier: "companion", followedAt: now - 7000 },
+            ...follows,
+          ]
+        : follows;
       await context.addInitScript(`try{
         sessionStorage.setItem('nns:wc-preview','1');
-        localStorage.setItem('no-noise:follows:v1', ${JSON.stringify(JSON.stringify(follows))});
+        localStorage.setItem('no-noise:follows:v1', ${JSON.stringify(JSON.stringify(shotFollows))});
         localStorage.setItem('no-noise:pinned:v1', ${JSON.stringify(JSON.stringify(pins))});
         localStorage.setItem('no-noise:prefs:v1', ${JSON.stringify(JSON.stringify(prefs))});
         localStorage.setItem('no-noise-theme','light');
@@ -172,6 +187,18 @@ async function main() {
       await context.route("**/api/preview/world-cup", json(body));
       await context.route("**/api/world-cup", json(body));
       await context.route("**/api/live-scores", json(JSON.stringify({ games: [], seriesGames: [] })));
+      if (shot.lineups) {
+        const xi = (code, formation, names) => ({
+          code, formation, subs: [],
+          starters: names.map(([jersey, name, captain]) => ({ jersey, name, captain: !!captain })),
+        });
+        await context.route("**/api/wc-lineups**", json(JSON.stringify({
+          teams: [
+            xi("FRA", "4-2-3-1", [["16","Maignan"],["02","Koundé"],["04","Upamecano"],["17","Saliba"],["22","T. Hernández"],["08","Tchouaméni"],["14","Camavinga"],["11","Dembélé"],["07","Griezmann",true],["10","Mbappé"],["09","Thuram"]]),
+            xi("PAR", "4-4-2", [["01","Fernández"],["02","Velázquez"],["05","Balbuena"],["03","Alderete"],["13","Alonso"],["16","Villasanti"],["23","Gómez",true],["08","Cubas"],["20","Almirón"],["09","Sanabria"],["19","Enciso"]]),
+          ],
+        })));
+      }
       const page = await context.newPage();
       await page.goto(`${BASE}${shot.path}?preview=wc-day`, { waitUntil: "load", timeout: 45000 });
       await page.waitForTimeout(2600);
