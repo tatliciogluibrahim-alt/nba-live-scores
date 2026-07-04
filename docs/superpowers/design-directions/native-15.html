@@ -1,0 +1,80 @@
+<!doctype html><html><head><meta charset="utf-8"><title>§15 — native surfaces, two treatments</title>
+<style>
+:root{--cream:#f1ead8;--ink:#1a1612;--mute:#8a8072;--line:rgba(26,22,18,.14);--brand:#b4361d;--wc:#1e6b3c;--sage:#e4e6d3;--conk:rgba(241,234,216,.92);--conkd:rgba(241,234,216,.55);--lineonk:rgba(241,234,216,.18)}
+body{background:#e9e2d2;font-family:-apple-system,sans-serif;margin:0;padding:30px;color:var(--ink)}
+h1{font-size:21px;font-weight:800}p.sub{color:#6b6257;font-size:13.5px;max-width:72ch;line-height:1.5}
+h2{font-size:13px;margin:34px 0 10px;text-transform:uppercase;letter-spacing:.1em;font-family:ui-monospace,monospace}
+.row{display:flex;gap:26px;flex-wrap:wrap}
+.opt{background:#f7f2e6;border:1px solid var(--line);padding:16px;width:430px}
+.opt h3{font-size:13px;margin:0 0 3px}.opt p{font-size:12px;color:#6b6257;margin:0 0 12px;line-height:1.45}
+.mono{font-family:ui-monospace,"JetBrains Mono",monospace;letter-spacing:.12em;text-transform:uppercase}
+.la{border-radius:22px;padding:16px 18px;width:378px}
+.la.ink{background:#161210;color:var(--conk)}
+.la.cream{background:var(--cream);color:var(--ink);border:1px solid rgba(26,22,18,.25)}
+.lahead{display:flex;justify-content:space-between;font-size:10px;font-weight:600}
+.laboard{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px}
+.laboard .t{font-size:17px;font-weight:800;letter-spacing:.06em}
+.laboard .s{font-size:40px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:.9}
+.larail{height:2px;margin-top:14px;position:relative}
+.la.ink .larail{background:var(--lineonk)}.la.cream .larail{background:var(--line)}
+.larail .f{position:absolute;left:0;top:0;bottom:0;width:62%;background:var(--wc)}
+.larail .n{position:absolute;left:62%;top:50%;transform:translate(-50%,-50%);width:7px;height:7px;border-radius:50%;background:var(--wc)}
+.lafoot{display:flex;justify-content:space-between;font-size:9px;margin-top:6px}
+.la.ink .dim{color:var(--conkd)}.la.cream .dim{color:var(--mute)}
+.isl{background:#000;border-radius:26px;color:#f1ead8;padding:12px 18px;width:340px}
+.isl .r{display:flex;justify-content:space-between;align-items:center}
+.isl .sc{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+.isl .cd{font-size:13px;font-weight:700;letter-spacing:.08em}
+.isl .mn{font-size:11px;color:#8fbf9f;font-weight:700}
+.wid{width:170px;height:170px;border-radius:24px;padding:14px;box-sizing:border-box}
+.wid.cream{background:var(--cream);border:1px solid rgba(26,22,18,.2)}
+.wid.ink{background:#161210;color:var(--conk)}
+.wid .e{font-size:8.5px;font-weight:700}
+.wid .m{font-size:15px;font-weight:800;margin-top:26px}
+.wid .d{font-size:10px;margin-top:3px}
+.wid .sc{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:14px;line-height:.95}
+.stamp{display:inline-block;border:1px solid;font-size:8.5px;padding:2px 5px;font-weight:700;margin-top:10px}
+.rule{height:2px;background:var(--brand);margin-top:8px}
+</style></head><body>
+<h1>Native surfaces — two treatments each</h1>
+<p class="sub">A = Ink Board: the Live Room register carried to the OS. B = Paper Monument: the Today front page carried to the OS. Both use the locked C4 chrome (vermilion for chrome, green only for live). Pick per surface — mixing is legitimate (e.g. ink Live Activity + paper widgets).</p>
+
+<h2>1 · Live Activity (lock screen)</h2>
+<div class="row">
+<div class="opt"><h3>A — Ink Board</h3><p>Full ink panel: reads as the Live Room slot it is. Max contrast against any wallpaper, score owns the width, rail carries progress. Space: one board row, zero decoration.</p>
+<div class="la ink"><div class="lahead mono"><span class="dim">● Live · Round of 32</span><span style="color:#f1ead8">67'</span></div>
+<div class="laboard"><span class="t mono">CPV</span><span class="s">1–2</span><span class="t mono">ARG</span></div>
+<div class="larail"><div class="f"></div><div class="n"></div></div>
+<div class="lafoot mono dim"><span>Kickoff</span><span>90'</span></div></div></div>
+<div class="opt"><h3>B — Paper Monument</h3><p>Cream card, ink numerals, vermilion masthead rule: the broadsheet on your lock screen. Unmistakably yours next to every other dark widget. Slightly less contrast on light wallpapers.</p>
+<div class="la cream"><div class="lahead mono"><span style="color:var(--brand);font-weight:700">● Live · 67'</span><span class="dim">Round of 32 · FOX</span></div>
+<div class="rule"></div>
+<div class="laboard"><span class="t mono">CPV</span><span class="s">1–2</span><span class="t mono">ARG</span></div>
+<div class="larail"><div class="f"></div><div class="n"></div></div>
+<div class="lafoot mono dim"><span>Kickoff</span><span>90'</span></div></div></div>
+</div>
+
+<h2>2 · Dynamic Island (expanded)</h2>
+<div class="row">
+<div class="opt"><h3>A — Board row</h3><p>Codes flank, score center-heavy, minute in live green. Everything on one baseline: glanceable in the island's tight vertical.</p>
+<div class="isl"><div class="r"><span class="cd mono">CPV</span><span class="sc">1–2</span><span class="cd mono">ARG</span></div>
+<div class="r" style="margin-top:6px"><span class="mn mono">● 67'</span><span style="font-size:9px;letter-spacing:.12em" class="mono dim">ROUND OF 32</span><span class="mn mono" style="visibility:hidden">67'</span></div></div></div>
+<div class="opt"><h3>B — Score forward</h3><p>Score dominates full-width with codes beneath as agate. More drama, one more scan line.</p>
+<div class="isl" style="text-align:center"><div class="sc" style="font-size:32px">1 – 2</div>
+<div class="r" style="margin-top:4px"><span class="cd mono">CPV</span><span class="mn mono">● 67'</span><span class="cd mono">ARG</span></div></div></div>
+</div>
+
+<h2>3 · Home-screen widget (small)</h2>
+<div class="row">
+<div class="opt"><h3>A — Paper agate (upcoming) </h3><p>Cream, mono eyebrow, matchup + day-aware stamp. Sits quiet on the grid like a clipping from the front page.</p>
+<div class="wid cream"><div class="e mono" style="color:var(--wc)">Summer Soccer · Sun</div><div class="rule" style="width:38px"></div>
+<div class="m mono">NOR · BRA</div><div class="d dim" style="color:var(--mute)">4:00 PM · Round of 16</div>
+<span class="stamp mono" style="border-color:var(--line);color:var(--ink)">FOX</span></div></div>
+<div class="opt"><h3>B — Ink live board</h3><p>Flips to ink whenever a tracked game is live: the state IS the color change. Upcoming stays cream (A); live goes ink. Recommended as a pair with A.</p>
+<div class="wid ink"><div class="e mono dim">● Live · 67'</div>
+<div class="m mono" style="margin-top:18px">CPV · ARG</div>
+<div class="sc">1–2</div>
+<div class="larail" style="margin-top:12px"><div class="f"></div></div></div></div>
+</div>
+<p class="sub" style="margin-top:26px">Lock-screen accessory widgets (circular/inline) stay monochrome by OS rule — they inherit whichever grammar you pick for the small widget. Tap targets, data contracts, and update cadence unchanged everywhere; this is a SwiftUI view-layer restyle only.</p>
+</body></html>
