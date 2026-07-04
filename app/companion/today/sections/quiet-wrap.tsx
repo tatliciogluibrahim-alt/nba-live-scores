@@ -52,16 +52,23 @@ export function QuietWrap({
 
   return (
     <>
-      {/* Mobile: System D agate slate — FT stamps + winner emphasis */}
-      <section className="md:hidden">
-        <SecHead name="Quiet wrap" count={wrapCountLabel(items.length)} />
-        {items.map((item, i) => (
-          <QuietWrapAgateRow
-            key={item.id}
-            item={item}
-            idx={padIdx(startIndex + i)}
-          />
-        ))}
+      {/* Mobile: System D agate slate on blush plate. Full-bleed: -mx-4 bleeds
+          to screen edges against the page's px-4 container; inner px-4 realigns
+          content. Padding matches c4 mock (.sec = 18px 18px 6px). */}
+      <section
+        className="md:hidden -mx-4"
+        style={{ background: "var(--plate-wrap)" }}
+      >
+        <div className="px-4 pt-[18px] pb-[6px]">
+          <SecHead name="Quiet wrap" count={wrapCountLabel(items.length)} />
+          {items.map((item, i) => (
+            <QuietWrapAgateRow
+              key={item.id}
+              item={item}
+              idx={padIdx(startIndex + i)}
+            />
+          ))}
+        </div>
       </section>
 
       {/* Desktop: legacy card list, unchanged */}

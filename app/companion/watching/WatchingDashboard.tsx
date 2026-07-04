@@ -133,32 +133,38 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
       {/* Live Room ink field — self-gates to nothing when no pin is live */}
       <LiveRoomField payload={payload} />
 
-      {/* Tracked for later — upcoming pins as agate rows */}
+      {/* Tracked for later — upcoming pins on sage plate. Full-bleed: -mx-4
+          bleeds to screen edges; inner px-4 realigns content. Padding matches
+          c4 mock (.sec = 18px 18px 6px). */}
       {laterItems.length > 0 ? (
-        <section className="mt-2">
-          <SecHead name="Tracked for later" count={String(laterItems.length)} />
-          {laterItems.map((item, i) => (
-            <TrackedAgateRow
-              key={item.id}
-              item={item}
-              idx={String(i + 1).padStart(2, "0")}
-            />
-          ))}
+        <section className="mt-2 -mx-4" style={{ background: "var(--plate-next)" }}>
+          <div className="px-4 pt-[18px] pb-[6px]">
+            <SecHead name="Tracked for later" count={String(laterItems.length)} />
+            {laterItems.map((item, i) => (
+              <TrackedAgateRow
+                key={item.id}
+                item={item}
+                idx={String(i + 1).padStart(2, "0")}
+              />
+            ))}
+          </div>
         </section>
       ) : null}
 
-      {/* Wrapped — finished pins, their own section (winner emphasis + FT
+      {/* Wrapped — finished pins on blush plate (winner emphasis + FT
           stamps unchanged). Index continues after the later section. */}
       {wrappedItems.length > 0 ? (
-        <section className="mt-6">
-          <SecHead name="Wrapped" count={String(wrappedItems.length)} />
-          {wrappedItems.map((item, i) => (
-            <TrackedAgateRow
-              key={item.id}
-              item={item}
-              idx={String(laterItems.length + i + 1).padStart(2, "0")}
-            />
-          ))}
+        <section className="mt-6 -mx-4" style={{ background: "var(--plate-wrap)" }}>
+          <div className="px-4 pt-[18px] pb-[6px]">
+            <SecHead name="Wrapped" count={String(wrappedItems.length)} />
+            {wrappedItems.map((item, i) => (
+              <TrackedAgateRow
+                key={item.id}
+                item={item}
+                idx={String(laterItems.length + i + 1).padStart(2, "0")}
+              />
+            ))}
+          </div>
         </section>
       ) : null}
 

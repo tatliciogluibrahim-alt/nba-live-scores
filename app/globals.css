@@ -62,8 +62,11 @@ html, body {
      active TabBar tick. NOT on stamps (they stay ink-outlined), NOT on body
      content. --plate-next (sage) / --plate-wrap (blush) are the tinted paper
      STOCK the not-now registers sit on (UP NEXT-class → next, WRAPPED-class →
-     wrap); full-bleed stock changes, never boxes. Plates land in D4 Task 3. */
-  --brand:       #b8391f;
+     wrap); full-bleed stock changes, never boxes. Plates land in D4 Task 3.
+     Brand darkened from #b8391f to #b4361d (Task 3 carry-in): index numerals
+     on --plate-wrap (#eddfd0) now clear WCAG AA at 4.61:1 (was 4.41:1).
+     Also passes on --plate-next: 4.76:1, on --cream: 5.02:1. */
+  --brand:       #b4361d;
   --plate-next:  #e4e6d3;
   --plate-wrap:  #eddfd0;
 
