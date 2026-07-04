@@ -93,23 +93,12 @@ export function PullToRefresh({
     }, SNAP_BACK_MS);
   }, []);
 
-
-// App-shell scroller (D4 Task 6d): app routes scroll an inner <main
-// id="nns-scroll"> below md, not the document. Read whichever is live.
-function pageScrollTop(): number {
-  const scroller = document.getElementById("nns-scroll");
-  if (scroller && scroller.scrollHeight > scroller.clientHeight) {
-    return scroller.scrollTop;
-  }
-  return window.scrollY;
-}
-
   const handleTouchStart = useCallback(
     (e: TouchEvent) => {
       if (disabled) return;
       // Only engage at the absolute top of the page. Anything else and
       // the user is just scrolling.
-      if (pageScrollTop() > 0) return;
+      if (window.scrollY > 0) return;
       // Don't try to handle multi-touch (pinch, etc).
       if (e.touches.length !== 1) return;
       // Don't fire if the touch started on an interactive element —
@@ -137,7 +126,7 @@ function pageScrollTop(): number {
       if (phase === "refreshing" || phase === "snapping") return;
       // If the user has scrolled away from the top mid-gesture (shouldn't
       // be possible but defensive), reset.
-      if (pageScrollTop() > 0) {
+      if (window.scrollY > 0) {
         startYRef.current = null;
         setPhase("idle");
         setTranslateY(0);
