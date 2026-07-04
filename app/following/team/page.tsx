@@ -1,5 +1,5 @@
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../companion/game/DetailCrumbs";
 import { TeamPicker } from "../../companion/following/picker/TeamPicker";
 
 export const metadata = {
@@ -10,7 +10,7 @@ export const metadata = {
 export default function FollowTeamPage() {
   return (
     <CompanionFrame>
-      <CrumbBar backHref="/following" backLabel="Following" title="Team" />
+      <DetailCrumbs backHref="/following" backLabel="Following" title="Team" />
       <main className="mx-auto max-w-md px-4 pb-4 pt-1">
         <TeamPicker />
       </main>

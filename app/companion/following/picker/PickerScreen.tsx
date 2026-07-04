@@ -84,8 +84,8 @@ export function PickerScreen({
         {subtitle}
       </p>
 
-      <label className="mb-4 flex items-center gap-2 rounded-[10px] border px-3 py-2"
-        style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+      <label className="mb-4 flex items-center gap-2 border-b px-1 py-2"
+        style={{ borderColor: "var(--rule)", borderBottomWidth: 2 }}
       >
         <svg
           width="14"
@@ -112,7 +112,7 @@ export function PickerScreen({
 
       {grouped.length === 0 ? (
         <p
-          className="rounded-[14px] border px-4 py-6 text-center text-[13px]"
+          className="px-1 py-6 text-[13px]"
           style={{
             background: "var(--paper)",
             borderColor: "var(--line)",
@@ -149,19 +149,15 @@ export function PickerScreen({
                             : `Follow ${opt.primary}`
                         }
                         aria-pressed={following}
-                        className="flex min-h-[56px] w-full items-center gap-3 rounded-[14px] border px-3 py-2 text-left transition active:scale-[0.99]"
-                        style={{
-                          background: following ? "var(--cream-2)" : "var(--paper)",
-                          borderColor: "var(--line)",
-                        }}
+                        className="flex min-h-[56px] w-full items-center gap-3 border-b px-1 py-2 text-left transition active:bg-[var(--paper)]"
+                        style={{ borderColor: "var(--line)" }}
                       >
                         {opt.markLines && opt.markLines.length > 0 ? (
                           <span
                             aria-hidden
-                            className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] leading-none"
+                            className="grid h-9 w-9 shrink-0 place-items-center leading-none"
                             style={{
-                              background: following ? "var(--paper)" : "var(--cream-2)",
-                              color: "var(--ink)",
+                              color: "var(--mute-1)",
                               fontFamily: "var(--font-mono)",
                               // Each line at 10px mono with 1.1
                               // line-height leaves comfortable room
@@ -188,10 +184,9 @@ export function PickerScreen({
                         ) : opt.mark ? (
                           <span
                             aria-hidden
-                            className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px]"
+                            className="grid h-9 w-9 shrink-0 place-items-center"
                             style={{
-                              background: following ? "var(--paper)" : "var(--cream-2)",
-                              color: "var(--ink)",
+                              color: "var(--mute-1)",
                               fontFamily: "var(--font-mono)",
                               fontSize: opt.mark.length > 3 ? 11 : 14,
                               fontWeight: 700,
@@ -221,13 +216,14 @@ export function PickerScreen({
                           ) : null}
                         </span>
                         <span
-                          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase"
+                          className="shrink-0 px-2 py-1 text-[9.5px] uppercase"
                           style={{
+                            fontFamily: "var(--font-mono)",
                             background: following ? "var(--ink)" : "transparent",
-                            color: following ? "var(--cream)" : "var(--mute-1)",
-                            border: following ? "1px solid var(--ink)" : "1px solid var(--line)",
-                            fontWeight: 700,
-                            letterSpacing: "0.06em",
+                            color: following ? "var(--cream)" : "var(--ink)",
+                            border: following ? "1px solid var(--ink)" : "1px solid var(--ink)",
+                            fontWeight: 600,
+                            letterSpacing: "0.08em",
                           }}
                         >
                           {following ? "Following" : "Follow"}
