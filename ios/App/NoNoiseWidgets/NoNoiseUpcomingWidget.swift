@@ -1,29 +1,154 @@
 import WidgetKit
 import SwiftUI
 import AppIntents
+import UIKit
 
-// Home-screen widget: upcoming followed games + the moment line.
+// Home-screen widgets: the "paper agate" front page (§15 System D).
 // Reads the App Group snapshot the app writes (WidgetBridge plugin).
 //
-// Calm by design — NO live scores. iOS throttles widget refreshes, so
-// the Live Activity owns "live"; this widget owns "what's next". It
-// updates when the app writes a fresh snapshot (WidgetCenter reload) and
-// on a slow timeline refresh.
+// Two widget kinds live here:
+//   • NoNoiseUpcomingWidget  (S / M / L) — the front page. Leads with a
+//     live followed game when one is on, otherwise what's next. Small
+//     flips to the ink board when live; medium/large show the agate slate.
+//   • NoNoiseLiveScoreWidget (S / M)     — the dedicated live surface.
 //
-// Uses SF system fonts (Bricolage doesn't load in extensions) and the
-// cream chassis with literal colors so the brand identity holds in both
-// light and dark home screens. Reuses Color(hex:) + NNMarkView from the
-// shared widget sources.
+// Home-screen widgets can't tick in real time (iOS throttles refreshes
+// and they get no pushes), so any live score shows the LATEST KNOWN value
+// with an "as of" time — never a confident-but-stale lie. The Live
+// Activity owns true real-time.
+//
+// SF system fonts only (Bricolage doesn't load in extensions): .monospaced
+// for codes/labels, .rounded for numerals. This is a view-layer restyle —
+// providers, timelines, intents, deep links, and update cadence unchanged.
 
-private let wCream = Color(hex: "f1ead8")
-private let wInk   = Color(hex: "1a1612")
-private let wInk2  = Color(hex: "4a4030")
-private let wMute  = Color(hex: "6f6552")
-private let wLine  = Color(hex: "ddd2ba")
+// MARK: - Paper agate palette
+//
+// Widgets DESIGN their own dark: the paper surface goes warm-dark and text
+// goes cream (mirroring the app's designed dark), never an auto-invert.
+// Chrome is vermilion; green appears only on live. Color(hex:) is declared
+// in NoNoiseGameAttributes.swift (member of this target).
+private let wSurface = Color(lightHex: "f1ead8", darkHex: "1d1812")  // paper / warm-dark
+private let wInk     = Color(lightHex: "1a1612", darkHex: "efe6d2")  // primary text
+private let wMute    = Color(lightHex: "6b6257", darkHex: "8a7d62")  // secondary text
+private let wLine    = Color(lightHex: "d8cdb4", darkHex: "3a3226")  // hairline
+private let wBrand   = Color(lightHex: "b4361d", darkHex: "cf5636")  // vermilion chrome
+private let wLive    = Color(lightHex: "1e6b3c", darkHex: "46a06a")  // green, live only
 
-// The medium widget is a single-game editorial hero; the next button
-// pages one game at a time (a carousel of heroes — widgets can't scroll).
+// Ink board (the live small): always warm-black — the state IS the color
+// change, so it does not adapt to the system scheme.
+private let bBg    = Color(hex: "161210")
+private let bText  = Color(hex: "efe6d2")
+private let bMute  = Color(hex: "9c8f72")
+private let bGreen = Color(hex: "46a06a")
+
+// Adaptive color from two literal hexes (light / dark). Uses a dynamic
+// UIColor so .containerBackground and text follow the system appearance
+// without us reading the environment in every leaf view.
+extension Color {
+    init(lightHex: String, darkHex: String) {
+        self = Color(UIColor { trait in
+            UIColor(Color(hex: trait.userInterfaceStyle == .dark ? darkHex : lightHex))
+        })
+    }
+}
+
+// The medium widget's dormant paging offset (kept for the interactive
+// "next" intent below). One game per page.
 private let PAGE = 1
+
+// MARK: - Snapshot parsing helpers
+
+private func dotMatchup(_ m: String) -> String {
+    m.replacingOccurrences(of: " vs ", with: " \u{00b7} ")
+     .replacingOccurrences(of: " VS ", with: " \u{00b7} ")
+}
+
+// "8:00 PM \u{00b7} Game 7" → (time: "8:00 PM", round: "Game 7").
+private func detailParts(_ d: String) -> (time: String, round: String) {
+    let parts = d.components(separatedBy: " \u{00b7} ")
+    let time = parts.first ?? d
+    let round = parts.count > 1 ? parts.dropFirst().joined(separator: " \u{00b7} ") : ""
+    return (time, round)
+}
+
+// "NBA \u{00b7} Sat" → "Sat".
+private func dayFrom(_ eyebrow: String) -> String {
+    let parts = eyebrow.components(separatedBy: " \u{00b7} ")
+    return parts.count > 1 ? (parts.last ?? "") : ""
+}
+
+// Day-aware stamp: "SAT 5:00 PM" (day from the eyebrow, time from detail).
+private func stampFor(_ g: WidgetUpcoming) -> String {
+    let time = detailParts(g.detail).time
+    let day = dayFrom(g.eyebrow)
+    return day.isEmpty ? time.uppercased() : "\(day.uppercased()) \(time)"
+}
+
+private func roundFor(_ g: WidgetUpcoming) -> String { detailParts(g.detail).round }
+
+private func sportTag(_ s: String) -> String {
+    switch s.lowercased() {
+    case "nba": return "NBA"
+    case "nfl": return "NFL"
+    default:    return "WORLD CUP"
+    }
+}
+
+private func countLabel(sport: String, n: Int) -> String {
+    let wc = sport.lowercased() == "wc" || sport.lowercased() == "world cup"
+    let noun = wc ? (n == 1 ? "match" : "matches") : (n == 1 ? "game" : "games")
+    return "\(n) \(noun)"
+}
+
+// Best-effort live rail fill. The snapshot contract carries no progress
+// value, so we derive one ONLY from a soccer minute ("67'") and never
+// fabricate a position for other sports (nil → a faint full "live"
+// underline that claims nothing).
+private func railFill(_ status: String) -> Double? {
+    let t = status.trimmingCharacters(in: .whitespaces)
+    guard t.contains("'") else { return nil }
+    let m = Int(t.prefix { $0.isNumber }) ?? 0
+    guard m > 0, m <= 130 else { return nil }
+    return min(1.0, Double(m) / 95.0)
+}
+
+private func liveScorePair(_ live: WidgetLive) -> String {
+    live.redacted ? "\u{2022}\u{2022}\u{2022}" : "\(live.away.score)\u{2013}\(live.home.score)"
+}
+
+private func accScore(_ t: WidgetLiveTeam, redacted: Bool) -> String {
+    redacted ? "\u{2022}" : "\(t.score)"
+}
+
+private func asOfText(_ generatedAt: Double) -> String {
+    guard generatedAt > 0 else { return "" }
+    let d = Date(timeIntervalSince1970: generatedAt / 1000)
+    let f = DateFormatter()
+    f.dateFormat = "h:mm a"
+    return "as of \(f.string(from: d))"
+}
+
+// Ordered "front page" slate: live games first, then upcoming.
+private enum AgateItem {
+    case live(WidgetLive)
+    case up(WidgetUpcoming)
+}
+private func agateItems(_ snap: WidgetSnapshot) -> [AgateItem] {
+    (snap.live ?? []).map(AgateItem.live) + snap.upcoming.map(AgateItem.up)
+}
+private func anyLive(_ items: [AgateItem]) -> Bool {
+    items.contains { if case .live = $0 { return true } else { return false } }
+}
+private func headerLeft(_ snap: WidgetSnapshot) -> String {
+    if let l = snap.live?.first { return "\(sportTag(l.sport)) \u{00b7} TODAY" }
+    if let g = snap.upcoming.first { return g.eyebrow.uppercased() }
+    return "NO NOISE"
+}
+private func leadSport(_ snap: WidgetSnapshot) -> String {
+    snap.live?.first?.sport ?? snap.upcoming.first?.sport ?? "wc"
+}
+
+// MARK: - Timeline plumbing (unchanged)
 
 struct UpcomingEntry: TimelineEntry {
     let date: Date
@@ -47,22 +172,19 @@ struct UpcomingProvider: TimelineProvider {
             startIndex: WidgetStore.readIndex()
         )
         // 45-minute auto-refresh (~32/day) keeps the widget inside
-        // WidgetKit's ~40-70 background-reload daily budget. A 15-min
-        // policy requested ~96/day, so iOS silently dropped the excess
-        // and the widget ran SLOWER than intended. Freshness while the
-        // app is open is handled by the explicit WidgetCenter reload the
-        // app fires on every snapshot write; this background cadence only
-        // covers slow day-rollover. WidgetStore.read() is a UserDefaults
-        // read, no network.
+        // WidgetKit's ~40-70 background-reload daily budget. Freshness while
+        // the app is open comes from the explicit WidgetCenter reload the
+        // app fires on every snapshot write; this cadence covers slow
+        // day-rollover. WidgetStore.read() is a UserDefaults read, no network.
         let next = Calendar.current.date(byAdding: .minute, value: 45, to: Date())
             ?? Date().addingTimeInterval(45 * 60)
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
 }
 
-// Interactive "next page" button (iOS 17+). Advances the medium widget's
-// paging offset by one page, wrapping at the end. WidgetKit reloads the
-// timeline automatically after the intent runs.
+// Interactive "next page" intent (iOS 17+). Retained so the App Group
+// paging state and its contract stay intact; the §15 multi-row agate
+// layouts show several games at once, so no visible paging control renders.
 struct AdvanceUpcomingIntent: AppIntent {
     static var title: LocalizedStringResource = "Show more games"
 
@@ -91,19 +213,22 @@ struct NoNoiseUpcomingWidget: Widget {
 }
 
 // Deep-link the whole widget to the currently-shown game so a tap opens
-// that match's detail page (not just Today). Falls back to /app when
-// there's no game to show. The "›" advance button captures its own tap,
-// so paging still works without triggering this link.
+// that match's detail page (not just Today). Falls back to /app.
 private func widgetDeepLink(_ entry: UpcomingEntry) -> URL? {
-    guard let snap = entry.snapshot, !snap.upcoming.isEmpty else {
+    guard let snap = entry.snapshot else {
+        return URL(string: "https://nonoisescores.app/app")
+    }
+    if let href = snap.live?.first?.href {
+        return URL(string: "https://nonoisescores.app\(href)")
+    }
+    guard !snap.upcoming.isEmpty else {
         return URL(string: "https://nonoisescores.app/app")
     }
     let idx = min(max(0, entry.startIndex), snap.upcoming.count - 1)
-    let href = snap.upcoming[idx].href // e.g. "/game/123"
-    return URL(string: "https://nonoisescores.app\(href)")
+    return URL(string: "https://nonoisescores.app\(snap.upcoming[idx].href)")
 }
 
-// MARK: - Views
+// MARK: - Upcoming widget
 
 struct UpcomingWidgetView: View {
     @Environment(\.widgetFamily) var family
@@ -112,15 +237,18 @@ struct UpcomingWidgetView: View {
     private var isAccessory: Bool {
         family == .accessoryRectangular || family == .accessoryInline
     }
+    private var hasLive: Bool { !(entry.snapshot?.live?.isEmpty ?? true) }
+
+    // Small flips to the ink board when live → warm-black surface. Every
+    // other case stays paper. Accessories are OS-tinted → transparent.
+    private var surface: AnyShapeStyle {
+        if isAccessory { return AnyShapeStyle(.clear) }
+        if family == .systemSmall && hasLive { return AnyShapeStyle(bBg) }
+        return AnyShapeStyle(wSurface)
+    }
 
     var body: some View {
-        if isAccessory {
-            // Lock screen / StandBy: the system tints these, so no cream
-            // chassis — transparent background, rely on hierarchy.
-            content.containerBackground(.clear, for: .widget)
-        } else {
-            content.containerBackground(wCream, for: .widget)
-        }
+        content.containerBackground(surface, for: .widget)
     }
 
     @ViewBuilder private var content: some View {
@@ -131,13 +259,13 @@ struct UpcomingWidgetView: View {
             AccessoryInlineBody(snap: entry.snapshot)
         default:
             if let snap = entry.snapshot, !snap.empty,
-               !(snap.upcoming.isEmpty && snap.moment == nil) {
+               !(snap.upcoming.isEmpty && (snap.live?.isEmpty ?? true) && snap.moment == nil) {
                 if family == .systemSmall {
                     SmallBody(snap: snap, startIndex: entry.startIndex)
                 } else if family == .systemLarge {
-                    LargeBody(snap: snap, startIndex: entry.startIndex)
+                    LargeBody(snap: snap)
                 } else {
-                    MediumBody(snap: snap, startIndex: entry.startIndex)
+                    MediumBody(snap: snap)
                 }
             } else {
                 EmptyBody()
@@ -146,15 +274,7 @@ struct UpcomingWidgetView: View {
     }
 }
 
-// MARK: - Lock-screen accessory bodies
-//
-// Live score when a followed game is on, otherwise the next match. The
-// score hides under No-Spoilers. System-tinted on the lock screen, so we
-// lean on hierarchy, not color.
-
-private func accScore(_ t: WidgetLiveTeam, redacted: Bool) -> String {
-    redacted ? "\u{2022}" : "\(t.score)"
-}
+// MARK: - Lock-screen accessory bodies (OS-tinted, monochrome by rule)
 
 private struct AccessoryRectBody: View {
     let snap: WidgetSnapshot?
@@ -203,340 +323,511 @@ private struct AccessoryInlineBody: View {
     }
 }
 
-// Small: one game at a time. Shares the paging index with medium, and
-// gets a tiny "›" advance button so you can swap which game shows (it's
-// otherwise the soonest). Tapping the rest of the widget opens the app.
+// MARK: - Small (paper agate, or ink board when live)
+
 private struct SmallBody: View {
     let snap: WidgetSnapshot
     let startIndex: Int
 
-    var body: some View {
-        let count = snap.upcoming.count
-        let idx = count > 0 ? min(max(0, startIndex), count - 1) : 0
-        let g: WidgetUpcoming? = count > 0 ? snap.upcoming[idx] : nil
-        let canPage = count > 1
+    private var soonest: WidgetUpcoming? {
+        guard !snap.upcoming.isEmpty else { return nil }
+        let idx = min(max(0, startIndex), snap.upcoming.count - 1)
+        return snap.upcoming[idx]
+    }
 
+    var body: some View {
+        if let live = snap.live?.first {
+            InkBoardSmall(live: live, generatedAt: snap.generatedAt)
+        } else if let g = soonest {
+            PaperSmall(game: g)
+        } else if let m = snap.moment {
+            MomentSmall(moment: m)
+        } else {
+            EmptyBody()
+        }
+    }
+}
+
+// Paper agate small (mock 3A): green sport-tag eyebrow, vermilion rule,
+// mono matchup, time \u{00b7} round, broadcast stamp. Clean — no brand footer.
+private struct PaperSmall: View {
+    let game: WidgetUpcoming
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 4) {
-                if let g {
-                    Text(g.eyebrow.uppercased())
-                        .font(.system(size: 10, weight: .semibold))
-                        .tracking(0.5)
-                        .foregroundStyle(Color(hex: g.accentHex))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
-                Spacer()
-                NNMarkView().frame(width: 18, height: 18)
-            }
-            Spacer()
-            if let g {
-                Text(g.matchup)
-                    .font(.system(size: 19, weight: .heavy))
-                    .foregroundStyle(wInk)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.8)
-                Text(g.detail)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(wMute)
-                    .lineLimit(1)
-                    .padding(.top, 3)
-                HStack(spacing: 6) {
-                    if let b = g.broadcast, !b.isEmpty {
-                        BroadcastPill(text: b, accentHex: g.accentHex)
-                    }
-                    Spacer()
-                    if canPage {
-                        Button(intent: AdvanceUpcomingIntent()) {
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(wInk)
-                                .frame(width: 20, height: 20)
-                                .background(
-                                    Circle().fill(wCream)
-                                        .overlay(Circle().stroke(wLine, lineWidth: 1))
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.top, 5)
-            } else if let m = snap.moment {
-                Text(m.text)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(wInk)
-                    .lineLimit(3)
+            Text(game.eyebrow.uppercased())
+                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                .tracking(0.6)
+                .foregroundStyle(wLive)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Rectangle().fill(wBrand).frame(width: 38, height: 2).padding(.top, 6)
+            Spacer(minLength: 8)
+            Text(dotMatchup(game.matchup))
+                .font(.system(size: 16, weight: .heavy, design: .monospaced))
+                .tracking(0.4)
+                .foregroundStyle(wInk)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+            Text(game.detail)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(wMute)
+                .lineLimit(1)
+                .padding(.top, 3)
+            Spacer(minLength: 8)
+            if let b = game.broadcast, !b.isEmpty {
+                StampLabel(text: b)
             }
         }
     }
 }
 
-// Medium: a single-game editorial hero (matching the design
-// exploration). The "Next ›" button pages through the user's upcoming
-// games one at a time — a carousel of heroes, since widgets can't
-// scroll. Falls back to the moment line when nothing is upcoming.
+// Ink board small (mock 3B): warm-black, green LIVE \u{00b7} minute, mono matchup,
+// big tabular score, live rail, and an "as of" honesty line.
+private struct InkBoardSmall: View {
+    let live: WidgetLive
+    let generatedAt: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 5) {
+                Circle().fill(bGreen).frame(width: 5, height: 5)
+                Text("LIVE \u{00b7} \(live.statusLine)")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .tracking(0.8)
+                    .foregroundStyle(bGreen)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            Spacer(minLength: 6)
+            Text("\(live.away.code) \u{00b7} \(live.home.code)")
+                .font(.system(size: 14, weight: .heavy, design: .monospaced))
+                .tracking(0.6)
+                .foregroundStyle(bText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(liveScorePair(live))
+                .font(.system(size: 30, weight: .heavy))
+                .monospacedDigit()
+                .foregroundStyle(bText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .padding(.top, 2)
+            Spacer(minLength: 8)
+            InkRail(fill: railFill(live.statusLine))
+            if !asOfText(generatedAt).isEmpty {
+                Text(asOfText(generatedAt))
+                    .font(.system(size: 8, weight: .medium, design: .monospaced))
+                    .foregroundStyle(bMute)
+                    .padding(.top, 4)
+            }
+        }
+    }
+}
+
+// Small fallback: nothing upcoming, just the moment line, kept calm.
+private struct MomentSmall: View {
+    let moment: WidgetMoment
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("NO NOISE")
+                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                .tracking(0.8)
+                .foregroundStyle(wMute)
+            Rectangle().fill(wBrand).frame(width: 38, height: 2).padding(.top, 6)
+            Spacer()
+            Text(moment.text)
+                .font(.system(size: 15, weight: .heavy))
+                .foregroundStyle(wInk)
+                .lineLimit(4)
+                .minimumScaleFactor(0.8)
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Medium (the strip: two agate rows)
+
 private struct MediumBody: View {
     let snap: WidgetSnapshot
-    let startIndex: Int
 
     var body: some View {
-        let count = snap.upcoming.count
-        // Clamp the paging offset (follows can shrink between tap + reload).
-        let idx = count > 0 ? min(max(0, startIndex), count - 1) : 0
-        let game: WidgetUpcoming? = count > 0 ? snap.upcoming[idx] : nil
-        let canPage = count > 1
+        let items = agateItems(snap)
+        let shown = Array(items.prefix(2))
+        let total = (snap.live?.count ?? 0) + snap.upcoming.count
 
         VStack(alignment: .leading, spacing: 0) {
-            // Header: NN mark + eyebrow, with a "2 / 4" position on the right.
-            HStack(spacing: 8) {
-                NNMarkView().frame(width: 22, height: 22)
-                if let g = game {
-                    Text(g.eyebrow.uppercased())
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(1.0)
-                        .foregroundStyle(Color(hex: g.accentHex))
-                        .lineLimit(1)
-                } else {
-                    Text("NO NOISE")
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(1.2)
+            WEyebrow(left: headerLeft(snap),
+                     right: countLabel(sport: leadSport(snap), n: total))
+            VermilionRule().padding(.top, 6).padding(.bottom, 2)
+
+            ForEach(Array(shown.enumerated()), id: \.offset) { i, item in
+                AgateRow(item: item, index: i + 1, border: i < shown.count - 1)
+            }
+
+            Spacer(minLength: 4)
+
+            HStack(alignment: .bottom, spacing: 6) {
+                if anyLive(shown), !asOfText(snap.generatedAt).isEmpty {
+                    Text(asOfText(snap.generatedAt))
+                        .font(.system(size: 8, weight: .medium, design: .monospaced))
                         .foregroundStyle(wMute)
                 }
                 Spacer()
-                if canPage {
-                    Text("\(idx + 1) / \(count)")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(wMute)
-                        .monospacedDigit()
-                }
-            }
-
-            Spacer(minLength: 6)
-
-            // Hero: big matchup + detail, or the moment when nothing's up.
-            if let g = game {
-                Text(g.matchup)
-                    .font(.system(size: 27, weight: .heavy))
-                    .foregroundStyle(wInk)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.7)
-                HStack(spacing: 6) {
-                    Text(g.detail)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(wMute)
-                        .lineLimit(1)
-                    if let b = g.broadcast, !b.isEmpty {
-                        BroadcastPill(text: b, accentHex: g.accentHex)
-                    }
-                }
-                .padding(.top, 4)
-            } else if let m = snap.moment {
-                Text(m.text)
-                    .font(.system(size: 22, weight: .heavy))
-                    .foregroundStyle(wInk)
-                    .lineLimit(3)
-                    .minimumScaleFactor(0.8)
-                if let d = m.detail {
-                    Text(d)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(wMute)
-                        .lineLimit(1)
-                        .padding(.top, 3)
-                }
-            }
-
-            Spacer(minLength: 6)
-
-            // Footer: the moment line (when a game is shown) + Next button.
-            HStack(alignment: .center, spacing: 8) {
-                if game != nil, let m = snap.moment {
-                    Text(m.text)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(wInk2)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 4)
-                if canPage {
-                    Button(intent: AdvanceUpcomingIntent()) {
-                        HStack(spacing: 4) {
-                            Text("Next").font(.system(size: 11, weight: .bold))
-                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold))
-                        }
-                        .foregroundStyle(wInk)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(
-                            Capsule().fill(wCream).overlay(Capsule().stroke(wLine, lineWidth: 1))
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
+                BrandFooter()
             }
         }
     }
 }
 
-// Large (4×4): the Next-up hero, bigger. One game — the soonest of the
-// user's follows — filling the canvas. Originally this was a hero + a
-// rotating "this week" list, but paging reshuffled games between the
-// hero slot and the list, and the same matchup (Game 1 + Game 2 of a
-// series) appeared twice — it read as chaos on a big tile. A single,
-// calm hero is the on-brand answer. The Next button still cycles your
-// follows; nothing reshuffles beneath it.
+// MARK: - Large (the mini front page: lead board + agate slate)
+
 private struct LargeBody: View {
     let snap: WidgetSnapshot
-    let startIndex: Int
 
     var body: some View {
-        let count = snap.upcoming.count
-        let idx = count > 0 ? min(max(0, startIndex), count - 1) : 0
-        let game: WidgetUpcoming? = count > 0 ? snap.upcoming[idx] : nil
-        let canPage = count > 1
+        let items = agateItems(snap)
+        let lead = items.first
+        let rows = Array(items.dropFirst().prefix(3))
+        let total = (snap.live?.count ?? 0) + snap.upcoming.count
 
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-                NNMarkView().frame(width: 24, height: 24)
-                if let g = game {
-                    Text(g.eyebrow.uppercased())
-                        .font(.system(size: 12, weight: .semibold))
-                        .tracking(1.0)
-                        .foregroundStyle(Color(hex: g.accentHex))
-                        .lineLimit(1)
-                } else {
-                    Text("NO NOISE")
-                        .font(.system(size: 12, weight: .semibold))
-                        .tracking(1.2)
-                        .foregroundStyle(wMute)
-                }
-                Spacer()
-                if canPage {
-                    Text("\(idx + 1) / \(count)")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(wMute)
-                        .monospacedDigit()
-                }
-            }
+            WEyebrow(left: headerLeft(snap),
+                     right: countLabel(sport: leadSport(snap), n: total))
+            VermilionRule().padding(.top, 6).padding(.bottom, 2)
+
+            leadView(lead)
 
             Spacer(minLength: 10)
 
-            if let g = game {
-                Text(g.matchup)
-                    .font(.system(size: 44, weight: .heavy))
-                    .foregroundStyle(wInk)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.6)
-                HStack(spacing: 8) {
-                    Text(g.detail)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(wMute)
-                        .lineLimit(1)
-                    if let b = g.broadcast, !b.isEmpty {
-                        BroadcastPill(text: b, accentHex: g.accentHex)
-                    }
-                }
-                .padding(.top, 8)
-            } else if let m = snap.moment {
-                Text(m.text)
-                    .font(.system(size: 30, weight: .heavy))
-                    .foregroundStyle(wInk)
-                    .lineLimit(3)
-                    .minimumScaleFactor(0.7)
-                if let d = m.detail {
-                    Text(d)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(wMute)
-                        .lineLimit(1)
-                        .padding(.top, 4)
-                }
+            ForEach(Array(rows.enumerated()), id: \.offset) { i, item in
+                AgateRow(item: item, index: i + 2, border: i < rows.count - 1)
             }
 
-            Spacer(minLength: 10)
+            Spacer(minLength: 4)
 
-            if canPage {
-                HStack {
-                    Spacer()
-                    Button(intent: AdvanceUpcomingIntent()) {
-                        HStack(spacing: 4) {
-                            Text("Next").font(.system(size: 12, weight: .bold))
-                            Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold))
-                        }
-                        .foregroundStyle(wInk)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .background(
-                            Capsule().fill(wCream).overlay(Capsule().stroke(wLine, lineWidth: 1))
-                        )
-                    }
-                    .buttonStyle(.plain)
+            HStack { Spacer(); BrandFooter() }
+        }
+    }
+
+    @ViewBuilder private func leadView(_ lead: AgateItem?) -> some View {
+        switch lead {
+        case .live(let l):
+            LeadBoard(live: l, generatedAt: snap.generatedAt)
+        case .up(let g):
+            UpcomingLead(game: g)
+        case nil:
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Quiet for now.")
+                    .font(.system(size: 20, weight: .heavy))
+                    .foregroundStyle(wMute)
+                if let m = snap.moment {
+                    Text(m.text)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(wMute)
+                        .lineLimit(2)
                 }
             }
+            .padding(.vertical, 6)
         }
     }
 }
 
-// Small "where it's airing" pill, tinted with the sport accent.
-private struct BroadcastPill: View {
-    let text: String
-    let accentHex: String
+// The live lead: codes flank a big tabular score, a green LIVE \u{00b7} minute
+// line with the honest "as of" time, then the live rail.
+private struct LeadBoard: View {
+    let live: WidgetLive
+    let generatedAt: Double
 
     var body: some View {
-        let accent = Color(hex: accentHex)
+        VStack(spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(live.away.code)
+                    .font(.system(size: 16, weight: .heavy, design: .monospaced))
+                    .tracking(0.6)
+                    .foregroundStyle(wInk)
+                Spacer()
+                Text(liveScorePair(live))
+                    .font(.system(size: 34, weight: .heavy))
+                    .monospacedDigit()
+                    .foregroundStyle(wInk)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Spacer()
+                Text(live.home.code)
+                    .font(.system(size: 16, weight: .heavy, design: .monospaced))
+                    .tracking(0.6)
+                    .foregroundStyle(wInk)
+            }
+            HStack(spacing: 6) {
+                Circle().fill(wLive).frame(width: 5, height: 5)
+                Text("LIVE \u{00b7} \(live.statusLine)")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .tracking(0.6)
+                    .foregroundStyle(wLive)
+                Spacer()
+                if !asOfText(generatedAt).isEmpty {
+                    Text(asOfText(generatedAt))
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundStyle(wMute)
+                }
+            }
+            WRail(fill: railFill(live.statusLine))
+        }
+    }
+}
+
+// The not-live lead: soonest match as a calm monument (matchup + stamp).
+private struct UpcomingLead: View {
+    let game: WidgetUpcoming
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(dotMatchup(game.matchup))
+                .font(.system(size: 30, weight: .heavy, design: .monospaced))
+                .tracking(0.5)
+                .foregroundStyle(wInk)
+                .lineLimit(1)
+                .minimumScaleFactor(0.55)
+            HStack(spacing: 6) {
+                Text(roundFor(game).isEmpty ? "Up next" : roundFor(game))
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(wMute)
+                Spacer()
+                StampLabel(text: stampFor(game))
+            }
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+// MARK: - Agate rows
+
+private struct AgateRow: View {
+    let item: AgateItem
+    let index: Int
+    var border: Bool = true
+
+    var body: some View {
+        switch item {
+        case .live(let l): AgateLiveRow(index: index, live: l, showBorder: border)
+        case .up(let g):   AgateUpcomingRow(index: index, game: g, showBorder: border)
+        }
+    }
+}
+
+private struct AgateUpcomingRow: View {
+    let index: Int
+    let game: WidgetUpcoming
+    var showBorder: Bool = true
+
+    var body: some View {
+        let round = roundFor(game)
+        VStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                RowIndex(index)
+                Text(dotMatchup(game.matchup))
+                    .font(.system(size: 13.5, weight: .heavy, design: .monospaced))
+                    .tracking(0.4)
+                    .foregroundStyle(wInk)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Spacer(minLength: 6)
+                if !round.isEmpty {
+                    Text(round)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(wMute)
+                        .lineLimit(1)
+                        .layoutPriority(-1)
+                }
+                StampLabel(text: stampFor(game))
+            }
+            .padding(.vertical, 7)
+            if showBorder { Rectangle().fill(wLine).frame(height: 1) }
+        }
+    }
+}
+
+private struct AgateLiveRow: View {
+    let index: Int
+    let live: WidgetLive
+    var showBorder: Bool = true
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                RowIndex(index)
+                Text("\(live.away.code) \u{00b7} \(live.home.code)")
+                    .font(.system(size: 13.5, weight: .heavy, design: .monospaced))
+                    .tracking(0.4)
+                    .foregroundStyle(wInk)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Spacer(minLength: 6)
+                HStack(spacing: 4) {
+                    Circle().fill(wLive).frame(width: 5, height: 5)
+                    Text(live.statusLine)
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundStyle(wLive)
+                        .lineLimit(1)
+                }
+                Text(liveScorePair(live))
+                    .font(.system(size: 14, weight: .heavy))
+                    .monospacedDigit()
+                    .foregroundStyle(wInk)
+                    .lineLimit(1)
+            }
+            .padding(.vertical, 7)
+            if showBorder { Rectangle().fill(wLine).frame(height: 1) }
+        }
+    }
+}
+
+private struct RowIndex: View {
+    let value: Int
+    init(_ v: Int) { value = v }
+    var body: some View {
+        Text(String(format: "%02d", value))
+            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+            .foregroundStyle(wBrand)
+    }
+}
+
+// MARK: - Shared chrome
+
+private struct WEyebrow: View {
+    let left: String
+    let right: String
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(left)
+                .font(.system(size: 9.5, weight: .bold, design: .monospaced))
+                .tracking(0.8)
+                .foregroundStyle(wLive)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Spacer(minLength: 6)
+            Text(right)
+                .font(.system(size: 9.5, weight: .bold, design: .monospaced))
+                .tracking(0.8)
+                .foregroundStyle(wBrand)
+                .lineLimit(1)
+        }
+    }
+}
+
+private struct VermilionRule: View {
+    var body: some View { Rectangle().fill(wBrand).frame(height: 2) }
+}
+
+// Bordered mono stamp (broadcast / day-time), matching the agate `.st`.
+private struct StampLabel: View {
+    let text: String
+    var body: some View {
         Text(text.uppercased())
-            .font(.system(size: 9, weight: .bold))
-            .tracking(0.5)
-            .foregroundStyle(accent)
-            .padding(.horizontal, 6)
+            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+            .foregroundStyle(wInk)
+            .padding(.horizontal, 5)
             .padding(.vertical, 2)
-            .background(Capsule().fill(accent.opacity(0.14)))
+            .overlay(Rectangle().stroke(wLine, lineWidth: 1))
+            .fixedSize()
+    }
+}
+
+// Live progress rail (adaptive paper surface).
+private struct WRail: View {
+    var fill: Double?
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Rectangle().fill(wLine).frame(height: 2)
+                if let f = fill {
+                    Rectangle().fill(wLive)
+                        .frame(width: max(3, geo.size.width * f), height: 2)
+                } else {
+                    Rectangle().fill(wLive.opacity(0.5)).frame(height: 2)
+                }
+            }
+        }
+        .frame(height: 2)
+    }
+}
+
+// Live rail on the ink board (dark surface).
+private struct InkRail: View {
+    var fill: Double?
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Rectangle().fill(Color.white.opacity(0.14)).frame(height: 2)
+                if let f = fill {
+                    Rectangle().fill(bGreen)
+                        .frame(width: max(3, geo.size.width * f), height: 2)
+                } else {
+                    Rectangle().fill(bGreen.opacity(0.6)).frame(height: 2)
+                }
+            }
+        }
+        .frame(height: 2)
+    }
+}
+
+// Brand footer (medium + large): the mark + mono "NO NOISE", bottom-right.
+private struct BrandFooter: View {
+    var body: some View {
+        HStack(spacing: 5) {
+            BrandGlyph()
+            Text("NO NOISE")
+                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                .tracking(0.8)
+                .foregroundStyle(wMute)
+        }
+    }
+}
+
+// No Noise Scores glyph: ink rounded square + cream pill + rust dot.
+// Brand identity → LITERAL hex, so the mark never flips in dark mode
+// (the cream pill + rust dot carry it on the warm-dark surface).
+struct BrandGlyph: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 3.2).fill(Color(hex: "1a1612"))
+            RoundedRectangle(cornerRadius: 1).fill(Color(hex: "faf5e8"))
+                .frame(width: 10, height: 4.6)
+            Circle().fill(Color(hex: "b85a2a"))
+                .frame(width: 1.6, height: 1.6)
+                .offset(x: 3.8, y: -1.2)
+        }
+        .frame(width: 14, height: 14)
     }
 }
 
 // Empty: nothing followed / nothing upcoming.
 private struct EmptyBody: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            NNMarkView().frame(width: 24, height: 24)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("NO NOISE")
+                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                .tracking(0.8)
+                .foregroundStyle(wMute)
+            Rectangle().fill(wBrand).frame(width: 38, height: 2).padding(.top, 6)
             Spacer()
             Text("Follow a team, country, or tournament to see what's next.")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(wInk)
                 .lineLimit(4)
+            Spacer()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-// No Noise Scores brand glyph: dark chip + cream pill + rust pip.
-//
-// Previously lived in NoNoiseLiveActivity.swift; moved here when that
-// file was rewritten for the Stadium Panel so the upcoming widget's
-// brand mark doesn't go missing again. Color(hex: String) is declared
-// in NoNoiseGameAttributes.swift (member of this target).
-struct NNMarkView: View {
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 7)
-                .fill(Color(hex: "1a1612"))
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color(hex: "faf5e8"))
-                .frame(width: 16, height: 7)
-            Circle()
-                .fill(Color(hex: "e55b2a"))
-                .frame(width: 4, height: 4)
-                .offset(x: 5, y: 0)
-        }
-    }
-}
-
 // MARK: - Live-score widget (home screen)
 //
-// Shows the latest known score of a followed game in progress. iOS
-// throttles widget refreshes and they get no pushes, so this is NOT
-// real-time like the Live Activity — it shows the score as of the last
-// snapshot the app wrote, with an "as of" time so it never reads as a
-// confident-but-stale lie. Score hides under No-Spoilers (entry.redacted).
-// Lives in this file (already in the widget target) so no new Xcode file
-// to add to the extension.
+// The latest known score of a followed game in progress. Not real-time
+// (throttled, no pushes), so every view carries the "as of" time so it
+// never reads as a confident-but-stale lie. Score hides under No-Spoilers.
 
 struct LiveScoreEntry: TimelineEntry {
     let date: Date
@@ -579,132 +870,81 @@ struct NoNoiseLiveScoreWidget: Widget {
     }
 }
 
-private func asOfText(_ generatedAt: Double) -> String {
-    guard generatedAt > 0 else { return "" }
-    let d = Date(timeIntervalSince1970: generatedAt / 1000)
-    let f = DateFormatter()
-    f.dateFormat = "h:mm a"
-    return "as of \(f.string(from: d))"
-}
-
-private func lsScore(_ t: WidgetLiveTeam, redacted: Bool) -> String {
-    redacted ? "\u{2022}\u{2022}\u{2022}" : "\(t.score)"
-}
-
 struct LiveScoreWidgetView: View {
     @Environment(\.widgetFamily) var family
     let entry: LiveScoreEntry
 
+    private var live: [WidgetLive] { entry.snapshot?.live ?? [] }
+
+    // Small goes ink board when live; medium stays paper agate.
+    private var surface: AnyShapeStyle {
+        if family == .systemSmall && !live.isEmpty { return AnyShapeStyle(bBg) }
+        return AnyShapeStyle(wSurface)
+    }
+
     var body: some View {
-        content.containerBackground(wCream, for: .widget)
+        content.containerBackground(surface, for: .widget)
     }
 
     @ViewBuilder private var content: some View {
-        let live = entry.snapshot?.live ?? []
         let at = entry.snapshot?.generatedAt ?? 0
         if live.isEmpty {
             EmptyLiveBody()
         } else if family == .systemMedium {
-            MediumLiveBody(live: Array(live.prefix(2)), generatedAt: at)
+            MediumLiveBody(live: Array(live.prefix(2)), sport: live[0].sport, generatedAt: at)
         } else {
-            SmallLiveBody(game: live[0], generatedAt: at)
-        }
-    }
-}
-
-private struct SmallLiveBody: View {
-    let game: WidgetLive
-    let generatedAt: Double
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(game.statusLine.uppercased())
-                    .font(.system(size: 10, weight: .semibold))
-                    .tracking(0.5)
-                    .foregroundStyle(Color(hex: game.accentHex))
-                    .lineLimit(1)
-                Spacer()
-                NNMarkView().frame(width: 18, height: 18)
-            }
-            Spacer()
-            scoreRow(code: game.away.code, score: lsScore(game.away, redacted: game.redacted))
-            scoreRow(code: game.home.code, score: lsScore(game.home, redacted: game.redacted))
-            Spacer()
-            if !asOfText(generatedAt).isEmpty {
-                Text(asOfText(generatedAt))
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(wMute)
-            }
-        }
-    }
-
-    private func scoreRow(code: String, score: String) -> some View {
-        HStack {
-            Text(code)
-                .font(.system(size: 17, weight: .heavy))
-                .foregroundStyle(wInk)
-            Spacer()
-            Text(score)
-                .font(.system(size: 22, weight: .heavy))
-                .foregroundStyle(wInk)
-                .monospacedDigit()
+            InkBoardSmall(live: live[0], generatedAt: at)
         }
     }
 }
 
 private struct MediumLiveBody: View {
     let live: [WidgetLive]
+    let sport: String
     let generatedAt: Double
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("LIVE")
-                    .font(.system(size: 10, weight: .semibold))
-                    .tracking(0.8)
-                    .foregroundStyle(wMute)
-                Spacer()
+        VStack(alignment: .leading, spacing: 0) {
+            WEyebrow(left: "\(sportTag(sport)) \u{00b7} LIVE",
+                     right: countLabel(sport: sport, n: live.count))
+            VermilionRule().padding(.top, 6).padding(.bottom, 2)
+
+            ForEach(Array(live.enumerated()), id: \.offset) { i, g in
+                AgateLiveRow(index: i + 1, live: g, showBorder: i < live.count - 1)
+            }
+
+            Spacer(minLength: 4)
+
+            HStack(alignment: .bottom, spacing: 6) {
                 if !asOfText(generatedAt).isEmpty {
                     Text(asOfText(generatedAt))
-                        .font(.system(size: 9, weight: .medium))
+                        .font(.system(size: 8, weight: .medium, design: .monospaced))
                         .foregroundStyle(wMute)
                 }
-                NNMarkView().frame(width: 16, height: 16)
+                Spacer()
+                BrandFooter()
             }
-            ForEach(live, id: \.id) { g in
-                HStack {
-                    Text("\(g.away.code) \(lsScore(g.away, redacted: g.redacted))\u{2013}\(lsScore(g.home, redacted: g.redacted)) \(g.home.code)")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(wInk)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                    Spacer()
-                    Text(g.statusLine)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color(hex: g.accentHex))
-                }
-            }
-            Spacer(minLength: 0)
         }
     }
 }
 
 private struct EmptyLiveBody: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Spacer()
-                NNMarkView().frame(width: 18, height: 18)
-            }
+        VStack(alignment: .leading, spacing: 0) {
+            Text("NO NOISE")
+                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                .tracking(0.8)
+                .foregroundStyle(wMute)
+            Rectangle().fill(wBrand).frame(width: 38, height: 2).padding(.top, 6)
             Spacer()
             Text("No live games")
-                .font(.system(size: 15, weight: .bold))
+                .font(.system(size: 15, weight: .heavy))
                 .foregroundStyle(wInk)
             Text("We'll show the score when a game you follow is on.")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(wMute)
                 .lineLimit(2)
+                .padding(.top, 2)
             Spacer()
         }
     }
