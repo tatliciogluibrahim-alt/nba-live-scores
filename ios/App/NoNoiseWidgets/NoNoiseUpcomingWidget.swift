@@ -23,16 +23,18 @@ import UIKit
 
 // MARK: - Paper agate palette
 //
-// Widgets DESIGN their own dark: the paper surface goes warm-dark and text
-// goes cream (mirroring the app's designed dark), never an auto-invert.
-// Chrome is vermilion; green appears only on live. Color(hex:) is declared
-// in NoNoiseGameAttributes.swift (member of this target).
-private let wSurface = Color(lightHex: "f1ead8", darkHex: "1d1812")  // paper / warm-dark
-private let wInk     = Color(lightHex: "1a1612", darkHex: "efe6d2")  // primary text
-private let wMute    = Color(lightHex: "6b6257", darkHex: "8a7d62")  // secondary text
-private let wLine    = Color(lightHex: "d8cdb4", darkHex: "3a3226")  // hairline
-private let wBrand   = Color(lightHex: "b4361d", darkHex: "cf5636")  // vermilion chrome
-private let wLive    = Color(lightHex: "1e6b3c", darkHex: "46a06a")  // green, live only
+// The resting widget is ALWAYS paper — literal colors, like the BrandMark.
+// Device QA (2026-07-04): the designed-dark variant made resting widgets ink
+// in system dark mode, which killed the locked "cream at rest, ink only when
+// live" pair — the live flip IS the signal, so rest never goes dark. Brand
+// law agrees: light default, never auto-flip. Color(hex:) is declared in
+// NoNoiseGameAttributes.swift (member of this target).
+private let wSurface = Color(hex: "f1ead8")  // paper, always
+private let wInk     = Color(hex: "1a1612")  // primary text
+private let wMute    = Color(hex: "6b6257")  // secondary text
+private let wLine    = Color(hex: "d8cdb4")  // hairline
+private let wBrand   = Color(hex: "b4361d")  // vermilion chrome
+private let wLive    = Color(hex: "1e6b3c")  // green, live only
 
 // Ink board (the live small): always warm-black — the state IS the color
 // change, so it does not adapt to the system scheme.
@@ -40,17 +42,6 @@ private let bBg    = Color(hex: "161210")
 private let bText  = Color(hex: "efe6d2")
 private let bMute  = Color(hex: "9c8f72")
 private let bGreen = Color(hex: "46a06a")
-
-// Adaptive color from two literal hexes (light / dark). Uses a dynamic
-// UIColor so .containerBackground and text follow the system appearance
-// without us reading the environment in every leaf view.
-extension Color {
-    init(lightHex: String, darkHex: String) {
-        self = Color(UIColor { trait in
-            UIColor(Color(hex: trait.userInterfaceStyle == .dark ? darkHex : lightHex))
-        })
-    }
-}
 
 // The medium widget's dormant paging offset (kept for the interactive
 // "next" intent below). One game per page.
@@ -489,23 +480,37 @@ private struct LargeBody: View {
     var body: some View {
         let items = agateItems(snap)
         let lead = items.first
-        let rows = Array(items.dropFirst().prefix(3))
+        let rows = Array(items.dropFirst().prefix(4))
         let total = (snap.live?.count ?? 0) + snap.upcoming.count
+        let hidden = max(0, total - 1 - rows.count)
 
+        // Content is top-anchored and tight (lead flows straight into the
+        // slate); ONE flexible spacer pushes the brand footer to the bottom.
+        // Device QA 2026-07-04: two flexible spacers spread short content
+        // across the full height and left dead zones mid-widget.
         VStack(alignment: .leading, spacing: 0) {
             WEyebrow(left: headerLeft(snap),
                      right: countLabel(sport: leadSport(snap), n: total))
             VermilionRule().padding(.top, 6).padding(.bottom, 2)
 
             leadView(lead)
-
-            Spacer(minLength: 10)
+                .padding(.bottom, 10)
 
             ForEach(Array(rows.enumerated()), id: \.offset) { i, item in
                 AgateRow(item: item, index: i + 2, border: i < rows.count - 1)
             }
 
-            Spacer(minLength: 4)
+            // No silent caps: if the day holds more than fits, say so.
+            if hidden > 0 {
+                Text("+\(hidden) more today")
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .kerning(1.2)
+                    .textCase(.uppercase)
+                    .foregroundStyle(wMute)
+                    .padding(.top, 8)
+            }
+
+            Spacer(minLength: 6)
 
             HStack { Spacer(); BrandFooter() }
         }
