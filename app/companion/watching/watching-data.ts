@@ -230,14 +230,12 @@ export function buildWatchingPayload({
   return { items, stalePins, liveCount, closestLive };
 }
 
-// ── System D mobile copy helpers (D2 Task 5) ──────────────────────────
+// ── System D copy helpers (D2 Task 5) ─────────────────────────────────
 
-/** Mobile pagehead meta line (System D). Mono caps, no trailing period —
- *  the broadsheet register wants a stamp, not a sentence. `live` drives the
- *  breathing dot. Derives from the SAME status buckets as
- *  buildWatchingSummary (the desktop sentence) so the two presentations of
- *  the same tracked set never disagree. Spoiler-safe: timing only, never a
- *  winner or a margin. */
+/** Pagehead meta line (System D) — one helper for both widths (D4b). Mono
+ *  caps, no trailing period — the broadsheet register wants a stamp, not a
+ *  sentence. `live` drives the breathing dot. Spoiler-safe: timing only,
+ *  never a winner or a margin. */
 export function buildWatchingMeta(
   items: Pick<PinnedItem, "status">[],
   staleCount: number
@@ -273,6 +271,19 @@ export function buildWatchingMeta(
     return { text: final === 1 ? "1 GAME WRAPPED" : "ALL WRAPPED", live: false };
   }
   return { text: `${upcoming} UPCOMING · ${final} WRAPPED`, live: false };
+}
+
+/** Parse a "75 – 87" score string into [75, 87]. Tolerant: an en-dash,
+ *  hyphen, or em-dash all parse. Returns [null, null] for upcoming pins (no
+ *  score yet) or unexpected shapes. One export shared by the Live Room ink
+ *  rows and the tracked agate rows so the two never drift. */
+export function parseScoreLine(
+  line: string | null
+): [number | null, number | null] {
+  if (!line) return [null, null];
+  const m = line.match(/(\d+)\s*[–\-—]\s*(\d+)/);
+  if (!m) return [null, null];
+  return [Number(m[1]), Number(m[2])];
 }
 
 /** Compact right-edge stamp for a tracked (agate / board) row. Upcoming
