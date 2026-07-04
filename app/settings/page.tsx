@@ -1,5 +1,5 @@
 import { CompanionFrame } from "../companion/frame/CompanionFrame";
-import { CrumbBar } from "../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../companion/game/DetailCrumbs";
 import { SettingsClient } from "../companion/settings/SettingsClient";
 
 export const metadata = {
@@ -10,7 +10,7 @@ export const metadata = {
 export default function SettingsPage() {
   return (
     <CompanionFrame desktopNav="detail">
-      <CrumbBar
+      <DetailCrumbs
         backHref="/following"
         backLabel="Following"
         title="Alerts & Notifications"

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
-import { CrumbBar } from "../../companion/frame/CrumbBar";
+import { DetailCrumbs } from "../../companion/game/DetailCrumbs";
 import { SeriesClient } from "../../companion/series/SeriesClient";
 
 // Dynamic per-series title. Series ids are `${abbrA}-${abbrB}`
@@ -40,7 +40,7 @@ export default async function SeriesPage({
 
   return (
     <CompanionFrame desktopNav="detail">
-      <CrumbBar backHref="/following" backLabel="Following" title="Series" />
+      <DetailCrumbs backHref="/following" backLabel="Following" title="Series" />
       <SeriesClient seriesKey={id} />
     </CompanionFrame>
   );

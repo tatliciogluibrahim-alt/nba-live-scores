@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
-import { ScoreModule } from "../atoms/ScoreModule";
 import { HeroMoment } from "../moments/HeroMoment";
 import { SevenDotStrip } from "../series/SevenDotStrip";
 import { HIDDEN_CAPTIONS, isSpoilery, safeText } from "../spoiler/safe-text";
@@ -14,9 +13,7 @@ import {
   useReveal,
 } from "../spoiler/reveal";
 import { useNoSpoilers } from "../providers";
-import { WatchLine } from "../watch/WatchLine";
 import type { Game, TeamPerformers, PlayerStatLine } from "../../nba/types";
-import { PinControls } from "./PinControls";
 import { TrackControl } from "./TrackControl";
 import { deriveHero, deriveSeriesContext, deriveSeriesDots } from "./nba-moments";
 import { HighlightsStack } from "./HighlightsStack";
@@ -116,9 +113,6 @@ export function NBALiveCompanion({
     freshLeaders.length > 0 ? { ...game, leaders: freshLeaders } : game;
 
   const status = isLive ? "live" : isUpcoming ? "upcoming" : "final";
-  const statusLabel = isLive && game.statusText
-    ? game.statusText.toUpperCase()
-    : status.toUpperCase();
 
   const contextLine = isUpcoming
     ? new Date(game.date).toLocaleString(undefined, {
@@ -257,21 +251,6 @@ export function NBALiveCompanion({
   // main column stays focused. Kept pixel-identical until D4. The mobile
   // System D column below renders its own recomposed versions.
   const effectivePerformers = previewPerformers ?? detail?.performers ?? [];
-  const periodScore = isUpcoming ? null : <PeriodScoreLine game={game} />;
-  const highlights =
-    isUpcoming || game.status === "final" ? null : (
-      <HighlightsStack game={gameWithFreshLeaders} />
-    );
-  const performers =
-    !isUpcoming && effectivePerformers.length > 0 ? (
-      <TopPerformers
-        performers={effectivePerformers}
-        gameId={game.id}
-        awayCode={game.away.abbreviation}
-        subject={subject}
-        live={isLive}
-      />
-    ) : null;
 
   // ── Mobile System D reference sections ────────────────────────────────────
   const hasPerformers = !isUpcoming && effectivePerformers.length > 0;
@@ -351,19 +330,6 @@ export function NBALiveCompanion({
     />
   );
 
-  const heroBlock =
-    isUpcoming ? null : game.status === "final" && hasRecap ? null : (
-      <div className="mt-4">
-        <HeroMoment
-          eyebrow={hero.eyebrow}
-          headline={hero.headline}
-          context={hero.context}
-          accent="var(--nba)"
-          live={hero.live}
-          surface={isLive ? "var(--nba-soft)" : undefined}
-        />
-      </div>
-    );
 
   const catchBlock = (() => {
     const showCatchMeUp =
@@ -412,8 +378,8 @@ export function NBALiveCompanion({
         {game.away.name} vs {game.home.name}
       </h1>
 
-      {/* ══════════ MOBILE — System D (md:hidden) ══════════ */}
-      <div className="-mx-4 md:hidden">
+      {/* ══════════ System D composition — all widths (D4b: seam deleted) ══════════ */}
+      <div className="-mx-4">
         <Monument
           sport="nba"
           rung={rung}
@@ -508,109 +474,6 @@ export function NBALiveCompanion({
         </div>
       </div>
 
-      {/* ══════════ DESKTOP — legacy layout, pixel-preserved (hidden md:grid) ══════════ */}
-      <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_300px] md:gap-6 md:items-start">
-        <div>
-      {/* Big editorial matchup — Bricolage 700, mute center dot, full team
-          names. aria-hidden: the sr-only h1 above carries the heading. */}
-      <div
-        aria-hidden
-        style={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 700,
-          fontSize: 44,
-          lineHeight: 0.96,
-          letterSpacing: "-0.025em",
-          color: "var(--ink)",
-        }}
-      >
-        {game.away.abbreviation}
-        <span style={{ color: "var(--mute-1)", fontWeight: 400, padding: "0 6px" }}>
-          ·
-        </span>
-        {game.home.abbreviation}
-      </div>
-      <p
-        aria-hidden
-        className="mt-1.5 text-[14px] leading-snug"
-        style={{ color: "var(--mute-1)", fontWeight: 500 }}
-      >
-        {game.away.name} vs {game.home.name}
-      </p>
-
-      {/* ── Scoreboard module — Stadium Panel primitive ─────────────────── */}
-      <div
-        className="mt-4 rounded-[14px] border px-4 py-4"
-        style={{
-          background: isLive ? "var(--nba-soft)" : "var(--paper)",
-          borderColor: "var(--line)",
-          ...({ viewTransitionName: `score-${game.id}` } as React.CSSProperties),
-        }}
-      >
-        <ScoreModule
-          eyebrow={series.safeLine ? `NBA · ${series.safeLine}` : "NBA"}
-          away={{ code: game.away.abbreviation, name: game.away.name }}
-          home={{ code: game.home.abbreviation, name: game.home.name }}
-          awayScore={isUpcoming ? null : game.away.score}
-          homeScore={isUpcoming ? null : game.home.score}
-          status={status}
-          statusLabel={statusLabel}
-          contextLine={contextLine}
-          spoilerSubject={subject}
-          gameId={game.id}
-          size="lg"
-          hideMatchup
-          progress={
-            isUpcoming
-              ? undefined
-              : {
-                  value: progress,
-                  sport: "nba",
-                  accent: "var(--nba)",
-                }
-          }
-        />
-      </div>
-
-      {revealBlock}
-      {seriesBlock}
-      {stakesBlock}
-      {heroBlock}
-      {catchBlock}
-      {recapBlock}
-
-      {/* ── Broadcast (single canonical line) ─────────────────────────── */}
-      {channel ? (
-        <div className="mt-5">
-          <WatchLine channel={channel} ariaSubject={subject} />
-        </div>
-      ) : null}
-
-      {/* ── Pin / Watching (PinControls carries the footnote) ─────────── */}
-      <PinControls
-        pinned={pinned}
-        onPin={onPin}
-        onUnpin={onUnpin}
-        subject={subject}
-        gameStatus={status}
-        className="mt-3"
-      />
-        </div>
-
-        {/* ── Right rail (desktop md+ only) ──────────────────────────────
-            Sticky reference column: per-quarter scoring + performers + live
-            highlights. Only renders the wrapper when there's something to
-            show so an upcoming game doesn't leave an empty rail. */}
-        {periodScore || highlights || performers ? (
-          <aside className="mt-5 hidden md:mt-0 md:block">
-            <div className="sticky top-4 space-y-4">
-              {periodScore}
-              {performers}
-              {highlights}
-            </div>
-          </aside>
-        ) : null}
-      </div>
      </GameSpoilerScope>
     </main>
   );

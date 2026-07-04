@@ -34,7 +34,7 @@ export function DetailCrumbs({
     <>
       {/* Mobile — System D masthead crumb */}
       <header
-        className="flex items-baseline justify-between md:hidden"
+        className="flex items-baseline justify-between"
         style={{
           paddingTop: "max(env(safe-area-inset-top), 14px)",
           paddingRight: "18px",
@@ -73,14 +73,6 @@ export function DetailCrumbs({
       </header>
 
       {/* Desktop — legacy CrumbBar, pixel-preserved */}
-      <div className="hidden md:block">
-        <CrumbBar
-          backHref={backHref}
-          backLabel={backLabel}
-          title={title}
-          trailing={trailing}
-        />
-      </div>
     </>
   );
 }

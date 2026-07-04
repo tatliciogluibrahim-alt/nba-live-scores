@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
-import { ScoreModule } from "../atoms/ScoreModule";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
-import { HeroMoment } from "../moments/HeroMoment";
 import { Spoiler } from "../spoiler/Spoiler";
-import { RevealResultsButton } from "../spoiler/RevealResultsButton";
 import { safeText } from "../spoiler/safe-text";
 import {
   GameSpoilerScope,
@@ -14,8 +11,6 @@ import {
   useReveal,
 } from "../spoiler/reveal";
 import { useFollows, useNoSpoilers } from "../providers";
-import { WatchLine } from "../watch/WatchLine";
-import Link from "next/link";
 import type { WCGameLite, WCMatchEventLite } from "../today/today-data";
 import type { LiveActivityStartInput } from "../native/live-activity";
 import { deriveSubline } from "../native/live-activity-subline";
@@ -24,7 +19,6 @@ import { InkField } from "../system/InkField";
 import { SecHead } from "../system/SecHead";
 import { AgateRow } from "../system/AgateRow";
 import { rungFor, peakEligible } from "../system/register";
-import { PinControls } from "./PinControls";
 import { TrackControl } from "./TrackControl";
 import { WCShareModal } from "../share/WCShareModal";
 import { StartingXI, LineupsAreInRow } from "./StartingXI";
@@ -97,10 +91,6 @@ export function WCGameDetail({
   // Soccer status labels. "HT" (halftime), "FT" (full time), "90'+3"
   // style strings come from the feed; we surface them verbatim when
   // present, fall back to generic tier labels otherwise.
-  const statusLabel =
-    isLive && game.statusText
-      ? game.statusText.toUpperCase()
-      : status.toUpperCase();
 
   // Soccer-bespoke context line.
   const contextLine = isUpcoming
@@ -225,94 +215,7 @@ export function WCGameDetail({
   // move to a sticky right rail so the main column stays focused on the moment
   // (scoreboard, hero, watch, pin). Mobile uses the System D ink field above,
   // so these render only inside the desktop grid.
-  const matchEventsSection =
-    matchEvents.length > 0 ? (
-      <section>
-        <div className="mb-2 flex items-center gap-3">
-          <Eyebrow>Match events</Eyebrow>
-          <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-        </div>
-        <ul className="space-y-1.5">
-          {matchEvents.map((event, index) => {
-            // Event hierarchy: goals / penalties / red cards are the match
-            // story and get the full card. Yellow cards are routine, so
-            // they drop to a light row (no border/fill) and stop visually
-            // competing with goals.
-            const isMajor =
-              event.type === "goal" ||
-              event.type === "pen_goal" ||
-              event.type === "own_goal" ||
-              event.type === "red_card";
-            return (
-            <li
-              key={`${event.minute}-${event.type}-${event.playerName}-${index}`}
-              className={
-                isMajor ? "rounded-[14px] border px-3 py-2.5" : "px-3 py-1"
-              }
-              style={
-                isMajor
-                  ? { background: "var(--paper)", borderColor: "var(--line)" }
-                  : undefined
-              }
-            >
-              {noSpoilers ? (
-                <p
-                  className="text-[13px]"
-                  style={{ color: "var(--ink)", fontWeight: 700 }}
-                >
-                  <Spoiler ariaSubject={subject} gameId={game.id}>
-                    {formatEventText(event, game)}
-                  </Spoiler>
-                </p>
-              ) : (
-                <MatchEventRow event={event} game={game} />
-              )}
-            </li>
-            );
-          })}
-        </ul>
-      </section>
-    ) : null;
 
-  const highlightsSection =
-    !isUpcoming && derivedHighlights.length > 0 ? (
-      <section>
-        <div className="mb-2 flex items-center gap-3">
-          <Eyebrow>Highlights</Eyebrow>
-          <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-        </div>
-        <ul className="space-y-2">
-          {derivedHighlights.map((h, i) => (
-            <li
-              key={i}
-              className="rounded-[14px] border px-3 py-3"
-              style={{
-                background: "var(--paper)",
-                borderColor: "var(--line)",
-              }}
-            >
-              <Eyebrow>{h.eyebrow}</Eyebrow>
-              <p
-                className="mt-1 text-[14px] leading-snug"
-                style={{
-                  color: "var(--ink)",
-                  fontWeight: 700,
-                  letterSpacing: "-0.005em",
-                }}
-              >
-                {h.spoilery && noSpoilers ? (
-                  <Spoiler ariaSubject={subject} gameId={game.id}>
-                    {h.body}
-                  </Spoiler>
-                ) : (
-                  h.body
-                )}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </section>
-    ) : null;
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-4xl md:pt-2">
@@ -324,8 +227,8 @@ export function WCGameDetail({
         {game.away.name} vs {game.home.name}
       </h1>
 
-      {/* ══════════ MOBILE — System D (md:hidden) ══════════ */}
-      <div className="-mx-4 md:hidden">
+      {/* ══════════ System D composition — all widths (D4b: seam deleted) ══════════ */}
+      <div className="-mx-4">
         <Monument
           sport="wc"
           rung={rung}
@@ -439,179 +342,6 @@ export function WCGameDetail({
             </button>
           </div>
         ) : null}
-      </div>
-
-      {/* ══════════ DESKTOP — legacy layout, pixel-preserved (hidden md:grid) ══════════ */}
-      <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_300px] md:gap-6 md:items-start">
-       <div>
-      {/* Big editorial matchup — Bricolage 700, mute center dot, full
-          team names (Watching · Game handoff). aria-hidden: the sr-only h1
-          above carries the heading. */}
-      <div
-        aria-hidden
-        style={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 700,
-          fontSize: 44,
-          lineHeight: 0.96,
-          letterSpacing: "-0.025em",
-          color: "var(--ink)",
-        }}
-      >
-        {game.away.abbreviation}
-        <span style={{ color: "var(--mute-1)", fontWeight: 400, padding: "0 6px" }}>
-          ·
-        </span>
-        {game.home.abbreviation}
-      </div>
-      <p
-        aria-hidden
-        className="mt-1.5 text-[14px] leading-snug"
-        style={{ color: "var(--mute-1)", fontWeight: 500 }}
-      >
-        {game.away.name} vs {game.home.name}
-      </p>
-
-      {/* ── Scoreboard ──────────────────────────────────────────────── */}
-      <div
-        className="mt-4 rounded-[14px] border px-4 py-4"
-        style={{
-          background: isLive ? "var(--wc-soft)" : "var(--paper)",
-          borderColor: "var(--line)",
-        }}
-      >
-        <ScoreModule
-          eyebrow={game.stage ? `Summer Soccer · ${game.stage}` : "Summer Soccer"}
-          away={{ code: game.away.abbreviation, name: game.away.name }}
-          home={{ code: game.home.abbreviation, name: game.home.name }}
-          awayScore={isUpcoming ? null : game.away.score}
-          homeScore={isUpcoming ? null : game.home.score}
-          status={status}
-          statusLabel={statusLabel}
-          contextLine={contextLine}
-          spoilerSubject={subject}
-          gameId={game.id}
-          size="lg"
-          hideMatchup
-          // Game Pulse rail — same lock-screen parity element as the NBA
-          // detail. WC uses the green accent + KICKOFF/90' rail. Live =
-          // minute progress; final = settled filled rail. Upcoming omits.
-          progress={
-            isUpcoming
-              ? undefined
-              : {
-                  value: progress,
-                  sport: "wc",
-                  accent: "var(--wc)",
-                }
-          }
-        />
-      </div>
-
-      {/* One reveal for the whole match — flips the score, match events,
-          and highlights at once. Finished/live games under No-Spoilers. */}
-      {!isUpcoming ? (
-        <div className="mt-3">
-          <RevealResultsButton
-            gameId={game.id}
-            kind={isLive ? "live" : "final"}
-          />
-        </div>
-      ) : null}
-
-      {/* ── Hero moment ──────────────────────────────────────────────── */}
-      <div className="mt-3">
-        <HeroMoment
-          eyebrow={hero.eyebrow}
-          headline={hero.headline}
-          context={hero.context}
-          accent="var(--wc)"
-          live={hero.live}
-          surface={isLive ? "var(--wc-soft)" : undefined}
-          muted={game.status === "final"}
-        />
-      </div>
-
-      {/* ── Both countries — group context + jump into each country's
-          page. Gives an upcoming match (which has no events/highlights
-          yet) somewhere to go: group, path, and fixtures per side. ── */}
-      <section className="mt-4">
-        <div className="mb-2 flex items-center gap-3">
-          <Eyebrow color="var(--wc)">
-            {game.group ? `Group ${game.group}` : "Summer Soccer"}
-          </Eyebrow>
-          <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {[game.away, game.home].map((team) => (
-            <Link
-              key={team.abbreviation}
-              href={`/country/${team.abbreviation}`}
-              aria-label={`Open ${team.name}`}
-              className="rounded-[14px] border px-3 py-3 transition active:scale-[0.98]"
-              style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-            >
-              <p
-                className="text-[15px] leading-tight"
-                style={{ color: "var(--ink)", fontWeight: 700 }}
-              >
-                {team.name}
-              </p>
-              <p
-                className="mt-1 text-[11px]"
-                style={{ color: "var(--mute-1)", fontWeight: 500 }}
-              >
-                Group, path & matches →
-              </p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Broadcast (bottom group: broadcast → pin → footnote) ──────── */}
-      {channel ? (
-        <div className="mt-4">
-          <WatchLine channel={channel} ariaSubject={subject} />
-        </div>
-      ) : null}
-
-      {/* ── Pin / Watching (PinControls carries the footnote) ─────────── */}
-      <PinControls
-        pinned={pinned}
-        onPin={onPin}
-        onUnpin={onUnpin}
-        subject={subject}
-        gameStatus={status}
-        className="mt-3"
-      />
-
-      {/* Share — a calm card with the score/stage + nonoisescores.app, the
-          organic growth artifact. Hidden under No-Spoilers so a share
-          never leaks the result the user is hiding. */}
-      {!noSpoilers ? (
-        <button
-          type="button"
-          onClick={() => setShareOpen(true)}
-          className="mt-3 inline-flex min-h-[40px] items-center gap-1.5 px-1 text-[13px] transition active:scale-[0.99]"
-          style={{ color: "var(--mute-1)", fontWeight: 600 }}
-        >
-          Share this match
-          <span aria-hidden>→</span>
-        </button>
-      ) : null}
-       </div>
-
-       {/* ── Right rail (desktop md+ only) ────────────────────────────
-           Sticky reference column: match events + highlights. Wrapper
-           only renders when there's something to show. */}
-       {matchEventsSection || highlightsSection ? (
-         <aside className="mt-5 hidden md:mt-0 md:block">
-           <div className="sticky top-4 space-y-4">
-             {matchEventsSection}
-             {highlightsSection}
-           </div>
-         </aside>
-       ) : null}
       </div>
 
       {/* Share modal — mounted once for both breakpoints. */}
