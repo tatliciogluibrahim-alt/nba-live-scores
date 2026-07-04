@@ -361,7 +361,7 @@ function FollowingMobile({
           className="mt-2 uppercase"
           style={{ ...MOBILE_META_STYLE, color: "var(--mute-2)" }}
         >
-          Some overlap. You still get one alert per game.
+          Some overlap. You still get one alert per event.
         </p>
       ) : null}
 
@@ -693,7 +693,7 @@ function FollowingDesktop({
             className="mt-2 uppercase"
             style={{ ...MOBILE_META_STYLE, color: "var(--mute-2)" }}
           >
-            Some overlap. You still get one alert per game.
+            Some overlap. You still get one alert per event.
           </p>
         ) : null}
 

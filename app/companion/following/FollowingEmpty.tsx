@@ -85,9 +85,10 @@ function EmptyMomentRow({ moment }: { moment: FollowMoment }) {
         </span>
       </span>
 
-      {/* Right: coming-soon / concluded stamp, or mono → for live moments. */}
-      {isComingSoon ? (
-        <Stamp text="Coming Aug 2026" variant="outline" />
+      {/* Right: coming-soon / concluded stamp, or mono → for live moments.
+          The coming-soon label reads from the moment (single source). */}
+      {moment.comingSoon ? (
+        <Stamp text={moment.comingSoon.label} variant="outline" />
       ) : isConcluded ? (
         <Stamp text="Season wrapped" variant="outline" />
       ) : (

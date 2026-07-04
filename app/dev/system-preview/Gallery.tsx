@@ -741,7 +741,6 @@ function TierLegendPreview() {
 /** Static agate row for the empty-state moment list (mirrors EmptyMomentRow
  *  in FollowingEmpty.tsx, gallery-safe: no router Link, no hooks). */
 function GalleryEmptyMomentRow({ moment }: { moment: FollowMoment }) {
-  const isComingSoon = Boolean(moment.comingSoon);
   return (
     <div
       style={{
@@ -792,8 +791,8 @@ function GalleryEmptyMomentRow({ moment }: { moment: FollowMoment }) {
           {moment.description}
         </span>
       </span>
-      {isComingSoon ? (
-        <Stamp text="Coming Aug 2026" variant="outline" />
+      {moment.comingSoon ? (
+        <Stamp text={moment.comingSoon.label} variant="outline" />
       ) : (
         <span aria-hidden style={{ color: "var(--mute-2)" }}>
           →
