@@ -150,7 +150,11 @@ When changing code:
 ## Current Phase
 
 **The iOS app is LIVE on the App Store.** v1.0 went live 2026-06-17.
-v1.0.1 (build 15) was approved and is live (shipped by 2026-07-02). Phase 22.5 (iOS native via Capacitor)
+v1.0.1 (build 15) live. **v1.0.2 (build 17) SUBMITTED 2026-07-04,
+awaiting Apple review** — carries the full System D + C4 redesign, the
+restyled widgets/Live Activity (paper-at-rest + build-17 layout fixes),
+new store screenshots (store-assets/v1.0.2), and the rewritten store
+description/keywords. Phase 22.5 (iOS native via Capacitor)
 is **shipped**, not in progress: Live Activity, the home-screen
 upcoming widget, the home-screen live-score widget, and lock-screen
 accessory widgets are all in production. Distribution is App Store +
