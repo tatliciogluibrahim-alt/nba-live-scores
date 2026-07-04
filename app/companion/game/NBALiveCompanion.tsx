@@ -395,39 +395,53 @@ export function NBALiveCompanion({
           spoilerSubject={subject}
         />
 
-        {/* PERFORMERS — agate rows. Under No-Spoilers the whole section
-            collapses to one reveal row so the stat lines never leak. */}
-        {hasPerformers ? (
-          <section className="px-[18px] pt-6">
-            <SecHead name={isLive ? "Top performers" : "Who mattered"} />
-            {noSpoilers ? (
+        {/* PERFORMERS + HIGHLIGHTS. Under No-Spoilers each section would
+            otherwise collapse to its own identical "Hidden · tap to reveal"
+            row (two stacked duplicates on a live game). Show ONE shared
+            reveal affordance instead; the reveal expands both real sections. */}
+        {noSpoilers ? (
+          hasPerformers || showHighlightsSection ? (
+            <section className="px-[18px] pt-6">
+              <SecHead
+                name={
+                  hasPerformers
+                    ? isLive
+                      ? "Top performers"
+                      : "Who mattered"
+                    : "Highlights"
+                }
+              />
               <HiddenAgateRow subject={subject} onReveal={() => reveal(game.id)} />
-            ) : (
-              orderedPerformers.flatMap((team) =>
-                team.players.map((p, i) => (
-                  <AgateRow
-                    key={`${team.teamAbbreviation}-${p.name}-${i}`}
-                    main={<span className="block truncate">{p.name}</span>}
-                    note={team.teamAbbreviation}
-                    score={agatePerformerLine(p)}
-                  />
-                ))
-              )
-            )}
-          </section>
-        ) : null}
+            </section>
+          ) : null
+        ) : (
+          <>
+            {/* PERFORMERS — agate rows. */}
+            {hasPerformers ? (
+              <section className="px-[18px] pt-6">
+                <SecHead name={isLive ? "Top performers" : "Who mattered"} />
+                {orderedPerformers.flatMap((team) =>
+                  team.players.map((p, i) => (
+                    <AgateRow
+                      key={`${team.teamAbbreviation}-${p.name}-${i}`}
+                      main={<span className="block truncate">{p.name}</span>}
+                      note={team.teamAbbreviation}
+                      score={agatePerformerLine(p)}
+                    />
+                  ))
+                )}
+              </section>
+            ) : null}
 
-        {/* HIGHLIGHTS — safe-text rows, same No-Spoilers collapse. */}
-        {showHighlightsSection ? (
-          <section className="px-[18px] pt-6">
-            <SecHead name="Highlights" />
-            {noSpoilers ? (
-              <HiddenAgateRow subject={subject} onReveal={() => reveal(game.id)} />
-            ) : (
-              <HighlightsStack game={gameWithFreshLeaders} headless />
-            )}
-          </section>
-        ) : null}
+            {/* HIGHLIGHTS — safe-text rows. */}
+            {showHighlightsSection ? (
+              <section className="px-[18px] pt-6">
+                <SecHead name="Highlights" />
+                <HighlightsStack game={gameWithFreshLeaders} headless />
+              </section>
+            ) : null}
+          </>
+        )}
 
         {/* PERIOD SCORES — the per-quarter table under a SecHead. Self-redacts
             each cell (quarter labels stay, scores blur). */}
