@@ -67,7 +67,7 @@ export function WCBracket() {
       ) : null}
 
       {/* ── Mobile: one round at a time, or a chronological day view ────── */}
-      <div className="md:hidden">
+      <div className="">
         {/* View switch — mono segments, active carries the ink underline
             (same grammar as the round tabs). Sits above the sticky tabs. */}
         <div className="mb-3 flex" style={{ borderBottom: "1px solid var(--line)" }}>
@@ -166,39 +166,6 @@ export function WCBracket() {
       </div>
 
       {/* ── Desktop: the whole bracket as adjacent round columns ──────── */}
-      <div className="hidden md:grid md:grid-cols-5 md:gap-3">
-        {rounds.map((r) => (
-          <div key={r.key}>
-            <div className="mb-2">
-              <p
-                className="text-[11px] uppercase"
-                style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.08em", color: "var(--ink)", fontWeight: 700 }}
-              >
-                {SHORT[r.key]}
-              </p>
-              {r.dateLabel ? (
-                <p
-                  className="text-[10px] uppercase"
-                  style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.06em", color: "var(--mute-2)", fontWeight: 600 }}
-                >
-                  {r.dateLabel}
-                </p>
-              ) : null}
-            </div>
-            {r.matches.length === 0 ? (
-              <p className="text-[12px]" style={{ color: "var(--mute-2)", fontWeight: 500 }}>
-                Not set yet.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {r.matches.map((m) => (
-                  <MatchCard key={`${m.round}-${m.number}`} match={m} />
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
     </section>
   );
 }
@@ -373,66 +340,6 @@ function BracketMatchRow({ match, idx }: { match: BracketMatch; idx: string }) {
   return (
     <div className={cls} style={rowStyle}>
       {inner}
-    </div>
-  );
-}
-
-function MatchCard({ match }: { match: BracketMatch }) {
-  const tag =
-    match.status === "final"
-      ? "Full time"
-      : match.status === "live"
-        ? "Live"
-        : match.dateLabel;
-  const body = (
-    <div
-      className="flex items-center justify-between gap-2 rounded-[12px] border px-3.5 py-3"
-      style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-    >
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <SlotLine slot={match.away} />
-        <SlotLine slot={match.home} />
-      </div>
-      {tag ? (
-        <span
-          className="shrink-0 text-[10px] uppercase"
-          style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.06em", color: match.status === "live" ? "var(--live)" : "var(--mute-2)", fontWeight: 700 }}
-        >
-          {tag}
-        </span>
-      ) : null}
-    </div>
-  );
-  return match.href ? (
-    <Link href={match.href} aria-label="Open match">
-      {body}
-    </Link>
-  ) : (
-    body
-  );
-}
-
-function SlotLine({ slot }: { slot: BracketSlot }) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <span
-        className="truncate text-[14px]"
-        style={{
-          color: slot.real ? "var(--ink)" : "var(--mute-1)",
-          fontWeight: slot.followed ? 800 : slot.real ? 700 : 500,
-        }}
-      >
-        {slot.followed ? "● " : ""}
-        {slot.real ? slot.code : slot.label}
-      </span>
-      {slot.score != null ? (
-        <span
-          className="shrink-0 text-[14px]"
-          style={{ color: "var(--ink)", fontWeight: 700, fontFamily: "var(--font-mono)" }}
-        >
-          {slot.score}
-        </span>
-      ) : null}
     </div>
   );
 }

@@ -20,7 +20,7 @@ import {
 } from "../../nba/lib/series-keys";
 import { parseSeriesWins } from "../../nba/lib/series";
 import { WCGroups, useWCSchedule } from "./WCGroups";
-import { WCKnockout, WCKnockoutPreview } from "./WCKnockout";
+import { WCKnockoutPreview } from "./WCKnockout";
 import { buildKnockoutRounds, buildKnockoutPreview, KNOCKOUT_STATIC_DATES } from "./knockout-data";
 import { buildPathData } from "./path-data";
 import { PathField } from "./PathField";
@@ -214,60 +214,6 @@ function SeasonWrappedBanner() {
   );
 }
 
-// ── Header ──────────────────────────────────────────────────────────────
-
-function TournamentHeader({ tournament }: { tournament: TournamentEntry }) {
-  // Front Page treatment (Concept A): drop the boxed card, lead with a
-  // big editorial headline (the tournament name) under a small
-  // letter-chip + eyebrow. Length-sized so "Summer Soccer 2026" and
-  // "NBA Playoffs" both sit right. Accent identity stays via the chip +
-  // eyebrow color.
-  const name = tournament.name;
-  const size = name.length <= 14 ? 38 : name.length <= 20 ? 32 : 28;
-  return (
-    <header className="px-1">
-      <div className="flex items-center gap-2">
-        <span
-          aria-hidden
-          className="grid h-6 w-6 shrink-0 place-items-center rounded-[7px]"
-          style={{
-            background: "var(--cream-2)",
-            color: tournament.accent,
-            fontFamily: "var(--font-mono)",
-            fontSize: tournament.chip.length > 2 ? 9 : 11,
-            fontWeight: 700,
-            letterSpacing: "0.02em",
-            lineHeight: 1,
-          }}
-        >
-          {tournament.chip}
-        </span>
-        <Eyebrow color={tournament.accent}>Tournament</Eyebrow>
-      </div>
-      <h1
-        className="mt-2"
-        style={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 700,
-          fontSize: size,
-          lineHeight: 1.02,
-          letterSpacing: "-0.02em",
-          color: "var(--ink)",
-          textWrap: "pretty",
-        }}
-      >
-        {name}
-      </h1>
-      <p
-        className="mt-2 text-[13px] leading-snug"
-        style={{ color: "var(--mute-1)", fontWeight: 500 }}
-      >
-        {tournament.detail}
-      </p>
-    </header>
-  );
-}
-
 // ── Pagehead (D3 seam) ─────────────────────────────────────────────────
 // Mobile: the System D editorial pagehead — "Summer Soccer." display + a mono
 // meta line + (for the World Cup) the OVERVIEW · GROUPS · BRACKET tab row that
@@ -284,11 +230,8 @@ function TournamentPagehead({
 }) {
   return (
     <>
-      <div className="md:hidden">
+      <div className="">
         <MobilePagehead tournament={tournament} phase={phase} />
-      </div>
-      <div className="hidden md:block">
-        <TournamentHeader tournament={tournament} />
       </div>
     </>
   );
@@ -648,7 +591,7 @@ function NBAPlayoffsBody() {
     <>
       {/* Mobile — System D agate series rows. Same computed `series`; a
           ruled row per matchup with the MiniSeriesStrip + momentum note. */}
-      <section className="mt-6 md:hidden">
+      <section className="mt-6">
         <SecHead name="Series" count={String(series.length)} />
         {series.map((s, i) => (
           <NBASeriesAgateRow
@@ -659,152 +602,6 @@ function NBAPlayoffsBody() {
         ))}
       </section>
 
-      {/* Desktop — legacy series cards, pixel-frozen until D4. */}
-      <div className="hidden md:block">
-    <section className="mt-5">
-      <div className="mb-2 flex items-center gap-3">
-        <Eyebrow>Series</Eyebrow>
-        <div className="h-px flex-1" style={{ background: "var(--line)" }} />
-        <span
-          className="text-[10px] uppercase"
-          style={{
-            fontFamily: "var(--font-mono)",
-            letterSpacing: "0.08em",
-            color: "var(--mute-2)",
-            fontWeight: 600,
-          }}
-        >
-          {series.length} {series.length === 1 ? "series" : "series"}
-        </span>
-      </div>
-      <ul className="space-y-2">
-        {series.map((s) => {
-          // Render team labels cleanly when one side is a placeholder.
-          // ESPN sometimes emits compound strings like "SPURS/THUNDER"
-          // which look bad crammed into the 9×9 avatar chip. Substitute
-          // "TBD" for the chip; keep the title row honest by showing
-          // the determined team + "TBD".
-          const chipA = s.aIsTbd ? "TBD" : s.a;
-          const chipB = s.bIsTbd ? "TBD" : s.b;
-          const titleA = s.aIsTbd ? "TBD" : s.a;
-          const titleB = s.bIsTbd ? "TBD" : s.b;
-          const ariaLabel =
-            s.aIsTbd || s.bIsTbd
-              ? `Open ${titleA} vs ${titleB} series (matchup not yet decided)`
-              : `Open ${titleA} vs ${titleB} series`;
-
-          return (
-          <li key={s.id}>
-            <Link
-              href={`/series/${s.id}`}
-              aria-label={ariaLabel}
-              className="flex min-h-[64px] items-center gap-3 rounded-[14px] border px-3 py-3 transition active:scale-[0.99]"
-              style={{
-                background: "var(--paper)",
-                borderColor: "var(--line)",
-              }}
-            >
-              <span
-                aria-hidden
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] leading-none"
-                style={{
-                  background: "var(--cream-2)",
-                  color: "var(--ink)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: "0.02em",
-                  textAlign: "center",
-                }}
-              >
-                <span className="block">
-                  <span
-                    className="block"
-                    style={{
-                      lineHeight: 1.1,
-                      color: s.aIsTbd ? "var(--mute-1)" : undefined,
-                    }}
-                  >
-                    {chipA}
-                  </span>
-                  <span
-                    className="block"
-                    style={{
-                      lineHeight: 1.1,
-                      color: s.bIsTbd ? "var(--mute-1)" : undefined,
-                    }}
-                  >
-                    {chipB}
-                  </span>
-                </span>
-              </span>
-              <div className="min-w-0 flex-1">
-                <p
-                  className="truncate text-[14px] leading-snug"
-                  style={{
-                    color: "var(--ink)",
-                    fontWeight: 700,
-                    letterSpacing: "-0.005em",
-                  }}
-                >
-                  {titleA} vs {titleB}
-                </p>
-                <p
-                  className="mt-0.5 truncate text-[12px]"
-                  style={{ color: "var(--mute-1)", fontWeight: 500 }}
-                >
-                  {s.label}
-                  {s.wrapped ? " · Wrapped" : ""}
-                </p>
-                {/* Inline 7-dot strip — at-a-glance series state.
-                    Filled dots = games played, dashed dots = remaining.
-                    Spoiler-safe (no winner attribution per dot). */}
-                <MiniSeriesStrip gamesPlayed={s.gamesPlayed} />
-                {/* Stakes-aware momentum line. Deterministic from
-                    parsed wins + today flag — no LLM, no API. Skips
-                    placeholder ("TBD") rows since there's nothing to
-                    attribute, and is null on wrapped series (the
-                    "Wrapped" pill already speaks for them). */}
-                {(() => {
-                  if (s.aIsTbd || s.bIsTbd) return null;
-                  const momentum = buildSeriesMomentumLine({
-                    a: s.a,
-                    b: s.b,
-                    aWins: s.aWins,
-                    bWins: s.bWins,
-                    wrapped: s.wrapped,
-                    hasGameToday: s.hasGameToday,
-                  });
-                  if (!momentum) return null;
-                  return (
-                    <p
-                      className="mt-1.5 truncate text-[12px] leading-snug"
-                      style={{ color: "var(--mute-1)", fontWeight: 500 }}
-                    >
-                      {momentum}
-                    </p>
-                  );
-                })()}
-              </div>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--mute-1)"
-                strokeWidth="2.4"
-                aria-hidden
-                className="shrink-0"
-              >
-                <path d="M9 6l6 6-6 6" />
-              </svg>
-            </Link>
-          </li>
-          );
-        })}
-      </ul>
-    </section>
-      </div>
     </>
   );
 }
@@ -965,74 +762,8 @@ function FIFAWorldCupBody({
   tournamentId: string;
   phase: TournamentPhase;
 }) {
-  // Phase 21D — lifecycle-aware. Group/pre: groups lead (the full 12-group grid
-  // lives at /tournament/[id]/groups). Knockout/concluded: the bracket is what
-  // people come for, so it leads and the group stage moves below as history.
-  const knockoutFirst = phase === "knockout" || phase === "concluded";
-
-  const bracketLink = (
-    <Link
-      href={`/tournament/${tournamentId}/bracket`}
-      aria-label="View the full Summer Soccer bracket"
-      className="flex items-center justify-between gap-3 rounded-[16px] border px-4 py-3.5 transition active:scale-[0.99]"
-      style={{ background: "var(--paper)", borderColor: "var(--line)", borderLeft: "3px solid var(--wc)" }}
-    >
-      <span className="flex min-w-0 flex-col">
-        <span
-          className="text-[10px] uppercase"
-          style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--wc)" }}
-        >
-          Bracket
-        </span>
-        <span className="mt-0.5 text-[14px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
-          {knockoutFirst ? "Open the bracket" : "View the full bracket"}
-        </span>
-        <span className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
-          Round of 32 to the final
-        </span>
-      </span>
-      <span aria-hidden style={{ color: "var(--mute-1)", fontSize: 16 }}>
-        →
-      </span>
-    </Link>
-  );
-
-  // Desktop keeps the phase-ordered legacy layout verbatim. Mobile gets the
-  // System D recomposition: YOUR PATH → knockout preview → groups preview.
-  const desktopBody = knockoutFirst ? (
-    <>
-      {bracketLink}
-      <div className="mt-8">
-        <WCKnockout />
-      </div>
-      <div className="mt-10">
-        <p
-          className="mb-2 text-[11px] uppercase"
-          style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--mute-1)" }}
-        >
-          Group stage
-        </p>
-        <WCGroups tournamentId={tournamentId} mode="preview" />
-      </div>
-    </>
-  ) : (
-    <>
-      <WCGroups tournamentId={tournamentId} mode="preview" />
-      <div className="mt-8">{bracketLink}</div>
-      <div className="mt-8">
-        <WCKnockout />
-      </div>
-    </>
-  );
-
-  return (
-    <>
-      <div className="md:hidden">
-        <FIFAWorldCupMobile tournamentId={tournamentId} phase={phase} />
-      </div>
-      <div className="hidden md:block">{desktopBody}</div>
-    </>
-  );
+  // D4b: one System D composition at every width (seam deleted).
+  return <FIFAWorldCupMobile tournamentId={tournamentId} phase={phase} />;
 }
 
 // Mobile World Cup body — the ONE ink path field (personal, WC-follow only),
