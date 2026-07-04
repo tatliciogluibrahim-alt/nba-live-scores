@@ -688,6 +688,20 @@ function FollowingMobile({
           >
             Sync devices
           </button>
+          {/* Settings — the D3 recomposition dropped the legacy pagehead
+              gear; the entry point lives here now (founder call
+              2026-07-03: with the other utility links, not app chrome). */}
+          <Link
+            href="/settings"
+            aria-label="Alerts and notification settings"
+            className="underline transition active:opacity-70"
+            style={{
+              textUnderlineOffset: 3,
+              textDecorationColor: "var(--line)",
+            }}
+          >
+            Settings
+          </Link>
         </div>
       </div>
     </section>
