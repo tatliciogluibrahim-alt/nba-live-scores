@@ -122,9 +122,7 @@ Preserve:
 - current sports picker structure
 
 System D note: on the **app surfaces** (Today in D1; game detail, Watching,
-docking, Starting XI in D2; Following + Tournament + the device-feedback
-wave in D3 — all shipped 2026-07-03; desktop propagation next in D4, after
-a color exploration pass), the card-style and
+docking, Starting XI in D2; Following + Tournament + device-feedback wave in D3; C4 color lock + D4a fixes + D4b desktop-everywhere + §15 native restyle shipped 2026-07-04 — System D is now the ONLY system at every width; store assets for v1.0.2 ready in store-assets/), the card-style and
 rounded-corners bullets are superseded by the System D editorial grammar
 (unboxed ruled agate rows, ink register fields, hairline and heavy rules) per
 `docs/superpowers/specs/2026-07-02-system-d-editorial-redesign-design.md`.

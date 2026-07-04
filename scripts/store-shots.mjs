@@ -124,15 +124,16 @@ function compositeHtml({ headline, sub, imgData, canvasW, canvasH, isMock }) {
   p{margin-top:26px;font-size:${Math.round(canvasW * 0.0265)}px;font-weight:500;color:#6b6257;line-height:1.4}
   .rule{width:84px;height:6px;background:#b4361d;margin:34px auto 0}
   .shell{position:absolute;left:50%;transform:translateX(-50%);bottom:-40px;width:${shellW}px;height:${shellH}px;background:#1a1612;border-radius:88px 88px 0 0;padding:18px 18px 0;box-shadow:0 40px 120px rgba(26,22,18,.28)}
-  .screen{width:100%;height:100%;border-radius:70px 70px 0 0;overflow:hidden;background:#f1ead8}
+  .screen{width:100%;height:100%;border-radius:70px 70px 0 0;overflow:hidden;background:#f1ead8;padding-top:${Math.round(shellW * 0.14)}px}
   .screen img{width:100%;display:block}
   .island{position:absolute;top:38px;left:50%;transform:translateX(-50%);width:${Math.round(shellW * 0.29)}px;height:${Math.round(shellW * 0.088)}px;background:#000;border-radius:999px;z-index:2}
-  .mockwrap{position:absolute;left:50%;transform:translateX(-50%);bottom:${Math.round(canvasH * 0.09)}px;width:${Math.round(canvasW * 0.82)}px;box-shadow:0 30px 90px rgba(26,22,18,.22);border-radius:44px;overflow:hidden}
+  .mockpanel{position:absolute;left:50%;transform:translateX(-50%);bottom:${Math.round(canvasH * 0.07)}px;width:${Math.round(canvasW * 0.86)}px;height:${Math.round(canvasH * 0.6)}px;background:#241d15;border-radius:72px;display:flex;align-items:center;justify-content:center;box-shadow:0 40px 120px rgba(26,22,18,.3)}
+  .mockwrap{width:${Math.round(canvasW * 0.62)}px;box-shadow:0 24px 70px rgba(0,0,0,.5);border-radius:40px;overflow:hidden}
   .mockwrap img{width:100%;display:block}
   </style></head><body>
   <div class="head"><h1>${headline}</h1><p>${sub}</p><div class="rule"></div></div>
   ${isMock
-    ? `<div class="mockwrap"><img src="${imgData}"/></div>`
+    ? `<div class="mockpanel"><div class="mockwrap"><img src="${imgData}"/></div></div>`
     : `<div class="shell"><div class="island"></div><div class="screen"><img src="${imgData}"/></div></div>`}
   </body></html>`;
 }
@@ -174,14 +175,9 @@ async function main() {
       const page = await context.newPage();
       await page.goto(`${BASE}${shot.path}?preview=wc-day`, { waitUntil: "load", timeout: 45000 });
       await page.waitForTimeout(2600);
-      await page.addStyleTag({ content: "nextjs-portal,[class*=PreviewModeBanner]{display:none!important} .nns-preview-banner{display:none!important}" }).catch(() => {});
-      // The preview banner is a component — hide any fixed green bar.
-      await page.evaluate(() => {
-        document.querySelectorAll("div,header").forEach((el) => {
-          const t = (el.textContent || "").trim();
-          if (t.startsWith("PREVIEW · WC LIVE-DAY") && el.children.length <= 3) el.style.display = "none";
-        });
-      }).catch(() => {});
+      // Hide dev chrome: Next portal + the preview banner (role=status,
+      // aria-label names it — a stable hook).
+      await page.addStyleTag({ content: 'nextjs-portal{display:none!important} [aria-label="Summer Soccer preview mode active"]{display:none!important}' }).catch(() => {});
       const buf = await page.screenshot({ fullPage: false });
       imgData = `data:image/png;base64,${buf.toString("base64")}`;
       await context.close();
