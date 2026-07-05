@@ -9,6 +9,7 @@ import { GameSpoilerScope, useFollowHidesGame, useReveal } from "../spoiler/reve
 import { safeText } from "../spoiler/safe-text";
 import { useNoSpoilers } from "../providers";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
+import { heroKickoffStamp } from "./agate-slate";
 
 // The lead settles in once per page-load, not on every Today re-mount (each
 // tab return remounts the route). A module flag — reset on a full reload —
@@ -94,7 +95,16 @@ function joinSentences(
   return done.length ? done.join(" ") : undefined;
 }
 
-export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
+export function FrontPageLead({
+  lead,
+  flush = false,
+}: {
+  lead: TodayHeadline;
+  /** Tightens the bottom margin when the Monument renders as the first
+   *  entry of a folded UP NEXT section (the agate rows continue right
+   *  below, so the full section gap would read as a break). */
+  flush?: boolean;
+}) {
   const game = lead.game ?? null;
   const deck = lead.deck;
 
@@ -146,21 +156,37 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
     );
 
     // Kicker context: live leads show stage/round · channel (the accent
-    // segment already carries the clock); upcoming leads reuse the deck's
-    // "time · context" detail. The Monument uppercases the whole row.
-    const context = [
-      lead.live ? game.contextLabel : deck.detail,
-      deck.broadcast,
-    ]
-      .filter(Boolean)
-      .join(" · ");
+    // segment already carries the clock); upcoming leads carry a day-aware
+    // kickoff ("TODAY 4:00 PM" / "MON 3:00 PM") followed by the detail's
+    // context tail, so day + time + round + channel read as ONE cluster
+    // (beta feedback 2026-07-05). The Monument uppercases the whole row.
+    let contextHead: string | undefined;
+    if (lead.live) {
+      contextHead = game.contextLabel;
+    } else if (deck.dateIso) {
+      const tail = deck.detail
+        .split(" · ")
+        .slice(1)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(" · ");
+      contextHead = [heroKickoffStamp(deck.dateIso, new Date()), tail]
+        .filter(Boolean)
+        .join(" · ");
+    } else {
+      contextHead = deck.detail;
+    }
+    const context = [contextHead, deck.broadcast].filter(Boolean).join(" · ");
 
     // Deck line: live = the calm status sentence plus the stake/context
-    // support; upcoming = the derived headline (it carries the day —
-    // "England vs Switzerland tomorrow.") plus the stake.
+    // support; upcoming = the stake alone ("Winner goes through to the
+    // quarterfinals." / "OKC leads series 3-2."). The old count headline
+    // ("Two matches today.") duplicated the UP NEXT section count, and the
+    // day now lives in the kicker — so with no stake the deck stays empty
+    // rather than restating what the Monument already shows.
     const deckText = lead.live
       ? joinSentences(deck.detail, lead.support)
-      : joinSentences(lead.headline, lead.support);
+      : joinSentences(lead.support);
 
     // No-Spoilers deck suppression (spec §9). The Monument already frosts
     // the deck visually via its <Spoiler>, but the SAFE-TEXT rule means the
@@ -182,7 +208,7 @@ export function FrontPageLead({ lead }: { lead: TodayHeadline }) {
       // column, where the Monument sits at the column's left edge with its
       // own 18px inset. The legacy md-only Front Page card render is gone —
       // D4b ends the desktop-frozen law for Today.
-      <div className={`${rise} -mx-4 md:mx-0 mb-5`}>
+      <div className={`${rise} -mx-4 md:mx-0 ${flush ? "mb-1" : "mb-5"}`}>
         <GameSpoilerScope gameId={game.gameId} hidden={baseHidden}>
           <Monument
             sport={sport}

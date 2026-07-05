@@ -3,6 +3,7 @@ import {
   deriveTodayHeadline,
   wcLeadGame,
   nbaLeadGame,
+  wcKnockoutStake,
   type TodayPayload,
   type WCGameLite,
   type NBAGame,
@@ -425,5 +426,47 @@ describe("nbaLeadGame", () => {
     const r = nbaLeadGame(makeNBA());
     expect(r.gameId).toBe("nba-g1");
     expect(r.spoilerSubject).toBe("OKC vs SA");
+  });
+});
+
+describe("wcKnockoutStake (knockout stake copy)", () => {
+  const wcGame = (stage?: string): ReturnType<typeof wcLeadGame> => ({
+    source: "wc",
+    gameId: "wc-1",
+    awayCode: "NOR",
+    homeCode: "BRA",
+    awayName: "Norway",
+    homeName: "Brazil",
+    awayScore: null,
+    homeScore: null,
+    status: "upcoming",
+    statusLine: "",
+    stage,
+    spoilerSubject: "NOR vs BRA",
+  });
+
+  it("names the next round per knockout stage", () => {
+    expect(wcKnockoutStake(wcGame("Round of 32"))).toBe(
+      "Winner goes through to the Round of 16."
+    );
+    expect(wcKnockoutStake(wcGame("Round of 16"))).toBe(
+      "Winner goes through to the quarterfinals."
+    );
+    expect(wcKnockoutStake(wcGame("Quarterfinals"))).toBe(
+      "Winner goes through to the semifinals."
+    );
+    expect(wcKnockoutStake(wcGame("Semifinals"))).toBe(
+      "Winner plays in the final."
+    );
+    expect(wcKnockoutStake(wcGame("Final"))).toBe("One match for the title.");
+  });
+
+  it("returns nothing for group stage, missing stage, and NBA leads", () => {
+    expect(wcKnockoutStake(wcGame("Group L"))).toBeUndefined();
+    expect(wcKnockoutStake(wcGame(undefined))).toBeUndefined();
+    expect(wcKnockoutStake(undefined)).toBeUndefined();
+    expect(
+      wcKnockoutStake({ ...wcGame("Round of 16"), source: "nba" })
+    ).toBeUndefined();
   });
 });

@@ -10,6 +10,7 @@ import { useWCSchedule } from "./WCGroups";
 import {
   buildBracketRounds,
   groupBracketByDay,
+  bracketSlotToken,
   type BracketMatch,
   type BracketRound,
   type BracketSlot,
@@ -50,9 +51,11 @@ export function WCBracket() {
   );
   const [active, setActive] = useState<KnockoutRoundKey>("r32");
   const round = rounds.find((r) => r.key === active) ?? rounds[0];
-  // Mobile view mode: the round-by-round bracket, or a chronological day
-  // schedule (D3 Task 6a). Client-side only, no new route.
-  const [mode, setMode] = useState<"bracket" | "byday">("bracket");
+  // Mobile view mode: a chronological day schedule, or the round-by-round
+  // bracket (D3 Task 6a). Client-side only, no new route. BY DAY is the
+  // default — beta feedback (2026-07-05): the day view answers "what's on,
+  // and when" without a walkthrough; the round tree is the deeper read.
+  const [mode, setMode] = useState<"bracket" | "byday">("byday");
 
   return (
     <section className="mt-4">
@@ -61,8 +64,8 @@ export function WCBracket() {
           className="mb-3 text-[12px] leading-snug"
           style={{ color: "var(--mute-2)", fontWeight: 500 }}
         >
-          The bracket fills in as the groups finish. Clinched teams take their
-          slots; the rest stay open.
+          The bracket fills in as the groups finish. Clinched teams take
+          their slots. The rest stay open.
         </p>
       ) : null}
 
@@ -72,8 +75,8 @@ export function WCBracket() {
             (same grammar as the round tabs). Sits above the sticky tabs. */}
         <div className="mb-3 flex" style={{ borderBottom: "1px solid var(--line)" }}>
           {([
-            ["bracket", "Bracket"],
             ["byday", "By day"],
+            ["bracket", "Bracket"],
           ] as const).map(([key, label]) => {
             const on = key === mode;
             return (
@@ -227,17 +230,9 @@ function gameIdFromHref(href: string | null): string | null {
   return id ? id : null;
 }
 
-/** Compact code for a bracket slot. Real → country code. A group-feed slot
- *  keeps its ESPN code ("2A", "3RD") — informative, like the mock's "1E · 2G".
- *  A synthetic winner/unpublished placeholder ("R32-1", "R32-14") reads as
- *  jargon (and duplicates itself on both sides of an unset match), so it
- *  collapses to an honest "TBD" at this compact scale. Desktop keeps the full
- *  "Winner of Round of 32 match N" label. */
-function bracketSlotToken(slot: BracketSlot): string {
-  if (slot.real) return slot.code;
-  if (/^(R32|R16|QF|SF)-\d+$/i.test(slot.code)) return "TBD";
-  return slot.code;
-}
+// Slot token logic lives in wc-bracket-data.ts (bracketSlotToken) — pure and
+// unit-tested. Real → country code, resolved winner-of → feeder pairing
+// ("NOR/BRA"), unresolved winner-of → "TBD", group-feed codes pass through.
 
 function BracketCode({ slot }: { slot: BracketSlot }) {
   // Real → ink (followed → full-ink bold). Placeholder slot code → muted.

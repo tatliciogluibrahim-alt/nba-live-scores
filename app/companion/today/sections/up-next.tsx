@@ -26,27 +26,42 @@ export function UpNext({
   items,
   excludeHref,
   startIndex = 1,
+  showHead = true,
+  footLink,
 }: {
   items: UpNextItem[];
   excludeHref?: string;
   /** First running index for the agate rows (continues the slate). */
   startIndex?: number;
+  /** False when the lead Monument is folded into this section — the SecHead
+   *  ("UP NEXT · 5 MATCHES") renders above the Monument in TodayClient, and
+   *  these rows continue the section headerless. */
+  showHead?: boolean;
+  /** Quiet foot row ("Bracket & schedule →") when a tournament slate is on
+   *  the day — the bracket's front door from Today (beta feedback
+   *  2026-07-05: it was three taps deep under Following). */
+  footLink?: { label: string; href: string };
 }) {
   // The lead game is rendered as the Front Page deck above. Drop it from
   // this list so the same match doesn't appear twice on one screen.
   const list = excludeHref ? items.filter((i) => i.href !== excludeHref) : items;
-  if (list.length === 0) return null;
+  if (list.length === 0 && !footLink) return null;
 
   return (
     <section
       className="-mx-4 md:mx-0"
       style={{ background: "var(--plate-next)" }}
     >
-      <div className="px-4 md:px-[18px] pt-[18px] pb-[6px]">
-        <SecHead name="Up next" count={upNextCountLabel(list)} />
+      <div className={`px-4 md:px-[18px] ${showHead ? "pt-[18px]" : "pt-1"} pb-[6px]`}>
+        {showHead && list.length > 0 ? (
+          <SecHead name="Up next" count={upNextCountLabel(list)} />
+        ) : null}
         {list.map((item, i) => (
           <UpNextAgateRow key={item.id} item={item} idx={padIdx(startIndex + i)} />
         ))}
+        {footLink ? (
+          <AgateRow main={footLink.label} href={footLink.href} />
+        ) : null}
       </div>
     </section>
   );

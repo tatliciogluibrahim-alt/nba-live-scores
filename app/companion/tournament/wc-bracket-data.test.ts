@@ -2,16 +2,19 @@ import { describe, it, expect } from "vitest";
 import {
   buildWCBracket,
   groupBracketByDay,
+  parseWinnerCode,
+  bracketSlotToken,
   type BracketMatch,
   type BracketRound,
   type BracketSlot,
 } from "./wc-bracket-data";
 import type { WCScheduleFixture } from "../../api/world-cup/schedule/route";
 
-function r32(
+function fixture(
   id: number,
   away: string,
   home: string,
+  stage: string,
   status: WCScheduleFixture["status"] = "upcoming",
   as = 0,
   hs = 0
@@ -21,12 +24,23 @@ function r32(
     date: "2026-06-28T19:00Z",
     status,
     statusText: "",
-    stage: "round-of-32",
+    stage,
     group: "",
     home: { name: home, abbreviation: home, score: hs },
     away: { name: away, abbreviation: away, score: as },
     broadcasts: [],
   };
+}
+
+function r32(
+  id: number,
+  away: string,
+  home: string,
+  status: WCScheduleFixture["status"] = "upcoming",
+  as = 0,
+  hs = 0
+): WCScheduleFixture {
+  return fixture(id, away, home, "round-of-32", status, as, hs);
 }
 
 describe("buildWCBracket", () => {
@@ -80,6 +94,87 @@ describe("buildWCBracket", () => {
     expect(b.resolved).toBe(false);
     // structure still renders (placeholders), 4 quarters present
     expect(b.quarters).toHaveLength(4);
+  });
+
+  it("resolves ESPN winner-of codes on a real QF fixture to the feeder pairing", () => {
+    const fixtures = [
+      ...Array.from({ length: 16 }, (_, i) => r32(i + 1, "2A", "2B")),
+      // R16 matches 1 and 2 (id order = match order) with real teams.
+      fixture(17, "MEX", "POR", "round-of-16"),
+      fixture(18, "FRA", "ESP", "round-of-16"),
+      // QF 1, published by ESPN with raw winner codes — away/home reversed
+      // vs our tree order, so resolution must follow the CODE, not the tree.
+      fixture(25, "RD16 W2", "RD16 W1", "quarterfinals"),
+    ];
+    const b = buildWCBracket(fixtures, new Set());
+    const qf1 = b.quarters[0].qf!;
+    expect(qf1.away.pairToken).toBe("FRA/ESP");
+    expect(qf1.away.label).toBe("Winner of France vs Spain");
+    expect(qf1.home.pairToken).toBe("MEX/POR");
+    expect(qf1.home.label).toBe("Winner of Mexico vs Portugal");
+  });
+
+  it("resolves synthetic upper-round placeholders from the fixed tree", () => {
+    const fixtures = [
+      ...Array.from({ length: 16 }, (_, i) => r32(i + 1, "2A", "2B")),
+      fixture(17, "MEX", "POR", "round-of-16"),
+      fixture(18, "FRA", "ESP", "round-of-16"),
+      // No QF fixture published — the QF is synthesized from the tree.
+    ];
+    const b = buildWCBracket(fixtures, new Set());
+    const qf1 = b.quarters[0].qf!;
+    expect(qf1.away.pairToken).toBe("MEX/POR");
+    expect(qf1.home.pairToken).toBe("FRA/ESP");
+  });
+
+  it("leaves winner-of slots unresolved when the feeder isn't a real pairing", () => {
+    const fixtures = [
+      ...Array.from({ length: 16 }, (_, i) => r32(i + 1, "2A", "2B")),
+      // R16 match 1 still carries group-slot codes — not a real pairing.
+      fixture(17, "1A", "2B", "round-of-16"),
+      fixture(25, "RD16 W1", "RD16 W2", "quarterfinals"),
+    ];
+    const b = buildWCBracket(fixtures, new Set());
+    const qf1 = b.quarters[0].qf!;
+    expect(qf1.away.pairToken).toBeUndefined();
+    expect(bracketSlotToken(qf1.away)).toBe("TBD");
+  });
+});
+
+describe("parseWinnerCode", () => {
+  it("parses ESPN and synthetic winner-of codes", () => {
+    expect(parseWinnerCode("RD16 W6")).toEqual({ round: "r16", n: 6 });
+    expect(parseWinnerCode("RD32 W9")).toEqual({ round: "r32", n: 9 });
+    expect(parseWinnerCode("QF W1")).toEqual({ round: "qf", n: 1 });
+    expect(parseWinnerCode("R16-6")).toEqual({ round: "r16", n: 6 });
+    expect(parseWinnerCode("SF-2")).toEqual({ round: "sf", n: 2 });
+  });
+
+  it("returns null for real countries and group-feed codes", () => {
+    expect(parseWinnerCode("MEX")).toBeNull();
+    expect(parseWinnerCode("2A")).toBeNull();
+    expect(parseWinnerCode("3RD")).toBeNull();
+    expect(parseWinnerCode("")).toBeNull();
+  });
+});
+
+describe("bracketSlotToken", () => {
+  const base: BracketSlot = {
+    code: "",
+    label: "",
+    real: false,
+    followed: false,
+    score: null,
+  };
+
+  it("keeps real codes and group-feed codes, resolves pairings, TBDs jargon", () => {
+    expect(bracketSlotToken({ ...base, code: "MEX", real: true })).toBe("MEX");
+    expect(bracketSlotToken({ ...base, code: "2A" })).toBe("2A");
+    expect(
+      bracketSlotToken({ ...base, code: "RD16 W6", pairToken: "NOR/BRA" })
+    ).toBe("NOR/BRA");
+    expect(bracketSlotToken({ ...base, code: "RD16 W6" })).toBe("TBD");
+    expect(bracketSlotToken({ ...base, code: "R32-1" })).toBe("TBD");
   });
 });
 

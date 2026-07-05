@@ -212,7 +212,7 @@ export function StartingXI({
               color: "var(--mute-1)",
             }}
           >
-            Starting XI · Usually about an hour before kickoff
+            Starting XI · about an hour before kickoff
           </span>
         </div>
       ) : (

@@ -1905,6 +1905,10 @@ export type TodayHeadlineDeck = {
   detail: string;
   /** Broadcast channel, e.g. "NBC". */
   broadcast?: string;
+  /** Raw ISO kickoff for an upcoming lead. Lets the Monument kicker carry a
+   *  day-aware time ("TODAY 4:00 PM" / "MON 3:00 PM") so the hero answers
+   *  "when" in one place. Unset for live leads and the hero fallback. */
+  dateIso?: string;
   accent: "var(--nba)" | "var(--wc)";
   href: string;
 };
@@ -1946,6 +1950,22 @@ function spellCount(n: number): string {
  *  line can't drift from the card above it. */
 type LeadGame = { deck: TodayHeadlineDeck; stake?: string; game?: TodayLeadGame };
 
+/** Knockout stake line for a Summer Soccer lead, derived from the stage —
+ *  fixed tournament structure, not a prediction ("Winner goes through to
+ *  the quarterfinals."). NBA leads carry their series stake instead; group
+ *  matches carry none. Order matters below: "quarterfinals" and
+ *  "semifinals" both contain "final". Exported for the copy tests. */
+export function wcKnockoutStake(game?: TodayLeadGame): string | undefined {
+  if (!game || game.source !== "wc") return undefined;
+  const s = (game.stage ?? "").toLowerCase();
+  if (s.includes("round of 32")) return "Winner goes through to the Round of 16.";
+  if (s.includes("round of 16")) return "Winner goes through to the quarterfinals.";
+  if (s.includes("quarter")) return "Winner goes through to the semifinals.";
+  if (s.includes("semi")) return "Winner plays in the final.";
+  if (s.includes("final")) return "One match for the title.";
+  return undefined;
+}
+
 /** Build the lead game from the live hero (preferred), then the first
  *  up-next item, then any non-countdown hero. Returns null for non-game
  *  leads (WC countdown, quiet day). */
@@ -1964,7 +1984,7 @@ function leadGame(payload: TodayPayload): LeadGame | null {
         accent: hero.accent,
         href: hero.href,
       },
-      stake: hero.stake,
+      stake: hero.stake ?? wcKnockoutStake(hero.game),
       game: hero.game,
     };
   }
@@ -1978,10 +1998,11 @@ function leadGame(payload: TodayPayload): LeadGame | null {
         matchup: up.headline,
         detail: up.detail,
         broadcast: up.watch?.channel,
+        dateIso: up.dateIso,
         accent: up.source === "wc" ? "var(--wc)" : "var(--nba)",
         href: up.href,
       },
-      stake: up.stake,
+      stake: up.stake ?? wcKnockoutStake(up.game),
       game: up.game,
     };
   }
@@ -1996,7 +2017,7 @@ function leadGame(payload: TodayPayload): LeadGame | null {
         accent: hero.accent,
         href: hero.href,
       },
-      stake: hero.stake,
+      stake: hero.stake ?? wcKnockoutStake(hero.game),
       game: hero.game,
     };
   }

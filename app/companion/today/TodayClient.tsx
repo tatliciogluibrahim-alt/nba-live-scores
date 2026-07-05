@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { PullToRefresh } from "../atoms/PullToRefresh";
 import { Masthead } from "../system/Masthead";
+import { SecHead } from "../system/SecHead";
 import { useFollows, useNoSpoilers } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveTodayHeadline } from "./today-data";
@@ -11,13 +12,14 @@ import { FrontPageLead } from "./FrontPageLead";
 import { LiveTrackHint } from "./LiveTrackHint";
 import { AlsoLiveBand, bandShownCount } from "./AlsoLiveBand";
 import { FollowLine } from "./FollowLine";
-import { slateStartIndex } from "./agate-slate";
+import { slateStartIndex, upNextCountLabel } from "./agate-slate";
 import { RestingState } from "./RestingState";
 import { BriefPromptCard } from "./BriefPromptCard";
 import { useSetupStep } from "./setup/useSetupStep";
 import { SetupCard } from "./setup/SetupCard";
 import { FirstFollowTierCard } from "../follow/FirstFollowTierCard";
 import { QuietRecap } from "./QuietRecap";
+import { WC_BRACKET_HREF } from "../following/data/tournaments";
 import { YouFollow } from "./sections/you-follow";
 import { TheMargin } from "./sections/the-margin";
 import { UpNext } from "./sections/up-next";
@@ -91,6 +93,32 @@ export function TodayClient() {
   const upNextShown = payload.restingState ? 0 : upNextVisible.length;
   const quietWrapStart = slateStart + upNextShown;
 
+  // ── Folded UP NEXT (beta feedback 2026-07-05) ──
+  // When the lead Monument is an UPCOMING game it IS the day's first up-next
+  // match — but it sat above a section labeled "UP NEXT · 4 MATCHES" that
+  // excluded it, so the labels contradicted the numbering (hero = 01, list =
+  // 02+). Fold: the SecHead moves above the Monument with the FULL day count,
+  // and the agate rows continue headerless right below. Live leads keep the
+  // old shape (a live game isn't "up next"; the section below stays honest).
+  const foldUpNext =
+    leadHasMonument &&
+    !payload.restingState &&
+    lead != null &&
+    !lead.live &&
+    payload.upNext.length > 0 &&
+    lead.deck?.href === payload.upNext[0]?.href;
+
+  // Bracket front door — a quiet foot row on UP NEXT whenever Summer Soccer
+  // is on the day's slate. The bracket was three taps deep under Following
+  // (a setup surface); the schedule artifact belongs near the scores.
+  const wcOnSlate =
+    payload.upNext.some((i) => i.source === "wc") ||
+    payload.quietWrap.some((i) => i.source === "wc") ||
+    scoreboard.some((t) => t.source === "wc");
+  const upNextFootLink = wcOnSlate
+    ? { label: "Bracket & schedule", href: WC_BRACKET_HREF }
+    : undefined;
+
   const setup = useSetupStep();
 
   return (
@@ -144,11 +172,34 @@ export function TodayClient() {
             {/* Front Page lead — the lead Monument (the one game worth
                 checking now). On a RESTING day (nothing live, games coming
                 up) the calm "Quiet for now." state takes over instead,
-                folding in the Next-up list. */}
+                folding in the Next-up list. An UPCOMING lead folds into
+                UP NEXT: SecHead (full count) → Monument (01) → agate rows
+                (02+), one section. */}
             {payload.restingState ? (
               <RestingState items={payload.upNext} />
             ) : lead ? (
-              <FrontPageLead lead={lead} />
+              <>
+                {foldUpNext ? (
+                  <div className="mb-2">
+                    <SecHead
+                      name="Up next"
+                      count={upNextCountLabel(payload.upNext)}
+                    />
+                  </div>
+                ) : null}
+                <FrontPageLead lead={lead} flush={foldUpNext} />
+                {foldUpNext ? (
+                  <div className="mb-5">
+                    <UpNext
+                      items={payload.upNext}
+                      excludeHref={lead.deck?.href}
+                      startIndex={slateStart}
+                      showHead={false}
+                      footLink={upNextFootLink}
+                    />
+                  </div>
+                ) : null}
+              </>
             ) : null}
 
             {/* Contextual one-time hint — teach lock-screen tracking the first
@@ -192,12 +243,15 @@ export function TodayClient() {
 
               {/* On a resting day the Next-up list is shown inside
                   RestingState above, so skip the standalone section to
-                  avoid a duplicate "Upcoming" list. */}
-              {!payload.restingState ? (
+                  avoid a duplicate "Upcoming" list. When the lead is folded
+                  into UP NEXT, the section already rendered under the
+                  Monument above. */}
+              {!payload.restingState && !foldUpNext ? (
                 <UpNext
                   items={payload.upNext}
                   excludeHref={lead?.deck?.href}
                   startIndex={slateStart}
+                  footLink={upNextFootLink}
                 />
               ) : null}
 

@@ -104,6 +104,21 @@ export function kickoffStamp(dateIso: string, now: Date): string {
   return `${weekday} ${time}`;
 }
 
+/** Day-aware kickoff line for the lead Monument's kicker. Same contract as
+ *  kickoffStamp, but a same-day fixture reads "TODAY 4:00 PM" instead of a
+ *  bare time — the kicker is the ONE place the hero answers "when", so the
+ *  day is stated, not implied by the masthead date (beta feedback
+ *  2026-07-05: date, time, and context read as three separate locations). */
+export function heroKickoffStamp(dateIso: string, now: Date): string {
+  const d = new Date(dateIso);
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  const stamp = kickoffStamp(dateIso, now);
+  return sameDay ? `TODAY ${stamp}` : stamp;
+}
+
 /** Day-word label for a resting-day UP NEXT row stamp. "Today" when the
  *  fixture is on the current day, otherwise the capitalized dayWord
  *  ("Tomorrow", "Saturday"), falling back to "Upcoming" when neither is

@@ -97,7 +97,7 @@ export default async function TournamentBracketPage({
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {isWorldCup
-              ? "Round by round, from the Round of 32 to the final. Swipe the rounds."
+              ? "Every knockout match, day by day or round by round."
               : "Round by round."}
           </p>
         </header>

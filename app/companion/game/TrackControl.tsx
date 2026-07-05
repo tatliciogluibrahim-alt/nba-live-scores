@@ -222,12 +222,15 @@ function DefaultCta({
   nativeUpcoming: boolean;
   onTap: () => void;
 }) {
+  // One clause each (beta feedback 2026-07-05: too many explainer
+  // sentences). The button label already says where the game goes; the
+  // subnote carries only what the label can't.
   const label = lockScreen ? "Track on Lock Screen" : "Add to Watching";
   const subnote = lockScreen
-    ? "Keeps the score on your lock screen and in Watching."
+    ? "Also saved to Watching."
     : nativeUpcoming
-      ? "Keeps it in Watching. It tracks your lock screen when it starts."
-      : "Keeps this game in Watching. Alerts come from follows.";
+      ? "Lock screen tracking starts at kickoff."
+      : "Alerts come from your follows.";
   return (
     <>
       <button

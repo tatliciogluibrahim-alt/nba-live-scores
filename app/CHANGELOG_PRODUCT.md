@@ -2,6 +2,47 @@
 
 ---
 
+## Friend-feedback batch — glance clarity on the World Cup surfaces — 2026-07-05
+
+Five fixes from the first structured friend-beta thread (Kanade,
+2026-07-05). His five complaints were one complaint: the app made him
+read sentences to answer glance questions. All fixes are hierarchy,
+semantics, and subtraction inside System D — the register is unchanged.
+
+- **UP NEXT now includes the lead.** When the lead Monument is an
+  upcoming game, the UP NEXT rule + full-day count sit above it and the
+  agate rows continue headerless below — one section, hero = 01, rows =
+  02+. The old shape (hero floating above an "UP NEXT · 4 MATCHES" that
+  excluded it) read as a contradiction. Live leads keep the old shape:
+  a live game isn't "up next."
+- **The hero answers "when" in one place.** Upcoming lead kicker reads
+  "TODAY 4:00 PM · ROUND OF 16 · FOX" (day-aware via heroKickoffStamp,
+  later days read "MON 3:00 PM"). The deck sentence dropped the count
+  headline ("Two matches today." duplicated the section count) and now
+  carries a stake instead: NBA series stakes as before, and a new
+  stage-derived knockout stake for Summer Soccer ("Winner goes through
+  to the quarterfinals."). No stake → no sentence.
+- **The bracket has front doors.** "Bracket & schedule →" foot row on
+  UP NEXT whenever Summer Soccer is on the slate, and the same row in
+  the game-detail Summer Soccer section for knockout matches. It was
+  three taps deep under Following, a setup surface.
+- **Bracket placeholders are legible, BY DAY is the default.** ESPN's
+  raw winner codes ("RD16 W6 · RD16 W5") now resolve to the feeder
+  pairing ("ENG/MEX · NOR/BRA") via the fixed slot tree; unresolvable
+  slots stay "TBD". The BY DAY view (the one the beta reader understood
+  without help) is now the default tab; the round tree is one tap away.
+- **Prose subtraction.** Upcoming game detail drops "Kicks off today."
+  (the kicker already says it; the "Kicking off." imminent state
+  stays). "STARTING XI · USUALLY ABOUT..." loses "USUALLY". TrackControl
+  subnotes cut to one clause each ("Alerts come from your follows.").
+  Bracket intro is one line. The stray semicolon in the pre-resolution
+  bracket note is gone.
+
+Parked deliberately: stats tab + player autosuggest search (NFL phase,
+he called it "whole another app"), NFL time-window sections (Phase 22).
+
+---
+
 ## System D — Color, the un-detachable tab bar, country page, XI subs (mobile) — 2026-07-03
 
 D4a ships the locked color direction and the highest-priority device

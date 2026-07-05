@@ -53,6 +53,10 @@ export type BracketSlot = {
   followed: boolean;
   /** Score for this side when the match is played, else null. */
   score: number | null;
+  /** Compact feeder pairing ("NOR/BRA") when a winner-of slot resolves to a
+   *  known matchup in the feeding round. Raw feed codes like "RD16 W6" read
+   *  as jargon; the pairing answers "winner of which match" at a glance. */
+  pairToken?: string;
 };
 
 export type BracketMatch = {
@@ -122,6 +126,35 @@ function makeSlot(
   };
 }
 
+/** Parse a winner-of slot code into the round + match number it references.
+ *  Handles both our synthetic codes ("R16-6") and the raw ESPN placeholder
+ *  abbreviations that pass through makeSlot ("RD16 W6", "QF W1"). Null for
+ *  anything else (real countries, group-feed codes like "2A"/"3RD"). */
+export function parseWinnerCode(
+  code: string
+): { round: KnockoutRoundKey; n: number } | null {
+  const c = (code || "").trim().toUpperCase();
+  let m = /^RD?(32|16)[\s-]*W(\d+)$/.exec(c); // ESPN: "RD16 W6", "RD32 W9"
+  if (m) return { round: m[1] === "32" ? "r32" : "r16", n: Number(m[2]) };
+  m = /^(QF|SF)\s*W(\d+)$/.exec(c); // ESPN upper rounds: "QF W1"
+  if (m) return { round: m[1].toLowerCase() as KnockoutRoundKey, n: Number(m[2]) };
+  m = /^(R32|R16|QF|SF)-(\d+)$/.exec(c); // our synthetic winnerSlot codes
+  if (m) return { round: m[1].toLowerCase() as KnockoutRoundKey, n: Number(m[2]) };
+  return null;
+}
+
+/** Compact display token for a bracket slot. Real → country code. A
+ *  group-feed slot keeps its ESPN code ("2A", "3RD") — informative. A
+ *  winner-of slot shows its resolved feeder pairing ("NOR/BRA") when known;
+ *  otherwise it collapses to an honest "TBD" rather than jargon ("RD16 W6").
+ *  Pure — exported for WCBracket's agate rows and the tests. */
+export function bracketSlotToken(slot: BracketSlot): string {
+  if (slot.real) return slot.code;
+  if (slot.pairToken) return slot.pairToken;
+  if (parseWinnerCode(slot.code)) return "TBD";
+  return slot.code;
+}
+
 // A placeholder slot for an unplayed upper-round side: "Winner of match N".
 function winnerSlot(round: KnockoutRoundKey, n: number): BracketSlot {
   const label =
@@ -181,11 +214,37 @@ export function buildWCBracket(
     arr.sort((a, b) => Number(a.id) - Number(b.id));
   }
 
+  // Resolve a winner-of slot ("RD16 W6" / "R16-6") to its feeder pairing
+  // ("NOR/BRA") once both sides of that feeder match are real countries.
+  // Both code families use ESPN's own match numbering (id order within the
+  // round — the verified assumption above), so the lookup stays one-source.
+  // Unresolvable slots pass through unchanged and render as "TBD".
+  const resolveSlot = (slot: BracketSlot): BracketSlot => {
+    if (slot.real) return slot;
+    const ref = parseWinnerCode(slot.code);
+    if (!ref) return slot;
+    const feeder = (byRound.get(ref.round) ?? [])[ref.n - 1];
+    if (!feeder) return slot;
+    const a = (feeder.away.abbreviation || "").toUpperCase();
+    const h = (feeder.home.abbreviation || "").toUpperCase();
+    if (!REAL_CODES.has(a) || !REAL_CODES.has(h)) return slot;
+    return {
+      ...slot,
+      label: `Winner of ${NAME_BY_CODE.get(a) ?? a} vs ${NAME_BY_CODE.get(h) ?? h}`,
+      pairToken: `${a}/${h}`,
+    };
+  };
+  const enrich = (m: BracketMatch): BracketMatch => ({
+    ...m,
+    away: resolveSlot(m.away),
+    home: resolveSlot(m.home),
+  });
+
   // number -> match, per round (1-indexed by id order).
   const matchOf = (round: KnockoutRoundKey, n: number): BracketMatch | null => {
     const arr = byRound.get(round) ?? [];
     const f = arr[n - 1];
-    return f ? fixtureToMatch(f, round, n, followedCodes) : null;
+    return f ? enrich(fixtureToMatch(f, round, n, followedCodes)) : null;
   };
 
   const r32Count = (byRound.get("r32") ?? []).length;
@@ -200,8 +259,10 @@ export function buildWCBracket(
     const real = matchOf(round, n);
     if (real) return real;
     // Not yet in the feed (or unresolved) — synthesize a placeholder from
-    // the fixed tree so the structure always renders.
-    return {
+    // the fixed tree so the structure always renders. Enriched so a known
+    // feeder pairing still reads as "NOR/BRA" even before ESPN publishes
+    // the upper-round fixture.
+    return enrich({
       round,
       number: n,
       away: winnerSlot(feedRound, feeds[0]),
@@ -210,7 +271,7 @@ export function buildWCBracket(
       dateLabel: null,
       dateIso: null,
       href: null,
-    };
+    });
   };
 
   const quarters: BracketQuarter[] = QUARTERS.map((q) => {

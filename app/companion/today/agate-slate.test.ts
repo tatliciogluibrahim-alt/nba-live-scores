@@ -10,6 +10,7 @@ import {
   upNextDayLabel,
   bandShownCount,
   kickoffStamp,
+  heroKickoffStamp,
 } from "./agate-slate";
 import type { ScoreboardTile } from "./today-data";
 
@@ -48,6 +49,26 @@ describe("kickoffStamp", () => {
   it("just past midnight is the next day → weekday prefix", () => {
     const now = new Date(2026, 6, 4, 23, 0); // Sat Jul 4, 11 PM
     expect(kickoffStamp(iso(2026, 6, 5, 0, 30), now)).toBe("SUN 12:30 AM");
+  });
+});
+
+describe("heroKickoffStamp (lead Monument kicker)", () => {
+  const iso = (
+    y: number,
+    m: number,
+    d: number,
+    h: number,
+    min: number
+  ): string => new Date(y, m, d, h, min).toISOString();
+
+  it("same local day → TODAY + time", () => {
+    const now = new Date(2026, 6, 5, 12, 0); // Sun Jul 5, noon
+    expect(heroKickoffStamp(iso(2026, 6, 5, 16, 0), now)).toBe("TODAY 4:00 PM");
+  });
+
+  it("later day → weekday abbrev + time (matches kickoffStamp)", () => {
+    const now = new Date(2026, 6, 5, 12, 0); // Sun Jul 5
+    expect(heroKickoffStamp(iso(2026, 6, 6, 15, 0), now)).toBe("MON 3:00 PM");
   });
 });
 

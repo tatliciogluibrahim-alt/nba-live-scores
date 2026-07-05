@@ -572,3 +572,33 @@ Still on hold:
 - Whole-app refactor
 - New backend / account system
 - Path B follow-schema refactor (wait for 3rd moment)
+## Friend-feedback batch (2026-07-05)
+
+First structured friend-beta thread (Kanade) produced five shipped
+fixes on the World Cup surfaces — full detail in
+`CHANGELOG_PRODUCT.md` (2026-07-05 entry):
+
+1. UP NEXT folds the upcoming lead in (SecHead + full count above the
+   Monument, headerless rows below). Live leads keep the old shape.
+2. Upcoming lead kicker is day-aware ("TODAY 4:00 PM"); deck carries a
+   stake (new WC knockout stake from stage) instead of the count line.
+3. "Bracket & schedule" front doors on Today (UP NEXT foot row) and
+   knockout game detail. One href source: WC_BRACKET_HREF in
+   `app/companion/following/data/tournaments.ts`.
+4. Bracket placeholder codes resolve to feeder pairings ("ENG/MEX ·
+   NOR/BRA"); BY DAY is the default bracket view.
+5. Prose subtraction: upcoming detail deck, Starting XI pending line,
+   TrackControl subnotes, bracket intro.
+
+Parked from the same thread: stats tab + player autosuggest search
+(NFL phase), NFL 1PM/4PM/8PM window sections (Phase 22).
+
+Build reference: `next build` route count is **83** top-level routes
+as of 2026-07-05. The gate rule: the count must not drop.
+
+Known data quirk (pre-existing, not fixed here): the bracket page's
+"fills in as the groups finish" line keys on `resolved` (16 R32
+fixtures in the feed). ESPN drops completed R32 fixtures from the
+schedule window late in the tournament, so the line can reappear
+after the groups are long done. Harmless but stale — candidate for a
+future pass.

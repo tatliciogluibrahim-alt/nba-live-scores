@@ -21,6 +21,8 @@ import { TrackControl } from "./TrackControl";
 import { WCShareModal } from "../share/WCShareModal";
 import { StartingXI, LineupsAreInRow } from "./StartingXI";
 import { useWCLineups } from "./use-wc-lineups";
+import { WC_BRACKET_HREF } from "../following/data/tournaments";
+import { roundKeyFromStage } from "../tournament/knockout-data";
 
 // Summer Soccer game detail.
 //
@@ -168,9 +170,15 @@ export function WCGameDetail({
   // Monument deck — the calm hero sentence, run through safeText so a spoilery
   // line blanks before the frost (mirrors FrontPageLead). Score numerals +
   // deck are Spoiler-wrapped by the Monument itself, so one tap reveals both.
-  const safeDeck = hero.headline
-    ? safeText(hero.headline, noSpoilers) || undefined
-    : undefined;
+  // Pre-kickoff the deck stays empty: the kicker already carries day, time,
+  // round, and channel, so "Kicks off today." restated the line above it
+  // (beta feedback 2026-07-05). "Kicking off." (scheduled time passed, not
+  // live yet) still shows — that state isn't in the kicker.
+  const showDeck = !isUpcoming || hero.imminent === true;
+  const safeDeck =
+    showDeck && hero.headline
+      ? safeText(hero.headline, noSpoilers) || undefined
+      : undefined;
 
   // MATCH EVENTS ink field — the goal/red story (yellows stay off the pulse,
   // matching d-game). Under No-Spoilers the field collapses to one reveal row
@@ -289,7 +297,10 @@ export function WCGameDetail({
             renders nothing until the feed lands. */}
         <StartingXI lineups={lineups} status={status} />
 
-        {/* GROUP — agate section, two chevroned rows into each country page */}
+        {/* GROUP — agate section, two chevroned rows into each country page.
+            Knockout matches add the bracket row: from a Round of 16 page the
+            bracket is the "who's next" answer, and Today's front door
+            shouldn't be the only way in (beta feedback 2026-07-05). */}
         <section className="px-[18px] pt-6">
           <SecHead name={game.group ? `Group ${game.group}` : "Summer Soccer"} />
           {[game.away, game.home].map((team) => (
@@ -300,6 +311,9 @@ export function WCGameDetail({
               href={`/country/${team.abbreviation}`}
             />
           ))}
+          {roundKeyFromStage(game.stage ?? "") ? (
+            <AgateRow main="Bracket & schedule" href={WC_BRACKET_HREF} />
+          ) : null}
         </section>
 
         {/* WATCH — agate row (no chevron: informational, not a link) */}
@@ -508,6 +522,10 @@ export function deriveWCHero(game: WCGameLite): {
   headline: string;
   context?: string;
   live: boolean;
+  /** True for the "Kicking off." in-between state — scheduled time passed
+   *  but the feed hasn't flipped to live. The detail page keeps this deck
+   *  (it isn't in the kicker) while suppressing the pre-kickoff ones. */
+  imminent?: boolean;
 } {
   if (game.status === "upcoming") {
     const d = new Date(game.date);
@@ -517,7 +535,12 @@ export function deriveWCHero(game: WCGameLite): {
     // both repeat "Summer Soccer · Group J" and "1:00 PM". No context line
     // here for the same reason — the stage lives on the scoreboard eyebrow.
     if (valid && d.getTime() <= Date.now()) {
-      return { eyebrow: "Preview", headline: "Kicking off.", live: false };
+      return {
+        eyebrow: "Preview",
+        headline: "Kicking off.",
+        live: false,
+        imminent: true,
+      };
     }
     const dayWord = (() => {
       try {

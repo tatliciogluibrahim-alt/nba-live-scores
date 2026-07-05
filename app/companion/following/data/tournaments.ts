@@ -57,6 +57,14 @@ export const TOURNAMENTS: TournamentEntry[] = [
   },
 ];
 
+/** The Summer Soccer 2026 tournament id — the one id referenced from
+ *  outside the picker (Today's bracket front door, the game-detail bracket
+ *  row). Kept next to the directory so a future id change has one home. */
+export const WC_TOURNAMENT_ID = "fifa-world-cup-2026";
+
+/** The bracket page for the Summer Soccer 2026 tournament. */
+export const WC_BRACKET_HREF = `/tournament/${WC_TOURNAMENT_ID}/bracket`;
+
 export function getTournament(id: string): TournamentEntry | undefined {
   return TOURNAMENTS.find((t) => t.id === id);
 }
