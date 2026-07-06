@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useFollows, useNoSpoilers } from "../providers";
 import { useWCSchedule, WCGroups } from "../tournament/WCGroups";
+import { ByDayView } from "../tournament/WCBracket";
+import { WCBracketTree } from "../tournament/WCBracketTree";
 import {
-  ByDayView,
-  BracketRoundsView,
+  buildBracketRounds,
   followedCountrySet,
-} from "../tournament/WCBracket";
-import { buildBracketRounds } from "../tournament/wc-bracket-data";
+} from "../tournament/wc-bracket-data";
 import { WC_TOURNAMENT_ID } from "../following/data/tournaments";
 
 // The Schedule surface (S1, 2026-07-06 spec: schedule-ia-waterfall).
@@ -102,7 +102,7 @@ export function ScheduleClient() {
         </div>
 
         {view === "byday" ? <ByDayView rounds={rounds} /> : null}
-        {view === "bracket" ? <BracketRoundsView rounds={rounds} /> : null}
+        {view === "bracket" ? <WCBracketTree /> : null}
         {view === "groups" ? (
           <WCGroups tournamentId={WC_TOURNAMENT_ID} mode="full" />
         ) : null}

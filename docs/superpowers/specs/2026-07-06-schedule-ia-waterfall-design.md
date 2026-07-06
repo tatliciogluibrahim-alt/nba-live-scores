@@ -1,9 +1,18 @@
 # Schedule tab: the IA waterfall
 
 **Date:** 2026-07-06
-**Status:** S1 BUILT 2026-07-06 (Schedule tab, Today slim, honesty
-batch — see CHANGELOG). S2 (design round: bracket tree, identity
-marks, scale) awaits its mock round. S3 pending S2.
+**Status:** S1 BUILT + DEPLOYED 2026-07-06. S2 direction LOCKED by
+Ibrahim (quarter cards; flags rejected) and BUILT + DEPLOYED
+2026-07-06: WCBracketTree replaces the round-list BRACKET view on
+Schedule + the tournament bracket page; scale step (today rows up,
+pointer down) shipped as a flagged inference. S3 (v1.0.3 store
+assets) waits on the v1.0.2 Apple review outcome.
+**Data-integrity note (S2 verify):** ESPN's real R32→R16 progression
+drifted from the pre-tournament tree constants in
+wc-bracket-data.ts (R16_FROM_R32 etc.). Displayed rounds are always
+real fixtures so users see correct structure; the constants now only
+shape synthetic placeholders and quarter grouping. If a future
+moment reuses this module, re-verify the constants at bracket set.
 **Doctrine refinement from the build:** real kickoff instants render
 device-local; date-only curated dates (path-data round dates at
 00:00Z) stay UTC-anchored — converting those to local would shift

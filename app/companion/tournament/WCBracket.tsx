@@ -11,36 +11,19 @@ import {
   buildBracketRounds,
   groupBracketByDay,
   bracketSlotToken,
+  followedCountrySet,
   type BracketMatch,
   type BracketRound,
   type BracketSlot,
 } from "./wc-bracket-data";
-import type { KnockoutRoundKey } from "./knockout-data";
+import { WCBracketTree } from "./WCBracketTree";
 
-// Dedicated World Cup bracket — round by round, the mobile-first pattern
-// (swipe/tap through R32 -> Final), not a cramped 32-team tree. Lives on
-// its own page (/tournament/[id]/bracket), reached by an explicit entry,
-// so it's a destination, not part of the core IA. Real ESPN data via
-// buildBracketRounds: real matchups + scores, honest slot labels for unset
-// slots, followed countries marked.
+// Dedicated World Cup bracket page body (/tournament/[id]/bracket): the
+// BY DAY chronology (default) or the quarter-cards bracket tree (S2,
+// WCBracketTree). Real ESPN data via the verified fixed tree: real
+// matchups + scores, honest slot labels for unset slots, followed
+// countries marked.
 
-const SHORT: Record<KnockoutRoundKey, string> = {
-  r32: "R32",
-  r16: "R16",
-  qf: "QF",
-  sf: "SF",
-  final: "Final",
-};
-
-export function followedCountrySet(
-  follows: { kind: string; id: string }[]
-): Set<string> {
-  const out = new Set<string>();
-  for (const f of follows) {
-    if (f.kind === "country" || f.kind === "team") out.add(f.id.toUpperCase());
-  }
-  return out;
-}
 
 export function WCBracket() {
   const { fixtures } = useWCSchedule();
@@ -104,7 +87,7 @@ export function WCBracket() {
         </div>
 
         {mode === "bracket" ? (
-          <BracketRoundsView rounds={rounds} />
+          <WCBracketTree />
         ) : (
           <ByDayView rounds={rounds} />
         )}
@@ -112,75 +95,6 @@ export function WCBracket() {
 
       {/* ── Desktop: the whole bracket as adjacent round columns ──────── */}
     </section>
-  );
-}
-
-// ── Round-by-round view (extracted for the Schedule surface, S1) ──────
-// Sticky round switcher + one round's matches as agate rows. Owns its
-// active-round state so WCBracket and ScheduleClient can mount it as-is.
-
-export function BracketRoundsView({ rounds }: { rounds: BracketRound[] }) {
-  const [active, setActive] = useState<KnockoutRoundKey>("r32");
-  const round = rounds.find((r) => r.key === active) ?? rounds[0];
-
-  return (
-    <>
-      <div
-        className="sticky top-0 z-10 -mx-4 mb-4 px-4 pb-0 pt-1"
-        style={{ background: "var(--bar-blur-bg, var(--cream))", backdropFilter: "blur(8px)" }}
-      >
-        {/* Round switcher — mono tabs, active carries the ink underline. */}
-        <div className="flex" style={{ borderBottom: "1px solid var(--line)" }}>
-          {rounds.map((r) => {
-            const on = r.key === round.key;
-            return (
-              <button
-                key={r.key}
-                type="button"
-                onClick={() => setActive(r.key)}
-                aria-pressed={on}
-                className="flex-1 uppercase transition active:opacity-70"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  letterSpacing: "0.12em",
-                  fontWeight: on ? 700 : 600,
-                  color: on ? "var(--ink)" : "var(--mute-2)",
-                  paddingTop: 4,
-                  paddingBottom: 10,
-                  background: "transparent",
-                  borderBottom: on ? "2px solid var(--ink)" : "2px solid transparent",
-                  marginBottom: -1,
-                }}
-              >
-                {SHORT[r.key]}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <SecHead name={round.label} count={round.dateLabel ?? undefined} />
-
-      {round.matches.length === 0 ? (
-        <p
-          className="py-[13px] text-[13px]"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          Not set yet.
-        </p>
-      ) : (
-        <div>
-          {round.matches.map((m) => (
-            <BracketMatchRow
-              key={`${m.round}-${m.number}`}
-              match={m}
-              idx={String(m.number).padStart(2, "0")}
-            />
-          ))}
-        </div>
-      )}
-    </>
   );
 }
 

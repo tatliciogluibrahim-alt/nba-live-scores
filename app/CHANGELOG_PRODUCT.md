@@ -2,6 +2,31 @@
 
 ---
 
+## S2 — the bracket becomes a bracket — 2026-07-06
+
+Direction locked by Ibrahim from the S2 mock round: quarter cards.
+No identity flags (rejected). Scale step included.
+
+- **Quarter-cards bracket tree.** The BRACKET view (Schedule tab and
+  the tournament bracket page) is now a true tree: one card per
+  bracket quarter, the two R16 feeders joining into the QF slot with
+  a drawn connector, and a closing card joining the semifinals into
+  the Final. Played feeders carry their spoiler-gated score; unset
+  slots read their feeder pairing ("EGY/ARG · COL/SUI") or TBD. The
+  quarter holding a followed country carries a YOUR PATH tag. The
+  round-by-round list view retired — BY DAY covers list needs.
+- **Nowness = size.** Today's UP NEXT rows step up (15px codes, the
+  section is today-only so there's room); the NEXT pointer steps
+  down (12px) — a signpost, not a slate entry.
+- **Data-integrity catch from verification:** the YOUR PATH tag now
+  derives from the matches a card displays, not the pre-tournament
+  R32→R16 tree constants — ESPN's real progression drifted from
+  those constants, and the stale mapping tagged the wrong quarter.
+  Displayed structure is always real fixtures, so this was
+  tag-cosmetic only.
+
+---
+
 ## S1 — the Schedule tab, Today slimmed, and the honesty batch — 2026-07-06
 
 The IA waterfall's first phase (spec:

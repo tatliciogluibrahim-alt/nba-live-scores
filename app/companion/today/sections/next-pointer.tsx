@@ -27,7 +27,9 @@ export function NextPointer({ item }: { item: UpNextItem }) {
       <SecHead name="Next" />
       <AgateRow
         main={
-          <span style={{ fontFamily: "var(--font-mono)" }}>
+          // S2 scale (nowness = size): the pointer sits a step BELOW
+          // today's rows — it's a signpost, not a slate entry.
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
             {away} · {home}
           </span>
         }
