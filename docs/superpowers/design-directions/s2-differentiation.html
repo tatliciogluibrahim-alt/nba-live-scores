@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>S2 differentiation — bracket tree, identity marks, scale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* C4 palette, literal (mock file — the app uses tokens). */
+  :root{
+    --cream:#f1ead8; --cream2:#e6ddc4; --ink:#1a1612; --ink2:#2b2520;
+    --mute:#746747; --mute2:#8a7d5c; --line:rgba(26,22,18,.16);
+    --brand:#b4361d; --wc:#1e6b3c; --sage:#e4e6d3; --blush:#eddfd0;
+    --disp:"Bricolage Grotesque",system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--cream);color:var(--ink);font-family:var(--disp);padding:28px 0 80px}
+  .phone{width:390px;margin:0 auto 14px;background:var(--cream);border:1px solid var(--line);padding:18px 16px 26px}
+  .dirhead{width:390px;margin:44px auto 10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--brand)}
+  .dirsub{width:390px;margin:0 auto 12px;font-size:13px;line-height:1.5;color:var(--mute);font-weight:500}
+  .sechead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px;border-bottom:2px solid var(--ink);margin-bottom:2px}
+  .sechead b{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase}
+  .sechead span{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--brand)}
+  .agate{display:flex;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .agate .idx{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--brand);min-width:18px}
+  .agate .codes{font-family:var(--mono);font-size:13px;font-weight:600;flex:1;white-space:nowrap}
+  .agate .note{color:var(--mute);font-weight:500;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .agate .stamp{font-family:var(--mono);font-size:10px;letter-spacing:.08em;border:1px solid var(--mute2);padding:3px 7px;color:var(--mute)}
+  .agate .arr{color:var(--mute2)}
+  .flag{font-size:13px;margin-right:4px}
+  .mutecode{color:var(--mute2);font-weight:500}
+
+  /* ── Direction A: the spine ─────────────────────────── */
+  .spine{position:relative;padding-left:0}
+  .tier{margin-bottom:2px}
+  .tierlabel{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.16em;color:var(--mute);text-transform:uppercase;margin:18px 0 8px}
+  .cup{background:var(--ink);color:var(--cream);padding:16px 14px;display:flex;justify-content:space-between;align-items:center}
+  .cup .t{font-family:var(--disp);font-weight:800;font-size:22px;letter-spacing:-.01em}
+  .cup .d{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:rgba(241,234,216,.6)}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+  .cell{background:var(--sage);padding:11px 12px;position:relative}
+  .cell.ghost{background:var(--cream2)}
+  .cell .m{font-family:var(--mono);font-size:12.5px;font-weight:600}
+  .cell .w{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--mute);text-transform:uppercase;margin-top:3px}
+  .cell.won .m{font-weight:800}
+  .cell.path{box-shadow:inset 0 0 0 1.5px var(--wc)}
+  .join{width:1px;height:14px;background:var(--ink);margin:0 auto}
+  .join.wide{width:50%;height:1px;margin:7px auto}
+
+  /* ── Direction B: quarter cards ─────────────────────── */
+  .qcard{border:1px solid var(--line);margin-bottom:12px}
+  .qhead{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:9px 12px;border-bottom:2px solid var(--ink);display:flex;justify-content:space-between}
+  .qhead span{color:var(--brand)}
+  .qbody{display:grid;grid-template-columns:1fr 16px 1fr;align-items:center}
+  .qleft{border-right:1px solid var(--line)}
+  .qrow{padding:10px 12px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;font-weight:600}
+  .qrow:last-child{border-bottom:none}
+  .qrow small{display:block;font-size:9px;letter-spacing:.1em;color:var(--mute);margin-top:2px;text-transform:uppercase}
+  .qconn{height:100%;position:relative}
+  .qconn::before{content:"";position:absolute;left:0;top:25%;bottom:25%;border-right:1px solid var(--ink);width:8px;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink)}
+  .qwin{padding:12px;font-family:var(--mono);font-size:13px;font-weight:800}
+  .qwin small{display:block;font-size:9px;letter-spacing:.1em;color:var(--mute);margin-top:3px;font-weight:600;text-transform:uppercase}
+
+  /* ── Direction C: the road ──────────────────────────── */
+  .road{border-left:2px solid var(--wc);padding-left:16px;position:relative}
+  .stop{position:relative;padding:12px 0 14px}
+  .stop::before{content:"";position:absolute;left:-21.5px;top:20px;width:9px;height:9px;border-radius:50%;background:var(--wc)}
+  .stop.open::before{background:var(--cream);border:1.5px solid var(--mute2)}
+  .stop .round{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--mute);text-transform:uppercase}
+  .stop .match{font-family:var(--disp);font-size:19px;font-weight:700;margin-top:2px}
+  .stop .res{font-family:var(--mono);font-size:12px;font-weight:700;margin-top:1px}
+  .stop .res.win{color:var(--wc)}
+  .stop .res.tbd{color:var(--mute2);font-weight:600}
+
+  /* ── Scale demo ─────────────────────────────────────── */
+  .mon{padding:18px 0 6px}
+  .mon .kick{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mute);text-transform:uppercase;margin-bottom:12px}
+  .mon .kick b{color:var(--brand);font-weight:700}
+  .mon .team{display:flex;justify-content:space-between;align-items:center}
+  .mon .team span{font-size:23px;font-weight:700}
+  .small-row{transform:none;padding:9px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center}
+  .small-row .codes{font-family:var(--mono);font-size:11.5px;font-weight:600;flex:1;color:var(--ink2);white-space:nowrap}
+  .small-row .stamp{font-family:var(--mono);font-size:9px;border:1px solid var(--mute2);padding:2px 6px;color:var(--mute)}
+</style>
+</head>
+<body>
+
+<div class="dirhead">S2 · Mock 1 of 3 — Bracket direction A: “The spine”</div>
+<div class="dirsub">Top-down tree. The Final is the crown, semis beneath, the four
+quarterfinals as paired cells. Followed path (Norway) carries the wc-green inset ring.
+Winners read full ink; unset slots ghost on cream-2. One screen, no swiping.</div>
+<div class="phone">
+  <div class="cup"><div class="t">The Final.</div><div class="d">SUN JUL 19 · 3:00 PM</div></div>
+  <div class="join"></div>
+  <div class="pair">
+    <div class="cell ghost"><div class="m mutecode">SF 1</div><div class="w">Winner QF1 · QF2</div></div>
+    <div class="cell ghost"><div class="m mutecode">SF 2</div><div class="w">Winner QF3 · QF4</div></div>
+  </div>
+  <div class="join"></div>
+  <div class="tierlabel">Quarterfinals · Thu–Sat</div>
+  <div class="pair">
+    <div class="cell won"><div class="m">MAR · FRA</div><div class="w">Thu Jul 9</div></div>
+    <div class="cell"><div class="m">BEL/USA · ESP/POR</div><div class="w">Fri Jul 10</div></div>
+  </div>
+  <div style="height:2px"></div>
+  <div class="pair">
+    <div class="cell path won"><div class="m">🏴 ENG · 🇳🇴 NOR</div><div class="w">Sat Jul 11</div></div>
+    <div class="cell"><div class="m">EGY/ARG · COL/SUI</div><div class="w">Sat Jul 11</div></div>
+  </div>
+</div>
+
+<div class="dirhead">S2 · Mock 2 of 3 — Bracket direction B: “Quarter cards”</div>
+<div class="dirsub">One card per bracket quarter: two R16 feeders join into the QF slot
+with a drawn connector. Matches the shipped data model 1:1. Scrolls vertically, four cards,
+SF/Final as a fifth. Denser than A, keeps every feeder visible.</div>
+<div class="phone">
+  <div class="qcard">
+    <div class="qhead">Quarter 3 <span>YOUR PATH</span></div>
+    <div class="qbody">
+      <div class="qleft">
+        <div class="qrow">🏴 ENG 3–2 MEX<small>R16 · FT</small></div>
+        <div class="qrow">🇳🇴 NOR 2–1 BRA<small>R16 · FT</small></div>
+      </div>
+      <div class="qconn"></div>
+      <div class="qwin">ENG · NOR<small>QF · Sat Jul 11</small></div>
+    </div>
+  </div>
+  <div class="qcard">
+    <div class="qhead">Quarter 4</div>
+    <div class="qbody">
+      <div class="qleft">
+        <div class="qrow">EGY · ARG<small>R16 · Tue 12:00 PM</small></div>
+        <div class="qrow">COL · SUI<small>R16 · Tue 4:00 PM</small></div>
+      </div>
+      <div class="qconn"></div>
+      <div class="qwin"><span class="mutecode">TBD</span><small>QF · Sat Jul 11</small></div>
+    </div>
+  </div>
+</div>
+
+<div class="dirhead">S2 · Mock 3 of 3 — Bracket direction C: “The road”</div>
+<div class="dirsub">Followed-team-first: your country's route from the group to the final
+as a single inked path, the tournament ghosted around it. The share-artifact candidate.
+Falls back to direction A/B layout when nothing is followed.</div>
+<div class="phone">
+  <div class="sechead"><b>Norway’s road</b><span>QF · SAT</span></div>
+  <div style="height:10px"></div>
+  <div class="road">
+    <div class="stop"><div class="round">Group I · 2nd</div><div class="match">7 pts · GD +1</div><div class="res win">Through</div></div>
+    <div class="stop"><div class="round">Round of 32</div><div class="match">NOR 2–1 CIV</div><div class="res win">Won</div></div>
+    <div class="stop"><div class="round">Round of 16</div><div class="match">NOR 2–1 BRA</div><div class="res win">Won</div></div>
+    <div class="stop open"><div class="round">Quarterfinal · Sat Jul 11</div><div class="match">ENG · NOR</div><div class="res tbd">4:00 PM · FOX</div></div>
+    <div class="stop open"><div class="round">Semifinal · Wed Jul 15</div><div class="match" style="color:var(--mute2)">Winner meets QF4</div><div class="res tbd">—</div></div>
+    <div class="stop open"><div class="round">The final · Sun Jul 19</div><div class="match" style="color:var(--mute2)">One match for the title</div><div class="res tbd">—</div></div>
+  </div>
+</div>
+
+<div class="dirhead">S2 · Identity marks — flags on agate rows</div>
+<div class="dirsub">Same row, with and without the mark. Flag emoji already ship in the
+country data. Proposal: marks on upcoming/structural rows (UP NEXT, Schedule, bracket);
+QUIET WRAP stays text-only (muted register).</div>
+<div class="phone">
+  <div class="sechead"><b>Without (shipped)</b></div>
+  <div class="agate"><span class="idx">02</span><span class="codes">ESP · POR</span><span class="note">Round of 16 · FOX</span><span class="stamp">MON 3:00 PM</span><span class="arr">→</span></div>
+  <div class="agate"><span class="idx">03</span><span class="codes">BEL · USA</span><span class="note">Round of 16 · FOX</span><span class="stamp">MON 8:00 PM</span><span class="arr">→</span></div>
+  <div style="height:22px"></div>
+  <div class="sechead"><b>With marks (S2)</b></div>
+  <div class="agate"><span class="idx">02</span><span class="codes"><span class="flag">🇪🇸</span>ESP · <span class="flag">🇵🇹</span>POR</span><span class="note">Round of 16 · FOX</span><span class="stamp">MON 3:00 PM</span><span class="arr">→</span></div>
+  <div class="agate"><span class="idx">03</span><span class="codes"><span class="flag">🇧🇪</span>BEL · <span class="flag">🇺🇸</span>USA</span><span class="note">Round of 16 · FOX</span><span class="stamp">MON 8:00 PM</span><span class="arr">→</span></div>
+</div>
+
+<div class="dirhead">S2 · Scale — nowness = size</div>
+<div class="dirsub">Live/today at full size; the NEXT pointer a clear step down. Today's
+rows step UP from the shipped 13px mono now that the section is today-only (fewer rows,
+more room). Reference (Schedule) rows stay uniform.</div>
+<div class="phone">
+  <div class="mon">
+    <div class="kick"><b>01</b> · TODAY 3:00 PM · ROUND OF 16 · FOX</div>
+    <div class="team"><span>Spain</span></div>
+    <div class="team"><span>Portugal</span></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="agate"><span class="idx">02</span><span class="codes" style="font-size:15px">🇧🇪 BEL · 🇺🇸 USA</span><span class="stamp">8:00 PM</span><span class="arr">→</span></div>
+  <div style="height:26px"></div>
+  <div class="sechead"><b>Next</b></div>
+  <div class="small-row"><span class="codes">EGY · ARG</span><span class="stamp">TUE 12:00 PM</span><span class="arr">→</span></div>
+</div>
+
+</body>
+</html>
