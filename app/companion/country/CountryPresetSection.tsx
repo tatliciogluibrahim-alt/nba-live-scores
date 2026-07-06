@@ -3,8 +3,9 @@
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PresetRow } from "../following/PresetRow";
+import { AlertSlotToggle } from "../follow/AlertSlotToggle";
 import { useFollows } from "../providers";
-import { PRESETS, type AlertPreset } from "../state/types";
+import { type AlertPreset } from "../state/types";
 
 // Country follow + preset block. Mirrors SeriesPresetSection in structure
 // but uses country-specific copy. Stage 11 cleanup could factor a shared
@@ -46,25 +47,14 @@ export function CountryPresetSection({
 
       {isFollowed && existing ? (
         <div>
-          <button
-            type="button"
-            onClick={() => setFollowAlertEnabled("country", countryCode, !existing.alertEnabled)}
-            aria-label={`${existing.alertEnabled ? "Disable" : "Enable"} alerts for ${countryName}`}
-            className="mb-2 inline-flex min-h-[44px] w-full items-center justify-between rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
-            style={{
-              background: existing.alertEnabled ? "var(--cream-2)" : "transparent",
-              borderColor: existing.alertEnabled ? "var(--ink)" : "var(--line)",
-            }}
-          >
-            <span className="text-[13px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
-              {existing.alertEnabled
-                ? `${PRESETS[existing.alertTier].label} alerts on`
-                : "Alerts off"}
-            </span>
-            <span className="text-[11px]" style={{ color: "var(--mute-1)", fontWeight: 600 }}>
-              {existing.alertEnabled ? "Manage" : "Turn on"}
-            </span>
-          </button>
+          <AlertSlotToggle
+            enabled={existing.alertEnabled}
+            tier={existing.alertTier}
+            subjectName={countryName}
+            onToggle={(next) =>
+              setFollowAlertEnabled("country", countryCode, next)
+            }
+          />
           {existing.alertEnabled ? (
             <PresetRow
               value={existing.alertTier}

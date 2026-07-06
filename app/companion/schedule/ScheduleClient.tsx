@@ -60,10 +60,19 @@ export function ScheduleClient() {
       </header>
 
       <div className="mt-4">
-        {/* View switch — same mono-segment grammar as the bracket page. */}
+        {/* View switch — same mono-segment grammar as the bracket page.
+            STICKY ("freeze pane", parked feedback 2026-07-06): switching
+            to BRACKET or GROUPS never requires scrolling back to the top. */}
         <div
-          className="mb-3 flex"
-          style={{ borderBottom: "1px solid var(--line)" }}
+          className="sticky z-20 -mx-4 mb-3 flex px-4 pt-1 md:mx-0 md:px-0"
+          style={{
+            // Pins BELOW the sticky BrandBar (z-30, safe-area padding +
+            // 32px of content) — top-0 put the tabs underneath it.
+            top: "calc(max(env(safe-area-inset-top), 12px) + 32px)",
+            borderBottom: "1px solid var(--line)",
+            background: "var(--bar-blur-bg, var(--cream))",
+            backdropFilter: "blur(8px)",
+          }}
         >
           {(
             [

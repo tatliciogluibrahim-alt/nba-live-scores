@@ -21,7 +21,6 @@ import { TrackControl } from "./TrackControl";
 import { WCShareModal } from "../share/WCShareModal";
 import { StartingXI, LineupsAreInRow } from "./StartingXI";
 import { useWCLineups } from "./use-wc-lineups";
-import { WC_BRACKET_HREF } from "../following/data/tournaments";
 import { roundKeyFromStage } from "../tournament/knockout-data";
 
 // Summer Soccer game detail.
@@ -316,7 +315,7 @@ export function WCGameDetail({
             />
           ))}
           {roundKeyFromStage(game.stage ?? "") ? (
-            <AgateRow main="Bracket & schedule" href={WC_BRACKET_HREF} />
+            <AgateRow main="Bracket & schedule" href="/schedule" />
           ) : null}
         </section>
 

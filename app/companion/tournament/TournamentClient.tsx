@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { SecHead } from "../system/SecHead";
+import { AlertSlotToggle } from "../follow/AlertSlotToggle";
 import { useFollows } from "../providers";
 import { PRESETS } from "../state/types";
 import {
@@ -358,12 +359,16 @@ function TournamentTabs({ tournamentId }: { tournamentId: string }) {
       >
         Groups
       </Link>
+      {/* The bracket lives on the Schedule tab now (S1/S2). This links
+          out honestly — a tab named "Bracket" landing on a day list was
+          parked feedback; "Schedule" promises what it opens. The old
+          /tournament/[id]/bracket route stays for deep links. */}
       <Link
-        href={`/tournament/${tournamentId}/bracket`}
+        href="/schedule"
         className="uppercase"
         style={{ ...tabStyle, color: "var(--mute-2)", fontWeight: 600 }}
       >
-        Bracket
+        Schedule
       </Link>
     </div>
   );
@@ -730,6 +735,10 @@ function MiniSeriesStrip({ gamesPlayed }: { gamesPlayed: number }) {
       {Array.from({ length: 7 }).map((_, i) => {
         const state =
           i < played ? "played" : i === played ? "next" : "later";
+        // Games 1-4 are guaranteed in a best-of-7: they keep the solid
+        // outline even when "later". Only games 5-7 read as if-necessary
+        // (audit C5c: a 1-1 series was dashing guaranteed game 4).
+        const guaranteed = i < 4;
         return (
           <span
             key={i}
@@ -742,9 +751,9 @@ function MiniSeriesStrip({ gamesPlayed }: { gamesPlayed: number }) {
               border:
                 state === "played"
                   ? "1px solid var(--ink)"
-                  : state === "next"
-                    ? "1px solid var(--mute-2)" // scheduled → solid outline
-                    : "1px dashed var(--mute-2)", // later → dashed (if-necessary)
+                  : state === "next" || guaranteed
+                    ? "1px solid var(--mute-2)" // scheduled/guaranteed → solid
+                    : "1px dashed var(--mute-2)", // 5-7 → dashed (if-necessary)
             }}
           />
         );
@@ -884,39 +893,14 @@ function TournamentPresetSection({
 
       {isFollowed && existing ? (
         <div>
-          <button
-            type="button"
-            onClick={() =>
-              setFollowAlertEnabled(
-                "tournament",
-                tournament.id,
-                !existing.alertEnabled
-              )
+          <AlertSlotToggle
+            enabled={existing.alertEnabled}
+            tier={existing.alertTier}
+            subjectName={tournament.name}
+            onToggle={(next) =>
+              setFollowAlertEnabled("tournament", tournament.id, next)
             }
-            aria-label={`${existing.alertEnabled ? "Disable" : "Enable"} alerts for ${tournament.name}`}
-            className="mb-2 inline-flex min-h-[44px] w-full items-center justify-between rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
-            style={{
-              background: existing.alertEnabled
-                ? "var(--cream-2)"
-                : "transparent",
-              borderColor: existing.alertEnabled ? "var(--ink)" : "var(--line)",
-            }}
-          >
-            <span
-              className="text-[13px]"
-              style={{ color: "var(--ink)", fontWeight: 700 }}
-            >
-              {existing.alertEnabled
-                ? `${PRESETS[existing.alertTier].label} alerts on`
-                : "Alerts off"}
-            </span>
-            <span
-              className="text-[11px]"
-              style={{ color: "var(--mute-1)", fontWeight: 600 }}
-            >
-              {existing.alertEnabled ? "Manage" : "Turn on"}
-            </span>
-          </button>
+          />
           {/* Unfollow — a mono link action, not a pill. Secondary to the
               toggle above (the section's primary control). */}
           <button

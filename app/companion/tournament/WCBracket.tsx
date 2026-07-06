@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Spoiler } from "../spoiler/Spoiler";
 import { SecHead } from "../system/SecHead";
@@ -52,9 +52,17 @@ export function WCBracket() {
 
       {/* ── Mobile: one round at a time, or a chronological day view ────── */}
       <div className="">
-        {/* View switch — mono segments, active carries the ink underline
-            (same grammar as the round tabs). Sits above the sticky tabs. */}
-        <div className="mb-3 flex" style={{ borderBottom: "1px solid var(--line)" }}>
+        {/* View switch — mono segments, active carries the ink underline.
+            STICKY ("freeze pane", parked feedback 2026-07-06): deep in the
+            chronology the switch stays reachable. */}
+        <div
+          className="sticky top-0 z-10 -mx-4 mb-3 flex px-4 pt-1"
+          style={{
+            borderBottom: "1px solid var(--line)",
+            background: "var(--bar-blur-bg, var(--cream))",
+            backdropFilter: "blur(8px)",
+          }}
+        >
           {([
             ["byday", "By day"],
             ["bracket", "Bracket"],
@@ -98,26 +106,20 @@ export function WCBracket() {
   );
 }
 
-// ── BY DAY view (System D, D3 Task 6a; S1 full chronology) ────────────
-// The knockout schedule read chronologically: every dated fixture, past
-// days included (played matches keep their spoiler-gated scores), grouped
-// under day heads (TODAY / TOMORROW / "SAT JUL 5"). Day math is
-// device-local (one-app-day doctrine), matching Today's stamps. When past
-// days exist the view anchors to TODAY on open, so the reader lands on
-// now with history one scroll up. Exported for the Schedule surface.
+// ── BY DAY view (System D; parked-feedback batch 2026-07-06) ──────────
+// The knockout schedule with the soonest game on TOP: today and future
+// days first in chronological order, then a RESULTS block with played
+// days newest-first beneath. No scroll anchor — the earlier
+// scrollIntoView approach didn't fire reliably on iOS (confirmed by a
+// peer screenshot), and ordering beats scrolling anyway: you open the
+// view and the next kickoff is the first row. Day math is device-local
+// (one-app-day doctrine). Exported for the Schedule surface.
 
 export function ByDayView({ rounds }: { rounds: BracketRound[] }) {
   const groups = groupBracketByDay(rounds, new Date());
-  const hasPast = groups.some((g) => g.past);
-  const anchorRef = useRef<HTMLElement | null>(null);
-  const anchored = useRef(false);
-  const firstCurrentKey = groups.find((g) => !g.past)?.key;
-
-  useEffect(() => {
-    if (!hasPast || anchored.current) return;
-    anchored.current = true;
-    anchorRef.current?.scrollIntoView({ block: "start" });
-  }, [hasPast]);
+  const current = groups.filter((g) => !g.past);
+  // Newest-first: yesterday sits closest to the fold.
+  const past = groups.filter((g) => g.past).reverse();
 
   if (groups.length === 0) {
     return (
@@ -132,24 +134,52 @@ export function ByDayView({ rounds }: { rounds: BracketRound[] }) {
 
   return (
     <div>
-      {groups.map((g, gi) => (
-        <section
-          key={g.key}
-          ref={g.key === firstCurrentKey ? anchorRef : undefined}
-          className={gi === 0 ? "mt-1" : "mt-7"}
-          style={g.key === firstCurrentKey ? { scrollMarginTop: 8 } : undefined}
-        >
-          <SecHead name={g.head} count={String(g.matches.length)} />
-          {g.matches.map((m) => (
-            <BracketMatchRow
-              key={`${m.round}-${m.number}`}
-              match={m}
-              idx={String(m.number).padStart(2, "0")}
-            />
-          ))}
-        </section>
+      {current.map((g, gi) => (
+        <DayGroup key={g.key} group={g} first={gi === 0} />
       ))}
+
+      {past.length > 0 ? (
+        <>
+          <p
+            className="uppercase"
+            style={{
+              margin: "36px 0 4px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "0.16em",
+              color: "var(--mute-1)",
+            }}
+          >
+            Results
+          </p>
+          {past.map((g) => (
+            <DayGroup key={g.key} group={g} first={false} />
+          ))}
+        </>
+      ) : null}
     </div>
+  );
+}
+
+function DayGroup({
+  group,
+  first,
+}: {
+  group: ReturnType<typeof groupBracketByDay>[number];
+  first: boolean;
+}) {
+  return (
+    <section className={first ? "mt-1" : "mt-7"}>
+      <SecHead name={group.head} count={String(group.matches.length)} />
+      {group.matches.map((m) => (
+        <BracketMatchRow
+          key={`${m.round}-${m.number}`}
+          match={m}
+          idx={String(m.number).padStart(2, "0")}
+        />
+      ))}
+    </section>
   );
 }
 
@@ -227,10 +257,20 @@ function BracketMatchRow({ match, idx }: { match: BracketMatch; idx: string }) {
       </span>
     ) : null;
 
+  // Upcoming rows stamp the kickoff TIME — the day head above the row
+  // already owns the day, so "MON, JUL 6" under a TODAY head was
+  // redundant and hid the one fact the row should add (parked feedback
+  // 2026-07-06). Undated rows (SCHEDULE TO COME) fall back to nothing.
+  const kickTime = match.dateIso
+    ? new Date(match.dateIso).toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : match.dateLabel;
   const stamp = played ? (
     <Stamp text={live ? "LIVE" : "FT"} variant={live ? "outline" : "faint"} />
-  ) : match.dateLabel ? (
-    <Stamp text={match.dateLabel} variant={anyFollowed ? "outline" : "faint"} />
+  ) : kickTime ? (
+    <Stamp text={kickTime} variant={anyFollowed ? "outline" : "faint"} />
   ) : null;
 
   const inner = (

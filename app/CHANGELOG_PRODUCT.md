@@ -2,6 +2,56 @@
 
 ---
 
+## Feedback batch — the parked round + verified externals — 2026-07-06
+
+Six parked items from the peer-feedback round plus the survivors of an
+external (Codex) review. Every external claim was verified against the
+code first: four of eight were stale or wrong (notification fanout,
+spoiler structure, two route claims — all already correct), four were
+real and are fixed below.
+
+Parked round:
+- **Back means back.** Detail crumbs were hardcoded parent links ("←
+  WATCHING" from a game you opened on Today). Now origin-aware: with
+  in-app history the crumb reads "← BACK" and uses real history; on a
+  cold deep link it falls back to the named parent. New nav-depth
+  tracker in the frame.
+- **By Day opens on the soonest game.** Upcoming days render first
+  (today on top), played days sit beneath a RESULTS marker,
+  newest-first. The scroll-to-TODAY anchor (which didn't fire on real
+  iOS) is gone — ordering beats scrolling.
+- **Row stamps carry the time, not the date.** Under a day head an
+  upcoming row now stamps "8:00 PM", not "MON, JUL 6".
+- **The view switcher is freeze-paned.** BY DAY · BRACKET · GROUPS
+  pins below the brand bar while you scroll (and on the tournament
+  bracket page).
+- **The tournament page's third tab is now "Schedule"** and links to
+  the Schedule tab — the bracket's one home. The game-detail "Bracket
+  & schedule" row points there too.
+
+Verified externals:
+- **No more silent alert taps.** The four detail preset sections
+  (team, country, series, tournament) share FollowCard's guarded
+  toggle: at the 3-slot cap the button reads "Full", disables, and
+  explains — it used to do nothing.
+- **Settings push enrollment carries your alerts.** Subscribing from
+  Settings registered the device with an EMPTY alert set, and the
+  session's sync effect couldn't see the new subscription until a
+  reload. Both fixed: the panel sends current alert follows, and
+  subscription state now broadcasts across the app.
+- **Series dots respect the guarantee.** Games 1-4 of a best-of-7 no
+  longer render as "if necessary" dashes on the tournament strip and
+  the series fallback derivation.
+- **The tournament picker chip** uses the hand-picked chip ("SOC"),
+  not a name slice ("SUM").
+
+Refuted by audit, unchanged: push fanout covers all four follow kinds
+(tests prove it), WC match events already collapse to one neutral row
+under No-Spoilers, Up Next rows already link to game detail, quiet team
+follows already link to /team.
+
+---
+
 ## S2 — the bracket becomes a bracket — 2026-07-06
 
 Direction locked by Ibrahim from the S2 mock round: quarter cards.

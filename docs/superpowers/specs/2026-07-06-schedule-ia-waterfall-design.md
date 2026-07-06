@@ -244,6 +244,56 @@ Ranked individual findings:
   refresh store screenshots (v1.0.3), document the NFL mapping so
   Phase 22 inherits the patterns.
 
+## Parked feedback (2026-07-06, Ibrahim)
+
+**ALL BUILT 2026-07-06** in the feedback batch (see CHANGELOG), plus
+the verified survivors of the external Codex review (C2 push sync, C3
+slot-full UX, C5c series dots, C5d picker chip; C1/C4/C5a/C5b refuted
+by audit). Item list kept for the record:
+
+1. **Remove the bracket entry from the Following side.** Schedule owns
+   the bracket now; the tournament page's BRACKET tab (reached via
+   Following) is redundant. Candidate: tournament tabs become
+   OVERVIEW · GROUPS, or the tab deep-links to /schedule.
+2. **Schedule BY DAY: upcoming first, no scrolling.** The
+   scroll-to-TODAY anchor is not enough — the soonest game should be
+   at the top on open. Candidates: future-first order with past days
+   collapsed behind a RESULTS toggle at the bottom, or keep
+   chronology but collapse past days by default. Also verify whether
+   the scrollIntoView anchor even fires reliably on iOS in the app
+   shell's scroll container — his report reads like it didn't.
+3. Brackets (quarter cards): approved as shipped.
+4. **BY DAY row stamps repeat the day.** Under a day head the
+   unplayed row's stamp shows the full date ("MON, JUL 6") instead of
+   the kickoff time — redundant with the head and missing the one
+   fact the row should add. Fix: BracketMatchRow's upcoming stamp
+   uses the kickoff TIME (from dateIso, device-local); the day lives
+   in the head. Played rows keep FT/LIVE. (BracketMatchRow currently
+   stamps match.dateLabel.)
+5. **Sticky view tabs on Schedule ("freeze pane", peer feedback via
+   screenshot).** The BY DAY · BRACKET · GROUPS switcher scrolls away
+   with the page; deep in the chronology the user must scroll to the
+   top to change views. Fix: make the switcher row sticky (top-0,
+   z-10, --bar-blur-bg backdrop) — the exact treatment the retired
+   round switcher already had. Apply in ScheduleClient and WCBracket.
+   CONFIRMED by the same screenshot: the scroll-to-TODAY anchor does
+   NOT fire on a real iPhone (4:27 PM, view sitting at JUN 28, page
+   at top) — item 2 is a live bug, not a preference. Items 2 + 5
+   together are the deep-scroll fix: open at the soonest game AND
+   keep the controls reachable.
+6. **PRIORITY — the back button lies about where it goes.** Every
+   DetailCrumbs back affordance is a HARDCODED parent link (the
+   component comment concedes it: "origin-aware routing isn't
+   trivial here"). Game detail always reads "← WATCHING" even when
+   reached from Today, Schedule, or the bracket; tournament / team /
+   series pages always return to Following. With Schedule as a new
+   common origin the mismatch is now constant. Fix: origin-aware
+   back — router.back() when the previous history entry is in-app
+   (track via a session navigation flag), static parent href only on
+   cold deep links; label becomes "Back" or the true origin tab
+   name. Touches DetailCrumbs + its ~12 call sites' labels only —
+   the hrefs stay as the deep-link fallback.
+
 ## Non-goals
 
 - No feed, news, or editorial content on Schedule. Ever.

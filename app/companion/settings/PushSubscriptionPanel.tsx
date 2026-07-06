@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { isCapacitorNative } from "../dev/native-detect";
 import { usePushSubscription } from "../push/use-push-subscription";
+import { useFollows, useUserPrefs } from "../providers";
 
 // Stage B push panel — lives in Settings.
 //
@@ -36,6 +37,8 @@ export function PushSubscriptionPanel() {
 
 function WebPushPanel() {
   const { status, subscribe, unsubscribe, sendTest } = usePushSubscription();
+  const { follows } = useFollows();
+  const { prefs } = useUserPrefs();
   const [working, setWorking] = useState<null | "subscribe" | "unsubscribe" | "test" | "delayed-test">(
     null
   );
@@ -80,7 +83,17 @@ function WebPushPanel() {
   async function handleSubscribe() {
     setWorking("subscribe");
     setFeedback(null);
-    const sub = await subscribe();
+    // Register WITH the current alert follows (audit C2: a bare
+    // subscribe() enrolled the device with an EMPTY alert set, and the
+    // root sync effect couldn't correct it until a reload). The
+    // subscribed-status broadcast then lets PushSyncEffect complete the
+    // full pref sync (quiet hours, reminder lead, time zone).
+    const sub = await subscribe({
+      alerts: follows
+        .filter((f) => f.alertEnabled)
+        .map((f) => ({ kind: f.kind, id: f.id, tier: f.alertTier })),
+      noSpoilers: prefs.noSpoilers,
+    });
     setWorking(null);
     if (!sub) {
       setFeedback(

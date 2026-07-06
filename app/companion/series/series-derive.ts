@@ -193,7 +193,11 @@ function deriveFromSeriesContext(series: SeriesInfo): SeriesDot[] {
       continue;
     }
 
-    const ifNecessary = isComplete ? i > totalPlayed : i > totalPlayed + 1;
+    // Games 1-4 are guaranteed in a best-of-7 — they can never be
+    // "if necessary" no matter how few have been played (audit C5c: a
+    // 1-1 series was dashing game 4).
+    const ifNecessary =
+      i > 4 && (isComplete ? i > totalPlayed : i > totalPlayed + 1);
     result.push({
       number: i,
       state: ifNecessary ? "if-necessary" : "tbd",

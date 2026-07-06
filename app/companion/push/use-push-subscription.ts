@@ -91,6 +91,18 @@ function toStored(sub: PushSubscription): StoredSub {
   };
 }
 
+// ── Cross-instance status broadcast (audit C2, 2026-07-06) ────────────
+// Each hook instance held its own status copy: enabling push in the
+// Settings panel flipped THAT instance to "subscribed" while the
+// root-mounted PushSyncEffect instance stayed on its mount-time
+// "not-subscribed" until a full reload — so the alert-follow sync never
+// fired for the session. Subscribe/unsubscribe/expiry now broadcast the
+// new status to every live instance.
+const statusListeners = new Set<(s: PushSubscriptionStatus) => void>();
+function broadcastStatus(s: PushSubscriptionStatus) {
+  for (const listener of statusListeners) listener(s);
+}
+
 export function usePushSubscription(): {
   status: PushSubscriptionStatus;
   /** Create a new push subscription. Caller must have already secured
@@ -184,6 +196,16 @@ export function usePushSubscription(): {
     };
   }, []);
 
+  // Converge on broadcasts from other instances (C2). Registered after
+  // init so a subscribe in one surface updates every mounted consumer.
+  useEffect(() => {
+    const listener = (s: PushSubscriptionStatus) => setStatus(s);
+    statusListeners.add(listener);
+    return () => {
+      statusListeners.delete(listener);
+    };
+  }, []);
+
   const subscribe = useCallback(async (
     sync?: {
       alerts: AlertSyncItem[];
@@ -232,6 +254,7 @@ export function usePushSubscription(): {
 
       writeLocal(stored);
       setStatus({ state: "subscribed", sub: stored });
+      broadcastStatus({ state: "subscribed", sub: stored });
       return stored;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Subscribe failed.";
@@ -267,6 +290,7 @@ export function usePushSubscription(): {
       }
       writeLocal(null);
       setStatus({ state: "not-subscribed" });
+      broadcastStatus({ state: "not-subscribed" });
     } catch (err) {
       setStatus({
         state: "error",
@@ -326,6 +350,7 @@ export function usePushSubscription(): {
           // Server says subscription is gone — clear local state.
           writeLocal(null);
           setStatus({ state: "not-subscribed" });
+          broadcastStatus({ state: "not-subscribed" });
           return { ok: false, error: "Subscription expired. Re-enable to fix." };
         }
         if (!res.ok) {

@@ -13,7 +13,9 @@ export function TournamentPicker() {
       id: t.id,
       primary: t.name,
       secondary: t.detail,
-      mark: t.name.slice(0, 3).toUpperCase(),
+      // The hand-picked chip, never a name slice — slicing produced "SUM"
+      // for "Summer Soccer 2026" (the chip field exists for exactly this).
+      mark: t.chip,
     }));
   }, []);
 
