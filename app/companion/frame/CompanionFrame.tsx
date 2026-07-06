@@ -35,14 +35,17 @@ export function CompanionFrame({
    *  / team) so the rail stays present for navigation consistency,
    *  with nothing highlighted. Omit entirely only on standalone
    *  surfaces (marketing, onboarding) that shouldn't show app chrome. */
-  desktopNav?: "today" | "following" | "watching" | "detail";
+  desktopNav?: "today" | "schedule" | "following" | "watching" | "detail";
 }) {
   const padClass = hideTabBar ? HIDE_BOTTOM_PAD : MOBILE_BOTTOM_PAD;
   // "detail" renders the rail without a highlighted tab — pass through
   // the literal tab ids only; the sidebar's own pathname check handles
   // highlighting and correctly highlights nothing on detail routes.
   const activeTab =
-    desktopNav === "today" || desktopNav === "following" || desktopNav === "watching"
+    desktopNav === "today" ||
+    desktopNav === "schedule" ||
+    desktopNav === "following" ||
+    desktopNav === "watching"
       ? desktopNav
       : undefined;
   return (

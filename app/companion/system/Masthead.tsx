@@ -27,18 +27,30 @@ export function Masthead({
 }) {
   const [date, setDate] = useState<string | null>(null);
   // Client-only date so the server never bakes its own timezone into the
-  // markup (the documented client-render pattern; see providers.tsx). Set
-  // once on mount — the render-with-defaults-then-upgrade approach that
-  // keeps SSR hydration matching.
+  // markup (the documented client-render pattern; see providers.tsx).
+  // Re-derived on visibility changes and a slow tick (audit 2026-07-06 #4:
+  // set-once froze yesterday's date across local midnight in long-lived /
+  // native-resumed sessions). setDate with an unchanged string is a no-op
+  // re-render-wise, so the tick costs nothing on normal days.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDate(
-      new Date().toLocaleDateString(undefined, {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      })
-    );
+    const derive = () =>
+      setDate(
+        new Date().toLocaleDateString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        })
+      );
+    derive();
+    const tick = setInterval(derive, 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") derive();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(tick);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   return (

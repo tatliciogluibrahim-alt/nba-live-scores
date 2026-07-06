@@ -2,6 +2,50 @@
 
 ---
 
+## S1 — the Schedule tab, Today slimmed, and the honesty batch — 2026-07-06
+
+The IA waterfall's first phase (spec:
+docs/superpowers/specs/2026-07-06-schedule-ia-waterfall-design.md).
+Four surfaces, four contracts: Today is personal and now, Schedule is
+the whole competition in time and structure, Following is setup,
+Watching is held.
+
+- **Schedule is the fourth tab.** New `/schedule` route: BY DAY
+  (default) is the full tournament chronology — past days keep their
+  played matches, the view anchors to TODAY — plus BRACKET (round by
+  round) and GROUPS. Complete and impersonal: it never filters to
+  follows. Doctrine line under the pagehead when No-Spoilers is on:
+  scores stay hidden, the shape of the schedule doesn't.
+- **Today is today plus one pointer.** UP NEXT holds today's games
+  only (honest count, rows cap at 5 with a "+N more" overflow into
+  Schedule). When nothing of yours is on today, a single NEXT row
+  points at the soonest followed game. The resting screen folds to
+  the same pointer plus "Open Schedule". The "Bracket & schedule"
+  foot row retired (the tab replaced it).
+- **One app day.** Bracket day heads and date stamps now use the
+  device's own timezone, matching Today and the masthead (they were
+  US Eastern; a European user saw the same match filed under two
+  days). Curated date-only round dates stay UTC-anchored by design.
+- **Games no longer vanish at kickoff.** A game whose start passed
+  while the feed still says upcoming now stays on the slate reading
+  STARTING (Today rows, the lead kicker, and the match detail) for up
+  to 45 minutes instead of dropping Today to "All quiet." at the
+  exact minute it matters. The home-screen widget excludes these.
+- **The bracket stops contradicting itself.** Resolution now also
+  derives from published later-round fixtures, so "fills in as the
+  groups finish" can't return mid-quarterfinals when ESPN drops
+  played R32 games from its feed window.
+- **The masthead date can't go stale.** Re-derived on visibility
+  changes and a slow tick; it used to freeze at mount across local
+  midnight.
+
+Known and accepted per the L7 doctrine: advancement is visible under
+No-Spoilers (a team appearing in the next round reveals it won).
+Deeper leaks flagged in the 2026-07-06 audit (group-table columns,
+country path rail, YouFollow status words) are S2/backlog items.
+
+---
+
 ## Friend-feedback batch — glance clarity on the World Cup surfaces — 2026-07-05
 
 Five fixes from the first structured friend-beta thread (Kanade,

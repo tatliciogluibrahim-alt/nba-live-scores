@@ -143,6 +143,11 @@ export type UpNextItem = {
   /** Series stake, humanized ("OKC leads series 3-2"). NBA series games
    *  only; undefined for plain games and Summer Soccer fixtures. */
   stake?: string;
+  /** True when the scheduled start has passed but the feed hasn't flipped
+   *  to live yet (ESPN's pre→in lag). The game stays on the slate reading
+   *  "STARTING" instead of vanishing at the exact minute the user checks
+   *  (audit 2026-07-06 #1). */
+  imminent?: boolean;
   watch?: { channel: string; stream?: string };
   href: string;
   spoilerSubject: string;
@@ -980,21 +985,34 @@ function buildUpNext(
   );
   const pinnedIds = new Set(pinned.map((p) => p.gameId));
 
-  // Drop games whose kickoff has already passed while the feed still marks
-  // them "upcoming" (ESPN's pre→in flip lags by a minute or two). They belong
-  // in the live scoreboard, not in Upcoming reading their kickoff time — the
-  // exact "live game shown as 6:00 PM upcoming" symptom (RC3/RC4). A 2-minute
-  // grace absorbs clock skew without hiding a genuine pre-match.
+  // Kickoff-passed handling (audit 2026-07-06 #1). Dropping a game the
+  // moment its start passes while ESPN still says "upcoming" made the slate
+  // (and on a one-game day, the whole Front Page) blank out at the exact
+  // minute the user checks for tipoff, then snap to live. Instead: within a
+  // 45-minute window after the scheduled start, the game stays on the slate
+  // flagged `imminent` (renders "STARTING", never its stale kickoff time —
+  // which preserves the original RC3/RC4 fix). Past that window (abandoned /
+  // postponed feed rows), it drops as before. A 2-minute grace absorbs
+  // clock skew without flagging a genuine pre-match.
   const KICKOFF_GRACE_MS = 2 * 60 * 1000;
+  const IMMINENT_WINDOW_MS = 45 * 60 * 1000;
   const kickoffNotPassed = (date: string) =>
     new Date(date).getTime() > Date.now() - KICKOFF_GRACE_MS;
+  const kickoffImminent = (date: string) => {
+    const t = new Date(date).getTime();
+    return (
+      t <= Date.now() - KICKOFF_GRACE_MS && t > Date.now() - IMMINENT_WINDOW_MS
+    );
+  };
+  const onSlate = (date: string) =>
+    kickoffNotPassed(date) || kickoffImminent(date);
 
   const nbaUpcoming = nba
-    .filter((g) => g.status === "upcoming" && kickoffNotPassed(g.date))
+    .filter((g) => g.status === "upcoming" && onSlate(g.date))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const wcUpcoming = wc
-    .filter((g) => g.status === "upcoming" && kickoffNotPassed(g.date))
+    .filter((g) => g.status === "upcoming" && onSlate(g.date))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   // "Personal" = a game the user explicitly follows: their team, their
@@ -1034,7 +1052,10 @@ function buildUpNext(
     candidates.push({
       date: new Date(g.date).getTime(),
       pinned,
-      item: nbaToUpNext(g, pinned, true),
+      item: {
+        ...nbaToUpNext(g, pinned, true),
+        imminent: kickoffImminent(g.date) || undefined,
+      },
     });
   }
   for (const g of wcUpcoming) {
@@ -1043,7 +1064,10 @@ function buildUpNext(
     candidates.push({
       date: new Date(g.date).getTime(),
       pinned,
-      item: wcToUpNext(g, pinned, true),
+      item: {
+        ...wcToUpNext(g, pinned, true),
+        imminent: kickoffImminent(g.date) || undefined,
+      },
     });
   }
 
@@ -1052,7 +1076,11 @@ function buildUpNext(
     return a.date - b.date;
   });
 
-  return candidates.slice(0, 5).map((c) => c.item);
+  // Unsliced (audit 2026-07-06 #3): the old slice(0,5) silently truncated
+  // busier days and every downstream count lied with it. The render layer
+  // caps VISIBLE rows and adds an honest "+N more" overflow into Schedule;
+  // the widget applies its own cap.
+  return candidates.map((c) => c.item);
 }
 
 // ── Quiet wrap ────────────────────────────────────────────────────────
@@ -1909,6 +1937,9 @@ export type TodayHeadlineDeck = {
    *  day-aware time ("TODAY 4:00 PM" / "MON 3:00 PM") so the hero answers
    *  "when" in one place. Unset for live leads and the hero fallback. */
   dateIso?: string;
+  /** Scheduled start passed, feed not live yet — the kicker reads
+   *  "STARTING" instead of the stale kickoff time. */
+  imminent?: boolean;
   accent: "var(--nba)" | "var(--wc)";
   href: string;
 };
@@ -1991,7 +2022,11 @@ function leadGame(payload: TodayPayload): LeadGame | null {
 
   // Upcoming — the up-next item already carries the "time · context"
   // detail ("8:30 PM · Game 6") and the broadcast the deck wants.
-  const up = payload.upNext[0];
+  // Prefer TODAY'S first game: the Monument is Today's lead, and a pinned
+  // future game sorting to upNext[0] must not displace a game that's
+  // actually on today (S1 — Today is today + one pointer, the pointer
+  // handles the future).
+  const up = payload.upNext.find((i) => i.isToday) ?? payload.upNext[0];
   if (up) {
     return {
       deck: {
@@ -1999,6 +2034,7 @@ function leadGame(payload: TodayPayload): LeadGame | null {
         detail: up.detail,
         broadcast: up.watch?.channel,
         dateIso: up.dateIso,
+        imminent: up.imminent,
         accent: up.source === "wc" ? "var(--wc)" : "var(--nba)",
         href: up.href,
       },

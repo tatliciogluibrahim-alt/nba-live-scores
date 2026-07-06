@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Spoiler } from "../spoiler/Spoiler";
 import { SecHead } from "../system/SecHead";
@@ -32,7 +32,7 @@ const SHORT: Record<KnockoutRoundKey, string> = {
   final: "Final",
 };
 
-function followedCountrySet(
+export function followedCountrySet(
   follows: { kind: string; id: string }[]
 ): Set<string> {
   const out = new Set<string>();
@@ -49,8 +49,6 @@ export function WCBracket() {
     fixtures,
     followedCountrySet(follows)
   );
-  const [active, setActive] = useState<KnockoutRoundKey>("r32");
-  const round = rounds.find((r) => r.key === active) ?? rounds[0];
   // Mobile view mode: a chronological day schedule, or the round-by-round
   // bracket (D3 Task 6a). Client-side only, no new route. BY DAY is the
   // default — beta feedback (2026-07-05): the day view answers "what's on,
@@ -106,63 +104,7 @@ export function WCBracket() {
         </div>
 
         {mode === "bracket" ? (
-          <>
-            <div
-              className="sticky top-0 z-10 -mx-4 mb-4 px-4 pb-0 pt-1"
-              style={{ background: "var(--bar-blur-bg, var(--cream))", backdropFilter: "blur(8px)" }}
-            >
-              {/* Round switcher — mono tabs, active carries the ink underline. */}
-              <div className="flex" style={{ borderBottom: "1px solid var(--line)" }}>
-                {rounds.map((r) => {
-                  const on = r.key === active;
-                  return (
-                    <button
-                      key={r.key}
-                      type="button"
-                      onClick={() => setActive(r.key)}
-                      aria-pressed={on}
-                      className="flex-1 uppercase transition active:opacity-70"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 11,
-                        letterSpacing: "0.12em",
-                        fontWeight: on ? 700 : 600,
-                        color: on ? "var(--ink)" : "var(--mute-2)",
-                        paddingTop: 4,
-                        paddingBottom: 10,
-                        background: "transparent",
-                        borderBottom: on ? "2px solid var(--ink)" : "2px solid transparent",
-                        marginBottom: -1,
-                      }}
-                    >
-                      {SHORT[r.key]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <SecHead name={round.label} count={round.dateLabel ?? undefined} />
-
-            {round.matches.length === 0 ? (
-              <p
-                className="py-[13px] text-[13px]"
-                style={{ color: "var(--mute-1)", fontWeight: 500 }}
-              >
-                Not set yet.
-              </p>
-            ) : (
-              <div>
-                {round.matches.map((m) => (
-                  <BracketMatchRow
-                    key={`${m.round}-${m.number}`}
-                    match={m}
-                    idx={String(m.number).padStart(2, "0")}
-                  />
-                ))}
-              </div>
-            )}
-          </>
+          <BracketRoundsView rounds={rounds} />
         ) : (
           <ByDayView rounds={rounds} />
         )}
@@ -173,14 +115,95 @@ export function WCBracket() {
   );
 }
 
-// ── Mobile BY DAY view (System D, D3 Task 6a) ─────────────────────────
-// The knockout schedule read chronologically: every dated fixture from today
-// forward, grouped under day heads (TODAY / TOMORROW / "SAT JUL 5"), reusing
-// the Task 5 agate row. Answers "what's on, and when" without walking the
-// round tabs. Day math is ET (matches the per-match dateLabel).
+// ── Round-by-round view (extracted for the Schedule surface, S1) ──────
+// Sticky round switcher + one round's matches as agate rows. Owns its
+// active-round state so WCBracket and ScheduleClient can mount it as-is.
 
-function ByDayView({ rounds }: { rounds: BracketRound[] }) {
+export function BracketRoundsView({ rounds }: { rounds: BracketRound[] }) {
+  const [active, setActive] = useState<KnockoutRoundKey>("r32");
+  const round = rounds.find((r) => r.key === active) ?? rounds[0];
+
+  return (
+    <>
+      <div
+        className="sticky top-0 z-10 -mx-4 mb-4 px-4 pb-0 pt-1"
+        style={{ background: "var(--bar-blur-bg, var(--cream))", backdropFilter: "blur(8px)" }}
+      >
+        {/* Round switcher — mono tabs, active carries the ink underline. */}
+        <div className="flex" style={{ borderBottom: "1px solid var(--line)" }}>
+          {rounds.map((r) => {
+            const on = r.key === round.key;
+            return (
+              <button
+                key={r.key}
+                type="button"
+                onClick={() => setActive(r.key)}
+                aria-pressed={on}
+                className="flex-1 uppercase transition active:opacity-70"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: "0.12em",
+                  fontWeight: on ? 700 : 600,
+                  color: on ? "var(--ink)" : "var(--mute-2)",
+                  paddingTop: 4,
+                  paddingBottom: 10,
+                  background: "transparent",
+                  borderBottom: on ? "2px solid var(--ink)" : "2px solid transparent",
+                  marginBottom: -1,
+                }}
+              >
+                {SHORT[r.key]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <SecHead name={round.label} count={round.dateLabel ?? undefined} />
+
+      {round.matches.length === 0 ? (
+        <p
+          className="py-[13px] text-[13px]"
+          style={{ color: "var(--mute-1)", fontWeight: 500 }}
+        >
+          Not set yet.
+        </p>
+      ) : (
+        <div>
+          {round.matches.map((m) => (
+            <BracketMatchRow
+              key={`${m.round}-${m.number}`}
+              match={m}
+              idx={String(m.number).padStart(2, "0")}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+// ── BY DAY view (System D, D3 Task 6a; S1 full chronology) ────────────
+// The knockout schedule read chronologically: every dated fixture, past
+// days included (played matches keep their spoiler-gated scores), grouped
+// under day heads (TODAY / TOMORROW / "SAT JUL 5"). Day math is
+// device-local (one-app-day doctrine), matching Today's stamps. When past
+// days exist the view anchors to TODAY on open, so the reader lands on
+// now with history one scroll up. Exported for the Schedule surface.
+
+export function ByDayView({ rounds }: { rounds: BracketRound[] }) {
   const groups = groupBracketByDay(rounds, new Date());
+  const hasPast = groups.some((g) => g.past);
+  const anchorRef = useRef<HTMLElement | null>(null);
+  const anchored = useRef(false);
+  const firstCurrentKey = groups.find((g) => !g.past)?.key;
+
+  useEffect(() => {
+    if (!hasPast || anchored.current) return;
+    anchored.current = true;
+    anchorRef.current?.scrollIntoView({ block: "start" });
+  }, [hasPast]);
 
   if (groups.length === 0) {
     return (
@@ -188,7 +211,7 @@ function ByDayView({ rounds }: { rounds: BracketRound[] }) {
         className="py-[13px] text-[13px]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        The knockout schedule fills in as the groups finish.
+        No knockout matches on the schedule yet.
       </p>
     );
   }
@@ -196,7 +219,12 @@ function ByDayView({ rounds }: { rounds: BracketRound[] }) {
   return (
     <div>
       {groups.map((g, gi) => (
-        <section key={g.key} className={gi === 0 ? "mt-1" : "mt-7"}>
+        <section
+          key={g.key}
+          ref={g.key === firstCurrentKey ? anchorRef : undefined}
+          className={gi === 0 ? "mt-1" : "mt-7"}
+          style={g.key === firstCurrentKey ? { scrollMarginTop: 8 } : undefined}
+        >
           <SecHead name={g.head} count={String(g.matches.length)} />
           {g.matches.map((m) => (
             <BracketMatchRow

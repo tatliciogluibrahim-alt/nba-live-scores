@@ -230,7 +230,10 @@ export function WidgetSync() {
     // moment line (or its empty CTA). Cap at 5 so the medium widget can
     // page through a couple more games before wrapping.
     const upcoming = payload.upNext
-      .filter((item) => item.personal)
+      // No imminent games on the tile: an already-started game showing its
+      // passed kickoff time is exactly the stale-widget read this filter
+      // family exists to prevent. The Live Activity owns started games.
+      .filter((item) => item.personal && !item.imminent)
       .slice(0, 5)
       .map(itemToUpcoming);
     let moment: WidgetSnapshot["moment"] = payload.reminder

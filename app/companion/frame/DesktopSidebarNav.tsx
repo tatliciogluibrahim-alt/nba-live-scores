@@ -24,7 +24,7 @@ import { useLiveRail } from "./use-live-rail";
 // breathing dot), no soft pills. Vermilion appears only on the active
 // tick, per the chrome law.
 
-type Tab = "today" | "following" | "watching";
+type Tab = "today" | "schedule" | "following" | "watching";
 
 type Entry = {
   id: Tab;
@@ -39,6 +39,7 @@ type Entry = {
 // "open the app on any device" route that always renders Today.
 const ENTRIES: Entry[] = [
   { id: "today", href: "/app", label: "Today" },
+  { id: "schedule", href: "/schedule", label: "Schedule" },
   { id: "following", href: "/following", label: "Following" },
   { id: "watching", href: "/watching", label: "Watching" },
 ];

@@ -13,14 +13,18 @@ import { usePathname } from "next/navigation";
 // at --mute-1. Three tabs, three jobs, real Next.js navigation.
 
 type Tab = {
-  id: "today" | "following" | "watching";
+  id: "today" | "schedule" | "following" | "watching";
   href: string;
   label: string;
   ariaLabel: string;
 };
 
+// Four tabs, four jobs (S1, 2026-07-06): state → structure → setup →
+// held. Schedule is the competition's full shape (day list, bracket,
+// groups); Today stays personal and now.
 const TABS: Tab[] = [
   { id: "today", href: "/", label: "Today", ariaLabel: "Today" },
+  { id: "schedule", href: "/schedule", label: "Schedule", ariaLabel: "Schedule and bracket" },
   { id: "following", href: "/following", label: "Following", ariaLabel: "Following" },
   { id: "watching", href: "/watching", label: "Watching", ariaLabel: "Watching, pinned games" },
 ];

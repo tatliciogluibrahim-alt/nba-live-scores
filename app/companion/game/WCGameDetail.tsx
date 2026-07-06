@@ -90,21 +90,25 @@ export function WCGameDetail({
   // style strings come from the feed; we surface them verbatim when
   // present, fall back to generic tier labels otherwise.
 
-  // Soccer-bespoke context line.
+  // HeroMoment content for WC.
+  const hero = deriveWCHero(game);
+
+  // Soccer-bespoke context line. An imminent match (scheduled time passed,
+  // feed not live yet) says "Starting" — never a time that already went by
+  // (audit 2026-07-06 #7).
   const contextLine = isUpcoming
-    ? new Date(game.date).toLocaleString(undefined, {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })
+    ? hero.imminent
+      ? "Starting"
+      : new Date(game.date).toLocaleString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
     : isLive
       ? game.statusText
       : "Full time";
-
-  // HeroMoment content for WC.
-  const hero = deriveWCHero(game);
 
   const channel = game.broadcasts[0] ?? game.watchLabel ?? null;
   const matchEvents = relevantMatchEvents(game.events ?? []);
@@ -172,9 +176,9 @@ export function WCGameDetail({
   // deck are Spoiler-wrapped by the Monument itself, so one tap reveals both.
   // Pre-kickoff the deck stays empty: the kicker already carries day, time,
   // round, and channel, so "Kicks off today." restated the line above it
-  // (beta feedback 2026-07-05). "Kicking off." (scheduled time passed, not
-  // live yet) still shows — that state isn't in the kicker.
-  const showDeck = !isUpcoming || hero.imminent === true;
+  // (beta feedback 2026-07-05). The imminent state now lives in the kicker
+  // ("STARTING"), so its deck sentence is redundant too.
+  const showDeck = !isUpcoming;
   const safeDeck =
     showDeck && hero.headline
       ? safeText(hero.headline, noSpoilers) || undefined

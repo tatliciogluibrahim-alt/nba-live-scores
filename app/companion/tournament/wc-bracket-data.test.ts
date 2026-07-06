@@ -210,34 +210,45 @@ describe("groupBracketByDay", () => {
     dateLabel: null,
   });
 
-  // Fixed clock: Sat Jul 4 2026, noon ET (16:00 UTC, EDT = UTC-4).
-  const now = new Date("2026-07-04T16:00:00Z");
+  // Local-constructed dates so day grouping renders deterministically in
+  // any runner timezone (one-app-day doctrine: day math is device-local).
+  // Jul 4 2026 is a Saturday.
+  const iso = (
+    y: number,
+    m: number,
+    d: number,
+    h: number,
+    min = 0
+  ): string => new Date(y, m, d, h, min).toISOString();
+  const now = new Date(2026, 6, 4, 12, 0); // Sat Jul 4, local noon
 
-  it("labels today, tomorrow, and later days; drops the past", () => {
-    const past = match("2026-07-02T20:00:00Z"); // Thu — dropped
-    const todayEarly = match("2026-07-04T18:00:00Z"); // 2 PM ET
-    const todayLate = match("2026-07-04T23:00:00Z"); // 7 PM ET
-    const tomorrow = match("2026-07-05T20:00:00Z"); // Sun
-    const later = match("2026-07-08T20:00:00Z"); // Wed
+  it("labels today, tomorrow, and later days; keeps the past, flagged", () => {
+    const past = match(iso(2026, 6, 2, 20)); // Thu — kept, past
+    const todayEarly = match(iso(2026, 6, 4, 14));
+    const todayLate = match(iso(2026, 6, 4, 19));
+    const tomorrow = match(iso(2026, 6, 5, 16)); // Sun
+    const later = match(iso(2026, 6, 8, 16)); // Wed
     const groups = groupBracketByDay(
       [round([past, todayLate, todayEarly, tomorrow, later])],
       now
     );
 
     expect(groups.map((g) => g.head)).toEqual([
+      "THU JUL 2",
       "TODAY",
       "TOMORROW",
       "WED JUL 8",
     ]);
+    expect(groups.map((g) => g.past)).toEqual([true, false, false, false]);
     // Chronological within the day (early before late).
-    expect(groups[0].matches.map((m) => m.number)).toEqual([
+    expect(groups[1].matches.map((m) => m.number)).toEqual([
       todayEarly.number,
       todayLate.number,
     ]);
   });
 
   it("collects real-but-undated fixtures under SCHEDULE TO COME, last", () => {
-    const today = match("2026-07-04T18:00:00Z");
+    const today = match(iso(2026, 6, 4, 14));
     const undated = match(null, { real: true, href: "/game/y" });
     const groups = groupBracketByDay([round([today, undated])], now);
 

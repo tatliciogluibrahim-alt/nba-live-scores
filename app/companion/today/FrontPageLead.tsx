@@ -163,6 +163,15 @@ export function FrontPageLead({
     let contextHead: string | undefined;
     if (lead.live) {
       contextHead = game.contextLabel;
+    } else if (deck.imminent) {
+      // Started, feed not live yet — say so instead of a passed time.
+      const tail = deck.detail
+        .split(" · ")
+        .slice(1)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(" · ");
+      contextHead = ["Starting", tail].filter(Boolean).join(" · ");
     } else if (deck.dateIso) {
       const tail = deck.detail
         .split(" · ")

@@ -1,10 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { Display } from "../atoms/Display";
-import { SecHead } from "../system/SecHead";
-import { AgateRow } from "../system/AgateRow";
-import { Stamp } from "../system/Stamp";
-import { matchupCodes, padIdx, upNextCountLabel, upNextDayLabel } from "./agate-slate";
+import { NextPointer } from "./sections/next-pointer";
 import type { UpNextItem } from "./today-data";
 
 // Today's RESTING state (design study C, "Next up"). Shown when nothing
@@ -28,7 +26,9 @@ import type { UpNextItem } from "./today-data";
 // "quiet-but-you-have-next-games" case.
 
 export function RestingState({ items }: { items: UpNextItem[] }) {
-  const shown = items.slice(0, 5);
+  // S1 (2026-07-06): today + one pointer. The resting screen shows the
+  // SOONEST followed game only; the rest of the week lives on Schedule.
+  const next = items[0];
   return (
     <section className="mb-5">
       <Display as="p" size="xl">
@@ -41,43 +41,27 @@ export function RestingState({ items }: { items: UpNextItem[] }) {
         Nothing live right now. That&apos;s the point.
       </p>
 
-      {shown.length > 0 ? (
+      {next ? (
         <div className="mt-7">
-          <SecHead name="Up next" count={upNextCountLabel(shown)} />
-          {shown.map((item, i) => (
-            <RestingAgateRow key={item.id} item={item} idx={padIdx(i + 1)} />
-          ))}
+          <NextPointer item={next} />
+          <Link
+            href="/schedule"
+            className="mt-4 inline-flex min-h-[40px] items-center gap-1.5 uppercase transition active:opacity-70"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              color: "var(--ink)",
+            }}
+          >
+            Open Schedule
+            <span aria-hidden style={{ color: "var(--mute-2)" }}>
+              →
+            </span>
+          </Link>
         </div>
       ) : null}
     </section>
-  );
-}
-
-// One upcoming game as an agate row. Future fixtures carry no winner
-// emphasis and no score, so the row reads: idx · codes · competition · the
-// day word (a faint, accent-free stamp). Mirrors UpNext's agate row but
-// swaps the kickoff time for the day word — on a resting day the fixtures
-// are days out, so the day matters more than the clock.
-function RestingAgateRow({ item, idx }: { item: UpNextItem; idx: string }) {
-  const { away, home } = matchupCodes(item.headline);
-  // detail is "8:00 PM · Group Stage" / "8:00 PM · Game 6": drop the leading
-  // kickoff time (the stamp carries the day) and keep the competition context
-  // as the note, joined with the broadcast ("Group Stage · Fox").
-  const parts = item.detail.split(" · ").map((s) => s.trim()).filter(Boolean);
-  const context = parts.slice(1).join(" · ");
-  const note = [context, item.watch?.channel].filter(Boolean).join(" · ");
-
-  return (
-    <AgateRow
-      idx={idx}
-      main={
-        <span style={{ fontFamily: "var(--font-mono)" }}>
-          {away} · {home}
-        </span>
-      }
-      note={note || undefined}
-      stamp={<Stamp text={upNextDayLabel(item)} variant="faint" />}
-      href={item.href}
-    />
   );
 }

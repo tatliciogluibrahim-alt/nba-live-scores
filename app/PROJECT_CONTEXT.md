@@ -602,3 +602,24 @@ fixtures in the feed). ESPN drops completed R32 fixtures from the
 schedule window late in the tournament, so the line can reappear
 after the groups are long done. Harmless but stale — candidate for a
 future pass.
+
+## S1 shipped: Schedule tab + Today slim (2026-07-06)
+
+The IA is now four surfaces with one-line contracts (spec:
+docs/superpowers/specs/2026-07-06-schedule-ia-waterfall-design.md):
+Today (personal + now), Schedule (complete + structural, new
+/schedule route + 4th tab), Following (setup), Watching (held).
+Today shows today's games plus at most ONE future pointer; the week
+lives on Schedule. Bug batch shipped alongside: one-app-day doctrine
+(device-local day math on the bracket), STARTING imminent state
+(games no longer vanish at kickoff), stage-derived bracket
+resolution, honest UP NEXT overflow, masthead date refresh.
+
+Build reference: route count is now **84** (was 83; +/schedule).
+
+Open next: S2 design round (bracket-as-a-tree mocks, flag identity
+marks on rows, nowness=size scale hierarchy) behind its own go/no-go,
+then S3 (v1.0.3 store assets, retire transitional pieces). The
+No-Spoilers advancement-leak audit items (group-table columns,
+country path rail, YouFollow status words) are logged in the spec's
+L8 and accepted-for-now under the L7 doctrine.

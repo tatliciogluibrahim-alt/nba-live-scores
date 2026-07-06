@@ -19,10 +19,10 @@ import { useSetupStep } from "./setup/useSetupStep";
 import { SetupCard } from "./setup/SetupCard";
 import { FirstFollowTierCard } from "../follow/FirstFollowTierCard";
 import { QuietRecap } from "./QuietRecap";
-import { WC_BRACKET_HREF } from "../following/data/tournaments";
 import { YouFollow } from "./sections/you-follow";
 import { TheMargin } from "./sections/the-margin";
-import { UpNext } from "./sections/up-next";
+import { UpNext, UP_NEXT_MAX_ROWS } from "./sections/up-next";
+import { NextPointer } from "./sections/next-pointer";
 import { QuietWrap } from "./sections/quiet-wrap";
 import { ReminderRow } from "./sections/reminder-row";
 import { CalmCard } from "./sections/calm-card";
@@ -87,17 +87,33 @@ export function TodayClient() {
   const slateStart = slateStartIndex(leadHasMonument, bandCount);
   // UP NEXT renders (and consumes indices) only when it isn't folded into the
   // resting state; QUIET WRAP picks up right after whatever UP NEXT showed.
-  const upNextVisible = payload.upNext.filter(
-    (i) => !lead?.deck?.href || i.href !== lead.deck.href
+  // ── Today slim (S1, 2026-07-06): today + exactly one pointer ──
+  // UP NEXT holds TODAY'S games only; the week lives on the Schedule tab.
+  // When nothing of yours is on today (or it all wrapped), a single NEXT
+  // pointer row answers "when do I next care" — never a second future item.
+  const todayUpNext = payload.upNext.filter((i) => i.isToday);
+  const futureUpNext = payload.upNext.filter((i) => !i.isToday);
+
+  // The Monument renders only for a live lead or today's first game. A
+  // future-day lead (pinned Thursday game, quiet Tuesday) is a pointer,
+  // not a monument — Today never leads with another day's game.
+  const showLead =
+    lead != null &&
+    (lead.live ||
+      (lead.deck != null &&
+        todayUpNext.some((i) => i.href === lead.deck?.href)));
+
+  const todayVisible = todayUpNext.filter(
+    (i) => !lead?.deck?.href || !showLead || i.href !== lead.deck.href
   );
-  const upNextShown = payload.restingState ? 0 : upNextVisible.length;
+  const upNextShown = payload.restingState
+    ? 0
+    : Math.min(todayVisible.length, UP_NEXT_MAX_ROWS);
   const quietWrapStart = slateStart + upNextShown;
 
   // ── Folded UP NEXT (beta feedback 2026-07-05) ──
-  // When the lead Monument is an UPCOMING game it IS the day's first up-next
-  // match — but it sat above a section labeled "UP NEXT · 4 MATCHES" that
-  // excluded it, so the labels contradicted the numbering (hero = 01, list =
-  // 02+). Fold: the SecHead moves above the Monument with the FULL day count,
+  // When the lead Monument is an UPCOMING game it IS today's first up-next
+  // match — the SecHead sits above the Monument with the FULL today count,
   // and the agate rows continue headerless right below. Live leads keep the
   // old shape (a live game isn't "up next"; the section below stays honest).
   const foldUpNext =
@@ -105,19 +121,15 @@ export function TodayClient() {
     !payload.restingState &&
     lead != null &&
     !lead.live &&
-    payload.upNext.length > 0 &&
-    lead.deck?.href === payload.upNext[0]?.href;
+    showLead &&
+    todayUpNext.length > 0 &&
+    lead.deck?.href === todayUpNext[0]?.href;
 
-  // Bracket front door — a quiet foot row on UP NEXT whenever Summer Soccer
-  // is on the day's slate. The bracket was three taps deep under Following
-  // (a setup surface); the schedule artifact belongs near the scores.
-  const wcOnSlate =
-    payload.upNext.some((i) => i.source === "wc") ||
-    payload.quietWrap.some((i) => i.source === "wc") ||
-    scoreboard.some((t) => t.source === "wc");
-  const upNextFootLink = wcOnSlate
-    ? { label: "Bracket & schedule", href: WC_BRACKET_HREF }
-    : undefined;
+  const showNextPointer =
+    !payload.restingState &&
+    !lead?.live &&
+    todayUpNext.length === 0 &&
+    futureUpNext.length > 0;
 
   const setup = useSetupStep();
 
@@ -177,13 +189,13 @@ export function TodayClient() {
                 (02+), one section. */}
             {payload.restingState ? (
               <RestingState items={payload.upNext} />
-            ) : lead ? (
+            ) : showLead && lead ? (
               <>
                 {foldUpNext ? (
                   <div className="mb-2">
                     <SecHead
                       name="Up next"
-                      count={upNextCountLabel(payload.upNext)}
+                      count={upNextCountLabel(todayUpNext)}
                     />
                   </div>
                 ) : null}
@@ -191,11 +203,10 @@ export function TodayClient() {
                 {foldUpNext ? (
                   <div className="mb-5">
                     <UpNext
-                      items={payload.upNext}
+                      items={todayUpNext}
                       excludeHref={lead.deck?.href}
                       startIndex={slateStart}
                       showHead={false}
-                      footLink={upNextFootLink}
                     />
                   </div>
                 ) : null}
@@ -241,18 +252,21 @@ export function TodayClient() {
                 <SetupCard setup={setup} />
               ) : null}
 
-              {/* On a resting day the Next-up list is shown inside
-                  RestingState above, so skip the standalone section to
-                  avoid a duplicate "Upcoming" list. When the lead is folded
-                  into UP NEXT, the section already rendered under the
-                  Monument above. */}
+              {/* On a resting day the pointer is shown inside RestingState
+                  above; when the lead is folded into UP NEXT, the section
+                  already rendered under the Monument. Otherwise (live
+                  lead): today's remaining games as the labeled section. */}
               {!payload.restingState && !foldUpNext ? (
                 <UpNext
-                  items={payload.upNext}
-                  excludeHref={lead?.deck?.href}
+                  items={todayUpNext}
+                  excludeHref={showLead ? lead?.deck?.href : undefined}
                   startIndex={slateStart}
-                  footLink={upNextFootLink}
                 />
+              ) : null}
+
+              {/* The one allowed not-today item: the NEXT pointer. */}
+              {showNextPointer ? (
+                <NextPointer item={futureUpNext[0]} />
               ) : null}
 
               <QuietWrap items={payload.quietWrap} startIndex={quietWrapStart} />
