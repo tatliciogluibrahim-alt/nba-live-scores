@@ -623,3 +623,42 @@ then S3 (v1.0.3 store assets, retire transitional pieces). The
 No-Spoilers advancement-leak audit items (group-table columns,
 country path rail, YouFollow status words) are logged in the spec's
 L8 and accepted-for-now under the L7 doctrine.
+
+## Session wrap 2026-07-06 (evening) — where to pick up
+
+Everything below is DEPLOYED to production and committed on main
+(latest: edcd7ff). Full detail per entry in CHANGELOG_PRODUCT.md; the
+IA source of truth is
+docs/superpowers/specs/2026-07-06-schedule-ia-waterfall-design.md.
+
+Shipped this session, in order:
+1. S1 — Schedule tab (4th surface), Today slimmed to today + one NEXT
+   pointer, honesty bug batch (one-app-day, STARTING imminent state,
+   bracket resolution, honest overflow, masthead refresh).
+2. S2 — quarter-cards bracket tree (direction locked by Ibrahim; flags
+   rejected; scale step shipped). Round-list bracket view retired.
+3. Feedback batch — origin-aware back button, By Day upcoming-first
+   with RESULTS below, time-only row stamps, sticky view switcher,
+   tournament tab → Schedule, shared AlertSlotToggle (slot-full
+   honesty), Settings push enrollment + cross-instance subscription
+   broadcast, series-dot floor at game 4, picker chip fix.
+
+External (Codex) review: 4 of 8 claims refuted by audit (fanout,
+spoiler structure, 2 route claims — already correct); the other 4
+fixed in the batch above.
+
+Open when picking up:
+- v1.0.2 (build 17) still in Apple review — S3 (v1.0.3 store assets
+  with Schedule/tree screenshots) waits on that verdict.
+- No-Spoilers advancement leaks (group-table columns, country path
+  rail, YouFollow status words) doctrined-as-visible; revisit only if
+  users complain (spec L7/L8).
+- Bracket tree constants (R16_FROM_R32 etc.) drifted from ESPN's real
+  numbering — displayed rounds are real fixtures so cosmetic, but
+  RE-VERIFY before reusing the module for NBA/NFL.
+- Push sync fix verified by code path; do one real test push from
+  Settings on a physical device.
+- Awaiting more peer feedback rounds from Ibrahim's testers.
+
+Route count: 84. Gate: lint 0 / 380 tests / build / live-verify, per
+ship-gate.

@@ -154,7 +154,17 @@ v1.0.1 (build 15) live. **v1.0.2 (build 17) SUBMITTED 2026-07-04,
 awaiting Apple review** — carries the full System D + C4 redesign, the
 restyled widgets/Live Activity (paper-at-rest + build-17 layout fixes),
 new store screenshots (store-assets/v1.0.2), and the rewritten store
-description/keywords. Phase 22.5 (iOS native via Capacitor)
+description/keywords.
+
+**IA update (2026-07-06, web/PWA, live in production):** the app is
+now FOUR surfaces — Today · Schedule · Following · Watching. Today is
+personal and today-only (plus one NEXT pointer); Schedule is the
+complete competition (By Day default, quarter-cards bracket tree,
+groups); Following is setup; Watching is held. Contracts + doctrines
+live in `docs/superpowers/specs/2026-07-06-schedule-ia-waterfall-design.md`
+— read it before touching Today/Schedule composition. The native
+wrapper picks all of this up from production; v1.0.3 store assets
+should reflect the new IA. Phase 22.5 (iOS native via Capacitor)
 is **shipped**, not in progress: Live Activity, the home-screen
 upcoming widget, the home-screen live-score widget, and lock-screen
 accessory widgets are all in production. Distribution is App Store +
