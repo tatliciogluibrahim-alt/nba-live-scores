@@ -647,44 +647,85 @@ External (Codex) review: 4 of 8 claims refuted by audit (fanout,
 spoiler structure, 2 route claims — already correct); the other 4
 fixed in the batch above.
 
-Open when picking up:
-- v1.0.2 (build 17) still in Apple review — S3 (v1.0.3 store assets
-  with Schedule/tree screenshots) waits on that verdict.
-- No-Spoilers advancement leaks (group-table columns, country path
-  rail, YouFollow status words) doctrined-as-visible; revisit only if
-  users complain (spec L7/L8).
-- Bracket tree constants (R16_FROM_R32 etc.) drifted from ESPN's real
-  numbering — displayed rounds are real fixtures so cosmetic, but
-  RE-VERIFY before reusing the module for NBA/NFL.
-- Push sync fix verified by code path; do one real test push from
-  Settings on a physical device.
-- Awaiting more peer feedback rounds from Ibrahim's testers.
-- 2026-07-11: peer LLM review briefing written at
-  docs/PEER_REVIEW_BRIEFING.md; Ibrahim ran it (ChatGPT), findings
-  triaged against code (7 of 9 real, 2 refuted: "Lineups are in" IS a
-  scroll control; index numerals are System D grammar).
-- 2026-07-11: **Batch 1 SHIPPED to working tree (uncommitted)** — see
-  CHANGELOG 2026-07-11 entry. Notification lifecycle collapse
-  (wc-state tag), third-place round key + bracket footnote + BY DAY,
-  final-slot result rendering, lineup column order, placeholder
-  headline fix, and the live-verify discovery: schedule route stage
-  is now slug-first so penalty-decided matches stop vanishing from
-  the bracket (was hitting 4 matches in production TODAY; would have
-  hit a PK semi/final next week). Plan:
-  docs/superpowers/plans/2026-07-11-wc-final-week-batch1.md.
-- **Batch 2 (before Jul 19): NOT started** — WC wind-down moment on
-  Today (CalmEndCard is NBA-gated at today-data pickClosing), champion
-  persistence (moment dies with the 14-day feed window ~Jul 23; no
-  persistent surface names the champion), dated dead-zone card ("NFL
-  starts Sep 10" style), "Quarter N" → "Quarterfinal N" card heads,
-  FT-chip removal inside wrapped sections, Watching wrapped-game
-  expiry (~24h), concluded boundary (fires 8 PM ET Jul 19 off the
-  00:00Z anchor — fine for an afternoon final, fragile in general).
-- Cron cadence: cron-job.org drives scan-wc at 1 min (confirmed by
-  Ibrahim 2026-07-11); the route self-throttles via isStateRelevant,
-  so a permanent 1-min job is the automation — no window switching.
-- v1.0.2 still in Apple review as of 2026-07-11 (7 days — abnormal;
-  Ibrahim to check App Store Connect / consider expedited review).
+Open items from this wrap were resolved or carried into the
+2026-07-11 wrap below (push device test: done, worked; the rest
+carried).
 
 Route count: 84. Gate: lint 0 / 380 tests / build / live-verify, per
+ship-gate.
+
+## Session wrap 2026-07-11 — where to pick up
+
+Everything shipped this session is committed and DEPLOYED (c2643ac,
+production-verified same day). Full detail in CHANGELOG_PRODUCT.md
+(2026-07-11 entry); plan at
+docs/superpowers/plans/2026-07-11-wc-final-week-batch1.md.
+
+Context for the clock: WC semifinals Jul 14/15, third place Jul 18,
+final Jul 19. After Jul 19 the app is in a dead zone until NFL
+(Phase 22 build starts August).
+
+Shipped this session:
+1. Peer-review pipeline: self-contained briefing at
+   docs/PEER_REVIEW_BRIEFING.md (screenshot checklist S1-S16 + prompt).
+   Ibrahim ran one round (ChatGPT); triaged against code, 7 of 9
+   findings real, 2 refuted ("Lineups are in →" IS a working scroll
+   control; index numerals are System D grammar, keep).
+2. Batch 1 (pre-semifinal fixes): WC lifecycle pushes share one
+   wc-state collapse tag (states replace, goals persist); third place
+   is a real round (BY DAY + bracket footnote, display-only, no
+   advancement moment); bracket final slot renders Spoiler-gated
+   score + LIVE/FT; Starting XI columns match the header order;
+   placeholder fixtures read by stage (no QFW codes on Today/widget);
+   schedule-route stage is slug-first — ESPN swaps note headlines to
+   "X advance on penalties" on decided matches, which was silently
+   dropping all four PK matches from the bracket (live-verify catch,
+   worst bug of the day; a PK semi/final would have vanished).
+
+Open when picking up (in priority order):
+- **Batch 2 — deadline Jul 19, the final.** Not started. Items:
+  (a) WC wind-down moment on Today — CalmEndCard's tournament config
+  is NBA-Finals-gated in pickClosing (today-data); Jul 20 currently
+  falls through to the generic deadzone card. (b) Champion
+  persistence — the "are champions" moment is winner-follower-only
+  and dies when the final leaves the 14-day feed window (~Jul 23);
+  no persistent surface names the champion (tree, tournament page,
+  recap all silent). (c) Dated dead-zone card ("NFL starts [date]",
+  not "in September"). (d) "Quarter N" card heads → "Quarterfinal N".
+  (e) FT-chip removal inside Quiet Wrap / Wrapped sections (keep in
+  mixed lists). (f) Watching wrapped-game expiry (~24h or a Recent
+  collapse). (g) Concluded boundary fires 8 PM ET Jul 19 off the
+  00:00Z curated anchor — fine for an afternoon final, fragile
+  doctrine; consider deriving from the real final's status.
+- **Visual checks still owed** (code shipped, not yet eyeballed):
+  Notification Center collapse during a live match; the bracket
+  closing card + final slot + third-place row once ESPN publishes
+  those fixtures (semis expected after the Jul 11/12 QFs); lineup
+  column order on a live/final detail page.
+- **Peer review round 2:** run the same briefing in a second model
+  (Gemini) and diff with the ChatGPT round — overlap is signal. Most
+  screenshots (S2, S5-S8, S11-S16) were never captured; the first
+  round ran on 8 shots.
+- **v1.0.2 (build 17) still in Apple review** — 7 days as of Jul 11,
+  abnormal. Check App Store Connect status; an expedited-review
+  request citing the WC final is legitimate. S3 (v1.0.3 store assets
+  with the 4-tab IA) stays parked on the verdict.
+- **NBA lifecycle collapse tags:** the wc-state pattern (states
+  replace, moments persist) should apply to tipoff/eoq/second-half/
+  final when NFL builds in August — NBA tags were left unchanged
+  (season over, dedupe-safe).
+- Parked design calls from the review triage (no deadline): widget
+  slimming (hero + next 2 + "N more" footer), Watching index numerals
+  reading as priority, "Lineups are in" arrow → ↓. Rejected: removing
+  index numerals, repositioning Watching copy "Tracked for later".
+- Carried from 2026-07-06: No-Spoilers advancement leaks
+  doctrined-as-visible (revisit on user complaint, spec L7/L8);
+  bracket R32 constants still need RE-VERIFY before NBA/NFL reuse
+  (the PK-stage fix restored match numbering, the constants caveat
+  stands); awaiting more tester feedback rounds.
+- Settled, no action: cron-job.org drives scan-wc at a permanent
+  1-minute cadence (route self-throttles via isStateRelevant);
+  physical-device push test done and working.
+
+Route count: 85. Gate: lint 0 / 400 tests / build / live-verify, per
 ship-gate.
