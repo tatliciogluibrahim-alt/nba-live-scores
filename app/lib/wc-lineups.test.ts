@@ -2,8 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   mapLineups,
   surnameOf,
+  orderLineupTeams,
   type ESPNLineupsResponse,
   type ESPNRosterEntry,
+  type StartingXITeam,
 } from "./wc-lineups";
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
@@ -101,6 +103,37 @@ const PENDING_PARTIAL: ESPNLineupsResponse = {
 };
 
 // ── surnameOf ────────────────────────────────────────────────────────────────
+describe("orderLineupTeams (peer review 2026-07-11)", () => {
+  const team = (code: string): StartingXITeam => ({
+    code,
+    formation: "4-3-3",
+    starters: [],
+    subs: [],
+  });
+
+  it("puts the leftCode team first regardless of feed order", () => {
+    // ESPN's rosters often arrive home-first; the detail header renders
+    // away-first. Columns must match the header.
+    expect(orderLineupTeams([team("USA"), team("BEL")], "BEL").map((t) => t.code))
+      .toEqual(["BEL", "USA"]);
+    expect(orderLineupTeams([team("BEL"), team("USA")], "BEL").map((t) => t.code))
+      .toEqual(["BEL", "USA"]);
+  });
+
+  it("is case-insensitive", () => {
+    expect(orderLineupTeams([team("USA"), team("BEL")], "bel")[0].code).toBe("BEL");
+  });
+
+  it("keeps feed order when the code is unknown, missing, or not two teams", () => {
+    expect(orderLineupTeams([team("USA"), team("BEL")], "FRA").map((t) => t.code))
+      .toEqual(["USA", "BEL"]);
+    expect(orderLineupTeams([team("USA"), team("BEL")], null).map((t) => t.code))
+      .toEqual(["USA", "BEL"]);
+    expect(orderLineupTeams([team("USA")], "USA").map((t) => t.code)).toEqual(["USA"]);
+    expect(orderLineupTeams([], "USA")).toEqual([]);
+  });
+});
+
 describe("surnameOf", () => {
   it("strips the first token and keeps the rest (multi-word surnames survive)", () => {
     expect(surnameOf("Virgil van Dijk")).toBe("van Dijk");

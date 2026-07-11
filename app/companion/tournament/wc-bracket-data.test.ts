@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildWCBracket,
+  buildBracketRounds,
   groupBracketByDay,
   parseWinnerCode,
   bracketSlotToken,
@@ -138,6 +139,47 @@ describe("buildWCBracket", () => {
     const qf1 = b.quarters[0].qf!;
     expect(qf1.away.pairToken).toBeUndefined();
     expect(bracketSlotToken(qf1.away)).toBe("TBD");
+  });
+});
+
+describe("third place (peer review 2026-07-11)", () => {
+  it("exposes the third-place match on the bracket", () => {
+    const b = buildWCBracket(
+      [fixture(97, "NED", "FRA", "3rd Place", "upcoming")],
+      new Set()
+    );
+    expect(b.third).not.toBeNull();
+    expect(b.third?.round).toBe("third");
+    expect(b.third?.away.code).toBe("NED");
+  });
+
+  it("is null until ESPN publishes the fixture (never synthesized)", () => {
+    const b = buildWCBracket([], new Set());
+    expect(b.third).toBeNull();
+  });
+
+  it("routes the third-place match into rounds between SF and Final", () => {
+    const { rounds } = buildBracketRounds(
+      [fixture(97, "NED", "FRA", "3rd Place")],
+      new Set()
+    );
+    const idx = rounds.findIndex((r) => r.key === "third");
+    expect(idx).toBeGreaterThan(-1);
+    expect(rounds[idx - 1]?.key).toBe("sf");
+    expect(rounds[idx + 1]?.key).toBe("final");
+    expect(rounds[idx].matches).toHaveLength(1);
+    expect(rounds[idx].label).toBe("Third place");
+  });
+
+  it("TBDs ESPN loser codes instead of leaking jargon", () => {
+    const slot: BracketSlot = {
+      code: "SF L1",
+      label: "To be decided",
+      real: false,
+      followed: false,
+      score: null,
+    };
+    expect(bracketSlotToken(slot)).toBe("TBD");
   });
 });
 

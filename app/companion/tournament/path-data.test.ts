@@ -24,6 +24,7 @@ const ROUND_LABELS: Record<KnockoutRound["key"], string> = {
   r16: "Round of 16",
   qf: "Quarterfinals",
   sf: "Semifinals",
+  third: "Third place",
   final: "Final",
 };
 
@@ -32,6 +33,7 @@ const STATIC_ISO: Record<KnockoutRound["key"], string> = {
   r16: "2026-07-03T00:00:00Z",
   qf: "2026-07-09T00:00:00Z",
   sf: "2026-07-14T00:00:00Z",
+  third: "2026-07-18T00:00:00Z",
   final: "2026-07-19T00:00:00Z",
 };
 

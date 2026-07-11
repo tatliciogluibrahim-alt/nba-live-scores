@@ -1,6 +1,7 @@
 "use client";
 
 import { SecHead } from "../system/SecHead";
+import { orderLineupTeams } from "../../lib/wc-lineups";
 import type { StartingXITeam, WCLineups } from "../../lib/wc-lineups";
 
 // Starting XI — the matchday-programme lineups module (spec §17). Two columns,
@@ -177,9 +178,13 @@ function XIColumn({ team }: { team: StartingXITeam }) {
 export function StartingXI({
   lineups,
   status,
+  leftCode,
 }: {
   lineups: WCLineups | null;
   status: "live" | "upcoming" | "final";
+  /** The code that renders first in the game header (the away side) —
+   *  columns must match the header's order, not ESPN's feed order. */
+  leftCode?: string | null;
 }) {
   // Hard failure / not fetched → render nothing (never an error UI).
   if (!lineups) return null;
@@ -222,7 +227,7 @@ export function StartingXI({
             className="grid grid-cols-2"
             style={{ gap: "0 18px", paddingTop: 4 }}
           >
-            {lineups.teams.map((team, index) => (
+            {orderLineupTeams(lineups.teams, leftCode).map((team, index) => (
               <XIColumn key={team.code || index} team={team} />
             ))}
           </div>

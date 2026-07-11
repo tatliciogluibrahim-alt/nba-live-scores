@@ -659,6 +659,32 @@ Open when picking up:
 - Push sync fix verified by code path; do one real test push from
   Settings on a physical device.
 - Awaiting more peer feedback rounds from Ibrahim's testers.
+- 2026-07-11: peer LLM review briefing written at
+  docs/PEER_REVIEW_BRIEFING.md; Ibrahim ran it (ChatGPT), findings
+  triaged against code (7 of 9 real, 2 refuted: "Lineups are in" IS a
+  scroll control; index numerals are System D grammar).
+- 2026-07-11: **Batch 1 SHIPPED to working tree (uncommitted)** — see
+  CHANGELOG 2026-07-11 entry. Notification lifecycle collapse
+  (wc-state tag), third-place round key + bracket footnote + BY DAY,
+  final-slot result rendering, lineup column order, placeholder
+  headline fix, and the live-verify discovery: schedule route stage
+  is now slug-first so penalty-decided matches stop vanishing from
+  the bracket (was hitting 4 matches in production TODAY; would have
+  hit a PK semi/final next week). Plan:
+  docs/superpowers/plans/2026-07-11-wc-final-week-batch1.md.
+- **Batch 2 (before Jul 19): NOT started** — WC wind-down moment on
+  Today (CalmEndCard is NBA-gated at today-data pickClosing), champion
+  persistence (moment dies with the 14-day feed window ~Jul 23; no
+  persistent surface names the champion), dated dead-zone card ("NFL
+  starts Sep 10" style), "Quarter N" → "Quarterfinal N" card heads,
+  FT-chip removal inside wrapped sections, Watching wrapped-game
+  expiry (~24h), concluded boundary (fires 8 PM ET Jul 19 off the
+  00:00Z anchor — fine for an afternoon final, fragile in general).
+- Cron cadence: cron-job.org drives scan-wc at 1 min (confirmed by
+  Ibrahim 2026-07-11); the route self-throttles via isStateRelevant,
+  so a permanent 1-min job is the automation — no window switching.
+- v1.0.2 still in Apple review as of 2026-07-11 (7 days — abnormal;
+  Ibrahim to check App Store Connect / consider expedited review).
 
 Route count: 84. Gate: lint 0 / 380 tests / build / live-verify, per
 ship-gate.

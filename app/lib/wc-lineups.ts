@@ -71,6 +71,23 @@ export type StartingXITeam = {
 
 export type WCLineups = { teams: StartingXITeam[] } | { pending: true };
 
+/** Order the two lineup columns to match the caller's presentation order.
+ *  ESPN's rosters arrive in feed order (often home-first) while the game
+ *  detail header renders away-first — the columns must agree with the
+ *  header or the reader remaps the matchup mid-page (peer review
+ *  2026-07-11). `leftCode` is the code that should read first;
+ *  unknown/missing codes keep feed order untouched. Pure. */
+export function orderLineupTeams(
+  teams: StartingXITeam[],
+  leftCode?: string | null
+): StartingXITeam[] {
+  if (!leftCode || teams.length !== 2) return teams;
+  const left = leftCode.toUpperCase();
+  const idx = teams.findIndex((t) => (t.code || "").toUpperCase() === left);
+  if (idx <= 0) return teams; // already first, or not found
+  return [teams[idx], ...teams.filter((_, i) => i !== idx)];
+}
+
 // Surname for the programme row. Law: strip the FIRST whitespace token (the
 // given name) and keep the rest joined. This is deliberately NOT "last token":
 // "Virgil van Dijk" must read "van Dijk", not "Dijk". "Arda Güler" → "Güler",

@@ -7,6 +7,7 @@ import {
   knockoutResult,
   countryKnockoutOutcome,
   nextStageLabel,
+  isRealCountryCode,
   type KnockoutGameLike,
   type KnockoutRoundKey,
 } from "./knockout-data";
@@ -30,6 +31,7 @@ const STATIC = {
   r16: "2026-07-03T00:00:00Z",
   qf: "2026-07-09T00:00:00Z",
   sf: "2026-07-14T00:00:00Z",
+  third: "2026-07-18T00:00:00Z",
   final: "2026-07-19T00:00:00Z",
 } satisfies Record<KnockoutRoundKey, string>;
 
@@ -54,10 +56,63 @@ describe("roundKeyFromStage", () => {
   });
 });
 
+describe("third place (peer review 2026-07-11)", () => {
+  it("maps ESPN's 3rd Place stage to the third round", () => {
+    expect(roundKeyFromStage("3rd Place")).toBe("third");
+    expect(roundKeyFromStage("Third place play-off")).toBe("third");
+  });
+
+  it("never produces an advancement outcome for third place", () => {
+    // Display-only round: nobody advances, the semifinal already
+    // eliminated the loser. No Today moment, no Brief line.
+    const game: KnockoutGameLike = {
+      stage: "3rd Place",
+      status: "final",
+      home: { abbreviation: "FRA", score: 2 },
+      away: { abbreviation: "NED", score: 1 },
+    };
+    expect(knockoutResult(game)).toBeNull();
+    expect(countryKnockoutOutcome(game, "FRA")).toBeNull();
+  });
+
+  it("exposes a resolved Third place round between Semifinals and Final", () => {
+    const rounds = buildKnockoutRounds(
+      [
+        fx({
+          id: "97",
+          stage: "3rd Place",
+          date: "2026-07-18T19:00Z",
+          home: { name: "France", abbreviation: "FRA", score: 0 },
+          away: { name: "Netherlands", abbreviation: "NED", score: 0 },
+        }),
+      ],
+      STATIC
+    );
+    expect(rounds.map((r) => r.key)).toEqual([
+      "r32",
+      "r16",
+      "qf",
+      "sf",
+      "third",
+      "final",
+    ]);
+    const third = rounds.find((r) => r.key === "third");
+    expect(third?.label).toBe("Third place");
+    expect(third?.resolved).toBe(true);
+    expect(third?.matches[0]?.awayCode).toBe("NED");
+  });
+
+  it("isRealCountryCode distinguishes countries from feed placeholders", () => {
+    expect(isRealCountryCode("MEX")).toBe(true);
+    expect(isRealCountryCode("qfw1")).toBe(false);
+    expect(isRealCountryCode("")).toBe(false);
+  });
+});
+
 describe("buildKnockoutRounds", () => {
-  it("returns all five rounds in order, all unresolved with no fixtures", () => {
+  it("returns all six rounds in order, all unresolved with no fixtures", () => {
     const rounds = buildKnockoutRounds([], STATIC);
-    expect(rounds.map((r) => r.key)).toEqual(["r32", "r16", "qf", "sf", "final"]);
+    expect(rounds.map((r) => r.key)).toEqual(["r32", "r16", "qf", "sf", "third", "final"]);
     expect(rounds.every((r) => !r.resolved && r.matches.length === 0)).toBe(true);
     // Dates come from the static fallback.
     expect(rounds[0].dateLabel).toBeTruthy();

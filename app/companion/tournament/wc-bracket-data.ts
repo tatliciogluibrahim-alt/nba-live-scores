@@ -101,6 +101,10 @@ export type BracketQuarter = {
 export type WCBracket = {
   quarters: BracketQuarter[];
   semis: BracketMatch[]; // up to 2
+  /** The bronze match. Only ever a real published fixture — never
+   *  synthesized (data-integrity: no fabricated loser-of pairings). Null
+   *  until ESPN publishes it. */
+  third: BracketMatch | null;
   final: BracketMatch | null;
   /** True once the R32 is structurally present (16 matches). Bracket UI
    *  shows placeholders before this; falls back to the round-list if false. */
@@ -165,6 +169,9 @@ export function bracketSlotToken(slot: BracketSlot): string {
   if (slot.real) return slot.code;
   if (slot.pairToken) return slot.pairToken;
   if (parseWinnerCode(slot.code)) return "TBD";
+  // ESPN loser-of codes ("SF L1" feeds the third-place match) are jargon
+  // with no pairing resolver — an honest TBD beats leaking them.
+  if (/^(QF|SF|RD?\d+)\s*L\d+$/i.test((slot.code || "").trim())) return "TBD";
   return slot.code;
 }
 
@@ -315,9 +322,10 @@ export function buildWCBracket(
   });
 
   const semis = [1, 2].map((n) => upper("sf", n, SF_FROM_QF[n], "qf"));
+  const third = matchOf("third", 1);
   const final = upper("final", 1, [1, 2], "sf");
 
-  return { quarters, semis, final, resolved };
+  return { quarters, semis, third, final, resolved };
 }
 
 // R32 placeholder when ESPN hasn't published a given match yet — keeps the
@@ -365,6 +373,7 @@ export function buildBracketRounds(
     .map((q) => q.qf)
     .filter((m): m is BracketMatch => m != null)
     .sort(byNumber);
+  const third = b.third ? [b.third] : [];
   const final = b.final ? [b.final] : [];
   const firstDate = (ms: BracketMatch[]) =>
     ms.find((m) => m.dateLabel)?.dateLabel ?? null;
@@ -374,6 +383,7 @@ export function buildBracketRounds(
     { key: "r16", label: "Round of 16", matches: r16, dateLabel: firstDate(r16) },
     { key: "qf", label: "Quarterfinals", matches: qf, dateLabel: firstDate(qf) },
     { key: "sf", label: "Semifinals", matches: b.semis, dateLabel: firstDate(b.semis) },
+    { key: "third", label: "Third place", matches: third, dateLabel: firstDate(third) },
     { key: "final", label: "Final", matches: final, dateLabel: firstDate(final) },
   ];
 

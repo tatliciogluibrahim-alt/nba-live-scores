@@ -2,7 +2,58 @@
 
 ---
 
-## Feedback batch — the parked round + verified externals — 2026-07-06
+## Final-week batch 1 — peer review + audit fixes — 2026-07-11
+
+Pre-semifinal fixes from two sources run the same day: a code audit of
+the final-week states and an external LLM product review (prompt at
+docs/PEER_REVIEW_BRIEFING.md, findings triaged against the code first —
+two of nine were refuted). Plan at
+docs/superpowers/plans/2026-07-11-wc-final-week-batch1.md.
+
+- **Notification Center stops archiving stale match states.** The four
+  WC lifecycle pushes (kickoff, halftime, second half, full time) now
+  share one `${gameId}:wc-state` collapse tag, so each state replaces
+  the last on web (SW `tag`) and native (`apns-collapse-id`). Goals
+  keep per-scoreline tags and persist — a finished 3–2 match leaves
+  three goal cards plus one "Full time", never a halftime stack.
+  Delivery dedupe (`dedupeTagFor`) was already separate and is
+  untouched. The Live Activity offer rides the same slot, and its copy
+  is now "Track this match on your Lock Screen."
+- **Third place exists.** "3rd Place" now maps to a real round key
+  (`third`) between SF and Final: it renders in BY DAY on its day and
+  as a quiet footnote row on the bracket's closing card. It is
+  display-only by design — `knockoutResult` skips it, so no
+  advancement moment or Brief line fires (nobody advances from the
+  bronze match). Never synthesized: absent until ESPN publishes it.
+  ESPN loser codes ("SF L1") render as TBD, not jargon.
+- **The bracket's final slot shows the result.** SlotCell renders the
+  Spoiler-gated score plus LIVE/FT stamp once the match starts,
+  mirroring the feeder rows. A played final no longer reads as
+  upcoming (peer review P0).
+- **Lineup columns match the header.** Starting XI columns now order
+  to the game header's away-first presentation via
+  `orderLineupTeams` — ESPN's feed order (often home-first) forced a
+  mid-page matchup remap (peer review, S10a).
+- **Placeholder fixtures stop leaking slot codes.** An undecided
+  upper-round fixture ("QFW2 vs QFW1") now reads by its stage
+  ("Semifinal · Teams to be decided") on Today's NEXT pointer and the
+  home-screen widget — one fix in wcToUpNext covers both.
+- **Penalty-decided matches no longer vanish from the bracket.**
+  Found in this batch's live verify, worst bug of the day: the
+  schedule route preferred ESPN's note headline for `stage`, and on
+  penalty-decided matches that headline becomes "Paraguay advance 4-3
+  on penalties" — unparseable as a round, so all four PK matches were
+  missing from bracket/BY DAY data and their rounds' match numbering
+  drifted. Stage is now slug-first (mirrors /api/world-cup); a PK
+  semifinal or final next week stays on the tree. Parsing moved to
+  `normalize.ts` (route files may only export route fields) with the
+  stage contract locked in tests.
+
+Gate: lint 0, 400 tests (baseline 380), build 85 routes, local prod
+server verified against the live feed (28/28 knockout stages parse,
+key pages 200). Not yet eyeballed in a browser: the SlotCell score
+render and third-place row (semis/third not yet published by ESPN —
+verify visually once they land).
 
 Six parked items from the peer-feedback round plus the survivors of an
 external (Codex) review. Every external claim was verified against the

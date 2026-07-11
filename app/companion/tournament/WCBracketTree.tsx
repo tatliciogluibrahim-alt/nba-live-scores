@@ -30,6 +30,7 @@ const ROUND_SHORT: Record<KnockoutRoundKey, string> = {
   r16: "R16",
   qf: "QF",
   sf: "SF",
+  third: "3RD",
   final: "Final",
 };
 
@@ -65,6 +66,7 @@ export function WCBracketTree() {
         feeders={bracket.semis}
         slot={bracket.final}
         slotRound="final"
+        footnote={bracket.third}
       />
     </div>
   );
@@ -77,6 +79,7 @@ function QuarterCard({
   slot,
   slotRound,
   tag,
+  footnote,
 }: {
   /** 1-4 for the quarters; null for the closing semis-into-final card. */
   index: number | null;
@@ -84,6 +87,10 @@ function QuarterCard({
   slot: BracketMatch | null;
   slotRound: KnockoutRoundKey;
   tag?: string;
+  /** The third-place match, on the closing card only. Rendered as one
+   *  quiet full-width row under the tree — real fixtures only (the
+   *  bracket never synthesizes it). */
+  footnote?: BracketMatch | null;
 }) {
   const head = index == null ? "Semifinals & final" : `Quarter ${index}`;
   return (
@@ -141,6 +148,12 @@ function QuarterCard({
 
         <SlotCell match={slot} round={slotRound} />
       </div>
+
+      {footnote ? (
+        <div style={{ borderTop: "1px solid var(--line)" }}>
+          <FeederRow match={footnote} last />
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -224,15 +237,31 @@ function FeederRow({ match, last }: { match: BracketMatch; last: boolean }) {
 }
 
 // The joined slot: the next round's match. Real pairing reads heavy ink;
-// unresolved reads muted TBD. Links when the fixture exists.
+// unresolved reads muted TBD. Links when the fixture exists. A live or
+// played slot renders its Spoiler-gated score + LIVE/FT stamp exactly like
+// a FeederRow — the final must never read as upcoming after it's been
+// played (peer review 2026-07-11).
 function SlotCell({ match, round }: { match: BracketMatch | null; round: KnockoutRoundKey }) {
   const bothReal = match != null && match.away.real && match.home.real;
+  const played = match != null && match.status !== "upcoming";
+  const live = match != null && match.status === "live";
+  const scored =
+    match != null &&
+    played &&
+    match.away.score != null &&
+    match.home.score != null;
+  const gameId = match ? gameIdFromHref(match.href) : null;
+  const aria = match ? `${match.away.label} vs ${match.home.label}` : "";
   const label = match
     ? `${bracketSlotToken(match.away)} · ${bracketSlotToken(match.home)}`
     : "TBD";
-  const when = match?.dateIso
-    ? kickoffStamp(match.dateIso, new Date())
-    : match?.dateLabel ?? null;
+  const when = live
+    ? "LIVE"
+    : played
+      ? "FT"
+      : match?.dateIso
+        ? kickoffStamp(match.dateIso, new Date())
+        : match?.dateLabel ?? null;
 
   const inner = (
     <div style={{ padding: 12 }} className="flex h-full flex-col justify-center">
@@ -244,7 +273,21 @@ function SlotCell({ match, round }: { match: BracketMatch | null; round: Knockou
           color: bothReal ? "var(--ink)" : "var(--mute-2)",
         }}
       >
-        {label}
+        {scored && match ? (
+          <>
+            {bracketSlotToken(match.away)}{" "}
+            {gameId ? (
+              <Spoiler gameId={gameId} ariaSubject={aria}>
+                {match.away.score}–{match.home.score}
+              </Spoiler>
+            ) : (
+              `${match.away.score}–${match.home.score}`
+            )}{" "}
+            {bracketSlotToken(match.home)}
+          </>
+        ) : (
+          label
+        )}
       </span>
       <span
         className="uppercase"
@@ -253,7 +296,7 @@ function SlotCell({ match, round }: { match: BracketMatch | null; round: Knockou
           fontFamily: "var(--font-mono)",
           fontSize: 9,
           letterSpacing: "0.1em",
-          color: "var(--mute-1)",
+          color: live ? "var(--live)" : "var(--mute-1)",
           fontWeight: 600,
         }}
       >

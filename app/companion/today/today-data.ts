@@ -9,6 +9,7 @@ import { tournamentPhase } from "../following/data/tournament-phase";
 import { prettifySeriesSummary } from "../../nba/lib/series";
 import {
   countryKnockoutOutcome,
+  isRealCountryCode,
   knockoutResult,
   nextStageLabel,
 } from "../tournament/knockout-data";
@@ -930,15 +931,28 @@ function nbaToUpNext(g: NBAGame, pinned: boolean, personal: boolean): UpNextItem
   };
 }
 
-function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): UpNextItem {
+export function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): UpNextItem {
+  // ESPN publishes upper-round fixtures before the teams are decided, with
+  // slot codes as abbreviations ("QFW1" = quarterfinal winner 1). Those
+  // codes are feed jargon — the stage name is the honest headline until
+  // the matchup is real (peer review 2026-07-11). Flows to Today's NEXT
+  // pointer AND the home-screen widget (WidgetSync reads item.headline).
+  const placeholder =
+    !isRealCountryCode(g.away.abbreviation) ||
+    !isRealCountryCode(g.home.abbreviation);
+  const headline = placeholder
+    ? g.stage || "Teams to be decided"
+    : `${g.away.abbreviation} vs ${g.home.abbreviation}`;
   return {
     source: "wc",
     id: g.id,
     pinned,
     personal,
     eyebrow: `Summer Soccer · ${formatGameDay(g.date, new Date(), "wc")}`,
-    headline: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
-    detail: `${formatGameTime(g.date)}${g.stage ? " · " + g.stage : ""}`,
+    headline,
+    detail: placeholder
+      ? `${formatGameTime(g.date)} · Teams to be decided`
+      : `${formatGameTime(g.date)}${g.stage ? " · " + g.stage : ""}`,
     dateIso: g.date,
     isToday: isSameDay(g.date),
     dayWord: headlineDayWord(g.date),
@@ -947,7 +961,7 @@ function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): UpNextIt
     // NBA up-next. Was linking to the away country page, so tapping a
     // fixture jumped to a country instead of the game.
     href: `/game/${g.id}`,
-    spoilerSubject: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
+    spoilerSubject: headline,
     game: wcLeadGame(g),
   };
 }

@@ -529,7 +529,7 @@ function offerMatchup(event: PushEvent): string {
  *  Notification Center slot. */
 function startTag(event: PushEvent): string {
   return event.type === "wc-kickoff"
-    ? `${event.gameId}:wc-kickoff`
+    ? `${event.gameId}:wc-state`
     : `${event.gameId}:tipoff`;
 }
 
@@ -556,7 +556,7 @@ export function buildLiveActivityOfferPayload(event: PushEvent): PushPayload {
   return {
     title: offerMatchup(event),
     subtitle: offerSubtitle(event),
-    body: "Tap to add the live score to your lock screen.",
+    body: "Track this match on your Lock Screen.",
     url: `/game/${event.gameId}?offer=live-activity`,
     tag: startTag(event),
   };
@@ -572,7 +572,7 @@ export function liveActivityOfferData(event: PushEvent): Record<string, string> 
   };
 }
 
-function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
+export function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
   const matchup = `${event.awayCode} vs ${event.homeCode}`;
   // Knockout WC matches add the round to the subtitle ("USA vs POR ·
   // Round of 32") so a win-or-go-home alert reads with its stakes. Group
@@ -683,13 +683,20 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:final`,
       };
+    // WC match-STATE pushes (kickoff → halftime → second half → full time)
+    // share one `${gameId}:wc-state` tag so each state REPLACES the last in
+    // Notification Center (web `tag` + APNs collapse-id both key off it).
+    // A finished match leaves the goals + one "Full time" card, never a
+    // stale "Halftime" stack (peer review 2026-07-11). Goals keep their
+    // per-scoreline tags below — user-requested events persist. Delivery
+    // dedupe is dedupeTagFor (separate function), untouched by these tags.
     case "wc-kickoff":
       return {
         title: "Kickoff",
         subtitle: wcSubtitle,
         body: "The match is underway. Tap to follow along.",
         url: `/game/${event.gameId}`,
-        tag: `${event.gameId}:wc-kickoff`,
+        tag: `${event.gameId}:wc-state`,
       };
     case "wc-halftime":
       return {
@@ -697,7 +704,7 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
         subtitle: wcSubtitle,
         body: noSpoilers ? "Half done. Tap to check in." : scoreLine(event),
         url: `/game/${event.gameId}`,
-        tag: `${event.gameId}:wc-halftime`,
+        tag: `${event.gameId}:wc-state`,
       };
     case "wc-second-half":
       return {
@@ -707,7 +714,7 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
           ? "Second half underway. Tap to check in."
           : `${scoreLine(event)} · Second half started`,
         url: `/game/${event.gameId}`,
-        tag: `${event.gameId}:wc-second-half`,
+        tag: `${event.gameId}:wc-state`,
       };
     case "wc-goal":
       return {
@@ -729,7 +736,7 @@ function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
           ? "Match wrapped. Tap when you're ready."
           : scoreLine(event),
         url: `/game/${event.gameId}`,
-        tag: `${event.gameId}:wc-final`,
+        tag: `${event.gameId}:wc-state`,
       };
   }
 }

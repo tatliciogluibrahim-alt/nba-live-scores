@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   subscriberWantsEvent,
   isStartEvent,
+  buildPayload,
   buildLiveActivityOfferPayload,
   liveActivityOfferData,
   wantsLiveActivityOffer,
@@ -245,6 +246,45 @@ describe("subscriberWantsEvent — defensive", () => {
   });
 });
 
+describe("buildPayload — WC lifecycle collapse (peer review 2026-07-11)", () => {
+  // Match-state pushes (kickoff, halftime, second half, full time) share
+  // ONE Notification Center slot per match: each state replaces the last,
+  // so a finished match leaves goals + "Full time", never a stale
+  // "Halftime" stack. Goals keep per-scoreline tags — the user asked for
+  // them, they persist. Dedupe is dedupeTagFor (separate), NOT these tags.
+  it("gives kickoff, halftime, second half, and full time one shared state tag", () => {
+    const states = [
+      "wc-kickoff",
+      "wc-halftime",
+      "wc-second-half",
+      "wc-final",
+    ] as const;
+    for (const type of states) {
+      expect(buildPayload(wcEvent({ type }), false).tag).toBe("w1:wc-state");
+    }
+  });
+
+  it("keeps every goal in its own slot (per-scoreline tags)", () => {
+    const first = buildPayload(
+      wcEvent({ type: "wc-goal", awayScore: 1, homeScore: 0 }),
+      false
+    );
+    const second = buildPayload(
+      wcEvent({ type: "wc-goal", awayScore: 1, homeScore: 1 }),
+      false
+    );
+    expect(first.tag).toBe("w1:wc-goal:1-0");
+    expect(second.tag).toBe("w1:wc-goal:1-1");
+    expect(first.tag).not.toBe(second.tag);
+  });
+
+  it("keeps the live-activity offer in the same slot as the kickoff push", () => {
+    const offer = buildLiveActivityOfferPayload(wcEvent({ type: "wc-kickoff" }));
+    const kickoff = buildPayload(wcEvent({ type: "wc-kickoff" }), false);
+    expect(offer.tag).toBe(kickoff.tag);
+  });
+});
+
 describe("live-activity offer builders", () => {
   function wcEvent(over: Partial<PushEvent> = {}): PushEvent {
     return {
@@ -273,9 +313,9 @@ describe("live-activity offer builders", () => {
     const p = buildLiveActivityOfferPayload(wcEvent());
     expect(p.title).toBe("BRA vs JPN");
     expect(p.subtitle).toBe("Starting now");
-    expect(p.body).toBe("Tap to add the live score to your lock screen.");
+    expect(p.body).toBe("Track this match on your Lock Screen.");
     expect(p.url).toBe("/game/wc1?offer=live-activity");
-    expect(p.tag).toBe("wc1:wc-kickoff");
+    expect(p.tag).toBe("wc1:wc-state");
     // never leak a score
     expect(p.body).not.toMatch(/\d/);
     // no em-dashes in user-facing copy
@@ -305,7 +345,7 @@ describe("live-activity offer builders", () => {
     const p = buildLiveActivityOfferPayload(nbaEvent({ type: "tipoff", isGame7: true }));
     expect(p.subtitle).toBe("Game 7 · series on the line");
     expect(p.title).toBe("OKC vs SA");
-    expect(p.body).toBe("Tap to add the live score to your lock screen.");
+    expect(p.body).toBe("Track this match on your Lock Screen.");
   });
 
   it("uses the knockout round as the offer subtitle for a WC knockout kickoff", () => {

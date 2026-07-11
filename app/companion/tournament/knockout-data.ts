@@ -11,7 +11,7 @@ import { WC_COUNTRIES } from "../following/data/countries";
 import { WC_KNOCKOUT_ROUNDS } from "../following/data/wc-fixtures";
 import type { WCScheduleFixtureLite } from "../country/country-data";
 
-export type KnockoutRoundKey = "r32" | "r16" | "qf" | "sf" | "final";
+export type KnockoutRoundKey = "r32" | "r16" | "qf" | "sf" | "third" | "final";
 
 export type KnockoutMatch = {
   id: string;
@@ -49,11 +49,19 @@ const ROUND_ORDER: { key: KnockoutRoundKey; label: string }[] = [
   { key: "r16", label: "Round of 16" },
   { key: "qf", label: "Quarterfinals" },
   { key: "sf", label: "Semifinals" },
+  { key: "third", label: "Third place" },
   { key: "final", label: "Final" },
 ];
 
 const REAL_CODES = new Set(WC_COUNTRIES.map((c) => c.id));
 const NAME_BY_CODE = new Map(WC_COUNTRIES.map((c) => [c.id, c.name]));
+
+/** True when the code is a real World Cup country, not an ESPN slot
+ *  placeholder ("2A", "QFW1", "SF L2"). One definition for every surface
+ *  that must not print feed jargon (Today's NEXT pointer, the widget). */
+export function isRealCountryCode(code: string): boolean {
+  return REAL_CODES.has((code || "").toUpperCase());
+}
 
 // Scheduled round dates from wc-fixtures.ts, keyed for the builder's
 // static-date fallback so a round with no feed fixtures still shows when.
@@ -84,6 +92,9 @@ export function roundKeyFromStage(stage: string): KnockoutRoundKey | null {
   if (s.includes("round of 16")) return "r16";
   if (s.includes("quarter")) return "qf";
   if (s.includes("semi")) return "sf";
+  // ESPN tags the bronze match "3rd Place"; some feeds say "third place
+  // play-off". Checked before "final" so no variant ever falls through.
+  if (s.includes("3rd") || s.includes("third")) return "third";
   if (s.includes("final")) return "final";
   return null;
 }
@@ -154,6 +165,10 @@ export function knockoutResult(game: KnockoutGameLike): KnockoutResult | null {
   if (game.status !== "final") return null;
   const stageKey = roundKeyFromStage(game.stage);
   if (!stageKey) return null; // group stage or unknown — not a knockout
+  // Third place is display-only: nobody advances and the loser was
+  // already eliminated in the semifinal, so it never produces an
+  // advancement moment or a Brief line.
+  if (stageKey === "third") return null;
   const { home: h, away: a } = game;
   let winnerHome: boolean;
   if (h.score > a.score) winnerHome = true;
@@ -194,6 +209,7 @@ const NEXT_STAGE_LABEL: Record<KnockoutRoundKey, string> = {
   r16: "Quarterfinals",
   qf: "Semifinals",
   sf: "Final",
+  third: "Third place", // unreachable: knockoutResult skips the round
   final: "Champions", // winning the final wins the tournament
 };
 

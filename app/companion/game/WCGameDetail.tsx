@@ -298,7 +298,11 @@ export function WCGameDetail({
         {/* STARTING XI (§17) — the programme lineups. Below the events field
             (or below the monument when upcoming/no events). Not a spoiler;
             renders nothing until the feed lands. */}
-        <StartingXI lineups={lineups} status={status} />
+        <StartingXI
+          lineups={lineups}
+          status={status}
+          leftCode={game.away.abbreviation}
+        />
 
         {/* GROUP — agate section, two chevroned rows into each country page.
             Knockout matches add the bracket row: from a Round of 16 page the

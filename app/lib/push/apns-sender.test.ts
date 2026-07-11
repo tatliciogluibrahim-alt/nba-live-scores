@@ -13,7 +13,7 @@ describe("buildApnsPayload", () => {
 
   it("places custom data as top-level keys alongside aps", () => {
     const p = buildApnsPayload(
-      { title: "BRA vs JPN", body: "Tap to add the live score to your lock screen." },
+      { title: "BRA vs JPN", body: "Track this match on your Lock Screen." },
       { type: "live-activity-offer", gameId: "wc1", sport: "wc" }
     );
     expect(p.type).toBe("live-activity-offer");
