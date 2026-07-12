@@ -188,6 +188,26 @@ function winnerSlot(round: KnockoutRoundKey, n: number): BracketSlot {
   return { code: `${round.toUpperCase()}-${n}`, label, real: false, followed: false, score: null };
 }
 
+/** The advancing side's code for a FINAL feeder, or null when the match
+ *  isn't decided by trusted data. Prefers ESPN's own `winner` flag (it's
+ *  penalty-aware: on a shootout ESPN flags the winner even though regulation
+ *  ended level), then falls back to a decisive scoreline. A match still level
+ *  with no flag returns null — the advancing side is never guessed
+ *  (data-integrity). */
+function feederWinnerCode(f: WCScheduleFixture): string | null {
+  if (f.status !== "final") return null;
+  const away = (f.away.abbreviation || "").toUpperCase();
+  const home = (f.home.abbreviation || "").toUpperCase();
+  if (f.home.winner === true) return home;
+  if (f.away.winner === true) return away;
+  const as = f.away.score;
+  const hs = f.home.score;
+  if (typeof as === "number" && typeof hs === "number" && as !== hs) {
+    return hs > as ? home : away;
+  }
+  return null;
+}
+
 function fixtureToMatch(
   f: WCScheduleFixture,
   round: KnockoutRoundKey,
@@ -250,6 +270,14 @@ export function buildWCBracket(
     const a = (feeder.away.abbreviation || "").toUpperCase();
     const h = (feeder.home.abbreviation || "").toUpperCase();
     if (!REAL_CODES.has(a) || !REAL_CODES.has(h)) return slot;
+    // Feeder decided → advance the actual winner into this slot so the
+    // bracket stays dynamic. ESPN publishes each knockout round only when it
+    // schedules it, so without this a semifinal slot would sit on the
+    // quarterfinal pairing ("MAR/FRA") long after that quarterfinal is final.
+    // The winner is trusted data (feederWinnerCode never guesses); when the
+    // feeder isn't decided yet it stays a pairing.
+    const winner = feederWinnerCode(feeder);
+    if (winner) return makeSlot(winner, null, followedCodes);
     return {
       ...slot,
       label: `Winner of ${NAME_BY_CODE.get(a) ?? a} vs ${NAME_BY_CODE.get(h) ?? h}`,

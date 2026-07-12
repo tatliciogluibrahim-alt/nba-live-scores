@@ -142,6 +142,85 @@ describe("buildWCBracket", () => {
   });
 });
 
+describe("advances feeder winners into the next round (dynamic bracket)", () => {
+  // ESPN publishes knockout fixtures round-by-round, so late in the
+  // tournament the next round has no fixture yet. Once a feeder is FINAL the
+  // bracket must advance the actual winner into the next slot rather than sit
+  // on the feeder pairing until ESPN catches up. The winner is trusted data
+  // (ESPN's own flag / a decisive scoreline), never a guessed bracket.
+  function qf(
+    id: number,
+    away: string,
+    home: string,
+    winnerSide: "home" | "away",
+    as = 1,
+    hs = 1
+  ): WCScheduleFixture {
+    const f = fixture(id, away, home, "quarterfinals", "final", as, hs);
+    if (winnerSide === "home") f.home.winner = true;
+    else f.away.winner = true;
+    return f;
+  }
+
+  it("advances decided QF winners into the semifinal slots (winner flag)", () => {
+    const fixtures = [
+      qf(25, "MAR", "FRA", "home"), // QF1 → FRA
+      qf(26, "BEL", "ESP", "home"), // QF2 → ESP
+      qf(27, "ENG", "NOR", "away"), // QF3 → ENG
+      qf(28, "SUI", "ARG", "home"), // QF4 → ARG
+    ];
+    const b = buildWCBracket(fixtures, new Set());
+    const [sf1, sf2] = b.semis;
+    expect(sf1.away.code).toBe("FRA");
+    expect(sf1.away.real).toBe(true);
+    expect(sf1.home.code).toBe("ESP");
+    expect(sf1.home.real).toBe(true);
+    expect(sf2.away.code).toBe("ENG");
+    expect(sf2.home.code).toBe("ARG");
+  });
+
+  it("carries the followed flag onto an advanced winner", () => {
+    const fixtures = [
+      qf(25, "MAR", "FRA", "home"),
+      qf(26, "BEL", "ESP", "home"),
+    ];
+    const b = buildWCBracket(fixtures, new Set(["FRA"]));
+    expect(b.semis[0].away.followed).toBe(true);
+  });
+
+  it("advances the winner by a decisive scoreline when ESPN has no flag", () => {
+    const fixtures = [
+      fixture(25, "MAR", "FRA", "quarterfinals", "final", 0, 2), // FRA 2–0
+      fixture(26, "BEL", "ESP", "quarterfinals", "final", 1, 2), // ESP 2–1
+    ];
+    const b = buildWCBracket(fixtures, new Set());
+    expect(b.semis[0].away.code).toBe("FRA");
+    expect(b.semis[0].home.code).toBe("ESP");
+  });
+
+  it("keeps the feeder pairing when a final feeder is level with no flag (never guesses)", () => {
+    const fixtures = [
+      fixture(25, "MAR", "FRA", "quarterfinals", "final", 1, 1), // level, no flag
+      fixture(26, "BEL", "ESP", "quarterfinals", "final", 0, 2), // ESP decided
+    ];
+    const b = buildWCBracket(fixtures, new Set());
+    expect(b.semis[0].away.real).toBe(false);
+    expect(b.semis[0].away.pairToken).toBe("MAR/FRA");
+    expect(b.semis[0].home.code).toBe("ESP");
+    expect(b.semis[0].home.real).toBe(true);
+  });
+
+  it("still shows the pairing while the feeder is unplayed", () => {
+    const fixtures = [
+      fixture(25, "MAR", "FRA", "quarterfinals"), // upcoming
+      fixture(26, "BEL", "ESP", "quarterfinals"),
+    ];
+    const b = buildWCBracket(fixtures, new Set());
+    expect(b.semis[0].away.pairToken).toBe("MAR/FRA");
+    expect(b.semis[0].away.real).toBe(false);
+  });
+});
+
 describe("third place (peer review 2026-07-11)", () => {
   it("exposes the third-place match on the bracket", () => {
     const b = buildWCBracket(

@@ -52,6 +52,15 @@ describe("normalizeFixture — stage derivation", () => {
     expect(normalizeFixture(event)?.stage).toBe("Semifinal");
   });
 
+  it("carries ESPN's winner flag onto the sides (penalty-aware advance)", () => {
+    const event = espnEvent();
+    // Level on the scoreboard (1–1), ESPN flags the shootout winner.
+    event.competitions![0].competitors![0].winner = true; // home GER
+    const f = normalizeFixture(event);
+    expect(f?.home.winner).toBe(true);
+    expect(f?.away.winner).toBe(false);
+  });
+
   it("keeps the group label for true group-stage matches", () => {
     const event = espnEvent();
     event.competitions![0].competitors = [

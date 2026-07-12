@@ -30,6 +30,7 @@ type ESPNStatus = {
 type ESPNCompetitor = {
   homeAway?: "home" | "away";
   score?: string;
+  winner?: boolean;
   team?: { displayName?: string; shortDisplayName?: string; abbreviation?: string };
 };
 type ESPNBroadcast = {
@@ -104,15 +105,20 @@ export function normalizeFixture(event: ESPNEvent): WCScheduleFixture | null {
   const competitors = comp.competitors ?? [];
   const homeC = competitors.find((c) => c.homeAway === "home");
   const awayC = competitors.find((c) => c.homeAway === "away");
+  // ESPN flags the advancing side with `winner: true` (penalty-aware: on a
+  // shootout it flags the winner even though regulation ended level). The
+  // bracket uses it to advance a decided feeder's winner into the next round.
   const home = {
     name: homeC?.team?.displayName ?? homeC?.team?.shortDisplayName ?? "TBD",
     abbreviation: homeC?.team?.abbreviation ?? "TBD",
     score: Number(homeC?.score ?? 0),
+    winner: homeC?.winner === true,
   };
   const away = {
     name: awayC?.team?.displayName ?? awayC?.team?.shortDisplayName ?? "TBD",
     abbreviation: awayC?.team?.abbreviation ?? "TBD",
     score: Number(awayC?.score ?? 0),
+    winner: awayC?.winner === true,
   };
 
   // Assign a group letter ONLY when both teams sit in the same group —

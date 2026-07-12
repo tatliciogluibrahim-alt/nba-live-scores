@@ -2,6 +2,42 @@
 
 ---
 
+## Dynamic bracket — winners advance into the next round — 2026-07-12
+
+The knockout bracket was built purely by mapping ESPN's *published*
+fixtures onto the fixed tree. ESPN publishes each knockout round only
+when it schedules it, so late in the tournament the next round has no
+fixture yet — and `resolveSlot` only ever resolved an unplayed slot to
+its feeder *pairing* ("MAR/FRA"), never to the actual winner. Live
+symptom (2026-07-12): all four quarterfinals were final (FRA, ESP, ENG,
+ARG advanced) but the semifinal slots still read "MAR/FRA vs BEL/ESP"
+and "ENG/NOR vs SUI/ARG" because ESPN had not yet published the SF
+fixtures. The bracket looked frozen.
+
+- **Feeders now advance their winner.** `buildWCBracket` / `resolveSlot`
+  read a FINAL feeder's result and put the actual winning country into
+  the next slot. The semis now show FRA vs ESP and ENG vs ARG the moment
+  the quarterfinals finish, without waiting on ESPN to publish the
+  semifinal fixtures. The Final correctly stays TBD until the semis are
+  played (no SF fixture to resolve finalists from — never synthesized).
+- **Penalty-safe, never guessed.** A new `feederWinnerCode` prefers
+  ESPN's own `winner` flag (threaded through `normalizeFixture` +
+  `WCScheduleFixture.home/away.winner`), which is penalty-aware — ESPN
+  flags the shootout winner even when regulation ended level. It falls
+  back to a decisive scoreline, and returns null (keeps the pairing)
+  when a match is still level with no flag. The advancing side is trusted
+  data, never a fabricated bracket (data-integrity rule).
+- This reuses the SAME feeder mapping the tree already trusted for
+  pairings, so it introduces no new bracket assumptions — verified: the
+  R16→QF tree constants match the real ESPN progression this tournament.
+- Tests: 6 new in `wc-bracket-data.test.ts` (winner flag, scoreline
+  fallback, never-guess on level, still-pairing while unplayed, followed
+  flag) + 1 in `normalize.test.ts`. Suite 406/406, lint clean, build
+  93/93 pages. Files: `wc-bracket-data.ts`, `normalize.ts`,
+  `schedule/route.ts` (+ tests).
+
+---
+
 ## Final-week batch 1 — peer review + audit fixes — 2026-07-11
 
 Pre-semifinal fixes from two sources run the same day: a code audit of

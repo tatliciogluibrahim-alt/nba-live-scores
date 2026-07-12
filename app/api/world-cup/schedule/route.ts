@@ -36,8 +36,8 @@ export type WCScheduleFixture = {
   statusText: string;
   stage: string;
   group: string;
-  home: { name: string; abbreviation: string; score: number };
-  away: { name: string; abbreviation: string; score: number };
+  home: { name: string; abbreviation: string; score: number; winner?: boolean };
+  away: { name: string; abbreviation: string; score: number; winner?: boolean };
   broadcasts: string[];
 };
 
