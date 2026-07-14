@@ -4,6 +4,7 @@
 
 import type { Follow, PinnedGame } from "../state/types";
 import type { WCChampion } from "../../lib/wc-champion";
+import { NFL_2026_SEASON_OPENER } from "../following/data/nfl-dates";
 import { getCountry } from "../following/data/countries";
 import { getTournament } from "../following/data/tournaments";
 import { tournamentPhase } from "../following/data/tournament-phase";
@@ -1609,9 +1610,9 @@ function pickClosing(
           kind: "deadzone",
           eyebrow: "Quiet stretch",
           headline: "Your circle is quiet right now.",
-          // NFL is the next scheduled moment in the product (Sept).
-          // Phrase softly — no exact date we'd have to keep accurate.
-          detail: "Nothing live or coming up. NFL kicks off in September.",
+          // NFL is the next scheduled moment in the product. The 2026
+          // opener is confirmed (see nfl-dates.ts), so we name the date.
+          detail: `Nothing live or coming up. NFL opens ${NFL_2026_SEASON_OPENER.label}.`,
           dots: [],
           circleHeading: "You still follow",
           circle,

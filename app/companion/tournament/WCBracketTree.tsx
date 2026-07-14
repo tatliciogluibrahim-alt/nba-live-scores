@@ -99,7 +99,7 @@ function QuarterCard({
    *  the result is revealed. */
   champion?: WCChampion | null;
 }) {
-  const head = index == null ? "Semifinals & final" : `Quarter ${index}`;
+  const head = index == null ? "Semifinals & final" : `Quarterfinal ${index}`;
   return (
     <section
       className="mb-3"
