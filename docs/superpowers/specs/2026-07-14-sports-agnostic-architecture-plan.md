@@ -1,7 +1,9 @@
 # Sports-agnostic architecture — plan
 
 Date: 2026-07-14
-Status: plan for review (not yet approved, not started)
+Status: PARKED 2026-07-14 — three decisions locked (below), no code
+started. Ibrahim will run a dedicated No Noise session for this; do not
+begin implementation until then. Not needed before the NFL build.
 Raised by Ibrahim 2026-07-12; parked in ROADMAP Phase 23+ until now.
 
 ## The problem, precisely
@@ -109,20 +111,22 @@ Adding NFL becomes: register one `ActiveCompetition`, write one feed
 adapter, declare its `views` (By Day / Standings). Zero Schedule rework.
 This is the payoff — the whole point of Phases 0–4.
 
-## Open decisions (need Ibrahim's call)
+## Decisions (locked 2026-07-14)
 
-1. **Multi-competition Schedule shape.** Competition switcher (one at a
-   time) vs merged chronological (all interleaved)?
-   *Recommend: switcher for structural views (bracket/groups can't merge),
-   merged By Day for the timeline. Best of both.*
-2. **Default scope.** "Following" only, or "Following" plus a peek at
-   other live competitions?
-   *Recommend: Following-only default, All-sports one tap away. Keeps the
-   calm, personal register; the negative space is the position.*
-3. **Where the scope control lives.** A segmented toggle at the top of
-   Schedule, or in the masthead?
-   *Recommend: top of Schedule, co-located with the existing view tabs —
-   one control cluster, not two.*
+1. **Multi-competition Schedule shape → SWITCHER.** One competition at a
+   time via a competition switcher above the view tabs. Not a merged
+   interleaved view.
+2. **Default scope → FOLLOWING ONLY**, with a caveat: it must not leave a
+   user staring at nothing when their sport is idle. Following-only is the
+   default register, but the idle state needs a retention hook so users
+   don't disappear during a dead zone. Reuse/extend the existing dead-zone
+   bridge + wind-down machinery (CalmEndCard deadzone variant, the dated
+   "next moment" pointer) so an idle Following-scope Schedule still points
+   somewhere alive (next moment on the calendar, a nearby live competition
+   worth a peek). Design this retention beat as part of Phase 1, not an
+   afterthought.
+3. **Scope control location → TOP OF SCHEDULE**, co-located with the view
+   tabs as one control cluster.
 
 ## Sequencing recommendation
 
