@@ -3,7 +3,11 @@ import { winnerCodeOf, deriveChampionFromFixtures } from "./wc-champion";
 import type { WCScheduleFixture } from "../api/world-cup/schedule/route";
 
 function fixture(
-  over: Partial<WCScheduleFixture> & {
+  over: {
+    id?: string;
+    date?: string;
+    status?: WCScheduleFixture["status"];
+    stage?: string;
     away?: Partial<WCScheduleFixture["away"]>;
     home?: Partial<WCScheduleFixture["home"]>;
   } = {}

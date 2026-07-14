@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { WC_LEAGUE } from "../../lib/wc-league";
+import { readFrozenChampion } from "../../lib/wc-champion-store";
 
 export const dynamic = "force-dynamic";
 
@@ -410,6 +411,11 @@ async function fetchForDate(date: string): Promise<ESPNEvent[]> {
 export async function GET() {
   const nowMs = Date.now();
 
+  // The frozen champion (null until the final is decided). The schedule
+  // route owns the freeze; here we only read it, so Today can still name the
+  // champion after the final ages out of this 14-day window.
+  const champion = await readFrozenChampion();
+
   // Serve a fresh-enough cached snapshot so all surfaces agree (see the cache
   // note above). Falls through to a live fetch on a miss or when KV is absent.
   try {
@@ -421,6 +427,7 @@ export async function GET() {
         {
           games: cached.games,
           count: cached.games.length,
+          champion,
           updatedAt: new Date(cached.fetchedAt).toISOString(),
           cached: true,
         },
@@ -505,7 +512,12 @@ export async function GET() {
     }
 
     return NextResponse.json(
-      { games, count: games.length, updatedAt: new Date().toISOString() },
+      {
+        games,
+        count: games.length,
+        champion,
+        updatedAt: new Date().toISOString(),
+      },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
   } catch (err) {

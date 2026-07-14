@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { WC_LEAGUE } from "../../../lib/wc-league";
+import { resolveFrozenChampion } from "../../../lib/wc-champion-store";
+import type { WCChampion } from "../../../lib/wc-champion";
 import { normalizeFixture, type ESPNEvent } from "./normalize";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +57,9 @@ export type WCSchedulePayload = {
   fixtures: WCScheduleFixture[];
   /** Group letter -> rows ordered by official rank. */
   standings: Record<string, WCScheduleStanding[]>;
+  /** The tournament champion once the final is decided, frozen so it
+   *  survives ESPN dropping the fixture. Null until then. */
+  champion: WCChampion | null;
   fetchedAt: number;
 };
 
@@ -140,7 +145,8 @@ async function buildPayload(now: number): Promise<WCSchedulePayload> {
     .filter((f): f is WCScheduleFixture => f !== null && f.id !== "")
     .sort((a, b) => a.date.localeCompare(b.date));
   const standings = parseStandings(standingsJson as ESPNStandingsResponse);
-  return { fixtures, standings, fetchedAt: now };
+  const champion = await resolveFrozenChampion(fixtures, now);
+  return { fixtures, standings, champion, fetchedAt: now };
 }
 
 export async function GET() {
@@ -181,7 +187,7 @@ export async function GET() {
       /* no cache */
     }
     return NextResponse.json(
-      { fixtures: [], standings: {}, fetchedAt: now },
+      { fixtures: [], standings: {}, champion: null, fetchedAt: now },
       { status: 503, headers: { "Cache-Control": "no-store" } }
     );
   }
