@@ -1,10 +1,68 @@
 import { describe, it, expect } from "vitest";
-import { buildWatchingMeta, trackedStampText } from "./watching-data";
+import {
+  buildWatchingMeta,
+  trackedStampText,
+  isExpiredFinalPin,
+  WATCHING_FINAL_TTL_MS,
+  type PinnedItem,
+} from "./watching-data";
 
 // Pure copy helpers for the System D mobile Watching recomposition (D2 T5).
 // Timing-only, never a winner or a margin — safe under No-Spoilers.
 
 const s = (status: "live" | "upcoming" | "final") => ({ status });
+
+function pin(over: Partial<PinnedItem> = {}): PinnedItem {
+  return {
+    source: "wc",
+    id: "1",
+    pinnedAt: 0,
+    dateISO: "2026-07-14T19:00:00Z",
+    matchup: "FRA · ESP",
+    contextEyebrow: "",
+    status: "final",
+    statusLabel: "FINAL",
+    statusTone: "final",
+    scoreLine: "2 – 1",
+    detailLine: "Final",
+    awayCode: "FRA",
+    homeCode: "ESP",
+    awayName: "France",
+    homeName: "Spain",
+    spoilerSubject: "France vs Spain",
+    spoilerKind: "final",
+    href: "/game/1",
+    ...over,
+  };
+}
+
+describe("isExpiredFinalPin (Watching 24h auto-remove)", () => {
+  const kickoff = new Date("2026-07-14T19:00:00Z").getTime();
+
+  it("expires a final pin once kickoff + 24h has passed", () => {
+    const now = kickoff + WATCHING_FINAL_TTL_MS + 1;
+    expect(isExpiredFinalPin(pin({ status: "final" }), now)).toBe(true);
+  });
+
+  it("keeps a final pin just under the 24h window", () => {
+    const now = kickoff + WATCHING_FINAL_TTL_MS - 1;
+    expect(isExpiredFinalPin(pin({ status: "final" }), now)).toBe(false);
+  });
+
+  it("never expires a live or upcoming pin", () => {
+    const now = kickoff + WATCHING_FINAL_TTL_MS * 10;
+    expect(isExpiredFinalPin(pin({ status: "live" }), now)).toBe(false);
+    expect(isExpiredFinalPin(pin({ status: "upcoming" }), now)).toBe(false);
+  });
+
+  it("never expires a pin with a missing or unparseable date", () => {
+    const now = kickoff + WATCHING_FINAL_TTL_MS * 10;
+    expect(isExpiredFinalPin(pin({ status: "final", dateISO: "" }), now)).toBe(false);
+    expect(isExpiredFinalPin(pin({ status: "final", dateISO: "not-a-date" }), now)).toBe(
+      false
+    );
+  });
+});
 
 describe("buildWatchingMeta (mobile pagehead meta)", () => {
   it("live wins over every other bucket and flags the breathing dot", () => {

@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { Display } from "../atoms/Display";
 import { SecHead } from "../system/SecHead";
 import { TrackedAgateRow, StaleAgateRow } from "./PinnedCard";
 import { LiveRoomField } from "./LiveRoom";
 import { useIsNative } from "../dev/native-detect";
-import { buildWatchingMeta } from "./watching-data";
+import { usePinned } from "../providers";
+import { buildWatchingMeta, isExpiredFinalPin } from "./watching-data";
 import type { WatchingPayload } from "./watching-data";
 
 // Watching — the tracking surface. One System D composition per width behind
@@ -16,6 +18,7 @@ import type { WatchingPayload } from "./watching-data";
 // grammar at the wider column measure, not a separate design.
 
 export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
+  usePruneExpiredPins(payload);
   return (
     <section>
       {/* Mobile: System D recomposition — ink Live Room, agate tracked list */}
@@ -29,6 +32,27 @@ export function WatchingDashboard({ payload }: { payload: WatchingPayload }) {
       </div>
     </section>
   );
+}
+
+// Auto-remove finished pins ~24h after the match (WATCHING_FINAL_TTL_MS).
+// The lock screen drops tracked games at final; this clears the in-app list
+// a day later. Destructive by design (chosen over a non-destructive collapse):
+// a game you tracked leaves Watching a day later with no undo but re-adding it.
+// The processed-ids ref stops the unpin from firing twice for one id while the
+// state update propagates.
+function usePruneExpiredPins(payload: WatchingPayload) {
+  const { unpinGame } = usePinned();
+  const prunedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const now = Date.now();
+    for (const item of payload.items) {
+      if (prunedRef.current.has(item.id)) continue;
+      if (isExpiredFinalPin(item, now)) {
+        prunedRef.current.add(item.id);
+        unpinGame(item.id);
+      }
+    }
+  }, [payload.items, unpinGame]);
 }
 
 // ── Mobile (System D) ──────────────────────────────────────────────────

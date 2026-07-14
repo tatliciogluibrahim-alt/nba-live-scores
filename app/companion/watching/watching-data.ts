@@ -11,6 +11,9 @@ export type PinnedItem = {
   source: PinnedSource;
   id: string;
   pinnedAt: number;
+  /** Raw kickoff ISO from the source game. Anchors the 24h finished-pin
+   *  expiry (isExpiredFinalPin). */
+  dateISO: string;
 
   // Display
   matchup: string;             // "NYK · CLE"
@@ -125,6 +128,7 @@ export function nbaToPinned(g: NBAGame, pinnedAt: number): PinnedItem {
     source: "nba",
     id: g.id,
     pinnedAt,
+    dateISO: g.date,
     matchup: `${g.away.abbreviation} · ${g.home.abbreviation}`,
     contextEyebrow: g.gameContext ? `NBA · ${g.gameContext}` : "NBA",
     status: g.status,
@@ -160,6 +164,7 @@ function wcToPinned(g: WCGameLite, pinnedAt: number): PinnedItem {
     source: "wc",
     id: g.id,
     pinnedAt,
+    dateISO: g.date,
     matchup: `${g.away.abbreviation} · ${g.home.abbreviation}`,
     contextEyebrow: g.stage ? `Summer Soccer · ${g.stage}` : "Summer Soccer",
     status: g.status,
@@ -284,6 +289,24 @@ export function parseScoreLine(
   const m = line.match(/(\d+)\s*[–\-—]\s*(\d+)/);
   if (!m) return [null, null];
   return [Number(m[1]), Number(m[2])];
+}
+
+// A finished tracked game clears itself a day after the match, matching the
+// calm daily rhythm (the lock screen already drops tracked games at final;
+// this clears the in-app list ~24h later). Anchored on the kickoff ISO —
+// the only reliable timestamp on a PinnedItem. A match ends ~2h after
+// kickoff, so kickoff + 24h ≈ "about a day after full time" (documented
+// approximation, not an exact final-whistle offset).
+export const WATCHING_FINAL_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** True when a finished pin is old enough to auto-remove. Only finals with a
+ *  parseable kickoff older than the TTL qualify — live/upcoming pins and pins
+ *  with a missing/unparseable date never expire. Pure + testable. */
+export function isExpiredFinalPin(item: PinnedItem, now: number): boolean {
+  if (item.status !== "final") return false;
+  const kickoff = new Date(item.dateISO).getTime();
+  if (!Number.isFinite(kickoff)) return false;
+  return kickoff + WATCHING_FINAL_TTL_MS < now;
 }
 
 /** Compact right-edge stamp for a tracked (agate / board) row. Upcoming
