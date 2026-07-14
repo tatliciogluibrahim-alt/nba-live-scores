@@ -3,6 +3,7 @@
 // Keep all "what to surface" logic here so the screen file stays a layout.
 
 import type { Follow, PinnedGame } from "../state/types";
+import type { WCChampion } from "../../lib/wc-champion";
 import { getCountry } from "../following/data/countries";
 import { getTournament } from "../following/data/tournaments";
 import { tournamentPhase } from "../following/data/tournament-phase";
@@ -250,6 +251,11 @@ export type ClosingMoment = {
   detail?: string;
   /** Game-by-game dots for the series variant. Empty for tournament. */
   dots: ClosingMomentDot[];
+  /** The tournament champion, carried on the WC wind-down variant so the
+   *  card can name it. The card gates the name on No-Spoilers (headline
+   *  above stays safe/generic). Absent when the user follows the winner
+   *  (their follower champion card already names it) or off the WC variant. */
+  champion?: WCChampion;
   /** Spoilery summary line (e.g. "OKC took it in 6."). Only shown when
    *  No-Spoilers is off. */
   spoilerSummary?: string;
@@ -1422,7 +1428,8 @@ function pickClosing(
   follows: Follow[],
   hasLive: boolean,
   hasUpcoming: boolean,
-  now = new Date()
+  now = new Date(),
+  champion: WCChampion | null = null
 ): ClosingMoment | null {
   const seriesWindowMs = now.getTime() - SERIES_CLOSE_WINDOW_DAYS * 86_400_000;
   const tournamentWindowMs =
@@ -1525,6 +1532,30 @@ function pickClosing(
       autoDropNote: followedSeries.has(seriesKey)
         ? "We retired your follow on this series to free an alert slot. Your other follows are untouched."
         : undefined,
+    };
+  }
+
+  // ── Tournament variant (World Cup wind-down) ──
+  // The final is decided (champion frozen) and the slate is quiet. Name the
+  // champion for the first TOURNAMENT_CLOSE_WINDOW_DAYS, then fall through to
+  // the dead-zone card. The champion object rides along so the card can name
+  // the winner (spoiler-gated); the headline here stays safe/generic. When
+  // the user follows the winner we drop the champion so their follower
+  // champion card names it instead — no double naming on one screen.
+  if (!hasLive && !hasUpcoming && champion && champion.decidedAt >= tournamentWindowMs) {
+    const followsChampion = follows.some(
+      (f) =>
+        (f.kind === "country" || f.kind === "team") &&
+        f.id.toUpperCase() === champion.code
+    );
+    return {
+      id: "tournament:wc-2026",
+      kind: "tournament",
+      eyebrow: "Tournament wrapped",
+      headline: "The World Cup is over.",
+      detail: "We'll be back when the next moment matters.",
+      dots: [],
+      champion: followsChampion ? undefined : champion,
     };
   }
 
@@ -1798,6 +1829,7 @@ export function buildTodayPayload({
   wc,
   follows,
   pinned,
+  champion = null,
   now = new Date(),
 }: {
   /** Current-week NBA games used for hero, You Follow chips, and
@@ -1811,6 +1843,9 @@ export function buildTodayPayload({
   wc: WCGameLite[];
   follows: Follow[];
   pinned: PinnedGame[];
+  /** The frozen tournament champion (from the WC feed), or null until the
+   *  final is decided. Feeds the WC wind-down moment. */
+  champion?: WCChampion | null;
   now?: Date;
 }): TodayPayload {
   const recentForWrap = nbaRecent && nbaRecent.length > 0 ? nbaRecent : nba;
@@ -1835,7 +1870,7 @@ export function buildTodayPayload({
   // real-world session: NYK vs SA was listed in NEXT UP with the
   // "TONIGHT" eyebrow, and the headline still said "Quiet for now."
   const hasTonightUpcoming = upNext.some((item) => item.isToday);
-  const closing = pickClosing(recentForWrap, follows, hasLive, hasUpcoming, now);
+  const closing = pickClosing(recentForWrap, follows, hasLive, hasUpcoming, now, champion);
   const pinnedSummary = buildPinnedSummary(nba, recentForWrap, wc, pinned);
   // Quiet Wrap intentionally shows both today's "Earlier" finals AND
   // yesterday's finals for context, but the Quiet Recap moment is

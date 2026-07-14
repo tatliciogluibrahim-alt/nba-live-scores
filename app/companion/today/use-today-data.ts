@@ -11,6 +11,7 @@ import {
   type TodayPayload,
   type WCGameLite,
 } from "./today-data";
+import type { WCChampion } from "../../lib/wc-champion";
 
 // Empty payload used during loading and as the safe fallback when both
 // API calls fail. Keeps the page shape stable so we don't flash empties.
@@ -50,6 +51,9 @@ type FetchedData = {
    *  it from the current-week feed. */
   nbaRecent: NBAGame[];
   wc: WCGameLite[];
+  /** Frozen tournament champion (from the WC feed), or null until the final
+   *  is decided. Drives the WC wind-down moment. */
+  champion: WCChampion | null;
   updatedAt: Date | null;
 };
 
@@ -74,19 +78,25 @@ async function fetchNBA(): Promise<{ games: NBAGame[]; recent: NBAGame[] }> {
   }
 }
 
-async function fetchWC(): Promise<WCGameLite[]> {
+async function fetchWC(): Promise<{
+  games: WCGameLite[];
+  champion: WCChampion | null;
+}> {
   try {
     // wcFeedUrl() swaps to /api/preview/world-cup when the URL has
     // ?preview=wc-day, so we can feel the live-day UX without
     // waiting for kickoff. Real path otherwise.
     const res = await fetch(wcFeedUrl(), { cache: "no-store" });
-    if (!res.ok) return [];
-    const json = (await res.json()) as { games?: WCGameLite[] };
+    if (!res.ok) return { games: [], champion: null };
+    const json = (await res.json()) as {
+      games?: WCGameLite[];
+      champion?: WCChampion | null;
+    };
     const games = json.games ?? [];
     writeFeed(FEED_KEYS.worldCup, games);
-    return games;
+    return { games, champion: json.champion ?? null };
   } catch {
-    return [];
+    return { games: [], champion: null };
   }
 }
 
@@ -100,12 +110,15 @@ function seedData(): FetchedData {
   );
   const wc = readFeed<WCGameLite[]>(FEED_KEYS.worldCup);
   if (!ls && !wc) {
-    return { nba: [], nbaRecent: [], wc: [], updatedAt: null };
+    return { nba: [], nbaRecent: [], wc: [], champion: null, updatedAt: null };
   }
   return {
     nba: ls?.games ?? [],
     nbaRecent: ls?.recent ?? [],
     wc: wc ?? [],
+    // Champion isn't cached (server-derived); it repopulates on the first
+    // poll. Null until then.
+    champion: null,
     updatedAt: new Date(),
   };
 }
@@ -158,15 +171,21 @@ export function useTodayData() {
       setData(dataRef.current);
       if (r.games.length > 0 || r.recent.length > 0) setHasLoadedOnce(true);
     };
-    const applyWc = (wc: WCGameLite[]) => {
+    const applyWc = (res: {
+      games: WCGameLite[];
+      champion: WCChampion | null;
+    }) => {
       if (isCancelled()) return;
-      const sig = JSON.stringify(wc);
+      const { games: wc, champion } = res;
+      // Champion in the signature so its arrival commits (rebuilds the
+      // payload → the wind-down moment appears) even on a byte-identical slate.
+      const sig = JSON.stringify(wc) + "|" + (champion?.code ?? "");
       if (sig === wcSigRef.current && dataRef.current.updatedAt !== null) {
         if (wc.length > 0) setHasLoadedOnce(true);
         return;
       }
       wcSigRef.current = sig;
-      dataRef.current = { ...dataRef.current, wc, updatedAt: new Date() };
+      dataRef.current = { ...dataRef.current, wc, champion, updatedAt: new Date() };
       setData(dataRef.current);
       if (wc.length > 0) setHasLoadedOnce(true);
     };
@@ -198,6 +217,7 @@ export function useTodayData() {
       wc: data.wc,
       follows,
       pinned,
+      champion: data.champion,
     });
   }, [
     hasLoadedOnce,
@@ -206,6 +226,7 @@ export function useTodayData() {
     data.nba,
     data.nbaRecent,
     data.wc,
+    data.champion,
     follows,
     pinned,
   ]);

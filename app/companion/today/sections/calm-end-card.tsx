@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Display } from "../../atoms/Display";
 import { useNoSpoilers } from "../../providers";
+import { useEffectiveNoSpoilers } from "../../spoiler/reveal";
 import { useClosingDismissed } from "./use-closing-dismissed";
 import { useExit } from "../../hooks/use-exit";
 import type { ClosingMoment } from "../today-data";
@@ -43,6 +44,10 @@ const monoLink = {
 
 export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
   const noSpoilers = useNoSpoilers();
+  // The WC wind-down carries the champion. Naming the winner is the ultimate
+  // spoiler, so it hides under No-Spoilers behind the same reveal the final
+  // score uses; the moment's own headline/detail stay safe/generic.
+  const championHidden = useEffectiveNoSpoilers(moment.champion?.gameId);
   const { hydrated, isDismissed, dismiss } = useClosingDismissed();
   // Dismiss collapses + fades the card out before unmounting, so the calm
   // acknowledgment doesn't pop away instantly.
@@ -54,6 +59,13 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
   if (isDismissed(moment.id)) return null;
 
   const isSeries = moment.kind === "series";
+  const nameChampion = Boolean(moment.champion) && !championHidden;
+  const headline = nameChampion
+    ? `${moment.champion!.name} are world champions.`
+    : moment.headline;
+  const detail = nameChampion
+    ? "That's the World Cup. We'll be back when the next moment matters."
+    : moment.detail;
 
   return (
     <div
@@ -103,15 +115,15 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
           </div>
 
           <Display as="p" size="sm" className="mb-1">
-            {moment.headline}
+            {headline}
           </Display>
 
-          {moment.detail ? (
+          {detail ? (
             <p
               className="text-[13px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              {moment.detail}
+              {detail}
             </p>
           ) : null}
 
