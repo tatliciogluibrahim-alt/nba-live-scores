@@ -16,6 +16,7 @@ import {
 } from "../country/country-data";
 import { WC_GROUP_FIXTURES } from "../following/data/wc-fixtures";
 import { getCountry } from "../following/data/countries";
+import type { WCChampion } from "../../lib/wc-champion";
 
 // Curated group fixtures adapted to the schedule shape, so the page can
 // SERVER-RENDER the real 12 groups + teams (status "upcoming", no scores)
@@ -55,27 +56,34 @@ const IDLE_INTERVAL_MS = 60_000;
 type SchedulePayload = {
   fixtures: WCScheduleFixtureLite[];
   standings: Record<string, WCScheduleStandingLite[]>;
+  champion: WCChampion | null;
 };
 
 async function fetchSchedule(): Promise<SchedulePayload> {
   try {
     const res = await fetch("/api/world-cup/schedule", { cache: "no-store" });
-    if (!res.ok) return { fixtures: [], standings: {} };
+    if (!res.ok) return { fixtures: [], standings: {}, champion: null };
     const json = (await res.json()) as Partial<SchedulePayload>;
-    return { fixtures: json.fixtures ?? [], standings: json.standings ?? {} };
+    return {
+      fixtures: json.fixtures ?? [],
+      standings: json.standings ?? {},
+      champion: json.champion ?? null,
+    };
   } catch {
-    return { fixtures: [], standings: {} };
+    return { fixtures: [], standings: {}, champion: null };
   }
 }
 
 export function useWCSchedule(): {
   fixtures: WCScheduleFixtureLite[];
   standings: Record<string, WCScheduleStandingLite[]>;
+  champion: WCChampion | null;
   hydrated: boolean;
 } {
   const [data, setData] = useState<SchedulePayload>({
     fixtures: [],
     standings: {},
+    champion: null,
   });
   const dataRef = useRef<SchedulePayload>(data);
   const [hydrated, setHydrated] = useState(false);
@@ -97,6 +105,7 @@ export function useWCSchedule(): {
   return {
     fixtures: data.fixtures,
     standings: data.standings,
+    champion: data.champion,
     hydrated,
   };
 }

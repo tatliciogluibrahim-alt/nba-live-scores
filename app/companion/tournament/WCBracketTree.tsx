@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Spoiler } from "../spoiler/Spoiler";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import { useFollows } from "../providers";
 import { useWCSchedule } from "./WCGroups";
 import {
@@ -12,6 +13,7 @@ import {
 } from "./wc-bracket-data";
 import { kickoffStamp } from "../today/agate-slate";
 import type { KnockoutRoundKey } from "./knockout-data";
+import type { WCChampion } from "../../lib/wc-champion";
 
 // The bracket as a bracket (S2, direction locked 2026-07-06: "quarter
 // cards"). One card per bracket quarter: the two R16 feeders join into
@@ -35,7 +37,7 @@ const ROUND_SHORT: Record<KnockoutRoundKey, string> = {
 };
 
 export function WCBracketTree() {
-  const { fixtures } = useWCSchedule();
+  const { fixtures, champion } = useWCSchedule();
   const { follows } = useFollows();
   const bracket = buildWCBracket(fixtures, followedCountrySet(follows));
 
@@ -67,6 +69,7 @@ export function WCBracketTree() {
         slot={bracket.final}
         slotRound="final"
         footnote={bracket.third}
+        champion={champion}
       />
     </div>
   );
@@ -80,6 +83,7 @@ function QuarterCard({
   slotRound,
   tag,
   footnote,
+  champion,
 }: {
   /** 1-4 for the quarters; null for the closing semis-into-final card. */
   index: number | null;
@@ -91,6 +95,9 @@ function QuarterCard({
    *  quiet full-width row under the tree — real fixtures only (the
    *  bracket never synthesizes it). */
   footnote?: BracketMatch | null;
+  /** The champion, on the closing card only — crowns the final slot once
+   *  the result is revealed. */
+  champion?: WCChampion | null;
 }) {
   const head = index == null ? "Semifinals & final" : `Quarter ${index}`;
   return (
@@ -146,7 +153,7 @@ function QuarterCard({
           />
         </div>
 
-        <SlotCell match={slot} round={slotRound} />
+        <SlotCell match={slot} round={slotRound} champion={champion} />
       </div>
 
       {footnote ? (
@@ -241,7 +248,15 @@ function FeederRow({ match, last }: { match: BracketMatch; last: boolean }) {
 // played slot renders its Spoiler-gated score + LIVE/FT stamp exactly like
 // a FeederRow — the final must never read as upcoming after it's been
 // played (peer review 2026-07-11).
-function SlotCell({ match, round }: { match: BracketMatch | null; round: KnockoutRoundKey }) {
+function SlotCell({
+  match,
+  round,
+  champion,
+}: {
+  match: BracketMatch | null;
+  round: KnockoutRoundKey;
+  champion?: WCChampion | null;
+}) {
   const bothReal = match != null && match.away.real && match.home.real;
   const played = match != null && match.status !== "upcoming";
   const live = match != null && match.status === "live";
@@ -263,6 +278,20 @@ function SlotCell({ match, round }: { match: BracketMatch | null; round: Knockou
         ? kickoffStamp(match.dateIso, new Date())
         : match?.dateLabel ?? null;
 
+  // Crown the champion — but only on the final slot AND only once the
+  // result is revealed. Naming the winner is the ultimate spoiler, so it
+  // hides under No-Spoilers behind the same reveal the score uses. The hook
+  // runs unconditionally (a bare gameId is fine when there's no champion).
+  const hideChampion = useEffectiveNoSpoilers(champion?.gameId);
+  const championSide: "away" | "home" | null =
+    round === "final" && champion && !hideChampion && match
+      ? match.away.code === champion.code
+        ? "away"
+        : match.home.code === champion.code
+          ? "home"
+          : null
+      : null;
+
   const inner = (
     <div style={{ padding: 12 }} className="flex h-full flex-col justify-center">
       <span
@@ -275,7 +304,8 @@ function SlotCell({ match, round }: { match: BracketMatch | null; round: Knockou
       >
         {scored && match ? (
           <>
-            {bracketSlotToken(match.away)}{" "}
+            {bracketSlotToken(match.away)}
+            {championSide === "away" ? <Crown /> : null}{" "}
             {gameId ? (
               <Spoiler gameId={gameId} ariaSubject={aria}>
                 {match.away.score}–{match.home.score}
@@ -284,6 +314,7 @@ function SlotCell({ match, round }: { match: BracketMatch | null; round: Knockou
               `${match.away.score}–${match.home.score}`
             )}{" "}
             {bracketSlotToken(match.home)}
+            {championSide === "home" ? <Crown /> : null}
           </>
         ) : (
           label
@@ -296,12 +327,15 @@ function SlotCell({ match, round }: { match: BracketMatch | null; round: Knockou
           fontFamily: "var(--font-mono)",
           fontSize: 9,
           letterSpacing: "0.1em",
-          color: live ? "var(--live)" : "var(--mute-1)",
-          fontWeight: 600,
+          color: championSide
+            ? "var(--brand)"
+            : live
+              ? "var(--live)"
+              : "var(--mute-1)",
+          fontWeight: championSide ? 700 : 600,
         }}
       >
-        {ROUND_SHORT[round]}
-        {when ? ` · ${when}` : ""}
+        {championSide ? "Champions" : `${ROUND_SHORT[round]}${when ? ` · ${when}` : ""}`}
       </span>
     </div>
   );
@@ -318,6 +352,17 @@ function SlotCell({ match, round }: { match: BracketMatch | null; round: Knockou
     );
   }
   return inner;
+}
+
+// The champion mark on the final slot's winning side. A restrained
+// brand-accent star (a crown glyph risks tofu in mono fonts); the "Champions"
+// stamp under the slot carries the word.
+function Crown() {
+  return (
+    <span aria-hidden style={{ color: "var(--brand)", marginLeft: 2 }}>
+      ★
+    </span>
+  );
 }
 
 /** "/game/1234" → "1234" (a stable Spoiler key); null when not linkable. */
