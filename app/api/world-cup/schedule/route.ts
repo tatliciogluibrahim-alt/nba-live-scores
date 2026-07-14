@@ -21,8 +21,22 @@ export const dynamic = "force-dynamic";
 // degrades to a live fetch when KV isn't configured (local dev).
 
 // Group stage + knockouts. June 11 first whistle → July 19 final.
-const WC_DATE_RANGE = "20260611-20260719";
-const SCOREBOARD_URL = `https://site.api.espn.com/apis/site/v2/sports/soccer/${WC_LEAGUE}/scoreboard?dates=${WC_DATE_RANGE}`;
+//
+// ESPN's scoreboard caps a SINGLE request at 100 events. The tournament has
+// 104 (72 group + 16 + 8 + 4 + 2 SF + 1 third + 1 final), so one range query
+// for the whole window silently drops the last 4 — the semis, third place,
+// and final (verified live 2026-07-14: the range returned exactly 100, the
+// deepest rounds missing). That broke the champion freeze, third place, and
+// the final's real date/time. We fetch the window in sub-ranges that each
+// stay well under the cap and merge, so every fixture is present.
+const WC_DATE_CHUNKS = [
+  "20260611-20260620",
+  "20260621-20260630",
+  "20260701-20260710",
+  "20260711-20260719",
+] as const;
+const scoreboardUrl = (range: string) =>
+  `https://site.api.espn.com/apis/site/v2/sports/soccer/${WC_LEAGUE}/scoreboard?dates=${range}`;
 const STANDINGS_URL = `https://site.api.espn.com/apis/v2/sports/soccer/${WC_LEAGUE}/standings`;
 
 const ESPN_TIMEOUT_MS = 9000;
@@ -135,15 +149,42 @@ async function fetchJson<T>(url: string): Promise<T> {
   }
 }
 
+// Rank so a boundary-straddling duplicate keeps the more-complete reading
+// (ESPN can file a late-night match under two adjacent date buckets).
+const STATUS_RANK: Record<WCScheduleFixture["status"], number> = {
+  final: 3,
+  live: 2,
+  upcoming: 1,
+};
+
 async function buildPayload(now: number): Promise<WCSchedulePayload> {
-  const [scoreboard, standingsJson] = await Promise.all([
-    fetchJson<{ events?: ESPNEvent[] }>(SCOREBOARD_URL),
+  const [chunks, standingsJson] = await Promise.all([
+    Promise.all(
+      WC_DATE_CHUNKS.map((range) =>
+        fetchJson<{ events?: ESPNEvent[] }>(scoreboardUrl(range)).catch(
+          () => ({ events: [] as ESPNEvent[] })
+        )
+      )
+    ),
     fetchJson<ESPNStandingsResponse>(STANDINGS_URL).catch(() => ({})),
   ]);
-  const fixtures = (scoreboard.events ?? [])
-    .map(normalizeFixture)
-    .filter((f): f is WCScheduleFixture => f !== null && f.id !== "")
-    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Merge all sub-ranges, dedup by id (keep the highest-status reading).
+  const byId = new Map<string, WCScheduleFixture>();
+  for (const chunk of chunks) {
+    for (const event of chunk.events ?? []) {
+      const f = normalizeFixture(event);
+      if (!f || f.id === "") continue;
+      const existing = byId.get(f.id);
+      if (!existing || STATUS_RANK[f.status] > STATUS_RANK[existing.status]) {
+        byId.set(f.id, f);
+      }
+    }
+  }
+  const fixtures = [...byId.values()].sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+
   const standings = parseStandings(standingsJson as ESPNStandingsResponse);
   const champion = await resolveFrozenChampion(fixtures, now);
   return { fixtures, standings, champion, fetchedAt: now };
