@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Display } from "../atoms/Display";
 import { Masthead } from "../system/Masthead";
 import { SecHead } from "../system/SecHead";
-import { AgateRow } from "../system/AgateRow";
 import { resolveFollowIdentity } from "../follow/identity";
 import { useFollows } from "../providers";
 import type { Follow } from "../state/types";
@@ -76,13 +75,6 @@ export function FollowingDashboard() {
   // series detail), but the card signals it won't drive new alerts.
   const wrappedSeries = useWrappedSeries();
   const liveFollows = useLiveFollows();
-  // Surface the bracket entry only for people who follow the World Cup
-  // (a country or the tournament). It's a destination link, not IA.
-  const followsWC = follows.some(
-    (f) =>
-      f.kind === "country" ||
-      (f.kind === "tournament" && f.id.startsWith("fifa-world-cup"))
-  );
 
   const cards: FollowCardData[] = follows.map((f) => {
     const identity = resolveFollowIdentity(f);
@@ -130,7 +122,6 @@ export function FollowingDashboard() {
           cards={cards}
           alertSlotCount={alertSlotCount}
           alertSlotCap={alertSlotCap}
-          followsWC={followsWC}
           wrappedHoldingSlot={wrappedHoldingSlot}
           onShare={() => setShareOpen(true)}
           onSync={() => setSyncOpen(true)}
@@ -147,7 +138,6 @@ export function FollowingDashboard() {
           cards={cards}
           alertSlotCount={alertSlotCount}
           alertSlotCap={alertSlotCap}
-          followsWC={followsWC}
           wrappedHoldingSlot={wrappedHoldingSlot}
           onShare={() => setShareOpen(true)}
           onSync={() => setSyncOpen(true)}
@@ -190,7 +180,6 @@ function FollowingMobile({
   cards,
   alertSlotCount,
   alertSlotCap,
-  followsWC,
   wrappedHoldingSlot,
   onShare,
   onSync,
@@ -199,7 +188,6 @@ function FollowingMobile({
   cards: FollowCardData[];
   alertSlotCount: number;
   alertSlotCap: number;
-  followsWC: boolean;
   wrappedHoldingSlot: FollowCardData[];
   onShare: () => void;
   onSync: () => void;
@@ -418,18 +406,6 @@ function FollowingMobile({
       {renderSection("Up next", upNext, "next")}
       {renderSection("Wrapped", wrapped, "wrapped")}
 
-      {/* Per-sport cross-link — the bracket destination, WC followers only. */}
-      {followsWC ? (
-        <section className="mt-6">
-          <SecHead name="Summer soccer" />
-          <AgateRow
-            main="View the bracket"
-            note="See who's through, round by round"
-            href="/tournament/fifa-world-cup-2026/bracket"
-          />
-        </section>
-      ) : null}
-
       {/* Add follow — the primary action, filled pill. Then the SHARE ·
           SYNC DEVICES footer wiring the existing two modals. */}
       <div className="mt-[26px]">
@@ -526,7 +502,6 @@ function FollowingDesktop({
   cards,
   alertSlotCount,
   alertSlotCap,
-  followsWC,
   wrappedHoldingSlot,
   onShare,
   onSync,
@@ -535,7 +510,6 @@ function FollowingDesktop({
   cards: FollowCardData[];
   alertSlotCount: number;
   alertSlotCap: number;
-  followsWC: boolean;
   wrappedHoldingSlot: FollowCardData[];
   onShare: () => void;
   onSync: () => void;
@@ -747,18 +721,6 @@ function FollowingDesktop({
         {renderSection("Live now", liveNow, "live")}
         {renderSection("Up next", upNext, "next")}
         {renderSection("Wrapped", wrapped, "wrapped")}
-
-        {/* Per-sport cross-link — the bracket destination, WC followers only. */}
-        {followsWC ? (
-          <section className="mt-6">
-            <SecHead name="Summer soccer" />
-            <AgateRow
-              main="View the bracket"
-              note="See who's through, round by round"
-              href="/tournament/fifa-world-cup-2026/bracket"
-            />
-          </section>
-        ) : null}
 
         {/* Add follow — the primary action, filled pill. Then the SHARE ·
             SYNC DEVICES · SETTINGS footer wiring the existing two modals. */}
