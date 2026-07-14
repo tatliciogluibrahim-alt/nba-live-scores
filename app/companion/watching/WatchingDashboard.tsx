@@ -104,8 +104,9 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
         </section>
       ) : null}
 
-      {/* Wrapped — finished pins on blush plate (winner emphasis + FT
-          stamps unchanged). Index continues after the later section. */}
+      {/* Wrapped — finished pins on blush plate (winner emphasis kept). Every
+          row is final, so the FT stamp is dropped as constant noise. Index
+          continues after the later section. */}
       {wrappedItems.length > 0 ? (
         <section className="mt-6 -mx-4" style={{ background: "var(--plate-wrap)" }}>
           <div className="px-4 pt-[18px] pb-[6px]">
@@ -115,6 +116,7 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
                 key={item.id}
                 item={item}
                 idx={String(laterItems.length + i + 1).padStart(2, "0")}
+                hideStamp
               />
             ))}
           </div>
@@ -243,8 +245,9 @@ function WatchingDesktop({ payload }: { payload: WatchingPayload }) {
           </section>
         ) : null}
 
-        {/* Wrapped — finished pins on the blush plate (winner emphasis + FT
-            stamps unchanged). Index continues after the later section. */}
+        {/* Wrapped — finished pins on the blush plate (winner emphasis kept;
+            FT stamp dropped as constant noise). Index continues after the
+            later section. */}
         {wrappedItems.length > 0 ? (
           <section className="mt-6 -mx-[18px]" style={{ background: "var(--plate-wrap)" }}>
             <div className="px-[18px] pt-[18px] pb-[6px]">
@@ -254,6 +257,7 @@ function WatchingDesktop({ payload }: { payload: WatchingPayload }) {
                   key={item.id}
                   item={item}
                   idx={String(laterItems.length + i + 1).padStart(2, "0")}
+                  hideStamp
                 />
               ))}
             </div>

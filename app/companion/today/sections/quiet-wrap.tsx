@@ -9,7 +9,6 @@ import {
 } from "../../spoiler/reveal";
 import { SecHead } from "../../system/SecHead";
 import { AgateRow } from "../../system/AgateRow";
-import { Stamp } from "../../system/Stamp";
 import { winnerSide } from "../../system/emphasis";
 import {
   agateScore,
@@ -124,7 +123,6 @@ function QuietWrapAgateInner({
           {agateScore(awayScore, homeScore)}
         </Spoiler>
       }
-      stamp={<Stamp text="FT" variant="faint" />}
       href={item.href}
     />
   );

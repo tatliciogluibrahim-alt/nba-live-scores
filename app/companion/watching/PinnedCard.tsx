@@ -23,7 +23,17 @@ import type { PinnedItem, StalePin } from "./watching-data";
 // Spoiler-gated score, and finals get winner emphasis — both gated exactly
 // like Today's QUIET WRAP so a followed team's result never leaks.
 
-export function TrackedAgateRow({ item, idx }: { item: PinnedItem; idx: string }) {
+export function TrackedAgateRow({
+  item,
+  idx,
+  hideStamp = false,
+}: {
+  item: PinnedItem;
+  idx: string;
+  /** Suppress the status stamp. Set inside the all-final Wrapped section,
+   *  where every row is a final so the "FT" stamp is constant noise. */
+  hideStamp?: boolean;
+}) {
   // Hooks run unconditionally (rules-of-hooks); the upcoming branch just
   // doesn't consume `hidden` since it carries no score to protect.
   const globalNoSpoilers = useNoSpoilers();
@@ -42,7 +52,7 @@ export function TrackedAgateRow({ item, idx }: { item: PinnedItem; idx: string }
         idx={idx}
         main={<TrackedMatchup away={item.awayCode} home={item.homeCode} winner={null} />}
         note={item.detailLine.split(" · ")[0] || undefined}
-        stamp={<Stamp text={trackedStampText(item)} variant="faint" />}
+        stamp={hideStamp ? undefined : <Stamp text={trackedStampText(item)} variant="faint" />}
         href={item.href}
       />
     );
@@ -50,12 +60,20 @@ export function TrackedAgateRow({ item, idx }: { item: PinnedItem; idx: string }
 
   return (
     <GameSpoilerScope gameId={item.id} hidden={hidden}>
-      <TrackedAgateInner item={item} idx={idx} />
+      <TrackedAgateInner item={item} idx={idx} hideStamp={hideStamp} />
     </GameSpoilerScope>
   );
 }
 
-function TrackedAgateInner({ item, idx }: { item: PinnedItem; idx: string }) {
+function TrackedAgateInner({
+  item,
+  idx,
+  hideStamp = false,
+}: {
+  item: PinnedItem;
+  idx: string;
+  hideStamp?: boolean;
+}) {
   const [awayScore, homeScore] = parseScoreLine(item.scoreLine);
 
   // Winner emphasis (ink winner / mute loser) IS a spoiler. Gate it on the
@@ -74,7 +92,7 @@ function TrackedAgateInner({ item, idx }: { item: PinnedItem; idx: string }) {
           {`${awayScore ?? 0}–${homeScore ?? 0}`}
         </Spoiler>
       }
-      stamp={<Stamp text={trackedStampText(item)} variant="faint" />}
+      stamp={hideStamp ? undefined : <Stamp text={trackedStampText(item)} variant="faint" />}
       href={item.href}
     />
   );
