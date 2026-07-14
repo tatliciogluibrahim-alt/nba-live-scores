@@ -654,6 +654,41 @@ carried).
 Route count: 84. Gate: lint 0 / 380 tests / build / live-verify, per
 ship-gate.
 
+## Session wrap 2026-07-14 — Batch 2 shipped
+
+Batch 2 (the tournament ending) is committed. Full detail in the
+CHANGELOG_PRODUCT.md "Final-week Batch 2" entry; spec + plan in
+docs/superpowers/{specs,plans}/2026-07-13-wc-final-week-batch2*.
+
+Shipped: champion persistence (frozen write-once to KV
+`nns:wc:champion:2026`, derived from ESPN's winner flag, exposed on
+both WC feed payloads); champion named on the bracket final slot, the
+tournament concluded banner, and a new Today WC wind-down moment — all
+spoiler-gated on `useEffectiveNoSpoilers(champion.gameId)`; dated
+dead-zone card ("NFL opens September 9", confirmed date in
+`following/data/nfl-dates.ts`); "Quarterfinal N" bracket heads;
+FT-chip removed from the all-final wrap sections (QuietWrap +
+Watching Wrapped, via a `hideStamp` prop); Watching finished-pin
+24h auto-remove (`isExpiredFinalPin` + `PinnedItem.dateISO`).
+
+Gate passed: lint 0, 422 tests, build 85 routes / 93 pages,
+live-verified (champion null pre-final; positive path + Batch 1 winner
+rule confirmed against the real ESPN feed).
+
+**Verification still owed once the real final plays (Jul 19):** the
+champion surfaces (crown on the bracket, "France are world champions."
+on the tournament banner + Today wind-down) can only be eyeballed once
+ESPN posts a decided final — the logic is unit- and live-null-verified,
+but the lit-up state is unshot. ESPN still publishes knockouts
+round-by-round (as of Jul 14 the full-tournament feed stops at the
+quarterfinals; the SF/final fixtures aren't posted yet), so the frozen
+champion depends on the schedule route running once after the final
+concludes (it runs on every tournament/groups/bracket page load + the
+scan cron, so this is reliable). **Item (g) NOT done** (concluded
+date-anchor hardening — deferred to pre-NFL). **Sport-agnostic tabs**
+(raised 2026-07-12) still parked in ROADMAP Phase 23+, decide before
+NFL build.
+
 ## Session wrap 2026-07-11 — where to pick up
 
 Everything shipped this session is committed and DEPLOYED (c2643ac,

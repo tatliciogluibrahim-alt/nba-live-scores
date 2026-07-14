@@ -2,6 +2,68 @@
 
 ---
 
+## Final-week Batch 2 — the ending — 2026-07-13/14
+
+The tournament's close: a persistent, spoiler-gated champion on every
+structural surface, a World Cup wind-down moment, a dated dead-zone
+card, and small final-week polish. Spec at
+docs/superpowers/specs/2026-07-13-wc-final-week-batch2-design.md, plan
+at docs/superpowers/plans/2026-07-13-wc-final-week-batch2.md.
+
+- **Champion persistence.** "X are world champions" used to appear only
+  on the Today card, only if you followed the winner, and only while the
+  final sat in the 14-day live feed (gone ~Jul 23). Now the champion is
+  derived once from ESPN's own `winner` flag and frozen write-once to KV
+  (`nns:wc:champion:2026`, no expiry, never overwritten). New
+  `app/lib/wc-champion.ts` (pure derivation, shared `winnerCodeOf` rule
+  the bracket also uses) + server-only `wc-champion-store.ts` (the
+  freeze; @vercel/kv stays out of the client bundle). The schedule route
+  derives + freezes and exposes `champion`; the live 14-day route reads
+  it so Today keeps naming the champion after the final ages out.
+- **Champion surfaces, all spoiler-gated.** Naming the winner is the
+  ultimate result, so every surface hides it under
+  `useEffectiveNoSpoilers(champion.gameId)` — the same reveal the bracket
+  score uses. (1) Bracket final slot: the winning side gets a brand star
+  and a "Champions" stamp once revealed; unchanged under No-Spoilers.
+  (2) Tournament concluded banner: "France are world champions." on
+  reveal, generic acknowledgment when hidden (NBA concluded tournaments
+  keep the generic banner). (3) Today wind-down moment.
+- **WC wind-down moment (a).** `pickClosing` gained a World Cup branch:
+  once the champion is frozen and the slate is quiet, it fires
+  `tournament:wc-2026` for 7 days (before the dead-zone card), naming the
+  champion in the card when revealed. When you follow the winner the
+  champion is dropped so your follower champion card names it instead —
+  no double naming.
+- **Dated dead-zone card (c).** "NFL kicks off in September" → "NFL opens
+  September 9." The 2026 opener (Wed Sep 9, Seattle v New England, Super
+  Bowl LX rematch) is confirmed/released — verified against Wikipedia +
+  FBSchedules, so no fabricated date. One-source constant in
+  `app/companion/following/data/nfl-dates.ts`.
+- **Quarterfinal rename (d).** Bracket quarter-card heads read
+  "Quarterfinal N" (the card culminates in that QF) instead of the
+  ambiguous "Quarter N".
+- **FT-chip removal in wrap sections (e).** Today's QUIET WRAP and
+  Watching's WRAPPED are all-final, so a constant "FT" stamp is noise —
+  dropped. A `hideStamp` prop on `TrackedAgateRow` handles the shared
+  component; winner emphasis and the gated score are unchanged. Mixed
+  lists (country page, bracket tree) keep FT.
+- **Watching 24h auto-remove (f).** Finished pins now clear ~24h after
+  the match (pure `isExpiredFinalPin` + `WATCHING_FINAL_TTL_MS`, anchored
+  on a new `PinnedItem.dateISO`; pruned via `unpinGame` in a guarded
+  effect). Destructive by design — chosen over a non-destructive collapse.
+  Live/upcoming and undated pins never expire.
+- **Not done (g):** the concluded date-anchor (`wcPhase`, fires
+  2026-07-20T00:00Z = ~8pm ET Jul 19) still works for this final;
+  deriving it from the real final's status is deferred to before the NFL
+  build.
+- Gate: lint 0, 422 tests (18 new across champion / wind-down / expiry),
+  build 85 routes / 93 pages, live-verified against the real ESPN feed
+  (champion correctly null pre-final; synthetic decided final derives;
+  Batch 1 winner rule intact). Champion surfaces fully verifiable only
+  once the real final is played (Jul 19).
+
+---
+
 ## Dynamic bracket — winners advance into the next round — 2026-07-12
 
 The knockout bracket was built purely by mapping ESPN's *published*
