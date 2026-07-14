@@ -1,10 +1,31 @@
 # Sports-agnostic architecture — plan
 
 Date: 2026-07-14
-Status: PARKED 2026-07-14 — three decisions locked (below), no code
-started. Ibrahim will run a dedicated No Noise session for this; do not
-begin implementation until then. Not needed before the NFL build.
-Raised by Ibrahim 2026-07-12; parked in ROADMAP Phase 23+ until now.
+Status: SHIPPED 2026-07-14 — Phases 0–3 built + visually verified.
+Three decisions locked (below). Remaining: Phase 4 (Today/Watching copy
+sweep) and Phase 5 (NFL live views + feed adapter, lands with the Aug
+build — NFL is registered now and renders its coming-soon body).
+Raised by Ibrahim 2026-07-12.
+
+## What shipped (2026-07-14)
+
+- Phase 0: `app/companion/schedule/competitions.ts` — the active-
+  competitions registry (`buildScheduleCompetitions`, `followsCompetition`,
+  `scopeCompetitions`), tested. Stale concluded competitions age off after
+  30 days.
+- Phase 1+3: `ScheduleClient` rewritten — a Following/All-sports scope
+  toggle + a competition switcher at the top of Schedule. Following is the
+  default; the switcher hides when one competition is in scope.
+- Phase 2: competition-driven bodies — the World Cup keeps its exact
+  By day / Bracket / Groups (`WCScheduleBody`, unchanged); others render a
+  status card (coming soon / wrapped / live-on-Today).
+- Idle retention (decision 2): never a dead end — the empty-Following
+  state names what's live now (or the next moment) and offers one tap to
+  All sports.
+- Verified live at mobile width: Following (WC schedule), All sports
+  (Summer Soccer / NFL·soon switcher), NFL coming-soon body. Zero console
+  errors. The switcher/all-sports paths are exercised today by WC (live) +
+  NFL (coming soon); full multi-LIVE-competition behavior arrives with NFL.
 
 ## The problem, precisely
 

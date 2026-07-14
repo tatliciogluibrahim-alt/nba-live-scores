@@ -549,18 +549,18 @@ Sketched but unsequenced. Re-evaluate after Phase 22.
   after the Phase 22.5 iOS Native ship.
 - Family / shared follows.
 - Champions League knockout rounds.
-- **Sport-agnostic tabs (raised 2026-07-12).** Today / Schedule /
-  Following / Watching currently assume one active moment, so Schedule
-  reads as "the World Cup schedule" rather than "the schedule for what
-  you follow." As soon as two moments overlap (NBA Playoffs + World Cup,
-  or World Cup + NFL), a bare "Schedule" tab is ambiguous. Direction to
-  explore: the tab is driven by your follows by default (what you follow
-  dictates what surfaces), with a toggle to "All sports" that then lets
-  you filter to a specific competition. This is the IA generalization
-  the four-tab model was built toward but hasn't been forced to solve
-  yet (only one moment has ever been live at a time). Couples to the
-  Path B follow-schema refactor above. Decide before the NFL build
-  (Aug 2026), when NBA/WC/NFL first realistically coexist.
+- **Sport-agnostic Schedule (raised 2026-07-12, Phases 0–3 SHIPPED
+  2026-07-14).** Schedule was hardcoded to the World Cup; it now has a
+  Following/All-sports scope toggle + a competition switcher, backed by
+  an active-competitions registry (`app/companion/schedule/competitions.ts`).
+  Decisions locked: switcher (not merge), Following default with an idle
+  retention hook, scope control at the top of Schedule. The World Cup
+  keeps its exact views; other competitions render a status card; NFL is
+  registered and shows its coming-soon body. **Remaining: Phase 4**
+  (Today/Watching WC-specific copy sweep) and **Phase 5** (NFL live views
+  + feed adapter — lands with the Aug NFL build; the frame is ready).
+  Couples to the Path B follow-schema refactor. Full spec:
+  `docs/superpowers/specs/2026-07-14-sports-agnostic-architecture-plan.md`.
 
 iOS Live Activities / native wrap previously sat here unsequenced.
 Promoted to Phase 22.5 above (see `docs/IOS_NATIVE_PLAN.md`).

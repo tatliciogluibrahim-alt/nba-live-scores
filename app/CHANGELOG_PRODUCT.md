@@ -2,6 +2,42 @@
 
 ---
 
+## Sports-agnostic Schedule + the 100-cap fix — 2026-07-14
+
+Two things: a data bug that was dropping the deepest rounds, and the
+Schedule surface going sports-agnostic.
+
+- **Fix: ESPN's 100-event cap was dropping the semis, third place, and
+  final.** The schedule route made one range query for the whole
+  tournament; ESPN caps a single scoreboard request at 100 events and the
+  tournament has 104, so the last four (the semis, third place, final)
+  silently never reached the app. This only started biting once ESPN
+  published those fixtures (total crossed 100) — right at the climax. It
+  also meant the champion could never freeze and third place never
+  rendered. Fixed by chunking the window into four sub-ranges under the
+  cap and merging (dedup by id, highest status wins). Verified live: all
+  104 fixtures present; the semis arrive as real dated fixtures.
+- **Schedule is no longer hardcoded to the World Cup.** A Following /
+  All-sports scope toggle + a competition switcher sit at the top
+  (decisions: switcher not merge; Following default; top of Schedule).
+  Backed by a new active-competitions registry
+  (`app/companion/schedule/competitions.ts`) that derives status, the
+  views each competition can render, and whether you follow it. The World
+  Cup keeps its exact By day / Bracket / Groups; other competitions render
+  a status card. An idle retention state never leaves a dead end — it
+  names what's live now or the next moment and offers one tap to All
+  sports. With one competition in scope the switcher hides, so the live
+  World Cup is unchanged. Adding NFL (Aug) is registering it + a feed
+  adapter; it already renders its coming-soon body ("NFL Season opens
+  September 9"). Phases 0–3 of
+  `docs/superpowers/specs/2026-07-14-sports-agnostic-architecture-plan.md`;
+  Phase 4 (Today/Watching copy sweep) + Phase 5 (NFL live) remain.
+- Verified at mobile width (Playwright): Following, All-sports switcher,
+  NFL coming-soon — zero console errors. Gate: lint 0, 430 tests (8 new),
+  build 93 pages.
+
+---
+
 ## Final-week Batch 2 — the ending — 2026-07-13/14
 
 The tournament's close: a persistent, spoiler-gated champion on every
