@@ -6,6 +6,7 @@ import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { SecHead } from "../system/SecHead";
 import { AlertSlotToggle } from "../follow/AlertSlotToggle";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 import { useFollows } from "../providers";
 import { PRESETS } from "../state/types";
 import {
@@ -156,12 +157,17 @@ export function TournamentClient({
   // Show a "Season wrapped" acknowledgment instead of the live alert pill, and
   // hide the follow/alert controls (you can browse the results, not follow it).
   const concluded = phase === "concluded";
+  const isWC = tournament.id.startsWith("fifa-world-cup-");
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1 md:max-w-2xl">
       <TournamentPagehead tournament={tournament} phase={phase} />
       {concluded ? (
-        <SeasonWrappedBanner />
+        isWC ? (
+          <WCConcludedBanner />
+        ) : (
+          <SeasonWrappedBanner />
+        )
       ) : (
         <AlertStatePill tournamentId={tournament.id} />
       )}
@@ -185,9 +191,16 @@ export function TournamentClient({
   );
 }
 
-// Concluded-tournament acknowledgment. Calm, forward-only — the results stay
-// browsable, but there's nothing live to follow.
-function SeasonWrappedBanner() {
+// Concluded-tournament acknowledgment. Calm, forward-only. Results stay
+// browsable, nothing live to follow. `eyebrow`/`headline` default to the
+// generic copy; the WC variant passes champion copy.
+function SeasonWrappedBanner({
+  eyebrow = "Season wrapped",
+  headline,
+}: {
+  eyebrow?: string;
+  headline?: React.ReactNode;
+}) {
   return (
     <div
       className="mt-3 rounded-[14px] border px-4 py-3"
@@ -199,20 +212,39 @@ function SeasonWrappedBanner() {
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
           letterSpacing: "0.12em",
-          color: "var(--mute-1)",
+          color: eyebrow === "Champions" ? "var(--brand)" : "var(--mute-1)",
         }}
       >
-        Season wrapped
+        {eyebrow}
       </p>
       <p
         className="mt-1 text-[13px] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 600 }}
       >
-        This one&apos;s in the books. The results stay here to browse — there&apos;s
-        nothing live left to follow.
+        {headline ??
+          "This one's in the books. The results stay here to browse. Nothing live left to follow."}
       </p>
     </div>
   );
+}
+
+// The World Cup concluded banner names the champion once the final is
+// revealed. Naming the winner is the ultimate spoiler, so under No-Spoilers
+// it falls back to the generic acknowledgment (same reveal the final score
+// uses). The champion is the frozen value, so it survives the final aging
+// out of the live feed.
+function WCConcludedBanner() {
+  const { champion } = useWCSchedule();
+  const hideChampion = useEffectiveNoSpoilers(champion?.gameId);
+  if (champion && !hideChampion) {
+    return (
+      <SeasonWrappedBanner
+        eyebrow="Champions"
+        headline={`${champion.name} are world champions. The tournament is in the books.`}
+      />
+    );
+  }
+  return <SeasonWrappedBanner />;
 }
 
 // ── Pagehead (D3 seam) ─────────────────────────────────────────────────
