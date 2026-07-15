@@ -17,6 +17,7 @@
 //                    schema migration.
 
 import type { CachedGameState } from "./state-cache";
+import { scoreEvent } from "./significance";
 
 // Canonical event-type list — the single source of truth. The
 // dispatcher, preset matcher, ops-metrics funnel, and the push admin /
@@ -86,6 +87,12 @@ export type PushEvent = {
    *  parseable — the dispatcher falls back to a plain "Goal" line.
    *  No-Spoilers users never see it. */
   scorer?: string;
+  /** Significance score 0–100 (significance.ts scoreEvent), computed at
+   *  detection where the game state is richest. The dispatcher gates each
+   *  subscriber's tier on it. Optional for back-compat: a missing score
+   *  fails open (treated as always-significant) so an unscored path never
+   *  silently drops an alert. */
+  significance?: number;
 };
 
 export type FreshGameState = {
@@ -387,5 +394,20 @@ export function detectEvents(
     updatedAt: Date.now(),
   };
 
-  return { events, nextState };
+  // Score each event where the game state is richest (margin, max-lead,
+  // clock, Game 7). The dispatcher gates on this per subscriber.
+  const isGame7 = /\bGame\s*7\b/i.test(stableNext.gameContext ?? "");
+  const scored = events.map((e) => ({
+    ...e,
+    significance: scoreEvent({
+      type: e.type,
+      margin: currentMargin,
+      maxLead,
+      period: stableNext.period,
+      secondsRemaining: stableNext.secondsRemaining ?? undefined,
+      isGame7,
+    }),
+  }));
+
+  return { events: scored, nextState };
 }

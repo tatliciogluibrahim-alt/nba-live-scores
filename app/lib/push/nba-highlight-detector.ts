@@ -13,6 +13,7 @@
 // one and avoids noisy thresholds.
 
 import type { PushEvent } from "./event-detector";
+import { scoreEvent } from "./significance";
 
 // Points thresholds that earn a ping, ascending. A 41-point game fires
 // once at 30 and once at 40 (not at 31..39).
@@ -99,6 +100,7 @@ export function detectNBAHighlights(input: HighlightInput): HighlightResult {
       // Render the real number the player has now, not just the
       // threshold — "SGA · 34 PTS" reads truer than "SGA · 30 PTS".
       note: `${leader.name} · ${pts} PTS${leader.team ? ` (${leader.team})` : ""}`,
+      significance: scoreEvent({ type: "nba-highlight", milestone }),
     });
   }
 

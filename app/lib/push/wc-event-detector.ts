@@ -28,6 +28,7 @@
 
 import type { CachedWCGameState } from "./wc-state-cache";
 import type { PushEvent } from "./event-detector";
+import { scoreEvent } from "./significance";
 
 export type FreshWCGameState = {
   gameId: string;
@@ -196,5 +197,16 @@ export function detectWCEvents(
     updatedAt: Date.now(),
   };
 
-  return { events, nextState };
+  // Score each event by round + minute. wc-final is round-driven, so a
+  // group full-time barely registers while THE final is near-max.
+  const scored = events.map((e) => ({
+    ...e,
+    significance: scoreEvent({
+      type: e.type,
+      stage: e.stage,
+      minute: stableNext.minute ?? undefined,
+    }),
+  }));
+
+  return { events: scored, nextState };
 }

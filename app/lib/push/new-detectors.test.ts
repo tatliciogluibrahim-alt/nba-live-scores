@@ -34,6 +34,30 @@ function wcPrev(over: Partial<CachedWCGameState> = {}): CachedWCGameState {
   };
 }
 
+describe("detectWCEvents — significance attached (engine C2)", () => {
+  it("scores THE final near-max and a group full-time low", () => {
+    const finalEvt = detectWCEvents(
+      wcPrev({ status: "live" }),
+      wcFresh({ status: "final", stage: "Final" })
+    ).events.find((e) => e.type === "wc-final")!;
+    expect(finalEvt.significance).toBeGreaterThanOrEqual(70);
+
+    const groupEvt = detectWCEvents(
+      wcPrev({ status: "live" }),
+      wcFresh({ status: "final", stage: "Group A" })
+    ).events.find((e) => e.type === "wc-final")!;
+    expect(groupEvt.significance).toBeLessThan(42);
+  });
+
+  it("scores a goal and carries it on the event", () => {
+    const goal = detectWCEvents(
+      wcPrev({ awayScore: 0, homeScore: 0 }),
+      wcFresh({ awayScore: 1, homeScore: 0, stage: "Final" })
+    ).events.find((e) => e.type === "wc-goal")!;
+    expect(goal.significance).toBeGreaterThanOrEqual(42);
+  });
+});
+
 describe("detectWCEvents — goals", () => {
   it("fires wc-goal when the scoreline rises while live", () => {
     const { events } = detectWCEvents(
