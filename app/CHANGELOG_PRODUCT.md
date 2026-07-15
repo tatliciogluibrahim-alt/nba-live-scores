@@ -2,6 +2,41 @@
 
 ---
 
+## Significance engine — smart notifications — 2026-07-14
+
+The notification is the product (95% of a user's relationship with the app
+is a lock-screen ping), so this makes every alert pure signal. Instead of
+firing on fixed event types gated by a static tier, the app now scores each
+candidate alert 0–100 and treats tiers as significance thresholds. Reuses
+the weight philosophy already built for the Brief (rankSignals), the
+closeness×lateness heat from live-state, and the calm LLM phraser — wiring
+them into the push path for the first time. Spec:
+`docs/superpowers/specs/2026-07-14-significance-engine-design.md`.
+
+- **Smart firing (live).** `scoreEvent()` scores every event from stakes
+  (round, Game 7, elimination), closeness (margin × clock), and rarity
+  (comeback size, milestone). `subscriberWantsEvent` fires when
+  `significance + personal boost >= tier threshold` (all:0 / companion:42 /
+  quiet:70; a directly-followed team/country adds +25). The effect: a
+  genuine classic — a comeback, a close finish, a Game 7, your country's
+  goal in the final — **breaks through even to a Quiet follower**, while a
+  broad tournament follow gets only finals + classics, and low-stakes events
+  are suppressed below Full Details. A direct follow keeps its tier's
+  behavior (start + final still reach Quiet). Tier copy retuned to match
+  ("Quiet: start, final, and the big moments").
+- **Smart copy (dormant).** `narratePush` phrases the notification body in
+  the calm-companion voice, grounded (any invented number → rejected →
+  template), 2.5s timeout, pre-narrated once per event, spoiler-variant
+  only. **Off until `PUSH_NARRATE=1` + `ANTHROPIC_API_KEY` are set** — ships
+  dormant so it can be smoke-tested before the final without risk. Null
+  always falls back to today's templates.
+- Weights/thresholds are hand-tuned starting dials, to calibrate with real
+  delivery data. Gate: lint 0, 455 tests (40+ new across the scorer, the
+  gate, the detectors, the grounded guard, and the end-to-end firing path),
+  build 93 pages. Verified detect → score → gate for the final's exact path.
+
+---
+
 ## Sports-agnostic Schedule + the 100-cap fix — 2026-07-14
 
 Two things: a data bug that was dropping the deepest rounds, and the

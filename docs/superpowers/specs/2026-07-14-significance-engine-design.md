@@ -1,8 +1,35 @@
 # Significance engine — design
 
 Date: 2026-07-14
-Status: design, pending user review
+Status: SHIPPED 2026-07-14 — all four components built + tested. Smart
+firing (C1–C3) is LIVE. Smart copy (C4) is wired but DORMANT behind the
+`PUSH_NARRATE` kill switch — set `PUSH_NARRATE=1` (+ `ANTHROPIC_API_KEY`)
+to enable it after a live smoke test.
 Proving ground: the World Cup final, 2026-07-19 (gated live, not shadowed)
+
+## What shipped (2026-07-14)
+
+- **C1** `app/lib/push/significance.ts` — `scoreEvent()` 0–100, pure, 14
+  tests locking the final's scenarios.
+- **C2** — every `PushEvent` carries `significance`, computed in the NBA/WC/
+  highlight detectors. Fail-open (missing → always significant).
+- **C3** — `subscriberWantsEvent` gates on `significance + personalBoost >=
+  tierThreshold` (all:0 / companion:42 / quiet:70, boost:25). Tier copy in
+  `PRESETS` retuned to match. Behavior-lock tests for breakthrough + boost +
+  tournament-quiet. **This is live.**
+- **C4** `app/lib/push/narrate-push.ts` — LLM body copy, grounded + 2.5s
+  timeout + template fallback, pre-narrated once per event before fan-out,
+  spoiler variant only. **Off by default** (kill switch).
+- Verified end-to-end (detect → score → gate) for the final's exact firing
+  path. Gate: lint 0, 455 tests, build 93 pages.
+
+### Calibration note
+
+Weights + thresholds are hand-tuned starting values (the "who gets pinged"
+dials). Direct follows keep their tier's behavior (start + final reach
+Quiet); classics break through; broad tournament follows get quieter.
+Calibrate with real friend-beta delivery data. Marketing pages
+(quiet-sports-alerts, how-it-works) still carry old tier prose — copy sweep.
 
 ## The idea
 

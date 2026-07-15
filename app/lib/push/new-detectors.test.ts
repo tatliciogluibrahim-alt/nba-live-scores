@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { detectWCEvents, type FreshWCGameState } from "./wc-event-detector";
 import type { CachedWCGameState } from "./wc-state-cache";
 import { detectNBAHighlights } from "./nba-highlight-detector";
+import { subscriberWantsEvent } from "./dispatcher";
 
 // Coverage for the two newest detectors: WC goals (score-diff) and NBA
 // player-milestone highlights (game-detail leaders).
@@ -55,6 +56,46 @@ describe("detectWCEvents — significance attached (engine C2)", () => {
       wcFresh({ awayScore: 1, homeScore: 0, stage: "Final" })
     ).events.find((e) => e.type === "wc-goal")!;
     expect(goal.significance).toBeGreaterThanOrEqual(42);
+  });
+});
+
+describe("end-to-end: detect → score → gate (the final's firing path)", () => {
+  it("THE final, detected live, breaks through to a Quiet country follower", () => {
+    const finalEvt = detectWCEvents(
+      wcPrev({ status: "live", awayCode: "FRA", homeCode: "ESP" }),
+      wcFresh({
+        status: "final",
+        stage: "Final",
+        awayCode: "FRA",
+        homeCode: "ESP",
+        awayScore: 2,
+        homeScore: 1,
+      })
+    ).events.find((e) => e.type === "wc-final")!;
+
+    expect(
+      subscriberWantsEvent(
+        { alerts: [{ kind: "country", id: "FRA", tier: "quiet" }], noSpoilers: false },
+        finalEvt
+      )
+    ).toBe(true);
+  });
+
+  it("a group full-time does NOT reach a Quiet whole-tournament follower", () => {
+    const groupEvt = detectWCEvents(
+      wcPrev({ status: "live" }),
+      wcFresh({ status: "final", stage: "Group A", awayScore: 1, homeScore: 0 })
+    ).events.find((e) => e.type === "wc-final")!;
+
+    expect(
+      subscriberWantsEvent(
+        {
+          alerts: [{ kind: "tournament", id: "fifa-world-cup-2026", tier: "quiet" }],
+          noSpoilers: false,
+        },
+        groupEvt
+      )
+    ).toBe(false);
   });
 });
 
