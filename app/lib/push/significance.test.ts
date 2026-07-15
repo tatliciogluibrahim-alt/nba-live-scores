@@ -60,10 +60,9 @@ describe("scoreEvent — NBA", () => {
     ).toBeGreaterThanOrEqual(quiet);
   });
 
-  it("a routine final reaches Companion but not Quiet", () => {
+  it("a final reaches every tier (finals are the one universal ping)", () => {
     const s = scoreEvent({ type: "final", margin: 18, period: 4, secondsRemaining: 0 });
-    expect(s).toBeGreaterThanOrEqual(companion);
-    expect(s).toBeLessThan(quiet);
+    expect(s).toBeGreaterThanOrEqual(quiet);
   });
 
   it("a tight late close-game breaks Companion", () => {
@@ -89,11 +88,12 @@ describe("scoreEvent — NBA", () => {
     );
   });
 
-  it("a routine tipoff reaches nobody below Full Details; Game 7 tipoff is louder", () => {
-    expect(scoreEvent({ type: "tipoff" })).toBeLessThan(companion);
-    expect(scoreEvent({ type: "tipoff", isGame7: true })).toBeGreaterThan(
-      scoreEvent({ type: "tipoff" })
-    );
+  it("a tipoff reaches Companion, and a followed team's tipoff breaks Quiet", () => {
+    const s = scoreEvent({ type: "tipoff" });
+    expect(s).toBeGreaterThanOrEqual(companion);
+    expect(s).toBeLessThan(quiet); // a stranger's game start doesn't reach Quiet
+    expect(s + PERSONAL_BOOST).toBeGreaterThanOrEqual(quiet); // your team's does
+    expect(scoreEvent({ type: "tipoff", isGame7: true })).toBeGreaterThan(s);
   });
 
   it("stays within 0–100", () => {

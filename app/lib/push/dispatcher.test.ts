@@ -9,14 +9,16 @@ import {
 } from "./dispatcher";
 import type { PushEvent } from "./event-detector";
 import type { SyncedAlert } from "./sync-validation";
+import { scoreEvent } from "./significance";
 
 // Dispatcher matcher coverage. This is the launch-critical fan-out gate:
 // for any (subscriber, event) pair it decides whether the push goes out.
 // Bugs here are silent — a user just stops getting alerts they expected —
-// so the matrix is locked here.
+// so the matrix is locked here. Events carry a real significance score (as
+// the detectors attach in production) so the tier gate is exercised honestly.
 
 function nbaEvent(over: Partial<PushEvent> = {}): PushEvent {
-  return {
+  const e: PushEvent = {
     type: "final",
     gameId: "g1",
     awayCode: "OKC",
@@ -25,17 +27,32 @@ function nbaEvent(over: Partial<PushEvent> = {}): PushEvent {
     homeScore: 0,
     ...over,
   };
+  return {
+    ...e,
+    significance:
+      over.significance ??
+      scoreEvent({
+        type: e.type,
+        isGame7: e.isGame7,
+        margin: Math.abs(e.awayScore - e.homeScore),
+      }),
+  };
 }
 
 function wcEvent(over: Partial<PushEvent> = {}): PushEvent {
-  return {
+  const e: PushEvent = {
     type: "wc-final",
     gameId: "w1",
     awayCode: "BRA",
     homeCode: "ARG",
     awayScore: 0,
     homeScore: 0,
+    stage: "Final",
     ...over,
+  };
+  return {
+    ...e,
+    significance: over.significance ?? scoreEvent({ type: e.type, stage: e.stage }),
   };
 }
 
@@ -193,6 +210,56 @@ describe("subscriberWantsEvent — tier filtering", () => {
         nbaEvent({ type: "eoq-1" })
       )
     ).toBe(true);
+  });
+});
+
+describe("subscriberWantsEvent — significance gate (the engine's point)", () => {
+  it("a classic breaks through to a Quiet follower of their team", () => {
+    // A comeback is not in Quiet's old event list, but it's a genuine
+    // moment — a Quiet user following OKC should still get it.
+    expect(
+      subscriberWantsEvent(
+        sub([{ kind: "team", id: "OKC", tier: "quiet" }]),
+        nbaEvent({ type: "comeback", significance: scoreEvent({ type: "comeback", maxLead: 20 }) })
+      )
+    ).toBe(true);
+  });
+
+  it("a routine tipoff does NOT reach a Quiet WHOLE-TOURNAMENT follower", () => {
+    // No personal boost for a tournament follow — Quiet stays finals + classics.
+    expect(
+      subscriberWantsEvent(
+        sub([{ kind: "tournament", id: "nba-playoffs-2025", tier: "quiet" }]),
+        nbaEvent({ type: "tipoff" })
+      )
+    ).toBe(false);
+  });
+
+  it("...but a final DOES reach that same Quiet tournament follower", () => {
+    expect(
+      subscriberWantsEvent(
+        sub([{ kind: "tournament", id: "nba-playoffs-2025", tier: "quiet" }]),
+        nbaEvent({ type: "final" })
+      )
+    ).toBe(true);
+  });
+
+  it("the personal boost: your country's goal in the final reaches you on Quiet", () => {
+    expect(
+      subscriberWantsEvent(
+        sub([{ kind: "country", id: "BRA", tier: "quiet" }]),
+        wcEvent({ type: "wc-goal", stage: "Final", awayScore: 1, homeScore: 0 })
+      )
+    ).toBe(true);
+  });
+
+  it("a routine group goal does NOT reach a Quiet country follower", () => {
+    expect(
+      subscriberWantsEvent(
+        sub([{ kind: "country", id: "BRA", tier: "quiet" }]),
+        wcEvent({ type: "wc-goal", stage: "Group C", awayScore: 1, homeScore: 0 })
+      )
+    ).toBe(false);
   });
 });
 

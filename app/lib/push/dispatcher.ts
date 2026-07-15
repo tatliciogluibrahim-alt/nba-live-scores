@@ -16,8 +16,7 @@ import {
   getWebPush,
   type PushPayload,
 } from "./web-push-config";
-import { presetMatchesEvent } from "./preset-matcher";
-import type { AlertPreset } from "../../companion/state/types";
+import { SIGNIFICANCE_THRESHOLD, PERSONAL_BOOST } from "./significance";
 import { claimDelivery, releaseDelivery } from "./dedupe";
 import {
   listSubscriptions,
@@ -423,57 +422,56 @@ export function subscriberWantsEvent(
 
   const alerts = Array.isArray(sub.alerts) ? sub.alerts : [];
   const wc = isWCEvent(event);
-  const tierOk = (tier: AlertPreset) => presetMatchesEvent(tier, event.type);
+  // Significance gate (2026-07-14 engine). Tiers are thresholds, not event
+  // lists: a directly-followed entity's tense moment breaks through even on
+  // Quiet, and low-stakes events are suppressed everywhere but Full Details.
+  // Fail-open: an unscored event (older detector path) reads as always
+  // significant, so nothing silently drops an alert.
+  const significance = event.significance ?? 100;
 
-  // The Following UI offers four kinds — team, country, series,
-  // tournament. Each kind has its own way of matching to an event:
-  //
-  //   1. Direct entity match
-  //      NBA event ↔ team follow whose id matches awayCode/homeCode
-  //      WC  event ↔ country follow whose id matches awayCode/homeCode
-  //
-  //   2. Series match (NBA only — the schema has no WC series follows)
-  //      A series follow's id is `${teamA}-${teamB}` (sorted). The
-  //      event matches if BOTH team codes are in that id. This is what
-  //      lets a user follow the "OKC vs SA" series once and get pings
-  //      for every game in it, regardless of home/away.
-  //
-  //   3. Tournament match (broadest follow)
-  //      NBA event ↔ tournament follow whose id starts with
-  //                    "nba-playoffs-" (covers future seasons too)
-  //      WC  event ↔ tournament follow whose id starts with
-  //                    "fifa-world-cup-"
-  //
-  // Any one of these matches with a tier that includes the event type
-  // is enough to fan out. Per-tier filtering applies uniformly across
-  // all four kinds — "Quiet" still gets bookends only, etc.
+  // The Following UI offers four kinds — team, country, series, tournament.
+  // Each matches an event differently:
+  //   1. Direct entity — NBA team / WC country whose id is a competitor.
+  //   2. Series (NBA only) — id `${teamA}-${teamB}`, both codes present.
+  //   3. Tournament — broadest; matches by id prefix.
+  // Kinds 1 and 2 are "direct" (your team/country/series) and earn the
+  // personal boost; a tournament follow does not. Any matching follow whose
+  // (significance + boost) clears its tier threshold fans the event out.
   return alerts.some((f) => {
-    if (!tierOk(f.tier)) return false;
+    let matched = false;
+    let direct = false;
 
     // 1. Direct entity.
     if (
       ((wc && f.kind === "country") || (!wc && f.kind === "team")) &&
       (f.id === event.awayCode || f.id === event.homeCode)
     ) {
-      return true;
+      matched = true;
+      direct = true;
     }
-
     // 2. Series — NBA only. Series ids are `${teamA}-${teamB}`.
-    if (!wc && f.kind === "series") {
+    else if (!wc && f.kind === "series") {
       const [a, b] = f.id.split("-");
       const has = (code: string) =>
         code === event.awayCode || code === event.homeCode;
-      if (a && b && has(a) && has(b)) return true;
+      if (a && b && has(a) && has(b)) {
+        matched = true;
+        direct = true;
+      }
+    }
+    // 3. Tournament — match by id prefix so future seasons inherit.
+    else if (f.kind === "tournament") {
+      if (
+        (wc && f.id.startsWith("fifa-world-cup-")) ||
+        (!wc && f.id.startsWith("nba-playoffs-"))
+      ) {
+        matched = true;
+      }
     }
 
-    // 3. Tournament — match by id prefix so future seasons
-    //    (`nba-playoffs-2026`, etc.) inherit without code changes.
-    if (f.kind === "tournament") {
-      if (wc && f.id.startsWith("fifa-world-cup-")) return true;
-      if (!wc && f.id.startsWith("nba-playoffs-")) return true;
-    }
-
-    return false;
+    if (!matched) return false;
+    const score = significance + (direct ? PERSONAL_BOOST : 0);
+    return score >= SIGNIFICANCE_THRESHOLD[f.tier];
   });
 }
 

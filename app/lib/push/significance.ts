@@ -88,13 +88,23 @@ function clutchBonus(i: SignificanceInput): number {
 
 const HIGHLIGHT_WEIGHT: Record<number, number> = {
   30: 38,
-  40: 55,
-  50: 75,
-  60: 90,
+  40: 58,
+  50: 78,
+  60: 92,
 };
 
 /** Score a candidate push event 0–100. Higher = more worth interrupting a
- *  lock screen for. Base weight by event type + additive stakes/closeness. */
+ *  lock screen for. Base weight by event type + additive stakes/closeness.
+ *
+ *  Calibrated (with the tier thresholds + personal boost below) so that:
+ *   • A DIRECT follow (your team/country) keeps its tier's behavior — a start
+ *     (45+25) and a final reach Quiet; quarter breaks/goals reach Companion.
+ *   • A genuine classic (close game, comeback, Game 7, a deep-round goal)
+ *     BREAKS THROUGH to Quiet even though a routine event wouldn't.
+ *   • A broad tournament follow (no boost) gets quieter — finals + classics
+ *     on Quiet, not every game's tipoff.
+ *  These are hand-tuned starting weights, meant to be calibrated with real
+ *  delivery data (like the rest of the product's data layer). */
 export function scoreEvent(i: SignificanceInput): number {
   switch (i.type) {
     case "wc-final":
@@ -102,27 +112,27 @@ export function scoreEvent(i: SignificanceInput): number {
     case "wc-goal":
       return clamp(30 + wcRoundWeight(i.stage) + ((i.minute ?? 0) >= 80 ? 8 : 0));
     case "wc-kickoff":
-      return clamp(12 + wcRoundWeight(i.stage));
+      return clamp(45 + wcRoundWeight(i.stage));
     case "wc-halftime":
-      return clamp(8 + wcRoundWeight(i.stage) * 0.3);
+      return clamp(18);
     case "wc-second-half":
-      return clamp(6 + wcRoundWeight(i.stage) * 0.3);
+      return clamp(20);
     case "final":
-      return clamp(68 + (i.isGame7 ? 30 : 0) + clutchBonus(i));
+      return clamp(72 + (i.isGame7 ? 28 : 0) + clutchBonus(i));
     case "comeback":
       return clamp(60 + Math.min(i.maxLead ?? 0, 30) / 2);
     case "close-game":
       return clamp(52 + clutchBonus(i));
     case "eoq-3":
-      return clamp(22 + (i.isGame7 ? 10 : 0));
+      return clamp(26 + (i.isGame7 ? 10 : 0));
     case "eoq-2":
-      return clamp(16 + (i.isGame7 ? 10 : 0));
+      return clamp(20 + (i.isGame7 ? 10 : 0));
     case "eoq-1":
-      return clamp(14 + (i.isGame7 ? 8 : 0));
+      return clamp(18 + (i.isGame7 ? 8 : 0));
     case "second-half-start":
-      return clamp(12);
+      return clamp(20);
     case "tipoff":
-      return clamp(14 + (i.isGame7 ? 25 : 0) + wcRoundWeight(i.stage));
+      return clamp(45 + (i.isGame7 ? 25 : 0));
     case "nba-highlight":
       return clamp(HIGHLIGHT_WEIGHT[i.milestone ?? 30] ?? 38);
     default:
