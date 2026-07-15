@@ -16,7 +16,11 @@ import {
   getWebPush,
   type PushPayload,
 } from "./web-push-config";
-import { SIGNIFICANCE_THRESHOLD, PERSONAL_BOOST } from "./significance";
+import {
+  SIGNIFICANCE_THRESHOLD,
+  PERSONAL_BOOST,
+  TIER_INVARIANT_EVENTS,
+} from "./significance";
 import {
   narratePush,
   pushNarrateEnabled,
@@ -519,6 +523,11 @@ export function subscriberWantsEvent(
     }
 
     if (!matched) return false;
+    // Tier promise as a hard floor: a direct follow ALWAYS gets its team's
+    // start and final, regardless of score or a future weight retune. The
+    // threshold governs the middle (goals, breaks, close games) + tournament
+    // follows, where breakthrough still applies.
+    if (direct && TIER_INVARIANT_EVENTS.has(event.type)) return true;
     const score = significance + (direct ? PERSONAL_BOOST : 0);
     return score >= SIGNIFICANCE_THRESHOLD[f.tier];
   });

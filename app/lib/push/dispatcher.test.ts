@@ -253,6 +253,37 @@ describe("subscriberWantsEvent — significance gate (the engine's point)", () =
     ).toBe(true);
   });
 
+  it("tier invariant: a direct follow ALWAYS gets start + final, even at significance 0", () => {
+    for (const type of ["tipoff", "final"] as const) {
+      expect(
+        subscriberWantsEvent(
+          sub([{ kind: "team", id: "OKC", tier: "quiet" }]),
+          nbaEvent({ type, significance: 0 })
+        )
+      ).toBe(true);
+    }
+    // A country follow gets its own match kickoff + full time regardless.
+    for (const type of ["wc-kickoff", "wc-final"] as const) {
+      expect(
+        subscriberWantsEvent(
+          sub([{ kind: "country", id: "BRA", tier: "quiet" }]),
+          wcEvent({ type, stage: "Group A", significance: 0 })
+        )
+      ).toBe(true);
+    }
+  });
+
+  it("the invariant does NOT extend to a broad tournament follow", () => {
+    // A whole-tournament Quiet follow still gets finals by threshold, but a
+    // low-significance start does not sneak through on the invariant.
+    expect(
+      subscriberWantsEvent(
+        sub([{ kind: "tournament", id: "nba-playoffs-2025", tier: "quiet" }]),
+        nbaEvent({ type: "tipoff", significance: 20 })
+      )
+    ).toBe(false);
+  });
+
   it("a routine group goal does NOT reach a Quiet country follower", () => {
     expect(
       subscriberWantsEvent(

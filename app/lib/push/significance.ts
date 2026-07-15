@@ -145,3 +145,17 @@ export function scoreEvent(i: SignificanceInput): number {
 // moments. A directly-followed team/country adds PERSONAL_BOOST at the gate.
 export const SIGNIFICANCE_THRESHOLD = { all: 0, companion: 42, quiet: 70 } as const;
 export const PERSONAL_BOOST = 25;
+
+// Tier-promise INVARIANTS. Every tier is defined as "start and final" at
+// minimum, so for a DIRECTLY-followed team/country these events always fire —
+// they are a hard floor, never suppressed by a significance retune. The
+// threshold governs the middle (goals, breaks, close games) and broad
+// tournament follows. (External review 2026-07-14: a tier promise must not be
+// an emergent outcome of the weights.) wc-final fires per match, so a direct
+// country follow gets its own match endings; a tournament follow does not.
+export const TIER_INVARIANT_EVENTS = new Set([
+  "tipoff",
+  "wc-kickoff",
+  "final",
+  "wc-final",
+]);
