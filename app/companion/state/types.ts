@@ -132,7 +132,11 @@ export const PRESETS: Record<
   AlertPreset,
   { label: string; detail: string }
 > = {
-  quiet: { label: "Quiet", detail: "Start and final only." },
-  companion: { label: "Companion", detail: "Start, quarter breaks, scores, final." },
-  all: { label: "Full Details", detail: "Everything: scores, close finishes, comebacks." },
+  // Tiers are significance thresholds (2026-07-14 engine), not fixed event
+  // lists. The copy describes what each tier actually delivers now: Quiet is
+  // the start, the final, and genuine classics; Companion adds the beats;
+  // Full Details is every moment.
+  quiet: { label: "Quiet", detail: "Start, final, and the big moments." },
+  companion: { label: "Companion", detail: "The beats that matter for your team." },
+  all: { label: "Full Details", detail: "Every moment, every game." },
 };
