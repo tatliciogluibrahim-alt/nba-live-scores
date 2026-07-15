@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   bodyIsGrounded,
+  bodyTenseOk,
   pushNarrateEnabled,
   narratePush,
   type PushNarrationInput,
@@ -27,6 +28,37 @@ describe("bodyIsGrounded — no fabricated numbers reach a lock screen", () => {
   it("rejects a line with an invented number", () => {
     expect(bodyIsGrounded("France beat Spain 3-0.", facts)).toBe(false);
     expect(bodyIsGrounded("Mbappe scored in the 88th minute.", facts)).toBe(false);
+  });
+});
+
+describe("bodyTenseOk — a live event must never read as a finished result", () => {
+  it("rejects a result verb on a live goal (the England-beat-Argentina bug)", () => {
+    expect(
+      bodyTenseOk("England beat Argentina 1-0 in the semifinal.", "wc-goal")
+    ).toBe(false);
+    for (const verb of [
+      "won",
+      "defeated",
+      "edged",
+      "sealed the win",
+      "through to the final",
+      "eliminated",
+      "are champions",
+    ]) {
+      expect(bodyTenseOk(`England ${verb} Argentina.`, "wc-goal")).toBe(false);
+    }
+  });
+
+  it("accepts a present-tense live line", () => {
+    expect(
+      bodyTenseOk("A. Gordon puts England ahead 1-0.", "wc-goal")
+    ).toBe(true);
+    expect(bodyTenseOk("Level at 1-1, second half.", "wc-second-half")).toBe(true);
+  });
+
+  it("allows a result verb only on a final event", () => {
+    expect(bodyTenseOk("England beat Argentina 1-0.", "wc-final")).toBe(true);
+    expect(bodyTenseOk("Spain won 2-0.", "final")).toBe(true);
   });
 });
 
