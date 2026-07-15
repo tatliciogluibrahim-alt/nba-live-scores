@@ -17,6 +17,11 @@ import {
   type PushPayload,
 } from "./web-push-config";
 import { SIGNIFICANCE_THRESHOLD, PERSONAL_BOOST } from "./significance";
+import {
+  narratePush,
+  pushNarrateEnabled,
+  type PushNarrationInput,
+} from "./narrate-push";
 import { claimDelivery, releaseDelivery } from "./dedupe";
 import {
   listSubscriptions,
@@ -61,6 +66,25 @@ type DeliveryResult = {
   reason?: string;
 };
 
+/** Stable key for the per-batch narrated-body cache — one narration per
+ *  distinct (game, event type, scoreline). */
+function narrationKey(event: PushEvent): string {
+  return `${event.gameId}:${event.type}:${event.awayScore}-${event.homeScore}`;
+}
+
+/** Map a push event to the grounded facts the phraser may use. */
+function pushNarrationInputFor(event: PushEvent): PushNarrationInput {
+  return {
+    type: event.type,
+    away: event.awayCode,
+    home: event.homeCode,
+    awayScore: event.awayScore,
+    homeScore: event.homeScore,
+    ...(event.stage ? { stage: event.stage } : {}),
+    ...(event.scorer ? { scorer: event.scorer } : {}),
+  };
+}
+
 export async function dispatchEvents(events: PushEvent[]): Promise<{
   deliveries: DeliveryResult[];
   pruned: number;
@@ -88,6 +112,21 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
   const webpush = getWebPush();
   // Evaluated once per batch — quiet hours are per-device local windows.
   const nowMs = Date.now();
+
+  // LLM copy (C4): phrase the spoiler body ONCE per significant event (not
+  // per device), in parallel, before the fan-out. Off unless PUSH_NARRATE is
+  // set; low-significance events keep their templates. A null result (timeout,
+  // error, ungrounded, or kill switch off) means the template is used.
+  const narratedBody = new Map<string, string>();
+  if (pushNarrateEnabled()) {
+    await Promise.all(
+      events.map(async (event) => {
+        if ((event.significance ?? 100) < SIGNIFICANCE_THRESHOLD.companion) return;
+        const line = await narratePush(pushNarrationInputFor(event));
+        if (line) narratedBody.set(narrationKey(event), line);
+      })
+    );
+  }
 
   for (const event of events) {
     const eventTag = dedupeTagFor(event);
@@ -146,7 +185,14 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           return;
         }
 
-        const payload = { ...buildPayload(event, sub.noSpoilers), eventType: event.type };
+        // LLM body only for the spoiler variant (No-Spoilers keeps templates).
+        const narrated = sub.noSpoilers
+          ? undefined
+          : narratedBody.get(narrationKey(event));
+        const payload = {
+          ...buildPayload(event, sub.noSpoilers, narrated),
+          eventType: event.type,
+        };
         let encoded: string;
         try {
           encoded = encodePushPayload(payload);
@@ -300,9 +346,12 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
         // carries data the web layer reads to pin the game + start the
         // Live Activity. Everyone else gets the normal payload.
         const offer = wantsLiveActivityOffer(ios, event);
+        const iosNarrated = ios.noSpoilers
+          ? undefined
+          : narratedBody.get(narrationKey(event));
         const payload = offer
           ? buildLiveActivityOfferPayload(event)
-          : buildPayload(event, ios.noSpoilers);
+          : buildPayload(event, ios.noSpoilers, iosNarrated);
         apnsAttempted += 1;
         const result = await sendApnsPush({
           deviceToken: ios.token,
@@ -570,7 +619,20 @@ export function liveActivityOfferData(event: PushEvent): Record<string, string> 
   };
 }
 
-export function buildPayload(event: PushEvent, noSpoilers: boolean): PushPayload {
+/** Build the push payload. When `narratedBody` is provided (the LLM copy,
+ *  spoiler variant only), it replaces the template body; title/subtitle/tag/
+ *  url stay the deterministic template so structure and collapse behavior are
+ *  unchanged. Null/absent → pure template (today's behavior). */
+export function buildPayload(
+  event: PushEvent,
+  noSpoilers: boolean,
+  narratedBody?: string
+): PushPayload {
+  const base = buildTemplatePayload(event, noSpoilers);
+  return narratedBody ? { ...base, body: narratedBody } : base;
+}
+
+function buildTemplatePayload(event: PushEvent, noSpoilers: boolean): PushPayload {
   const matchup = `${event.awayCode} vs ${event.homeCode}`;
   // Knockout WC matches add the round to the subtitle ("USA vs POR ·
   // Round of 32") so a win-or-go-home alert reads with its stakes. Group
