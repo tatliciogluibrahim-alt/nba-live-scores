@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Spoiler } from "../spoiler/Spoiler";
 import { SecHead } from "../system/SecHead";
@@ -115,11 +115,95 @@ export function WCBracket() {
 // view and the next kickoff is the first row. Day math is device-local
 // (one-app-day doctrine). Exported for the Schedule surface.
 
+// ── The Now Register (UX review 2026-07-15) — temporal orientation, no new
+// controls. A phase register line (SEMIFINALS · N MATCHES LEFT), a passive
+// NOW/NEXT marker before the live-or-next match, and one chapter of ceremony
+// for the final. All static: no scroll-to-position, no per-tick animation.
+
+const PHASE_LABEL: Record<string, string> = {
+  r32: "Round of 32",
+  r16: "Round of 16",
+  qf: "Quarterfinals",
+  sf: "Semifinals",
+  third: "Third place",
+  final: "Final",
+};
+
+/** The current knockout phase + how many scheduled matches remain. The
+ *  phase is the earliest round still holding an unplayed scheduled match;
+ *  the count is every unplayed scheduled match from now to the final. Null
+ *  before the knockouts are set (nothing to orient around yet). */
+export function phaseRegister(
+  rounds: BracketRound[]
+): { label: string; left: number } | null {
+  let label: string | null = null;
+  let left = 0;
+  for (const r of rounds) {
+    for (const m of r.matches) {
+      const scheduled = m.dateIso != null || m.away.real || m.home.real;
+      if (m.status !== "final" && scheduled) {
+        if (!label) label = PHASE_LABEL[r.key] ?? r.label;
+        left += 1;
+      }
+    }
+  }
+  return label ? { label: label.toUpperCase(), left } : null;
+}
+
+type Anchor = { key: string; kind: "now" | "next" } | null;
+
+/** The match to mark: the live one, else the next scheduled upcoming one.
+ *  Scans in chronological (group) order over the current (non-past) days. */
+function findAnchor(groups: ReturnType<typeof groupBracketByDay>): Anchor {
+  let next: string | null = null;
+  for (const g of groups) {
+    for (const m of g.matches) {
+      const key = `${m.round}-${m.number}`;
+      if (m.status === "live") return { key, kind: "now" };
+      if (m.status === "upcoming" && m.dateIso && !next) next = key;
+    }
+  }
+  return next ? { key: next, kind: "next" } : null;
+}
+
+function NowMark({ kind }: { kind: "now" | "next" }) {
+  const live = kind === "now";
+  return (
+    <div
+      className="flex items-center gap-2 uppercase"
+      style={{ padding: "8px 0 2px" }}
+      aria-label={live ? "Live now" : "Up next"}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.18em",
+          color: live ? "var(--live)" : "var(--ink)",
+        }}
+      >
+        {live ? "Now" : "Next"}
+      </span>
+      <span
+        aria-hidden
+        style={{
+          flex: 1,
+          height: 0,
+          borderTop: `1px solid ${live ? "var(--live)" : "var(--line)"}`,
+        }}
+      />
+    </div>
+  );
+}
+
 export function ByDayView({ rounds }: { rounds: BracketRound[] }) {
   const groups = groupBracketByDay(rounds, new Date());
   const current = groups.filter((g) => !g.past);
   // Newest-first: yesterday sits closest to the fold.
   const past = groups.filter((g) => g.past).reverse();
+  const register = phaseRegister(rounds);
+  const anchor = findAnchor(current);
 
   if (groups.length === 0) {
     return (
@@ -134,8 +218,27 @@ export function ByDayView({ rounds }: { rounds: BracketRound[] }) {
 
   return (
     <div>
+      {/* Phase register — the competition's present tense, said once. */}
+      {register ? (
+        <div
+          className="flex items-baseline justify-between uppercase"
+          style={{
+            padding: "0 0 12px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "0.14em",
+          }}
+        >
+          <span style={{ color: "var(--ink)" }}>{register.label}</span>
+          <span style={{ color: "var(--mute-1)" }}>
+            {register.left} {register.left === 1 ? "match" : "matches"} left
+          </span>
+        </div>
+      ) : null}
+
       {current.map((g, gi) => (
-        <DayGroup key={g.key} group={g} first={gi === 0} />
+        <DayGroup key={g.key} group={g} first={gi === 0} anchor={anchor} />
       ))}
 
       {past.length > 0 ? (
@@ -154,7 +257,7 @@ export function ByDayView({ rounds }: { rounds: BracketRound[] }) {
             Results
           </p>
           {past.map((g) => (
-            <DayGroup key={g.key} group={g} first={false} />
+            <DayGroup key={g.key} group={g} first={false} anchor={null} />
           ))}
         </>
       ) : null}
@@ -165,20 +268,50 @@ export function ByDayView({ rounds }: { rounds: BracketRound[] }) {
 function DayGroup({
   group,
   first,
+  anchor,
 }: {
   group: ReturnType<typeof groupBracketByDay>[number];
   first: boolean;
+  anchor: Anchor;
 }) {
+  // Chapter ceremony: the final earns a single line of it — a brand eyebrow
+  // and a heavier top rule. Only the final; over-labeling every day would
+  // manufacture drama the review warns against.
+  const isFinalDay = group.matches.some((m) => m.round === "final");
   return (
-    <section className={first ? "mt-1" : "mt-7"}>
+    <section
+      className={first ? "mt-1" : "mt-7"}
+      style={
+        isFinalDay
+          ? { borderTop: "2px solid var(--rule)", paddingTop: 12, marginTop: 28 }
+          : undefined
+      }
+    >
+      {isFinalDay ? (
+        <p
+          className="uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "0.2em",
+            color: "var(--brand)",
+            marginBottom: 2,
+          }}
+        >
+          The final
+        </p>
+      ) : null}
       <SecHead name={group.head} count={String(group.matches.length)} />
-      {group.matches.map((m) => (
-        <BracketMatchRow
-          key={`${m.round}-${m.number}`}
-          match={m}
-          idx={String(m.number).padStart(2, "0")}
-        />
-      ))}
+      {group.matches.map((m) => {
+        const key = `${m.round}-${m.number}`;
+        return (
+          <Fragment key={key}>
+            {anchor && anchor.key === key ? <NowMark kind={anchor.kind} /> : null}
+            <BracketMatchRow match={m} idx={String(m.number).padStart(2, "0")} />
+          </Fragment>
+        );
+      })}
     </section>
   );
 }
