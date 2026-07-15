@@ -14,11 +14,17 @@ describe("buildApnsPayload", () => {
   it("places custom data as top-level keys alongside aps", () => {
     const p = buildApnsPayload(
       { title: "BRA vs JPN", body: "Track this match on your Lock Screen." },
-      { type: "live-activity-offer", gameId: "wc1", sport: "wc" }
+      {
+        type: "live-activity-offer",
+        gameId: "wc1",
+        sport: "wc",
+        url: "/game/wc1?offer=live-activity",
+      }
     );
     expect(p.type).toBe("live-activity-offer");
     expect(p.gameId).toBe("wc1");
     expect(p.sport).toBe("wc");
+    expect(p.url).toBe("/game/wc1?offer=live-activity");
     // aps stays intact and the custom keys are NOT inside it
     expect((p.aps as Record<string, unknown>).type).toBeUndefined();
   });

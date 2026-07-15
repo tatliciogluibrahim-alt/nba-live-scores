@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useIsNative } from "../dev/native-detect";
 import {
   areLiveActivitiesEnabled,
+  clearLiveActivityReveal,
   startLiveActivity,
   type LiveActivityStartInput,
 } from "../native/live-activity";
@@ -104,8 +105,13 @@ export function TrackControl({
   }
   const state = __preview ? __preview.state : realState;
 
-  // Lock-screen wording applies only to a live game on native.
+  // The action can target the lock screen for any live native game with an
+  // open slot. Held-state wording is stricter: a pinned overflow game is in
+  // Watching, but it is NOT on the lock screen unless it actually owns one
+  // of the first three slots.
   const lockScreen = native && live;
+  const holdsLockScreen = lockScreen && slot.holds;
+  const pinnedOverflow = pinned && lockScreen && !slot.holds;
   // Hint copy shows on a fresh dock (or, in preview, whenever held).
   const heldHint = __preview ? state === "held" : showHint;
 
@@ -132,6 +138,16 @@ export function TrackControl({
     // true or null (unknown): try the direct start. The poll is the backstop
     // if startInput isn't supplied yet.
     if (startInput) {
+      // Reveal state survives an Activity ending. Clear it before the instant
+      // path too, not only inside the background reconciler, so re-pinning a
+      // selectively hidden game cannot flash a previously revealed score.
+      if (startInput.redacted) {
+        const cleared = await clearLiveActivityReveal(startInput.gameId);
+        if (!cleared) {
+          setDenied(true);
+          return;
+        }
+      }
       const ok = await startLiveActivity(startInput);
       if (!ok) {
         setDenied(true);
@@ -164,7 +180,8 @@ export function TrackControl({
 
       {state === "held" ? (
         <HeldStamp
-          lockScreen={lockScreen}
+          lockScreen={holdsLockScreen}
+          overflow={pinnedOverflow}
           hint={heldHint}
           onUnpin={onUnpin}
         />
@@ -259,16 +276,20 @@ function DefaultCta({
 // ── Held: outlined ◉ stamp, tap to remove ───────────────────────────────
 function HeldStamp({
   lockScreen,
+  overflow,
   hint,
   onUnpin,
 }: {
   lockScreen: boolean;
+  overflow: boolean;
   hint: boolean;
   onUnpin: () => void;
 }) {
   const label = lockScreen
     ? "◉ On your lock screen · tap to remove"
-    : "✓ In Watching · tap to remove";
+    : overflow
+      ? "✓ In Watching · lock screen full"
+      : "✓ In Watching · tap to remove";
   return (
     <>
       <OutlineStamp
@@ -300,12 +321,12 @@ function FullStamp({ used, max }: { used: number; max: number }) {
 function DeniedStamp({ onRetry }: { onRetry: () => void }) {
   return (
     <>
-      <OutlineStamp onClick={onRetry} ariaLabel="Live Activities are off. Turn them on in iOS Settings, then tap to retry.">
-        Turn on Live Activities
+      <OutlineStamp onClick={onRetry} ariaLabel="Lock screen tracking is unavailable. Check iOS Settings or update the app, then tap to retry.">
+        Lock screen unavailable
       </OutlineStamp>
       <Subnote>
-        Added to Watching. The lock screen needs Live Activities on in iOS
-        Settings.
+        Added to Watching. Check Live Activities in iOS Settings or update the
+        app, then try again.
       </Subnote>
     </>
   );

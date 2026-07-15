@@ -2,11 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { useFollows, useUserPrefs } from "../providers";
+import { buildFollowSyncState, followSyncHash } from "./follow-sync";
 import { usePushSubscription } from "./use-push-subscription";
 
 // PushSyncEffect — invisible component, mounted globally in the root
-// providers. Watches per-follow alert settings and re-POSTs them to
-// the server whenever they change, so the dispatcher's notion of "what
+// providers. Watches per-follow alert + selective No-Spoilers settings and
+// re-POSTs them whenever they change, so the dispatcher's notion of "what
 // this device wants" stays current.
 //
 // Runs only when:
@@ -57,9 +58,11 @@ export function PushSyncEffect() {
     if (!followsHydrated || !prefsHydrated) return;
     if (status.state !== "subscribed") return;
 
-    const alerts = follows
-      .filter((f) => f.alertEnabled)
-      .map((f) => ({ kind: f.kind, id: f.id, tier: f.alertTier }));
+    // One minimal snapshot feeds both alert fanout and selective
+    // No-Spoilers. Alert-enabled hidden follows carry the flag inline;
+    // hidden follows without an alert slot live in spoilerFollows, so no
+    // identity is sent twice and visible-only follows stay on-device.
+    const followSync = buildFollowSyncState(follows);
 
     // Quiet Hours + reminder lead time are server-honored prefs (the
     // dispatcher suppresses pushes in-window; the reminders cron fires
@@ -79,7 +82,7 @@ export function PushSyncEffect() {
       `${prefs.noSpoilers ? "1" : "0"}|` +
       `${quietHours ? `${quietHours.start}-${quietHours.end}` : "none"}|` +
       `${remindBeforeMinutes ?? "def"}|${timeZone ?? "notz"}|` +
-      alerts.map((f) => `${f.kind}:${f.id}:${f.tier}`).sort().join(",");
+      followSyncHash(followSync);
 
     if (readLastHash() === hash) return;
     if (inFlightRef.current === hash) return;
@@ -88,7 +91,8 @@ export function PushSyncEffect() {
     let cancelled = false;
     (async () => {
       const ok = await syncFollows({
-        alerts,
+        alerts: followSync.alerts,
+        spoilerFollows: followSync.spoilerFollows,
         noSpoilers: prefs.noSpoilers,
         quietHours,
         remindBeforeMinutes,

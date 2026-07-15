@@ -62,7 +62,7 @@ function resolveBackTarget(from: string | undefined): {
 
   switch (from) {
     case "today":
-      return { href: "/", label: "Today" };
+      return { href: "/app", label: "Today" };
     case "following":
       return { href: "/following", label: "Following" };
     case "watching":

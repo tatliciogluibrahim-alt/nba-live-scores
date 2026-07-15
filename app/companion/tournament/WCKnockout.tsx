@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { Spoiler } from "../spoiler/Spoiler";
+import {
+  GameSpoilerScope,
+  useFollowHidesGame,
+  useReveal,
+} from "../spoiler/reveal";
 import { SecHead } from "../system/SecHead";
 import { Stamp } from "../system/Stamp";
-import { useFollows } from "../providers";
+import { useFollows, useNoSpoilers } from "../providers";
 import { useWCSchedule } from "./WCGroups";
 import {
   buildKnockoutPreview,
@@ -101,6 +106,14 @@ function KnockoutPreviewRow({
 }) {
   const played = row.status !== "upcoming";
   const live = row.status === "live";
+  const scopeId = row.id || `wc-knockout-${row.awayCode}-${row.homeCode}`;
+  const globalHidden = useNoSpoilers();
+  const followHidden = useFollowHidesGame({
+    countryCodes: [row.awayCode, row.homeCode],
+  });
+  const hidden = globalHidden || followHidden;
+  const { isRevealed } = useReveal();
+  const resultHidden = hidden && !isRevealed(scopeId);
 
   // Codes: followed side carries the ink; placeholder rows read fully muted.
   const codeColor = row.placeholder ? "var(--mute-2)" : "var(--ink)";
@@ -131,9 +144,10 @@ function KnockoutPreviewRow({
         fontWeight: 700,
         fontSize: 14,
         color: live ? "var(--live)" : "var(--ink)",
+        ...(resultHidden ? { position: "relative", zIndex: 1 } : {}),
       }}
     >
-      <Spoiler gameId={row.id} ariaSubject={`${row.awayName} vs ${row.homeName}`}>
+      <Spoiler gameId={scopeId} ariaSubject={`${row.awayName} vs ${row.homeName}`}>
         {row.scoreLine}
       </Spoiler>
     </span>
@@ -177,21 +191,24 @@ function KnockoutPreviewRow({
   const cls = "flex items-center gap-[10px] py-[13px]";
   const rowStyle = { fontSize: 14, borderBottom: "1px solid var(--line)" };
 
-  if (row.href) {
-    return (
+  const renderedRow = row.href ? (
+    <div className={`relative ${cls}`} style={rowStyle}>
       <Link
         href={row.href}
         aria-label={`${row.awayName} vs ${row.homeName}`}
-        className={`${cls} active:bg-[var(--paper)]`}
-        style={rowStyle}
-      >
-        {inner}
-      </Link>
-    );
-  }
-  return (
+        className="absolute inset-0 active:bg-[var(--paper)]"
+      />
+      {inner}
+    </div>
+  ) : (
     <div className={cls} style={rowStyle}>
       {inner}
     </div>
+  );
+
+  return (
+    <GameSpoilerScope gameId={scopeId} hidden={hidden}>
+      {renderedRow}
+    </GameSpoilerScope>
   );
 }

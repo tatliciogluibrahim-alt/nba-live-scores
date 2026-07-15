@@ -10,6 +10,18 @@ class NoNoiseViewController: CAPBridgeViewController {
 
     // Brand cream — matches the CSS --cream (#f1ead8).
     private let cream = UIColor(red: 241/255, green: 234/255, blue: 216/255, alpha: 1)
+    private var pendingAppURL: URL?
+
+    func openAppURL(_ url: URL) {
+        pendingAppURL = url
+        loadPendingAppURL()
+    }
+
+    private func loadPendingAppURL() {
+        guard let url = pendingAppURL, let webView else { return }
+        pendingAppURL = nil
+        webView.load(URLRequest(url: url))
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -74,5 +86,6 @@ class NoNoiseViewController: CAPBridgeViewController {
 
             print("🔌 [NoNoise] WebView bounce disabled, background set to cream, light style forced, inspectable enabled")
         }
+        loadPendingAppURL()
     }
 }

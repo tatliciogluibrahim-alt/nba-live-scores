@@ -38,7 +38,7 @@ import {
   touchIosToken,
 } from "./ios-token-store";
 import { sendApnsPush } from "./apns-sender";
-import type { SyncedAlert } from "./sync-validation";
+import type { SyncedAlert, SyncedFollow } from "./sync-validation";
 import { isWithinQuietHours } from "./quiet-hours";
 import type { EventType, PushEvent } from "./event-detector";
 import { incrCounter } from "./ops-metrics";
@@ -189,12 +189,15 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           return;
         }
 
-        // LLM body only for the spoiler variant (No-Spoilers keeps templates).
-        const narrated = sub.noSpoilers
+        // Selective No-Spoilers is evaluated for this event, not just as a
+        // device-wide preference. It gets the same safe template and LLM
+        // suppression as global No-Spoilers.
+        const eventNoSpoilers = subscriberUsesNoSpoilersForEvent(sub, event);
+        const narrated = eventNoSpoilers
           ? undefined
           : narratedBody.get(narrationKey(event));
         const payload = {
-          ...buildPayload(event, sub.noSpoilers, narrated),
+          ...buildPayload(event, eventNoSpoilers, narrated),
           eventType: event.type,
         };
         let encoded: string;
@@ -350,12 +353,13 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
         // carries data the web layer reads to pin the game + start the
         // Live Activity. Everyone else gets the normal payload.
         const offer = wantsLiveActivityOffer(ios, event);
-        const iosNarrated = ios.noSpoilers
+        const eventNoSpoilers = subscriberUsesNoSpoilersForEvent(ios, event);
+        const iosNarrated = eventNoSpoilers
           ? undefined
           : narratedBody.get(narrationKey(event));
         const payload = offer
           ? buildLiveActivityOfferPayload(event)
-          : buildPayload(event, ios.noSpoilers, iosNarrated);
+          : buildPayload(event, eventNoSpoilers, iosNarrated);
         apnsAttempted += 1;
         const result = await sendApnsPush({
           deviceToken: ios.token,
@@ -363,7 +367,12 @@ export async function dispatchEvents(events: PushEvent[]): Promise<{
           subtitle: payload.subtitle,
           body: payload.body,
           collapseId: payload.tag,
-          data: offer ? liveActivityOfferData(event) : undefined,
+          // Capacitor does not navigate from a notification tap on its own.
+          // Preserve the transport-neutral payload URL in top-level APNs
+          // data for every native push; offers add pin metadata alongside it.
+          data: offer
+            ? liveActivityOfferData(event)
+            : { url: payload.url ?? `/game/${event.gameId}` },
           // PRODUCTION. TestFlight + App Store builds get their device
           // tokens from the production APNs endpoint
           // (api.push.apple.com). Sending to sandbox
@@ -458,7 +467,57 @@ const SPOILERY_EVENTS = new Set<PushEvent["type"]>(["close-game", "comeback"]);
 type SubscriberPreferences = {
   alerts: SyncedAlert[];
   noSpoilers: boolean;
+  /** Hidden follows without an alert slot. Optional keeps old KV rows and
+   * test fixtures backward-compatible. */
+  spoilerFollows?: SyncedFollow[];
 };
+
+/** Selective No-Spoilers matching mirrors the in-app contract: a series
+ * protects only games containing both teams in its key. Whole-tournament hiding
+ * remains intentionally excluded and belongs to the global toggle. */
+function selectiveFollowMatchesEvent(
+  follow: SyncedFollow,
+  event: PushEvent
+): boolean {
+  const wc = isWCEvent(event);
+  const id = follow.id.trim().toUpperCase();
+  const away = event.awayCode.trim().toUpperCase();
+  const home = event.homeCode.trim().toUpperCase();
+  if (follow.kind === "team") {
+    return !wc && (id === away || id === home);
+  }
+  if (follow.kind === "country") {
+    return wc && (id === away || id === home);
+  }
+  if (!wc && follow.kind === "series") {
+    const [a, b] = id.split("-");
+    const has = (code: string) => code === away || code === home;
+    return Boolean(a && b && has(a) && has(b));
+  }
+  return false;
+}
+
+/** Effective No-Spoilers for one subscriber/event pair. Exported so tests
+ * can lock the redaction boundary independently from transport fanout. */
+export function subscriberUsesNoSpoilersForEvent(
+  sub: SubscriberPreferences,
+  event: PushEvent
+): boolean {
+  if (sub.noSpoilers) return true;
+
+  const hiddenAlertMatches = (Array.isArray(sub.alerts) ? sub.alerts : []).some(
+    (alert) =>
+      alert.hideSpoilers === true && selectiveFollowMatchesEvent(alert, event)
+  );
+  if (hiddenAlertMatches) return true;
+
+  return (
+    Array.isArray(sub.spoilerFollows) &&
+    sub.spoilerFollows.some((follow) =>
+      selectiveFollowMatchesEvent(follow, event)
+    )
+  );
+}
 
 /** Transport-neutral matcher. Returns true when the subscriber's
  *  alerts + noSpoilers combination matches the event. Same logic
@@ -469,9 +528,14 @@ export function subscriberWantsEvent(
   sub: SubscriberPreferences,
   event: PushEvent
 ): boolean {
-  // No-Spoilers gate. The user explicitly opted into hiding closeness
-  // across the entire app — push notifications must honor that too.
-  if (sub.noSpoilers && SPOILERY_EVENTS.has(event.type)) return false;
+  // Global and selective No-Spoilers share the same unsafe-event gate.
+  // Close-game/comeback copy reveals drama even without an explicit score.
+  if (
+    subscriberUsesNoSpoilersForEvent(sub, event) &&
+    SPOILERY_EVENTS.has(event.type)
+  ) {
+    return false;
+  }
 
   const alerts = Array.isArray(sub.alerts) ? sub.alerts : [];
   const wc = isWCEvent(event);
@@ -625,6 +689,7 @@ export function liveActivityOfferData(event: PushEvent): Record<string, string> 
     type: "live-activity-offer",
     gameId: event.gameId,
     sport: isWCEvent(event) ? "wc" : "nba",
+    url: `/game/${event.gameId}?offer=live-activity`,
   };
 }
 

@@ -12,6 +12,10 @@ export type WCChampion = {
   name: string;
   /** The final's ESPN game id — every surface spoiler-gates on it. */
   gameId: string;
+  /** Both finalists. Frozen with the winner so selective No-Spoilers can
+   *  protect the result even after the live fixture ages out. */
+  awayCode: string;
+  homeCode: string;
   /** ms epoch when the champion was first resolved (drives the wind-down
    *  window on Today). */
   decidedAt: number;
@@ -56,6 +60,8 @@ export function deriveChampionFromFixtures(
     code,
     name: NAME_BY_CODE.get(code) ?? code,
     gameId: finalFix.id,
+    awayCode: finalFix.away.abbreviation,
+    homeCode: finalFix.home.abbreviation,
     decidedAt: now,
   };
 }

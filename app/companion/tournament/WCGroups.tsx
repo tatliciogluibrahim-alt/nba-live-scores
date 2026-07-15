@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { Spoiler } from "../spoiler/Spoiler";
+import {
+  GameSpoilerScope,
+  useFollowHidesGame,
+  useReveal,
+} from "../spoiler/reveal";
 import { SecHead } from "../system/SecHead";
-import { useFollows } from "../providers";
+import { useFollows, useNoSpoilers } from "../providers";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import { buildGroupTable, type GroupTableRow } from "./group-table";
 import {
@@ -17,6 +22,10 @@ import {
 import { WC_GROUP_FIXTURES } from "../following/data/wc-fixtures";
 import { getCountry } from "../following/data/countries";
 import type { WCChampion } from "../../lib/wc-champion";
+import {
+  withGameOrigin,
+  type GameOrigin,
+} from "../game/game-origin";
 
 // Curated group fixtures adapted to the schedule shape, so the page can
 // SERVER-RENDER the real 12 groups + teams (status "upcoming", no scores)
@@ -127,11 +136,27 @@ function statusWord(match: GroupScheduleRow): string {
   return ""; // upcoming — the date/time line carries it on the left
 }
 
-function ScheduleRow({ match }: { match: GroupScheduleRow }) {
+function ScheduleRow({
+  match,
+  gameOrigin,
+  gameReturnTo,
+}: {
+  match: GroupScheduleRow;
+  gameOrigin?: GameOrigin;
+  gameReturnTo?: string;
+}) {
   const live = match.status === "live";
   const played = match.status === "live" || match.status === "final";
   const hasScore = match.awayScore != null && match.homeScore != null;
   const state = statusWord(match);
+  const scopeId = match.id || `wc-group-${match.matchday}-${match.awayCode}-${match.homeCode}`;
+  const globalHidden = useNoSpoilers();
+  const followHidden = useFollowHidesGame({
+    countryCodes: [match.awayCode, match.homeCode],
+  });
+  const hidden = globalHidden || followHidden;
+  const { isRevealed } = useReveal();
+  const resultHidden = hidden && !isRevealed(scopeId);
 
   const inner = (
     <div className="flex items-baseline justify-between gap-3 py-1.5">
@@ -144,12 +169,18 @@ function ScheduleRow({ match }: { match: GroupScheduleRow }) {
             style={{ color: "var(--ink)", fontWeight: 700 }}
           >
             {match.awayCode}{" "}
-            <Spoiler
-              gameId={match.id}
-              ariaSubject={`${match.awayCode} versus ${match.homeCode}`}
+            <span
+              style={
+                resultHidden ? { position: "relative", zIndex: 1 } : undefined
+              }
             >
-              {match.awayScore} · {match.homeScore}
-            </Spoiler>{" "}
+              <Spoiler
+                gameId={scopeId}
+                ariaSubject={`${match.awayCode} versus ${match.homeCode}`}
+              >
+                {match.awayScore} · {match.homeScore}
+              </Spoiler>
+            </span>{" "}
             {match.homeCode}
           </p>
         ) : (
@@ -190,20 +221,35 @@ function ScheduleRow({ match }: { match: GroupScheduleRow }) {
     </div>
   );
   // Static-only rows (no feed id yet) aren't deep-linkable; render plain.
-  return match.href ? (
-    <Link
-      href={match.href}
-      aria-label={`Open ${match.awayCode} versus ${match.homeCode}`}
-      className="block transition active:scale-[0.99]"
-    >
+  const row = match.href ? (
+    <div className="relative block transition active:scale-[0.99]">
+      <Link
+        href={withGameOrigin(match.href, gameOrigin, gameReturnTo)}
+        aria-label={`Open ${match.awayCode} versus ${match.homeCode}`}
+        className="absolute inset-0"
+      />
       {inner}
-    </Link>
+    </div>
   ) : (
     <div>{inner}</div>
   );
+
+  return (
+    <GameSpoilerScope gameId={scopeId} hidden={hidden}>
+      {row}
+    </GameSpoilerScope>
+  );
 }
 
-function ScheduleList({ schedule }: { schedule: GroupScheduleRow[] }) {
+function ScheduleList({
+  schedule,
+  gameOrigin,
+  gameReturnTo,
+}: {
+  schedule: GroupScheduleRow[];
+  gameOrigin?: GameOrigin;
+  gameReturnTo?: string;
+}) {
   // Group by matchday so the six rows read as the round-robin they are.
   const byDay = new Map<number, GroupScheduleRow[]>();
   for (const m of schedule) {
@@ -231,7 +277,12 @@ function ScheduleList({ schedule }: { schedule: GroupScheduleRow[] }) {
             </p>
           ) : null}
           {(byDay.get(day) ?? []).map((m) => (
-            <ScheduleRow key={`${m.id}-${m.awayCode}`} match={m} />
+            <ScheduleRow
+              key={`${m.id}-${m.awayCode}`}
+              match={m}
+              gameOrigin={gameOrigin}
+              gameReturnTo={gameReturnTo}
+            />
           ))}
         </div>
       ))}
@@ -387,12 +438,16 @@ function GroupTableSection({
   showFootnote,
   withSchedule,
   topClass,
+  gameOrigin,
+  gameReturnTo,
 }: {
   block: GroupDetail;
   fromParam: string;
   showFootnote: boolean;
   withSchedule: boolean;
   topClass: string;
+  gameOrigin?: GameOrigin;
+  gameReturnTo?: string;
 }) {
   const [open, setOpen] = useState(false);
   const table = buildGroupTable(block);
@@ -446,7 +501,13 @@ function GroupTableSection({
               {open ? "Matches ↑" : "Matches ↓"}
             </span>
           </button>
-          {open ? <ScheduleList schedule={block.schedule} /> : null}
+          {open ? (
+            <ScheduleList
+              schedule={block.schedule}
+              gameOrigin={gameOrigin}
+              gameReturnTo={gameReturnTo}
+            />
+          ) : null}
         </>
       ) : null}
     </section>
@@ -458,9 +519,13 @@ function GroupTableSection({
 export function WCGroups({
   tournamentId,
   mode,
+  gameOrigin,
+  gameReturnTo,
 }: {
   tournamentId: string;
   mode: "preview" | "full";
+  gameOrigin?: GameOrigin;
+  gameReturnTo?: string;
 }) {
   const { follows } = useFollows();
   const followedCountry = follows.find((f) => f.kind === "country")?.id;
@@ -501,6 +566,8 @@ export function WCGroups({
               showFootnote={i === 0}
               withSchedule
               topClass={i === 0 ? "mt-6" : "mt-8"}
+              gameOrigin={gameOrigin}
+              gameReturnTo={gameReturnTo}
             />
           ))}
         </div>
@@ -535,6 +602,8 @@ export function WCGroups({
             showFootnote={i === 0}
             withSchedule={false}
             topClass={i === 0 ? "mt-2" : "mt-8"}
+            gameOrigin={gameOrigin}
+            gameReturnTo={gameReturnTo}
           />
         ))}
         <Link

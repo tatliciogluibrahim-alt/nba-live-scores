@@ -8,7 +8,12 @@
 import { createHash } from "node:crypto";
 import { kv } from "@vercel/kv";
 import type { ValidPushSubscription } from "./subscription-validation";
-import type { SyncedAlert, SyncedFollow, ValidSyncPayload } from "./sync-validation";
+import {
+  preserveSelectiveSpoilers,
+  type SyncedAlert,
+  type SyncedFollow,
+  type ValidSyncPayload,
+} from "./sync-validation";
 import type { AlertPreset } from "../../companion/state/types";
 
 export type StoredSubscription = {
@@ -19,6 +24,9 @@ export type StoredSubscription = {
   /** Alert-enabled follows snapshot. Visible-only follows are intentionally
    *  omitted so backend fanout cost tracks the slot model directly. */
   alerts: SyncedAlert[];
+  /** Selective-hide follows without an alert slot. Hidden alert-enabled
+   * follows carry the marker inline in `alerts`, so identities are unique. */
+  spoilerFollows: SyncedFollow[];
   /** @deprecated Stage C shape. Kept optional for KV row normalization. */
   follows?: SyncedFollow[];
   /** @deprecated Stage C shape. Kept optional for KV row normalization. */
@@ -140,6 +148,9 @@ function normalizeStored(
     endpoint: row.endpoint ?? endpoint,
     keys: { p256dh: row.keys.p256dh, auth: row.keys.auth },
     alerts,
+    spoilerFollows: Array.isArray(row.spoilerFollows)
+      ? row.spoilerFollows
+      : [],
     follows: Array.isArray(row.follows) ? row.follows : undefined,
     alertPreset: row.alertPreset,
     noSpoilers: typeof row.noSpoilers === "boolean" ? row.noSpoilers : false,
@@ -169,8 +180,20 @@ export async function upsertSubscription(
   // If the caller supplied a sync payload (subscribe / sync calls), use
   // it. Otherwise preserve whatever was there (test endpoint, dispatcher
   // refresh after delivery, etc).
-  const alerts = sync ? sync.alerts : existing?.alerts ?? [];
-  const noSpoilers = sync
+  const incomingAlerts = sync?.alertsProvided
+    ? sync.alerts
+    : existing?.alerts ?? [];
+  const selective =
+    sync?.selectiveSpoilersProvided
+      ? { alerts: incomingAlerts, spoilerFollows: sync.spoilerFollows }
+      : preserveSelectiveSpoilers(
+          incomingAlerts,
+          existing?.alerts ?? [],
+          existing?.spoilerFollows ?? []
+        );
+  const alerts = selective.alerts;
+  const spoilerFollows = selective.spoilerFollows;
+  const noSpoilers = sync?.noSpoilersProvided
     ? sync.noSpoilers
     : existing?.noSpoilers ?? false;
   // Quiet-hours / reminder / tz prefs travel with the sync payload.
@@ -186,6 +209,7 @@ export async function upsertSubscription(
         ...existing,
         keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
         alerts,
+        spoilerFollows,
         noSpoilers,
         quietHours,
         remindBeforeMinutes,
@@ -196,6 +220,7 @@ export async function upsertSubscription(
         endpoint: sub.endpoint,
         keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
         alerts,
+        spoilerFollows,
         noSpoilers,
         quietHours,
         remindBeforeMinutes,

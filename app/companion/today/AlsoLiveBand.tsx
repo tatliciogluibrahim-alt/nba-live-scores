@@ -91,6 +91,8 @@ function BandRow({ tile, idx }: { tile: ScoreboardTile; idx: string }) {
         }
         stamp={<Stamp text={tile.statusLine} variant="onInk" />}
         href={tile.href}
+        spoilerGameId={tile.id}
+        linkLabel={`Open ${subject}`}
       />
     </GameSpoilerScope>
   );

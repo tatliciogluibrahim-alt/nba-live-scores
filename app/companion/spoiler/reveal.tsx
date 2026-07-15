@@ -4,11 +4,21 @@ import {
   createContext,
   useCallback,
   useContext,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 import { useNoSpoilers, useFollows } from "../providers";
+import {
+  followHidesParticipants,
+  type SpoilerParticipants,
+} from "./follow-match";
+import {
+  selectiveHiddenFollowKey,
+  shouldResetRevealLevels,
+  type RevealPrivacyState,
+} from "./reveal-reset";
 
 // Per-game reveal state for No-Spoilers mode.
 //
@@ -51,11 +61,45 @@ type RevealCtx = {
 const RevealContext = createContext<RevealCtx | null>(null);
 
 export function RevealProvider({ children }: { children: ReactNode }) {
+  const globalNoSpoilers = useNoSpoilers();
+  const { follows } = useFollows();
+  const hiddenFollowKey = selectiveHiddenFollowKey(follows);
+  const currentPrivacy: RevealPrivacyState = {
+    globalNoSpoilers,
+    selectiveHiddenFollowKey: hiddenFollowKey,
+  };
+  const [appliedPrivacy, setAppliedPrivacy] = useState<RevealPrivacyState>(
+    () => currentPrivacy
+  );
+  const resetRequired = shouldResetRevealLevels(
+    appliedPrivacy,
+    currentPrivacy
+  );
+  const privacyChanged =
+    appliedPrivacy.globalNoSpoilers !== currentPrivacy.globalNoSpoilers ||
+    appliedPrivacy.selectiveHiddenFollowKey !==
+      currentPrivacy.selectiveHiddenFollowKey;
+
   // Per-game reveal level. 0 = hidden, 1..3 = catch-me-up in progress,
   // FULL_REVEAL = fully revealed (treated exactly like the old binary).
   const [levels, setLevels] = useState<ReadonlyMap<string, number>>(
     () => new Map()
   );
+
+  // A privacy-setting change must win over an older reveal before the browser
+  // can paint. `resetRequired` also makes isRevealed return false during this
+  // transition render; the layout effect then drops the stale map and records
+  // the new baseline synchronously.
+  useLayoutEffect(() => {
+    if (!privacyChanged) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAppliedPrivacy({
+      globalNoSpoilers,
+      selectiveHiddenFollowKey: hiddenFollowKey,
+    });
+    if (!resetRequired) return;
+    setLevels((previous) => (previous.size === 0 ? previous : new Map()));
+  }, [globalNoSpoilers, hiddenFollowKey, privacyChanged, resetRequired]);
 
   const reveal = useCallback((gameId: string) => {
     if (!gameId) return;
@@ -79,13 +123,14 @@ export function RevealProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isRevealed = useCallback(
-    (gameId: string) => (levels.get(gameId) ?? 0) >= FULL_REVEAL,
-    [levels]
+    (gameId: string) =>
+      !resetRequired && (levels.get(gameId) ?? 0) >= FULL_REVEAL,
+    [levels, resetRequired]
   );
 
   const getRevealLevel = useCallback(
-    (gameId: string) => levels.get(gameId) ?? 0,
-    [levels]
+    (gameId: string) => (resetRequired ? 0 : levels.get(gameId) ?? 0),
+    [levels, resetRequired]
   );
 
   const value = useMemo<RevealCtx>(
@@ -167,25 +212,7 @@ export function useEffectiveNoSpoilers(gameId?: string): boolean {
  *  hideSpoilers hides every game it's part of, even when the global
  *  toggle is off. Tournament follows are intentionally NOT matched here
  *  (too broad — that's what the global toggle is for). */
-export function useFollowHidesGame(participants: {
-  teamCodes?: string[];
-  countryCodes?: string[];
-}): boolean {
+export function useFollowHidesGame(participants: SpoilerParticipants): boolean {
   const { follows } = useFollows();
-  const teamCodes = participants.teamCodes ?? [];
-  const countryCodes = participants.countryCodes ?? [];
-
-  return follows.some((f) => {
-    if (!f.hideSpoilers) return false;
-    if (f.kind === "team") return teamCodes.includes(f.id);
-    if (f.kind === "country") return countryCodes.includes(f.id);
-    if (f.kind === "series") {
-      const [a, b] = f.id.split("-");
-      return (
-        (Boolean(a) && teamCodes.includes(a)) ||
-        (Boolean(b) && teamCodes.includes(b))
-      );
-    }
-    return false;
-  });
+  return followHidesParticipants(follows, participants);
 }

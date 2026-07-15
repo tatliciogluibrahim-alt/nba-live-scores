@@ -36,10 +36,12 @@ describe("buildKnockoutMoments", () => {
     const [m] = buildKnockoutMoments([wc()], [follow("country", "USA")]);
     expect(m.outcome).toBe("advanced");
     expect(m.countryCode).toBe("USA");
+    expect(m.opponentCode).toBe("POR");
     expect(m.stageLabel).toBe("Round of 32");
     expect(m.nextStage).toBe("Round of 16");
     expect(m.isChampion).toBe(false);
     expect(m.id).toBe("ko:g1:USA");
+    expect(m.gameId).toBe("g1");
     expect(m.href).toBe("/country/USA");
   });
 

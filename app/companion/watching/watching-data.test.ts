@@ -3,9 +3,11 @@ import {
   buildWatchingMeta,
   trackedStampText,
   isExpiredFinalPin,
+  nbaToPinned,
   WATCHING_FINAL_TTL_MS,
   type PinnedItem,
 } from "./watching-data";
+import type { NBAGame } from "../today/today-data";
 
 // Pure copy helpers for the System D mobile Watching recomposition (D2 T5).
 // Timing-only, never a winner or a margin — safe under No-Spoilers.
@@ -146,5 +148,29 @@ describe("trackedStampText (agate row stamp)", () => {
 
   it("live with an empty detail line falls back to LIVE", () => {
     expect(trackedStampText({ status: "live", detailLine: "" })).toBe("LIVE");
+  });
+});
+
+describe("Watching game links", () => {
+  it("carry Watching as the return surface", () => {
+    const game: NBAGame = {
+      id: "nba-1",
+      date: "2026-07-15T20:00:00Z",
+      status: "upcoming",
+      statusText: "8:00 PM",
+      period: 0,
+      matchup: "NYK vs BOS",
+      gameContext: "Game 1",
+      seriesSummary: "",
+      seriesConference: "East",
+      seriesRound: "First Round",
+      away: { name: "Knicks", abbreviation: "NYK", score: 0, logo: "" },
+      home: { name: "Celtics", abbreviation: "BOS", score: 0, logo: "" },
+      broadcasts: [],
+    };
+
+    expect(nbaToPinned(game, 1).href).toBe(
+      "/game/nba-1?from=watching"
+    );
   });
 });

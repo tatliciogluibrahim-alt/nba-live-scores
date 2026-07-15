@@ -5,6 +5,9 @@ import { useFollows, useUserPrefs } from "../providers";
 import { isCapacitorNative } from "../dev/native-detect";
 import { BrandMark } from "../frame/BrandMark";
 import { SportsBallLoader } from "../atoms/SportsBallLoader";
+import { useReducedMotion } from "../hooks/use-reduced-motion";
+import { notifyNativePushPermissionChanged } from "../push/native-push-events";
+import { markPushPermissionDeniedThisSession } from "../push/permission-session";
 
 // First-run onboarding — shown ONCE to truly-fresh installs (no follows
 // yet, hasn't completed onboarding). Three steps:
@@ -29,7 +32,13 @@ async function requestNotifications(hasFollow: boolean): Promise<void> {
   try {
     const mod = await import("@capacitor/push-notifications");
     const res = await mod.PushNotifications.requestPermissions();
-    if (res.receive === "granted") await mod.PushNotifications.register();
+    if (res.receive === "granted") {
+      // The global bootstrap owns listener-before-register ordering. Signal
+      // it to attach listeners and register instead of registering here.
+      notifyNativePushPermissionChanged();
+    } else if (res.receive === "denied") {
+      markPushPermissionDeniedThisSession();
+    }
   } catch {
     // Best-effort; the boot bootstrap + Settings still own the fallback.
   }
@@ -42,6 +51,7 @@ export function OnboardingFlow() {
   const [phase, setPhase] = useState<"idle" | "active" | "done">("idle");
   const [step, setStep] = useState(0);
   const [working, setWorking] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   // Latch active once, for a genuinely fresh install.
   useEffect(() => {
@@ -142,7 +152,7 @@ export function OnboardingFlow() {
         {step === 0 ? (
           <div>
             <div className="mb-6">
-              <SportsBallLoader size={56} />
+              <SportsBallLoader size={56} animated={!reduceMotion} />
             </div>
             <h1
               style={{

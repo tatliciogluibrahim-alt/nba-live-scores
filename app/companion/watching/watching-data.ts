@@ -4,6 +4,7 @@
 import type { StatusTone } from "../atoms/StatusPill";
 import type { PinnedGame } from "../state/types";
 import type { NBAGame, WCGameLite } from "../today/today-data";
+import { withGameOrigin } from "../game/game-origin";
 
 export type PinnedSource = "nba" | "wc";
 
@@ -146,7 +147,7 @@ export function nbaToPinned(g: NBAGame, pinnedAt: number): PinnedItem {
     watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
     spoilerSubject: g.matchup || `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     spoilerKind: isSeriesClinch ? "series" : isFinal ? "final" : "live",
-    href: `/game/${g.id}`,
+    href: withGameOrigin(`/game/${g.id}`, "watching"),
   };
 }
 
@@ -183,7 +184,7 @@ function wcToPinned(g: WCGameLite, pinnedAt: number): PinnedItem {
         : undefined,
     spoilerSubject: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     spoilerKind: "live",
-    href: `/game/${g.id}`,
+    href: withGameOrigin(`/game/${g.id}`, "watching"),
   };
 }
 

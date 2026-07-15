@@ -46,7 +46,7 @@ export default async function BriefUnsubscribedPage({
 
   return (
     <CompanionFrame>
-      <DetailCrumbs backHref="/" backLabel="Today" title="Brief" />
+      <DetailCrumbs backHref="/app" backLabel="Today" title="Brief" />
       <main className="mx-auto max-w-md px-4 pb-4 pt-1">
         <Eyebrow>{eyebrow}</Eyebrow>
         <Display as="h1" size="lg" className="mt-2">
@@ -59,7 +59,7 @@ export default async function BriefUnsubscribedPage({
           {body}
         </p>
         <Link
-          href="/"
+          href="/app"
           className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",

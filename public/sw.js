@@ -172,11 +172,11 @@ async function navigationStrategy(req) {
 // ── Notifications ──────────────────────────────────────────────────
 
 // Notification tap — focus an existing app window if one exists,
-// otherwise open the app at the URL we stashed in `data.url` (or '/').
+// otherwise open the app at the URL we stashed in `data.url` (or '/app').
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const data = event.notification.data || {};
-  const targetUrl = data.url || '/';
+  const targetUrl = data.url || '/app';
 
   // Open-rate tracking (Phase 21C). Fire-and-forget a beacon to record
   // that a notification of this event type was opened. Best-effort —
@@ -238,7 +238,7 @@ self.addEventListener('push', (event) => {
       badge: APP_ICON,
       tag: payload.tag,
       data: {
-        url: payload.url || '/',
+        url: payload.url || '/app',
         eventType: payload.eventType || null,
         swVersion: SW_VERSION,
       },

@@ -287,7 +287,11 @@ export function NBALiveCompanion({
       >
         {seriesDots.length > 0 ? (
           <div className="flex items-center justify-between gap-4">
-            <SevenDotStrip dots={seriesDots} />
+            {/* The page scope may be revealed for this game, but each played
+                series dot keeps its own reveal boundary. Passing the raw
+                hidden decision prevents one game reveal from exposing every
+                earlier winner in the series. */}
+            <SevenDotStrip dots={seriesDots} hidden={baseHidden} />
             {isLive && lastFetched ? (
               <FreshnessIndicator lastFetched={lastFetched} />
             ) : null}

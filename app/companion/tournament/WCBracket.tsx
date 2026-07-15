@@ -3,9 +3,14 @@
 import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Spoiler } from "../spoiler/Spoiler";
+import {
+  GameSpoilerScope,
+  useFollowHidesGame,
+  useReveal,
+} from "../spoiler/reveal";
 import { SecHead } from "../system/SecHead";
 import { Stamp } from "../system/Stamp";
-import { useFollows } from "../providers";
+import { useFollows, useNoSpoilers } from "../providers";
 import { useWCSchedule } from "./WCGroups";
 import {
   buildBracketRounds,
@@ -17,6 +22,10 @@ import {
   type BracketSlot,
 } from "./wc-bracket-data";
 import { WCBracketTree } from "./WCBracketTree";
+import {
+  withGameOrigin,
+  type GameOrigin,
+} from "../game/game-origin";
 
 // Dedicated World Cup bracket page body (/tournament/[id]/bracket): the
 // BY DAY chronology (default) or the quarter-cards bracket tree (S2,
@@ -197,7 +206,15 @@ function NowMark({ kind }: { kind: "now" | "next" }) {
   );
 }
 
-export function ByDayView({ rounds }: { rounds: BracketRound[] }) {
+export function ByDayView({
+  rounds,
+  gameOrigin,
+  gameReturnTo,
+}: {
+  rounds: BracketRound[];
+  gameOrigin?: GameOrigin;
+  gameReturnTo?: string;
+}) {
   const groups = groupBracketByDay(rounds, new Date());
   const current = groups.filter((g) => !g.past);
   // Newest-first: yesterday sits closest to the fold.
@@ -238,7 +255,14 @@ export function ByDayView({ rounds }: { rounds: BracketRound[] }) {
       ) : null}
 
       {current.map((g, gi) => (
-        <DayGroup key={g.key} group={g} first={gi === 0} anchor={anchor} />
+        <DayGroup
+          key={g.key}
+          group={g}
+          first={gi === 0}
+          anchor={anchor}
+          gameOrigin={gameOrigin}
+          gameReturnTo={gameReturnTo}
+        />
       ))}
 
       {past.length > 0 ? (
@@ -257,7 +281,14 @@ export function ByDayView({ rounds }: { rounds: BracketRound[] }) {
             Results
           </p>
           {past.map((g) => (
-            <DayGroup key={g.key} group={g} first={false} anchor={null} />
+            <DayGroup
+              key={g.key}
+              group={g}
+              first={false}
+              anchor={null}
+              gameOrigin={gameOrigin}
+              gameReturnTo={gameReturnTo}
+            />
           ))}
         </>
       ) : null}
@@ -269,10 +300,14 @@ function DayGroup({
   group,
   first,
   anchor,
+  gameOrigin,
+  gameReturnTo,
 }: {
   group: ReturnType<typeof groupBracketByDay>[number];
   first: boolean;
   anchor: Anchor;
+  gameOrigin?: GameOrigin;
+  gameReturnTo?: string;
 }) {
   // Chapter ceremony: the final earns a single line of it — a brand eyebrow
   // and a heavier top rule. Only the final; over-labeling every day would
@@ -308,7 +343,12 @@ function DayGroup({
         return (
           <Fragment key={key}>
             {anchor && anchor.key === key ? <NowMark kind={anchor.kind} /> : null}
-            <BracketMatchRow match={m} idx={String(m.number).padStart(2, "0")} />
+            <BracketMatchRow
+              match={m}
+              idx={String(m.number).padStart(2, "0")}
+              gameOrigin={gameOrigin}
+              gameReturnTo={gameReturnTo}
+            />
           </Fragment>
         );
       })}
@@ -353,11 +393,29 @@ function BracketCode({ slot }: { slot: BracketSlot }) {
   );
 }
 
-function BracketMatchRow({ match, idx }: { match: BracketMatch; idx: string }) {
+function BracketMatchRow({
+  match,
+  idx,
+  gameOrigin,
+  gameReturnTo,
+}: {
+  match: BracketMatch;
+  idx: string;
+  gameOrigin?: GameOrigin;
+  gameReturnTo?: string;
+}) {
   const played = match.status !== "upcoming";
   const live = match.status === "live";
   const scoreLine = bracketScoreLine(match);
   const gameId = gameIdFromHref(match.href);
+  const scopeId = gameId ?? `wc-${match.round}-${match.number}`;
+  const globalHidden = useNoSpoilers();
+  const followHidden = useFollowHidesGame({
+    countryCodes: [match.away.code, match.home.code],
+  });
+  const hidden = globalHidden || followHidden;
+  const { isRevealed } = useReveal();
+  const resultHidden = hidden && !isRevealed(scopeId);
   const anyFollowed = match.away.followed || match.home.followed;
   const aria = `${match.away.label} vs ${match.home.label}`;
 
@@ -378,15 +436,12 @@ function BracketMatchRow({ match, idx }: { match: BracketMatch; idx: string }) {
           fontWeight: 700,
           fontSize: 14,
           color: live ? "var(--live)" : "var(--ink)",
+          ...(resultHidden ? { position: "relative", zIndex: 1 } : {}),
         }}
       >
-        {gameId ? (
-          <Spoiler gameId={gameId} ariaSubject={aria}>
-            {scoreLine}
-          </Spoiler>
-        ) : (
-          scoreLine
-        )}
+        <Spoiler gameId={scopeId} ariaSubject={aria}>
+          {scoreLine}
+        </Spoiler>
       </span>
     ) : null;
 
@@ -435,21 +490,24 @@ function BracketMatchRow({ match, idx }: { match: BracketMatch; idx: string }) {
   const cls = "flex items-center gap-[10px] py-[13px]";
   const rowStyle = { fontSize: 14, borderBottom: "1px solid var(--line)" };
 
-  if (match.href) {
-    return (
+  const row = match.href ? (
+    <div className={`relative ${cls}`} style={rowStyle}>
       <Link
-        href={match.href}
+        href={withGameOrigin(match.href, gameOrigin, gameReturnTo)}
         aria-label={aria}
-        className={`${cls} active:bg-[var(--paper)]`}
-        style={rowStyle}
-      >
-        {inner}
-      </Link>
-    );
-  }
-  return (
+        className="absolute inset-0 active:bg-[var(--paper)]"
+      />
+      {inner}
+    </div>
+  ) : (
     <div className={cls} style={rowStyle}>
       {inner}
     </div>
+  );
+
+  return (
+    <GameSpoilerScope gameId={scopeId} hidden={hidden}>
+      {row}
+    </GameSpoilerScope>
   );
 }

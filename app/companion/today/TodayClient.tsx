@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { PullToRefresh } from "../atoms/PullToRefresh";
 import { Masthead } from "../system/Masthead";
 import { SecHead } from "../system/SecHead";
-import { useFollows, useNoSpoilers } from "../providers";
+import { useFollows, useNoSpoilers, useUserPrefs } from "../providers";
 import { useTodayData } from "./use-today-data";
 import { deriveTodayHeadline } from "./today-data";
 import { FrontPageLead } from "./FrontPageLead";
@@ -17,7 +17,14 @@ import { RestingState } from "./RestingState";
 import { BriefPromptCard } from "./BriefPromptCard";
 import { useSetupStep } from "./setup/useSetupStep";
 import { SetupCard } from "./setup/SetupCard";
-import { FirstFollowTierCard } from "../follow/FirstFollowTierCard";
+import {
+  resolveTodayVisitAsk,
+  type TodayVisitAsk,
+} from "./setup/resolve-setup-step";
+import {
+  FirstFollowTierCard,
+  isFirstFollowTierEducationDue,
+} from "../follow/FirstFollowTierCard";
 import { QuietRecap } from "./QuietRecap";
 import { YouFollow } from "./sections/you-follow";
 import { TheMargin } from "./sections/the-margin";
@@ -41,7 +48,12 @@ import { KnockoutMomentCard } from "./sections/knockout-moment-card";
 
 export function TodayClient() {
   const { payload, hydrated, refetch } = useTodayData();
-  const { follows, removeFollow } = useFollows();
+  const {
+    follows,
+    removeFollow,
+    hydrated: followsHydrated,
+  } = useFollows();
+  const { prefs, hydrated: prefsHydrated } = useUserPrefs();
 
   // Auto-drop a dead series follow when its series wraps. The data layer
   // sets payload.closing.autoDropFollow only for the SERIES follow (team
@@ -133,6 +145,35 @@ export function TodayClient() {
     futureUpNext.length > 0;
 
   const setup = useSetupStep();
+  const firstFollowEducationDue = isFirstFollowTierEducationDue({
+    followCount: follows.length,
+    followsHydrated,
+    prefsHydrated,
+    firstFollowEducated: prefs.firstFollowEducated === true,
+  });
+  const [latchedVisitAsk, setLatchedVisitAsk] =
+    useState<TodayVisitAsk | null>(null);
+  const visitAsk =
+    latchedVisitAsk ??
+    resolveTodayVisitAsk(
+      setup.resolved,
+      setup.step,
+      firstFollowEducationDue
+    );
+
+  // Freeze the first ask that earns the slot. If it is completed or dismissed,
+  // the remaining asks wait for the next visit instead of stacking in place.
+  useEffect(() => {
+    if (latchedVisitAsk || !visitAsk) return;
+    // This is a deliberate visit-lifetime UI latch, not derived product state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLatchedVisitAsk(visitAsk);
+  }, [latchedVisitAsk, visitAsk]);
+
+  const setupAsk = setup.step ? `setup:${setup.step}` : null;
+  const showCurrentSetupAsk = setupAsk !== null && visitAsk === setupAsk;
+  const showFirstFollowEducation = visitAsk === "firstFollow";
+  const showBriefPrompt = visitAsk === "brief";
 
   return (
     <PullToRefresh onRefresh={refetch}>
@@ -153,14 +194,18 @@ export function TodayClient() {
       {/* Setup — top slot. Only the foundational follow step renders here;
           it is the screen for a brand-new user. Every post-follow nudge
           renders below the content instead (inline slot, further down). */}
-      {setup.step === "follow" ? <SetupCard setup={setup} /> : null}
+      {showCurrentSetupAsk && setup.step === "follow" ? (
+        <SetupCard setup={setup} />
+      ) : null}
 
       {/* First-follow alert-tier education — sits below the strip
           (so the user reads "you followed something" before the deep
           explanation), above any other contextual card. The component
           self-gates on follows.length === 1 + !firstFollowEducated,
           so on every other render it's a no-op. */}
-      {hydrated ? <FirstFollowTierCard /> : null}
+      {hydrated ? (
+        <FirstFollowTierCard active={showFirstFollowEducation} />
+      ) : null}
 
       {/* Quiet Recap — end-of-night moment when the slate is fully wrapped.
           Renders above the Brief because it's the one card that earns
@@ -255,7 +300,7 @@ export function TodayClient() {
               {/* Setup — inline slot. Any post-follow nudge (install / enable
                   / recover / optional install) renders here, below the live
                   content, so scores come first. At most one ever shows. */}
-              {setup.step && setup.step !== "follow" ? (
+              {showCurrentSetupAsk && setup.step !== "follow" ? (
                 <SetupCard setup={setup} />
               ) : null}
 
@@ -297,10 +342,9 @@ export function TodayClient() {
 
               {/* The Margin nudge — mobile footer (desktop uses the rail).
                   One ask per visit (external UX review 2026-07-15): suppressed
-                  whenever a setup ask (enable notifications / install) is
-                  showing, so a single visit never stacks two requests.
-                  Notifications always take precedence. */}
-              {setup.step && setup.step !== "follow" ? null : <BriefPromptCard />}
+                  until setup has resolved and whenever any setup ask is
+                  showing, so a single visit never stacks two requests. */}
+              {showBriefPrompt ? <BriefPromptCard /> : null}
             </div>
           </div>
 
@@ -310,7 +354,7 @@ export function TodayClient() {
           <aside className="hidden md:block">
             <div className="sticky top-6 space-y-8">
               <YouFollow items={payload.youFollow} />
-              <TheMargin />
+              {showBriefPrompt ? <TheMargin /> : null}
             </div>
           </aside>
         </div>

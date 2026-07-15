@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { usePinned, useUserPrefs, useFollows } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
-import { buildSeriesKey } from "../../nba/lib/series-keys";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import { isCapacitorNative } from "../dev/native-detect";
 import type { NBAGame, WCGameLite } from "../today/today-data";
@@ -11,15 +10,22 @@ import { buildWatchingPayload, type PinnedItem } from "../watching/watching-data
 import {
   startLiveActivity,
   endLiveActivity,
+  clearLiveActivityReveal,
   addLiveActivityPushTokenListener,
-  getActiveLiveActivityGameIds,
+  getActiveLiveActivities,
   LIVE_ACTIVITY_SANDBOX,
   type LiveActivityStartInput,
 } from "./live-activity";
 import { postWithRetry } from "../push/register-state";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
 import { deriveSubline } from "./live-activity-subline";
-import type { PinnedGame } from "../state/types";
+import type { Follow, PinnedGame } from "../state/types";
+import { MAX_LOCK_SCREEN_SLOTS } from "../system/lock-screen-slots";
+import { followHidesParticipants } from "../spoiler/follow-match";
+import {
+  planLiveActivityReconciliation,
+  type ActiveLiveActivityState,
+} from "./live-activity-reconcile";
 
 // LiveActivitySync — invisible, mounted globally beside
 // CapacitorPushBootstrap. The web half of Phase 22.5-3.
@@ -43,13 +49,6 @@ import type { PinnedGame } from "../state/types";
 
 const LIVE_INTERVAL_MS = 15_000;
 const IDLE_INTERVAL_MS = 60_000;
-
-// Cap concurrent Live Activities. iOS allows several, but a calm app
-// shouldn't stack the lock screen — and it mirrors the "3" the user
-// already knows from the free alert slots. When more than 3 pinned
-// games are live at once, the newest-pinned 3 get the Activity; the
-// rest are tracked in Watching + via push.
-const MAX_LIVE_ACTIVITIES = 3;
 
 // Sport accent hexes (AGENTS palette). Matches the apns-sender default
 // and the per-sport accents used across the app.
@@ -127,15 +126,15 @@ function itemToStartInput(
 function gameIsHidden(
   item: PinnedItem,
   noSpoilers: boolean,
-  hideIds: Set<string>
+  follows: readonly Follow[]
 ): boolean {
   if (noSpoilers) return true;
-  if (hideIds.size === 0) return false;
-  const a = item.awayCode;
-  const h = item.homeCode;
-  if ((a && hideIds.has(a)) || (h && hideIds.has(h))) return true;
-  if (a && h && hideIds.has(buildSeriesKey(a, h))) return true;
-  return false;
+  return followHidesParticipants(
+    follows,
+    item.source === "wc"
+      ? { countryCodes: [item.awayCode, item.homeCode] }
+      : { teamCodes: [item.awayCode, item.homeCode] }
+  );
 }
 
 async function postRegister(gameId: string, token: string): Promise<void> {
@@ -169,25 +168,133 @@ export function LiveActivitySync() {
 
   // Stable refs the poll closure reads without re-subscribing.
   const pinnedRef = useRef<PinnedGame[]>(pinned);
-  const startedRef = useRef<Set<string>>(new Set()); // gameIds with a live activity
-  const inFlightRef = useRef<Set<string>>(new Set()); // start in progress
+  // gameId → the static redaction attribute currently on the Activity.
+  // `null` means an older native build reported only the id; the first
+  // reconcile restarts it once so current spoiler state becomes certain.
+  const activeRef = useRef<Map<string, ActiveLiveActivityState>>(new Map());
   const tokensRef = useRef<Map<string, string>>(new Map()); // gameId → push token
+  const liveItemsRef = useRef<PinnedItem[]>([]);
+  // ActivityKit mutations are serialized. This prevents a preference
+  // change, an unpin, and the live-data poll from ending/starting the same
+  // tile concurrently and losing its token lifecycle.
+  const operationQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const seedPromiseRef = useRef<Promise<void> | null>(null);
   const hasLiveRef = useRef(false);
   // No-Spoilers state the start loop reads to decide redaction. Refs so
   // a prefs/follows change doesn't re-subscribe the poll.
   const noSpoilersRef = useRef(prefs.noSpoilers);
-  const hideIdsRef = useRef<Set<string>>(new Set());
+  const followsRef = useRef<Follow[]>(follows);
 
   useEffect(() => {
     pinnedRef.current = pinned;
   }, [pinned]);
 
+  const enqueueOperation = useCallback(
+    (operation: () => Promise<void>): Promise<void> => {
+      const next = operationQueueRef.current.then(operation, operation);
+      const guarded = next.catch((err) => {
+        console.warn("[LiveActivity] reconciliation failed:", err);
+      });
+      operationQueueRef.current = guarded;
+      return guarded;
+    },
+    []
+  );
+
+  const stopTrackedActivity = useCallback(async (gameId: string) => {
+    const ended = await endLiveActivity(gameId);
+    if (!ended) return false;
+    const token = tokensRef.current.get(gameId);
+    if (token) {
+      try {
+        await postDeregister(token);
+      } finally {
+        tokensRef.current.delete(gameId);
+      }
+    }
+    activeRef.current.delete(gameId);
+    return true;
+  }, []);
+
+  const reconcileActivities = useCallback(
+    async (sourceItems: PinnedItem[]) => {
+      // The mount seed runs before lifecycle decisions so an Activity that
+      // survived an app kill is never mistaken for an empty slot.
+      if (seedPromiseRef.current) await seedPromiseRef.current;
+
+      // A poll can have been queued just before an unpin. Filter again at
+      // execution time so stale work can never restart a removed game.
+      const pinnedIds = new Set(pinnedRef.current.map((pin) => pin.gameId));
+      const desiredInOrder = sourceItems
+        .filter((item) => pinnedIds.has(item.id))
+        .map((item) => {
+          const redacted = gameIsHidden(
+            item,
+            noSpoilersRef.current,
+            followsRef.current
+          );
+          return { gameId: item.id, redacted, value: item };
+        });
+
+      const plan = planLiveActivityReconciliation(
+        desiredInOrder,
+        activeRef.current,
+        MAX_LOCK_SCREEN_SLOTS
+      );
+
+      // End overflow/stale/mismatched activities FIRST. Starting before
+      // eviction can leave the old three in ActivityKit and make the app's
+      // slot meter disagree with the lock screen.
+      let everyEndCompleted = true;
+      for (const gameId of plan.endGameIds) {
+        const ended = await stopTrackedActivity(gameId);
+        if (!ended) everyEndCompleted = false;
+      }
+      // Do not start replacements while ActivityKit may still hold a stale
+      // or unredacted tile. The next visibility pass retries cleanup.
+      if (!everyEndCompleted) return;
+
+      // A lock-screen reveal is device-local and persisted in the App Group.
+      // When hiding is newly enabled, clear it before the replacement starts
+      // or the new redacted Activity would immediately reveal itself again.
+      const unsafeToRestart = new Set<string>();
+      for (const gameId of plan.clearRevealGameIds) {
+        const cleared = await clearLiveActivityReveal(gameId);
+        if (!cleared) unsafeToRestart.add(gameId);
+      }
+
+      for (const desired of plan.start) {
+        if (unsafeToRestart.has(desired.gameId)) continue;
+        const ok = await startLiveActivity(
+          itemToStartInput(desired.value, desired.redacted)
+        );
+        if (ok) activeRef.current.set(desired.gameId, desired.redacted);
+      }
+    },
+    [stopTrackedActivity]
+  );
+
+  const queueReconcile = useCallback(
+    (items: PinnedItem[]) =>
+      enqueueOperation(() => reconcileActivities(items)),
+    [enqueueOperation, reconcileActivities]
+  );
+
   useEffect(() => {
     noSpoilersRef.current = prefs.noSpoilers;
-    hideIdsRef.current = new Set(
-      follows.filter((f) => f.hideSpoilers).map((f) => f.id)
-    );
-  }, [prefs.noSpoilers, follows]);
+    followsRef.current = follows;
+
+    // `redacted` is a static Activity attribute. Reconcile immediately on
+    // a global/selective change rather than waiting up to a minute for the
+    // data poll, so a lock-screen score cannot linger after hiding is on.
+    if (
+      isCapacitorNative() &&
+      hydrated &&
+      (liveItemsRef.current.length > 0 || activeRef.current.size > 0)
+    ) {
+      void queueReconcile(liveItemsRef.current);
+    }
+  }, [prefs.noSpoilers, follows, hydrated, queueReconcile]);
 
   // Token listener — attach once. The native plugin streams the
   // per-Activity push token (it can rotate, so we always store + POST
@@ -212,25 +319,52 @@ export function LiveActivitySync() {
     };
   }, []);
 
-  // Seed startedRef from the OS-persisted Live Activities on mount.
-  // ActivityKit activities survive app kills/relaunches, but startedRef is
+  // Seed activeRef from the OS-persisted Live Activities on mount.
+  // ActivityKit activities survive app kills/relaunches, but activeRef is
   // in-memory and starts empty every launch. Without seeding, the poll
-  // would see a still-live pinned game with an empty startedRef and start a
+  // would see a still-live pinned game with an empty activeRef and start a
   // SECOND activity for one that already exists. Asking the native plugin
   // which game activities are already running closes that gap. (Native
   // start() is also idempotent across launches as a backstop.)
   useEffect(() => {
     if (!isCapacitorNative()) return;
     let cancelled = false;
-    (async () => {
-      const ids = await getActiveLiveActivityGameIds();
+    const privacyEndTimers = new Set<ReturnType<typeof setTimeout>>();
+    const seed = (async () => {
+      const active = await getActiveLiveActivities();
       if (cancelled) return;
-      for (const id of ids) startedRef.current.add(id);
+      for (const item of active) {
+        activeRef.current.set(item.gameId, item.redacted);
+      }
+
+      // Privacy must not wait for either sports feed. On a cold launch, end
+      // every persisted tile that is not provably redacted as soon as the OS
+      // state is known. The normal poll can later restart safe desired tiles.
+      const privacyActive =
+        noSpoilersRef.current ||
+        followsRef.current.some((follow) => follow.hideSpoilers);
+      if (privacyActive) {
+        const endUnsafeWithRetry = async (gameId: string): Promise<void> => {
+          const ended = await stopTrackedActivity(gameId);
+          if (ended || cancelled) return;
+          const timer = setTimeout(() => {
+            privacyEndTimers.delete(timer);
+            if (!cancelled) void endUnsafeWithRetry(gameId);
+          }, 5_000);
+          privacyEndTimers.add(timer);
+        };
+        for (const item of active) {
+          if (item.redacted !== true) await endUnsafeWithRetry(item.gameId);
+        }
+      }
     })();
+    seedPromiseRef.current = seed;
     return () => {
       cancelled = true;
+      for (const timer of privacyEndTimers) clearTimeout(timer);
+      privacyEndTimers.clear();
     };
-  }, []);
+  }, [stopTrackedActivity]);
 
   // Unpin cleanup. The visibility poll below is gated on pinned.length > 0,
   // so the moment the user unpins the last game the poll disables — and
@@ -240,20 +374,36 @@ export function LiveActivitySync() {
   // longer pinned. Runs independently of the poll.
   useEffect(() => {
     if (!isCapacitorNative() || !hydrated) return;
+    let cancelled = false;
+    const retryTimers = new Set<ReturnType<typeof setTimeout>>();
     const pinnedIds = new Set(pinned.map((p) => p.gameId));
-    for (const gameId of Array.from(startedRef.current)) {
-      if (pinnedIds.has(gameId)) continue;
-      void (async () => {
-        await endLiveActivity(gameId);
-        const token = tokensRef.current.get(gameId);
-        if (token) {
-          await postDeregister(token);
-          tokensRef.current.delete(gameId);
+    void enqueueOperation(async () => {
+      if (seedPromiseRef.current) await seedPromiseRef.current;
+
+      const stopWithRetry = async (gameId: string): Promise<void> => {
+        const ended = await stopTrackedActivity(gameId);
+        if (ended || cancelled) return;
+        const timer = setTimeout(() => {
+          retryTimers.delete(timer);
+          if (!cancelled) {
+            void enqueueOperation(() => stopWithRetry(gameId));
+          }
+        }, 5_000);
+        retryTimers.add(timer);
+      };
+
+      for (const gameId of Array.from(activeRef.current.keys())) {
+        if (!pinnedIds.has(gameId)) {
+          await stopWithRetry(gameId);
         }
-        startedRef.current.delete(gameId);
-      })();
-    }
-  }, [pinned, hydrated]);
+      }
+    });
+    return () => {
+      cancelled = true;
+      for (const timer of retryTimers) clearTimeout(timer);
+      retryTimers.clear();
+    };
+  }, [pinned, hydrated, enqueueOperation, stopTrackedActivity]);
 
   // Lifecycle poll. Disabled unless native + hydrated + something pinned,
   // so web users and pin-less users never fetch.
@@ -268,41 +418,9 @@ export function LiveActivitySync() {
         pinned: pinnedRef.current,
       });
       const liveItems = items.filter((i) => i.status === "live");
-      const liveIds = new Set(liveItems.map((i) => i.id));
+      liveItemsRef.current = liveItems;
       hasLiveRef.current = liveItems.length > 0;
-
-      // Start activities for newly-live pins, capped at MAX. liveItems
-      // arrives in pinned order, so the first 3 win the lock screen.
-      for (const item of liveItems) {
-        if (startedRef.current.has(item.id) || inFlightRef.current.has(item.id)) {
-          continue;
-        }
-        if (startedRef.current.size + inFlightRef.current.size >= MAX_LIVE_ACTIVITIES) {
-          break;
-        }
-        inFlightRef.current.add(item.id);
-        const redacted = gameIsHidden(
-          item,
-          noSpoilersRef.current,
-          hideIdsRef.current
-        );
-        const ok = await startLiveActivity(itemToStartInput(item, redacted));
-        inFlightRef.current.delete(item.id);
-        if (isCancelled()) return;
-        if (ok) startedRef.current.add(item.id);
-      }
-
-      // End activities for games that are no longer live-pinned.
-      for (const gameId of Array.from(startedRef.current)) {
-        if (liveIds.has(gameId)) continue;
-        await endLiveActivity(gameId);
-        const token = tokensRef.current.get(gameId);
-        if (token) {
-          await postDeregister(token);
-          tokensRef.current.delete(gameId);
-        }
-        startedRef.current.delete(gameId);
-      }
+      await queueReconcile(liveItems);
     },
     () => (hasLiveRef.current ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS),
     isCapacitorNative() && hydrated && pinned.length > 0

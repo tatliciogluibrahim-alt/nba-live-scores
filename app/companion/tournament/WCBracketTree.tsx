@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { Spoiler } from "../spoiler/Spoiler";
-import { useEffectiveNoSpoilers } from "../spoiler/reveal";
-import { useFollows } from "../providers";
+import {
+  GameSpoilerScope,
+  useFollowHidesGame,
+  useReveal,
+} from "../spoiler/reveal";
+import { useFollows, useNoSpoilers } from "../providers";
 import { useWCSchedule } from "./WCGroups";
 import {
   buildWCBracket,
@@ -14,6 +18,10 @@ import {
 import { kickoffStamp } from "../today/agate-slate";
 import type { KnockoutRoundKey } from "./knockout-data";
 import type { WCChampion } from "../../lib/wc-champion";
+import {
+  withGameOrigin,
+  type GameOrigin,
+} from "../game/game-origin";
 
 // The bracket as a bracket (S2, direction locked 2026-07-06: "quarter
 // cards"). One card per bracket quarter: the two R16 feeders join into
@@ -36,7 +44,13 @@ const ROUND_SHORT: Record<KnockoutRoundKey, string> = {
   final: "Final",
 };
 
-export function WCBracketTree() {
+export function WCBracketTree({
+  gameOrigin,
+  gameReturnTo,
+}: {
+  gameOrigin?: GameOrigin;
+  gameReturnTo?: string;
+} = {}) {
   const { fixtures, champion } = useWCSchedule();
   const { follows } = useFollows();
   const bracket = buildWCBracket(fixtures, followedCountrySet(follows));
@@ -61,6 +75,8 @@ export function WCBracketTree() {
           slot={q.qf}
           slotRound="qf"
           tag={quarterFollowed(q) ? "Your path" : undefined}
+          gameOrigin={gameOrigin}
+          gameReturnTo={gameReturnTo}
         />
       ))}
       <QuarterCard
@@ -70,6 +86,8 @@ export function WCBracketTree() {
         slotRound="final"
         footnote={bracket.third}
         champion={champion}
+        gameOrigin={gameOrigin}
+        gameReturnTo={gameReturnTo}
       />
     </div>
   );
@@ -84,6 +102,8 @@ function QuarterCard({
   tag,
   footnote,
   champion,
+  gameOrigin,
+  gameReturnTo,
 }: {
   /** 1-4 for the quarters; null for the closing semis-into-final card. */
   index: number | null;
@@ -98,6 +118,8 @@ function QuarterCard({
   /** The champion, on the closing card only — crowns the final slot once
    *  the result is revealed. */
   champion?: WCChampion | null;
+  gameOrigin?: GameOrigin;
+  gameReturnTo?: string;
 }) {
   const head = index == null ? "Semifinals & final" : `Quarterfinal ${index}`;
   return (
@@ -124,7 +146,13 @@ function QuarterCard({
       <div className="grid grid-cols-[1fr_16px_1fr] items-stretch">
         <div style={{ borderRight: "1px solid var(--line)" }}>
           {feeders.map((m, i) => (
-            <FeederRow key={`${m.round}-${m.number}`} match={m} last={i === feeders.length - 1} />
+            <FeederRow
+              key={`${m.round}-${m.number}`}
+              match={m}
+              last={i === feeders.length - 1}
+              gameOrigin={gameOrigin}
+              gameReturnTo={gameReturnTo}
+            />
           ))}
         </div>
 
@@ -153,12 +181,23 @@ function QuarterCard({
           />
         </div>
 
-        <SlotCell match={slot} round={slotRound} champion={champion} />
+        <SlotCell
+          match={slot}
+          round={slotRound}
+          champion={champion}
+          gameOrigin={gameOrigin}
+          gameReturnTo={gameReturnTo}
+        />
       </div>
 
       {footnote ? (
         <div style={{ borderTop: "1px solid var(--line)" }}>
-          <FeederRow match={footnote} last />
+          <FeederRow
+            match={footnote}
+            last
+            gameOrigin={gameOrigin}
+            gameReturnTo={gameReturnTo}
+          />
         </div>
       ) : null}
     </section>
@@ -167,10 +206,28 @@ function QuarterCard({
 
 // A feeder match row: codes with a spoiler-gated score when played, the
 // kickoff stamp when not. The row links to the match when it exists.
-function FeederRow({ match, last }: { match: BracketMatch; last: boolean }) {
+function FeederRow({
+  match,
+  last,
+  gameOrigin,
+  gameReturnTo,
+}: {
+  match: BracketMatch;
+  last: boolean;
+  gameOrigin?: GameOrigin;
+  gameReturnTo?: string;
+}) {
   const played = match.status !== "upcoming";
   const live = match.status === "live";
   const gameId = gameIdFromHref(match.href);
+  const scopeId = gameId ?? `wc-${match.round}-${match.number}`;
+  const globalHidden = useNoSpoilers();
+  const followHidden = useFollowHidesGame({
+    countryCodes: [match.away.code, match.home.code],
+  });
+  const hidden = globalHidden || followHidden;
+  const { isRevealed } = useReveal();
+  const resultHidden = hidden && !isRevealed(scopeId);
   const aria = `${match.away.label} vs ${match.home.label}`;
 
   const main = (
@@ -178,13 +235,15 @@ function FeederRow({ match, last }: { match: BracketMatch; last: boolean }) {
       {played && match.away.score != null && match.home.score != null ? (
         <>
           {bracketSlotToken(match.away)}{" "}
-          {gameId ? (
-            <Spoiler gameId={gameId} ariaSubject={aria}>
+          <span
+            style={
+              resultHidden ? { position: "relative", zIndex: 1 } : undefined
+            }
+          >
+            <Spoiler gameId={scopeId} ariaSubject={aria}>
               {match.away.score}–{match.home.score}
             </Spoiler>
-          ) : (
-            `${match.away.score}–${match.home.score}`
-          )}{" "}
+          </span>{" "}
           {bracketSlotToken(match.home)}
         </>
       ) : (
@@ -229,18 +288,24 @@ function FeederRow({ match, last }: { match: BracketMatch; last: boolean }) {
     </div>
   );
 
-  if (match.href) {
-    return (
+  const row = match.href ? (
+    <div className="relative block transition active:bg-[var(--paper)]">
       <Link
-        href={match.href}
+        href={withGameOrigin(match.href, gameOrigin, gameReturnTo)}
         aria-label={aria}
-        className="block transition active:bg-[var(--paper)]"
-      >
-        {inner}
-      </Link>
-    );
-  }
-  return inner;
+        className="absolute inset-0"
+      />
+      {inner}
+    </div>
+  ) : (
+    inner
+  );
+
+  return (
+    <GameSpoilerScope gameId={scopeId} hidden={hidden}>
+      {row}
+    </GameSpoilerScope>
+  );
 }
 
 // The joined slot: the next round's match. Real pairing reads heavy ink;
@@ -252,10 +317,14 @@ function SlotCell({
   match,
   round,
   champion,
+  gameOrigin,
+  gameReturnTo,
 }: {
   match: BracketMatch | null;
   round: KnockoutRoundKey;
   champion?: WCChampion | null;
+  gameOrigin?: GameOrigin;
+  gameReturnTo?: string;
 }) {
   const bothReal = match != null && match.away.real && match.home.real;
   const played = match != null && match.status !== "upcoming";
@@ -266,6 +335,15 @@ function SlotCell({
     match.away.score != null &&
     match.home.score != null;
   const gameId = match ? gameIdFromHref(match.href) : null;
+  const scopeId =
+    gameId ?? champion?.gameId ?? `wc-${round}-${match?.number ?? "pending"}`;
+  const globalHidden = useNoSpoilers();
+  const followHidden = useFollowHidesGame({
+    countryCodes: match ? [match.away.code, match.home.code] : [],
+  });
+  const hidden = globalHidden || followHidden;
+  const { isRevealed } = useReveal();
+  const resultHidden = hidden && !isRevealed(scopeId);
   const aria = match ? `${match.away.label} vs ${match.home.label}` : "";
   const label = match
     ? `${bracketSlotToken(match.away)} · ${bracketSlotToken(match.home)}`
@@ -282,7 +360,7 @@ function SlotCell({
   // result is revealed. Naming the winner is the ultimate spoiler, so it
   // hides under No-Spoilers behind the same reveal the score uses. The hook
   // runs unconditionally (a bare gameId is fine when there's no champion).
-  const hideChampion = useEffectiveNoSpoilers(champion?.gameId);
+  const hideChampion = Boolean(champion) && hidden && !isRevealed(scopeId);
   const championSide: "away" | "home" | null =
     round === "final" && champion && !hideChampion && match
       ? match.away.code === champion.code
@@ -306,13 +384,15 @@ function SlotCell({
           <>
             {bracketSlotToken(match.away)}
             {championSide === "away" ? <Crown /> : null}{" "}
-            {gameId ? (
-              <Spoiler gameId={gameId} ariaSubject={aria}>
+            <span
+              style={
+                resultHidden ? { position: "relative", zIndex: 1 } : undefined
+              }
+            >
+              <Spoiler gameId={scopeId} ariaSubject={aria}>
                 {match.away.score}–{match.home.score}
               </Spoiler>
-            ) : (
-              `${match.away.score}–${match.home.score}`
-            )}{" "}
+            </span>{" "}
             {bracketSlotToken(match.home)}
             {championSide === "home" ? <Crown /> : null}
           </>
@@ -340,18 +420,24 @@ function SlotCell({
     </div>
   );
 
-  if (match?.href) {
-    return (
+  const cell = match?.href ? (
+    <div className="relative block transition active:bg-[var(--paper)]">
       <Link
-        href={match.href}
+        href={withGameOrigin(match.href, gameOrigin, gameReturnTo)}
         aria-label={`${match.away.label} vs ${match.home.label}`}
-        className="block transition active:bg-[var(--paper)]"
-      >
-        {inner}
-      </Link>
-    );
-  }
-  return inner;
+        className="absolute inset-0"
+      />
+      {inner}
+    </div>
+  ) : (
+    inner
+  );
+
+  return (
+    <GameSpoilerScope gameId={scopeId} hidden={hidden}>
+      {cell}
+    </GameSpoilerScope>
+  );
 }
 
 // The champion mark on the final slot's winning side. A restrained

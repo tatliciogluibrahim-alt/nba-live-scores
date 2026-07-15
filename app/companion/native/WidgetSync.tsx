@@ -21,6 +21,16 @@ import {
   type WidgetLive,
 } from "./widget-bridge";
 import type { Follow } from "../state/types";
+import {
+  buildNBAFollowCoverage,
+  nbaGameMatchesFollowCoverage,
+} from "../following/nba-follow-coverage";
+import { followHidesParticipants } from "../spoiler/follow-match";
+import {
+  selectiveHiddenFollowKey,
+  shouldResetRevealLevels,
+  type RevealPrivacyState,
+} from "../spoiler/reveal-reset";
 
 // WidgetSync — invisible, mounted globally beside LiveActivitySync. The
 // web half of the home-screen widget (Phase 22.5-4).
@@ -100,49 +110,44 @@ function itemToUpcoming(item: UpNextItem): WidgetUpcoming {
     detail: item.detail,
     broadcast: item.watch?.channel,
     accentHex: sport === "wc" ? ACCENT_WC : ACCENT_NBA,
-    href: item.href,
+    // Widgets are system entry points, not Today links. Keep the canonical
+    // game URL source-free so a cold tap uses game detail's safe Today
+    // fallback instead of claiming an in-app surface opened it.
+    href: `/game/${item.id}`,
   };
 }
 
 // Live followed games for the live-score widget. A game counts as followed
-// if a team/country/series code is in it, or a matching tournament is
-// followed. Score is redacted when global No-Spoilers is on, or when a
+// for a direct team/country, an exact two-team series matchup, or a matching
+// tournament. Score is redacted when global No-Spoilers is on, or when a
 // matching follow has per-follow hideSpoilers.
-function buildLiveEntries(
+export function buildLiveEntries(
   nba: NBAGame[],
   wc: WCGameLite[],
   follows: Follow[],
   noSpoilers: boolean
 ): WidgetLive[] {
-  const codes = new Set<string>();
+  const nbaFollowCoverage = buildNBAFollowCoverage(follows);
+  const wcCodes = new Set<string>();
   let wcTour = false;
   let nbaTour = false;
   for (const f of follows) {
-    if (f.kind === "team" || f.kind === "country") codes.add(f.id.toUpperCase());
-    else if (f.kind === "series")
-      f.id.split("-").forEach((c) => codes.add(c.toUpperCase()));
+    if (f.kind === "country") wcCodes.add(f.id.toUpperCase());
     else if (f.kind === "tournament") {
-      if (getTournament(f.id)?.accent === "var(--wc)") wcTour = true;
-      else nbaTour = true;
+      const accent = getTournament(f.id)?.accent;
+      if (accent === "var(--wc)") wcTour = true;
+      if (accent === "var(--nba)") nbaTour = true;
     }
   }
 
   const hideFor = (away: string, home: string, sport: "nba" | "wc"): boolean => {
     if (noSpoilers) return true;
-    return follows.some((f) => {
-      if (!f.hideSpoilers) return false;
-      if (f.kind === "team" || f.kind === "country") {
-        const id = f.id.toUpperCase();
-        return id === away || id === home;
-      }
-      if (f.kind === "series")
-        return f.id
-          .split("-")
-          .some((c) => c.toUpperCase() === away || c.toUpperCase() === home);
-      if (f.kind === "tournament")
-        return (getTournament(f.id)?.accent === "var(--wc)" ? "wc" : "nba") === sport;
-      return false;
-    });
+    return followHidesParticipants(
+      follows,
+      sport === "wc"
+        ? { countryCodes: [away, home] }
+        : { teamCodes: [away, home] }
+    );
   };
 
   const out: WidgetLive[] = [];
@@ -150,7 +155,9 @@ function buildLiveEntries(
     if (g.status !== "live") continue;
     const a = g.away.abbreviation.toUpperCase();
     const h = g.home.abbreviation.toUpperCase();
-    if (!(nbaTour || codes.has(a) || codes.has(h))) continue;
+    if (!(nbaTour || nbaGameMatchesFollowCoverage(nbaFollowCoverage, a, h))) {
+      continue;
+    }
     out.push({
       id: g.id,
       sport: "nba",
@@ -166,7 +173,7 @@ function buildLiveEntries(
     if (g.status !== "live") continue;
     const a = g.away.abbreviation.toUpperCase();
     const h = g.home.abbreviation.toUpperCase();
-    if (!(wcTour || codes.has(a) || codes.has(h))) continue;
+    if (!(wcTour || wcCodes.has(a) || wcCodes.has(h))) continue;
     out.push({
       id: g.id,
       sport: "wc",
@@ -190,6 +197,11 @@ export function WidgetSync() {
   const followsRef = useRef(follows);
   const pinnedRef = useRef(pinned);
   const noSpoilersRef = useRef(noSpoilers);
+  const lastSnapshotRef = useRef<WidgetSnapshot | null>(null);
+  const privacyStateRef = useRef<RevealPrivacyState>({
+    globalNoSpoilers: false,
+    selectiveHiddenFollowKey: "",
+  });
   // Drives the poll cadence: tightens to LIVE_REFRESH_MS while a followed
   // game is live, relaxes to REFRESH_MS otherwise.
   const hasLiveRef = useRef(false);
@@ -203,6 +215,21 @@ export function WidgetSync() {
     noSpoilersRef.current = noSpoilers;
   }, [noSpoilers]);
 
+  const writePrivacySafeSnapshot = useCallback(async () => {
+    const previous = lastSnapshotRef.current;
+    const safeSnapshot: WidgetSnapshot = {
+      generatedAt: Date.now(),
+      upcoming: previous?.upcoming ?? [],
+      live: [],
+      moment: previous?.moment ?? null,
+      empty:
+        (previous?.upcoming.length ?? 0) === 0 && previous?.moment == null,
+    };
+    hasLiveRef.current = false;
+    lastSnapshotRef.current = safeSnapshot;
+    await writeWidgetSnapshot(safeSnapshot);
+  }, []);
+
   const writeSnapshot = useCallback(async () => {
     const [nbaRes, wcRes] = await Promise.all([fetchNBA(), fetchWC()]);
 
@@ -211,7 +238,15 @@ export function WidgetSync() {
     // data. A blanked widget on a transient failure reads as broken.
     // When at least one feed succeeded, proceed (treat the failed one as
     // an empty list — partial data beats stale-everything).
-    if (nbaRes === null && wcRes === null) return;
+    if (nbaRes === null && wcRes === null) {
+      const privacyActive =
+        noSpoilersRef.current ||
+        followsRef.current.some((follow) => follow.hideSpoilers);
+      if (privacyActive) {
+        await writePrivacySafeSnapshot();
+      }
+      return;
+    }
     const nba = nbaRes?.games ?? [];
     const nbaRecent = nbaRes?.recent ?? [];
     const wc = wcRes ?? [];
@@ -280,10 +315,13 @@ export function WidgetSync() {
       moment,
       empty: upcoming.length === 0 && live.length === 0 && moment === null,
     };
+    lastSnapshotRef.current = snapshot;
     await writeWidgetSnapshot(snapshot);
-  }, []);
+  }, [writePrivacySafeSnapshot]);
 
-  // Recompute + write whenever follows or pins change (cheap, native-only).
+  // Recompute + write whenever follows, pins, or global No-Spoilers changes
+  // (cheap, native-only). Waiting for the 30-minute idle poll after a privacy
+  // toggle could leave a score visible on the home screen.
   // DEBOUNCED: hydration races + chained state updates can fire follows/pinned
   // many times in quick succession at boot — without this, each one triggers
   // a fetchNBA + fetchWC + WidgetCenter.reloadAllTimelines round-trip and the
@@ -291,10 +329,25 @@ export function WidgetSync() {
   const writeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!isCapacitorNative() || !hydrated) return;
+    const nextPrivacy: RevealPrivacyState = {
+      globalNoSpoilers: noSpoilers,
+      selectiveHiddenFollowKey: selectiveHiddenFollowKey(follows),
+    };
+    const privacyTightened = shouldResetRevealLevels(
+      privacyStateRef.current,
+      nextPrivacy
+    );
+    privacyStateRef.current = nextPrivacy;
+
+    // Privacy writes are network-independent and start immediately. A slow
+    // or hung feed request can never extend the life of a visible score.
+    const privacyWrite = privacyTightened
+      ? writePrivacySafeSnapshot()
+      : Promise.resolve();
     if (writeTimeoutRef.current) clearTimeout(writeTimeoutRef.current);
     writeTimeoutRef.current = setTimeout(() => {
       writeTimeoutRef.current = null;
-      void writeSnapshot();
+      void privacyWrite.then(writeSnapshot);
     }, 400);
     return () => {
       if (writeTimeoutRef.current) {
@@ -302,7 +355,14 @@ export function WidgetSync() {
         writeTimeoutRef.current = null;
       }
     };
-  }, [follows, pinned, hydrated, writeSnapshot]);
+  }, [
+    follows,
+    pinned,
+    noSpoilers,
+    hydrated,
+    writeSnapshot,
+    writePrivacySafeSnapshot,
+  ]);
 
   // Slow refresh while the app is open so day-rollover / new fixtures
   // land in the widget. Disabled off-native.

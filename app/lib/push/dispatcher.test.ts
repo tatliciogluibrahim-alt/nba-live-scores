@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   subscriberWantsEvent,
+  subscriberUsesNoSpoilersForEvent,
   isStartEvent,
   buildPayload,
   buildLiveActivityOfferPayload,
@@ -8,7 +9,7 @@ import {
   wantsLiveActivityOffer,
 } from "./dispatcher";
 import type { PushEvent } from "./event-detector";
-import type { SyncedAlert } from "./sync-validation";
+import type { SyncedAlert, SyncedFollow } from "./sync-validation";
 import { scoreEvent } from "./significance";
 
 // Dispatcher matcher coverage. This is the launch-critical fan-out gate:
@@ -56,8 +57,12 @@ function wcEvent(over: Partial<PushEvent> = {}): PushEvent {
   };
 }
 
-function sub(alerts: SyncedAlert[], noSpoilers = false) {
-  return { alerts, noSpoilers };
+function sub(
+  alerts: SyncedAlert[],
+  noSpoilers = false,
+  spoilerFollows: SyncedFollow[] = []
+) {
+  return { alerts, noSpoilers, spoilerFollows };
 }
 
 describe("subscriberWantsEvent — team & country direct match", () => {
@@ -330,6 +335,124 @@ describe("subscriberWantsEvent — No-Spoilers gate", () => {
       )
     ).toBe(true);
   });
+
+  it("suppresses unsafe events for a matching selectively-hidden team", () => {
+    const selective = sub(
+      [{ kind: "team", id: "OKC", tier: "all", hideSpoilers: true }],
+      false
+    );
+
+    expect(
+      subscriberWantsEvent(selective, nbaEvent({ type: "close-game" }))
+    ).toBe(false);
+    expect(
+      subscriberWantsEvent(selective, nbaEvent({ type: "comeback" }))
+    ).toBe(false);
+  });
+});
+
+describe("subscriberUsesNoSpoilersForEvent — selective matching", () => {
+  it("matches an inline hidden NBA team alert and redacts safe events", () => {
+    const selective = sub([
+      { kind: "team", id: "OKC", tier: "companion", hideSpoilers: true },
+    ]);
+    const event = nbaEvent({ type: "final", awayScore: 112, homeScore: 108 });
+
+    expect(subscriberUsesNoSpoilersForEvent(selective, event)).toBe(true);
+    expect(
+      buildPayload(
+        event,
+        subscriberUsesNoSpoilersForEvent(selective, event)
+      ).body
+    ).toBe("Game's done. Tap when you're ready.");
+  });
+
+  it("matches a hidden country without an alert slot", () => {
+    const selective = sub(
+      [{ kind: "tournament", id: "fifa-world-cup-2026", tier: "all" }],
+      false,
+      [{ kind: "country", id: "BRA" }]
+    );
+
+    const event = wcEvent({ type: "wc-goal", awayScore: 1, homeScore: 0 });
+    const hidden = subscriberUsesNoSpoilersForEvent(selective, event);
+    expect(hidden).toBe(true);
+    expect(buildPayload(event, hidden).body).toBe(
+      "Someone scored. Tap to check in."
+    );
+  });
+
+  it("matches a hidden NBA series only when both participants are present", () => {
+    const event = nbaEvent({ awayCode: "OKC", homeCode: "SA" });
+    for (const id of ["OKC-SA", "SA-OKC"]) {
+      expect(
+        subscriberUsesNoSpoilersForEvent(
+          sub(
+            [{ kind: "tournament", id: "nba-playoffs-2026", tier: "all" }],
+            false,
+            [{ kind: "series", id }]
+          ),
+          event
+        )
+      ).toBe(true);
+    }
+    expect(
+      subscriberUsesNoSpoilersForEvent(
+        sub([], false, [{ kind: "series", id: "OKC-NYK" }]),
+        event
+      )
+    ).toBe(false);
+  });
+
+  it("suppresses an unsafe event delivered through a broad alert when its series is hidden", () => {
+    const selective = sub(
+      [{ kind: "tournament", id: "nba-playoffs-2026", tier: "all" }],
+      false,
+      [{ kind: "series", id: "OKC-SA" }]
+    );
+
+    expect(
+      subscriberWantsEvent(selective, nbaEvent({ type: "close-game" }))
+    ).toBe(false);
+  });
+
+  it("does not redact non-matching team, country, or series events", () => {
+    expect(
+      subscriberUsesNoSpoilersForEvent(
+        sub([], false, [{ kind: "team", id: "NYK" }]),
+        nbaEvent()
+      )
+    ).toBe(false);
+    expect(
+      subscriberUsesNoSpoilersForEvent(
+        sub([], false, [{ kind: "country", id: "USA" }]),
+        wcEvent()
+      )
+    ).toBe(false);
+    expect(
+      subscriberUsesNoSpoilersForEvent(
+        sub([], false, [{ kind: "series", id: "NYK-BOS" }]),
+        nbaEvent()
+      )
+    ).toBe(false);
+  });
+
+  it("intentionally excludes tournament selective hiding", () => {
+    expect(
+      subscriberUsesNoSpoilersForEvent(
+        sub([], false, [
+          { kind: "tournament", id: "nba-playoffs-2026" },
+        ]),
+        nbaEvent()
+      )
+    ).toBe(false);
+  });
+
+  it("keeps global No-Spoilers backward-compatible", () => {
+    expect(subscriberUsesNoSpoilersForEvent(sub([], true), nbaEvent())).toBe(
+      true
+    );
+  });
 });
 
 describe("subscriberWantsEvent — defensive", () => {
@@ -426,16 +549,18 @@ describe("live-activity offer builders", () => {
     expect(p.title).toBe("OKC vs SA");
   });
 
-  it("builds offer data with type, gameId, and sport", () => {
+  it("builds offer data with pin metadata and the exact game URL", () => {
     expect(liveActivityOfferData(wcEvent())).toEqual({
       type: "live-activity-offer",
       gameId: "wc1",
       sport: "wc",
+      url: "/game/wc1?offer=live-activity",
     });
     expect(liveActivityOfferData(nbaEvent({ type: "tipoff", gameId: "g9" }))).toEqual({
       type: "live-activity-offer",
       gameId: "g9",
       sport: "nba",
+      url: "/game/g9?offer=live-activity",
     });
   });
 

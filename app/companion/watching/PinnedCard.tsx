@@ -94,6 +94,8 @@ function TrackedAgateInner({
       }
       stamp={hideStamp ? undefined : <Stamp text={trackedStampText(item)} variant="faint" />}
       href={item.href}
+      spoilerGameId={item.id}
+      linkLabel={`Open ${item.spoilerSubject}`}
     />
   );
 }

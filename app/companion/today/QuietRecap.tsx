@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { Display } from "../atoms/Display";
-import { useNoSpoilers, useUserPrefs } from "../providers";
+import { useFollows, useNoSpoilers, useUserPrefs } from "../providers";
+import { followHidesParticipants } from "../spoiler/follow-match";
 import type { TodayPayload } from "./today-data";
 
 // QuietRecap — Stage 15F.
@@ -22,8 +23,19 @@ import type { TodayPayload } from "./today-data";
 // wrapped.") and lose the numeric flourish.
 
 export function QuietRecap({ payload }: { payload: TodayPayload }) {
-  const noSpoilers = useNoSpoilers();
+  const globalNoSpoilers = useNoSpoilers();
+  const { follows } = useFollows();
   const { prefs, markQuietRecapSeen, hydrated } = useUserPrefs();
+
+  const selectiveHidden = payload.recapFinals.some((item) => {
+    return followHidesParticipants(
+      follows,
+      item.source === "wc"
+        ? { countryCodes: [item.awayCode, item.homeCode] }
+        : { teamCodes: [item.awayCode, item.homeCode] }
+    );
+  });
+  const noSpoilers = globalNoSpoilers || selectiveHidden;
 
   if (!hydrated) return null;
   if (!payload.slateComplete) return null;
@@ -44,6 +56,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
     : finalsCount === 1
       ? "No more alerts tonight. Tap to see it."
       : "No more alerts tonight. Tap to see the wrap.";
+  const singleVisibleFinal = !noSpoilers && finalsCount === 1;
 
   return (
     <section
@@ -92,7 +105,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
           <Link
             href="/watching"
             aria-label={
-              finalsCount === 1
+              singleVisibleFinal
                 ? "See tonight's final"
                 : "See tonight's wrap"
             }
@@ -103,7 +116,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
               border: "1px solid var(--cream)",
             }}
           >
-            {finalsCount === 1 ? "See it" : "See the wrap"}
+            {singleVisibleFinal ? "See it" : "See the wrap"}
           </Link>
           <button
             type="button"

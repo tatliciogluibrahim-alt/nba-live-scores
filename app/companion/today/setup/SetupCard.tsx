@@ -17,7 +17,7 @@ export function SetupCard({ setup }: { setup: UseSetupStepResult }) {
     case "installOptional":
       return <InstallStep variant="optional" platform={setup.platform} promptInstall={setup.promptInstall} />;
     case "enable":
-      return <EnableStep />;
+      return <EnableStep onPermissionChange={setup.setPermission} />;
     case "recover":
       return <RecoverStep platform={setup.platform} />;
     default:

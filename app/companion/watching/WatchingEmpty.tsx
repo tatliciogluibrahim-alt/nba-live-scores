@@ -42,7 +42,7 @@ export function WatchingEmpty() {
           a mono note under the label with a → chevron at the row edge. */}
       <div style={{ borderBottom: "1px solid var(--line)" }}>
         <Link
-          href="/"
+          href="/app"
           className="flex min-h-[52px] items-center justify-between gap-3 border-t py-3 transition active:opacity-70"
           style={{ borderColor: "var(--line)", color: "var(--ink)" }}
           aria-label="Go to Today"
@@ -70,14 +70,14 @@ export function WatchingEmpty() {
         </Link>
 
         <Link
-          href="/following"
+          href="/schedule?scope=all"
           className="flex min-h-[52px] items-center justify-between gap-3 border-t py-3 transition active:opacity-70"
           style={{ borderColor: "var(--line)", color: "var(--ink)" }}
-          aria-label="Go to Following"
+          aria-label="Go to Schedule"
         >
           <span className="flex flex-col gap-1">
             <span className="text-[14px]" style={{ fontWeight: 600 }}>
-              Set up Following
+              Browse the full schedule
             </span>
             <span
               className="uppercase"
@@ -89,7 +89,7 @@ export function WatchingEmpty() {
                 color: "var(--mute-2)",
               }}
             >
-              Teams, countries, series, tournaments
+              Every match in the competition
             </span>
           </span>
           <span aria-hidden className="text-[16px]" style={{ color: "var(--mute-1)" }}>

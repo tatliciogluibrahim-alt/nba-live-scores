@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useIsNative } from "../dev/native-detect";
+import { useFollows, useUserPrefs } from "../providers";
+import { buildFollowSyncState } from "./follow-sync";
 import { usePushSubscription } from "./use-push-subscription";
 
 // One-tap "tell me when the next moment is ready" — the Moment Relay arm
@@ -37,6 +40,9 @@ export function MomentRelayButton({
 }) {
   const [state, setState] = useState<State>("idle");
   const { subscribe } = usePushSubscription();
+  const { follows } = useFollows();
+  const { prefs } = useUserPrefs();
+  const native = useIsNative();
 
   async function arm() {
     setState("arming");
@@ -53,7 +59,16 @@ export function MomentRelayButton({
             return;
           }
         }
-        const sub = await subscribe({ alerts: [], noSpoilers: false });
+        // Creating a relay subscription must preserve the device's real
+        // alert and privacy snapshot. A bare empty/default registration can
+        // otherwise create a window where existing alerts or No-Spoilers are
+        // false on the backend.
+        const followSync = buildFollowSyncState(follows);
+        const sub = await subscribe({
+          alerts: followSync.alerts,
+          spoilerFollows: followSync.spoilerFollows,
+          noSpoilers: prefs.noSpoilers,
+        });
         endpoint = sub?.endpoint ?? storedEndpoint();
       }
       if (!endpoint) {
@@ -70,6 +85,11 @@ export function MomentRelayButton({
       setState("error");
     }
   }
+
+  // Moment Relay currently stores a web-push endpoint. Native uses an APNs
+  // token and cannot truthfully arm this route yet, so do not show a CTA that
+  // will always fail inside the App Store wrapper.
+  if (native) return null;
 
   if (state === "armed") {
     return (

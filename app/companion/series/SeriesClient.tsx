@@ -6,6 +6,7 @@ import { Eyebrow } from "../atoms/Eyebrow";
 import { StatusPill, type StatusTone } from "../atoms/StatusPill";
 import { HIDDEN_CAPTIONS, isSpoilery } from "../spoiler/safe-text";
 import { useNoSpoilers } from "../providers";
+import { useFollowHidesGame } from "../spoiler/reveal";
 import { useSeriesData } from "./use-series-data";
 import { SevenDotStrip } from "./SevenDotStrip";
 import { NextGameBlock } from "./NextGameBlock";
@@ -26,6 +27,12 @@ const STATUS_TONE: Record<string, StatusTone> = {
 export function SeriesClient({ seriesKey }: { seriesKey: string }) {
   const noSpoilers = useNoSpoilers();
   const { payload, hydrated } = useSeriesData(seriesKey);
+  const followHidden = useFollowHidesGame({
+    teamCodes: payload
+      ? [payload.teamA.abbr, payload.teamB.abbr]
+      : seriesKey.split("-").filter(Boolean),
+  });
+  const hideResults = noSpoilers || followHidden;
 
   if (!hydrated) {
     return <LoadingShell />;
@@ -52,7 +59,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
   // Caption only fires when there's actual spoilery content; never a
   // phantom "context hidden" label for empty / non-spoilery summaries.
   const hasSpoilerySummary = isSpoilery(payload.spoilerySummary);
-  const showSpoilerySummary = !noSpoilers && hasSpoilerySummary;
+  const showSpoilerySummary = !hideResults && hasSpoilerySummary;
   // Wrapped series read like a receipt: the winner is already stated once
   // in the big summary line above ("NYK WINS SERIES 4-1"), so the
   // "What's at stake" spoilery stake ("NYK won the series 4–1.") just
@@ -60,7 +67,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
   // it's forward-looking ("NYK can clinch.").
   const isWrapped = payload.statusLabel === "Final";
   const showSpoileryStake =
-    !noSpoilers &&
+    !hideResults &&
     !isWrapped &&
     payload.spoileryStakeLine &&
     payload.spoileryStakeLine !== payload.spoilerySummary;
@@ -98,7 +105,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
         >
           {payload.spoilerySummary}
         </p>
-      ) : noSpoilers && hasSpoilerySummary ? (
+      ) : hideResults && hasSpoilerySummary ? (
         <p
           className="mt-3 text-[11px] uppercase"
           style={{
@@ -140,7 +147,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
           <Eyebrow>Schedule</Eyebrow>
           <div className="h-px flex-1" style={{ background: "var(--line)" }} />
         </div>
-        <SevenDotStrip dots={payload.dots} />
+        <SevenDotStrip dots={payload.dots} hidden={hideResults} />
       </section>
 
       {/* ── Next game block ───────────────────────────────────────── */}
@@ -165,7 +172,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
 
       {/* ── Related games list ────────────────────────────────────── */}
       <div className="mt-5">
-        <RelatedGames games={payload.games} />
+        <RelatedGames games={payload.games} hidden={hideResults} />
       </div>
     </main>
   );
@@ -266,7 +273,7 @@ function SeriesAwaitingOpponent({ seriesKey }: { seriesKey: string }) {
           NBA Playoffs
         </Link>
         <Link
-          href="/"
+          href="/app"
           className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",
@@ -319,7 +326,7 @@ function SeriesNotFound({ seriesKey }: { seriesKey: string }) {
           Following
         </Link>
         <Link
-          href="/"
+          href="/app"
           className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",

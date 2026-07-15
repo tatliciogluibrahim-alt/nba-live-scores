@@ -123,6 +123,13 @@ private func asOfText(_ generatedAt: Double) -> String {
 private enum AgateItem {
     case live(WidgetLive)
     case up(WidgetUpcoming)
+
+    var href: String {
+        switch self {
+        case .live(let game): return game.href
+        case .up(let game):   return game.href
+        }
+    }
 }
 private func agateItems(_ snap: WidgetSnapshot) -> [AgateItem] {
     (snap.live ?? []).map(AgateItem.live) + snap.upcoming.map(AgateItem.up)
@@ -137,6 +144,33 @@ private func headerLeft(_ snap: WidgetSnapshot) -> String {
 }
 private func leadSport(_ snap: WidgetSnapshot) -> String {
     snap.live?.first?.sport ?? snap.upcoming.first?.sport ?? "wc"
+}
+
+private func gameDeepLink(_ href: String) -> URL? {
+    let relative: String
+    if let absolute = URL(string: href),
+       let host = absolute.host,
+       host == "nonoisescores.app" {
+        relative = absolute.path + (absolute.query.map { "?\($0)" } ?? "")
+    } else {
+        relative = href.hasPrefix("/") ? href : "/\(href)"
+    }
+    return URL(string: "nonoisescores://app\(relative)")
+}
+
+// Multi-row widgets need a destination per row. `widgetURL` remains the
+// calm fallback for taps on chrome/empty space, while a Link wins for the
+// exact game row the user touched.
+@ViewBuilder private func gameLink<Content: View>(
+    _ href: String,
+    @ViewBuilder content: () -> Content
+) -> some View {
+    if let destination = gameDeepLink(href) {
+        Link(destination: destination) { content() }
+            .buttonStyle(.plain)
+    } else {
+        content()
+    }
 }
 
 // MARK: - Timeline plumbing (unchanged)
@@ -207,16 +241,16 @@ struct NoNoiseUpcomingWidget: Widget {
 // that match's detail page (not just Today). Falls back to /app.
 private func widgetDeepLink(_ entry: UpcomingEntry) -> URL? {
     guard let snap = entry.snapshot else {
-        return URL(string: "https://nonoisescores.app/app")
+        return URL(string: "nonoisescores://app/app")
     }
     if let href = snap.live?.first?.href {
-        return URL(string: "https://nonoisescores.app\(href)")
+        return gameDeepLink(href)
     }
     guard !snap.upcoming.isEmpty else {
-        return URL(string: "https://nonoisescores.app/app")
+        return URL(string: "nonoisescores://app/app")
     }
     let idx = min(max(0, entry.startIndex), snap.upcoming.count - 1)
-    return URL(string: "https://nonoisescores.app\(snap.upcoming[idx].href)")
+    return gameDeepLink(snap.upcoming[idx].href)
 }
 
 // MARK: - Upcoming widget
@@ -519,9 +553,13 @@ private struct LargeBody: View {
     @ViewBuilder private func leadView(_ lead: AgateItem?) -> some View {
         switch lead {
         case .live(let l):
-            LeadBoard(live: l, generatedAt: snap.generatedAt)
+            gameLink(l.href) {
+                LeadBoard(live: l, generatedAt: snap.generatedAt)
+            }
         case .up(let g):
-            UpcomingLead(game: g)
+            gameLink(g.href) {
+                UpcomingLead(game: g)
+            }
         case nil:
             VStack(alignment: .leading, spacing: 6) {
                 Text("Quiet for now.")
@@ -615,6 +653,12 @@ private struct AgateRow: View {
     var border: Bool = true
 
     var body: some View {
+        gameLink(item.href) {
+            row
+        }
+    }
+
+    @ViewBuilder private var row: some View {
         switch item {
         case .live(let l): AgateLiveRow(index: index, live: l, showBorder: border)
         case .up(let g):   AgateUpcomingRow(index: index, game: g, showBorder: border)
@@ -858,9 +902,9 @@ struct LiveScoreProvider: TimelineProvider {
 
 private func liveDeepLink(_ snap: WidgetSnapshot?) -> URL? {
     if let href = snap?.live?.first?.href {
-        return URL(string: "https://nonoisescores.app\(href)")
+        return gameDeepLink(href)
     }
-    return URL(string: "https://nonoisescores.app/app")
+    return URL(string: "nonoisescores://app/app")
 }
 
 struct NoNoiseLiveScoreWidget: Widget {
@@ -915,7 +959,9 @@ private struct MediumLiveBody: View {
             VermilionRule().padding(.top, 6).padding(.bottom, 2)
 
             ForEach(Array(live.enumerated()), id: \.offset) { i, g in
-                AgateLiveRow(index: i + 1, live: g, showBorder: i < live.count - 1)
+                gameLink(g.href) {
+                    AgateLiveRow(index: i + 1, live: g, showBorder: i < live.count - 1)
+                }
             }
 
             Spacer(minLength: 4)

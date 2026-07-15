@@ -23,13 +23,19 @@
 // for the same reason (see dispatcher.ts comments).
 
 import { kv } from "@vercel/kv";
-import type { SyncedAlert } from "./sync-validation";
+import {
+  preserveSelectiveSpoilers,
+  type SyncedAlert,
+  type SyncedFollow,
+} from "./sync-validation";
 
 export type StoredIosToken = {
   /** APNs hex device token — opaque to us. */
   token: string;
   /** Alert-enabled follows snapshot, same shape as web push. */
   alerts: SyncedAlert[];
+  /** Selective-hide follows without an alert slot. */
+  spoilerFollows: SyncedFollow[];
   /** No-Spoilers mode flag. Dispatcher uses this to suppress
    *  closeness-revealing events (close-game, comeback) and to swap
    *  push bodies for safe variants. */
@@ -77,6 +83,9 @@ function normalizeStored(
   return {
     token: raw.token ?? token,
     alerts: Array.isArray(raw.alerts) ? raw.alerts : [],
+    spoilerFollows: Array.isArray(raw.spoilerFollows)
+      ? raw.spoilerFollows
+      : [],
     noSpoilers: typeof raw.noSpoilers === "boolean" ? raw.noSpoilers : false,
     lockScreenOffers:
       typeof raw.lockScreenOffers === "boolean" ? raw.lockScreenOffers : true,
@@ -98,7 +107,10 @@ function normalizeStored(
 export async function upsertIosToken(input: {
   token: string;
   alerts?: SyncedAlert[];
+  spoilerFollows?: SyncedFollow[];
+  selectiveSpoilersProvided?: boolean;
   noSpoilers?: boolean;
+  noSpoilersProvided?: boolean;
   lockScreenOffers?: boolean;
   quietHours?: { start: string; end: string };
   remindBeforeMinutes?: number;
@@ -114,11 +126,25 @@ export async function upsertIosToken(input: {
   // signal that the device sent its full prefs, so quietHours / reminder
   // / tz are taken from the input (even when undefined = "cleared").
   // A bare touch (no alerts) preserves the stored prefs.
-  const syncing = input.alerts !== undefined;
-  const alerts = syncing ? input.alerts! : existing?.alerts ?? [];
+  const syncing =
+    input.alerts !== undefined || input.spoilerFollows !== undefined;
+  const incomingAlerts =
+    input.alerts !== undefined ? input.alerts : existing?.alerts ?? [];
+  const selective = input.selectiveSpoilersProvided
+    ? {
+        alerts: incomingAlerts,
+        spoilerFollows: input.spoilerFollows ?? [],
+      }
+    : preserveSelectiveSpoilers(
+        incomingAlerts,
+        existing?.alerts ?? [],
+        existing?.spoilerFollows ?? []
+      );
+  const alerts = selective.alerts;
+  const spoilerFollows = selective.spoilerFollows;
   const noSpoilers =
-    input.noSpoilers !== undefined
-      ? input.noSpoilers
+    input.noSpoilersProvided
+      ? input.noSpoilers === true
       : existing?.noSpoilers ?? false;
   const lockScreenOffers =
     input.lockScreenOffers !== undefined
@@ -134,6 +160,7 @@ export async function upsertIosToken(input: {
     ? {
         ...existing,
         alerts,
+        spoilerFollows,
         noSpoilers,
         lockScreenOffers,
         quietHours,
@@ -141,7 +168,8 @@ export async function upsertIosToken(input: {
         timeZone,
         updatedAt:
           input.alerts !== undefined ||
-          input.noSpoilers !== undefined ||
+          input.spoilerFollows !== undefined ||
+          input.noSpoilersProvided ||
           input.lockScreenOffers !== undefined
             ? now
             : existing.updatedAt,
@@ -150,6 +178,7 @@ export async function upsertIosToken(input: {
     : {
         token,
         alerts,
+        spoilerFollows,
         noSpoilers,
         lockScreenOffers,
         quietHours,
@@ -212,6 +241,7 @@ export async function listIosTokens(): Promise<StoredIosToken[]> {
       return {
         token,
         alerts: [],
+        spoilerFollows: [],
         noSpoilers: false,
         lockScreenOffers: true,
         createdAt: now,
@@ -235,4 +265,3 @@ export async function countIosTokens(): Promise<number> {
   // and the overcount is harmless for diagnostic use.
   return (v2 ?? 0) + (legacy ?? 0);
 }
-

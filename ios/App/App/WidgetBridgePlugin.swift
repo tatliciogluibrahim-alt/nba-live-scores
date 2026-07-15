@@ -37,12 +37,12 @@ public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         defaults.set(json, forKey: Self.snapshotKey)
-        // Targeted reload of just the upcoming widget. Higher priority +
-        // less battery cost than reloadAllTimelines, which iOS often
-        // defers. Real-user symptom: tournament/series follow change
-        // didn't visibly update the widget until a SECOND change racked
-        // up enough reload requests for iOS to finally honor one.
+        // Targeted reloads for both widget kinds that read this snapshot.
+        // Higher priority + less battery cost than reloadAllTimelines,
+        // which iOS often defers. Omitting NoNoiseLiveScore left that widget
+        // stale even while the upcoming widget reflected the same write.
         WidgetCenter.shared.reloadTimelines(ofKind: "NoNoiseUpcoming")
+        WidgetCenter.shared.reloadTimelines(ofKind: "NoNoiseLiveScore")
         call.resolve()
     }
 }

@@ -8,7 +8,12 @@ import { NFL_2026_SEASON_OPENER } from "../following/data/nfl-dates";
 import { getCountry } from "../following/data/countries";
 import { getTournament } from "../following/data/tournaments";
 import { tournamentPhase } from "../following/data/tournament-phase";
+import {
+  buildNBAFollowCoverage,
+  nbaGameMatchesFollowCoverage,
+} from "../following/nba-follow-coverage";
 import { prettifySeriesSummary } from "../../nba/lib/series";
+import { withGameOrigin } from "../game/game-origin";
 import {
   countryKnockoutOutcome,
   isRealCountryCode,
@@ -257,6 +262,9 @@ export type ClosingMoment = {
    *  above stays safe/generic). Absent when the user follows the winner
    *  (their follower champion card already names it) or off the WC variant. */
   champion?: WCChampion;
+  /** Both final participants. Needed so selective No-Spoilers for the losing
+   *  finalist also hides the champion result on the wind-down card. */
+  championParticipantCodes?: string[];
   /** Spoilery summary line (e.g. "OKC took it in 6."). Only shown when
    *  No-Spoilers is off. */
   spoilerSummary?: string;
@@ -296,7 +304,12 @@ export type ClosingMoment = {
 export type KnockoutMomentItem = {
   /** Stable id for dismiss tracking: "ko:<gameId>:<countryCode>". */
   id: string;
+  /** Shared reveal identity for this result across Schedule/detail/Today. */
+  gameId: string;
   countryCode: string;
+  /** The other finalist in this knockout match. Selective No-Spoilers must
+   *  protect the result when either participant is hidden. */
+  opponentCode: string;
   countryName: string;
   outcome: "advanced" | "eliminated";
   /** The round just played, e.g. "Round of 32". */
@@ -309,6 +322,13 @@ export type KnockoutMomentItem = {
   /** Spoilery final line, e.g. "USA 1 – POR 2". */
   scoreLine: string;
   href: string;
+};
+
+export type RecapFinal = {
+  source: "nba" | "wc";
+  id: string;
+  awayCode: string;
+  homeCode: string;
 };
 
 export type TodayPayload = {
@@ -330,6 +350,9 @@ export type TodayPayload = {
   /** Headline count for the recap copy. Always finals.length when
    *  slateComplete is true; 0 otherwise. */
   finalsCount: number;
+  /** Untruncated same-day personal finals. Presentation labels and Quiet
+   *  Wrap's three-row cap must never decide recap truth or privacy. */
+  recapFinals: RecapFinal[];
   /** A "calm ending" card the user might see today. At most one. Either
    *  a followed series just wrapped, or the NBA Finals just wrapped and
    *  the slate is otherwise quiet. Dismissal is client-side
@@ -568,11 +591,9 @@ export function nbaLeadGame(g: NBAGame): TodayLeadGame {
 }
 
 // ── Hero pick ─────────────────────────────────────────────────────────
-// One earned moment. Preference order:
-//   1. A live NBA game involving a followed team
-//   2. Any live NBA game (closest score in latest period wins)
-//   3. The next upcoming NBA game for a followed team
-//   4. The WC countdown reminder dressed up as a hero (when no NBA hero exists)
+// One earned, personal moment. A game can lead only when it is pinned or
+// covered by a team, country, series, or tournament follow. Today never fills
+// this slot with a generic live game from the wider feed.
 
 function scoreClosenessRank(g: NBAGame): number {
   // Lower = more interesting. Late-period close games rank lowest.
@@ -598,47 +619,66 @@ function pickHero(
   const followedCountries = new Set(
     follows.filter((f) => f.kind === "country").map((f) => f.id)
   );
+  const followedSeries = follows
+    .filter((f) => f.kind === "series")
+    .map((f) => f.id);
+  const followsNbaTour = follows.some(
+    (f) =>
+      f.kind === "tournament" &&
+      getTournament(f.id)?.accent === "var(--nba)"
+  );
+  const followsWcTour = follows.some(
+    (f) =>
+      f.kind === "tournament" &&
+      getTournament(f.id)?.accent === "var(--wc)"
+  );
+
+  const nbaIsPersonal = (g: NBAGame): boolean => {
+    if (followsNbaTour) return true;
+    if ([...followedTeams].some((abbr) => gameIncludesTeam(g, abbr))) {
+      return true;
+    }
+    return followedSeries.some((sid) => {
+      const [a, b] = sid.split("-");
+      return !!a && !!b && gameIncludesTeam(g, a) && gameIncludesTeam(g, b);
+    });
+  };
+  const wcIsPersonal = (g: WCGameLite): boolean =>
+    followsWcTour ||
+    [...followedCountries].some((code) => gameIncludesCountry(g, code));
 
   const live = [...nba.filter((g) => g.status === "live")].sort(
     (a, b) => scoreClosenessRank(a) - scoreClosenessRank(b)
   );
   const wcLive = wc.filter((g) => g.status === "live");
 
-  // Hero priority spans both sports. A live game (either sport) beats an
-  // upcoming one. Within "live", a pinned or followed match is the
-  // strongest "I care" signal; NBA wins ties only when neither side is
-  // explicitly cared-about. Without this, a live followed WC match
-  // (e.g. USA at the Summer Soccer) never reached the hero — it was
-  // NBA-only before.
-  const nbaCared =
-    live.find((g) => pinnedIds.has(g.id)) ??
-    live.find((g) => [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr)));
-  const wcCared =
-    wcLive.find((g) => pinnedIds.has(g.id)) ??
-    wcLive.find((g) => [...followedCountries].some((c) => gameIncludesCountry(g, c)));
-
-  // Resolve to one live hero, preferring cared-about matches.
-  const heroLive = nbaCared ?? (wcCared ? null : live[0]);
-  const heroWcLive = !heroLive ? (wcCared ?? wcLive[0]) : null;
+  // Pinned wins across sports, then a followed NBA game wins a same-strength
+  // tie with a followed WC match. With no personal match, both remain null.
+  const pinnedNba = live.find((g) => pinnedIds.has(g.id));
+  const pinnedWc = wcLive.find((g) => pinnedIds.has(g.id));
+  const followedNba = live.find(nbaIsPersonal);
+  const followedWc = wcLive.find(wcIsPersonal);
+  let heroLive: NBAGame | null = null;
+  let heroWcLive: WCGameLite | null = null;
+  if (pinnedNba) heroLive = pinnedNba;
+  else if (pinnedWc) heroWcLive = pinnedWc;
+  else if (followedNba) heroLive = followedNba;
+  else if (followedWc) heroWcLive = followedWc;
 
   // Followed-live counts (both sports) drive the personal headline rungs
   // ("United States are live." / "Two of yours are live."). A WC tournament
   // follow covers every match; otherwise count pinned + followed-country/team
   // live games. This is the user's FOLLOWED live set, not the whole feed — a
   // feed-wide count beside one shown game would be a lie (RC4).
-  const followsWcTour = follows.some(
-    (f) => f.kind === "tournament" && getTournament(f.id)?.accent === "var(--wc)"
-  );
   const followedWcLiveCount = wcLive.filter(
     (g) =>
-      followsWcTour ||
       pinnedIds.has(g.id) ||
-      [...followedCountries].some((c) => gameIncludesCountry(g, c))
+      wcIsPersonal(g)
   ).length;
   const followedNbaLiveCount = live.filter(
     (g) =>
       pinnedIds.has(g.id) ||
-      [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr))
+      nbaIsPersonal(g)
   ).length;
   const followedLiveCount = followedWcLiveCount + followedNbaLiveCount;
 
@@ -666,7 +706,7 @@ function pickHero(
       live: true,
       accent: "var(--wc)",
       pinned: isPinned,
-      href: `/game/${heroWcLive.id}`,
+      href: withGameOrigin(`/game/${heroWcLive.id}`, "today"),
       spoilerMatchup: `${heroWcLive.away.abbreviation} vs ${heroWcLive.home.abbreviation}`,
       spoilerKind: "live",
       spoilerSubject: `${heroWcLive.away.abbreviation} vs ${heroWcLive.home.abbreviation}`,
@@ -701,7 +741,7 @@ function pickHero(
       live: true,
       accent: "var(--nba)",
       pinned: isPinned,
-      href: `/game/${heroLive.id}`,
+      href: withGameOrigin(`/game/${heroLive.id}`, "today"),
       spoilerMatchup: heroLive.matchup,
       spoilerKind: "live",
       spoilerSubject: heroLive.matchup,
@@ -730,7 +770,7 @@ function pickHero(
         : undefined,
       live: false,
       accent: "var(--nba)",
-      href: `/game/${todayFollowed.id}`,
+      href: withGameOrigin(`/game/${todayFollowed.id}`, "today"),
       spoilerMatchup: todayFollowed.matchup,
       spoilerKind: "live",
       spoilerSubject: todayFollowed.matchup,
@@ -754,7 +794,11 @@ function pickHero(
   // just opened today), and the user is following a country whose
   // opener is part of the action, the hero earns the editorial slot.
   const hoursUntilKickoff = (WC_KICKOFF.getTime() - now.getTime()) / 3_600_000;
-  if (hoursUntilKickoff > 0 && hoursUntilKickoff <= 24) {
+  if (
+    hoursUntilKickoff > 0 &&
+    hoursUntilKickoff <= 24 &&
+    (followedCountries.size > 0 || followsWcTour)
+  ) {
     const followedCountry = follows.find((f) => f.kind === "country");
     const country = followedCountry ? getCountry(followedCountry.id) : null;
     const hoursRounded = Math.max(1, Math.ceil(hoursUntilKickoff));
@@ -838,7 +882,7 @@ function buildYouFollow(
                 : g.status === "upcoming"
                   ? "upcoming"
                   : "final",
-            href: `/game/${g.id}`,
+            href: withGameOrigin(`/game/${g.id}`, "today"),
           };
         }
         // No live or upcoming game for this team — chip routes to the
@@ -944,7 +988,7 @@ function nbaToUpNext(g: NBAGame, pinned: boolean, personal: boolean): UpNextItem
     dayWord: headlineDayWord(g.date),
     stake: g.seriesSummary ? prettifySeriesSummary(g.seriesSummary) : undefined,
     watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
-    href: `/game/${g.id}`,
+    href: withGameOrigin(`/game/${g.id}`, "today"),
     spoilerSubject: g.matchup,
     game: nbaLeadGame(g),
   };
@@ -979,7 +1023,7 @@ export function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): U
     // Open the match detail (which supports WC games), consistent with
     // NBA up-next. Was linking to the away country page, so tapping a
     // fixture jumped to a country instead of the game.
-    href: `/game/${g.id}`,
+    href: withGameOrigin(`/game/${g.id}`, "today"),
     spoilerSubject: headline,
     game: wcLeadGame(g),
   };
@@ -1143,6 +1187,111 @@ function quietWrapDayLabel(date: string, now = new Date()): string {
  *  this is purely a UI cap, not a data limit. */
 const QUIET_WRAP_WINDOW_DAYS = 3;
 
+function personalFinalMatchers(follows: Follow[]): {
+  nba: (game: NBAGame) => boolean;
+  wc: (game: WCGameLite) => boolean;
+} {
+  const followedTeams = new Set(
+    follows.filter((f) => f.kind === "team").map((f) => f.id)
+  );
+  const followedCountries = new Set(
+    follows.filter((f) => f.kind === "country").map((f) => f.id)
+  );
+  const followedSeries = follows
+    .filter((f) => f.kind === "series")
+    .map((f) => f.id);
+  const followedTournaments = follows
+    .filter((f) => f.kind === "tournament")
+    .map((f) => getTournament(f.id))
+    .filter((t): t is NonNullable<typeof t> => Boolean(t));
+  const followsNbaTournament = followedTournaments.some(
+    (t) => t.accent === "var(--nba)"
+  );
+  const followsWcTournament = followedTournaments.some(
+    (t) => t.accent === "var(--wc)"
+  );
+
+  return {
+    nba: (game) => {
+      if (followsNbaTournament) return true;
+      if ([...followedTeams].some((abbr) => gameIncludesTeam(game, abbr))) {
+        return true;
+      }
+      return followedSeries.some((seriesId) => {
+        const [a, b] = seriesId.split("-");
+        return (
+          Boolean(a) &&
+          Boolean(b) &&
+          gameIncludesTeam(game, a) &&
+          gameIncludesTeam(game, b)
+        );
+      });
+    },
+    wc: (game) =>
+      followsWcTournament ||
+      [...followedCountries].some((code) => gameIncludesCountry(game, code)),
+  };
+}
+
+function isSameLocalDay(date: string, now: Date): boolean {
+  const value = new Date(date);
+  return (
+    Number.isFinite(value.getTime()) &&
+    value.getFullYear() === now.getFullYear() &&
+    value.getMonth() === now.getMonth() &&
+    value.getDate() === now.getDate()
+  );
+}
+
+function buildRecapFinals(
+  nbaRecent: NBAGame[],
+  wc: WCGameLite[],
+  follows: Follow[],
+  now: Date
+): RecapFinal[] {
+  const personal = personalFinalMatchers(follows);
+  const seen = new Set<string>();
+  const finals: RecapFinal[] = [];
+  const add = (final: RecapFinal) => {
+    const key = `${final.source}:${final.id}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    finals.push(final);
+  };
+
+  for (const game of nbaRecent) {
+    if (
+      game.status !== "final" ||
+      !isSameLocalDay(game.date, now) ||
+      !personal.nba(game)
+    ) {
+      continue;
+    }
+    add({
+      source: "nba",
+      id: game.id,
+      awayCode: game.away.abbreviation,
+      homeCode: game.home.abbreviation,
+    });
+  }
+  for (const game of wc) {
+    if (
+      game.status !== "final" ||
+      !isSameLocalDay(game.date, now) ||
+      !personal.wc(game)
+    ) {
+      continue;
+    }
+    add({
+      source: "wc",
+      id: game.id,
+      awayCode: game.away.abbreviation,
+      homeCode: game.home.abbreviation,
+    });
+  }
+  return finals;
+}
+
 function buildQuietWrap(
   nbaRecent: NBAGame[],
   wc: WCGameLite[],
@@ -1155,23 +1304,12 @@ function buildQuietWrap(
     return Number.isFinite(ms) && ms >= cutoffMs;
   };
 
-  const followedTeams = new Set(
-    follows.filter((f) => f.kind === "team").map((f) => f.id)
-  );
-  const followedCountries = new Set(
-    follows.filter((f) => f.kind === "country").map((f) => f.id)
-  );
-  // Cap is 1 (a single "discovery" row) only for a user with NO follows
-  // at all, so a fresh user doesn't get an ESPN-dump of random finals.
-  // Previously this keyed on NBA teams alone, which wrongly treated a
-  // country-only (Summer Soccer) follower as un-followed.
-  const hasAnyFollow = follows.length > 0;
+  const personal = personalFinalMatchers(follows);
 
   // Both sports flow into one ranked list. Quiet Wrap was NBA-only until
-  // now — Summer Soccer finals never reached it because the function
-  // never received the WC feed. `personal` (a followed team/country is in
-  // the match) floats to the top; within a tier the most recent comes
-  // first, so a soccer final from today can sit above last night's NBA.
+  // Summer Soccer finals were wired into the same path. The newest personal
+  // final wins regardless of sport, so today's soccer final can sit above
+  // last night's NBA game.
   type Entry =
     | { source: "nba"; ms: number; personal: boolean; g: NBAGame }
     | { source: "wc"; ms: number; personal: boolean; g: WCGameLite };
@@ -1181,7 +1319,7 @@ function buildQuietWrap(
     .map((g) => ({
       source: "nba",
       ms: new Date(g.date).getTime(),
-      personal: [...followedTeams].some((abbr) => gameIncludesTeam(g, abbr)),
+      personal: personal.nba(g),
       g,
     }));
 
@@ -1190,24 +1328,17 @@ function buildQuietWrap(
     .map((g) => ({
       source: "wc",
       ms: new Date(g.date).getTime(),
-      personal: [...followedCountries].some((c) => gameIncludesCountry(g, c)),
+      personal: personal.wc(g),
       g,
     }));
 
-  const ranked = [...nbaEntries, ...wcEntries].sort((a, b) =>
-    a.personal !== b.personal ? (a.personal ? -1 : 1) : b.ms - a.ms
-  );
-
-  const cap = hasAnyFollow ? 3 : 1;
-
-  // Today's contract is "only what you follow" (external UX review 2026-07-15).
-  // For a user with follows, show ONLY their personal finals — never fill the
-  // remaining slots with unrelated games. A user who follows nothing gets one
-  // recent final as a discovery taste (there's nothing personal to show).
-  const selected = (hasAnyFollow ? ranked.filter((e) => e.personal) : ranked).slice(
-    0,
-    cap
-  );
+  // Today's contract is "only what you follow". There is no discovery fill:
+  // a fresh user sees no wrap, and a returning user never gets unrelated
+  // finals just because fewer than three personal games have wrapped.
+  const selected = [...nbaEntries, ...wcEntries]
+    .filter((e) => e.personal)
+    .sort((a, b) => b.ms - a.ms)
+    .slice(0, 3);
 
   return selected.map<QuietWrapItem>((e) => {
     const dayLabel = quietWrapDayLabel(e.g.date, now);
@@ -1227,7 +1358,7 @@ function buildQuietWrap(
         context: "Full time.",
         spoilerSubject: matchup,
         kind: "final",
-        href: `/game/${e.g.id}`,
+        href: withGameOrigin(`/game/${e.g.id}`, "today"),
       };
     }
 
@@ -1255,7 +1386,7 @@ function buildQuietWrap(
       context: "Final.",
       spoilerSubject: g.matchup,
       kind: isSeriesClinch ? "series" : "final",
-      href: `/game/${g.id}`,
+      href: withGameOrigin(`/game/${g.id}`, "today"),
     };
   });
 }
@@ -1567,7 +1698,7 @@ function pickClosing(
   if (!hasLive && !hasUpcoming && champion && champion.decidedAt >= tournamentWindowMs) {
     const followsChampion = follows.some(
       (f) =>
-        (f.kind === "country" || f.kind === "team") &&
+        f.kind === "country" &&
         f.id.toUpperCase() === champion.code
     );
     return {
@@ -1578,6 +1709,7 @@ function pickClosing(
       detail: "We'll be back when the next moment matters.",
       dots: [],
       champion: followsChampion ? undefined : champion,
+      championParticipantCodes: [champion.awayCode, champion.homeCode],
     };
   }
 
@@ -1753,7 +1885,7 @@ function buildPinnedSummary(
         href:
           top.status === "unresolved"
             ? "/watching"
-            : `/game/${top.gameId}`,
+            : withGameOrigin(`/game/${top.gameId}`, "today"),
       };
       break;
     }
@@ -1774,7 +1906,8 @@ function buildPinnedSummary(
 // The desktop scoreboard: the user's followed games that are live now or
 // coming today, score-forward. Live tiles come from the raw feeds (real
 // scores); upcoming-today tiles reuse the already-built Up Next list.
-// "Followed" = pinned, a team/country in the game, or a covering tournament.
+// "Followed" = pinned, a direct team/country, an exact series matchup, or a
+// covering tournament.
 function buildScoreboard(
   nba: NBAGame[],
   wc: WCGameLite[],
@@ -1782,23 +1915,24 @@ function buildScoreboard(
   pinned: PinnedGame[]
 ): ScoreboardTile[] {
   const pinnedIds = new Set(pinned.map((p) => p.gameId));
-  const codes = new Set<string>();
+  const nbaFollowCoverage = buildNBAFollowCoverage(follows);
+  const wcCodes = new Set<string>();
   let wcTour = false;
   let nbaTour = false;
   for (const f of follows) {
-    if (f.kind === "team" || f.kind === "country") codes.add(f.id.toUpperCase());
-    else if (f.kind === "series")
-      f.id.split("-").forEach((c) => codes.add(c.toUpperCase()));
+    if (f.kind === "country") wcCodes.add(f.id.toUpperCase());
     else if (f.kind === "tournament") {
-      if (getTournament(f.id)?.accent === "var(--wc)") wcTour = true;
-      else nbaTour = true;
+      const accent = getTournament(f.id)?.accent;
+      if (accent === "var(--wc)") wcTour = true;
+      if (accent === "var(--nba)") nbaTour = true;
     }
   }
   const covered = (away: string, home: string, sport: "nba" | "wc", id: string) =>
     pinnedIds.has(id) ||
     (sport === "wc" ? wcTour : nbaTour) ||
-    codes.has(away.toUpperCase()) ||
-    codes.has(home.toUpperCase());
+    (sport === "wc"
+      ? wcCodes.has(away.toUpperCase()) || wcCodes.has(home.toUpperCase())
+      : nbaGameMatchesFollowCoverage(nbaFollowCoverage, away, home));
   const leadOf = (a: number, h: number): "away" | "home" | null =>
     a > h ? "away" : h > a ? "home" : null;
 
@@ -1817,7 +1951,7 @@ function buildScoreboard(
       status: "live",
       statusLine: g.statusText || "Live",
       stageLine: g.gameContext ? `NBA · ${g.gameContext}` : "NBA",
-      href: `/game/${g.id}`,
+      href: withGameOrigin(`/game/${g.id}`, "today"),
       lead: leadOf(g.away.score, g.home.score),
     });
   }
@@ -1834,7 +1968,7 @@ function buildScoreboard(
       status: "live",
       statusLine: g.statusText || "Live",
       stageLine: g.stage ? `Summer Soccer · ${g.stage}` : "Summer Soccer",
-      href: `/game/${g.id}`,
+      href: withGameOrigin(`/game/${g.id}`, "today"),
       lead: leadOf(g.away.score, g.home.score),
     });
   }
@@ -1958,9 +2092,13 @@ export function buildTodayPayload({
   // wider window's past finals are dropped — only the forward games stay.
   const upNext = buildUpNext(recentForWrap, wc, follows, pinned);
   const quietWrap = buildQuietWrap(recentForWrap, wc, follows, now);
+  const recapFinals = buildRecapFinals(recentForWrap, wc, follows, now);
   const reminder = buildReminder(follows, now);
 
-  const hasLive = nba.some((g) => g.status === "live") || wc.some((g) => g.status === "live");
+  const scoreboard = buildScoreboard(nba, wc, follows, pinned);
+  // The feed can contain unrelated live games. Today state and calm endings
+  // key off the user's personal live slate, not the provider-wide feed.
+  const hasLive = scoreboard.length > 0;
   const hasUpcoming = upNext.length > 0;
   // A personal game scheduled for *tonight* (same calendar day as now)
   // counts as live-stakes context, even if tipoff hasn't happened yet.
@@ -1970,20 +2108,19 @@ export function buildTodayPayload({
   // real-world session: NYK vs SA was listed in NEXT UP with the
   // "TONIGHT" eyebrow, and the headline still said "Quiet for now."
   const hasTonightUpcoming = upNext.some((item) => item.isToday);
-  const closing = pickClosing(recentForWrap, follows, hasLive, hasUpcoming, now, champion);
-  const pinnedSummary = buildPinnedSummary(nba, recentForWrap, wc, pinned);
-  // Quiet Wrap intentionally shows both today's "Earlier" finals AND
-  // yesterday's finals for context, but the Quiet Recap moment is
-  // strictly about *tonight's* slate. Count only games that finished
-  // today (local time), via formatGameDay's "Tonight" branch.
-  // Use recentForWrap, not nba: ESPN drops finals from the current-week feed a
-  // few hours after they end, so a late-night opener — the exact moment the
-  // once-per-night recap exists for — would silently never fire. Quiet Wrap
-  // already reads recentForWrap, so this keeps the two in agreement.
-  const tonightFinals = recentForWrap.filter(
-    (g) => g.status === "final" && formatGameDay(g.date, now) === "Tonight"
+  const closing = pickClosing(
+    recentForWrap,
+    follows,
+    hasLive,
+    hasUpcoming,
+    now,
+    champion
   );
-  const hasTonightFinals = tonightFinals.length > 0;
+  const pinnedSummary = buildPinnedSummary(nba, recentForWrap, wc, pinned);
+  // Recap truth is untruncated and structured. Quiet Wrap is a three-row
+  // presentation list whose NBA eyebrows can include "Game N"; neither its
+  // cap nor its copy should decide whether tonight's personal slate wrapped.
+  const hasTonightFinals = recapFinals.length > 0;
   const hasFinals = quietWrap.length > 0;
   const isQuietDay = !hasLive && !hasUpcoming && !hasFinals;
   // Resting state (design C): nothing live right now, no game tonight,
@@ -1999,7 +2136,7 @@ export function buildTodayPayload({
   // Slate complete: nothing live, nothing upcoming, but at least one
   // game finished tonight. Yesterday's finals don't trigger the recap.
   const slateComplete = !hasLive && !hasUpcoming && hasTonightFinals;
-  const finalsCount = slateComplete ? tonightFinals.length : 0;
+  const finalsCount = slateComplete ? recapFinals.length : 0;
 
   return {
     hero,
@@ -2011,10 +2148,11 @@ export function buildTodayPayload({
     restingState,
     slateComplete,
     finalsCount,
+    recapFinals,
     closing,
     pinnedSummary,
     knockoutMoments: buildKnockoutMoments(wc, follows),
-    scoreboard: buildScoreboard(nba, wc, follows, pinned),
+    scoreboard,
     reliancePrompt: buildReliancePrompt(recentForWrap, wc, follows, now),
   };
 }
@@ -2056,7 +2194,12 @@ export function buildKnockoutMoments(
     const next = nextStageLabel(r.stageKey);
     items.push({
       id: `ko:${game.id}:${code}`,
+      gameId: game.id,
       countryCode: code,
+      opponentCode:
+        game.away.abbreviation === code
+          ? game.home.abbreviation
+          : game.away.abbreviation,
       countryName: getCountry(code)?.name ?? code,
       outcome,
       stageLabel: game.stage,

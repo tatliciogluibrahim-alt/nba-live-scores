@@ -4,7 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { Spoiler } from "../spoiler/Spoiler";
-import { useNoSpoilers } from "../providers";
+import {
+  GameSpoilerScope,
+  useEffectiveNoSpoilers,
+  useReveal,
+} from "../spoiler/reveal";
 import { getTeam } from "../following/data/teams";
 import type { SeriesDot, SeriesDotState } from "./series-data";
 
@@ -133,8 +137,17 @@ function formatDate(iso: string | undefined): string | null {
   }
 }
 
-export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
-  const noSpoilers = useNoSpoilers();
+export function SevenDotStrip({
+  dots,
+  hidden,
+}: {
+  dots: SeriesDot[];
+  /** Series-level hidden decision. Omit inside a game spoiler scope. */
+  hidden?: boolean;
+}) {
+  const scopedHidden = useEffectiveNoSpoilers();
+  const noSpoilers = hidden ?? scopedHidden;
+  const { isRevealed } = useReveal();
   const [selected, setSelected] = useState<number | null>(null);
 
   const selectedDot =
@@ -155,8 +168,10 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
             (display === "live" || display === "next");
           const breathing = display === "live";
           const isSelected = selected === dot.number;
+          const dotHidden =
+            noSpoilers && !(dot.gameId && isRevealed(dot.gameId));
           const dotLabel =
-            display === "played" && !noSpoilers && dot.winnerCode
+            display === "played" && !dotHidden && dot.winnerCode
               ? dot.winnerCode.toUpperCase()
               : String(dot.number);
 
@@ -191,7 +206,7 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
             </span>
           );
 
-          const aria = ariaLabel(dot, display, noSpoilers);
+          const aria = ariaLabel(dot, display, dotHidden);
 
           // Played dots become buttons that toggle the inline detail
           // card below the strip. Tap-same-dot-again to collapse,
@@ -239,7 +254,11 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
       {/* Inline detail card — only for played dots. Renders the score
           through <Spoiler> so No-Spoilers mode still gates the reveal. */}
       {selectedDot && selectedIsPlayed ? (
-        <PlayedGameDetail dot={selectedDot} onClose={() => setSelected(null)} />
+        <PlayedGameDetail
+          dot={selectedDot}
+          hidden={noSpoilers}
+          onClose={() => setSelected(null)}
+        />
       ) : null}
     </div>
   );
@@ -247,9 +266,11 @@ export function SevenDotStrip({ dots }: { dots: SeriesDot[] }) {
 
 function PlayedGameDetail({
   dot,
+  hidden,
   onClose,
 }: {
   dot: SeriesDot;
+  hidden: boolean;
   onClose: () => void;
 }) {
   const scores = parseScoreLine(dot.scoreLine);
@@ -258,59 +279,62 @@ function PlayedGameDetail({
     dot.awayCode && dot.homeCode
       ? `${dot.awayCode} vs ${dot.homeCode}`
       : `Game ${dot.number}`;
+  const scopeId = dot.gameId ?? `series-game-${dot.number}`;
 
   return (
-    <article
-      className="mt-3 rounded-[14px] border px-3.5 py-3"
-      style={{
-        background: "var(--paper)",
-        borderColor: "var(--line)",
-      }}
-      aria-label={`Game ${dot.number} details`}
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <Eyebrow>
-          Game {dot.number}
-          {dateLabel ? ` · ${dateLabel}` : ""}
-        </Eyebrow>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close game details"
-          className="no-noise-reveal-focus inline-flex min-h-[44px] items-center text-[11px] underline underline-offset-4 decoration-dotted"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          Close
-        </button>
-      </div>
+    <GameSpoilerScope gameId={scopeId} hidden={hidden}>
+      <article
+        className="mt-3 rounded-[14px] border px-3.5 py-3"
+        style={{
+          background: "var(--paper)",
+          borderColor: "var(--line)",
+        }}
+        aria-label={`Game ${dot.number} details`}
+      >
+        <div className="flex items-baseline justify-between gap-3">
+          <Eyebrow>
+            Game {dot.number}
+            {dateLabel ? ` · ${dateLabel}` : ""}
+          </Eyebrow>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close game details"
+            className="no-noise-reveal-focus inline-flex min-h-[44px] items-center text-[11px] underline underline-offset-4 decoration-dotted"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            Close
+          </button>
+        </div>
 
-      {scores && dot.awayCode && dot.homeCode ? (
-        <p
-          className="mt-2 text-[20px] leading-none"
-          style={{
-            color: "var(--ink)",
-            fontFamily: "var(--font-mono)",
-            fontVariantNumeric: "tabular-nums",
-            fontWeight: 700,
-            letterSpacing: "-0.005em",
-          }}
-        >
-          <Spoiler ariaSubject={subject} gameId={dot.gameId}>
-            {dot.awayCode} {scores[0]} – {scores[1]} {dot.homeCode}
-          </Spoiler>
-        </p>
-      ) : null}
+        {scores && dot.awayCode && dot.homeCode ? (
+          <p
+            className="mt-2 text-[20px] leading-none"
+            style={{
+              color: "var(--ink)",
+              fontFamily: "var(--font-mono)",
+              fontVariantNumeric: "tabular-nums",
+              fontWeight: 700,
+              letterSpacing: "-0.005em",
+            }}
+          >
+            <Spoiler ariaSubject={subject} gameId={scopeId}>
+              {dot.awayCode} {scores[0]} – {scores[1]} {dot.homeCode}
+            </Spoiler>
+          </p>
+        ) : null}
 
-      {dot.gameId ? (
-        <Link
-          href={`/game/${dot.gameId}`}
-          aria-label={`Open Game ${dot.number}`}
-          className="mt-3 inline-flex min-h-[44px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          Open game
-        </Link>
-      ) : null}
-    </article>
+        {dot.gameId ? (
+          <Link
+            href={`/game/${dot.gameId}`}
+            aria-label={`Open Game ${dot.number}`}
+            className="mt-3 inline-flex min-h-[44px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            Open game
+          </Link>
+        ) : null}
+      </article>
+    </GameSpoilerScope>
   );
 }

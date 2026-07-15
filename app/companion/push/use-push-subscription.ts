@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { AlertPreset, FollowKind } from "../state/types";
+import type { AlertSyncItem, SpoilerFollowSyncItem } from "./follow-sync";
 
 // Push subscription hook — encapsulates the full Web Push subscription
 // lifecycle for a device: read existing subscription on mount, subscribe
@@ -23,12 +23,6 @@ const LEGACY_LS_KEY = "nns.push.subscription.v1";
 type StoredSub = {
   endpoint: string;
   keys: { p256dh: string; auth: string };
-};
-
-type AlertSyncItem = {
-  kind: FollowKind;
-  id: string;
-  tier: AlertPreset;
 };
 
 export type PushSubscriptionStatus =
@@ -107,11 +101,11 @@ export function usePushSubscription(): {
   status: PushSubscriptionStatus;
   /** Create a new push subscription. Caller must have already secured
    *  Notification permission — otherwise pushManager.subscribe rejects.
-   *  Pass the current alert-enabled follows + noSpoilers flag so the
-   *  server knows who to fan out which events to and which
-   *  closeness-leaking events to suppress. */
+   *  Pass the current alert-enabled follows + global/selective No-Spoilers
+   *  state so the server knows what to fan out and what to redact. */
   subscribe: (sync?: {
     alerts: AlertSyncItem[];
+    spoilerFollows?: SpoilerFollowSyncItem[];
     noSpoilers: boolean;
     quietHours?: { start: string; end: string };
     remindBeforeMinutes?: number;
@@ -119,13 +113,14 @@ export function usePushSubscription(): {
   }) => Promise<StoredSub | null>;
   /** Tear down the subscription on this device, both server and browser. */
   unsubscribe: () => Promise<void>;
-  /** Push the current per-follow alerts + noSpoilers to the server without
+  /** Push the current per-follow alerts + No-Spoilers state to the server without
    *  re-creating the subscription. Called whenever any of those change
    *  while already subscribed. No-op if not subscribed yet. Returns true
    *  if the server acknowledged the sync (HTTP 2xx), false otherwise —
    *  callers can use this to know whether to retry on next open. */
   syncFollows: (sync: {
     alerts: AlertSyncItem[];
+    spoilerFollows?: SpoilerFollowSyncItem[];
     noSpoilers: boolean;
     quietHours?: { start: string; end: string };
     remindBeforeMinutes?: number;
@@ -209,6 +204,7 @@ export function usePushSubscription(): {
   const subscribe = useCallback(async (
     sync?: {
       alerts: AlertSyncItem[];
+      spoilerFollows?: SpoilerFollowSyncItem[];
       noSpoilers: boolean;
       quietHours?: { start: string; end: string };
       remindBeforeMinutes?: number;
@@ -242,6 +238,7 @@ export function usePushSubscription(): {
           body: JSON.stringify({
             subscription: stored,
             alerts: sync?.alerts ?? [],
+            spoilerFollows: sync?.spoilerFollows ?? [],
             noSpoilers: sync?.noSpoilers ?? false,
             quietHours: sync?.quietHours,
             remindBeforeMinutes: sync?.remindBeforeMinutes,
@@ -302,6 +299,7 @@ export function usePushSubscription(): {
   const syncFollows = useCallback(
     async (sync: {
       alerts: AlertSyncItem[];
+      spoilerFollows?: SpoilerFollowSyncItem[];
       noSpoilers: boolean;
       quietHours?: { start: string; end: string };
       remindBeforeMinutes?: number;
@@ -316,6 +314,7 @@ export function usePushSubscription(): {
           body: JSON.stringify({
             subscription: local,
             alerts: sync.alerts,
+            spoilerFollows: sync.spoilerFollows ?? [],
             noSpoilers: sync.noSpoilers,
             quietHours: sync.quietHours,
             remindBeforeMinutes: sync.remindBeforeMinutes,

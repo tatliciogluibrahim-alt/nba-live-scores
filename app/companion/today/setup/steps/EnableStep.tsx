@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { useFollows, useUserPrefs } from "../../../providers";
 import { usePushSubscription } from "../../../push/use-push-subscription";
+import { buildFollowSyncState } from "../../../push/follow-sync";
+import { markPushPermissionDeniedThisSession } from "../../../push/permission-session";
 import { useIsNative } from "../../../dev/native-detect";
 import type { AlertPreset } from "../../../state/types";
 import { PRESETS } from "../../../state/types";
+import type { SetupPermission } from "../resolve-setup-step";
 
 // Enable Notifications step — extracted from EnableNotificationsCard.
 //
@@ -32,7 +35,11 @@ function trackFunnel(event: string) {
   }
 }
 
-export function EnableStep() {
+export function EnableStep({
+  onPermissionChange,
+}: {
+  onPermissionChange?: (permission: SetupPermission) => void;
+}) {
   const { prefs, dismissNotifPrompt, setDefaultAlertTier } = useUserPrefs();
   const { follows } = useFollows();
   const { subscribe } = usePushSubscription();
@@ -83,12 +90,15 @@ export function EnableStep() {
       const result = await window.Notification.requestPermission();
 
       if (result === "granted") {
+        onPermissionChange?.("granted");
         trackFunnel("permission_granted");
         // Create the Web Push subscription with enabled per-follow alerts
         // so the dispatcher can fanout immediately on the next change.
         try {
+          const followSync = buildFollowSyncState(follows);
           await subscribe({
-            alerts: alertFollows.map((f) => ({ kind: f.kind, id: f.id, tier: f.alertTier })),
+            alerts: followSync.alerts,
+            spoilerFollows: followSync.spoilerFollows,
             noSpoilers: prefs.noSpoilers,
           });
         } catch {
@@ -103,7 +113,7 @@ export function EnableStep() {
             icon: "/app-icon-192.png",
             badge: "/app-icon-192.png",
             tag: "welcome",
-            data: { url: "/" },
+            data: { url: "/app" },
           });
         } catch {
           /* SW unavailable — granted state still holds */
@@ -118,6 +128,8 @@ export function EnableStep() {
           dismissNotifPrompt();
         }, 1800);
       } else if (result === "denied") {
+        markPushPermissionDeniedThisSession();
+        onPermissionChange?.("denied");
         trackFunnel("permission_denied");
         dismissNotifPrompt();
       }

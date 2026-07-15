@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 
 // System D board row — the ink-field sibling of AgateRow. From d-mix
 // `.boardrow`: whole row is mono, 15px/600, cream-on-ink; 10px idx
@@ -17,9 +20,20 @@ type BoardRowProps = {
   score?: ReactNode;
   stamp?: ReactNode;
   href?: string;
+  spoilerGameId?: string;
+  linkLabel?: string;
 };
 
-export function BoardRow({ idx, matchup, score, stamp, href }: BoardRowProps) {
+export function BoardRow({
+  idx,
+  matchup,
+  score,
+  stamp,
+  href,
+  spoilerGameId,
+  linkLabel = "Open details",
+}: BoardRowProps) {
+  const scoreHidden = useEffectiveNoSpoilers(spoilerGameId ?? "");
   const inner = (
     <>
       {idx != null && (
@@ -31,7 +45,17 @@ export function BoardRow({ idx, matchup, score, stamp, href }: BoardRowProps) {
       </span>
 
       {score != null && score !== "" && (
-        <span style={{ fontWeight: 700, fontSize: 17 }}>{score}</span>
+        <span
+          style={{
+            fontWeight: 700,
+            fontSize: 17,
+            ...(spoilerGameId && scoreHidden
+              ? { position: "relative", zIndex: 1 }
+              : {}),
+          }}
+        >
+          {score}
+        </span>
       )}
 
       {stamp}
@@ -54,9 +78,14 @@ export function BoardRow({ idx, matchup, score, stamp, href }: BoardRowProps) {
 
   if (href) {
     return (
-      <Link href={href} className={`${cls} active:opacity-80`} style={rowStyle}>
+      <div className={`relative ${cls}`} style={rowStyle}>
+        <Link
+          href={href}
+          aria-label={linkLabel}
+          className="absolute inset-0 active:opacity-80"
+        />
         {inner}
-      </Link>
+      </div>
     );
   }
 

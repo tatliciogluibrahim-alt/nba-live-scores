@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { isCapacitorNative } from "../dev/native-detect";
+import { buildFollowSyncState } from "../push/follow-sync";
 import { usePushSubscription } from "../push/use-push-subscription";
 import { useFollows, useUserPrefs } from "../providers";
+import { notifyNativePushPermissionChanged } from "../push/native-push-events";
 
 // Stage B push panel — lives in Settings.
 //
@@ -88,10 +90,10 @@ function WebPushPanel() {
     // root sync effect couldn't correct it until a reload). The
     // subscribed-status broadcast then lets PushSyncEffect complete the
     // full pref sync (quiet hours, reminder lead, time zone).
+    const followSync = buildFollowSyncState(follows);
     const sub = await subscribe({
-      alerts: follows
-        .filter((f) => f.alertEnabled)
-        .map((f) => ({ kind: f.kind, id: f.id, tier: f.alertTier })),
+      alerts: followSync.alerts,
+      spoilerFollows: followSync.spoilerFollows,
       noSpoilers: prefs.noSpoilers,
     });
     setWorking(null);
@@ -284,6 +286,21 @@ function NativePushPanel() {
     // synchronously, so it can't cascade.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
+
+    // A denied user leaves the app for iOS Settings. The native shell often
+    // stays mounted, so a mount-only check would keep showing "off" after
+    // they return. Re-read the OS permission on both visibility and focus;
+    // the global APNs bootstrap performs the matching registration recovery.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    const onFocus = () => void refresh();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [refresh]);
 
   async function handleTurnOn() {
@@ -306,8 +323,11 @@ function NativePushPanel() {
 
       const result = await mod.PushNotifications.requestPermissions();
       if (result.receive === "granted") {
-        await mod.PushNotifications.register();
         setPerm("granted");
+        // The global bootstrap owns listener-before-register ordering. A
+        // direct register() here could mint a token before its listener was
+        // attached, silently losing the backend registration.
+        notifyNativePushPermissionChanged();
         setFeedback("Notifications are on. Real pushes will start landing on your lock screen.");
       } else if (result.receive === "denied") {
         setPerm("denied");

@@ -29,8 +29,9 @@ const TOKEN_MIN_LENGTH = 32; // permissive; real tokens are usually 64+
 type Body = {
   token?: unknown;
   // Optional sync payload — same shape /api/push/subscribe accepts.
-  // alerts: SyncedAlert[], noSpoilers: boolean.
+  // alerts: SyncedAlert[], spoilerFollows: SyncedFollow[], noSpoilers: boolean.
   alerts?: unknown;
+  spoilerFollows?: unknown;
   noSpoilers?: unknown;
   lockScreenOffers?: unknown;
 };
@@ -67,8 +68,13 @@ export async function POST(req: Request) {
   try {
     const stored = await upsertIosToken({
       token,
-      alerts: sync.alerts,
+      alerts: sync.alertsProvided ? sync.alerts : undefined,
+      spoilerFollows: sync.selectiveSpoilersProvided
+        ? sync.spoilerFollows
+        : undefined,
+      selectiveSpoilersProvided: sync.selectiveSpoilersProvided,
       noSpoilers: sync.noSpoilers,
+      noSpoilersProvided: sync.noSpoilersProvided,
       lockScreenOffers: sync.lockScreenOffers,
       quietHours: sync.quietHours,
       remindBeforeMinutes: sync.remindBeforeMinutes,

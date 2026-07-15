@@ -5,10 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { AlertSlotToggle } from "../follow/AlertSlotToggle";
-import { useFollows } from "../providers";
-import { PRESETS } from "../state/types";
+import { useFollows, useNoSpoilers } from "../providers";
+import { PRESETS, type Follow } from "../state/types";
 import { getTeam, teamDisplayName } from "../following/data/teams";
 import { buildSeriesKey } from "../../nba/lib/series-keys";
+import { GameSpoilerScope, useReveal } from "../spoiler/reveal";
+import { Spoiler } from "../spoiler/Spoiler";
+import { followHidesParticipants } from "../spoiler/follow-match";
+import { HIDDEN_CAPTIONS } from "../spoiler/safe-text";
 
 // /team/[abbr] — first detail page for NBA team follows. Replaces
 // the Phase 1 fallback that left team rows in FollowCard
@@ -77,6 +81,8 @@ export function TeamClient({ teamAbbr }: { teamAbbr: string }) {
   const team = getTeam(teamAbbr);
   const [games, setGames] = useState<ApiGame[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const { follows } = useFollows();
+  const globalNoSpoilers = useNoSpoilers();
 
   useEffect(() => {
     let cancelled = false;
@@ -186,14 +192,25 @@ export function TeamClient({ teamAbbr }: { teamAbbr: string }) {
           summary={currentSeries.summary}
           wrapped={currentSeries.wrapped}
           seriesKey={currentSeries.key}
+          hidden={
+            globalNoSpoilers ||
+            followHidesParticipants(follows, {
+              teamCodes: [teamAbbr, currentSeries.opponent],
+            })
+          }
         />
       ) : null}
 
       {/* Recent results — final games only, last 5. Renders only when
-          there's data. Calm rows, no spoiler treatment since the team
-          detail page is opt-in. */}
+          there's data. Global and per-follow No-Spoilers both protect
+          the outcome, score, and screen-reader label. */}
       {recentResults.length > 0 ? (
-        <RecentResults games={recentResults} teamAbbr={teamAbbr} />
+        <RecentResults
+          games={recentResults}
+          teamAbbr={teamAbbr}
+          follows={follows}
+          globalNoSpoilers={globalNoSpoilers}
+        />
       ) : null}
 
       <div className="mt-6">
@@ -414,12 +431,14 @@ function CurrentSeriesLink({
   summary,
   wrapped,
   seriesKey,
+  hidden,
 }: {
   teamAbbr: string;
   opponent: string;
   summary: string;
   wrapped: boolean;
   seriesKey: string;
+  hidden: boolean;
 }) {
   return (
     <section className="mt-4">
@@ -449,8 +468,8 @@ function CurrentSeriesLink({
               className="mt-0.5 text-[12px]"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              {summary}
-              {wrapped ? " · Wrapped" : ""}
+              {hidden ? HIDDEN_CAPTIONS.series : summary}
+              {!hidden && wrapped ? " · Wrapped" : ""}
             </p>
           ) : null}
         </div>
@@ -476,10 +495,16 @@ function CurrentSeriesLink({
 function RecentResults({
   games,
   teamAbbr,
+  follows,
+  globalNoSpoilers,
 }: {
   games: ApiGame[];
   teamAbbr: string;
+  follows: readonly Follow[];
+  globalNoSpoilers: boolean;
 }) {
+  const { isRevealed } = useReveal();
+
   return (
     <section className="mt-5">
       <div className="mb-2 flex items-center gap-3">
@@ -494,46 +519,64 @@ function RecentResults({
           const oppCode = isAway ? g.home.abbreviation : g.away.abbreviation;
           const won = teamScore > oppScore;
           const dayLabel = formatGameDay(g.date);
+          const subject = `${teamAbbr} vs ${oppCode}`;
+          const hidden =
+            globalNoSpoilers ||
+            followHidesParticipants(follows, {
+              teamCodes: [teamAbbr, oppCode],
+            });
+          const resultHidden = hidden && !isRevealed(g.id);
+          const ariaLabel = resultHidden
+            ? `Open ${subject} final game detail, result hidden by No-Spoilers mode`
+            : `${teamAbbr} ${won ? "won" : "lost"} vs ${oppCode}, ${teamScore} to ${oppScore}`;
 
           return (
-            <li key={g.id}>
-              <Link
-                href={`/game/${g.id}`}
-                aria-label={`${teamAbbr} ${won ? "won" : "lost"} vs ${oppCode}, ${teamScore} to ${oppScore}`}
-                className="flex items-center justify-between gap-3 rounded-[14px] border px-3 py-2.5 transition active:scale-[0.99]"
+            <GameSpoilerScope key={g.id} gameId={g.id} hidden={hidden}>
+              <li
+                className="relative flex items-center justify-between gap-3 rounded-[14px] border px-3 py-2.5"
                 style={{
                   background: "var(--paper)",
                   borderColor: "var(--line)",
                 }}
               >
-                <div className="min-w-0 flex-1">
-                  <Eyebrow>
-                    {dayLabel} · {isAway ? "@" : "vs"} {oppCode}
-                  </Eyebrow>
-                  <p
-                    className="mt-1 text-[13px]"
+                <Link
+                  href={`/game/${g.id}`}
+                  aria-label={ariaLabel}
+                  className="absolute inset-0 rounded-[14px] transition active:scale-[0.99]"
+                />
+                  <div className="min-w-0 flex-1 pointer-events-none">
+                    <Eyebrow>
+                      {dayLabel} · {isAway ? "@" : "vs"} {oppCode}
+                    </Eyebrow>
+                    <p
+                      className="mt-1 text-[13px]"
+                      style={{
+                        color: "var(--ink)",
+                        fontWeight: 700,
+                        letterSpacing: "-0.005em",
+                      }}
+                    >
+                      {resultHidden ? "Final" : won ? "W" : "L"}
+                    </p>
+                  </div>
+                  <span
+                    className="tabular-nums shrink-0 text-[14px]"
                     style={{
                       color: "var(--ink)",
+                      fontFamily: "var(--font-mono)",
                       fontWeight: 700,
-                      letterSpacing: "-0.005em",
+                      fontVariantNumeric: "tabular-nums",
+                      ...(resultHidden
+                        ? { position: "relative", zIndex: 1 }
+                        : {}),
                     }}
                   >
-                    {won ? "W" : "L"}
-                  </p>
-                </div>
-                <span
-                  className="tabular-nums shrink-0 text-[14px]"
-                  style={{
-                    color: "var(--ink)",
-                    fontFamily: "var(--font-mono)",
-                    fontWeight: 700,
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                >
-                  {teamScore} – {oppScore}
-                </span>
-              </Link>
-            </li>
+                    <Spoiler ariaSubject={subject} gameId={g.id}>
+                      {teamScore} – {oppScore}
+                    </Spoiler>
+                  </span>
+              </li>
+            </GameSpoilerScope>
           );
         })}
       </ul>
@@ -665,7 +708,7 @@ function TeamNotFound({ abbr }: { abbr: string }) {
           Pick team
         </Link>
         <Link
-          href="/"
+          href="/app"
           className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",

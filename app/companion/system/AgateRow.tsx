@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useEffectiveNoSpoilers } from "../spoiler/reveal";
 
 // System D agate row — unboxed, ruled, calm. From d-mix `.agaterow`:
 // 13px padding-block, 1px --line bottom rule, 14px base, 10px mono idx
@@ -21,10 +24,23 @@ type AgateRowProps = {
   score?: ReactNode;
   stamp?: ReactNode;
   href?: string;
+  /** Lets a hidden score rise above the row's sibling overlay link. */
+  spoilerGameId?: string;
+  linkLabel?: string;
   emphasize?: "away" | "home" | null;
 };
 
-export function AgateRow({ idx, main, note, score, stamp, href }: AgateRowProps) {
+export function AgateRow({
+  idx,
+  main,
+  note,
+  score,
+  stamp,
+  href,
+  spoilerGameId,
+  linkLabel = "Open details",
+}: AgateRowProps) {
+  const scoreHidden = useEffectiveNoSpoilers(spoilerGameId ?? "");
   const inner = (
     <>
       {idx != null && (
@@ -54,7 +70,14 @@ export function AgateRow({ idx, main, note, score, stamp, href }: AgateRowProps)
       {score != null && score !== "" && (
         <span
           className="tabular-nums lining-nums"
-          style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 16 }}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontWeight: 700,
+            fontSize: 16,
+            ...(spoilerGameId && scoreHidden
+              ? { position: "relative", zIndex: 1 }
+              : {}),
+          }}
         >
           {score}
         </span>
@@ -75,9 +98,14 @@ export function AgateRow({ idx, main, note, score, stamp, href }: AgateRowProps)
 
   if (href) {
     return (
-      <Link href={href} className={`${cls} active:bg-[var(--paper)]`} style={rowStyle}>
+      <div className={`relative ${cls}`} style={rowStyle}>
+        <Link
+          href={href}
+          aria-label={linkLabel}
+          className="absolute inset-0 active:bg-[var(--paper)]"
+        />
         {inner}
-      </Link>
+      </div>
     );
   }
 

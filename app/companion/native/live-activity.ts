@@ -62,12 +62,26 @@ export type LiveActivityStartInput = {
 
 export type LiveActivityPushTokenEvent = { gameId: string; token: string };
 
+export type ActiveLiveActivity = {
+  gameId: string;
+  /** `null` when an older native build can only report ids. */
+  redacted: boolean | null;
+};
+
 type PluginListenerHandle = { remove: () => void | Promise<void> };
 
 type LiveActivityPlugin = {
   start(opts: LiveActivityStartInput): Promise<{ id: string }>;
   end(opts: { gameId: string }): Promise<void>;
   getActiveGameIds(): Promise<{ gameIds: string[] }>;
+  /** Richer persisted-state read added after v1.0.2. Optional so an older
+   *  App Store build falls back to getActiveGameIds(). */
+  getActiveActivities?(): Promise<{
+    activities: Array<{ gameId: string; redacted: boolean }>;
+  }>;
+  /** Clears the device-local Live Activity reveal flag before a newly-hidden
+   *  activity restarts. Optional for backward compatibility. */
+  clearReveal?(opts: { gameId: string }): Promise<void>;
   /** Preflight: are Live Activities enabled in iOS Settings? Optional so an
    *  older native build shipped before this method degrades to `null`
    *  (unknown) rather than crashing the dispatch. */
@@ -144,14 +158,17 @@ export async function areLiveActivitiesEnabled(): Promise<boolean | null> {
   }
 }
 
-/** End the Live Activity for a game (final / unpinned). No-op off-native. */
-export async function endLiveActivity(gameId: string): Promise<void> {
+/** End the Live Activity for a game (final / unpinned). Returns false when
+ *  native cleanup did not complete, so callers retain state and retry. */
+export async function endLiveActivity(gameId: string): Promise<boolean> {
   const plugin = getPlugin();
-  if (!plugin) return;
+  if (!plugin) return false;
   try {
     await plugin.end({ gameId });
+    return true;
   } catch (err) {
     console.warn("[LiveActivity] end failed:", err);
+    return false;
   }
 }
 
@@ -168,6 +185,53 @@ export async function getActiveLiveActivityGameIds(): Promise<string[]> {
   } catch (err) {
     console.warn("[LiveActivity] getActiveGameIds failed:", err);
     return [];
+  }
+}
+
+/** Active ActivityKit games plus their static redaction attribute. Newer
+ *  native builds return the full shape. Older builds reject the unknown
+ *  method, so we fall back to ids with `redacted: null`; the reconcile loop
+ *  then performs one safe restart to establish the current preference. */
+export async function getActiveLiveActivities(): Promise<ActiveLiveActivity[]> {
+  const plugin = getPlugin();
+  if (!plugin) return [];
+  try {
+    if (typeof plugin.getActiveActivities === "function") {
+      const res = await plugin.getActiveActivities();
+      if (Array.isArray(res?.activities)) {
+        return res.activities
+          .filter((item) => typeof item?.gameId === "string" && item.gameId)
+          .map((item) => ({
+            gameId: item.gameId,
+            redacted: Boolean(item.redacted),
+          }));
+      }
+    }
+  } catch {
+    // Older native build. Fall through to the id-only method.
+  }
+
+  const ids = await getActiveLiveActivityGameIds();
+  return ids.map((gameId) => ({ gameId, redacted: null }));
+}
+
+/** Forget a prior lock-screen reveal when No-Spoilers is newly enabled for
+ *  the game. False means this native build cannot guarantee the reset, so a
+ *  redacted replacement must not start. */
+export async function clearLiveActivityReveal(
+  gameId: string
+): Promise<boolean> {
+  const plugin = getPlugin();
+  if (!plugin) return false;
+  try {
+    if (typeof plugin.clearReveal !== "function") return false;
+    await plugin.clearReveal({ gameId });
+    return true;
+  } catch (err) {
+    // An older native proxy can expose any property as a callable function
+    // and then reject the unknown method. Report false so privacy wins.
+    console.warn("[LiveActivity] clearReveal unavailable:", err);
+    return false;
   }
 }
 

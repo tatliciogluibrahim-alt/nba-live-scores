@@ -6,8 +6,9 @@ import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { SecHead } from "../system/SecHead";
 import { AlertSlotToggle } from "../follow/AlertSlotToggle";
-import { useEffectiveNoSpoilers } from "../spoiler/reveal";
-import { useFollows } from "../providers";
+import { useReveal } from "../spoiler/reveal";
+import { useFollows, useNoSpoilers } from "../providers";
+import { followHidesParticipants } from "../spoiler/follow-match";
 import { PRESETS } from "../state/types";
 import {
   getTournament,
@@ -234,8 +235,28 @@ function SeasonWrappedBanner({
 // uses). The champion is the frozen value, so it survives the final aging
 // out of the live feed.
 function WCConcludedBanner() {
-  const { champion } = useWCSchedule();
-  const hideChampion = useEffectiveNoSpoilers(champion?.gameId);
+  const { champion, fixtures } = useWCSchedule();
+  const globalNoSpoilers = useNoSpoilers();
+  const { follows } = useFollows();
+  const { isRevealed } = useReveal();
+  const finalFixture = champion
+    ? fixtures.find((fixture) => fixture.id === champion.gameId)
+    : null;
+  const followHidden = champion
+    ? followHidesParticipants(follows, {
+        countryCodes: finalFixture
+          ? [
+              finalFixture.away.abbreviation,
+              finalFixture.home.abbreviation,
+            ]
+          : [champion.awayCode, champion.homeCode],
+      })
+    : false;
+  const hideChampion = Boolean(
+    champion &&
+      (globalNoSpoilers || followHidden) &&
+      !isRevealed(champion.gameId)
+  );
   if (champion && !hideChampion) {
     return (
       <SeasonWrappedBanner
@@ -450,6 +471,8 @@ function AlertStatePill({ tournamentId }: { tournamentId: string }) {
 function NBAPlayoffsBody() {
   const [games, setGames] = useState<ApiGame[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const globalNoSpoilers = useNoSpoilers();
+  const { follows } = useFollows();
 
   useEffect(() => {
     let cancelled = false;
@@ -635,6 +658,12 @@ function NBAPlayoffsBody() {
             key={s.id}
             s={s}
             idx={String(i + 1).padStart(2, "0")}
+            hidden={
+              globalNoSpoilers ||
+              followHidesParticipants(follows, {
+                teamCodes: [s.a, s.b],
+              })
+            }
           />
         ))}
       </section>
@@ -663,7 +692,15 @@ type NBASeriesRow = {
   hasGameToday: boolean;
 };
 
-function NBASeriesAgateRow({ s, idx }: { s: NBASeriesRow; idx: string }) {
+function NBASeriesAgateRow({
+  s,
+  idx,
+  hidden,
+}: {
+  s: NBASeriesRow;
+  idx: string;
+  hidden: boolean;
+}) {
   const titleA = s.aIsTbd ? "TBD" : s.a;
   const titleB = s.bIsTbd ? "TBD" : s.b;
   const ariaLabel =
@@ -671,7 +708,7 @@ function NBASeriesAgateRow({ s, idx }: { s: NBASeriesRow; idx: string }) {
       ? `Open ${titleA} vs ${titleB} series (matchup not yet decided)`
       : `Open ${titleA} vs ${titleB} series`;
   const momentum =
-    s.aIsTbd || s.bIsTbd
+    hidden || s.aIsTbd || s.bIsTbd
       ? null
       : buildSeriesMomentumLine({
           a: s.a,
@@ -1034,7 +1071,7 @@ function TournamentNotFound({ id }: { id: string }) {
           Pick tournament
         </Link>
         <Link
-          href="/"
+          href="/app"
           className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",

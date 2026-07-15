@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Display } from "../../atoms/Display";
 import { useNoSpoilers } from "../../providers";
+import { useFollowHidesGame, useReveal } from "../../spoiler/reveal";
 import { useClosingDismissed } from "./use-closing-dismissed";
 import { useExit } from "../../hooks/use-exit";
 import { WCShareModal } from "../../share/WCShareModal";
@@ -27,7 +28,13 @@ import type { KnockoutMomentItem } from "../today-data";
 // closes plainly. Voice: no hype, no FOMO, calm. Dismissible per moment.
 
 export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
-  const noSpoilers = useNoSpoilers();
+  const globalNoSpoilers = useNoSpoilers();
+  const followHidden = useFollowHidesGame({
+    countryCodes: [moment.countryCode, moment.opponentCode],
+  });
+  const { isRevealed } = useReveal();
+  const noSpoilers =
+    (globalNoSpoilers || followHidden) && !isRevealed(moment.gameId);
   const { hydrated, isDismissed, dismiss } = useClosingDismissed();
   const [shareOpen, setShareOpen] = useState(false);
   // Dismiss collapses + fades out before unmounting.
@@ -73,7 +80,13 @@ export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
             borderBottom: "1px solid var(--line)",
             padding: "12px 0 14px",
           }}
-          aria-label={advanced ? "Knockout advancement" : "Knockout exit"}
+          aria-label={
+            noSpoilers
+              ? "Knockout result hidden by No-Spoilers mode"
+              : advanced
+                ? "Knockout advancement"
+                : "Knockout exit"
+          }
         >
           {/* Eyebrow row — stage · outcome, dismiss at the row edge. */}
           <div className="mb-2 flex items-baseline justify-between">

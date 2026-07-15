@@ -5,6 +5,7 @@ import Capacitor
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
+    private var pendingAppDestination: URL?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         return true
@@ -26,6 +27,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        deliverPendingAppDestination()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
@@ -33,9 +35,41 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        if let destination = appDestination(from: url) {
+            pendingAppDestination = destination
+            deliverPendingAppDestination()
+            return true
+        }
         // Called when the app was launched with a url. Feel free to add additional processing here,
         // but if you want the App API to support tracking app url opens, make sure to keep this call
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
+    }
+
+    // WidgetKit and ActivityKit use a private app scheme so taps always open
+    // the installed wrapper rather than Safari. Only the two destinations
+    // those surfaces need are accepted, then converted back to the canonical
+    // production URL loaded inside the existing Capacitor WebView.
+    private func appDestination(from url: URL) -> URL? {
+        guard url.scheme?.lowercased() == "nonoisescores",
+              url.host?.lowercased() == "app" else { return nil }
+        let path = url.path.isEmpty ? "/app" : url.path
+        guard path == "/app" || path.hasPrefix("/game/") else { return nil }
+        var destination = URLComponents()
+        destination.scheme = "https"
+        destination.host = "nonoisescores.app"
+        destination.path = path
+        destination.query = url.query
+        destination.fragment = url.fragment
+        return destination.url
+    }
+
+    private func deliverPendingAppDestination() {
+        guard let destination = pendingAppDestination,
+              let controller = window?.rootViewController as? NoNoiseViewController else {
+            return
+        }
+        pendingAppDestination = nil
+        controller.openAppURL(destination)
     }
 
     func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {

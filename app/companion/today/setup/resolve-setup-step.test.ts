@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { resolveSetupStep, type SetupState } from "./resolve-setup-step";
+import {
+  resolveSetupStep,
+  resolveTodayVisitAsk,
+  shouldShowBriefPrompt,
+  type SetupState,
+  type SetupStepId,
+} from "./resolve-setup-step";
 
 // Base = a fully set-up returning user on Android with alerts granted.
 // Each test overrides only the fields it cares about.
@@ -34,6 +40,27 @@ describe("resolveSetupStep", () => {
 
   it("has follows on native -> null", () => {
     expect(resolveSetupStep(state({ isNative: true }))).toBeNull();
+  });
+
+  it("native denial -> recover", () => {
+    expect(
+      resolveSetupStep(
+        state({ isNative: true, platform: "ios", permission: "denied" })
+      )
+    ).toBe("recover");
+  });
+
+  it("dismissed native recovery -> null", () => {
+    expect(
+      resolveSetupStep(
+        state({
+          isNative: true,
+          platform: "ios",
+          permission: "denied",
+          recoverDismissed: true,
+        })
+      )
+    ).toBeNull();
   });
 
   it("iOS Safari, not installed, default -> install", () => {
@@ -112,5 +139,43 @@ describe("resolveSetupStep", () => {
     expect(
       resolveSetupStep(state({ platform: "ios", standalone: true, permission: "unsupported" }))
     ).toBeNull();
+  });
+});
+
+describe("shouldShowBriefPrompt", () => {
+  it("waits until setup state has resolved", () => {
+    expect(shouldShowBriefPrompt(false, null)).toBe(false);
+  });
+
+  it.each<SetupStepId>([
+    "follow",
+    "install",
+    "enable",
+    "recover",
+    "installOptional",
+  ])("suppresses the Brief while the %s setup ask is showing", (step) => {
+    expect(shouldShowBriefPrompt(true, step)).toBe(false);
+  });
+
+  it("allows the Brief only when no setup ask remains", () => {
+    expect(shouldShowBriefPrompt(true, null)).toBe(true);
+  });
+});
+
+describe("resolveTodayVisitAsk", () => {
+  it("waits for setup resolution", () => {
+    expect(resolveTodayVisitAsk(false, null, true)).toBeNull();
+  });
+
+  it("prioritizes the current setup step over later asks", () => {
+    expect(resolveTodayVisitAsk(true, "enable", true)).toBe("setup:enable");
+  });
+
+  it("shows first-follow education before the Brief", () => {
+    expect(resolveTodayVisitAsk(true, null, true)).toBe("firstFollow");
+  });
+
+  it("uses the Brief only when no activation ask remains", () => {
+    expect(resolveTodayVisitAsk(true, null, false)).toBe("brief");
   });
 });

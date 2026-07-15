@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFollows, usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import { FEED_KEYS, readFeed, writeFeed } from "../hooks/feed-cache";
+import { localDayKey } from "../hooks/local-day";
 import {
   buildTodayPayload,
   type NBAGame,
@@ -25,6 +26,7 @@ const EMPTY: TodayPayload = {
   restingState: false,
   slateComplete: false,
   finalsCount: 0,
+  recapFinals: [],
   closing: null,
   pinnedSummary: {
     total: 0,
@@ -35,8 +37,8 @@ const EMPTY: TodayPayload = {
     primary: null,
   },
   knockoutMoments: [],
-    scoreboard: [],
-    reliancePrompt: null,
+  scoreboard: [],
+  reliancePrompt: null,
 };
 
 // Polling cadence per STRATEGY.md: 10s when a live game is on the surface,
@@ -138,6 +140,24 @@ export function useTodayData() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(
     () => data.updatedAt !== null
   );
+  // Today composition is calendar-sensitive even when both feeds are byte-
+  // identical. Re-key at local midnight (and immediately on app resume) so
+  // the masthead can never advance to a new date while yesterday's slate
+  // remains memoized underneath it.
+  const [dayKey, setDayKey] = useState(() => localDayKey(new Date()));
+
+  useEffect(() => {
+    const refreshDay = () => setDayKey(localDayKey(new Date()));
+    const tick = setInterval(refreshDay, 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshDay();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(tick);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
 
   // Single fetch+commit path shared by the poll loop and the manual
   // refetch. `isCancelled` guards the post-await setState (the poll
@@ -212,6 +232,9 @@ export function useTodayData() {
 
   const payload = useMemo<TodayPayload>(() => {
     if (!hasLoadedOnce || !followsHydrated || !pinnedHydrated) return EMPTY;
+    // Explicit invalidation token: feed bytes can remain unchanged across
+    // midnight, but the meaning of "Today", "Earlier", and "Next" cannot.
+    void dayKey;
     return buildTodayPayload({
       nba: data.nba,
       nbaRecent: data.nbaRecent,
@@ -219,6 +242,7 @@ export function useTodayData() {
       follows,
       pinned,
       champion: data.champion,
+      now: new Date(),
     });
   }, [
     hasLoadedOnce,
@@ -228,6 +252,7 @@ export function useTodayData() {
     data.nbaRecent,
     data.wc,
     data.champion,
+    dayKey,
     follows,
     pinned,
   ]);

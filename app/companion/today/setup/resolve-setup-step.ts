@@ -32,9 +32,14 @@ export function resolveSetupStep(s: SetupState): SetupStepId | null {
     return s.firstRunDismissed ? null : "follow";
   }
 
-  // Native owns its own permission + install model (App Store install,
-  // Capacitor permission prompt). No web setup steps there.
-  if (s.isNative) return null;
+  // Native owns its own install + initial permission model, but a prior iOS
+  // denial still needs a calm recovery path. The hook supplies the real APNs
+  // permission state; no web install/enable steps run inside the wrapper.
+  if (s.isNative) {
+    return s.permission === "denied" && !s.recoverDismissed
+      ? "recover"
+      : null;
+  }
 
   // 2. Install — iOS blocking. iOS web push does not work until the app is
   // on the home screen, so this comes before the alerts ask. Independent of
@@ -71,4 +76,34 @@ export function resolveSetupStep(s: SetupState): SetupStepId | null {
   }
 
   return null;
+}
+
+/** The Daily Brief is a secondary ask. Keep it out of Today until setup has
+ *  resolved and there is no setup card competing for the visit. */
+export function shouldShowBriefPrompt(
+  setupResolved: boolean,
+  step: SetupStepId | null
+): boolean {
+  return setupResolved && step === null;
+}
+
+export type TodayVisitAsk =
+  | `setup:${SetupStepId}`
+  | "firstFollow"
+  | "brief";
+
+/**
+ * Pick the only activation ask allowed on a Today visit. The caller latches
+ * the returned id for the lifetime of the mounted page, so completing or
+ * dismissing one ask cannot reveal a second one underneath it.
+ */
+export function resolveTodayVisitAsk(
+  setupResolved: boolean,
+  step: SetupStepId | null,
+  firstFollowEducationDue: boolean
+): TodayVisitAsk | null {
+  if (!setupResolved) return null;
+  if (step) return `setup:${step}`;
+  if (firstFollowEducationDue) return "firstFollow";
+  return "brief";
 }

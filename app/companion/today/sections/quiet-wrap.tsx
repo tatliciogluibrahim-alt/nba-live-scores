@@ -124,6 +124,8 @@ function QuietWrapAgateInner({
         </Spoiler>
       }
       href={item.href}
+      spoilerGameId={item.id}
+      linkLabel={`Open ${item.spoilerSubject}`}
     />
   );
 }

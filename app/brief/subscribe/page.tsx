@@ -10,7 +10,7 @@ export const metadata = {
 export default function BriefSubscribePage() {
   return (
     <CompanionFrame desktopNav="detail">
-      <DetailCrumbs backHref="/" backLabel="Today" title="Brief" />
+      <DetailCrumbs backHref="/app" backLabel="Today" title="Brief" />
       <BriefSubscribeClient />
     </CompanionFrame>
   );

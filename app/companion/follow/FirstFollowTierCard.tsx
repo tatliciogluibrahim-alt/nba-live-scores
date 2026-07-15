@@ -39,7 +39,26 @@ const CONFIRMATION_HOLD_MS = 1600;
 
 const TIER_ORDER: AlertPreset[] = ["quiet", "companion", "all"];
 
-export function FirstFollowTierCard() {
+export function isFirstFollowTierEducationDue({
+  followCount,
+  followsHydrated,
+  prefsHydrated,
+  firstFollowEducated,
+}: {
+  followCount: number;
+  followsHydrated: boolean;
+  prefsHydrated: boolean;
+  firstFollowEducated: boolean;
+}): boolean {
+  return (
+    followsHydrated &&
+    prefsHydrated &&
+    followCount === 1 &&
+    !firstFollowEducated
+  );
+}
+
+export function FirstFollowTierCard({ active = true }: { active?: boolean }) {
   const { follows, setFollowAlertTier, hydrated: followsHydrated } = useFollows();
   const {
     prefs,
@@ -70,9 +89,17 @@ export function FirstFollowTierCard() {
   //   3. The educated flag isn't already set.
   //   4. Onboarding is complete (or never started). Onboarding's own
   //      alert step covers the same ground; we don't double up.
-  if (!followsHydrated || !prefsHydrated) return null;
-  if (prefs.firstFollowEducated) return null;
-  if (follows.length !== 1) return null;
+  if (
+    !active ||
+    !isFirstFollowTierEducationDue({
+      followCount: follows.length,
+      followsHydrated,
+      prefsHydrated,
+      firstFollowEducated: prefs.firstFollowEducated === true,
+    })
+  ) {
+    return null;
+  }
 
   const follow = follows[0];
   const identity = resolveFollowIdentity(follow);

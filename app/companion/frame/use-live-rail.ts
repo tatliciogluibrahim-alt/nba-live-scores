@@ -59,13 +59,15 @@ async function fetchWC(): Promise<WCGameLite[]> {
 // "mine" if pinned, in a followed tournament's sport, or one of its codes is
 // a followed team/country (or a leg of a followed series).
 function buildCoverage(follows: Follow[], pinnedIds: Set<string>) {
-  const codes = new Set<string>();
+  const nbaCodes = new Set<string>();
+  const wcCodes = new Set<string>();
   let wcTour = false;
   let nbaTour = false;
   for (const f of follows) {
-    if (f.kind === "team" || f.kind === "country") codes.add(f.id.toUpperCase());
+    if (f.kind === "team") nbaCodes.add(f.id.toUpperCase());
+    else if (f.kind === "country") wcCodes.add(f.id.toUpperCase());
     else if (f.kind === "series")
-      f.id.split("-").forEach((c) => codes.add(c.toUpperCase()));
+      f.id.split("-").forEach((c) => nbaCodes.add(c.toUpperCase()));
     else if (f.kind === "tournament") {
       if (getTournament(f.id)?.accent === "var(--wc)") wcTour = true;
       else nbaTour = true;
@@ -74,8 +76,8 @@ function buildCoverage(follows: Follow[], pinnedIds: Set<string>) {
   return (away: string, home: string, sport: "nba" | "wc", id: string) =>
     pinnedIds.has(id) ||
     (sport === "wc" ? wcTour : nbaTour) ||
-    codes.has(away.toUpperCase()) ||
-    codes.has(home.toUpperCase());
+    (sport === "wc" ? wcCodes : nbaCodes).has(away.toUpperCase()) ||
+    (sport === "wc" ? wcCodes : nbaCodes).has(home.toUpperCase());
 }
 
 export function useLiveRail(): LiveRailPip[] {

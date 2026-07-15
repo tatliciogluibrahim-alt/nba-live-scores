@@ -324,7 +324,7 @@ function TestPushButton({ preview }: { preview: PreviewExample }) {
               icon: "/app-icon-192.png",
               badge: "/app-icon-192.png",
               tag: "test-push",
-              data: { url: "/" },
+              data: { url: "/app" },
             });
             delivered = true;
           } catch {

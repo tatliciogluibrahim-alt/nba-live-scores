@@ -70,6 +70,9 @@ export function Spoiler({
     <button
       type="button"
       onClick={(e) => {
+        // Safety net for legacy rows that still put the reveal inside a link.
+        // The migrated overlay-link rows no longer nest interactive elements.
+        e.preventDefault();
         e.stopPropagation();
         if (gameId) reveal(gameId);
         else setLocalRevealed(true);

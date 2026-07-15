@@ -31,7 +31,9 @@ const TABS: Tab[] = [
 
 function isActive(pathname: string | null, href: string) {
   if (!pathname) return false;
-  if (href === "/") return pathname === "/";
+  // Today has two valid app paths: `/` on the mobile front door and `/app`
+  // as the explicit all-device entry used by cold game-detail fallbacks.
+  if (href === "/") return pathname === "/" || pathname === "/app";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

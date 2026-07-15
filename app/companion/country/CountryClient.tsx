@@ -6,14 +6,16 @@ import { Eyebrow } from "../atoms/Eyebrow";
 import { useCountryData } from "./use-country-data";
 import { CountryPresetSection } from "./CountryPresetSection";
 import { TournamentCountdown } from "./TournamentCountdown";
-import { useFollows } from "../providers";
-import { PRESETS } from "../state/types";
+import { useFollows, useNoSpoilers } from "../providers";
+import { PRESETS, type Follow } from "../state/types";
 import { StakesLine } from "../stakes/StakesLine";
 import { deriveWCGroupStake } from "../stakes/derive-stakes";
 import { SecHead } from "../system/SecHead";
 import { AgateRow } from "../system/AgateRow";
 import { Stamp } from "../system/Stamp";
 import { Spoiler } from "../spoiler/Spoiler";
+import { GameSpoilerScope } from "../spoiler/reveal";
+import { followHidesParticipants } from "../spoiler/follow-match";
 import type { CountryPayload } from "./country-data";
 
 // Single-screen Summer Soccer Country Dashboard. Composition only.
@@ -21,6 +23,7 @@ import type { CountryPayload } from "./country-data";
 export function CountryClient({ countryCode }: { countryCode: string }) {
   const { payload, hydrated, tournamentStarted } = useCountryData(countryCode);
   const { follows } = useFollows();
+  const globalNoSpoilers = useNoSpoilers();
 
   if (!hydrated) {
     return <LoadingShell />;
@@ -55,6 +58,8 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
           tournamentStarted={tournamentStarted}
           alertStateLabel={alertStateLabel}
           alertEnabled={followed?.alertEnabled ?? false}
+          follows={follows}
+          globalNoSpoilers={globalNoSpoilers}
         />
       </div>
 
@@ -83,11 +88,15 @@ function CountryMobile({
   tournamentStarted,
   alertStateLabel,
   alertEnabled,
+  follows,
+  globalNoSpoilers,
 }: {
   payload: NonNullable<CountryPayload>;
   tournamentStarted: boolean;
   alertStateLabel: string | null;
   alertEnabled: boolean;
+  follows: readonly Follow[];
+  globalNoSpoilers: boolean;
 }) {
   const { country, groupRows, pathStages, fixtures, groupStake } = payload;
 
@@ -100,6 +109,9 @@ function CountryMobile({
   const hasStandings = groupRows.some(
     (r) => r.standing && r.standing.played > 0
   );
+  const hideCountryState =
+    globalNoSpoilers ||
+    followHidesParticipants(follows, { countryCodes: [country.id] });
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-2">
@@ -170,16 +182,28 @@ function CountryMobile({
                   variant="outline"
                 />
               );
+            const hideFixture =
+              globalNoSpoilers ||
+              followHidesParticipants(follows, {
+                countryCodes: [country.id, f.opponentCode],
+              });
             return (
-              <AgateRow
+              <GameSpoilerScope
                 key={`${f.id}-${i}`}
-                idx={String(i + 1).padStart(2, "0")}
-                main={matchup}
-                note={prettyStage(f.stage)}
-                score={score}
-                stamp={stamp}
-                href={isReal ? `/game/${f.id}` : undefined}
-              />
+                gameId={String(f.id)}
+                hidden={hideFixture}
+              >
+                <AgateRow
+                  idx={String(i + 1).padStart(2, "0")}
+                  main={matchup}
+                  note={prettyStage(f.stage)}
+                  score={score}
+                  stamp={stamp}
+                  href={isReal ? `/game/${f.id}` : undefined}
+                  spoilerGameId={score ? String(f.id) : undefined}
+                  linkLabel={`Open ${matchup}`}
+                />
+              </GameSpoilerScope>
             );
           })}
         </section>
@@ -353,10 +377,16 @@ function CountryMobile({
       </div>
 
       <div className="mt-4">
-        <StakesLine
-          stake={groupStake ?? deriveWCGroupStake(country, tournamentStarted)}
-          ariaSubject={country.name}
-        />
+        <GameSpoilerScope
+          gameId={`country-path:${country.id}`}
+          hidden={hideCountryState}
+        >
+          <StakesLine
+            stake={groupStake ?? deriveWCGroupStake(country, tournamentStarted)}
+            ariaSubject={country.name}
+            revealId={`country-path:${country.id}`}
+          />
+        </GameSpoilerScope>
       </div>
 
       <div className="mt-5">
@@ -449,7 +479,7 @@ function CountryNotFound({ countryCode }: { countryCode: string }) {
           Pick country
         </Link>
         <Link
-          href="/"
+          href="/app"
           className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Display } from "../../atoms/Display";
 import { useNoSpoilers } from "../../providers";
-import { useEffectiveNoSpoilers } from "../../spoiler/reveal";
+import { useFollowHidesGame, useReveal } from "../../spoiler/reveal";
 import { useClosingDismissed } from "./use-closing-dismissed";
 import { useExit } from "../../hooks/use-exit";
 import { MomentRelayButton } from "../../push/MomentRelayButton";
@@ -44,11 +44,28 @@ const monoLink = {
 } as const;
 
 export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
-  const noSpoilers = useNoSpoilers();
+  const globalNoSpoilers = useNoSpoilers();
+  const participantCodes = Array.from(
+    new Set(
+      moment.dots.flatMap((dot) => [dot.awayCode, dot.homeCode])
+    )
+  );
+  const followHidden = useFollowHidesGame({
+    teamCodes: participantCodes,
+    countryCodes:
+      moment.championParticipantCodes ??
+      (moment.champion ? [moment.champion.code] : []),
+  });
+  const noSpoilers = globalNoSpoilers || followHidden;
+  const { isRevealed } = useReveal();
   // The WC wind-down carries the champion. Naming the winner is the ultimate
   // spoiler, so it hides under No-Spoilers behind the same reveal the final
   // score uses; the moment's own headline/detail stay safe/generic.
-  const championHidden = useEffectiveNoSpoilers(moment.champion?.gameId);
+  const championHidden = Boolean(
+    moment.champion &&
+      noSpoilers &&
+      !isRevealed(moment.champion.gameId)
+  );
   const { hydrated, isDismissed, dismiss } = useClosingDismissed();
   // Dismiss collapses + fades the card out before unmounting, so the calm
   // acknowledgment doesn't pop away instantly.
@@ -213,7 +230,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
 
           {/* Primary CTA. At most one. Mono link, not a pill — this row is a
               moment among several, never the screen's sole primary action. */}
-          {moment.primary ? (
+          {moment.primary && !noSpoilers ? (
             <div className="mt-3">
               <Link
                 href={moment.primary.href}

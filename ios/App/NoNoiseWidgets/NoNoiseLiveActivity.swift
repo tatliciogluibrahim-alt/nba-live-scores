@@ -38,6 +38,16 @@ private let nnBg       = Color(hex: "1d1812")   // Live Activity surface
 private let nnHair     = Color.white.opacity(0.12)
 private let nnHairStr  = Color.white.opacity(0.22)
 
+// ActivityKit opens this URL when the user taps the lock-screen tile or
+// Dynamic Island. The game id is part of the Activity's static attributes,
+// so every tile returns to its own detail page rather than the app root.
+private func liveActivityDeepLink(_ gameId: String) -> URL? {
+    guard !gameId.isEmpty else {
+        return URL(string: "nonoisescores://app/app")
+    }
+    return URL(string: "nonoisescores://app/game/\(gameId)")
+}
+
 // MARK: - Per-sport theming
 //
 // accent = the brand sport color LIFTED for legibility on the dark
@@ -307,6 +317,7 @@ struct NoNoiseLiveActivity: Widget {
                 redacted: hideScore,
                 gameId: context.attributes.gameId
             )
+            .widgetURL(liveActivityDeepLink(context.attributes.gameId))
         } dynamicIsland: { context in
             let s = context.state
             let theme = SportTheme.from(context.attributes.sport)
@@ -363,6 +374,7 @@ struct NoNoiseLiveActivity: Widget {
                     .foregroundStyle(nnInk)
             }
             .keylineTint(theme.accent)
+            .widgetURL(liveActivityDeepLink(context.attributes.gameId))
         }
     }
 }

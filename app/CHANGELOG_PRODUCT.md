@@ -2,6 +2,53 @@
 
 ---
 
+## P0/P1 trust and continuity pass — 2026-07-15
+
+App-wide hardening of the two highest-priority UX classes: trust failures
+(wrong content, false state, spoiler leaks) and continuity failures (wrong
+return paths, repeated asks, lost context).
+
+- **Today is strictly personal.** Hero, live state, Quiet Wrap, recap, and
+  World Cup kickoff content now require a matching team, country, series, or
+  tournament follow. Unrelated live games and finals no longer leak into the
+  personal surface. A visit-level ask latch gives Setup, first-follow tier
+  education, and the Brief one shared slot; completing one never reveals a
+  second ask underneath it.
+- **Navigation preserves intent.** Today, Schedule, and Watching game links
+  carry their origin. Game detail names the real source, uses history when it
+  exists, and falls back to `/app` on a cold push/widget open. Watching's empty
+  and browse actions now lead to the full Schedule. Schedule scope, competition, and
+  By day / Bracket / Groups view live in the URL, survive a game-detail round
+  trip or cold detail reload, and hydrate safely on a direct query URL.
+- **No-Spoilers is sealed end to end.** One shared sport-aware matcher now
+  covers team, country, and series follows across Today, Schedule, team,
+  country, series, tournament, Watching, widgets, and Live Activities.
+  Scores, result language, series dots, champion language, and accessible
+  labels respect global or selective hiding. Sport codes cannot cross-match,
+  and a hidden series applies only to that exact two-team matchup. Re-enabling
+  hiding clears any session reveal, while revealing one game never exposes the
+  other results in its series. Standings and advancement structure remain
+  visible by the existing L7 doctrine.
+- **Push and lock-screen state tell the truth.** Selective hiding now reaches
+  web push and APNs; close-game and comeback alerts stay suppressed while a
+  matching follow is hidden. Live Activities reconcile to the newest three
+  eligible games, clear stale reveal state before a hidden restart, and stop
+  claiming overflow games are on the lock screen. Privacy tightening clears a
+  stale widget or unredacted Live Activity before network fetches, and legacy
+  sync payloads cannot erase newer selective choices. Notification, widget,
+  and Live Activity taps route to the correct game in the installed app; offer
+  pushes add the game before opening it.
+- **Resume paths recover cleanly.** Today rolls over at the local day boundary;
+  Schedule refreshes competition phases on time and app resume. Native
+  notification permission refreshes after Settings and can recover on resume,
+  while an initial denial does not immediately trigger a second ask in the
+  same visit. The onboarding sports-ball loader now honors reduced motion.
+- Gate: 58 test files / 560 tests, lint and standalone TypeScript clean,
+  production web build 93 pages, phone-width interaction and visual QA, and
+  native app + widget Xcode build.
+
+---
+
 ## Moment Relay + reliance loop — retention & truth loop — 2026-07-15
 
 Two plays from the external product review (ChatGPT), which named

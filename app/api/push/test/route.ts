@@ -31,7 +31,7 @@ export const maxDuration = 30; // seconds — covers worst-case delayMs
 const DEFAULT_PAYLOAD: PushPayload = {
   title: "Test push from No Noise Scores.",
   body: "If you see this with the app closed, push is wired end-to-end.",
-  url: "/",
+  url: "/app",
   tag: "test-push",
 };
 

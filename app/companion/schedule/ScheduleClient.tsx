@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useFollows, useNoSpoilers } from "../providers";
 import { useWCSchedule, WCGroups } from "../tournament/WCGroups";
 import { ByDayView } from "../tournament/WCBracket";
@@ -18,6 +19,10 @@ import {
   type ScheduleCompetition,
   type ScheduleView,
 } from "./competitions";
+import {
+  scheduleHref,
+  type ScheduleRouteState,
+} from "./schedule-route";
 
 // The Schedule surface (S1 2026-07-06 schedule-ia-waterfall; sports-agnostic
 // 2026-07-14). Contract: how does the whole competition unfold — complete,
@@ -36,13 +41,40 @@ const VIEW_LABELS: Record<ScheduleView, string> = {
   groups: "Groups",
 };
 
-export function ScheduleClient() {
+export function ScheduleClient({
+  scope,
+  competition: selectedId,
+  view: requestedView,
+}: ScheduleRouteState) {
   const { follows } = useFollows();
-  const [scope, setScope] = useState<"following" | "all">("following");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  // Frozen at mount (lazy init keeps render pure). Phase boundaries flip on
-  // the next navigation/refresh, which is fine — they move on the scale of days.
-  const [now] = useState(() => Date.now());
+  const router = useRouter();
+
+  function updateScheduleState(patch: Partial<ScheduleRouteState>) {
+    router.replace(
+      scheduleHref(
+        { scope, competition: selectedId, view: requestedView },
+        patch
+      ),
+      { scroll: false }
+    );
+  }
+  // Competition phases can cross while the native shell remains mounted for
+  // hours. Refresh the lifecycle clock slowly and on resume so a boundary
+  // never requires a manual route remount.
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const refreshNow = () => setNow(Date.now());
+    const tick = setInterval(refreshNow, 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshNow();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(tick);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
 
   const all = activeScheduleCompetitions(follows, now);
   const inScope = scopeCompetitions(all, scope);
@@ -55,6 +87,10 @@ export function ScheduleClient() {
   // changes what's shown (more than one competition exists, or the single one
   // isn't followed so "Following" would be empty).
   const showScope = all.length > 1 || (all.length === 1 && !all[0].followed);
+  const gameReturnTo = scheduleHref(
+    { scope, competition: selectedId, view: requestedView },
+    {}
+  );
 
   return (
     <>
@@ -74,25 +110,35 @@ export function ScheduleClient() {
       </header>
 
       {showScope ? (
-        <ScopeToggle scope={scope} onScope={setScope} />
+        <ScopeToggle
+          scope={scope}
+          onScope={(nextScope) => updateScheduleState({ scope: nextScope })}
+        />
       ) : null}
 
       {inScope.length > 1 ? (
         <CompetitionSwitcher
           competitions={inScope}
           selectedId={selected?.id ?? null}
-          onSelect={setSelectedId}
+          onSelect={(id) => updateScheduleState({ competition: id })}
         />
       ) : null}
 
       {selected ? (
-        <CompetitionBody competition={selected} />
+        <CompetitionBody
+          competition={selected}
+          view={requestedView}
+          onView={(view) => updateScheduleState({ view })}
+          gameReturnTo={gameReturnTo}
+        />
       ) : (
         <IdleState
           liveElsewhere={all.filter(
             (c) => c.status === "live" || c.status === "upcoming"
           )}
-          onSeeAll={() => setScope("all")}
+          onSeeAll={() =>
+            updateScheduleState({ scope: "all", competition: null })
+          }
         />
       )}
     </>
@@ -120,7 +166,9 @@ function ScopeToggle({
           <button
             key={key}
             type="button"
-            onClick={() => onScope(key)}
+            onClick={() => {
+              if (!on) onScope(key);
+            }}
             aria-pressed={on}
             className="uppercase transition active:opacity-70"
             style={{
@@ -187,10 +235,27 @@ function CompetitionSwitcher({
 }
 
 // ── Body dispatch by competition ───────────────────────────────────────
-function CompetitionBody({ competition }: { competition: ScheduleCompetition }) {
+function CompetitionBody({
+  competition,
+  view,
+  onView,
+  gameReturnTo,
+}: {
+  competition: ScheduleCompetition;
+  view: ScheduleView | null;
+  onView: (view: ScheduleView) => void;
+  gameReturnTo: string;
+}) {
   if (competition.views.length > 0) {
     // The only competition with built schedule views today is the World Cup.
-    return <WCScheduleBody views={competition.views} />;
+    return (
+      <WCScheduleBody
+        views={competition.views}
+        requestedView={view}
+        onView={onView}
+        gameReturnTo={gameReturnTo}
+      />
+    );
   }
   if (competition.status === "comingsoon") {
     return <ComingSoonBody competition={competition} />;
@@ -202,13 +267,25 @@ function CompetitionBody({ competition }: { competition: ScheduleCompetition }) 
 }
 
 // ── World Cup body — the existing By day / Bracket / Groups, unchanged ──
-function WCScheduleBody({ views }: { views: ScheduleView[] }) {
+function WCScheduleBody({
+  views,
+  requestedView,
+  onView,
+  gameReturnTo,
+}: {
+  views: ScheduleView[];
+  requestedView: ScheduleView | null;
+  onView: (view: ScheduleView) => void;
+  gameReturnTo: string;
+}) {
   const { fixtures } = useWCSchedule();
   const { follows } = useFollows();
   const noSpoilers = useNoSpoilers();
   const { rounds } = buildBracketRounds(fixtures, followedCountrySet(follows));
-  const [view, setView] = useState<ScheduleView>(views[0]);
-  const activeView = views.includes(view) ? view : views[0];
+  const activeView =
+    requestedView && views.includes(requestedView)
+      ? requestedView
+      : views[0];
 
   return (
     <div className="mt-4">
@@ -238,7 +315,7 @@ function WCScheduleBody({ views }: { views: ScheduleView[] }) {
             <button
               key={key}
               type="button"
-              onClick={() => setView(key)}
+              onClick={() => onView(key)}
               aria-pressed={on}
               className="flex-1 uppercase transition active:opacity-70"
               style={{
@@ -262,10 +339,26 @@ function WCScheduleBody({ views }: { views: ScheduleView[] }) {
         })}
       </div>
 
-      {activeView === "byday" ? <ByDayView rounds={rounds} /> : null}
-      {activeView === "bracket" ? <WCBracketTree /> : null}
+      {activeView === "byday" ? (
+        <ByDayView
+          rounds={rounds}
+          gameOrigin="schedule"
+          gameReturnTo={gameReturnTo}
+        />
+      ) : null}
+      {activeView === "bracket" ? (
+        <WCBracketTree
+          gameOrigin="schedule"
+          gameReturnTo={gameReturnTo}
+        />
+      ) : null}
       {activeView === "groups" ? (
-        <WCGroups tournamentId={WC_TOURNAMENT_ID} mode="full" />
+        <WCGroups
+          tournamentId={WC_TOURNAMENT_ID}
+          mode="full"
+          gameOrigin="schedule"
+          gameReturnTo={gameReturnTo}
+        />
       ) : null}
     </div>
   );
@@ -364,7 +457,7 @@ function LiveElsewhereBody({ competition }: { competition: ScheduleCompetition }
       eyebrow="Live now"
       headline={`${name} is on.`}
       detail="Follow it on Today for the moments that matter."
-      cta={{ label: "Open Today", href: "/today" }}
+      cta={{ label: "Open Today", href: "/app" }}
     />
   );
 }

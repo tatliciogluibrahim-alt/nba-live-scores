@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useFollows, useUserPrefs } from "../../providers";
 import { isCapacitorNative } from "../../dev/native-detect";
 import type { AlertPreset } from "../../state/types";
+import { wasPushPermissionDeniedThisSession } from "../../push/permission-session";
 import {
   resolveSetupStep,
   type SetupPermission,
@@ -17,6 +18,8 @@ export type BeforeInstallPromptEvent = Event & {
 };
 
 export type UseSetupStepResult = {
+  /** True once follows, preferences, and browser-only setup state are known. */
+  resolved: boolean;
   step: SetupStepId | null;
   platform: SetupPlatform;
   permission: SetupPermission;
@@ -60,9 +63,53 @@ export function useSetupStep(): UseSetupStepResult {
   const [permission, setPermission] = useState<SetupPermission>("default");
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- setup mirrors browser
+     and native permission stores that are unavailable during SSR. */
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
+    // Native iOS uses APNs permission, not window.Notification. Keep this
+    // state live across an iOS Settings round trip so Today can surface (and
+    // then retire) the recovery step without a full app relaunch.
+    if (isCapacitorNative()) {
+      let cancelled = false;
+      const syncNativePermission = async () => {
+        try {
+          const mod = await import("@capacitor/push-notifications");
+          const status = await mod.PushNotifications.checkPermissions();
+          if (cancelled) return;
+          setPermission(
+            status.receive === "granted"
+              ? "granted"
+              : status.receive === "denied"
+                ? "denied"
+                : "default"
+          );
+        } catch {
+          if (!cancelled) setPermission("unsupported");
+        } finally {
+          if (!cancelled) setReady(true);
+        }
+      };
+      setPlatform("ios");
+      setStandalone(true);
+      void syncNativePermission();
+
+      const onVisible = () => {
+        if (document.visibilityState === "visible") {
+          void syncNativePermission();
+        }
+      };
+      const onFocus = () => void syncNativePermission();
+      document.addEventListener("visibilitychange", onVisible);
+      window.addEventListener("focus", onFocus);
+      return () => {
+        cancelled = true;
+        document.removeEventListener("visibilitychange", onVisible);
+        window.removeEventListener("focus", onFocus);
+      };
+    }
+
     setPlatform(detectPlatform());
     setStandalone(detectStandalone());
     setPermission(readPermission());
@@ -75,6 +122,7 @@ export function useSetupStep(): UseSetupStepResult {
     window.addEventListener("beforeinstallprompt", onBefore);
     return () => window.removeEventListener("beforeinstallprompt", onBefore);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const promptInstall = useCallback(async () => {
     if (!deferred) return;
@@ -99,11 +147,14 @@ export function useSetupStep(): UseSetupStepResult {
         firstRunDismissed: Boolean(prefs.firstRunDismissed),
         notifDismissed: Boolean(prefs.notifPromptDismissed),
         installDismissed: Boolean(prefs.installPromptDismissed),
-        recoverDismissed: Boolean(prefs.pushRecoveryDismissed),
+        recoverDismissed:
+          Boolean(prefs.pushRecoveryDismissed) ||
+          wasPushPermissionDeniedThisSession(),
       })
     : null;
 
   return {
+    resolved: hydrated,
     step,
     platform,
     permission,

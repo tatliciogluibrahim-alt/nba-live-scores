@@ -25,10 +25,14 @@ export function DetailCrumbs({
   backHref = "/watching",
   backLabel = "Watching",
   title = "Game",
+  showSourceLabel = false,
 }: {
   backHref?: string;
   backLabel?: string;
   title?: ReactNode;
+  /** Keep the named source visible even when an in-app history entry exists.
+   *  The click still uses real history so Schedule view/scroll state survives. */
+  showSourceLabel?: boolean;
 }) {
   const router = useRouter();
   const [canBack, setCanBack] = useState(false);
@@ -38,6 +42,8 @@ export function DetailCrumbs({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCanBack(hasInAppHistory());
   }, []);
+
+  const displayLabel = showSourceLabel ? backLabel : canBack ? "Back" : backLabel;
 
   return (
     <>
@@ -54,9 +60,9 @@ export function DetailCrumbs({
       >
         <Link
           href={backHref}
-          aria-label={canBack ? "Back" : `Back to ${backLabel}`}
+          aria-label={showSourceLabel || !canBack ? `Back to ${backLabel}` : "Back"}
           onClick={(e) => {
-            if (!canBack) return; // plain link → static parent
+            if (!canBack) return; // plain link → named cold-link fallback
             e.preventDefault();
             router.back();
           }}
@@ -70,7 +76,7 @@ export function DetailCrumbs({
           }}
         >
           <span aria-hidden>←&nbsp;</span>
-          {canBack ? "Back" : backLabel}
+          {displayLabel}
         </Link>
         <span
           className="uppercase"

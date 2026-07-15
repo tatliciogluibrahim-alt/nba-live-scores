@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Eyebrow } from "../../../atoms/Eyebrow";
 import { useFollows, useUserPrefs } from "../../../providers";
+import { useIsNative } from "../../../dev/native-detect";
 import type { SetupPlatform } from "../resolve-setup-step";
 
 // Push Permission Recovery step — extracted from PushPermissionRecoveryCard.
@@ -11,12 +12,22 @@ import type { SetupPlatform } from "../resolve-setup-step";
 // removed: the resolver guarantees this body only mounts when appropriate.
 // Platform is passed as a prop from the hook instead of being detected locally.
 
-function instructionsFor(platform: SetupPlatform): {
+function instructionsFor(platform: SetupPlatform, native: boolean): {
   steps: string[];
   hint?: string;
 } {
   switch (platform) {
     case "ios":
+      if (native) {
+        return {
+          steps: [
+            "Tap Open iOS Settings below.",
+            "Tap Notifications.",
+            "Toggle Allow Notifications on.",
+            "Return to No Noise Scores.",
+          ],
+        };
+      }
       return {
         steps: [
           "Open the iPhone Settings app.",
@@ -60,9 +71,10 @@ export function RecoverStep({ platform }: { platform: SetupPlatform }) {
   const { dismissPushRecovery } = useUserPrefs();
   const { follows } = useFollows();
   const [expanded, setExpanded] = useState(false);
+  const native = useIsNative();
 
   const enabledFollowCount = follows.filter((f) => f.alertEnabled).length;
-  const { steps, hint } = instructionsFor(platform);
+  const { steps, hint } = instructionsFor(platform, native);
 
   // Lead with a specific, useful sentence — name the actual stakes
   // instead of a generic "alerts are off." If the user has any
@@ -108,7 +120,12 @@ export function RecoverStep({ platform }: { platform: SetupPlatform }) {
       {!expanded ? (
         <button
           type="button"
-          onClick={() => setExpanded(true)}
+          onClick={() => {
+            setExpanded(true);
+            if (native && platform === "ios") {
+              window.location.href = "app-settings:";
+            }
+          }}
           className="mt-3 inline-flex min-h-[40px] items-center justify-center rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
           style={{
             background: "transparent",
@@ -116,7 +133,9 @@ export function RecoverStep({ platform }: { platform: SetupPlatform }) {
             borderColor: "var(--line)",
           }}
         >
-          How to turn them on
+          {native && platform === "ios"
+            ? "Open iOS Settings"
+            : "How to turn them on"}
         </button>
       ) : (
         <div className="mt-3">

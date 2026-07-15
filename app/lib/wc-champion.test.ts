@@ -93,6 +93,8 @@ describe("deriveChampionFromFixtures", () => {
       code: "ESP",
       name: "Spain",
       gameId: "999",
+      awayCode: "FRA",
+      homeCode: "ESP",
       decidedAt: NOW,
     });
   });

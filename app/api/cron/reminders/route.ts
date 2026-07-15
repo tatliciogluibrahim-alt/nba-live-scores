@@ -215,6 +215,7 @@ export async function GET(req: Request) {
           title: game.title,
           body: `Starts in ${minutesTo(game.tipoffMs)} min.`,
           collapseId: `reminder-${game.id}`,
+          data: { url: `/game/${game.id}` },
           sandbox: false,
         });
         if (result.ok) {

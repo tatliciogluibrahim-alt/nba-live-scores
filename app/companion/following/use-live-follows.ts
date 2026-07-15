@@ -28,6 +28,15 @@ type WCGame = {
   home: { abbreviation: string };
 };
 
+type ParticipantFollowKind = "team" | "country" | "series";
+
+export function liveFollowKey(
+  kind: ParticipantFollowKind,
+  id: string
+): string {
+  return `${kind}:${id.trim().toUpperCase()}`;
+}
+
 export function useLiveFollows(): Set<string> {
   const [liveIds, setLiveIds] = useState<Set<string>>(new Set());
 
@@ -52,11 +61,18 @@ export function useLiveFollows(): Set<string> {
         // NBA live games → team abbreviations + series key
         for (const g of nbaJson.games ?? []) {
           if (g.status !== "live") continue;
-          if (g.away?.abbreviation) ids.add(g.away.abbreviation);
-          if (g.home?.abbreviation) ids.add(g.home.abbreviation);
+          if (g.away?.abbreviation) {
+            ids.add(liveFollowKey("team", g.away.abbreviation));
+          }
+          if (g.home?.abbreviation) {
+            ids.add(liveFollowKey("team", g.home.abbreviation));
+          }
           if (g.away?.abbreviation && g.home?.abbreviation) {
             ids.add(
-              buildSeriesKey(g.away.abbreviation, g.home.abbreviation)
+              liveFollowKey(
+                "series",
+                buildSeriesKey(g.away.abbreviation, g.home.abbreviation)
+              )
             );
           }
         }
@@ -64,8 +80,12 @@ export function useLiveFollows(): Set<string> {
         // WC live games → country codes
         for (const g of wcJson.games ?? []) {
           if (g.status !== "live") continue;
-          if (g.away?.abbreviation) ids.add(g.away.abbreviation);
-          if (g.home?.abbreviation) ids.add(g.home.abbreviation);
+          if (g.away?.abbreviation) {
+            ids.add(liveFollowKey("country", g.away.abbreviation));
+          }
+          if (g.home?.abbreviation) {
+            ids.add(liveFollowKey("country", g.home.abbreviation));
+          }
         }
 
         // Tournament follows: if ANY live game exists, the tournament is live
@@ -105,11 +125,8 @@ export function isFollowLive(
   id: string,
   liveIds: Set<string>
 ): boolean {
-  if (kind === "team" || kind === "country") {
-    return liveIds.has(id);
-  }
-  if (kind === "series") {
-    return liveIds.has(id);
+  if (kind === "team" || kind === "country" || kind === "series") {
+    return liveIds.has(liveFollowKey(kind, id));
   }
   if (kind === "tournament") {
     if (id.startsWith("nba-playoffs")) return liveIds.has("nba-playoffs-live");

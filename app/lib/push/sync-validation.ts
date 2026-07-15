@@ -11,13 +11,27 @@ export type SyncedFollow = {
 
 export type SyncedAlert = SyncedFollow & {
   tier: AlertPreset;
+  /** Selective No-Spoilers marker. Only valid for team/country/series.
+   * Alert-enabled hidden follows carry this inline to avoid sending the
+   * same identity again in `spoilerFollows`. */
+  hideSpoilers?: true;
 };
 
 export type ValidSyncPayload = {
   alerts: SyncedAlert[];
+  /** False for legacy/touch payloads that did not send an alert snapshot. */
+  alertsProvided: boolean;
+  /** Selective-hide follows that do not have an alert slot. Membership
+   * implies hideSpoilers=true. Tournament is intentionally unsupported. */
+  spoilerFollows: SyncedFollow[];
+  /** An explicit array, including [], is authoritative. When absent, stores
+   * preserve older selective choices instead of erasing them during rollout. */
+  selectiveSpoilersProvided: boolean;
   /** No-Spoilers mode flag. Gates closeness-leaking events at the
    *  dispatcher (close-game, comeback) — see Codex QA #1. */
   noSpoilers: boolean;
+  /** Distinguishes an explicit false from a legacy payload with no flag. */
+  noSpoilersProvided: boolean;
   /** Whether the device wants the lock-screen live-score offer at
    *  kickoff (iOS only). Defaults true. */
   lockScreenOffers: boolean;
@@ -81,11 +95,20 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
   // This keeps the subscribe endpoint backwards-compatible with clients
   // that POST only a subscription (no follows / preset yet).
   if (!input || typeof input !== "object") {
-    return { alerts: [], noSpoilers: false, lockScreenOffers: true };
+    return {
+      alerts: [],
+      alertsProvided: false,
+      spoilerFollows: [],
+      selectiveSpoilersProvided: false,
+      noSpoilers: false,
+      noSpoilersProvided: false,
+      lockScreenOffers: true,
+    };
   }
 
   const raw = input as {
     alerts?: unknown;
+    spoilerFollows?: unknown;
     // Legacy Stage C payload. Converted into per-follow alerts below so
     // old clients don't break while installed PWAs roll forward.
     follows?: unknown;
@@ -108,10 +131,17 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
     : Array.isArray(raw.follows)
       ? raw.follows
       : [];
+  const alertsProvided =
+    Array.isArray(raw.alerts) || Array.isArray(raw.follows);
   const alerts: SyncedAlert[] = [];
   for (const entry of rawAlerts.slice(0, MAX_ALERTS)) {
     if (!entry || typeof entry !== "object") continue;
-    const f = entry as { kind?: unknown; id?: unknown; tier?: unknown };
+    const f = entry as {
+      kind?: unknown;
+      id?: unknown;
+      tier?: unknown;
+      hideSpoilers?: unknown;
+    };
     if (typeof f.kind !== "string" || !VALID_KINDS.has(f.kind as FollowKind)) {
       continue;
     }
@@ -122,15 +152,116 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
       typeof f.tier === "string" && VALID_PRESETS.has(f.tier as AlertPreset)
         ? (f.tier as AlertPreset)
         : alertPreset;
-    alerts.push({ kind: f.kind as FollowKind, id: f.id, tier });
+    const kind = f.kind as FollowKind;
+    alerts.push({
+      kind,
+      id: f.id,
+      tier,
+      ...(f.hideSpoilers === true && kind !== "tournament"
+        ? { hideSpoilers: true as const }
+        : {}),
+    });
+  }
+
+  // Only identities that are not already represented by a hidden alert
+  // belong here. That keeps one follow from being stored twice while still
+  // letting a visible-only follow protect notifications triggered by a
+  // different alert (for example, a team hidden under a tournament alert).
+  const hiddenAlertKeys = new Set(
+    alerts
+      .filter((alert) => alert.hideSpoilers)
+      .map((alert) => `${alert.kind}:${alert.id}`)
+  );
+  const spoilerFollows: SyncedFollow[] = [];
+  const seenSpoilerKeys = new Set<string>();
+  const rawSpoilerFollows = Array.isArray(raw.spoilerFollows)
+    ? raw.spoilerFollows
+    : [];
+  const selectiveSpoilersProvided = Array.isArray(raw.spoilerFollows);
+  for (const entry of rawSpoilerFollows.slice(0, MAX_ALERTS)) {
+    if (!entry || typeof entry !== "object") continue;
+    const follow = entry as { kind?: unknown; id?: unknown };
+    if (
+      typeof follow.kind !== "string" ||
+      follow.kind === "tournament" ||
+      !VALID_KINDS.has(follow.kind as FollowKind)
+    ) {
+      continue;
+    }
+    if (
+      typeof follow.id !== "string" ||
+      follow.id.length === 0 ||
+      follow.id.length > MAX_ID_LENGTH
+    ) {
+      continue;
+    }
+    const key = `${follow.kind}:${follow.id}`;
+    if (hiddenAlertKeys.has(key) || seenSpoilerKeys.has(key)) continue;
+    seenSpoilerKeys.add(key);
+    spoilerFollows.push({ kind: follow.kind as FollowKind, id: follow.id });
   }
 
   const noSpoilers = raw.noSpoilers === true;
+  const noSpoilersProvided = typeof raw.noSpoilers === "boolean";
   // Default ON: undefined/absent → true. Only an explicit false disables.
   const lockScreenOffers = raw.lockScreenOffers !== false;
   const quietHours = parseQuietHours(raw.quietHours);
   const remindBeforeMinutes = parseRemindBeforeMinutes(raw.remindBeforeMinutes);
   const timeZone = parseTimeZone(raw.timeZone);
 
-  return { alerts, noSpoilers, lockScreenOffers, quietHours, remindBeforeMinutes, timeZone };
+  return {
+    alerts,
+    alertsProvided,
+    spoilerFollows,
+    selectiveSpoilersProvided,
+    noSpoilers,
+    noSpoilersProvided,
+    lockScreenOffers,
+    quietHours,
+    remindBeforeMinutes,
+    timeZone,
+  };
+}
+
+function followKey(follow: SyncedFollow): string {
+  return `${follow.kind}:${follow.id.trim().toUpperCase()}`;
+}
+
+/**
+ * Merge a legacy sync snapshot with stored selective privacy. New clients
+ * send `spoilerFollows` explicitly (even when empty) and bypass this helper.
+ * Old clients can still change alert tiers without erasing hidden follows.
+ */
+export function preserveSelectiveSpoilers(
+  incomingAlerts: readonly SyncedAlert[],
+  existingAlerts: readonly SyncedAlert[],
+  existingSpoilerFollows: readonly SyncedFollow[]
+): { alerts: SyncedAlert[]; spoilerFollows: SyncedFollow[] } {
+  const hidden = new Map<string, SyncedFollow>();
+  for (const alert of existingAlerts) {
+    if (alert.hideSpoilers && alert.kind !== "tournament") {
+      hidden.set(followKey(alert), { kind: alert.kind, id: alert.id });
+    }
+  }
+  for (const follow of existingSpoilerFollows) {
+    if (follow.kind !== "tournament") hidden.set(followKey(follow), follow);
+  }
+  // A transitional client may carry the inline flag but not the separate
+  // array. Treat that as an additional hidden identity, never a reset.
+  for (const alert of incomingAlerts) {
+    if (alert.hideSpoilers && alert.kind !== "tournament") {
+      hidden.set(followKey(alert), { kind: alert.kind, id: alert.id });
+    }
+  }
+
+  const incomingKeys = new Set(incomingAlerts.map(followKey));
+  const alerts = incomingAlerts.map((alert) =>
+    alert.kind !== "tournament" && hidden.has(followKey(alert))
+      ? { ...alert, hideSpoilers: true as const }
+      : alert
+  );
+  const spoilerFollows = Array.from(hidden.entries())
+    .filter(([key]) => !incomingKeys.has(key))
+    .map(([, follow]) => follow);
+  return { alerts, spoilerFollows };
 }

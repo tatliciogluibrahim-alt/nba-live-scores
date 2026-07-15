@@ -3,11 +3,17 @@
 import Link from "next/link";
 import { Stamp } from "../system/Stamp";
 import { Spoiler } from "../spoiler/Spoiler";
-import { useNoSpoilers } from "../providers";
-import { GameSpoilerScope, useFollowHidesGame } from "../spoiler/reveal";
+import { useFollows, useNoSpoilers } from "../providers";
+import {
+  GameSpoilerScope,
+  useFollowHidesGame,
+  useReveal,
+} from "../spoiler/reveal";
+import { followHidesParticipants } from "../spoiler/follow-match";
 import { useIsNative } from "../dev/native-detect";
 import { slotState, MAX_LOCK_SCREEN_SLOTS } from "../system/lock-screen-slots";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
+import { withGameOrigin } from "../game/game-origin";
 import { parseScoreLine, trackedStampText } from "./watching-data";
 import type { PinnedItem, WatchingPayload } from "./watching-data";
 
@@ -35,6 +41,7 @@ import type { PinnedItem, WatchingPayload } from "./watching-data";
 
 export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
   const noSpoilers = useNoSpoilers();
+  const { follows } = useFollows();
   const native = useIsNative();
   const liveItems = payload.items.filter((i) => i.status === "live");
   if (liveItems.length < 1) return null;
@@ -55,8 +62,22 @@ export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
   // No-Spoilers (revealing "who's close" is a soft spoiler). The ≥2 guard
   // means with one live game there is nothing to switch to (the ≥1 room gate
   // made single-live the common case).
+  // "Closest" compares every live score. If even one row is selectively
+  // hidden, suppress the comparison so the pill cannot leak that hidden
+  // game's margin relative to the visible rows.
+  const anySelectiveHidden = liveItems.some((item) =>
+    followHidesParticipants(
+        follows,
+        item.source === "wc"
+          ? {
+              countryCodes: [item.awayCode, item.homeCode],
+            }
+          : { teamCodes: [item.awayCode, item.homeCode] }
+      )
+  );
   const showClosest =
     !noSpoilers &&
+    !anySelectiveHidden &&
     liveItems.length >= 2 &&
     payload.closestLive != null &&
     payload.closestLive.margin <= 9;
@@ -130,6 +151,8 @@ function LiveRoomRow({
       : { teamCodes: [item.awayCode, item.homeCode] }
   );
   const hidden = globalNoSpoilers || followHidden;
+  const { isRevealed } = useReveal();
+  const resultHidden = hidden && !isRevealed(item.id);
 
   // ◉ marks the first MAX_LOCK_SCREEN_SLOTS live pins (the lock-screen slot
   // holders); any overflow live pin falls back to its running ordinal.
@@ -149,16 +172,19 @@ function LiveRoomRow({
 
   return (
     <GameSpoilerScope gameId={item.id} hidden={hidden}>
-      <Link
-        href={item.href}
-        aria-label={`Open ${item.spoilerSubject}, live`}
-        className="block active:opacity-80"
+      <div
+        className="relative block"
         style={{
           borderTop: idx === 0 ? "none" : "1px solid var(--line-on-ink)",
           paddingTop: 14,
           paddingBottom: 12,
         }}
       >
+        <Link
+          href={item.href}
+          aria-label={`Open ${item.spoilerSubject}, live`}
+          className="absolute inset-0 active:opacity-80"
+        />
         <div
           className="flex items-center gap-[10px] tabular-nums lining-nums"
           style={{ fontFamily: "var(--font-mono)" }}
@@ -172,7 +198,14 @@ function LiveRoomRow({
           >
             {item.awayCode} · {item.homeCode}
           </span>
-          <span style={{ fontSize: 21, fontWeight: 800, letterSpacing: "0.01em" }}>
+          <span
+            style={{
+              fontSize: 21,
+              fontWeight: 800,
+              letterSpacing: "0.01em",
+              ...(resultHidden ? { position: "relative", zIndex: 1 } : {}),
+            }}
+          >
             <Spoiler gameId={item.id} ariaSubject={item.spoilerSubject}>
               {score}
             </Spoiler>
@@ -205,7 +238,7 @@ function LiveRoomRow({
             }}
           />
         </div>
-      </Link>
+      </div>
     </GameSpoilerScope>
   );
 }
@@ -217,7 +250,7 @@ function ClosestPill({ targetId }: { targetId: string }) {
   return (
     <div style={{ marginTop: 16 }}>
       <Link
-        href={`/game/${targetId}`}
+        href={withGameOrigin(`/game/${targetId}`, "watching")}
         aria-label="Switch to the closest game"
         className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-4 transition active:scale-[0.97]"
         style={{ background: "var(--cream)", color: "var(--ink)", fontSize: 12, fontWeight: 700 }}

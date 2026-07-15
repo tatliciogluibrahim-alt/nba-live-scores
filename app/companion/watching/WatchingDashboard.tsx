@@ -150,7 +150,7 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
       {/* Find a game to track — you track from a game (Today/Schedule), not
           from Following, which only configures teams + alerts. */}
       <Link
-        href="/today"
+        href="/schedule?scope=all"
         className="mt-4 inline-flex min-h-[44px] items-center gap-1.5 uppercase"
         style={{
           fontFamily: "var(--font-mono)",
@@ -159,9 +159,9 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
           letterSpacing: "0.06em",
           color: "var(--mute-1)",
         }}
-        aria-label="Find a game to track. Go to Today."
+        aria-label="Find a game to track. Go to Schedule."
       >
-        Find a game on Today
+        Find a game in Schedule
         <span aria-hidden>→</span>
       </Link>
 
@@ -292,7 +292,7 @@ function WatchingDesktop({ payload }: { payload: WatchingPayload }) {
         {/* Find a game to track — you track from a game (Today/Schedule), not
           from Following, which only configures teams + alerts. */}
         <Link
-          href="/today"
+          href="/schedule?scope=all"
           className="mt-4 inline-flex min-h-[44px] items-center gap-1.5 uppercase"
           style={{
             fontFamily: "var(--font-mono)",
@@ -301,9 +301,9 @@ function WatchingDesktop({ payload }: { payload: WatchingPayload }) {
             letterSpacing: "0.06em",
             color: "var(--mute-1)",
           }}
-          aria-label="Find a game to track. Go to Today."
+          aria-label="Find a game to track. Go to Schedule."
         >
-          Track more from Following
+          Find a game in Schedule
           <span aria-hidden>→</span>
         </Link>
 

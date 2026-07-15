@@ -1,6 +1,10 @@
 import { CompanionFrame } from "../../companion/frame/CompanionFrame";
 import { DetailCrumbs } from "../../companion/game/DetailCrumbs";
 import { GameDetailClient } from "../../companion/game/GameDetailClient";
+import {
+  gameBackTarget,
+  parseGameOrigin,
+} from "../../companion/game/game-origin";
 
 export const metadata = {
   title: "Game | No Noise Scores",
@@ -8,18 +12,29 @@ export const metadata = {
 
 export default async function GamePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{
+    from?: string | string[];
+    returnTo?: string | string[];
+  }>;
 }) {
-  const { id } = await params;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
+  const origin = parseGameOrigin(query.from);
+  const back = gameBackTarget(origin, query.returnTo);
 
   return (
     <CompanionFrame desktopNav="detail">
-      {/* Origin-aware back: in-app navigation uses router history ("Back").
-          The static fallback (cold deep link, no history) is Today — the
-          app's home base — not Watching, which was an arbitrary default that
-          read as unaware when you'd arrived from Today or Schedule. */}
-      <DetailCrumbs backHref="/today" backLabel="Today" title="Game" />
+      {/* Explicit origins name the source and provide a cold-link fallback.
+          In-app clicks still use real history so scroll and selected Schedule
+          view survive. Push/widget URLs carry no source and fall back to /app. */}
+      <DetailCrumbs
+        backHref={back.href}
+        backLabel={back.label}
+        title="Game"
+        showSourceLabel={origin !== null}
+      />
       <GameDetailClient gameId={id} />
     </CompanionFrame>
   );

@@ -20,8 +20,16 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "end", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getActiveGameIds", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getActiveActivities", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "clearReveal", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "areActivitiesEnabled", returnType: CAPPluginReturnPromise),
     ]
+
+    // Must match WidgetStore.appGroup / WidgetStore.revealKey in the widget
+    // extension. The App target cannot import extension-only types, so the
+    // tiny shared-storage contract is repeated here deliberately.
+    private static let appGroup = "group.com.nonoisescores.app"
+    private static func revealKey(_ gameId: String) -> String { "reveal:\(gameId)" }
 
     // Dictionary of active Live Activities keyed by gameId.
     // Type-erased storage because @available can't annotate stored
@@ -190,7 +198,7 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
-        guard let activity = activities[gameId] else {
+        guard let activity = existingActivity(forGameId: gameId) else {
             // No tracked activity — might have been dismissed by the OS.
             call.resolve()
             return
@@ -224,5 +232,41 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             .map { $0.attributes.gameId }
             .filter { !$0.isEmpty }
         call.resolve(["gameIds": ids])
+    }
+
+    // Richer persisted-state read for the web reconciliation loop. The
+    // `redacted` flag is a STATIC Activity attribute, so the web must know
+    // its current value to decide whether a No-Spoilers preference change
+    // requires an end/restart. `getActiveGameIds` remains in place for older
+    // web bundles and older native binaries.
+    @objc func getActiveActivities(_ call: CAPPluginCall) {
+        guard #available(iOS 16.2, *) else {
+            call.resolve(["activities": []])
+            return
+        }
+        reconcileFromSystem()
+        let active = Activity<NoNoiseGameAttributes>.activities.compactMap { activity -> [String: Any]? in
+            let gameId = activity.attributes.gameId
+            guard !gameId.isEmpty else { return nil }
+            return [
+                "gameId": gameId,
+                "redacted": activity.attributes.redacted,
+            ]
+        }
+        call.resolve(["activities": active])
+    }
+
+    // The interactive Reveal button persists a per-game flag in the App
+    // Group. When the user newly enables global/selective No-Spoilers, the
+    // web clears this flag before restarting the Activity with redacted=true;
+    // otherwise the replacement would immediately reveal itself again.
+    @objc func clearReveal(_ call: CAPPluginCall) {
+        guard let gameId = call.getString("gameId"), !gameId.isEmpty else {
+            call.resolve()
+            return
+        }
+        let defaults = UserDefaults(suiteName: Self.appGroup)
+        defaults?.removeObject(forKey: Self.revealKey(gameId))
+        call.resolve()
     }
 }

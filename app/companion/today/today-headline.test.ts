@@ -24,6 +24,7 @@ function base(over: Partial<TodayPayload> = {}): TodayPayload {
     restingState: false,
     slateComplete: false,
     finalsCount: 0,
+    recapFinals: [],
     closing: null,
     pinnedSummary: {
       total: 0,
@@ -36,10 +37,13 @@ function base(over: Partial<TodayPayload> = {}): TodayPayload {
     knockoutMoments: [],
     scoreboard: [],
     ...over,
+    reliancePrompt: over.reliancePrompt ?? null,
   };
 }
 
-function upNextItem(over: Partial<TodayPayload["upNext"][number]> = {}) {
+function upNextItem(
+  over: Partial<TodayPayload["upNext"][number]> = {}
+): TodayPayload["upNext"][number] {
   return {
     source: "nba" as const,
     id: "g1",
@@ -48,6 +52,7 @@ function upNextItem(over: Partial<TodayPayload["upNext"][number]> = {}) {
     eyebrow: "NBA · Tonight",
     headline: "OKC vs SA",
     detail: "8:30 PM · Game 6",
+    dateIso: "2026-06-12T00:30:00Z",
     isToday: true,
     dayWord: "",
     href: "/game/g1",

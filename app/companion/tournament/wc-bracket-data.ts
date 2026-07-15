@@ -43,7 +43,7 @@ const QUARTERS: { qf: number; r16: [number, number]; r32: number[] }[] = [
 const REAL_CODES = new Set(WC_COUNTRIES.map((c) => c.id));
 const NAME_BY_CODE = new Map(WC_COUNTRIES.map((c) => [c.id, c.name]));
 
-/** The user's followed country/team codes, uppercased — the highlight set
+/** The user's followed country codes, uppercased — the highlight set
  *  every bracket view builds against. Lives here (not in a view file) so
  *  WCBracket, WCBracketTree, and ScheduleClient share one definition. */
 export function followedCountrySet(
@@ -51,7 +51,7 @@ export function followedCountrySet(
 ): Set<string> {
   const out = new Set<string>();
   for (const f of follows) {
-    if (f.kind === "country" || f.kind === "team") out.add(f.id.toUpperCase());
+    if (f.kind === "country") out.add(f.id.toUpperCase());
   }
   return out;
 }
