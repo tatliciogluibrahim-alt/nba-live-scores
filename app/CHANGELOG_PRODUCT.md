@@ -2,6 +2,47 @@
 
 ---
 
+## Moment Relay + reliance loop — retention & truth loop — 2026-07-15
+
+Two plays from the external product review (ChatGPT), which named
+substitution failure — not the dead zone itself — as the core survival
+risk, and the missing alert truth loop as the gap in the significance
+engine.
+
+- **Fix first (from the same review): start + final are hard tier
+  invariants for direct follows.** "Start and final" was an emergent
+  outcome of the significance weights; a retune could silently suppress a
+  Quiet user's own team's tipoff/final. Now `TIER_INVARIANT_EVENTS`
+  always fire for a directly-followed team/country regardless of score.
+  The threshold still governs the middle + tournament follows.
+- **Moment Relay (retention).** A one-tap "Tell me when NFL is ready" on
+  the World Cup wind-down + dead-zone cards. The device arms a reminder
+  (`nfl-2026`) — NOT a follow, no alert slot — stored in a KV set across
+  web + iOS. A manual admin trigger sends ONE push to every armed device,
+  deep-linking into the follow picker, and can never double-fire. This is
+  the WC→NFL bridge across the dead zone: silence, then one authorized
+  interruption. **Operator runbook — fire it when the NFL build is live:**
+  `curl -X POST -H "Authorization: Bearer $CRON_SECRET"
+  "https://nonoisescores.app/api/admin/moment-relay?moment=nfl-2026"`
+  (add `&force=1` only to retry a failed fan-out).
+- **Reliance loop (the truth loop).** After a followed match the user had
+  alerts on (last 24h), Today asks once: "Could you rely on the alerts for
+  that match? Yes / I missed something / Too many." The anonymous verdict +
+  tier + follow-kind append to a KV ledger (`/api/reliance`). This is the
+  only proprietary asset available here — labeled evidence about whether
+  our interruptions suffice, and whether the significance thresholds are
+  calibrated. v1 is feedback-only; the dispatch-side event ledger (alerts
+  actually sent, significance bands) is the NFL-scale enrichment, deferred.
+  **Metric reframe adopted:** activation = one direct follow + notifications
+  enabled, not three follows (three is a pricing allowance, not a value
+  milestone). The real reliance test runs at NFL Week 1 with volume; the WC
+  final is a small early sample, not proof.
+- Gate: lint 0, 467 tests (relay guard, reliance builder + invariant),
+  build 93 pages + 3 new dynamic routes. The relay SEND is verifiable only
+  post-deploy against real armed devices.
+
+---
+
 ## Significance engine — smart notifications — 2026-07-14
 
 The notification is the product (95% of a user's relationship with the app
