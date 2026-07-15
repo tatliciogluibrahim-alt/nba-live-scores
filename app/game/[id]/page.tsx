@@ -15,7 +15,11 @@ export default async function GamePage({
 
   return (
     <CompanionFrame desktopNav="detail">
-      <DetailCrumbs backHref="/watching" backLabel="Watching" title="Game" />
+      {/* Origin-aware back: in-app navigation uses router history ("Back").
+          The static fallback (cold deep link, no history) is Today — the
+          app's home base — not Watching, which was an arbitrary default that
+          read as unaware when you'd arrived from Today or Schedule. */}
+      <DetailCrumbs backHref="/today" backLabel="Today" title="Game" />
       <GameDetailClient gameId={id} />
     </CompanionFrame>
   );

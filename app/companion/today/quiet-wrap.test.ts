@@ -89,8 +89,31 @@ describe("Quiet Wrap — World Cup integration", () => {
     expect(p.quietWrap).toHaveLength(1);
   });
 
-  it("gives a country-only follower the full slate (cap 3), not the no-follow cap", () => {
-    const finals = ["a", "b", "c", "d"].map((id, i) =>
+  it("shows a follower ONLY their own finals, never unrelated ones (contract)", () => {
+    const p = buildTodayPayload({
+      nba: [],
+      nbaRecent: [],
+      wc: [
+        wcFinal({
+          id: "usa",
+          away: { name: "USA", abbreviation: "USA", score: 2 },
+          home: { name: "Iran", abbreviation: "IRN", score: 1 },
+        }),
+        wcFinal({
+          id: "other",
+          away: { name: "X", abbreviation: "X0", score: 1 },
+          home: { name: "Y", abbreviation: "Y0", score: 0 },
+        }),
+      ],
+      follows: [country("USA")],
+      pinned: [],
+    });
+    // Only USA's final — the unrelated one never fills a slot.
+    expect(p.quietWrap.map((i) => i.id)).toEqual(["usa"]);
+  });
+
+  it("shows an empty wrap when the follower's teams didn't play (no unrelated fill)", () => {
+    const finals = ["a", "b", "c"].map((id, i) =>
       wcFinal({
         id,
         date: new Date(Date.now() - i * 3_600_000).toISOString(),
@@ -102,9 +125,9 @@ describe("Quiet Wrap — World Cup integration", () => {
       nba: [],
       nbaRecent: [],
       wc: finals,
-      follows: [country("USA")], // a follow exists, just no matching team
+      follows: [country("USA")], // a follow exists, but none of these are theirs
       pinned: [],
     });
-    expect(p.quietWrap).toHaveLength(3);
+    expect(p.quietWrap).toHaveLength(0);
   });
 });

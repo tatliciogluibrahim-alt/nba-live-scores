@@ -1200,7 +1200,16 @@ function buildQuietWrap(
 
   const cap = hasAnyFollow ? 3 : 1;
 
-  return ranked.slice(0, cap).map<QuietWrapItem>((e) => {
+  // Today's contract is "only what you follow" (external UX review 2026-07-15).
+  // For a user with follows, show ONLY their personal finals — never fill the
+  // remaining slots with unrelated games. A user who follows nothing gets one
+  // recent final as a discovery taste (there's nothing personal to show).
+  const selected = (hasAnyFollow ? ranked.filter((e) => e.personal) : ranked).slice(
+    0,
+    cap
+  );
+
+  return selected.map<QuietWrapItem>((e) => {
     const dayLabel = quietWrapDayLabel(e.g.date, now);
     // Use "vs" to match the Up Next + game-detail pattern. The Quiet
     // Wrap card is a final-score line, not a series label.

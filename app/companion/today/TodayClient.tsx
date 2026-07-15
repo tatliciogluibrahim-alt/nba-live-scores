@@ -295,8 +295,12 @@ export function TodayClient() {
                 <FollowLine items={payload.youFollow} />
               </div>
 
-              {/* The Margin nudge — mobile footer (desktop uses the rail). */}
-              <BriefPromptCard />
+              {/* The Margin nudge — mobile footer (desktop uses the rail).
+                  One ask per visit (external UX review 2026-07-15): suppressed
+                  whenever a setup ask (enable notifications / install) is
+                  showing, so a single visit never stacks two requests.
+                  Notifications always take precedence. */}
+              {setup.step && setup.step !== "follow" ? null : <BriefPromptCard />}
             </div>
           </div>
 

@@ -22,7 +22,7 @@ export function WatchingEmpty() {
         className="mb-2 text-[14px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Track a game from Following to see it here.
+        Track a game from Today or Schedule to see it here.
       </p>
       {native ? (
         // Native only: teaches the lock-screen / widget payoff of tracking a
