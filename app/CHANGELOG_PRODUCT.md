@@ -24,12 +24,13 @@ them into the push path for the first time. Spec:
   are suppressed below Full Details. A direct follow keeps its tier's
   behavior (start + final still reach Quiet). Tier copy retuned to match
   ("Quiet: start, final, and the big moments").
-- **Smart copy (dormant).** `narratePush` phrases the notification body in
-  the calm-companion voice, grounded (any invented number → rejected →
-  template), 2.5s timeout, pre-narrated once per event, spoiler-variant
-  only. **Off until `PUSH_NARRATE=1` + `ANTHROPIC_API_KEY` are set** — ships
-  dormant so it can be smoke-tested before the final without risk. Null
-  always falls back to today's templates.
+- **Smart copy (turned on 2026-07-14).** `narratePush` phrases the
+  notification body in the calm-companion voice, grounded (any invented
+  number → rejected → template), 2.5s timeout, pre-narrated once per event,
+  spoiler-variant only. **On by default when `ANTHROPIC_API_KEY` is present**
+  (goes live on the next deploy if the key is in the prod env); kill with
+  `PUSH_NARRATE=0`. Null always falls back to today's templates, so a bad
+  generation can never break a push.
 - Weights/thresholds are hand-tuned starting dials, to calibrate with real
   delivery data. Gate: lint 0, 455 tests (40+ new across the scorer, the
   gate, the detectors, the grounded guard, and the end-to-end firing path),

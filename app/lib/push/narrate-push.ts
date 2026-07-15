@@ -7,8 +7,10 @@ import type { PushEvent } from "./event-detector";
 // timeout, and a hard grounded-number guard.
 //
 // SAFETY (this is the most critical path — a lock-screen ping):
-//   • Kill switch — off unless PUSH_NARRATE=1 AND ANTHROPIC_API_KEY is set.
-//     Off → every alert uses the deterministic templates (today's behavior).
+//   • Enabled by default when ANTHROPIC_API_KEY is set (2026-07-14: turned
+//     on). Kill switch — set PUSH_NARRATE=0 to force every alert back to the
+//     deterministic templates instantly, no deploy needed for the flag once
+//     it's a Vercel env var. Without a key it stays off.
 //   • Timeout — 2.5s; any timeout/error returns null.
 //   • Grounded — the model may only use the names/numbers in the facts; the
 //     output is rejected (→ null) if it contains any integer not in the
@@ -22,10 +24,10 @@ const ANTHROPIC_VERSION = "2023-06-01";
 const TIMEOUT_MS = 2500;
 const MAX_BODY_CHARS = 120;
 
-/** The kill switch. Both the flag and a key must be present. */
+/** On by default when a key is present; kill with PUSH_NARRATE=0. */
 export function pushNarrateEnabled(): boolean {
   return (
-    process.env.PUSH_NARRATE === "1" && Boolean(process.env.ANTHROPIC_API_KEY)
+    process.env.PUSH_NARRATE !== "0" && Boolean(process.env.ANTHROPIC_API_KEY)
   );
 }
 

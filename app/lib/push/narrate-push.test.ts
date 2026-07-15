@@ -30,13 +30,35 @@ describe("bodyIsGrounded — no fabricated numbers reach a lock screen", () => {
   });
 });
 
-describe("kill switch", () => {
-  it("is off (and narratePush returns null) when PUSH_NARRATE is unset", async () => {
-    const prev = process.env.PUSH_NARRATE;
+describe("kill switch (opt-out: on by default with a key, PUSH_NARRATE=0 kills)", () => {
+  const prevFlag = process.env.PUSH_NARRATE;
+  const prevKey = process.env.ANTHROPIC_API_KEY;
+  const restore = () => {
+    if (prevFlag === undefined) delete process.env.PUSH_NARRATE;
+    else process.env.PUSH_NARRATE = prevFlag;
+    if (prevKey === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = prevKey;
+  };
+
+  it("is off without a key, regardless of the flag", () => {
+    delete process.env.ANTHROPIC_API_KEY;
     delete process.env.PUSH_NARRATE;
     expect(pushNarrateEnabled()).toBe(false);
-    // With the switch off, narratePush must resolve null without any network.
-    await expect(narratePush(facts)).resolves.toBeNull();
-    if (prev !== undefined) process.env.PUSH_NARRATE = prev;
+    restore();
+  });
+
+  it("is ON when a key is present and PUSH_NARRATE is not 0", () => {
+    process.env.ANTHROPIC_API_KEY = "sk-test";
+    delete process.env.PUSH_NARRATE;
+    expect(pushNarrateEnabled()).toBe(true);
+    restore();
+  });
+
+  it("PUSH_NARRATE=0 forces it off even with a key", async () => {
+    process.env.ANTHROPIC_API_KEY = "sk-test";
+    process.env.PUSH_NARRATE = "0";
+    expect(pushNarrateEnabled()).toBe(false);
+    await expect(narratePush(facts)).resolves.toBeNull(); // no network when off
+    restore();
   });
 });
