@@ -97,11 +97,15 @@ export function bodyIsGrounded(text: string, i: PushNarrationInput): boolean {
 }
 
 function factsJson(i: PushNarrationInput): string {
+  // Only reached for a decided final (narratePush's guards). State the winner
+  // explicitly so the model can never invert who won.
+  const winner = i.awayScore > i.homeScore ? i.away : i.home;
   return JSON.stringify({
     away: i.away,
     home: i.home,
     awayScore: i.awayScore,
     homeScore: i.homeScore,
+    winner,
     ...(i.stage ? { stage: i.stage } : {}),
     ...(i.scorer ? { scorer: i.scorer } : {}),
   });
@@ -114,6 +118,18 @@ export async function narratePush(
   i: PushNarrationInput
 ): Promise<string | null> {
   if (!pushNarrateEnabled()) return null;
+
+  // STRUCTURAL GUARANTEE (2026-07-15): the model only ever phrases a FINISHED
+  // match. A live event (goal/kickoff/halftime/second half) can be
+  // misdescribed as over ("England beat Argentina" on a live goal), so those
+  // ALWAYS use the deterministic template, which just states the live score
+  // and cannot imply a result. This removes the entire bug class rather than
+  // relying on a leaky blocklist.
+  if (!FINAL_EVENTS.has(i.type)) return null;
+  // A level final was decided on penalties we don't have here — don't let the
+  // model assert a non-result. The template (with its Pens stamp) handles it.
+  if (i.awayScore === i.homeScore) return null;
+
   const apiKey = process.env.ANTHROPIC_API_KEY as string;
   const model = (process.env.NARRATIVE_MODEL ?? "claude-haiku-4-5").trim();
 

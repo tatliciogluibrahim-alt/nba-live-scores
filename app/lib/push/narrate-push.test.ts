@@ -62,6 +62,53 @@ describe("bodyTenseOk — a live event must never read as a finished result", ()
   });
 });
 
+describe("structural guarantee — the model narrates ONLY a decided final", () => {
+  const prevFlag = process.env.PUSH_NARRATE;
+  const prevKey = process.env.ANTHROPIC_API_KEY;
+  const enable = () => {
+    process.env.ANTHROPIC_API_KEY = "sk-test";
+    delete process.env.PUSH_NARRATE;
+  };
+  const restore = () => {
+    if (prevFlag === undefined) delete process.env.PUSH_NARRATE;
+    else process.env.PUSH_NARRATE = prevFlag;
+    if (prevKey === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = prevKey;
+  };
+
+  it("returns null (→ template) for EVERY in-progress event, no network call", async () => {
+    enable();
+    const live: PushNarrationInput["type"][] = [
+      "wc-goal",
+      "wc-kickoff",
+      "wc-halftime",
+      "wc-second-half",
+      "tipoff",
+      "eoq-1",
+      "eoq-2",
+      "eoq-3",
+      "second-half-start",
+      "close-game",
+      "comeback",
+      "nba-highlight",
+    ];
+    for (const type of live) {
+      // A live event can never be phrased by the LLM — this is what makes
+      // "reads as if the match is over" structurally impossible.
+      await expect(narratePush({ ...facts, type })).resolves.toBeNull();
+    }
+    restore();
+  });
+
+  it("returns null for a level final (decided on penalties we don't have)", async () => {
+    enable();
+    await expect(
+      narratePush({ ...facts, type: "wc-final", awayScore: 1, homeScore: 1 })
+    ).resolves.toBeNull();
+    restore();
+  });
+});
+
 describe("kill switch (opt-out: on by default with a key, PUSH_NARRATE=0 kills)", () => {
   const prevFlag = process.env.PUSH_NARRATE;
   const prevKey = process.env.ANTHROPIC_API_KEY;
