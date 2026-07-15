@@ -160,8 +160,56 @@ than guessing it with one. Phases 4–5 land with NFL.
 This is not urgent before the WC final (Jul 19) — Schedule works fine
 with one competition. It is the right thing to have designed before NFL.
 
+## Schedule view model — adopted 2026-07-15 (external design review)
+
+The heterogeneous-competition problem: By day / Bracket / Groups are
+World-Cup artifacts. A league (NFL) has no groups; its "bracket" exists
+only for a few late weeks; its structure is weeks + standings. Decision
+(ChatGPT design review ranked this #1 of 3): **capability-driven local
+views** — extends the existing `competitions.ts` registry, not a new
+navigation concept. Build with NFL (Phase 5), not before.
+
+- Each competition registers only the views it supports. A view has a
+  stable **role** (`chronology` | `standings` | `bracket`), a **label**
+  (By day / By week / Groups / Standings / Playoffs), an **availability
+  rule** (e.g. NFL Playoffs appears only once the postseason is
+  meaningful), and a **renderer variant**. `ScheduleView` becomes
+  role-tagged rather than the flat `"byday"|"bracket"|"groups"`.
+- **Chronology is the universal spine** — every competition's guaranteed
+  FIRST view + default. Universalize the job + position, not the label:
+  WC/NBA → "By day"; NFL regular season → "By week"; unknown → "Schedule".
+  One shared ruled-agate renderer; the registry supplies the grouping unit
+  (day vs week), section heads, timezone, and the game-row renderer.
+- Per-competition view sets:
+  - World Cup: By day · Groups · Bracket
+  - NFL regular season: By week · Standings
+  - NFL postseason: By week · Standings · Playoffs (Playoffs when meaningful)
+  - NBA Playoffs: By day · Bracket (series nodes; Play-In as a prelude
+    inside Bracket, not a tab)
+  - Chronology-only competition: no view control (never a one-item switch)
+- Selection contract: resolve by stable view **role/id**, not tab
+  position. Remember the last-valid view **per competition**. Switching
+  competitions never transfers tab position; an unsupported saved/linked
+  view falls back to chronology.
+- Mobile: cap at 3 equal-width single-line segments — no icons, no
+  horizontal scroll, no "More" overflow (the WC-tab-overflow bug must not
+  return).
+- **Bracket is a shared ROLE, not a shared implementation.** Do NOT build
+  one generic bracket engine assuming all nodes/advancement are equivalent
+  (WC single-match knockout ≠ NBA best-of-7 series ≠ NFL seeded conferences
+  + bye). Share typography, rows, rules, and the navigation contract; keep
+  format logic in per-competition renderer variants.
+
+Sequencing note (ties to the reliance-first discipline from the
+2026-07-14 product review): this is the correct design, but do not build
+the generalization before NFL exists. Building multi-competition view
+machinery now would scale the frame before the substitution/reliance
+claim is proven — exactly what that review warned against. Lock the design
+here; build it with Phase 5.
+
 ## Out of scope
 
 - Regular-season leagues beyond the product rule (majors only).
 - Account system / cross-device (separate track).
 - Any change that reduces the calm, follows-first register.
+- Building the adaptive view model before the NFL competition is real.
