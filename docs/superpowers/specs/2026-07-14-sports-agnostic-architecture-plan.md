@@ -207,6 +207,49 @@ machinery now would scale the frame before the substitution/reliance
 claim is proven — exactly what that review warned against. Lock the design
 here; build it with Phase 5.
 
+## Schedule orientation + motion — adopted 2026-07-15 (UX review)
+
+Schedule reads as a beautifully typeset reference sheet; identity should
+come from time, continuity, and ceremony, NOT more modules/controls. Three
+directions (ChatGPT UX review), all registry-configured, no new controls:
+
+1. **The Now Register** (ship first, M). A passive `NOW` rule sits before
+   the live-or-next match on the current day; on a quiet day it's `NEXT`
+   anchored to the next fixture (no ticking countdown). Above it, a phase
+   register line: `SEMIFINALS · 3 MATCHES LEFT`, `WEEK 8 · 16 GAMES`,
+   `CONFERENCE FINALS · 2 SERIES`. One ~200ms settle on arrival, then
+   still. Scheduled time changes in place → `LIVE` → `FT`; rows never jump
+   or reorder. Risk: iOS scroll anchoring must render AT position, never
+   race through old fixtures (so the static register + marker ship first;
+   scroll-to-position is a follow-up).
+2. **Same Game, New Lens** (L, prototype WC-only behind a flag). Switching
+   By Day → Bracket keeps the nearest live/upcoming match as the anchor and
+   morphs the row into its node (WC quarter/final; NBA series; NFL round).
+   No honest mapping → plain crossfade. The eventual signature interaction,
+   not rushed cross-sport. A wrong mapping is worse than none.
+3. **The Competition Has Chapters** (S/M). Real structural boundaries
+   (`GROUP STAGE · KNOCKOUTS · FINAL`; `REGULAR SEASON · WILD CARD · SUPER
+   BOWL`) get more space, a heavier rule, one type-scale step. Rows stay as
+   restrained as now. Only genuine phases earn ceremony; registry-supplied.
+
+Motion budget (hard limits): one arrival gesture per visit; one semantic
+transition per deliberate view change; one competition-specific structural
+signature; only genuinely-live elements loop; haptics only for real
+commitments (Track on Lock Screen). NEVER: per-second countdowns,
+gradients, bouncing marks, team-color background washes, animation on every
+clock tick (the F1 flashing-timing anti-pattern).
+
+Success = time-to-locate the live/next match, visible without scrolling,
+context preserved across a view switch, "made for this competition" — NOT
+longer sessions.
+
+Sequencing: directions 1 + 3 are targeted additions to the LIVE World Cup
+Schedule (globals.css already has one-shot motion + reduced-motion;
+ScheduleClient + WCBracketTree are isolated). They improve the current
+final-week experience and add no controls, so they're defensible now.
+Direction 2 waits (WC-flag prototype at most). Still weigh against the
+reliance-first discipline: this is polish, not survival.
+
 ## Out of scope
 
 - Regular-season leagues beyond the product rule (majors only).
