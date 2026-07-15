@@ -27,6 +27,7 @@ import { QuietWrap } from "./sections/quiet-wrap";
 import { ReminderRow } from "./sections/reminder-row";
 import { CalmCard } from "./sections/calm-card";
 import { CalmEndCard } from "./sections/calm-end-card";
+import { RelianceCard } from "./sections/reliance-card";
 import { KnockoutMomentCard } from "./sections/knockout-moment-card";
 
 // Today composition. One screen, three states layered on the same shape:
@@ -232,6 +233,12 @@ export function TodayClient() {
               <div className="mb-5">
                 <CalmEndCard moment={payload.closing} />
               </div>
+            ) : null}
+
+            {/* Alert reliance check — one-time, after a followed match the
+                user had alerts on. The truth loop for the significance engine. */}
+            {payload.reliancePrompt ? (
+              <RelianceCard prompt={payload.reliancePrompt} />
             ) : null}
 
             {/* Knockout moment — a followed country advanced or went out. The

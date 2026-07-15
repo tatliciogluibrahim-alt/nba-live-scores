@@ -2,7 +2,7 @@
 // already ship. Output: a single TodayPayload tuned for the Today composition.
 // Keep all "what to surface" logic here so the screen file stays a layout.
 
-import type { Follow, PinnedGame } from "../state/types";
+import type { Follow, PinnedGame, AlertPreset } from "../state/types";
 import type { WCChampion } from "../../lib/wc-champion";
 import { NFL_2026_SEASON_OPENER } from "../following/data/nfl-dates";
 import { getCountry } from "../following/data/countries";
@@ -350,6 +350,18 @@ export type TodayPayload = {
    *  quiet days. Desktop renders these as a dense grid; mobile ignores it
    *  in favor of the single calm lead. */
   scoreboard: ScoreboardTile[];
+  /** The alert truth loop (2026-07-14 review): when a followed match the user
+   *  had alerts on finished in the last day, we ask once whether the alerts
+   *  were enough. Null when there's nothing recent + alerted to ask about. */
+  reliancePrompt: ReliancePrompt | null;
+};
+
+export type ReliancePrompt = {
+  gameId: string;
+  sport: "nba" | "wc";
+  tier: AlertPreset;
+  /** A directly-followed team/country/series vs a broad tournament follow. */
+  followKind: "direct" | "tournament";
 };
 
 /** One tile in the desktop scoreboard grid. Score-forward; null scores for
@@ -1824,6 +1836,84 @@ function buildScoreboard(
   return tiles.slice(0, 12);
 }
 
+// ── Reliance prompt (the alert truth loop) ────────────────────────────
+// The most recent followed match (last 24h) the user had ALERTS ON — you can
+// only rate alert reliance if you were relying on alerts. Prefers a direct
+// follow (your team/country/series) over a broad tournament follow, since a
+// direct follow is the sharper signal. Pure.
+
+function matchAlertFollow(
+  follows: Follow[],
+  sport: "nba" | "wc",
+  away: string,
+  home: string
+): { tier: AlertPreset; kind: "direct" | "tournament" } | null {
+  let tournament: { tier: AlertPreset; kind: "tournament" } | null = null;
+  for (const f of follows) {
+    if (!f.alertEnabled) continue;
+    if (sport === "wc") {
+      if (f.kind === "country" && (f.id === away || f.id === home)) {
+        return { tier: f.alertTier, kind: "direct" };
+      }
+      if (f.kind === "tournament" && f.id.startsWith("fifa-world-cup-")) {
+        tournament = { tier: f.alertTier, kind: "tournament" };
+      }
+    } else {
+      if (f.kind === "team" && (f.id === away || f.id === home)) {
+        return { tier: f.alertTier, kind: "direct" };
+      }
+      if (f.kind === "series") {
+        const [a, b] = f.id.split("-");
+        const has = (c: string) => c === away || c === home;
+        if (a && b && has(a) && has(b)) return { tier: f.alertTier, kind: "direct" };
+      }
+      if (f.kind === "tournament" && f.id.startsWith("nba-playoffs-")) {
+        tournament = { tier: f.alertTier, kind: "tournament" };
+      }
+    }
+  }
+  return tournament;
+}
+
+function buildReliancePrompt(
+  nbaRecent: NBAGame[],
+  wc: WCGameLite[],
+  follows: Follow[],
+  now: Date
+): ReliancePrompt | null {
+  if (!follows.some((f) => f.alertEnabled)) return null;
+  const windowMs = now.getTime() - 24 * 60 * 60 * 1000;
+
+  const cands: { p: ReliancePrompt; ms: number }[] = [];
+  const consider = (
+    id: string,
+    date: string,
+    sport: "nba" | "wc",
+    away: string,
+    home: string
+  ) => {
+    const ms = new Date(date).getTime();
+    if (!Number.isFinite(ms) || ms < windowMs) return;
+    const m = matchAlertFollow(follows, sport, away, home);
+    if (!m) return;
+    cands.push({ p: { gameId: id, sport, tier: m.tier, followKind: m.kind }, ms });
+  };
+
+  for (const g of nbaRecent) {
+    if (g.status === "final") {
+      consider(g.id, g.date, "nba", g.away.abbreviation, g.home.abbreviation);
+    }
+  }
+  for (const g of wc) {
+    if (g.status === "final") {
+      consider(g.id, g.date, "wc", g.away.abbreviation, g.home.abbreviation);
+    }
+  }
+  if (cands.length === 0) return null;
+  cands.sort((a, b) => b.ms - a.ms);
+  return cands[0].p;
+}
+
 export function buildTodayPayload({
   nba,
   nbaRecent,
@@ -1916,6 +2006,7 @@ export function buildTodayPayload({
     pinnedSummary,
     knockoutMoments: buildKnockoutMoments(wc, follows),
     scoreboard: buildScoreboard(nba, wc, follows, pinned),
+    reliancePrompt: buildReliancePrompt(recentForWrap, wc, follows, now),
   };
 }
 
