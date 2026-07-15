@@ -250,9 +250,56 @@ final-week experience and add no controls, so they're defensible now.
 Direction 2 waits (WC-flag prototype at most). Still weigh against the
 reliance-first discipline: this is polish, not survival.
 
+## App-wide UX coherence — adopted 2026-07-15 (whole-app UX review)
+
+Verdict: do NOT redesign — System D is distinctive and earns its stakes.
+The app-wide opportunity is COHERENCE (setup/empty/Settings/nav states read
+like separate utilities in the same typography).
+
+**Four coherence leaks — FIXED 2026-07-15** (they damage premium perception
+more than any missing animation):
+1. Today's Quiet Wrap filled empty slots with non-followed finals →
+   followers now see only their own finals.
+2. Game-detail cold-deep-link back was always "Watching" → now "Today"
+   (in-app nav was already origin-aware via router.back).
+3. Watching's "track a game" CTAs pointed to Following (which only
+   configures) → now Today/Schedule (where you actually open a game).
+4. Two asks could stack in one visit → the Margin prompt yields to any
+   notification/install ask (one ask per visit, notifications first).
+
+**Winning direction (deferred build): The Living Edition.** Treat every
+followed game as ONE continuous object across Follow → Today → Schedule →
+Detail → Watching → Lock Screen → Final: identity + state persist instead
+of each surface rendering an unrelated representation. Precedents: Apple
+Sports (enter a game, move between adjacent live games, return from a Live
+Activity to the exact game) and Flighty (one flight object changing by
+journey phase across app + widgets + Dynamic Island + lock screen). Fold in
+one rule from each runner-up: followed identities recognizable immediately
+(Personal Folio); committed actions get precise visual + tactile feedback
+(Pocket Instrument). HARD RULE: never animate uncertainty — if both
+endpoints aren't known and fresh, use a plain cut. Build as ONE WC vertical
+slice first (England follow → semifinal on Today → game detail → Add to
+Watching → lock screen → final → Quiet Wrap), flawless incl. source-aware
+Back, No-Spoilers, Reduced Motion, stale data, app resume; then generalize
+to NBA series + NFL weeks. Effort L. Defer per the reliance-first discipline
+— this is the eventual signature, not a pre-substitution-proof build.
+
+**App-wide UX doctrine (adopt now as a rule, cheap to honor):**
+- Three depths: AMBIENT (push/widget/Live Activity — one fact, no config);
+  LANDING (Today/Schedule/Following/Watching — one dominant answer + one
+  likely action); DETAIL (game/country/series/Settings drawer — depth ok).
+- One ask per visit. One signature visualization per competition. One
+  entrance gesture per fresh visit. One looping cue, reserved for genuinely
+  live state. Configuration never competes visually with the sport.
+- A short session is success if the user leaves confident. Measure
+  time-to-confidence, exact deep-link restoration, tracking-handoff success,
+  and "can they name what matters in five seconds" — NOT dwell time.
+
 ## Out of scope
 
 - Regular-season leagues beyond the product rule (majors only).
 - Account system / cross-device (separate track).
 - Any change that reduces the calm, follows-first register.
 - Building the adaptive view model before the NFL competition is real.
+- Building The Living Edition continuity system before the reliance/
+  substitution claim is proven (lock the design; build the WC slice later).
