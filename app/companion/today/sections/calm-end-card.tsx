@@ -6,6 +6,7 @@ import { useNoSpoilers } from "../../providers";
 import { useEffectiveNoSpoilers } from "../../spoiler/reveal";
 import { useClosingDismissed } from "./use-closing-dismissed";
 import { useExit } from "../../hooks/use-exit";
+import { MomentRelayButton } from "../../push/MomentRelayButton";
 import type { ClosingMoment } from "../today-data";
 
 // CalmEndCard — the "honest ending" card.
@@ -59,6 +60,11 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
   if (isDismissed(moment.id)) return null;
 
   const isSeries = moment.kind === "series";
+  // The Moment Relay arm — only where NFL is genuinely the next moment: the
+  // World Cup wind-down and the dead-zone bridge. Not the NBA-Finals wind-down
+  // (the World Cup comes next there, not the NFL).
+  const showRelay =
+    moment.id === "tournament:wc-2026" || moment.kind === "deadzone";
   const nameChampion = Boolean(moment.champion) && !championHidden;
   const headline = nameChampion
     ? `${moment.champion!.name} are world champions.`
@@ -125,6 +131,14 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
             >
               {detail}
             </p>
+          ) : null}
+
+          {showRelay ? (
+            <MomentRelayButton
+              moment="nfl-2026"
+              label="Tell me when NFL is ready"
+              confirm="NFL is set. We'll stay quiet until it's ready."
+            />
           ) : null}
 
           {/* Acknowledge an auto-retired follow so the removal isn't silent
