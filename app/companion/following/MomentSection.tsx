@@ -20,7 +20,17 @@ import type { FollowMoment } from "./FollowChoice";
 // Adding a new moment (e.g. March Madness, Champions League) is just
 // appending another FollowMoment entry — no layout changes needed.
 
-export function MomentSection({ moment }: { moment: FollowMoment }) {
+export function MomentSection({
+  moment,
+  collapsed = false,
+}: {
+  moment: FollowMoment;
+  /** Collapsed = head + one-line description only, no granularity ladder.
+   *  Used for concluded moments on the "Follow more" hub: a new user should
+   *  lead with what's followable, not scroll past two dead wrapped ladders.
+   *  The breadth signal ("we cover NBA + soccer") stays; the clutter goes. */
+  collapsed?: boolean;
+}) {
   const isComingSoon = Boolean(moment.comingSoon);
   // A concluded tournament dims + becomes non-followable here too, like a
   // coming-soon moment — but the chip reads "Season wrapped" and the rows
@@ -90,6 +100,7 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
         >
           {moment.description}
         </p>
+        {collapsed ? null : (
         <ul>
           {moment.granularities.map((g) => {
             const inner = (
@@ -159,6 +170,7 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
             );
           })}
         </ul>
+        )}
       </section>
 
       {/* ── Desktop: legacy card, unchanged until the desktop pass ──── */}
@@ -211,7 +223,9 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
           coming-soon sections render each row as a static div with a
           "Not yet" tail so the row reads as informational. The shape
           stays identical so users see the same model regardless of
-          whether they can act on it today. */}
+          whether they can act on it today. Collapsed (concluded on the
+          hub) drops the ladder entirely — head + description only. */}
+      {collapsed ? null : (
       <ul>
         {moment.granularities.map((g) => {
           const inner = (
@@ -296,6 +310,7 @@ export function MomentSection({ moment }: { moment: FollowMoment }) {
           );
         })}
       </ul>
+      )}
     </section>
     </>
   );

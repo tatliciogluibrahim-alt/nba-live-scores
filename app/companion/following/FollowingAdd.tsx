@@ -1,7 +1,16 @@
 import { Display } from "../atoms/Display";
-import { FOLLOW_MOMENTS } from "./FollowChoice";
+import { FOLLOW_MOMENTS, type FollowMoment } from "./FollowChoice";
 import { MomentSection } from "./MomentSection";
 import { PickYourMomentGate } from "./PickYourMoment";
+import { tournamentPhase } from "./data/tournament-phase";
+
+// A moment is followable on the hub unless its tournament has concluded.
+// (Coming-soon moments stay followable-shaped; only WRAPPED seasons demote.)
+function isConcludedMoment(m: FollowMoment): boolean {
+  return (
+    !!m.tournamentId && tournamentPhase(m.tournamentId) === "concluded"
+  );
+}
 
 // /following/add — moment-grouped follow picker. NBA Playoffs and
 // Summer Soccer 2026 each get their own section with a granularity
@@ -26,6 +35,13 @@ import { PickYourMomentGate } from "./PickYourMoment";
 // doc for the full moment+scope refactor.
 
 export function FollowingAdd() {
+  // Lead with what a user can actually follow. Concluded seasons still show
+  // (breadth signal — the app covers NBA + soccer) but demoted to the bottom
+  // and collapsed to a single quiet row each, so the first thing a new user
+  // sees is a live, followable moment, not two dead wrapped ladders.
+  const followable = FOLLOW_MOMENTS.filter((m) => !isConcludedMoment(m));
+  const concluded = FOLLOW_MOMENTS.filter(isConcludedMoment);
+
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
       <Display as="h1" size="lg" className="mb-2">
@@ -40,10 +56,32 @@ export function FollowingAdd() {
 
       <PickYourMomentGate>
         <div className="space-y-3">
-          {FOLLOW_MOMENTS.map((moment) => (
+          {followable.map((moment) => (
             <MomentSection key={moment.id} moment={moment} />
           ))}
         </div>
+
+        {concluded.length > 0 ? (
+          <div className="mt-10">
+            <p
+              className="uppercase"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.14em",
+                color: "var(--mute-2)",
+              }}
+            >
+              Recently wrapped
+            </p>
+            <div className="space-y-1">
+              {concluded.map((moment) => (
+                <MomentSection key={moment.id} moment={moment} collapsed />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </PickYourMomentGate>
     </main>
   );
