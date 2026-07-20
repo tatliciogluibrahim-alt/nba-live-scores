@@ -865,5 +865,55 @@ function buildTemplatePayload(event: PushEvent, noSpoilers: boolean): PushPayloa
         url: `/game/${event.gameId}`,
         tag: `${event.gameId}:wc-state`,
       };
+
+    // ── NFL (Phase 22). Game-state events share one collapse tag
+    // (`${id}:nfl-state`) like the WC lifecycle, so each replaces the last;
+    // per-play events keep their own tag so goals/TDs persist. No-Spoilers
+    // drops the score AND the player name (a name is itself a fantasy
+    // spoiler, per docs/nfl-design.md) — the title stays neutral. ──────────
+    case "nfl-kickoff":
+      return nflPayload(event, "Kickoff", noSpoilers ? "The game is underway." : matchup, `${event.gameId}:nfl-state`);
+    case "nfl-eoq-1":
+      return nflPayload(event, "End of Q1", noSpoilers ? "First quarter wrapped." : scoreLine(event), `${event.gameId}:nfl-state`);
+    case "nfl-halftime":
+      return nflPayload(event, "Halftime", noSpoilers ? "Halftime. Tap to check in." : scoreLine(event), `${event.gameId}:nfl-state`);
+    case "nfl-eoq-3":
+      return nflPayload(event, "End of Q3", noSpoilers ? "Third quarter wrapped." : scoreLine(event), `${event.gameId}:nfl-state`);
+    case "nfl-ot":
+      return nflPayload(event, "Overtime", noSpoilers ? "We're going to overtime." : scoreLine(event), `${event.gameId}:nfl-state`);
+    case "nfl-final":
+      return nflPayload(event, "Final", noSpoilers ? "Game wrapped. Tap when you're ready." : scoreLine(event), `${event.gameId}:nfl-state`);
+    case "nfl-td-rushing":
+    case "nfl-td-receiving":
+    case "nfl-td-defensive":
+      return nflPayload(event, "Touchdown", noSpoilers ? "A touchdown was scored." : event.note ?? scoreLine(event), `${event.gameId}:${event.type}:${event.awayScore}-${event.homeScore}`);
+    case "nfl-fg":
+      return nflPayload(event, "Field goal", noSpoilers ? "A field goal was made." : event.note ?? scoreLine(event), `${event.gameId}:nfl-fg:${event.awayScore}-${event.homeScore}`);
+    case "nfl-safety":
+      return nflPayload(event, "Safety", noSpoilers ? "A safety was scored." : event.note ?? scoreLine(event), `${event.gameId}:nfl-safety:${event.awayScore}-${event.homeScore}`);
+    case "nfl-2pt":
+      return nflPayload(event, "Two-point try", noSpoilers ? "A two-point conversion was attempted." : event.note ?? scoreLine(event), `${event.gameId}:nfl-2pt:${event.awayScore}-${event.homeScore}`);
+    case "nfl-turnover":
+      return nflPayload(event, "Turnover", noSpoilers ? "A turnover changed possession." : event.note ?? matchup, `${event.gameId}:nfl-turnover:${event.note ?? ""}`);
+    case "nfl-big-play-rush":
+    case "nfl-big-play-rec":
+      return nflPayload(event, "Big play", noSpoilers ? "A big play just happened." : event.note ?? matchup, `${event.gameId}:${event.type}:${event.note ?? ""}`);
   }
+}
+
+/** Shared NFL payload shape — subtitle is always the plain matchup (NFL
+ *  carries no knockout stage), url is the game detail. */
+function nflPayload(
+  event: PushEvent,
+  title: string,
+  body: string,
+  tag: string
+): PushPayload {
+  return {
+    title,
+    subtitle: `${event.awayCode} vs ${event.homeCode}`,
+    body,
+    url: `/game/${event.gameId}`,
+    tag,
+  };
 }

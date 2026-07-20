@@ -29,6 +29,8 @@ export type SignificanceInput = {
   minute?: number;
   /** nba-highlight scoring milestone crossed (30/40/50/60). */
   milestone?: number;
+  /** NFL big play distance in yards (rush/reception). Longer = louder. */
+  yards?: number;
 };
 
 const clamp = (n: number): number => Math.max(0, Math.min(100, Math.round(n)));
@@ -135,6 +137,41 @@ export function scoreEvent(i: SignificanceInput): number {
       return clamp(45 + (i.isGame7 ? 25 : 0));
     case "nba-highlight":
       return clamp(HIGHLIGHT_WEIGHT[i.milestone ?? 30] ?? 38);
+
+    // ── NFL (Phase 22 gate 4) ──────────────────────────────────────────
+    // Calibrated to the design-doc tier mapping under the {0,42,70}
+    // thresholds + 25 boost: kickoff/final are invariants (own team, every
+    // tier); a TD reaches own-team Companion (40+25=65) but not Quiet, and
+    // any team via All; FG/safety/2pt/big-play are All-only (score < 17 so
+    // even own-team+boost stays under Companion); a game reaching OT is a
+    // "big moment" that breaks through to own-team Quiet (48+25=73).
+    case "nfl-kickoff":
+      return clamp(45);
+    case "nfl-final":
+      return clamp(72);
+    case "nfl-ot":
+      return clamp(48);
+    case "nfl-eoq-1":
+    case "nfl-halftime":
+    case "nfl-eoq-3":
+      return clamp(20);
+    case "nfl-td-rushing":
+    case "nfl-td-receiving":
+    case "nfl-td-defensive":
+      return clamp(40);
+    case "nfl-turnover":
+      return clamp(38);
+    case "nfl-big-play-rush":
+    case "nfl-big-play-rec":
+      // Longer runs read louder, but stay All-only (< 17 even at 60+ yds).
+      return clamp(12 + Math.min(Math.max((i.yards ?? 40) - 40, 0) / 20, 4));
+    case "nfl-fg":
+      return clamp(12);
+    case "nfl-safety":
+      return clamp(14);
+    case "nfl-2pt":
+      return clamp(12);
+
     default:
       return 20;
   }
@@ -156,6 +193,8 @@ export const PERSONAL_BOOST = 25;
 export const TIER_INVARIANT_EVENTS = new Set([
   "tipoff",
   "wc-kickoff",
+  "nfl-kickoff",
   "final",
   "wc-final",
+  "nfl-final",
 ]);

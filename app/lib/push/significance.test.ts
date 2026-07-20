@@ -53,6 +53,56 @@ describe("scoreEvent — WC (the live proving ground)", () => {
   });
 });
 
+describe("scoreEvent — NFL (design-doc tier mapping under the significance gate)", () => {
+  // Reproduce the gate: score + (direct ? boost : 0) >= threshold[tier].
+  const reaches = (
+    score: number,
+    tier: keyof typeof SIGNIFICANCE_THRESHOLD,
+    direct: boolean
+  ) => score + (direct ? PERSONAL_BOOST : 0) >= SIGNIFICANCE_THRESHOLD[tier];
+
+  it("kickoff + final are invariants (own team, every tier)", () => {
+    // Base scores reach Companion for a direct follow; the invariant floor
+    // (TIER_INVARIANT_EVENTS) guarantees Quiet regardless — asserted in the
+    // dispatcher tests. Here we just confirm the base isn't accidentally low.
+    expect(reaches(scoreEvent({ type: "nfl-kickoff" }), "companion", true)).toBe(true);
+    expect(reaches(scoreEvent({ type: "nfl-final" }), "quiet", true)).toBe(true);
+  });
+
+  it("a TD reaches own-team Companion but not own-team Quiet; any team via All", () => {
+    const td = scoreEvent({ type: "nfl-td-rushing" });
+    expect(reaches(td, "companion", true)).toBe(true); // your team's TD
+    expect(reaches(td, "quiet", true)).toBe(false); // not a Quiet-tier ping
+    expect(reaches(td, "all", false)).toBe(true); // any team on Full Details
+  });
+
+  it("FG / safety / 2pt / big plays are Full-Details-only (not even own-team Companion)", () => {
+    for (const type of ["nfl-fg", "nfl-safety", "nfl-2pt"] as const) {
+      expect(reaches(scoreEvent({ type }), "companion", true)).toBe(false);
+      expect(reaches(scoreEvent({ type }), "all", false)).toBe(true);
+    }
+    const bigPlay = scoreEvent({ type: "nfl-big-play-rush", yards: 62 });
+    expect(reaches(bigPlay, "companion", true)).toBe(false);
+    expect(reaches(bigPlay, "all", false)).toBe(true);
+  });
+
+  it("a game reaching OT is a big moment — breaks through to own-team Quiet", () => {
+    expect(reaches(scoreEvent({ type: "nfl-ot" }), "quiet", true)).toBe(true);
+  });
+
+  it("a turnover reaches own-team Companion", () => {
+    expect(reaches(scoreEvent({ type: "nfl-turnover" }), "companion", true)).toBe(true);
+    expect(reaches(scoreEvent({ type: "nfl-turnover" }), "quiet", true)).toBe(false);
+  });
+
+  it("a longer big play scores higher but stays under Companion", () => {
+    const short = scoreEvent({ type: "nfl-big-play-rec", yards: 41 });
+    const long = scoreEvent({ type: "nfl-big-play-rec", yards: 75 });
+    expect(long).toBeGreaterThan(short);
+    expect(reaches(long, "companion", true)).toBe(false);
+  });
+});
+
 describe("scoreEvent — NBA", () => {
   it("a Game 7 final is a max-significance moment", () => {
     expect(

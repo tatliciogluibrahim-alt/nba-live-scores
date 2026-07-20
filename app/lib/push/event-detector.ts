@@ -47,6 +47,23 @@ export const EVENT_TYPES = [
   "wc-second-half",
   "wc-goal",
   "wc-final",
+  // NFL (Phase 22). Game-state family mirrors NBA; per-play family is the
+  // fantasy vector. Detected in nfl-event-detector / nfl-play-detector.
+  "nfl-kickoff",
+  "nfl-eoq-1",
+  "nfl-halftime",
+  "nfl-eoq-3",
+  "nfl-ot",
+  "nfl-final",
+  "nfl-td-rushing",
+  "nfl-td-receiving",
+  "nfl-td-defensive",
+  "nfl-fg",
+  "nfl-safety",
+  "nfl-2pt",
+  "nfl-big-play-rush",
+  "nfl-big-play-rec",
+  "nfl-turnover",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

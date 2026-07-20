@@ -47,6 +47,27 @@ const MATRIX: Record<EventType, ReadonlySet<AlertPreset>> = {
   // soccer scores belong in the everyday "watch the team" tier.
   "wc-goal": new Set<AlertPreset>(["companion", "all"]),
   "wc-final": new Set<AlertPreset>(["quiet", "companion", "all"]),
+  // NFL (Phase 22, docs/nfl-design.md tier mapping). The significance
+  // engine is what actually gates at dispatch; this matrix documents the
+  // intended tier per event (and keeps the taxonomy-exhaustiveness test
+  // meaningful). Game state: kickoff/final are bookends (every tier), the
+  // quarter pulses + OT are Companion+. Per-play: TDs + turnovers are
+  // Companion (own team) + All; FG/safety/2pt/big plays are the loud tier.
+  "nfl-kickoff": new Set<AlertPreset>(["quiet", "companion", "all"]),
+  "nfl-eoq-1": new Set<AlertPreset>(["companion", "all"]),
+  "nfl-halftime": new Set<AlertPreset>(["companion", "all"]),
+  "nfl-eoq-3": new Set<AlertPreset>(["companion", "all"]),
+  "nfl-ot": new Set<AlertPreset>(["quiet", "companion", "all"]),
+  "nfl-final": new Set<AlertPreset>(["quiet", "companion", "all"]),
+  "nfl-td-rushing": new Set<AlertPreset>(["companion", "all"]),
+  "nfl-td-receiving": new Set<AlertPreset>(["companion", "all"]),
+  "nfl-td-defensive": new Set<AlertPreset>(["companion", "all"]),
+  "nfl-turnover": new Set<AlertPreset>(["companion", "all"]),
+  "nfl-fg": new Set<AlertPreset>(["all"]),
+  "nfl-safety": new Set<AlertPreset>(["all"]),
+  "nfl-2pt": new Set<AlertPreset>(["all"]),
+  "nfl-big-play-rush": new Set<AlertPreset>(["all"]),
+  "nfl-big-play-rec": new Set<AlertPreset>(["all"]),
 };
 
 export function presetMatchesEvent(
