@@ -2,6 +2,35 @@
 
 ---
 
+## NFL push detectors — Phase 22 gate 4 (pure core) — 2026-07-20
+
+The push pipeline's pure, testable core — built now (calendar-independent)
+so gate 4's live wiring is fast once preseason data flows (~Aug 6).
+
+- Taxonomy: 15 NFL event types (game-state + per-play) in EVENT_TYPES +
+  the preset matrix (design-doc tier mapping). Significance NFL cases
+  calibrated so the {0,42,70}+25 gate reproduces that mapping:
+  kickoff/final are invariants; TDs reach own-team Companion (not Quiet),
+  any team via All; FG/safety/2pt/big-plays are Full-Details-only; OT
+  breaks through to own-team Quiet. Tier-outcome tests lock it.
+- `detectNFLEvents` (game-state): kickoff / quarter breaks / OT / final,
+  mirroring the NBA detector. Improved on the spec — quarter breaks fire
+  on the actual boundary CROSSING, never backfilling a missed break (a
+  late "End of Q1" at halftime is noise). nfl-state-cache = thin KV I/O.
+- `detectNFLPlays` (the fantasy vector): classifies scoring plays into
+  rush/rec/def TD (parsed from the play text), FG, safety, 2pt; scans the
+  current drive for ≥40yd big plays + turnovers; dedups on play id. The
+  play description is the alert note. VERIFIED against a real CHI-MIN
+  capture — all 9 scoring plays classify correctly. NFL dispatcher
+  payloads carry the design-doc No-Spoilers rule (drop score AND player
+  name).
+
+Remaining for gate 4 (needs live preseason data to verify, ~Aug 6):
+scan-nfl cron + cron-job.org entry, wiring the detectors into the scan
+loop + dispatchEvents, per-game summary fetch. 614 tests, build 93 pages.
+
+---
+
 ## NFL data spine — Phase 22 gate 2 (spine complete) — 2026-07-20
 
 The foundation for the NFL build, seven weeks ahead of the Sept 9 opener.

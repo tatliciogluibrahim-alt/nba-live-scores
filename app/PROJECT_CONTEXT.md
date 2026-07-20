@@ -654,6 +654,21 @@ carried).
 Route count: 84. Gate: lint 0 / 380 tests / build / live-verify, per
 ship-gate.
 
+## Session wrap 2026-07-20 (cont.) — Phase 22 gate 4 pure core SHIPPED
+
+After the gate-2 spine, built gate 4's calendar-independent core: NFL
+push taxonomy + significance (tier-outcome tests), detectNFLEvents
+(game-state, crossing-based quarter breaks — improved on the spec),
+detectNFLPlays (the fantasy vector, VERIFIED vs a real CHI-MIN
+scoring-play capture — all 9 plays classify), nfl-state-cache, NFL
+dispatcher payloads (No-Spoilers drops score + player name). Gates 2 + 4
+now have their pure cores done + verified against real ESPN data, weeks
+early. What's LEFT is all calendar-gated to preseason (~Aug 6): gate 3
+(Following live — picker, drop comingSoon), gate 4 wiring (scan-nfl cron
++ detector→dispatch loop + summary fetch), gate 5 (native + detail), gate
+6 (Week 1 go-live + fire the relay). The hard, breakable parts (feed
+parsing, play classification, tier calibration) are behind us + verified.
+
 ## Session wrap 2026-07-20 — Phase 22 gate 2 spine SHIPPED
 
 NFL data spine is built + live-verified 7 weeks before the opener.

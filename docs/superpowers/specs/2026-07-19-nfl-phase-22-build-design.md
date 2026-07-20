@@ -117,7 +117,18 @@ live, Quiet default tier per nfl-design. Relay does NOT fire yet.
 Go/no-go: follow → appears on Today with the team's next real game;
 alert slots + tier UI correct; on-device.
 
-### Gate 4 — Push pipeline (~Aug 17–29)
+### Gate 4 — Push pipeline (~Aug 17–29) — PURE CORE SHIPPED 2026-07-20
+
+STATUS: the pure, calendar-independent core is built + tested early.
+Done: NFL taxonomy (EVENT_TYPES + matrix), significance NFL cases +
+invariants (tier-outcome tests), detectNFLEvents (game-state, crossing-
+based quarter breaks), detectNFLPlays (per-play, verified vs real
+scoring-play capture), nfl-state-cache, NFL dispatcher payloads with the
+No-Spoilers rule. REMAINING (needs live preseason ~Aug 6 to verify):
+scan-nfl cron + cron-job.org entry, detector wiring into the scan loop +
+dispatchEvents, per-game summary fetch.
+
+Original scope:
 
 `nfl-event-detector` (state: kickoff/eoq/halftime/final/OT + 2-minute
 warning, 8pt close-game, ≥14 comeback), `nfl-play-detector`
