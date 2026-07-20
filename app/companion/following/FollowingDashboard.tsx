@@ -7,6 +7,7 @@ import { Masthead } from "../system/Masthead";
 import { SecHead } from "../system/SecHead";
 import { resolveFollowIdentity } from "../follow/identity";
 import { useFollows } from "../providers";
+import { teamFollowCodes } from "../state/moments";
 import type { Follow } from "../state/types";
 import { type FollowCardData } from "./FollowCard";
 import { FollowRow } from "./FollowRow";
@@ -47,13 +48,13 @@ function hasOverlappingFollows(follows: Follow[]): boolean {
   // Tournament + anything else is the simplest overlap.
   if (tournaments.length > 0 && otherKinds.length > 0) return true;
 
-  // Series + matching team(s).
-  const teamIds = new Set(
-    follows.filter((f) => f.kind === "team").map((f) => f.id)
-  );
+  // Series + matching team(s). Series are NBA-only, so compare against NBA
+  // team follows only (an NFL "CLE" must not overlap an NBA "CLE-XXX"
+  // series). teamFollowCodes uppercases; uppercase the series legs to match.
+  const teamIds = teamFollowCodes(follows, "nba");
   for (const f of follows) {
     if (f.kind !== "series") continue;
-    const [a, b] = f.id.split("-");
+    const [a, b] = f.id.split("-").map((c) => c.toUpperCase());
     if ((a && teamIds.has(a)) || (b && teamIds.has(b))) return true;
   }
 

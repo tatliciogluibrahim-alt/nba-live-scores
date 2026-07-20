@@ -31,6 +31,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
     teamCodes: payload
       ? [payload.teamA.abbr, payload.teamB.abbr]
       : seriesKey.split("-").filter(Boolean),
+    sport: "nba",
   });
   const hideResults = noSpoilers || followHidden;
 

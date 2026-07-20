@@ -153,6 +153,7 @@ function ScheduleRow({
   const globalHidden = useNoSpoilers();
   const followHidden = useFollowHidesGame({
     countryCodes: [match.awayCode, match.homeCode],
+    sport: "wc",
   });
   const hidden = globalHidden || followHidden;
   const { isRevealed } = useReveal();

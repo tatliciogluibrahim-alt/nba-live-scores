@@ -155,8 +155,8 @@ export function buildLiveEntries(
       follows,
       // WC matches on country codes; NBA + NFL both match on team codes.
       sport === "wc"
-        ? { countryCodes: [away, home] }
-        : { teamCodes: [away, home] }
+        ? { countryCodes: [away, home], sport }
+        : { teamCodes: [away, home], sport }
     );
   };
 

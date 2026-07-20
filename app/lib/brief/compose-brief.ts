@@ -18,6 +18,8 @@ import type { Follow } from "../../companion/state/types";
 import type { BriefSubscriber } from "./subscriber-store";
 import { deriveNBARecap } from "../../companion/recap/derive-recap";
 import { getTeam } from "../../companion/following/data/teams";
+import { nflTeamDisplayName } from "../../companion/following/data/nfl-teams";
+import { momentSport } from "../../companion/state/moments";
 import {
   countryKnockoutOutcome,
   knockoutResult,
@@ -52,6 +54,12 @@ function listWithAnd(items: string[]): string {
 function followLabel(follow: Follow): string {
   switch (follow.kind) {
     case "team":
+      // Path B collision guard: "CLE" is both the Cavaliers and the Browns.
+      // Resolve the label against the follow's moment sport, not the bare
+      // code, so an NFL follow never renders as its NBA namesake.
+      if (momentSport(follow.momentId) === "nfl") {
+        return nflTeamDisplayName(follow.id);
+      }
       return getTeam(follow.id)?.name ?? follow.id;
     case "country":
       return countryDisplayName(follow.id);
@@ -154,8 +162,12 @@ type EditorialMoment = {
 const followsNBA = (follows: Follow[]): boolean =>
   follows.some(
     (f) =>
+      // Guard the team branch by moment sport: "CLE" is both the Cavaliers
+      // and the Browns, so an NFL Browns follow must not count as NBA here.
       (f.kind === "tournament" && f.id.startsWith("nba-playoffs-")) ||
-      (f.kind === "team" && ["SA", "NYK", "OKC", "CLE"].includes(f.id)) ||
+      (f.kind === "team" &&
+        momentSport(f.momentId) === "nba" &&
+        ["SA", "NYK", "OKC", "CLE"].includes(f.id)) ||
       (f.kind === "series" &&
         /\b(SA|NYK|OKC|CLE)\b/.test(f.id))
   );

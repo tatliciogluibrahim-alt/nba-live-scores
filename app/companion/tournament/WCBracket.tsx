@@ -412,6 +412,7 @@ function BracketMatchRow({
   const globalHidden = useNoSpoilers();
   const followHidden = useFollowHidesGame({
     countryCodes: [match.away.code, match.home.code],
+    sport: "wc",
   });
   const hidden = globalHidden || followHidden;
   const { isRevealed } = useReveal();

@@ -132,8 +132,8 @@ function gameIsHidden(
   return followHidesParticipants(
     follows,
     item.source === "wc"
-      ? { countryCodes: [item.awayCode, item.homeCode] }
-      : { teamCodes: [item.awayCode, item.homeCode] }
+      ? { countryCodes: [item.awayCode, item.homeCode], sport: "wc" }
+      : { teamCodes: [item.awayCode, item.homeCode], sport: item.source }
   );
 }
 

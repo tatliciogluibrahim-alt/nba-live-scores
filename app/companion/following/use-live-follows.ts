@@ -119,7 +119,13 @@ export function useLiveFollows(): Set<string> {
  *  - team: abbreviation is in the live set
  *  - country: country code is in the live set
  *  - series: series key (sorted "AWAY-HOME") is in the live set
- *  - tournament: special "nba-playoffs-live" / "wc-live" markers */
+ *  - tournament: special "nba-playoffs-live" / "wc-live" markers
+ *
+ *  Path B note: liveFollowKey is not yet sport-scoped. This hook only
+ *  fetches NBA + WC today, so the sole cross-sport risk is an NFL "CLE"
+ *  team follow lighting up on a live NBA "CLE" game. When NFL live data is
+ *  threaded into useLiveFollows (Phase 22 build step), scope the key by
+ *  sport (nba:CLE vs nfl:CLE) and pass the follow's momentSport here. */
 export function isFollowLive(
   kind: string,
   id: string,

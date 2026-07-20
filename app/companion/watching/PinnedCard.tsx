@@ -39,8 +39,8 @@ export function TrackedAgateRow({
   const globalNoSpoilers = useNoSpoilers();
   const followHidden = useFollowHidesGame(
     item.source === "wc"
-      ? { countryCodes: [item.awayCode, item.homeCode] }
-      : { teamCodes: [item.awayCode, item.homeCode] }
+      ? { countryCodes: [item.awayCode, item.homeCode], sport: "wc" }
+      : { teamCodes: [item.awayCode, item.homeCode], sport: item.source }
   );
   const hidden = globalNoSpoilers || followHidden;
 

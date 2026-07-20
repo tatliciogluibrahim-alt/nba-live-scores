@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { buildTodayPayload } from "./today-data";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
-import type { Follow, NBAGame } from "./today-data";
+import type { NBAGame } from "./today-data";
+import type { Follow } from "../state/types";
 
 function nflGame(over: Partial<NFLGameLite> = {}): NFLGameLite {
   return {

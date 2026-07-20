@@ -224,6 +224,7 @@ function FeederRow({
   const globalHidden = useNoSpoilers();
   const followHidden = useFollowHidesGame({
     countryCodes: [match.away.code, match.home.code],
+    sport: "wc",
   });
   const hidden = globalHidden || followHidden;
   const { isRevealed } = useReveal();
@@ -340,6 +341,7 @@ function SlotCell({
   const globalHidden = useNoSpoilers();
   const followHidden = useFollowHidesGame({
     countryCodes: match ? [match.away.code, match.home.code] : [],
+    sport: "wc",
   });
   const hidden = globalHidden || followHidden;
   const { isRevealed } = useReveal();

@@ -250,6 +250,7 @@ function WCConcludedBanner() {
               finalFixture.home.abbreviation,
             ]
           : [champion.awayCode, champion.homeCode],
+        sport: "wc",
       })
     : false;
   const hideChampion = Boolean(
@@ -662,6 +663,7 @@ function NBAPlayoffsBody() {
               globalNoSpoilers ||
               followHidesParticipants(follows, {
                 teamCodes: [s.a, s.b],
+                sport: "nba",
               })
             }
           />

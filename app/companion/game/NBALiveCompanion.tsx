@@ -87,6 +87,7 @@ export function NBALiveCompanion({
   const globalNoSpoilers = useNoSpoilers();
   const followHidden = useFollowHidesGame({
     teamCodes: [game.away.abbreviation, game.home.abbreviation],
+    sport: "nba",
   });
   const baseHidden = Boolean(__previewHidden) || globalNoSpoilers || followHidden;
   const { isRevealed, reveal } = useReveal();

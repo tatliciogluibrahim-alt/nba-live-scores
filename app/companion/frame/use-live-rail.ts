@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useFollows, usePinned } from "../providers";
 import { getTournament } from "../following/data/tournaments";
+import { momentSport } from "../state/moments";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import type { NBAGame, WCGameLite } from "../today/today-data";
@@ -64,13 +65,19 @@ function buildCoverage(follows: Follow[], pinnedIds: Set<string>) {
   let wcTour = false;
   let nbaTour = false;
   for (const f of follows) {
-    if (f.kind === "team") nbaCodes.add(f.id.toUpperCase());
-    else if (f.kind === "country") wcCodes.add(f.id.toUpperCase());
+    // Path B collision guard: an NFL team/tournament follow must not light
+    // up an NBA game (the rail reads only NBA+WC feeds today; NFL pips are
+    // a later build). Gate the NBA bucket on the follow's moment sport, and
+    // match the WC tournament by accent explicitly — no NBA catch-all.
+    if (f.kind === "team") {
+      if (momentSport(f.momentId) === "nba") nbaCodes.add(f.id.toUpperCase());
+    } else if (f.kind === "country") wcCodes.add(f.id.toUpperCase());
     else if (f.kind === "series")
       f.id.split("-").forEach((c) => nbaCodes.add(c.toUpperCase()));
     else if (f.kind === "tournament") {
-      if (getTournament(f.id)?.accent === "var(--wc)") wcTour = true;
-      else nbaTour = true;
+      const accent = getTournament(f.id)?.accent;
+      if (accent === "var(--wc)") wcTour = true;
+      else if (accent === "var(--nba)") nbaTour = true;
     }
   }
   return (away: string, home: string, sport: "nba" | "wc", id: string) =>

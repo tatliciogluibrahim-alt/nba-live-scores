@@ -1,4 +1,5 @@
 import type { Follow } from "../state/types";
+import { momentSport } from "../state/moments";
 
 export type NBAFollowCoverage = {
   directTeamCodes: Set<string>;
@@ -22,6 +23,9 @@ export function buildNBAFollowCoverage(
 
   for (const follow of follows) {
     if (follow.kind === "team") {
+      // NBA coverage only — an NFL team follow (Path B) must not mark an
+      // NBA game as followed (the LAC = Chargers/Clippers collision).
+      if (momentSport(follow.momentId) !== "nba") continue;
       const code = normalizeCode(follow.id);
       if (code) directTeamCodes.add(code);
       continue;

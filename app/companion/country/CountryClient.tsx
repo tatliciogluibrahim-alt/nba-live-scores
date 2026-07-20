@@ -111,7 +111,7 @@ function CountryMobile({
   );
   const hideCountryState =
     globalNoSpoilers ||
-    followHidesParticipants(follows, { countryCodes: [country.id] });
+    followHidesParticipants(follows, { countryCodes: [country.id], sport: "wc" });
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-2">
@@ -186,6 +186,7 @@ function CountryMobile({
               globalNoSpoilers ||
               followHidesParticipants(follows, {
                 countryCodes: [country.id, f.opponentCode],
+                sport: "wc",
               });
             return (
               <GameSpoilerScope

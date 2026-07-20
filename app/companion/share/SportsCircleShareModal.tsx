@@ -31,7 +31,9 @@ function toRows(follows: Follow[]): CircleRow[] {
   return follows.map((f) => {
     const identity = resolveFollowIdentity(f);
     return {
-      key: `${f.kind}-${f.id}`,
+      // momentId disambiguates the Path B collision: an NFL "CLE" (Browns)
+      // and an NBA "CLE" (Cavaliers) share kind+id but are distinct rows.
+      key: `${f.momentId}-${f.kind}-${f.id}`,
       name: identity.name,
       kindLabel: identity.kindLabel,
       accent: ACCENT_HEX[identity.accent] ?? "#6b6147",

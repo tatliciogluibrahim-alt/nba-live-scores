@@ -31,6 +31,7 @@ export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
   const globalNoSpoilers = useNoSpoilers();
   const followHidden = useFollowHidesGame({
     countryCodes: [moment.countryCode, moment.opponentCode],
+    sport: "wc",
   });
   const { isRevealed } = useReveal();
   const noSpoilers =

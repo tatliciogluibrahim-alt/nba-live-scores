@@ -79,8 +79,8 @@ function QuietWrapAgateRow({ item, idx }: { item: QuietWrapItem; idx: string }) 
   const globalNoSpoilers = useNoSpoilers();
   const followHidden = useFollowHidesGame(
     item.source === "wc"
-      ? { countryCodes: [away, home] }
-      : { teamCodes: [away, home] }
+      ? { countryCodes: [away, home], sport: "wc" }
+      : { teamCodes: [away, home], sport: item.source }
   );
   const hidden = globalNoSpoilers || followHidden;
 

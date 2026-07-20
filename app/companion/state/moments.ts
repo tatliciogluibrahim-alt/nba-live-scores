@@ -112,3 +112,56 @@ export function legacyKindOf(f: Pick<FollowV2, "scope">): FollowKind | null {
 export function legacyIdOf(f: Pick<FollowV2, "momentId" | "scopeId">): string {
   return f.scopeId ?? f.momentId;
 }
+
+// ── Sport-scoped follow readers (Path B collision guard) ───────────────
+// The derived legacy `id`/`kind` on a Follow can't tell an NFL "LAC"
+// (Chargers) from an NBA "LAC" (Clippers) — and NFL/NBA seasons overlap.
+// EVERY game-reading surface that matches a followed team to a game MUST
+// resolve the sport through the follow's MOMENT, not the bare code. These
+// helpers are the one place that logic lives so no reader re-introduces
+// the collision. Input is the minimal follow shape (works with FollowV2
+// or the runtime Follow).
+
+type ScopedFollow = Pick<FollowV2, "momentId" | "scope" | "scopeId">;
+
+/** Uppercased entity codes of team follows for one sport. Empty for a
+ *  sport the user follows no team in. */
+export function teamFollowCodes(
+  follows: readonly ScopedFollow[],
+  sport: Sport
+): Set<string> {
+  const out = new Set<string>();
+  for (const f of follows) {
+    if (
+      f.scope === "team" &&
+      f.scopeId &&
+      momentSport(f.momentId) === sport
+    ) {
+      out.add(f.scopeId.toUpperCase());
+    }
+  }
+  return out;
+}
+
+/** Series follow keys (sorted "A-B") for one sport (NBA today). */
+export function seriesFollowIds(
+  follows: readonly ScopedFollow[],
+  sport: Sport
+): string[] {
+  return follows
+    .filter(
+      (f) => f.scope === "series" && f.scopeId && momentSport(f.momentId) === sport
+    )
+    .map((f) => f.scopeId as string);
+}
+
+/** True when the user follows the WHOLE moment (scope "all") of a sport —
+ *  the old "tournament follow" that covers every game in it. */
+export function followsWholeSport(
+  follows: readonly ScopedFollow[],
+  sport: Sport
+): boolean {
+  return follows.some(
+    (f) => f.scope === "all" && momentSport(f.momentId) === sport
+  );
+}

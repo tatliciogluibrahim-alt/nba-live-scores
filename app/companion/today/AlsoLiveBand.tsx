@@ -71,8 +71,8 @@ function BandRow({ tile, idx }: { tile: ScoreboardTile; idx: string }) {
   const globalNoSpoilers = useNoSpoilers();
   const followHidden = useFollowHidesGame(
     tile.source === "wc"
-      ? { countryCodes: [tile.awayCode, tile.homeCode] }
-      : { teamCodes: [tile.awayCode, tile.homeCode] }
+      ? { countryCodes: [tile.awayCode, tile.homeCode], sport: "wc" }
+      : { teamCodes: [tile.awayCode, tile.homeCode], sport: tile.source }
   );
   const hidden = globalNoSpoilers || followHidden;
 

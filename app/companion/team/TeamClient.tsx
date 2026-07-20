@@ -7,6 +7,7 @@ import { Eyebrow } from "../atoms/Eyebrow";
 import { AlertSlotToggle } from "../follow/AlertSlotToggle";
 import { useFollows, useNoSpoilers } from "../providers";
 import { PRESETS, type Follow } from "../state/types";
+import { momentSport } from "../state/moments";
 import { getTeam, teamDisplayName } from "../following/data/teams";
 import { buildSeriesKey } from "../../nba/lib/series-keys";
 import { GameSpoilerScope, useReveal } from "../spoiler/reveal";
@@ -196,6 +197,7 @@ export function TeamClient({ teamAbbr }: { teamAbbr: string }) {
             globalNoSpoilers ||
             followHidesParticipants(follows, {
               teamCodes: [teamAbbr, currentSeries.opponent],
+              sport: "nba",
             })
           }
         />
@@ -275,7 +277,10 @@ function AlertStatePill({
 }) {
   const { follows } = useFollows();
   const followed = follows.find(
-    (f) => f.kind === "team" && f.id === teamAbbr
+    (f) =>
+      f.kind === "team" &&
+      f.id === teamAbbr &&
+      momentSport(f.momentId) === "nba"
   );
   if (!followed) return null;
   const label = followed.alertEnabled
@@ -524,6 +529,7 @@ function RecentResults({
             globalNoSpoilers ||
             followHidesParticipants(follows, {
               teamCodes: [teamAbbr, oppCode],
+              sport: "nba",
             });
           const resultHidden = hidden && !isRevealed(g.id);
           const ariaLabel = resultHidden
@@ -596,7 +602,10 @@ function TeamPresetSection({
   const { follows, addFollow, removeFollow, setFollowAlertEnabled } =
     useFollows();
   const existing = follows.find(
-    (f) => f.kind === "team" && f.id === teamAbbr
+    (f) =>
+      f.kind === "team" &&
+      f.id === teamAbbr &&
+      momentSport(f.momentId) === "nba"
   );
   const isFollowed = Boolean(existing);
 

@@ -5,7 +5,7 @@
 import type { Follow, PinnedGame, AlertPreset } from "../state/types";
 import type { WCChampion } from "../../lib/wc-champion";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
-import { momentSport } from "../state/moments";
+import { momentSport, teamFollowCodes } from "../state/moments";
 import { NFL_2026_SEASON_OPENER } from "../following/data/nfl-dates";
 import { getCountry } from "../following/data/countries";
 import { getTournament } from "../following/data/tournaments";
@@ -613,9 +613,9 @@ function pickHero(
   pinned: PinnedGame[],
   now: Date = new Date()
 ): TodayHero | null {
-  const followedTeams = new Set(
-    follows.filter((f) => f.kind === "team").map((f) => f.id)
-  );
+  // Path B collision guard: only NBA team follows match NBA games (an NFL
+  // "LAC" follow must never light up the NBA Clippers).
+  const followedTeams = teamFollowCodes(follows, "nba");
   const pinnedIds = new Set(pinned.map((p) => p.gameId));
 
   const followedCountries = new Set(
@@ -864,7 +864,23 @@ function buildYouFollow(
 ): YouFollowItem[] {
   return follows
     .map<YouFollowItem | null>((f) => {
-      if (f.kind === "team") {
+      // NFL team follow (Path B): never match NBA games or the NBA team
+      // page (the LAC collision). Route to the NFL schedule for now — the
+      // NFL team-detail page is a later build. NFL live-game status in the
+      // chip is deferred to preseason (nfl games aren't threaded here yet).
+      if (f.kind === "team" && momentSport(f.momentId) === "nfl") {
+        const code = f.scopeId ?? f.id;
+        return {
+          kind: "team",
+          id: code,
+          label: code,
+          chip: code,
+          statusLabel: "NFL",
+          tone: "upcoming",
+          href: "/schedule?scope=all&competition=nfl-season-2026",
+        };
+      }
+      if (f.kind === "team" && momentSport(f.momentId) === "nba") {
         const g = pickRelevantGame(nba.filter((x) => gameIncludesTeam(x, f.id)));
         if (g) {
           return {
@@ -1056,18 +1072,10 @@ function buildUpNext(
   follows: Follow[],
   pinned: PinnedGame[]
 ): UpNextItem[] {
-  // Sport-aware team sets (Path B): an NFL "LAC" follow must match only NFL
-  // games, never the NBA LAC. The follow's MOMENT decides the sport.
-  const followedTeams = new Set(
-    follows
-      .filter((f) => f.kind === "team" && momentSport(f.momentId) === "nba")
-      .map((f) => f.scopeId ?? f.id)
-  );
-  const followedNflTeams = new Set(
-    follows
-      .filter((f) => f.kind === "team" && momentSport(f.momentId) === "nfl")
-      .map((f) => f.scopeId ?? f.id)
-  );
+  // Sport-aware team sets (Path B collision guard, via the shared helpers):
+  // an NFL "LAC" follow matches only NFL games, never the NBA LAC.
+  const followedTeams = teamFollowCodes(follows, "nba");
+  const followedNflTeams = teamFollowCodes(follows, "nfl");
   const followedCountries = new Set(
     follows.filter((f) => f.kind === "country").map((f) => f.id)
   );
@@ -1246,9 +1254,9 @@ function personalFinalMatchers(follows: Follow[]): {
   nba: (game: NBAGame) => boolean;
   wc: (game: WCGameLite) => boolean;
 } {
-  const followedTeams = new Set(
-    follows.filter((f) => f.kind === "team").map((f) => f.id)
-  );
+  // Path B collision guard: only NBA team follows match NBA games (an NFL
+  // "LAC" follow must never light up the NBA Clippers).
+  const followedTeams = teamFollowCodes(follows, "nba");
   const followedCountries = new Set(
     follows.filter((f) => f.kind === "country").map((f) => f.id)
   );
@@ -1554,12 +1562,10 @@ function followedSeriesKeys(follows: Follow[]): Set<string> {
   return out;
 }
 
+// NBA team codes only — this feeds pickClosing's NBA series-clinch match,
+// so an NFL team follow must not leak in (Path B collision guard).
 function followedTeamIds(follows: Follow[]): Set<string> {
-  const out = new Set<string>();
-  for (const f of follows) {
-    if (f.kind === "team") out.add(f.id);
-  }
-  return out;
+  return teamFollowCodes(follows, "nba");
 }
 
 /** Turn a Follow into a chip {label, href} for the CalmEndCard's
@@ -2057,7 +2063,12 @@ function matchAlertFollow(
         tournament = { tier: f.alertTier, kind: "tournament" };
       }
     } else {
-      if (f.kind === "team" && (f.id === away || f.id === home)) {
+      // NBA only — an NFL team follow (Path B) must not match an NBA game.
+      if (
+        f.kind === "team" &&
+        momentSport(f.momentId) === "nba" &&
+        (f.id === away || f.id === home)
+      ) {
         return { tier: f.alertTier, kind: "direct" };
       }
       if (f.kind === "series") {

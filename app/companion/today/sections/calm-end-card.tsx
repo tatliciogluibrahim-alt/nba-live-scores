@@ -50,12 +50,21 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
       moment.dots.flatMap((dot) => [dot.awayCode, dot.homeCode])
     )
   );
-  const followHidden = useFollowHidesGame({
+  // This card spans two sports in one moment: the NBA series dots
+  // (teamCodes) and the WC champion (countryCodes). Gate each by its own
+  // sport so a shared code (e.g. an NFL "CLE" hideSpoilers follow) can't
+  // cross-hide the NBA wind-down. Two unconditional hook calls, OR-combined.
+  const teamHidden = useFollowHidesGame({
     teamCodes: participantCodes,
+    sport: "nba",
+  });
+  const championFollowHidden = useFollowHidesGame({
     countryCodes:
       moment.championParticipantCodes ??
       (moment.champion ? [moment.champion.code] : []),
+    sport: "wc",
   });
+  const followHidden = teamHidden || championFollowHidden;
   const noSpoilers = globalNoSpoilers || followHidden;
   const { isRevealed } = useReveal();
   // The WC wind-down carries the champion. Naming the winner is the ultimate

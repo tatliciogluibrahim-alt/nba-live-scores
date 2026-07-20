@@ -117,8 +117,8 @@ export function FrontPageLead({
   const globalNoSpoilers = useNoSpoilers();
   const followHidden = useFollowHidesGame(
     game?.source === "wc"
-      ? { countryCodes: participantCodes }
-      : { teamCodes: participantCodes }
+      ? { countryCodes: participantCodes, sport: "wc" }
+      : { teamCodes: participantCodes, sport: game?.source ?? "nba" }
   );
   const baseHidden = globalNoSpoilers || followHidden;
   // Reveal-aware so the deck fact-string comes back the moment the user

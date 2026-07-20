@@ -68,6 +68,7 @@ export function WCGameDetail({
   const globalNoSpoilers = useNoSpoilers();
   const followHidden = useFollowHidesGame({
     countryCodes: [game.away.abbreviation, game.home.abbreviation],
+    sport: "wc",
   });
   const baseHidden = globalNoSpoilers || followHidden;
   const { isRevealed, reveal } = useReveal();
