@@ -33,8 +33,10 @@ export function gameMatchIds(game: FeedGame): Set<string> {
 export function reminderFollowIds(alerts: SyncedAlert[]): Set<string> {
   const ids = new Set<string>();
   for (const a of alerts) {
-    if (a.kind === "team" || a.kind === "country" || a.kind === "series") {
-      ids.add(a.id.toUpperCase());
+    // Entity scopes only — whole-moment follows excluded to avoid
+    // per-game reminder spam (same rule as the old kind check).
+    if (a.scope !== "all" && a.scopeId) {
+      ids.add(a.scopeId.toUpperCase());
     }
   }
   return ids;

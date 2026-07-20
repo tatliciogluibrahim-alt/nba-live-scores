@@ -99,7 +99,7 @@ export async function GET(req: Request) {
           // tier and noSpoilers flag the dispatcher actually reads.
           breakdown: teamSubs.map((s) => {
             const match = s.alerts.find(
-              (f) => f.kind === "team" && f.id.toUpperCase() === team
+              (f) => f.scope === "team" && (f.scopeId ?? "").toUpperCase() === team
             );
             return {
               tier: match?.tier ?? null,

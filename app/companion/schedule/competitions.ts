@@ -1,12 +1,11 @@
 import type { Follow } from "../state/types";
+import { momentSport } from "../state/moments";
 import { TOURNAMENTS, type TournamentEntry } from "../following/data/tournaments";
 import {
   tournamentPhase,
   type TournamentPhase,
 } from "../following/data/tournament-phase";
 import { WC_KNOCKOUT_ROUNDS } from "../following/data/wc-fixtures";
-import { NBA_TEAMS } from "../following/data/teams";
-import { getNFLTeam } from "../following/data/nfl-teams";
 
 // The active-competitions registry (sports-agnostic Schedule, Phase 0).
 // One derived list of "what competitions matter on Schedule right now",
@@ -39,7 +38,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // drops off (last year's playoffs are not "the schedule").
 const CONCLUDED_GRACE_MS = 30 * DAY_MS;
 
-const NBA_TEAM_IDS = new Set(NBA_TEAMS.map((t) => t.id.toUpperCase()));
 const WC_VIEWS: ScheduleView[] = ["byday", "bracket", "groups"];
 
 type CompetitionFamily = "wc" | "nba" | "nfl" | "other";
@@ -51,23 +49,15 @@ function competitionFamily(id: string): CompetitionFamily {
   return "other";
 }
 
-/** Does the user follow this competition? A country → the World Cup; an NBA
- *  team or a series → NBA; an NFL team → NFL; a tournament follow → its own
- *  family (year-agnostic, so a stored 2024 follow still maps to the 2025
- *  entry). Pure. */
+/** Does the user follow this competition? Path B: the follow's MOMENT
+ *  carries the sport, so this is one canonical comparison — no per-kind
+ *  inference, no directory lookups, and a future NFL "LAC" can never be
+ *  confused with the Clippers. Year-agnostic via momentSport's prefix
+ *  tolerance. Pure. */
 export function followsCompetition(id: string, follows: Follow[]): boolean {
   const fam = competitionFamily(id);
-  return follows.some((f) => {
-    if (f.kind === "tournament") return competitionFamily(f.id) === fam;
-    if (fam === "wc") return f.kind === "country";
-    if (fam === "nba")
-      return (
-        (f.kind === "team" && NBA_TEAM_IDS.has(f.id.toUpperCase())) ||
-        f.kind === "series"
-      );
-    if (fam === "nfl") return f.kind === "team" && Boolean(getNFLTeam(f.id));
-    return false;
-  });
+  if (fam === "other") return false;
+  return follows.some((f) => momentSport(f.momentId) === fam);
 }
 
 /** When a competition concluded (ms epoch), or null if it hasn't. Used to age

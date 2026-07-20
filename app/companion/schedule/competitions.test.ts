@@ -32,19 +32,38 @@ describe("followsCompetition", () => {
     expect(followsCompetition("nfl-season-2026", follows)).toBe(false);
   });
 
-  it("maps an NBA team / series to NBA, an NFL team to NFL", () => {
+  it("maps NBA team/series follows to NBA; NFL requires a canonical NFL moment", () => {
     expect(
       followsCompetition("nba-playoffs-2025", [f({ kind: "team", id: "BOS" })])
     ).toBe(true);
     expect(
       followsCompetition("nba-playoffs-2025", [f({ kind: "series", id: "NYK-BOS" })])
     ).toBe(true);
+    // Path B semantics: a LEGACY team follow is NBA by construction (only
+    // the NBA picker ever existed pre-flip), so "BUF" as a legacy team
+    // follow is NOT an NFL follow — the old directory-lookup ambiguity
+    // (LAC = Clippers or Chargers?) is exactly what the schema kills.
     expect(
       followsCompetition("nfl-season-2026", [f({ kind: "team", id: "BUF" })])
-    ).toBe(true);
-    // An NBA team is not an NFL follow.
+    ).toBe(false);
+    // An NFL follow is born canonical (addMomentFollow / the gate-3 picker).
     expect(
-      followsCompetition("nfl-season-2026", [f({ kind: "team", id: "BOS" })])
+      followsCompetition("nfl-season-2026", [
+        {
+          momentId: "nfl-season-2026",
+          scope: "team",
+          scopeId: "BUF",
+          kind: "team",
+          id: "BUF",
+          alertEnabled: false,
+          alertTier: "quiet",
+          followedAt: 0,
+        },
+      ])
+    ).toBe(true);
+    // ...and the same "LAC" as an NBA follow never leaks into the NFL.
+    expect(
+      followsCompetition("nfl-season-2026", [f({ kind: "team", id: "LAC" })])
     ).toBe(false);
   });
 

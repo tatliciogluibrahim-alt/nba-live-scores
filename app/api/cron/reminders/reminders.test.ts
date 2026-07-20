@@ -58,9 +58,9 @@ describe("gameMatchIds", () => {
 describe("reminderFollowIds", () => {
   it("includes team / country / series ids, uppercased", () => {
     const alerts: SyncedAlert[] = [
-      { kind: "team", id: "okc", tier: "companion" },
-      { kind: "country", id: "BRA", tier: "companion" },
-      { kind: "series", id: "OKC-SA", tier: "companion" },
+      { momentId: "nba-playoffs-2025", scope: "team", scopeId: "okc", tier: "companion" },
+      { momentId: "fifa-world-cup-2026", scope: "country", scopeId: "BRA", tier: "companion" },
+      { momentId: "nba-playoffs-2025", scope: "series", scopeId: "OKC-SA", tier: "companion" },
     ];
     expect(reminderFollowIds(alerts)).toEqual(
       new Set(["OKC", "BRA", "OKC-SA"])
@@ -70,11 +70,10 @@ describe("reminderFollowIds", () => {
   it("EXCLUDES tournament follows (would spam per-game pings)", () => {
     const alerts: SyncedAlert[] = [
       {
-        kind: "tournament",
-        id: "fifa-world-cup-2026",
+        momentId: "fifa-world-cup-2026", scope: "all", scopeId: null,
         tier: "companion",
       },
-      { kind: "team", id: "OKC", tier: "companion" },
+      { momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "companion" },
     ];
     const ids = reminderFollowIds(alerts);
     expect(ids).toEqual(new Set(["OKC"]));
@@ -83,7 +82,7 @@ describe("reminderFollowIds", () => {
 
   it("returns an empty set when no follows qualify", () => {
     const alerts: SyncedAlert[] = [
-      { kind: "tournament", id: "nba-playoffs-2025", tier: "companion" },
+      { momentId: "nba-playoffs-2025", scope: "all", scopeId: null, tier: "companion" },
     ];
     expect(reminderFollowIds(alerts).size).toBe(0);
   });
@@ -110,26 +109,26 @@ describe("reminder matching — end-to-end (game ↔ follows intersection)", () 
 
   it("team follow for OKC matches the OKC vs SA game", () => {
     expect(
-      matches(game, [{ kind: "team", id: "OKC", tier: "companion" }])
+      matches(game, [{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "companion" }])
     ).toBe(true);
   });
 
   it("series follow for OKC-SA matches", () => {
     expect(
-      matches(game, [{ kind: "series", id: "OKC-SA", tier: "companion" }])
+      matches(game, [{ momentId: "nba-playoffs-2025", scope: "series", scopeId: "OKC-SA", tier: "companion" }])
     ).toBe(true);
   });
 
   it("team follow for NYK does NOT match an OKC vs SA game", () => {
     expect(
-      matches(game, [{ kind: "team", id: "NYK", tier: "companion" }])
+      matches(game, [{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "NYK", tier: "companion" }])
     ).toBe(false);
   });
 
   it("tournament follow does NOT match (excluded from reminders by design)", () => {
     expect(
       matches(game, [
-        { kind: "tournament", id: "nba-playoffs-2025", tier: "companion" },
+        { momentId: "nba-playoffs-2025", scope: "all", scopeId: null, tier: "companion" },
       ])
     ).toBe(false);
   });

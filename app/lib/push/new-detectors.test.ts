@@ -75,7 +75,7 @@ describe("end-to-end: detect → score → gate (the final's firing path)", () =
 
     expect(
       subscriberWantsEvent(
-        { alerts: [{ kind: "country", id: "FRA", tier: "quiet" }], noSpoilers: false },
+        { alerts: [{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "FRA", tier: "quiet" }], noSpoilers: false },
         finalEvt
       )
     ).toBe(true);
@@ -90,7 +90,7 @@ describe("end-to-end: detect → score → gate (the final's firing path)", () =
     expect(
       subscriberWantsEvent(
         {
-          alerts: [{ kind: "tournament", id: "fifa-world-cup-2026", tier: "quiet" }],
+          alerts: [{ momentId: "fifa-world-cup-2026", scope: "all", scopeId: null, tier: "quiet" }],
           noSpoilers: false,
         },
         groupEvt

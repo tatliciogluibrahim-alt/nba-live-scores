@@ -2,11 +2,16 @@
 // Stage 17: the dispatcher cares only about alert-enabled follows and
 // each follow owns its own tier.
 
-import type { AlertPreset, FollowKind } from "../../companion/state/types";
+import type { AlertPreset, ScopeKind } from "../../companion/state/types";
+import { canonicalSyncIdentity } from "../../companion/state/follow-migration";
 
+/** Canonical follow identity on the wire (Path B). The validator also
+ *  accepts the legacy {kind, id} shape — old stored KV records and
+ *  not-yet-refreshed clients migrate through canonicalSyncIdentity. */
 export type SyncedFollow = {
-  kind: FollowKind;
-  id: string;
+  momentId: string;
+  scope: ScopeKind;
+  scopeId: string | null;
 };
 
 export type SyncedAlert = SyncedFollow & {
@@ -22,7 +27,8 @@ export type ValidSyncPayload = {
   /** False for legacy/touch payloads that did not send an alert snapshot. */
   alertsProvided: boolean;
   /** Selective-hide follows that do not have an alert slot. Membership
-   * implies hideSpoilers=true. Tournament is intentionally unsupported. */
+   * implies hideSpoilers=true. Whole-moment ("all") is intentionally
+   * unsupported — the free global toggle is how you hide a tournament. */
   spoilerFollows: SyncedFollow[];
   /** An explicit array, including [], is authoritative. When absent, stores
    * preserve older selective choices instead of erasing them during rollout. */
@@ -75,12 +81,6 @@ function parseTimeZone(raw: unknown): string | undefined {
   return tz;
 }
 
-const VALID_KINDS: ReadonlySet<FollowKind> = new Set([
-  "team",
-  "country",
-  "series",
-  "tournament",
-]);
 const VALID_PRESETS: ReadonlySet<AlertPreset> = new Set([
   "quiet",
   "companion",
@@ -89,6 +89,10 @@ const VALID_PRESETS: ReadonlySet<AlertPreset> = new Set([
 
 const MAX_ALERTS = 64;
 const MAX_ID_LENGTH = 80;
+
+function identityKey(f: SyncedFollow): string {
+  return `${f.momentId}::${f.scope}::${f.scopeId ?? ""}`;
+}
 
 export function validateSyncPayload(input: unknown): ValidSyncPayload {
   // Empty / missing → treat as "nothing to alert about."
@@ -134,30 +138,37 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
   const alertsProvided =
     Array.isArray(raw.alerts) || Array.isArray(raw.follows);
   const alerts: SyncedAlert[] = [];
+  const seenAlertKeys = new Set<string>();
   for (const entry of rawAlerts.slice(0, MAX_ALERTS)) {
     if (!entry || typeof entry !== "object") continue;
     const f = entry as {
       kind?: unknown;
       id?: unknown;
+      momentId?: unknown;
+      scope?: unknown;
+      scopeId?: unknown;
       tier?: unknown;
       hideSpoilers?: unknown;
     };
-    if (typeof f.kind !== "string" || !VALID_KINDS.has(f.kind as FollowKind)) {
+    const canon = canonicalSyncIdentity(f);
+    if (!canon) continue;
+    if (
+      canon.momentId.length > MAX_ID_LENGTH ||
+      (canon.scopeId !== null && canon.scopeId.length > MAX_ID_LENGTH)
+    ) {
       continue;
     }
-    if (typeof f.id !== "string" || f.id.length === 0 || f.id.length > MAX_ID_LENGTH) {
-      continue;
-    }
+    const key = identityKey(canon);
+    if (seenAlertKeys.has(key)) continue;
+    seenAlertKeys.add(key);
     const tier: AlertPreset =
       typeof f.tier === "string" && VALID_PRESETS.has(f.tier as AlertPreset)
         ? (f.tier as AlertPreset)
         : alertPreset;
-    const kind = f.kind as FollowKind;
     alerts.push({
-      kind,
-      id: f.id,
+      ...canon,
       tier,
-      ...(f.hideSpoilers === true && kind !== "tournament"
+      ...(f.hideSpoilers === true && canon.scope !== "all"
         ? { hideSpoilers: true as const }
         : {}),
     });
@@ -168,9 +179,7 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
   // letting a visible-only follow protect notifications triggered by a
   // different alert (for example, a team hidden under a tournament alert).
   const hiddenAlertKeys = new Set(
-    alerts
-      .filter((alert) => alert.hideSpoilers)
-      .map((alert) => `${alert.kind}:${alert.id}`)
+    alerts.filter((alert) => alert.hideSpoilers).map(identityKey)
   );
   const spoilerFollows: SyncedFollow[] = [];
   const seenSpoilerKeys = new Set<string>();
@@ -180,25 +189,21 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
   const selectiveSpoilersProvided = Array.isArray(raw.spoilerFollows);
   for (const entry of rawSpoilerFollows.slice(0, MAX_ALERTS)) {
     if (!entry || typeof entry !== "object") continue;
-    const follow = entry as { kind?: unknown; id?: unknown };
+    const canon = canonicalSyncIdentity(
+      entry as { kind?: unknown; id?: unknown; momentId?: unknown; scope?: unknown; scopeId?: unknown }
+    );
+    // Whole-moment selective hiding is intentionally unsupported.
+    if (!canon || canon.scope === "all") continue;
     if (
-      typeof follow.kind !== "string" ||
-      follow.kind === "tournament" ||
-      !VALID_KINDS.has(follow.kind as FollowKind)
+      canon.momentId.length > MAX_ID_LENGTH ||
+      (canon.scopeId !== null && canon.scopeId.length > MAX_ID_LENGTH)
     ) {
       continue;
     }
-    if (
-      typeof follow.id !== "string" ||
-      follow.id.length === 0 ||
-      follow.id.length > MAX_ID_LENGTH
-    ) {
-      continue;
-    }
-    const key = `${follow.kind}:${follow.id}`;
+    const key = identityKey(canon);
     if (hiddenAlertKeys.has(key) || seenSpoilerKeys.has(key)) continue;
     seenSpoilerKeys.add(key);
-    spoilerFollows.push({ kind: follow.kind as FollowKind, id: follow.id });
+    spoilerFollows.push(canon);
   }
 
   const noSpoilers = raw.noSpoilers === true;
@@ -224,7 +229,7 @@ export function validateSyncPayload(input: unknown): ValidSyncPayload {
 }
 
 function followKey(follow: SyncedFollow): string {
-  return `${follow.kind}:${follow.id.trim().toUpperCase()}`;
+  return identityKey(follow);
 }
 
 /**
@@ -237,26 +242,31 @@ export function preserveSelectiveSpoilers(
   existingAlerts: readonly SyncedAlert[],
   existingSpoilerFollows: readonly SyncedFollow[]
 ): { alerts: SyncedAlert[]; spoilerFollows: SyncedFollow[] } {
+  const identityOf = (f: SyncedFollow): SyncedFollow => ({
+    momentId: f.momentId,
+    scope: f.scope,
+    scopeId: f.scopeId,
+  });
   const hidden = new Map<string, SyncedFollow>();
   for (const alert of existingAlerts) {
-    if (alert.hideSpoilers && alert.kind !== "tournament") {
-      hidden.set(followKey(alert), { kind: alert.kind, id: alert.id });
+    if (alert.hideSpoilers && alert.scope !== "all") {
+      hidden.set(followKey(alert), identityOf(alert));
     }
   }
   for (const follow of existingSpoilerFollows) {
-    if (follow.kind !== "tournament") hidden.set(followKey(follow), follow);
+    if (follow.scope !== "all") hidden.set(followKey(follow), follow);
   }
   // A transitional client may carry the inline flag but not the separate
   // array. Treat that as an additional hidden identity, never a reset.
   for (const alert of incomingAlerts) {
-    if (alert.hideSpoilers && alert.kind !== "tournament") {
-      hidden.set(followKey(alert), { kind: alert.kind, id: alert.id });
+    if (alert.hideSpoilers && alert.scope !== "all") {
+      hidden.set(followKey(alert), identityOf(alert));
     }
   }
 
   const incomingKeys = new Set(incomingAlerts.map(followKey));
   const alerts = incomingAlerts.map((alert) =>
-    alert.kind !== "tournament" && hidden.has(followKey(alert))
+    alert.scope !== "all" && hidden.has(followKey(alert))
       ? { ...alert, hideSpoilers: true as const }
       : alert
   );

@@ -117,10 +117,10 @@ function teamFollowDiff(
   newAlerts: ReadonlyArray<SyncedAlert>
 ): { added: string[]; removed: string[] } {
   const oldTeams = new Set(
-    oldAlerts.filter((f) => f.kind === "team").map((f) => f.id.toUpperCase())
+    oldAlerts.filter((f) => f.scope === "team").map((f) => (f.scopeId ?? "").toUpperCase())
   );
   const newTeams = new Set(
-    newAlerts.filter((f) => f.kind === "team").map((f) => f.id.toUpperCase())
+    newAlerts.filter((f) => f.scope === "team").map((f) => (f.scopeId ?? "").toUpperCase())
   );
   const added: string[] = [];
   const removed: string[] = [];
@@ -262,8 +262,8 @@ export async function removeSubscription(endpoint: string): Promise<boolean> {
   const teamCleanup: Promise<unknown>[] = [];
   if (existing) {
     for (const f of existing.alerts) {
-      if (f.kind === "team") {
-        teamCleanup.push(kv.srem(teamIndexKey(f.id), endpoint));
+      if (f.scope === "team" && f.scopeId) {
+        teamCleanup.push(kv.srem(teamIndexKey(f.scopeId), endpoint));
       }
     }
   }

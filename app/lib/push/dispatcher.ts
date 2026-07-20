@@ -27,6 +27,7 @@ import {
   type PushNarrationInput,
 } from "./narrate-push";
 import { claimDelivery, releaseDelivery } from "./dedupe";
+import { momentSport } from "../../companion/state/moments";
 import {
   listSubscriptions,
   removeSubscription,
@@ -479,17 +480,19 @@ function selectiveFollowMatchesEvent(
   follow: SyncedFollow,
   event: PushEvent
 ): boolean {
+  // Sport gate first (Path B): the follow's moment must belong to the
+  // event's sport. This is what keeps an NFL "LAC" from matching an NBA
+  // LAC event once gate 3 ships.
   const wc = isWCEvent(event);
-  const id = follow.id.trim().toUpperCase();
+  if (momentSport(follow.momentId) !== (wc ? "wc" : "nba")) return false;
+  const id = (follow.scopeId ?? "").trim().toUpperCase();
+  if (!id) return false;
   const away = event.awayCode.trim().toUpperCase();
   const home = event.homeCode.trim().toUpperCase();
-  if (follow.kind === "team") {
-    return !wc && (id === away || id === home);
+  if (follow.scope === "team" || follow.scope === "country") {
+    return id === away || id === home;
   }
-  if (follow.kind === "country") {
-    return wc && (id === away || id === home);
-  }
-  if (!wc && follow.kind === "series") {
+  if (follow.scope === "series") {
     const [a, b] = id.split("-");
     const has = (code: string) => code === away || code === home;
     return Boolean(a && b && has(a) && has(b));
@@ -539,6 +542,7 @@ export function subscriberWantsEvent(
 
   const alerts = Array.isArray(sub.alerts) ? sub.alerts : [];
   const wc = isWCEvent(event);
+  const eventSport = wc ? "wc" : "nba";
   // Significance gate (2026-07-14 engine). Tiers are thresholds, not event
   // lists: a directly-followed entity's tense moment breaks through even on
   // Quiet, and low-stakes events are suppressed everywhere but Full Details.
@@ -546,44 +550,33 @@ export function subscriberWantsEvent(
   // significant, so nothing silently drops an alert.
   const significance = event.significance ?? 100;
 
-  // The Following UI offers four kinds — team, country, series, tournament.
-  // Each matches an event differently:
-  //   1. Direct entity — NBA team / WC country whose id is a competitor.
-  //   2. Series (NBA only) — id `${teamA}-${teamB}`, both codes present.
-  //   3. Tournament — broadest; matches by id prefix.
-  // Kinds 1 and 2 are "direct" (your team/country/series) and earn the
-  // personal boost; a tournament follow does not. Any matching follow whose
-  // (significance + boost) clears its tier threshold fans the event out.
+  // Path B matching: sport gate via the follow's moment, then a per-scope
+  // predicate. An entity scope (team / country / series) is "direct" and
+  // earns the personal boost + the start/final invariant floor; the
+  // whole-moment scope ("all", the old tournament follow) is threshold-only.
+  // Adding NFL is a new momentSport value — zero changes here.
   return alerts.some((f) => {
+    if (momentSport(f.momentId) !== eventSport) return false;
+
     let matched = false;
     let direct = false;
+    const scopeId = f.scopeId ?? "";
 
-    // 1. Direct entity.
-    if (
-      ((wc && f.kind === "country") || (!wc && f.kind === "team")) &&
-      (f.id === event.awayCode || f.id === event.homeCode)
-    ) {
-      matched = true;
-      direct = true;
-    }
-    // 2. Series — NBA only. Series ids are `${teamA}-${teamB}`.
-    else if (!wc && f.kind === "series") {
-      const [a, b] = f.id.split("-");
+    if (f.scope === "team" || f.scope === "country") {
+      if (scopeId === event.awayCode || scopeId === event.homeCode) {
+        matched = true;
+        direct = true;
+      }
+    } else if (f.scope === "series") {
+      const [a, b] = scopeId.split("-");
       const has = (code: string) =>
         code === event.awayCode || code === event.homeCode;
       if (a && b && has(a) && has(b)) {
         matched = true;
         direct = true;
       }
-    }
-    // 3. Tournament — match by id prefix so future seasons inherit.
-    else if (f.kind === "tournament") {
-      if (
-        (wc && f.id.startsWith("fifa-world-cup-")) ||
-        (!wc && f.id.startsWith("nba-playoffs-"))
-      ) {
-        matched = true;
-      }
+    } else if (f.scope === "all") {
+      matched = true; // sport already gated via the moment
     }
 
     if (!matched) return false;

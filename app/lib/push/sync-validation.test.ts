@@ -39,41 +39,37 @@ describe("validateSyncPayload selective No-Spoilers", () => {
     const parsed = validateSyncPayload({
       alerts: [
         {
-          kind: "team",
-          id: "OKC",
+          momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC",
           tier: "companion",
           hideSpoilers: true,
         },
         {
-          kind: "tournament",
-          id: "nba-playoffs-2026",
+          momentId: "nba-playoffs-2026", scope: "all", scopeId: null,
           tier: "all",
           hideSpoilers: true,
         },
       ],
       spoilerFollows: [
-        { kind: "country", id: "BRA" },
-        { kind: "series", id: "OKC-SA" },
-        { kind: "tournament", id: "fifa-world-cup-2026" },
+        { momentId: "fifa-world-cup-2026", scope: "country", scopeId: "BRA" },
+        { momentId: "nba-playoffs-2025", scope: "series", scopeId: "OKC-SA" },
+        { momentId: "fifa-world-cup-2026", scope: "all", scopeId: null },
       ],
     });
 
     expect(parsed.alerts).toEqual([
       {
-        kind: "team",
-        id: "OKC",
+        momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC",
         tier: "companion",
         hideSpoilers: true,
       },
       {
-        kind: "tournament",
-        id: "nba-playoffs-2026",
+        momentId: "nba-playoffs-2026", scope: "all", scopeId: null,
         tier: "all",
       },
     ]);
     expect(parsed.spoilerFollows).toEqual([
-      { kind: "country", id: "BRA" },
-      { kind: "series", id: "OKC-SA" },
+      { momentId: "fifa-world-cup-2026", scope: "country", scopeId: "BRA" },
+      { momentId: "nba-playoffs-2025", scope: "series", scopeId: "OKC-SA" },
     ]);
     expect(parsed.selectiveSpoilersProvided).toBe(true);
   });
@@ -89,27 +85,25 @@ describe("validateSyncPayload selective No-Spoilers", () => {
   it("preserves selective choices across a legacy alert-tier sync", () => {
     expect(
       preserveSelectiveSpoilers(
-        [{ kind: "team", id: "NYK", tier: "all" }],
+        [{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "NYK", tier: "all" }],
         [
           {
-            kind: "team",
-            id: "NYK",
+            momentId: "nba-playoffs-2025", scope: "team", scopeId: "NYK",
             tier: "quiet",
             hideSpoilers: true,
           },
         ],
-        [{ kind: "country", id: "ENG" }]
+        [{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "ENG" }]
       )
     ).toEqual({
       alerts: [
         {
-          kind: "team",
-          id: "NYK",
+          momentId: "nba-playoffs-2025", scope: "team", scopeId: "NYK",
           tier: "all",
           hideSpoilers: true,
         },
       ],
-      spoilerFollows: [{ kind: "country", id: "ENG" }],
+      spoilerFollows: [{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "ENG" }],
     });
   });
 
@@ -117,30 +111,29 @@ describe("validateSyncPayload selective No-Spoilers", () => {
     const parsed = validateSyncPayload({
       alerts: [
         {
-          kind: "team",
-          id: "OKC",
+          momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC",
           tier: "quiet",
           hideSpoilers: true,
         },
       ],
       spoilerFollows: [
-        { kind: "team", id: "OKC" },
-        { kind: "team", id: "OKC" },
-        { kind: "country", id: "BRA" },
+        { momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC" },
+        { momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC" },
+        { momentId: "fifa-world-cup-2026", scope: "country", scopeId: "BRA" },
       ],
     });
 
-    expect(parsed.spoilerFollows).toEqual([{ kind: "country", id: "BRA" }]);
+    expect(parsed.spoilerFollows).toEqual([{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "BRA" }]);
   });
 
   it("preserves the legacy alert schema without selective fields", () => {
     const parsed = validateSyncPayload({
-      alerts: [{ kind: "team", id: "NYK", tier: "quiet" }],
+      alerts: [{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "NYK", tier: "quiet" }],
       noSpoilers: false,
     });
 
     expect(parsed.alerts).toEqual([
-      { kind: "team", id: "NYK", tier: "quiet" },
+      { momentId: "nba-playoffs-2025", scope: "team", scopeId: "NYK", tier: "quiet" },
     ]);
     expect(parsed.spoilerFollows).toEqual([]);
     expect(parsed.noSpoilers).toBe(false);

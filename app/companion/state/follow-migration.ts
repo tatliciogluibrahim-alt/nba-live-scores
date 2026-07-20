@@ -96,6 +96,48 @@ export function followIdentity(f: FollowV2): string {
   return `${f.momentId}::${f.scope}::${f.scopeId ?? ""}`;
 }
 
+/** Canonical follow IDENTITY from a wire entry in EITHER shape — v2
+ *  ({momentId, scope, scopeId}) or legacy ({kind, id}) — so the sync
+ *  validator and server stores accept old stored records and old client
+ *  payloads through the same mapping storage migration uses. Null =
+ *  unplaceable (dropped). */
+export function canonicalSyncIdentity(raw: {
+  momentId?: unknown;
+  scope?: unknown;
+  scopeId?: unknown;
+  kind?: unknown;
+  id?: unknown;
+}): { momentId: string; scope: ScopeKind; scopeId: string | null } | null {
+  if (
+    typeof raw.momentId === "string" &&
+    typeof raw.scope === "string" &&
+    SCOPES.has(raw.scope as ScopeKind)
+  ) {
+    const scope = raw.scope as ScopeKind;
+    const scopeId =
+      scope === "all"
+        ? null
+        : typeof raw.scopeId === "string" && raw.scopeId.length > 0
+          ? raw.scopeId
+          : null;
+    if (scope !== "all" && scopeId === null) return null; // entity scope needs an entity
+    return { momentId: raw.momentId, scope, scopeId };
+  }
+  if (typeof raw.kind === "string" && typeof raw.id === "string") {
+    const core = migrateFollow({
+      kind: raw.kind as FollowKind,
+      id: raw.id,
+      alertEnabled: false,
+      alertTier: "companion",
+      followedAt: 0,
+    });
+    return core
+      ? { momentId: core.momentId, scope: core.scope, scopeId: core.scopeId }
+      : null;
+  }
+  return null;
+}
+
 /** Decorate a canonical v2 core with its derived legacy view — the ONLY
  *  way a runtime `Follow` is constructed. group/round/stage scopes have no
  *  legacy kind; they fall back to "tournament" (broad) — impossible today

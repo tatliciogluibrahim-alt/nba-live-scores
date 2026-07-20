@@ -29,7 +29,13 @@ describe("shared web + Capacitor follow sync", () => {
 
     expect(state).toEqual({
       alerts: [
-        { kind: "team", id: "OKC", tier: "all", hideSpoilers: true },
+        {
+          momentId: "nba-playoffs-2025",
+          scope: "team",
+          scopeId: "OKC",
+          tier: "all",
+          hideSpoilers: true,
+        },
       ],
       spoilerFollows: [],
     });
@@ -43,8 +49,8 @@ describe("shared web + Capacitor follow sync", () => {
 
     expect(state.alerts).toEqual([]);
     expect(state.spoilerFollows).toEqual([
-      { kind: "country", id: "BRA" },
-      { kind: "series", id: "OKC-SA" },
+      { momentId: "fifa-world-cup-2026", scope: "country", scopeId: "BRA" },
+      { momentId: "nba-playoffs-2025", scope: "series", scopeId: "OKC-SA" },
     ]);
   });
 
@@ -74,8 +80,9 @@ describe("shared web + Capacitor follow sync", () => {
     expect(state).toEqual({
       alerts: [
         {
-          kind: "tournament",
-          id: "nba-playoffs-2026",
+          momentId: "nba-playoffs-2026",
+          scope: "all",
+          scopeId: null,
           tier: "companion",
         },
       ],

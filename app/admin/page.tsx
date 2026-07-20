@@ -69,9 +69,14 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-type Sport = "NBA" | "Summer Soccer" | "Tournament";
+type Sport = "NBA" | "Summer Soccer" | "NFL" | "Tournament";
 
-type AlertLike = { kind: string; id: string; tier?: string };
+type AlertLike = {
+  momentId: string;
+  scope: string;
+  scopeId: string | null;
+  tier?: string;
+};
 
 // Map a follow to its sport bucket. Today's product only has NBA team
 // follows + WC country follows + NBA / WC tournament follows + NBA
@@ -79,15 +84,12 @@ type AlertLike = { kind: string; id: string; tier?: string };
 // 2026 this will need an "NFL" bucket and the tournament prefix
 // matcher will need an "nfl-" branch.
 function sportFor(alert: AlertLike): Sport {
-  if (alert.kind === "team") return "NBA"; // only NBA has team follows today
-  if (alert.kind === "country") return "Summer Soccer";
-  if (alert.kind === "series") return "NBA"; // playoff series
-  if (alert.kind === "tournament") {
-    const id = alert.id.toLowerCase();
-    if (id.startsWith("nba")) return "NBA";
-    if (id.includes("fifa") || id.includes("world-cup")) return "Summer Soccer";
-    return "Tournament";
-  }
+  // Path B: the moment carries the sport — no more "only NBA has team
+  // follows today" inference. NFL buckets automatically when it ships.
+  const id = alert.momentId.toLowerCase();
+  if (id.startsWith("nba")) return "NBA";
+  if (id.includes("fifa") || id.includes("world-cup")) return "Summer Soccer";
+  if (id.startsWith("nfl")) return "NFL";
   return "Tournament";
 }
 
@@ -196,6 +198,7 @@ export default async function AdminPage({
   const sportTotals: Record<Sport, number> = {
     NBA: 0,
     "Summer Soccer": 0,
+    NFL: 0,
     Tournament: 0,
   };
   const followCounts = new Map<
@@ -218,10 +221,12 @@ export default async function AdminPage({
         tierCounts[a.tier]++;
       }
 
-      const key = `${a.kind}:${a.id}`;
+      // Display key: scope + entity (moment for whole-moment follows).
+      const label = a.scopeId ?? a.momentId;
+      const key = `${a.scope}:${label}`;
       const existing = followCounts.get(key);
       if (existing) existing.count++;
-      else followCounts.set(key, { kind: a.kind, id: a.id, sport, count: 1 });
+      else followCounts.set(key, { kind: a.scope, id: label, sport, count: 1 });
     }
     if (sportsThisRow.size >= 2) multiSportRows++;
   }

@@ -69,7 +69,7 @@ describe("subscriberWantsEvent — team & country direct match", () => {
   it("matches an NBA team follow on the away side", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "OKC", tier: "companion" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "companion" }]),
         nbaEvent()
       )
     ).toBe(true);
@@ -78,7 +78,7 @@ describe("subscriberWantsEvent — team & country direct match", () => {
   it("matches an NBA team follow on the home side", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "SA", tier: "companion" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "SA", tier: "companion" }]),
         nbaEvent()
       )
     ).toBe(true);
@@ -87,7 +87,7 @@ describe("subscriberWantsEvent — team & country direct match", () => {
   it("does NOT match a team follow for a different team", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "NYK", tier: "companion" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "NYK", tier: "companion" }]),
         nbaEvent()
       )
     ).toBe(false);
@@ -96,7 +96,7 @@ describe("subscriberWantsEvent — team & country direct match", () => {
   it("matches a WC country follow on the away side", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "country", id: "BRA", tier: "companion" }]),
+        sub([{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "BRA", tier: "companion" }]),
         wcEvent()
       )
     ).toBe(true);
@@ -105,7 +105,7 @@ describe("subscriberWantsEvent — team & country direct match", () => {
   it("does NOT cross sports: NBA team follow on a WC event", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "BRA", tier: "companion" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "BRA", tier: "companion" }]),
         wcEvent()
       )
     ).toBe(false);
@@ -116,7 +116,7 @@ describe("subscriberWantsEvent — series follow (NBA only)", () => {
   it("matches when both teams are in the series key", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "series", id: "OKC-SA", tier: "companion" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "series", scopeId: "OKC-SA", tier: "companion" }]),
         nbaEvent()
       )
     ).toBe(true);
@@ -125,7 +125,7 @@ describe("subscriberWantsEvent — series follow (NBA only)", () => {
   it("matches with reversed series key (OKC vs SA, key SA-OKC)", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "series", id: "SA-OKC", tier: "companion" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "series", scopeId: "SA-OKC", tier: "companion" }]),
         nbaEvent()
       )
     ).toBe(true);
@@ -135,7 +135,7 @@ describe("subscriberWantsEvent — series follow (NBA only)", () => {
     // Series follow for OKC-NYK; event is OKC vs SA. Only OKC matches.
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "series", id: "OKC-NYK", tier: "companion" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "series", scopeId: "OKC-NYK", tier: "companion" }]),
         nbaEvent()
       )
     ).toBe(false);
@@ -144,7 +144,7 @@ describe("subscriberWantsEvent — series follow (NBA only)", () => {
   it("series follows do not match WC events", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "series", id: "BRA-ARG", tier: "companion" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "series", scopeId: "BRA-ARG", tier: "companion" }]),
         wcEvent()
       )
     ).toBe(false);
@@ -155,7 +155,7 @@ describe("subscriberWantsEvent — tournament follow", () => {
   it("nba-playoffs-* tournament follow matches any NBA event", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "tournament", id: "nba-playoffs-2025", tier: "companion" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "all", scopeId: null, tier: "companion" }]),
         nbaEvent({ awayCode: "BOS", homeCode: "MIA" }) // teams unrelated to follow
       )
     ).toBe(true);
@@ -164,7 +164,7 @@ describe("subscriberWantsEvent — tournament follow", () => {
   it("fifa-world-cup-* tournament follow matches any WC event", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "tournament", id: "fifa-world-cup-2026", tier: "companion" }]),
+        sub([{ momentId: "fifa-world-cup-2026", scope: "all", scopeId: null, tier: "companion" }]),
         wcEvent({ awayCode: "USA", homeCode: "MEX" })
       )
     ).toBe(true);
@@ -173,7 +173,7 @@ describe("subscriberWantsEvent — tournament follow", () => {
   it("nba-playoffs tournament does NOT match WC events", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "tournament", id: "nba-playoffs-2025", tier: "companion" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "all", scopeId: null, tier: "companion" }]),
         wcEvent()
       )
     ).toBe(false);
@@ -182,7 +182,7 @@ describe("subscriberWantsEvent — tournament follow", () => {
   it("fifa-world-cup tournament does NOT match NBA events", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "tournament", id: "fifa-world-cup-2026", tier: "companion" }]),
+        sub([{ momentId: "fifa-world-cup-2026", scope: "all", scopeId: null, tier: "companion" }]),
         nbaEvent()
       )
     ).toBe(false);
@@ -193,7 +193,7 @@ describe("subscriberWantsEvent — tier filtering", () => {
   it("Quiet tier gets tipoff", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "OKC", tier: "quiet" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "quiet" }]),
         nbaEvent({ type: "tipoff" })
       )
     ).toBe(true);
@@ -202,7 +202,7 @@ describe("subscriberWantsEvent — tier filtering", () => {
   it("Quiet tier does NOT get end-of-quarter", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "OKC", tier: "quiet" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "quiet" }]),
         nbaEvent({ type: "eoq-1" })
       )
     ).toBe(false);
@@ -211,7 +211,7 @@ describe("subscriberWantsEvent — tier filtering", () => {
   it("Companion tier DOES get end-of-quarter", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "OKC", tier: "companion" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "companion" }]),
         nbaEvent({ type: "eoq-1" })
       )
     ).toBe(true);
@@ -224,7 +224,7 @@ describe("subscriberWantsEvent — significance gate (the engine's point)", () =
     // moment — a Quiet user following OKC should still get it.
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "OKC", tier: "quiet" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "quiet" }]),
         nbaEvent({ type: "comeback", significance: scoreEvent({ type: "comeback", maxLead: 20 }) })
       )
     ).toBe(true);
@@ -234,7 +234,7 @@ describe("subscriberWantsEvent — significance gate (the engine's point)", () =
     // No personal boost for a tournament follow — Quiet stays finals + classics.
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "tournament", id: "nba-playoffs-2025", tier: "quiet" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "all", scopeId: null, tier: "quiet" }]),
         nbaEvent({ type: "tipoff" })
       )
     ).toBe(false);
@@ -243,7 +243,7 @@ describe("subscriberWantsEvent — significance gate (the engine's point)", () =
   it("...but a final DOES reach that same Quiet tournament follower", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "tournament", id: "nba-playoffs-2025", tier: "quiet" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "all", scopeId: null, tier: "quiet" }]),
         nbaEvent({ type: "final" })
       )
     ).toBe(true);
@@ -252,7 +252,7 @@ describe("subscriberWantsEvent — significance gate (the engine's point)", () =
   it("the personal boost: your country's goal in the final reaches you on Quiet", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "country", id: "BRA", tier: "quiet" }]),
+        sub([{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "BRA", tier: "quiet" }]),
         wcEvent({ type: "wc-goal", stage: "Final", awayScore: 1, homeScore: 0 })
       )
     ).toBe(true);
@@ -262,7 +262,7 @@ describe("subscriberWantsEvent — significance gate (the engine's point)", () =
     for (const type of ["tipoff", "final"] as const) {
       expect(
         subscriberWantsEvent(
-          sub([{ kind: "team", id: "OKC", tier: "quiet" }]),
+          sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "quiet" }]),
           nbaEvent({ type, significance: 0 })
         )
       ).toBe(true);
@@ -271,7 +271,7 @@ describe("subscriberWantsEvent — significance gate (the engine's point)", () =
     for (const type of ["wc-kickoff", "wc-final"] as const) {
       expect(
         subscriberWantsEvent(
-          sub([{ kind: "country", id: "BRA", tier: "quiet" }]),
+          sub([{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "BRA", tier: "quiet" }]),
           wcEvent({ type, stage: "Group A", significance: 0 })
         )
       ).toBe(true);
@@ -283,7 +283,7 @@ describe("subscriberWantsEvent — significance gate (the engine's point)", () =
     // low-significance start does not sneak through on the invariant.
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "tournament", id: "nba-playoffs-2025", tier: "quiet" }]),
+        sub([{ momentId: "nba-playoffs-2025", scope: "all", scopeId: null, tier: "quiet" }]),
         nbaEvent({ type: "tipoff", significance: 20 })
       )
     ).toBe(false);
@@ -292,7 +292,7 @@ describe("subscriberWantsEvent — significance gate (the engine's point)", () =
   it("a routine group goal does NOT reach a Quiet country follower", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "country", id: "BRA", tier: "quiet" }]),
+        sub([{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "BRA", tier: "quiet" }]),
         wcEvent({ type: "wc-goal", stage: "Group C", awayScore: 1, homeScore: 0 })
       )
     ).toBe(false);
@@ -303,7 +303,7 @@ describe("subscriberWantsEvent — No-Spoilers gate", () => {
   it("close-game is SUPPRESSED for noSpoilers subscribers", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "OKC", tier: "all" }], true),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "all" }], true),
         nbaEvent({ type: "close-game" })
       )
     ).toBe(false);
@@ -312,7 +312,7 @@ describe("subscriberWantsEvent — No-Spoilers gate", () => {
   it("comeback is SUPPRESSED for noSpoilers subscribers", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "OKC", tier: "all" }], true),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "all" }], true),
         nbaEvent({ type: "comeback" })
       )
     ).toBe(false);
@@ -321,7 +321,7 @@ describe("subscriberWantsEvent — No-Spoilers gate", () => {
   it("final is NOT suppressed for noSpoilers (calm fallback body is used)", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "OKC", tier: "companion" }], true),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "companion" }], true),
         nbaEvent({ type: "final" })
       )
     ).toBe(true);
@@ -330,7 +330,7 @@ describe("subscriberWantsEvent — No-Spoilers gate", () => {
   it("close-game DOES fire for non-noSpoilers", () => {
     expect(
       subscriberWantsEvent(
-        sub([{ kind: "team", id: "OKC", tier: "all" }], false),
+        sub([{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "all" }], false),
         nbaEvent({ type: "close-game" })
       )
     ).toBe(true);
@@ -338,7 +338,7 @@ describe("subscriberWantsEvent — No-Spoilers gate", () => {
 
   it("suppresses unsafe events for a matching selectively-hidden team", () => {
     const selective = sub(
-      [{ kind: "team", id: "OKC", tier: "all", hideSpoilers: true }],
+      [{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "all", hideSpoilers: true }],
       false
     );
 
@@ -354,7 +354,7 @@ describe("subscriberWantsEvent — No-Spoilers gate", () => {
 describe("subscriberUsesNoSpoilersForEvent — selective matching", () => {
   it("matches an inline hidden NBA team alert and redacts safe events", () => {
     const selective = sub([
-      { kind: "team", id: "OKC", tier: "companion", hideSpoilers: true },
+      { momentId: "nba-playoffs-2025", scope: "team", scopeId: "OKC", tier: "companion", hideSpoilers: true },
     ]);
     const event = nbaEvent({ type: "final", awayScore: 112, homeScore: 108 });
 
@@ -369,9 +369,9 @@ describe("subscriberUsesNoSpoilersForEvent — selective matching", () => {
 
   it("matches a hidden country without an alert slot", () => {
     const selective = sub(
-      [{ kind: "tournament", id: "fifa-world-cup-2026", tier: "all" }],
+      [{ momentId: "fifa-world-cup-2026", scope: "all", scopeId: null, tier: "all" }],
       false,
-      [{ kind: "country", id: "BRA" }]
+      [{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "BRA" }]
     );
 
     const event = wcEvent({ type: "wc-goal", awayScore: 1, homeScore: 0 });
@@ -388,9 +388,9 @@ describe("subscriberUsesNoSpoilersForEvent — selective matching", () => {
       expect(
         subscriberUsesNoSpoilersForEvent(
           sub(
-            [{ kind: "tournament", id: "nba-playoffs-2026", tier: "all" }],
+            [{ momentId: "nba-playoffs-2026", scope: "all", scopeId: null, tier: "all" }],
             false,
-            [{ kind: "series", id }]
+            [{ momentId: "nba-playoffs-2025", scope: "series", scopeId: id }]
           ),
           event
         )
@@ -398,7 +398,7 @@ describe("subscriberUsesNoSpoilersForEvent — selective matching", () => {
     }
     expect(
       subscriberUsesNoSpoilersForEvent(
-        sub([], false, [{ kind: "series", id: "OKC-NYK" }]),
+        sub([], false, [{ momentId: "nba-playoffs-2025", scope: "series", scopeId: "OKC-NYK" }]),
         event
       )
     ).toBe(false);
@@ -406,9 +406,9 @@ describe("subscriberUsesNoSpoilersForEvent — selective matching", () => {
 
   it("suppresses an unsafe event delivered through a broad alert when its series is hidden", () => {
     const selective = sub(
-      [{ kind: "tournament", id: "nba-playoffs-2026", tier: "all" }],
+      [{ momentId: "nba-playoffs-2026", scope: "all", scopeId: null, tier: "all" }],
       false,
-      [{ kind: "series", id: "OKC-SA" }]
+      [{ momentId: "nba-playoffs-2025", scope: "series", scopeId: "OKC-SA" }]
     );
 
     expect(
@@ -419,19 +419,19 @@ describe("subscriberUsesNoSpoilersForEvent — selective matching", () => {
   it("does not redact non-matching team, country, or series events", () => {
     expect(
       subscriberUsesNoSpoilersForEvent(
-        sub([], false, [{ kind: "team", id: "NYK" }]),
+        sub([], false, [{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "NYK" }]),
         nbaEvent()
       )
     ).toBe(false);
     expect(
       subscriberUsesNoSpoilersForEvent(
-        sub([], false, [{ kind: "country", id: "USA" }]),
+        sub([], false, [{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "USA" }]),
         wcEvent()
       )
     ).toBe(false);
     expect(
       subscriberUsesNoSpoilersForEvent(
-        sub([], false, [{ kind: "series", id: "NYK-BOS" }]),
+        sub([], false, [{ momentId: "nba-playoffs-2025", scope: "series", scopeId: "NYK-BOS" }]),
         nbaEvent()
       )
     ).toBe(false);
@@ -441,7 +441,7 @@ describe("subscriberUsesNoSpoilersForEvent — selective matching", () => {
     expect(
       subscriberUsesNoSpoilersForEvent(
         sub([], false, [
-          { kind: "tournament", id: "nba-playoffs-2026" },
+          { momentId: "nba-playoffs-2026", scope: "all", scopeId: null },
         ]),
         nbaEvent()
       )
