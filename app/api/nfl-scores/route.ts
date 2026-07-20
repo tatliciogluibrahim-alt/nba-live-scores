@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { normalizeNFLGame, type ESPNNFLEvent, type NFLGameLite } from "./normalize";
+import { NFL_SEASON_YEAR } from "../../companion/following/data/nfl-dates";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,13 @@ async function fetchScoreboard(
   const params = new URLSearchParams();
   if (week) params.set("week", week);
   if (seasonType) params.set("seasontype", seasonType);
+  // Pin the season year on a PAGED request (a specific week). Without it
+  // ESPN serves the last COMPLETED season for that week — so paging past
+  // the current week would show last year's final scores. The bare
+  // "current week" request (no week) is left alone: ESPN's default already
+  // returns the right current week, and `dates=<year>` alone spans the
+  // whole year and trips the 100-event cap.
+  if (week) params.set("dates", String(NFL_SEASON_YEAR));
   const url = params.toString() ? `${SCOREBOARD}?${params}` : SCOREBOARD;
 
   const controller = new AbortController();
