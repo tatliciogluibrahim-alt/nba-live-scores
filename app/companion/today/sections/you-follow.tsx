@@ -41,7 +41,7 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
     <section>
       <SecHead name="You follow" count={String(items.length)} />
       {visible.map((item) => (
-        <FollowRailRow key={`${item.kind}-${item.id}`} item={item} />
+        <FollowRailRow key={`${item.sport}-${item.kind}-${item.id}`} item={item} />
       ))}
       {remaining > 0 ? (
         <AgateRow main={<span>{`+${remaining} more`}</span>} href="/following" />

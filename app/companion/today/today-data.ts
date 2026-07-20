@@ -2,7 +2,7 @@
 // already ship. Output: a single TodayPayload tuned for the Today composition.
 // Keep all "what to surface" logic here so the screen file stays a layout.
 
-import type { Follow, PinnedGame, AlertPreset } from "../state/types";
+import type { Follow, PinnedGame, AlertPreset, Sport } from "../state/types";
 import type { WCChampion } from "../../lib/wc-champion";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import { momentSport, teamFollowCodes } from "../state/moments";
@@ -111,6 +111,10 @@ export type TodayHero = {
 
 export type YouFollowItem = {
   kind: Follow["kind"];
+  /** Sport of the underlying follow. Disambiguates the React key + any
+   *  consumer branch when the same code exists in two sports (an NFL "CLE"
+   *  Browns follow and an NBA "CLE" Cavaliers follow share kind+id). */
+  sport: Sport;
   id: string;
   label: string;
   /** Short identity mark — same chip text as the Following tab card.
@@ -864,14 +868,19 @@ function buildYouFollow(
 ): YouFollowItem[] {
   return follows
     .map<YouFollowItem | null>((f) => {
+      // Sport of this follow, resolved through its MOMENT (Path B). Carried
+      // on every item so the React key + any consumer branch can tell an
+      // NFL "CLE" (Browns) from an NBA "CLE" (Cavaliers).
+      const sport: Sport = momentSport(f.momentId) ?? "nba";
       // NFL team follow (Path B): never match NBA games or the NBA team
       // page (the LAC collision). Route to the NFL schedule for now — the
       // NFL team-detail page is a later build. NFL live-game status in the
       // chip is deferred to preseason (nfl games aren't threaded here yet).
-      if (f.kind === "team" && momentSport(f.momentId) === "nfl") {
+      if (f.kind === "team" && sport === "nfl") {
         const code = f.scopeId ?? f.id;
         return {
           kind: "team",
+          sport,
           id: code,
           label: code,
           chip: code,
@@ -880,11 +889,12 @@ function buildYouFollow(
           href: "/schedule?scope=all&competition=nfl-season-2026",
         };
       }
-      if (f.kind === "team" && momentSport(f.momentId) === "nba") {
+      if (f.kind === "team" && sport === "nba") {
         const g = pickRelevantGame(nba.filter((x) => gameIncludesTeam(x, f.id)));
         if (g) {
           return {
             kind: "team",
+            sport,
             id: f.id,
             label: f.id,
             chip: f.id,
@@ -909,6 +919,7 @@ function buildYouFollow(
         // /following because no team detail page existed.
         return {
           kind: "team",
+          sport,
           id: f.id,
           label: f.id,
           chip: f.id,
@@ -925,6 +936,7 @@ function buildYouFollow(
         if (g) {
           return {
             kind: "country",
+            sport,
             id: f.id,
             label: f.id,
             chip: countryChip,
@@ -946,6 +958,7 @@ function buildYouFollow(
         const days = daysUntil(WC_KICKOFF, now);
         return {
           kind: "country",
+          sport,
           id: f.id,
           label: f.id,
           chip: countryChip,
@@ -958,6 +971,7 @@ function buildYouFollow(
         const [a, b] = f.id.split("-");
         return {
           kind: "series",
+          sport,
           id: f.id,
           label: f.id,
           chip: b ? `${a}·${b}` : f.id,
@@ -971,6 +985,7 @@ function buildYouFollow(
         const concluded = tournamentPhase(f.id) === "concluded";
         return {
           kind: "tournament",
+          sport,
           id: f.id,
           label: tournament?.name ?? f.id,
           // A tournament chip shows its name, not a 3-letter code: "SOC"

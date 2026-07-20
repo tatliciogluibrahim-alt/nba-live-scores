@@ -70,11 +70,19 @@ export function FollowLine({ items }: { items: YouFollowItem[] }) {
       >
         {visible.map((item, i) => {
           const live = item.tone === "live";
-          // Country follows are Summer Soccer (green); team/series/tournament
-          // lean NBA (red). Only live tokens carry a dot + full ink.
-          const dotColor = item.kind === "country" ? "var(--wc)" : "var(--nba)";
+          // Dot color follows the item's SPORT (not a kind guess): Summer
+          // Soccer green, NFL blue, NBA red. Only live tokens carry a dot.
+          const dotColor =
+            item.sport === "wc"
+              ? "var(--wc)"
+              : item.sport === "nfl"
+                ? "var(--nfl)"
+                : "var(--nba)";
           return (
-            <span key={`${item.kind}-${item.id}`} className="inline-flex items-center">
+            <span
+              key={`${item.sport}-${item.kind}-${item.id}`}
+              className="inline-flex items-center"
+            >
               {i > 0 ? (
                 <span aria-hidden style={{ color: "var(--mute-2)", padding: "0 6px" }}>
                   ·

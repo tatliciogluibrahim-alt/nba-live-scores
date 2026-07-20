@@ -84,4 +84,21 @@ describe("Today reads NFL games for followed NFL teams", () => {
     const p = buildTodayPayload({ ...base, nfl: [nflGame()], follows: [] });
     expect(p.upNext.filter((i) => i.source === "nfl")).toHaveLength(0);
   });
+
+  it("youFollow keeps a same-code NFL + NBA follow as two distinct, sport-tagged items", () => {
+    // The bug this locks: an NFL "CLE" (Browns) and an NBA "CLE" (Cavaliers)
+    // share kind+id, so a kind-id React key collided (rows dropped / expand
+    // state shared). Each youFollow item now carries its sport.
+    const p = buildTodayPayload({
+      ...base,
+      nfl: [],
+      follows: [nflTeamFollow("CLE"), nbaTeamFollow("CLE")],
+    });
+    const cle = p.youFollow.filter((i) => i.kind === "team" && i.id === "CLE");
+    expect(cle).toHaveLength(2);
+    expect(new Set(cle.map((i) => i.sport))).toEqual(new Set(["nfl", "nba"]));
+    // The composite key (sport-kind-id) the UI uses must be unique.
+    const keys = cle.map((i) => `${i.sport}-${i.kind}-${i.id}`);
+    expect(new Set(keys).size).toBe(2);
+  });
 });

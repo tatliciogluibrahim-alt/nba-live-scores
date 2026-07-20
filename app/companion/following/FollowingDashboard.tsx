@@ -198,7 +198,11 @@ function FollowingMobile({
   // FollowRow is a controlled expander (its drawer is the shared FollowCard
   // panel). Independent per row (not an accordion) to match FollowCard.
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
-  const keyOf = (c: FollowCardData) => `${c.follow.kind}-${c.follow.id}`;
+  // momentId disambiguates the Path B collision: an NFL "CLE" (Browns) and
+  // an NBA "CLE" (Cavaliers) share kind+id but are distinct rows, and this
+  // key also drives per-row expand/collapse state.
+  const keyOf = (c: FollowCardData) =>
+    `${c.follow.momentId}-${c.follow.kind}-${c.follow.id}`;
   const toggle = (key: string) =>
     setExpandedKeys((prev) => {
       const next = new Set(prev);
@@ -521,7 +525,11 @@ function FollowingDesktop({
   // opening the shared FollowDrawerBody (bell + tier + per-follow No-Spoilers
   // + unfollow). Not an accordion.
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
-  const keyOf = (c: FollowCardData) => `${c.follow.kind}-${c.follow.id}`;
+  // momentId disambiguates the Path B collision: an NFL "CLE" (Browns) and
+  // an NBA "CLE" (Cavaliers) share kind+id but are distinct rows, and this
+  // key also drives per-row expand/collapse state.
+  const keyOf = (c: FollowCardData) =>
+    `${c.follow.momentId}-${c.follow.kind}-${c.follow.id}`;
   const toggle = (key: string) =>
     setExpandedKeys((prev) => {
       const next = new Set(prev);
