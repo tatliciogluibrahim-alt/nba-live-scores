@@ -6,6 +6,7 @@ import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import { isCapacitorNative } from "../dev/native-detect";
 import type { NBAGame, WCGameLite } from "../today/today-data";
+import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import { buildWatchingPayload, type PinnedItem } from "../watching/watching-data";
 import {
   startLiveActivity,
@@ -78,6 +79,17 @@ async function fetchWC(): Promise<WCGameLite[]> {
   }
 }
 
+async function fetchNFL(): Promise<NFLGameLite[]> {
+  try {
+    const res = await fetch("/api/nfl-scores", { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { games?: NFLGameLite[] };
+    return json.games ?? [];
+  } catch {
+    return [];
+  }
+}
+
 function parseScore(line: string | null): { away: number; home: number } {
   if (!line) return { away: 0, home: 0 };
   const nums = line.match(/\d+/g);
@@ -90,8 +102,9 @@ function itemToStartInput(
   redacted: boolean
 ): LiveActivityStartInput {
   const { away, home } = parseScore(item.scoreLine);
-  const sport: LiveActivityStartInput["sport"] =
-    item.source === "wc" ? "wc" : "nba";
+  // item.source is already the sport (nba | wc | nfl) — pass it through so an
+  // NFL Live Activity gets the right accent + 15-minute-quarter progress.
+  const sport: LiveActivityStartInput["sport"] = item.source;
   const status: "live" | "upcoming" | "final" = item.status;
   return {
     gameId: item.id,
@@ -108,7 +121,8 @@ function itemToStartInput(
     // we seed it from the contextEyebrow so the tile reads correctly
     // the moment it opens.
     subline: deriveSubline(item.contextEyebrow),
-    accentHex: sport === "wc" ? ACCENT_WC : ACCENT_NBA,
+    accentHex:
+      sport === "wc" ? ACCENT_WC : sport === "nfl" ? ACCENT_NFL : ACCENT_NBA,
     // Initial Stadium Panel rail value so the activity opens at the
     // right point in the match instead of starting at 0.
     progress: computeLiveActivityProgress(sport, item.detailLine, status),
@@ -159,7 +173,6 @@ async function postDeregister(token: string): Promise<void> {
 }
 
 // Silence the unused NFL accent until NFL games can be pinned (Phase 22).
-void ACCENT_NFL;
 
 export function LiveActivitySync() {
   const { pinned, hydrated } = usePinned();
@@ -409,12 +422,13 @@ export function LiveActivitySync() {
   // so web users and pin-less users never fetch.
   useVisibilityPoll(
     async (isCancelled) => {
-      const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
+      const [nba, wc, nfl] = await Promise.all([fetchNBA(), fetchWC(), fetchNFL()]);
       if (isCancelled()) return;
 
       const { items } = buildWatchingPayload({
         nba,
         wc,
+        nfl,
         pinned: pinnedRef.current,
       });
       const liveItems = items.filter((i) => i.status === "live");

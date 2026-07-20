@@ -186,3 +186,58 @@ night, reliance rows arriving.
 - Division follows (schema supports; UI later).
 - Preseason pushes. NCAA. The Brief's NFL edition (post-launch).
 - Monetization. `userAffinities` cross-season teams (later phase).
+
+---
+
+## Activation status — 2026-07-20 (early-lead sweep)
+
+The World Cup wrapped (final Jul 19). Per user decision, NFL was **activated
+early** as a first-class followable moment (the "early lead" that fills the
+idle gap), months before the Sep 9 opener. What that sweep shipped and what
+it deliberately deferred:
+
+### Shipped
+
+- **Sport-collision gate (root cause).** Every game-reading surface that
+  matches a followed team to a game now resolves the sport through the
+  follow's MOMENT, not the bare code (the LAC/CLE class). One place holds
+  the logic: `state/moments.ts` sport-scoped readers + `follow-match.ts`'s
+  `sport` gate. Locked by `state/collision-guard.test.ts`.
+- **Schedule** is sports-agnostic + bug-free: family-based body dispatch,
+  season-type-aware week pager (no "of 18" during preseason), byweek/
+  standings deep-links round-trip, honest live-vs-upcoming idle copy.
+- **NFL game detail** (`NFLGameDetail`) — a tapped NFL game resolves to a
+  calm System D read instead of the NotFound. Current-week resolution.
+- **Activation**: `comingSoon` gate dropped; lifecycle fully date-derived
+  (`tournamentPhase`). Moment lists (onboarding, PickYourMoment,
+  FollowingEmpty) are phase-aware — concluded moments drop, pre-season NFL
+  is followable.
+- **Watching**: `nflToPinned` + `buildWatchingPayload` NFL branch + the
+  hook's `fetchNFL`. Required for coherence — the detail page's "Add to
+  Watching" would otherwise create a broken stale pin. Verified live.
+- **Native + widget threading (Sep-9 ready, type-safe):** `PinnedSource`,
+  `buildLiveEntries`, Live Activity `itemToStartInput` (accent + 15-min-
+  quarter progress), and the home-screen widget's up-next all carry NFL.
+  No live NFL games exist to exercise them until Sep 9, but they are
+  wired and correct.
+- **Trademark**: the two in-app CalmEndCard "World Cup" strings → "Summer
+  Soccer" (website/SEO keeps the factual nominative reference).
+
+### Deferred to the August pre-season build (dated, deliberate)
+
+The **live-game Today render branches** — `pickHero`, `buildScoreboard`,
+`quiet-wrap`, and `recap` NFL cases — are NOT built. Rationale:
+
+1. They render nothing until real NFL games are live/final (Sep 9+). The
+   preseason Today experience is already covered by the NFL **up-next
+   pointer** (built + wired end-to-end through `buildUpNext` +
+   `use-today-data`).
+2. `quiet-wrap` and `recap` produce **LLM narrative**. The data-integrity
+   rule forbids shipping generated NFL copy that can't be verified against
+   real game data. Build these in August against a real (or realistic
+   fixture) preseason slate, with the copy validator exercised.
+3. AGENTS.md gates the NFL full build to August 2026.
+
+Type widenings these will need (`RecapFinal.source`, `ReliancePrompt.sport`,
+reliance-store, narrative types) are also part of that August pass — they
+only matter once NFL finals feed the recap/wrap.

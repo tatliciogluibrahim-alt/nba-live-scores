@@ -128,15 +128,16 @@ function pageIsVisible(): boolean {
 // (pinned-and-live ids) is right on first paint. buildWatchingPayload is the
 // same source LiveActivitySync uses, so the meter and the lock-screen dock
 // agree on which games hold a slot.
-function seedFeeds(): { nba: NBAGame[]; wc: WCGameLite[] } {
+function seedFeeds(): { nba: NBAGame[]; wc: WCGameLite[]; nfl: NFLGameLite[] } {
   try {
     const ls = readFeed<{ games: NBAGame[]; recent: NBAGame[] }>(
       FEED_KEYS.liveScores
     );
     const wc = readFeed<WCGameLite[]>(FEED_KEYS.worldCup);
-    return { nba: ls?.games ?? [], wc: wc ?? [] };
+    // NFL isn't in the shared feed cache (nba+wc only); loads on first resolve.
+    return { nba: ls?.games ?? [], wc: wc ?? [], nfl: [] };
   } catch {
-    return { nba: [], wc: [] };
+    return { nba: [], wc: [], nfl: [] };
   }
 }
 
@@ -149,7 +150,11 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
   // Raw live feeds, refreshed each resolve tick, used only to derive the
   // pinned-and-live ids for TrackControl's slot meter. Kept out of the resolve
   // branch logic so the derivation reuses one shared source (watching-data).
-  const [feeds, setFeeds] = useState<{ nba: NBAGame[]; wc: WCGameLite[] }>(
+  const [feeds, setFeeds] = useState<{
+    nba: NBAGame[];
+    wc: WCGameLite[];
+    nfl: NFLGameLite[];
+  }>(
     seedFeeds
   );
 
@@ -161,7 +166,7 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
       if (!mounted.current) return;
 
       // Keep the slot-meter source fresh regardless of which game resolves.
-      setFeeds({ nba, wc });
+      setFeeds({ nba, wc, nfl });
 
       const nbaGame = nba.find((g) => g.id === gameId) ?? allNBA.find((g) => g.id === gameId);
       if (nbaGame) {
@@ -291,6 +296,7 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
     const { items } = buildWatchingPayload({
       nba: feeds.nba,
       wc: feeds.wc,
+      nfl: feeds.nfl,
       pinned,
     });
     return items.filter((i) => i.status === "live").map((i) => i.id);

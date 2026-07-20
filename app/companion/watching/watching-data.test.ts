@@ -4,10 +4,12 @@ import {
   trackedStampText,
   isExpiredFinalPin,
   nbaToPinned,
+  buildWatchingPayload,
   WATCHING_FINAL_TTL_MS,
   type PinnedItem,
 } from "./watching-data";
 import type { NBAGame } from "../today/today-data";
+import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 
 // Pure copy helpers for the System D mobile Watching recomposition (D2 T5).
 // Timing-only, never a winner or a margin — safe under No-Spoilers.
@@ -63,6 +65,61 @@ describe("isExpiredFinalPin (Watching 24h auto-remove)", () => {
     expect(isExpiredFinalPin(pin({ status: "final", dateISO: "not-a-date" }), now)).toBe(
       false
     );
+  });
+});
+
+function nflGame(over: Partial<NFLGameLite> = {}): NFLGameLite {
+  return {
+    id: "nfl1",
+    date: "2026-09-09T00:20:00Z",
+    status: "upcoming",
+    statusText: "Upcoming",
+    week: 1,
+    seasonType: 2,
+    period: 0,
+    home: { name: "Seattle Seahawks", abbreviation: "SEA", score: 0 },
+    away: { name: "New England Patriots", abbreviation: "NE", score: 0 },
+    broadcasts: ["NBC"],
+    ...over,
+  };
+}
+
+describe("buildWatchingPayload NFL pins (Phase 22)", () => {
+  it("resolves a pinned NFL game to a first-class item, not a stale pin", () => {
+    const { items, stalePins } = buildWatchingPayload({
+      nba: [],
+      wc: [],
+      nfl: [nflGame()],
+      pinned: [{ gameId: "nfl1", pinnedAt: 1 }],
+    });
+    expect(stalePins).toHaveLength(0);
+    expect(items).toHaveLength(1);
+    expect(items[0].source).toBe("nfl");
+    expect(items[0].contextEyebrow).toBe("NFL · Week 1");
+    // Upcoming games never show a score line (no false liveness).
+    expect(items[0].scoreLine).toBeNull();
+  });
+
+  it("labels a final NFL game with its score and the week", () => {
+    const { items } = buildWatchingPayload({
+      nba: [],
+      wc: [],
+      nfl: [nflGame({ status: "final", statusText: "Final", away: { name: "New England Patriots", abbreviation: "NE", score: 17 }, home: { name: "Seattle Seahawks", abbreviation: "SEA", score: 24 } })],
+      pinned: [{ gameId: "nfl1", pinnedAt: 1 }],
+    });
+    expect(items[0].scoreLine).toBe("17 – 24");
+    expect(items[0].statusLabel).toBe("FINAL");
+    expect(items[0].spoilerKind).toBe("final");
+  });
+
+  it("tags a preseason game's eyebrow distinctly from the regular season", () => {
+    const { items } = buildWatchingPayload({
+      nba: [],
+      wc: [],
+      nfl: [nflGame({ seasonType: 1, week: 2 })],
+      pinned: [{ gameId: "nfl1", pinnedAt: 1 }],
+    });
+    expect(items[0].contextEyebrow).toBe("NFL · Preseason Wk 2");
   });
 });
 

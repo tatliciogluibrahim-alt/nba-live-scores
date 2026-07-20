@@ -163,8 +163,13 @@ function LiveRoomRow({
   const [awayScore, homeScore] = parseScoreLine(item.scoreLine);
   const score = `${awayScore ?? 0}–${homeScore ?? 0}`;
 
-  const sport = item.source === "wc" ? "wc" : "nba";
-  const accent = sport === "wc" ? "var(--wc)" : "var(--nba)";
+  const sport = item.source;
+  const accent =
+    sport === "wc"
+      ? "var(--wc)"
+      : sport === "nfl"
+        ? "var(--nfl)"
+        : "var(--nba)";
   // Same lock-screen parity rail as PinnedCard: structural (no score leak),
   // safe under No-Spoilers. Minimal on the ink field — accent fill on a
   // cream-hairline track, a cream position knob, no ticks / end labels.

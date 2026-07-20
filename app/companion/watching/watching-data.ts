@@ -4,9 +4,10 @@
 import type { StatusTone } from "../atoms/StatusPill";
 import type { PinnedGame } from "../state/types";
 import type { NBAGame, WCGameLite } from "../today/today-data";
+import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import { withGameOrigin } from "../game/game-origin";
 
-export type PinnedSource = "nba" | "wc";
+export type PinnedSource = "nba" | "wc" | "nfl";
 
 export type PinnedItem = {
   source: PinnedSource;
@@ -88,13 +89,14 @@ function formatGameTime(date: string): string {
 function formatGameDay(
   date: string,
   now = new Date(),
-  sport: "nba" | "wc" = "nba"
+  sport: "nba" | "wc" | "nfl" = "nba"
 ): string {
   const d = new Date(date);
   const sameDay =
     d.getFullYear() === now.getFullYear() &&
     d.getMonth() === now.getMonth() &&
     d.getDate() === now.getDate();
+  // NBA + NFL skew evening ("Tonight"); Summer Soccer is US daytime ("Today").
   if (sameDay) return sport === "wc" ? "Today" : "Tonight";
 
   const tomorrow = new Date(now);
@@ -188,19 +190,65 @@ function wcToPinned(g: WCGameLite, pinnedAt: number): PinnedItem {
   };
 }
 
+// NFL pin (Phase 22). "AT" separator matches football convention (away AT
+// home), and the eyebrow carries the week label rather than a series/group.
+function nflToPinned(g: NFLGameLite, pinnedAt: number): PinnedItem {
+  const { tone, label } = statusToToneAndLabel(g.status);
+  const isUpcoming = g.status === "upcoming";
+
+  const weekLabel =
+    g.seasonType === 1
+      ? `Preseason Wk ${g.week}`
+      : g.seasonType === 3
+        ? `Playoffs Wk ${g.week}`
+        : `Week ${g.week}`;
+
+  let detailLine = g.statusText || "";
+  if (isUpcoming) {
+    detailLine = `${formatGameDay(g.date, new Date(), "nfl")} · ${formatGameTime(g.date)}`;
+  }
+
+  return {
+    source: "nfl",
+    id: g.id,
+    pinnedAt,
+    dateISO: g.date,
+    matchup: `${g.away.abbreviation} · ${g.home.abbreviation}`,
+    contextEyebrow: `NFL · ${weekLabel}`,
+    status: g.status,
+    statusLabel: label,
+    statusTone: tone,
+    scoreLine: isUpcoming ? null : `${g.away.score} – ${g.home.score}`,
+    detailLine,
+    awayCode: g.away.abbreviation,
+    homeCode: g.home.abbreviation,
+    awayName: g.away.name,
+    homeName: g.home.name,
+    watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
+    spoilerSubject: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
+    spoilerKind: g.status === "final" ? "final" : "live",
+    href: withGameOrigin(`/game/${g.id}`, "watching"),
+  };
+}
+
 // ── Public builder ────────────────────────────────────────────────────
 
 export function buildWatchingPayload({
   nba,
   wc,
+  nfl = [],
   pinned,
 }: {
   nba: NBAGame[];
   wc: WCGameLite[];
+  /** Current-week NFL games (Phase 22). Empty out of season — a pinned NFL
+   *  game that isn't in this feed falls to stalePins like any other. */
+  nfl?: NFLGameLite[];
   pinned: PinnedGame[];
 }): WatchingPayload {
   const nbaById = new Map(nba.map((g) => [g.id, g]));
   const wcById = new Map(wc.map((g) => [g.id, g]));
+  const nflById = new Map(nfl.map((g) => [g.id, g]));
 
   const items: PinnedItem[] = [];
   const stalePins: StalePin[] = [];
@@ -217,6 +265,11 @@ export function buildWatchingPayload({
     const wcGame = wcById.get(pin.gameId);
     if (wcGame) {
       items.push(wcToPinned(wcGame, pin.pinnedAt));
+      continue;
+    }
+    const nflGame = nflById.get(pin.gameId);
+    if (nflGame) {
+      items.push(nflToPinned(nflGame, pin.pinnedAt));
       continue;
     }
     stalePins.push({ source: "nba", id: pin.gameId, pinnedAt: pin.pinnedAt });

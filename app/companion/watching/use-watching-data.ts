@@ -7,6 +7,7 @@ import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import { FEED_KEYS, readFeed, writeFeed } from "../hooks/feed-cache";
 import type { Game } from "../../nba/types";
 import type { NBAGame, WCGameLite } from "../today/today-data";
+import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import {
   buildWatchingPayload,
   nbaToPinned,
@@ -61,6 +62,19 @@ async function fetchWC(): Promise<WCGameLite[]> {
   }
 }
 
+// Current-week NFL games (Phase 22). Empty out of season; a pinned NFL game
+// not in this week's slate resolves via the same path as any other stale pin.
+async function fetchNFL(): Promise<NFLGameLite[]> {
+  try {
+    const res = await fetch("/api/nfl-scores", { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { games?: NFLGameLite[] };
+    return json.games ?? [];
+  } catch {
+    return [];
+  }
+}
+
 // Pull persisted final-game snapshots for IDs the live feeds didn't
 // resolve. Lets historical pins keep rendering as game cards instead
 // of dead "No longer in the live feed." rows.
@@ -81,7 +95,12 @@ async function fetchSnapshot(id: string): Promise<Game | null> {
   }
 }
 
-type Fetched = { nba: NBAGame[]; wc: WCGameLite[]; updatedAt: Date | null };
+type Fetched = {
+  nba: NBAGame[];
+  wc: WCGameLite[];
+  nfl: NFLGameLite[];
+  updatedAt: Date | null;
+};
 
 export function useWatchingData() {
   const { pinned, hydrated: pinnedHydrated } = usePinned();
@@ -92,8 +111,10 @@ export function useWatchingData() {
       FEED_KEYS.liveScores
     );
     const wc = readFeed<WCGameLite[]>(FEED_KEYS.worldCup);
-    if (!ls && !wc) return { nba: [], wc: [], updatedAt: null };
-    return { nba: ls?.games ?? [], wc: wc ?? [], updatedAt: new Date() };
+    // NFL isn't cached in the shared feed (Today's cache is nba+wc); it
+    // loads on the first poll. Seed empty so the seed shape stays cheap.
+    if (!ls && !wc) return { nba: [], wc: [], nfl: [], updatedAt: null };
+    return { nba: ls?.games ?? [], wc: wc ?? [], nfl: [], updatedAt: new Date() };
   });
   const dataRef = useRef<Fetched>(data);
   // Last-committed feed signature — skip the re-render + updatedAt bump on a
@@ -109,15 +130,16 @@ export function useWatchingData() {
 
   // Single fetch+commit path shared by the poll loop and refetch.
   const loadInto = useCallback(async (isCancelled: () => boolean) => {
-    const [nba, wc] = await Promise.all([fetchNBA(), fetchWC()]);
+    const [nba, wc, nfl] = await Promise.all([fetchNBA(), fetchWC(), fetchNFL()]);
     if (isCancelled()) return;
-    const sig = JSON.stringify(nba) + "|" + JSON.stringify(wc);
+    const sig =
+      JSON.stringify(nba) + "|" + JSON.stringify(wc) + "|" + JSON.stringify(nfl);
     if (sig === sigRef.current && dataRef.current.updatedAt !== null) {
       setHasLoadedOnce(true);
       return;
     }
     sigRef.current = sig;
-    const next = { nba, wc, updatedAt: new Date() };
+    const next = { nba, wc, nfl, updatedAt: new Date() };
     dataRef.current = next;
     setData(next);
     setHasLoadedOnce(true);
@@ -132,15 +154,21 @@ export function useWatchingData() {
       const current = dataRef.current;
       const hasLive =
         current.nba.some((g) => g.status === "live") ||
-        current.wc.some((g) => g.status === "live");
+        current.wc.some((g) => g.status === "live") ||
+        current.nfl.some((g) => g.status === "live");
       return hasLive ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
     }
   );
 
   const livePayload = useMemo<WatchingPayload>(() => {
     if (!hasLoadedOnce || !pinnedHydrated) return EMPTY;
-    return buildWatchingPayload({ nba: data.nba, wc: data.wc, pinned });
-  }, [hasLoadedOnce, pinnedHydrated, data.nba, data.wc, pinned]);
+    return buildWatchingPayload({
+      nba: data.nba,
+      wc: data.wc,
+      nfl: data.nfl,
+      pinned,
+    });
+  }, [hasLoadedOnce, pinnedHydrated, data.nba, data.wc, data.nfl, pinned]);
 
   // Resolve any stale pins (pinned IDs the live feeds don't know about
   // anymore) against the snapshot store. Resolved snapshots are promoted

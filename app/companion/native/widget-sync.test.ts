@@ -38,6 +38,7 @@ describe("WidgetSync live follow eligibility", () => {
     const entries = buildLiveEntries(
       [exactSeriesGame, nextRoundGame],
       [],
+      [],
       [follow("series", "NYK-BOS")],
       false
     );
@@ -48,6 +49,7 @@ describe("WidgetSync live follow eligibility", () => {
   it("continues to include every matchup for a direct team follow", () => {
     const entries = buildLiveEntries(
       [exactSeriesGame, nextRoundGame],
+      [],
       [],
       [follow("team", "BOS")],
       false

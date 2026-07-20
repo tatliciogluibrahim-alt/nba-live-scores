@@ -13,6 +13,7 @@ import {
   type WCGameLite,
   type UpNextItem,
 } from "../today/today-data";
+import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import { getTournament } from "../following/data/tournaments";
 import {
   writeWidgetSnapshot,
@@ -26,6 +27,7 @@ import {
   nbaGameMatchesFollowCoverage,
 } from "../following/nba-follow-coverage";
 import { followHidesParticipants } from "../spoiler/follow-match";
+import { teamFollowCodes, followsWholeSport } from "../state/moments";
 import {
   selectiveHiddenFollowKey,
   shouldResetRevealLevels,
@@ -91,6 +93,20 @@ async function fetchWC(): Promise<WCGameLite[] | null> {
   }
 }
 
+// Current-week NFL games (Phase 22). Null on failure so a blip doesn't blank
+// the tile; empty out of season. Lets a followed team's next NFL game reach
+// the home-screen upcoming widget pre-season.
+async function fetchNFL(): Promise<NFLGameLite[] | null> {
+  try {
+    const res = await fetch("/api/nfl-scores", { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { games?: NFLGameLite[] };
+    return json.games ?? [];
+  } catch {
+    return null;
+  }
+}
+
 // Widget live-status label. Drops the ticking minute / clock ("58'",
 // "Q3 4:21") to a plain "Live" — home-screen + lock-screen widgets can't
 // refresh per-minute, so a precise clock always lags (and visibly trails
@@ -133,6 +149,7 @@ function itemToUpcoming(item: UpNextItem): WidgetUpcoming {
 export function buildLiveEntries(
   nba: NBAGame[],
   wc: WCGameLite[],
+  nfl: NFLGameLite[],
   follows: Follow[],
   noSpoilers: boolean
 ): WidgetLive[] {
@@ -148,6 +165,10 @@ export function buildLiveEntries(
       if (accent === "var(--nba)") nbaTour = true;
     }
   }
+  // NFL coverage via the Path B sport-scoped readers (an NFL "LAC" must not
+  // be confused with the NBA one).
+  const nflCodes = teamFollowCodes(follows, "nfl");
+  const nflTour = followsWholeSport(follows, "nfl");
 
   const hideFor = (away: string, home: string, sport: "nba" | "wc" | "nfl"): boolean => {
     if (noSpoilers) return true;
@@ -192,6 +213,22 @@ export function buildLiveEntries(
       statusLine: widgetLiveStatus(g.statusText),
       redacted: hideFor(a, h, "wc"),
       accentHex: ACCENT_WC,
+      href: `/game/${g.id}`,
+    });
+  }
+  for (const g of nfl) {
+    if (g.status !== "live") continue;
+    const a = g.away.abbreviation.toUpperCase();
+    const h = g.home.abbreviation.toUpperCase();
+    if (!(nflTour || nflCodes.has(a) || nflCodes.has(h))) continue;
+    out.push({
+      id: g.id,
+      sport: "nfl",
+      away: { code: g.away.abbreviation, score: g.away.score },
+      home: { code: g.home.abbreviation, score: g.home.score },
+      statusLine: widgetLiveStatus(g.statusText),
+      redacted: hideFor(a, h, "nfl"),
+      accentHex: ACCENT_NFL,
       href: `/game/${g.id}`,
     });
   }
@@ -241,14 +278,18 @@ export function WidgetSync() {
   }, []);
 
   const writeSnapshot = useCallback(async () => {
-    const [nbaRes, wcRes] = await Promise.all([fetchNBA(), fetchWC()]);
+    const [nbaRes, wcRes, nflRes] = await Promise.all([
+      fetchNBA(),
+      fetchWC(),
+      fetchNFL(),
+    ]);
 
-    // If BOTH feeds failed (network blip / both endpoints down), skip the
-    // write entirely rather than overwriting a good snapshot with empty
-    // data. A blanked widget on a transient failure reads as broken.
-    // When at least one feed succeeded, proceed (treat the failed one as
-    // an empty list — partial data beats stale-everything).
-    if (nbaRes === null && wcRes === null) {
+    // If ALL feeds failed (network blip / endpoints down), skip the write
+    // entirely rather than overwriting a good snapshot with empty data. A
+    // blanked widget on a transient failure reads as broken. When at least
+    // one feed succeeded, proceed (treat the failed one as an empty list —
+    // partial data beats stale-everything).
+    if (nbaRes === null && wcRes === null && nflRes === null) {
       const privacyActive =
         noSpoilersRef.current ||
         followsRef.current.some((follow) => follow.hideSpoilers);
@@ -260,11 +301,13 @@ export function WidgetSync() {
     const nba = nbaRes?.games ?? [];
     const nbaRecent = nbaRes?.recent ?? [];
     const wc = wcRes ?? [];
+    const nfl = nflRes ?? [];
 
     const payload = buildTodayPayload({
       nba,
       nbaRecent,
       wc,
+      nfl,
       follows: followsRef.current,
       pinned: pinnedRef.current,
     });
@@ -313,6 +356,7 @@ export function WidgetSync() {
     const live = buildLiveEntries(
       nba,
       wc,
+      nfl,
       followsRef.current,
       noSpoilersRef.current
     );
