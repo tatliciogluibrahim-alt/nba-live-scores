@@ -17,6 +17,7 @@ import { NFL_2026_SEASON_OPENER } from "../following/data/nfl-dates";
 import {
   activeScheduleCompetitions,
   scopeCompetitions,
+  competitionFamily,
   type ScheduleCompetition,
   type ScheduleView,
 } from "./competitions";
@@ -136,9 +137,8 @@ export function ScheduleClient({
         />
       ) : (
         <IdleState
-          liveElsewhere={all.filter(
-            (c) => c.status === "live" || c.status === "upcoming"
-          )}
+          liveElsewhere={all.filter((c) => c.status === "live")}
+          upcomingElsewhere={all.filter((c) => c.status === "upcoming")}
           onSeeAll={() =>
             updateScheduleState({ scope: "all", competition: null })
           }
@@ -250,10 +250,11 @@ function CompetitionBody({
   gameReturnTo: string;
 }) {
   if (competition.views.length > 0) {
-    // Route to the competition's native body. NFL renders By-week/Standings;
-    // everything else with built views is the World Cup today.
-    const isNFL = competition.views.includes("byweek");
-    if (isNFL) {
+    // Dispatch on the competition FAMILY, not on a view-name membership
+    // check. NFL renders By-week/Standings; the World Cup renders
+    // By-day/Bracket/Groups. A future family (NBA standings) slots in here.
+    const family = competitionFamily(competition.id);
+    if (family === "nfl") {
       return (
         <NFLScheduleBody
           views={competition.views as ("byweek" | "standings")[]}
@@ -485,19 +486,30 @@ function LiveElsewhereBody({ competition }: { competition: ScheduleCompetition }
 // on the calendar. One tap to see everything that's on.
 function IdleState({
   liveElsewhere,
+  upcomingElsewhere,
   onSeeAll,
 }: {
   liveElsewhere: ScheduleCompetition[];
+  upcomingElsewhere: ScheduleCompetition[];
   onSeeAll: () => void;
 }) {
+  // "On now" language keys on genuinely live competitions ONLY. An upcoming
+  // competition is not live — claiming it is would be the same false-liveness
+  // bug as a finished-game push that says a live game is over.
   const live = liveElsewhere[0];
-  const liveName = live?.name.replace(/\s+\d{4}$/, "");
+  const upcoming = upcomingElsewhere[0];
+  const stripYear = (name: string) => name.replace(/\s+\d{4}$/, "");
+  const eyebrow = live ? "On now" : upcoming ? "Coming up" : "Quiet stretch";
   const headline = live
-    ? `The ${liveName} is on right now.`
-    : "Nothing you follow is on the schedule right now.";
+    ? `The ${stripYear(live.name)} is on right now.`
+    : upcoming
+      ? `The ${stripYear(upcoming.name)} is up next.`
+      : "Nothing you follow is on the schedule right now.";
   const detail = live
     ? "You don't follow it yet. See what's on across every sport."
-    : `NFL opens ${NFL_2026_SEASON_OPENER.label}. Until then, see what else is on.`;
+    : upcoming
+      ? "You don't follow it yet. See what's on across every sport."
+      : `NFL opens ${NFL_2026_SEASON_OPENER.label}. Until then, see what else is on.`;
   return (
     <section
       className="mt-6"
@@ -513,7 +525,7 @@ function IdleState({
           color: "var(--mute-1)",
         }}
       >
-        {live ? "On now" : "Quiet stretch"}
+        {eyebrow}
       </p>
       <p
         className="mt-1 text-[15px] leading-snug"

@@ -20,6 +20,16 @@ describe("Schedule route state", () => {
     ).toEqual({ scope: "following", competition: null, view: null });
   });
 
+  it("round-trips NFL views (byweek/standings) so their deep-links survive", () => {
+    for (const view of ["byweek", "standings"] as const) {
+      expect(
+        parseScheduleRoute({ competition: "nfl-season-2026", view })
+      ).toEqual({ scope: "following", competition: "nfl-season-2026", view });
+    }
+    // A bogus view still falls back to null (no silent bad state).
+    expect(parseScheduleRoute({ view: "nonsense" }).view).toBeNull();
+  });
+
   it("keeps valid competition and view context when scope changes", () => {
     expect(
       scheduleHref(

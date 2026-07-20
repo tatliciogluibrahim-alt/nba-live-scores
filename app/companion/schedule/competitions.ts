@@ -26,6 +26,17 @@ export type ScheduleView =
   | "byweek"
   | "standings";
 
+/** Every valid schedule view, in one place so the route parser's type guard
+ *  can never drift from the type union (an NFL "byweek"/"standings" deep-link
+ *  must round-trip). Keep in sync with ScheduleView above. */
+export const ALL_SCHEDULE_VIEWS: readonly ScheduleView[] = [
+  "byday",
+  "bracket",
+  "groups",
+  "byweek",
+  "standings",
+];
+
 export type CompetitionStatus = "live" | "upcoming" | "concluded" | "comingsoon";
 
 export type ScheduleCompetition = {
@@ -51,9 +62,13 @@ const WC_VIEWS: ScheduleView[] = ["byday", "bracket", "groups"];
 // in gate 5 — not needed for the regular season.
 const NFL_VIEWS: ScheduleView[] = ["byweek", "standings"];
 
-type CompetitionFamily = "wc" | "nba" | "nfl" | "other";
+export type CompetitionFamily = "wc" | "nba" | "nfl" | "other";
 
-function competitionFamily(id: string): CompetitionFamily {
+/** The sport family a competition id belongs to. Prefix-tolerant so future
+ *  seasons resolve without a registry edit. Exported so the Schedule body
+ *  dispatches on the family (not on a fragile "does views include byweek"
+ *  check that breaks the moment two families share a view name). */
+export function competitionFamily(id: string): CompetitionFamily {
   if (id.startsWith("fifa-world-cup-")) return "wc";
   if (id.startsWith("nba-playoffs-")) return "nba";
   if (id.startsWith("nfl-season-")) return "nfl";

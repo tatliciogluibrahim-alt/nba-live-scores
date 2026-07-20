@@ -13,6 +13,39 @@ import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 // season produces real records. The schedule is public data, browsable
 // pre-season; live/final score states light up once games are played.
 
+// ESPN season types: 1 preseason · 2 regular · 3 postseason. The week ceiling
+// and labels differ per type, so the pager must never assume "of 18".
+function seasonBounds(seasonType: number): { min: number; max: number } {
+  if (seasonType === 1) return { min: 1, max: 4 }; // HOF week through preseason 3
+  if (seasonType === 3) return { min: 1, max: 5 }; // Wild Card through Super Bowl
+  return { min: 1, max: 18 }; // regular season
+}
+
+// Postseason weeks have names, not numbers. Week 4 (old Pro Bowl slot) is
+// skipped in the modern schedule, so it falls through to the generic label.
+function postseasonLabel(week: number): string {
+  const names: Record<number, string> = {
+    1: "Wild Card",
+    2: "Divisional",
+    3: "Conf. Championship",
+    5: "Super Bowl",
+  };
+  return names[week] ?? `Playoffs · Wk ${week}`;
+}
+
+function weekLabel(seasonType: number, week: number): string {
+  if (seasonType === 1) return `Preseason · Wk ${week}`;
+  if (seasonType === 3) return postseasonLabel(week);
+  return `Week ${week} of 18`;
+}
+
+// Compact header name (the SecHead eyebrow), season-type aware.
+function weekHeader(seasonType: number, week: number): string {
+  if (seasonType === 1) return `Preseason Week ${week}`;
+  if (seasonType === 3) return postseasonLabel(week);
+  return `Week ${week}`;
+}
+
 export function NFLScheduleBody({
   views,
   requestedView,
@@ -24,14 +57,27 @@ export function NFLScheduleBody({
   onView: (view: "byweek" | "standings") => void;
   gameReturnTo: string;
 }) {
-  // Null = the current week ESPN serves; a number pages to that week.
+  // Null week/season type = the current week ESPN serves. Once the user pages,
+  // both are pinned so paging stays WITHIN the current season type (preseason
+  // week 4 does not roll into regular-season week 1 — that's a type change).
   const [week, setWeek] = useState<number | null>(null);
-  const { schedule, hydrated } = useNFLSchedule(week);
+  const [seasonType, setSeasonType] = useState<number | null>(null);
+  const { schedule, hydrated } = useNFLSchedule(week, seasonType);
   const activeView =
     requestedView && (views as readonly string[]).includes(requestedView)
       ? requestedView
       : views[0];
-  const shownWeek = schedule.week || 1;
+  // Prefer the pinned season type (a page action) over the last fetch, so the
+  // label doesn't flicker mid-fetch; fall back to the feed's current type.
+  const shownSeasonType = seasonType ?? schedule.seasonType ?? 2;
+  const { min, max } = seasonBounds(shownSeasonType);
+  const shownWeek = schedule.week || min;
+
+  const page = (delta: number) => {
+    const next = Math.min(max, Math.max(min, shownWeek + delta));
+    setSeasonType(shownSeasonType);
+    setWeek(next);
+  };
 
   return (
     <div className="mt-4">
@@ -40,9 +86,11 @@ export function NFLScheduleBody({
       {activeView === "byweek" ? (
         <>
           <WeekPager
-            week={shownWeek}
-            onPrev={() => setWeek(Math.max(1, shownWeek - 1))}
-            onNext={() => setWeek(Math.min(18, shownWeek + 1))}
+            label={weekLabel(shownSeasonType, shownWeek)}
+            canPrev={shownWeek > min}
+            canNext={shownWeek < max}
+            onPrev={() => page(-1)}
+            onNext={() => page(1)}
           />
           {hydrated && schedule.games.length === 0 ? (
             <p
@@ -54,7 +102,7 @@ export function NFLScheduleBody({
           ) : (
             <section>
               <SecHead
-                name={`Week ${shownWeek}`}
+                name={weekHeader(shownSeasonType, shownWeek)}
                 count={String(schedule.games.length)}
               />
               {schedule.games.map((g) => (
@@ -121,11 +169,15 @@ function ViewTabs({
 }
 
 function WeekPager({
-  week,
+  label,
+  canPrev,
+  canNext,
   onPrev,
   onNext,
 }: {
-  week: number;
+  label: string;
+  canPrev: boolean;
+  canNext: boolean;
   onPrev: () => void;
   onNext: () => void;
 }) {
@@ -142,7 +194,7 @@ function WeekPager({
       <button
         type="button"
         onClick={onPrev}
-        disabled={week <= 1}
+        disabled={!canPrev}
         aria-label="Previous week"
         className="transition active:opacity-60 disabled:opacity-30"
         style={arrow}
@@ -159,12 +211,12 @@ function WeekPager({
           color: "var(--mute-1)",
         }}
       >
-        Week {week} of 18
+        {label}
       </span>
       <button
         type="button"
         onClick={onNext}
-        disabled={week >= 18}
+        disabled={!canNext}
         aria-label="Next week"
         className="transition active:opacity-60 disabled:opacity-30"
         style={arrow}

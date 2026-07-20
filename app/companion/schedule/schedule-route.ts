@@ -1,4 +1,5 @@
 import type { ScheduleView } from "./competitions";
+import { ALL_SCHEDULE_VIEWS } from "./competitions";
 
 export type ScheduleRouteState = {
   scope: "following" | "all";
@@ -13,7 +14,7 @@ function single(value: QueryValue): string | null {
 }
 
 function isScheduleView(value: string | null): value is ScheduleView {
-  return value === "byday" || value === "bracket" || value === "groups";
+  return value !== null && ALL_SCHEDULE_VIEWS.includes(value as ScheduleView);
 }
 
 export function parseScheduleRoute(query: {

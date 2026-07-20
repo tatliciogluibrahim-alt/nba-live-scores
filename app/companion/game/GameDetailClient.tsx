@@ -9,9 +9,11 @@ import { wcFeedUrl } from "../dev/preview-mode";
 import { readFeed, FEED_KEYS } from "../hooks/feed-cache";
 import { buildWatchingPayload } from "../watching/watching-data";
 import type { NBAGame, WCGameLite } from "../today/today-data";
+import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import type { Game } from "../../nba/types";
 import { NBALiveCompanion } from "./NBALiveCompanion";
 import { WCGameDetail } from "./WCGameDetail";
+import { NFLGameDetail } from "./NFLGameDetail";
 import { GameKeyboardNav } from "./GameKeyboardNav";
 
 // /game/[id] router. Resolves the game id against NBA + WC feeds in
@@ -23,6 +25,7 @@ import { GameKeyboardNav } from "./GameKeyboardNav";
 type Resolved =
   | { source: "nba"; game: Game; allNBAGames: Game[] }
   | { source: "wc"; game: WCGameLite }
+  | { source: "nfl"; game: NFLGameLite }
   | { source: null; game: null };
 
 type ApiResponse = {
@@ -44,6 +47,7 @@ async function fetchGames(): Promise<{
   nba: NBAGame[];
   allNBA: NBAGame[];
   wc: WCGameLite[];
+  nfl: NFLGameLite[];
 }> {
   try {
     // wcFeedUrl() honors ?preview=wc-day so a pinned preview WC match
@@ -51,9 +55,16 @@ async function fetchGames(): Promise<{
     // dispatcher's preview gameId (e.g. "preview-wc-usa-tur") won't
     // appear in real /api/world-cup data and the page falls through
     // to the "Game snapshot unavailable" NotFound.
-    const [nbaRes, wcRes] = await Promise.all([
+    //
+    // NFL: the scoreboard serves the current week only. That covers the
+    // primary tap paths (Today, Watching, the default Schedule week). A
+    // game the user paged to in another week resolves via neither feed nor
+    // (yet) a snapshot, so it lands on the calm NotFound — an any-week
+    // resolver via the summary endpoint is a documented follow-up.
+    const [nbaRes, wcRes, nflRes] = await Promise.all([
       fetch("/api/live-scores", { cache: "no-store" }),
       fetch(wcFeedUrl(), { cache: "no-store" }),
+      fetch("/api/nfl-scores", { cache: "no-store" }).catch(() => null),
     ]);
     const nbaJson = nbaRes.ok ? ((await nbaRes.json()) as ApiResponse) : {};
     const nba = nbaJson.games ?? [];
@@ -61,9 +72,18 @@ async function fetchGames(): Promise<{
     const wcJson = wcRes.ok
       ? ((await wcRes.json()) as { games?: WCGameLite[] })
       : { games: [] };
-    return { nba, allNBA, wc: wcJson.games ?? [] };
+    const nflJson =
+      nflRes && nflRes.ok
+        ? ((await nflRes.json()) as { games?: NFLGameLite[] })
+        : { games: [] };
+    return {
+      nba,
+      allNBA,
+      wc: wcJson.games ?? [],
+      nfl: nflJson.games ?? [],
+    };
   } catch {
-    return { nba: [], allNBA: [], wc: [] };
+    return { nba: [], allNBA: [], wc: [], nfl: [] };
   }
 }
 
@@ -137,7 +157,7 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
     const mounted = { current: true };
 
     async function resolve() {
-      const { nba, allNBA, wc } = await fetchGames();
+      const { nba, allNBA, wc, nfl } = await fetchGames();
       if (!mounted.current) return;
 
       // Keep the slot-meter source fresh regardless of which game resolves.
@@ -166,6 +186,13 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
       const wcGame = wc.find((g) => g.id === gameId);
       if (wcGame) {
         const next = { source: "wc", game: wcGame } as const;
+        resolvedRef.current = next;
+        setResolved(next);
+        return;
+      }
+      const nflGame = nfl.find((g) => g.id === gameId);
+      if (nflGame) {
+        const next = { source: "nfl", game: nflGame } as const;
         resolvedRef.current = next;
         setResolved(next);
         return;
@@ -292,6 +319,21 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
       <>
         <GameKeyboardNav gameId={gameId} />
         <WCGameDetail
+          game={resolved.game}
+          pinned={gamePinned}
+          onPin={onPin}
+          onUnpin={onUnpin}
+          pinnedLiveIds={pinnedLiveIds}
+        />
+      </>
+    );
+  }
+
+  if (resolved.source === "nfl") {
+    return (
+      <>
+        <GameKeyboardNav gameId={gameId} />
+        <NFLGameDetail
           game={resolved.game}
           pinned={gamePinned}
           onPin={onPin}
