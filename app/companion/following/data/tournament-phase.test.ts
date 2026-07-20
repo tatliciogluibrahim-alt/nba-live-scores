@@ -47,8 +47,27 @@ describe("tournamentPhase — NBA playoffs (active vs concluded by season year)"
     );
   });
 
-  it("defaults to 'group' for an unknown tournament", () => {
-    expect(tournamentPhase("nfl-season-2026", new Date("2026-06-26T00:00:00Z"))).toBe(
+  it("NFL: pre before the opener, active in-season, concluded after the Super Bowl", () => {
+    // Before the Sept 9 2026 opener.
+    expect(tournamentPhase("nfl-season-2026", new Date("2026-08-01T00:00:00Z"))).toBe(
+      "pre"
+    );
+    // Mid-season (Week 1 window through January).
+    expect(tournamentPhase("nfl-season-2026", new Date("2026-11-15T00:00:00Z"))).toBe(
+      "group"
+    );
+    // The day of the Super Bowl (Feb 14 2027) is still active.
+    expect(tournamentPhase("nfl-season-2026", new Date("2027-02-14T12:00:00Z"))).toBe(
+      "group"
+    );
+    // Well after it → concluded.
+    expect(tournamentPhase("nfl-season-2026", new Date("2027-03-01T00:00:00Z"))).toBe(
+      "concluded"
+    );
+  });
+
+  it("defaults to 'group' for a genuinely unknown tournament", () => {
+    expect(tournamentPhase("ncaa-madness-2027", new Date("2027-03-20T00:00:00Z"))).toBe(
       "group"
     );
   });

@@ -1,4 +1,5 @@
 import { WC_GROUP_FIXTURES, WC_KNOCKOUT_ROUNDS } from "./wc-fixtures";
+import { NFL_2026_SEASON_OPENER, NFL_2026_SEASON_END } from "./nfl-dates";
 
 // ── Tournament lifecycle (Phase 21D) ──────────────────────────────────
 //
@@ -26,8 +27,23 @@ export function tournamentPhase(
 ): TournamentPhase {
   if (tournamentId.startsWith("fifa-world-cup-")) return wcPhase(now);
   if (tournamentId.startsWith("nba-playoffs-")) return nbaPhase(tournamentId, now);
+  if (tournamentId.startsWith("nfl-season-")) return nflPhase(now);
   // Unknown tournaments default to "group" (treated as active).
   return "group";
+}
+
+// NFL, like NBA, has no group/knockout split to surface — the meaningful
+// boundaries are pre (before the opener), active (the season), and
+// concluded (after the Super Bowl). Dates come from the confirmed schedule
+// (nfl-dates.ts), so a schedule change moves the boundaries. "group" stands
+// in for "active", matching nbaPhase.
+function nflPhase(now: Date): TournamentPhase {
+  const t = now.getTime();
+  const opener = new Date(NFL_2026_SEASON_OPENER.iso).getTime();
+  const end = new Date(NFL_2026_SEASON_END.iso).getTime();
+  if (t < opener) return "pre";
+  if (t < end + DAY_MS) return "group";
+  return "concluded";
 }
 
 // NBA has no group/knockout split to surface, so the only meaningful boundary

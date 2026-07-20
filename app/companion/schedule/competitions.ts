@@ -6,6 +6,7 @@ import {
   type TournamentPhase,
 } from "../following/data/tournament-phase";
 import { WC_KNOCKOUT_ROUNDS } from "../following/data/wc-fixtures";
+import { NFL_2026_SEASON_END } from "../following/data/nfl-dates";
 
 // The active-competitions registry (sports-agnostic Schedule, Phase 0).
 // One derived list of "what competitions matter on Schedule right now",
@@ -14,10 +15,16 @@ import { WC_KNOCKOUT_ROUNDS } from "../following/data/wc-fixtures";
 // switcher read this; nothing else hardcodes a competition. Adding a new
 // sport (NFL) is registering it in TOURNAMENTS + teaching it views here.
 
-/** Schedule view surfaces a competition can render. Only competitions with a
- *  built schedule (the World Cup) expose these; others carry an empty list and
- *  render a status card (concluded / coming soon / live-on-Today). */
-export type ScheduleView = "byday" | "bracket" | "groups";
+/** Schedule view surfaces a competition can render. `byweek` is NFL's
+ *  chronological spine (the analogue of WC/NBA `byday`); `standings` is the
+ *  league table (NFL now; NBA later). A competition with no built view
+ *  carries an empty list and renders a status card. */
+export type ScheduleView =
+  | "byday"
+  | "bracket"
+  | "groups"
+  | "byweek"
+  | "standings";
 
 export type CompetitionStatus = "live" | "upcoming" | "concluded" | "comingsoon";
 
@@ -39,6 +46,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const CONCLUDED_GRACE_MS = 30 * DAY_MS;
 
 const WC_VIEWS: ScheduleView[] = ["byday", "bracket", "groups"];
+// NFL: chronological By-week spine + the league Standings (adaptive view
+// model). Playoffs (a January bracket) joins as an availability-gated view
+// in gate 5 — not needed for the regular season.
+const NFL_VIEWS: ScheduleView[] = ["byweek", "standings"];
 
 type CompetitionFamily = "wc" | "nba" | "nfl" | "other";
 
@@ -74,6 +85,10 @@ function concludedAt(entry: TournamentEntry, phase: TournamentPhase): number | n
   if (fam === "nba") {
     const year = Number(entry.id.split("-").pop());
     return Number.isFinite(year) ? Date.UTC(year, 6, 1) : null;
+  }
+  if (fam === "nfl") {
+    // Concluded the day after the Super Bowl (nflPhase's own boundary).
+    return new Date(NFL_2026_SEASON_END.iso).getTime() + DAY_MS;
   }
   return null;
 }
@@ -116,9 +131,11 @@ export function buildScheduleCompetitions(
     out.push({
       ...base,
       status: statusFor(phase),
-      // Only the World Cup has built schedule views today; others render a
-      // status card. NFL gets views when Phase 22 wires its schedule.
-      views: fam === "wc" ? WC_VIEWS : [],
+      // Each family renders its native views (the adaptive view model,
+      // 2026-07-15): WC = day/bracket/groups, NFL = week/standings. NFL's
+      // views stay dormant behind its comingSoon short-circuit above until
+      // gate 3 drops it; the assignment is ready so it lights up then.
+      views: fam === "wc" ? WC_VIEWS : fam === "nfl" ? NFL_VIEWS : [],
     });
   }
   const rank: Record<CompetitionStatus, number> = {

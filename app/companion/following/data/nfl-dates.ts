@@ -9,3 +9,12 @@ export const NFL_2026_SEASON_OPENER = {
   /** Pre-formatted for copy so the date lives in exactly one place. */
   label: "September 9",
 } as const;
+
+// The 2026 season ends at Super Bowl LXI — Feb 14, 2027, SoFi Stadium
+// (confirmed alongside the schedule release). The tournament-phase
+// concluded boundary reads this so a stored `nfl-season-2026` follow
+// stops reading "active" the day after the title game.
+export const NFL_2026_SEASON_END = {
+  iso: "2027-02-14",
+  label: "February 14",
+} as const;

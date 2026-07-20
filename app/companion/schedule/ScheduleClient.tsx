@@ -39,6 +39,8 @@ const VIEW_LABELS: Record<ScheduleView, string> = {
   byday: "By day",
   bracket: "Bracket",
   groups: "Groups",
+  byweek: "By week",
+  standings: "Standings",
 };
 
 export function ScheduleClient({
