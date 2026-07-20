@@ -7,6 +7,7 @@ import { useFollows, useNoSpoilers } from "../providers";
 import { useWCSchedule, WCGroups } from "../tournament/WCGroups";
 import { ByDayView } from "../tournament/WCBracket";
 import { WCBracketTree } from "../tournament/WCBracketTree";
+import { NFLScheduleBody } from "./NFLScheduleBody";
 import {
   buildBracketRounds,
   followedCountrySet,
@@ -249,7 +250,21 @@ function CompetitionBody({
   gameReturnTo: string;
 }) {
   if (competition.views.length > 0) {
-    // The only competition with built schedule views today is the World Cup.
+    // Route to the competition's native body. NFL renders By-week/Standings;
+    // everything else with built views is the World Cup today.
+    const isNFL = competition.views.includes("byweek");
+    if (isNFL) {
+      return (
+        <NFLScheduleBody
+          views={competition.views as ("byweek" | "standings")[]}
+          requestedView={
+            view === "byweek" || view === "standings" ? view : null
+          }
+          onView={onView}
+          gameReturnTo={gameReturnTo}
+        />
+      );
+    }
     return (
       <WCScheduleBody
         views={competition.views}

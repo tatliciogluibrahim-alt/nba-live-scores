@@ -82,20 +82,24 @@ describe("buildScheduleCompetitions", () => {
     expect(ids).not.toContain("nba-playoffs-2025"); // concluded > 30 days ago
   });
 
-  it("tags status + views: WC live with schedule views, NFL coming soon empty", () => {
+  it("tags status + views: WC live; NFL comingSoon-to-follow but its schedule is browsable", () => {
     const comps = buildScheduleCompetitions(TOURNAMENTS, [], DURING_WC);
     const wc = comps.find((c) => c.id === "fifa-world-cup-2026")!;
     expect(wc.status).toBe("live");
     expect(wc.views).toEqual(["byday", "bracket", "groups"]);
+    // NFL's schedule is public ESPN data now, so it renders By-week/Standings
+    // pre-season with an "upcoming" status — even though follows are still
+    // gated (comingSoon in the directory → followed:false, no picker).
     const nfl = comps.find((c) => c.id === "nfl-season-2026")!;
-    expect(nfl.status).toBe("comingsoon");
-    expect(nfl.views).toEqual([]);
+    expect(nfl.status).toBe("upcoming");
+    expect(nfl.views).toEqual(["byweek", "standings"]);
+    expect(nfl.followed).toBe(false);
   });
 
-  it("orders live before coming soon", () => {
+  it("orders live before upcoming (WC live sits ahead of the NFL pre-season)", () => {
     const comps = buildScheduleCompetitions(TOURNAMENTS, [], DURING_WC);
     expect(comps[0].status).toBe("live");
-    expect(comps[comps.length - 1].status).toBe("comingsoon");
+    expect(comps[comps.length - 1].status).toBe("upcoming");
   });
 
   it("sets followed from the user's follows", () => {
