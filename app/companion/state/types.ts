@@ -30,6 +30,58 @@ export type Follow = {
   alertPreset?: AlertPreset;
 };
 
+// ── Path B (gate 1, 2026-07-19): moment + scope follow schema ─────────
+// docs/follow-moments-design.md, reconciled in the Phase 22 spec. The v2
+// shape replaces the flat kind/id Follow once the flip lands (PB3–PB6);
+// until then it exists alongside it so the directory + migration are
+// built and tested additively.
+
+/** Feed-vocabulary sports — matches every feed/source union in the app
+ *  ("nba" | "wc" | "nfl"), NOT the design doc's invented "soccer". */
+export type Sport = "nba" | "wc" | "nfl";
+
+/** Scope kinds inside a moment. group/round/stage are schema-ready for
+ *  future products (group follows, round follows) — no picker offers
+ *  them yet and no migration can produce them. */
+export type ScopeKind =
+  | "all"
+  | "team"
+  | "country"
+  | "series"
+  | "group"
+  | "round"
+  | "stage";
+
+/** The v2 follow record: WHERE (moment) + WHAT (scope + entity).
+ *  Becomes `Follow` at the PB3 flip. */
+export type FollowV2 = {
+  /** The moment this follow belongs to ("nfl-season-2026"). */
+  momentId: string;
+  scope: ScopeKind;
+  /** Entity inside the scope ("NYK" / "USA" / "OKC-SA"). Null for "all". */
+  scopeId: string | null;
+  alertEnabled: boolean;
+  alertTier: AlertPreset;
+  /** Selective No-Spoilers — shipped 2026-05-28, AFTER the Path B design
+   *  doc was written. Must survive migration (Phase 22 spec reconciliation). */
+  hideSpoilers?: boolean;
+  followedAt: number;
+};
+
+/** The pre-Path-B flat shape, kept as a standalone structural type (NOT an
+ *  alias of Follow) so the PB3 flip of `Follow` cannot ripple into the
+ *  migration code's input type. Mirrors the v1 stored records exactly. */
+export type LegacyFollow = {
+  kind: FollowKind;
+  id: string;
+  alertEnabled: boolean;
+  alertTier: AlertPreset;
+  hideSpoilers?: boolean;
+  followedAt: number;
+  /** @deprecated pre-v2 tier field some very old records still carry. */
+  alertPreset?: AlertPreset;
+};
+
 export type PinnedGame = {
   gameId: string;
   pinnedAt: number;
