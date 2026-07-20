@@ -2,6 +2,34 @@
 
 ---
 
+## NFL alert pipeline + Today reading — Phase 22 gates 3-5 — 2026-07-20
+
+The rest of the buildable NFL surface, everything that could be honestly
+verified against today's data:
+
+- **Today reads NFL games** (gate 3b): a followed NFL team's upcoming
+  game surfaces in Up Next with sport-aware matching — an NFL "LAC"
+  follow matches only NFL games, an NBA "LAC" never matches an NFL game
+  (collision guard tested at the Today layer). The today hook fetches
+  /api/nfl-scores.
+- **scan-nfl cron** (gate 4d): completes the push pipeline — Bearer-auth,
+  fetch feed, detectNFLEvents (game state) + detectNFLPlays (per-play,
+  summary fetch per live game, fired-id deduped), dispatchEvents,
+  fail-loud on KV outage. Verified live: auth gate rejects (401); an
+  authorized scan of the real all-upcoming slate runs clean (0 events, no
+  misfires, 200). scan-nfl-cron.yml added.
+- **NFL-ready upcoming widget** (gate 5a): the home-screen upcoming widget
+  passes a followed NFL game through with the NFL accent (Swift theme
+  already exists).
+
+Calendar-gated to preseason (~Aug 6) + a device: live game-state
+rendering everywhere, the scan's live event detection, the Live Activity
++ live-score widget NFL loops (need Watching-NFL reading too), full game
+detail, standings with real records. The discovery-heavy work is done;
+what remains is wiring verified functions to live data. 618 tests.
+
+---
+
 ## NFL Schedule live — By-week view browsable — 2026-07-20
 
 Correcting an earlier over-conservative call: NFL's Week-1 schedule is

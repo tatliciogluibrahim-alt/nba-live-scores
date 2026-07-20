@@ -654,6 +654,21 @@ carried).
 Route count: 84. Gate: lint 0 / 380 tests / build / live-verify, per
 ship-gate.
 
+## Session wrap 2026-07-20 (cont. 3) — NFL followable + alert pipeline wired
+
+Everything buildable+verifiable-now across gates 2-5 is DONE. NFL is
+FOLLOWABLE (team picker, canonical follows, collision-proof identity —
+Chargers vs Clippers proven live), BROWSABLE (By-week Schedule, 16 real
+Week-1 games), and READS ON TODAY (followed team's next game, sport-aware
+matching). The full push pipeline is wired: taxonomy + significance +
+both detectors (verified vs a real game) + scan-nfl cron (auth + clean
+happy-path verified live). Upcoming widget is NFL-ready.
+CALENDAR-GATED to preseason (~Aug 6) + a device — the ONLY remaining
+work: live game-state rendering, the scan's live event detection, Live
+Activity + live-score widget NFL loops (need Watching-NFL), full detail
+parity, standings, Week-1 go-live (fire the relay — a manual Sept action).
+See CHANGELOG "NFL alert pipeline" + the Phase 22 spec.
+
 ## Session wrap 2026-07-20 (cont. 2) — NFL Schedule live + gate 4 core
 
 Corrected an over-conservative deferral: the NFL By-week Schedule view is
