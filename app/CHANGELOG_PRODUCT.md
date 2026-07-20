@@ -2,6 +2,52 @@
 
 ---
 
+## NFL activated early + app-wide sports-agnostic sweep — 2026-07-20
+
+The World Cup wrapped (final Jul 19). NFL was activated as a first-class
+followable moment now — the "early lead" that fills the idle gap ahead of
+the Sep 9 opener (alerts stay dormant until real games). To make that
+coherent, the whole app was swept for sport-correctness:
+
+- **Sport-collision gate (root cause).** The NBA/NFL team-code collision
+  class is closed app-wide. The derived legacy `id`/`kind` on a Follow
+  can't tell an NFL "LAC" (Chargers) from an NBA "LAC" (Clippers), and the
+  seasons overlap. Every game-reading surface now resolves the sport
+  through the follow's MOMENT, not the bare code. The logic lives in one
+  place (`state/moments.ts` sport-scoped readers + a `sport` gate on the
+  spoiler matcher), locked by `state/collision-guard.test.ts` (14 codes
+  collide; CLE and LAC are the canonical examples).
+- **Schedule** is now sports-agnostic and bug-free: the body dispatches on
+  competition family (not a fragile view-name check); the NFL week pager is
+  season-type aware (no "Week N of 18" during preseason — it reads
+  "Preseason · Wk N" / postseason round names, and paging stays within the
+  season type); byweek/standings deep-links round-trip; the idle "on now"
+  copy keys on live-only status so an upcoming competition never reads as
+  live.
+- **NFL game detail** — a tapped NFL game resolves to a calm System D read
+  (Monument + Watch/Season rows + docking) instead of the NotFound.
+- **Activation**: the static `comingSoon` gate is gone; NFL's lifecycle is
+  fully date-derived. Onboarding, PickYourMoment, and FollowingEmpty moment
+  lists are phase-aware — a concluded moment (last playoffs, a wrapped
+  World Cup) drops off, pre-season NFL shows as followable.
+- **Watching + native**: NFL threaded through Watching (so "Add to
+  Watching" from the detail actually shows the game), the live-score
+  widget, and the Live Activity (sport-correct accent + 15-minute-quarter
+  progress). Sep-9 ready; no live NFL games exercise them until then.
+- **Trademark**: the two in-app CalmEndCard "World Cup" strings → "Summer
+  Soccer" (website/SEO keeps the factual reference for search).
+
+Deferred to the August pre-season build: the live-game Today render
+branches (hero/scoreboard/quiet-wrap/recap NFL cases + type widenings) —
+they render nothing until real games, and wrap/recap are LLM narrative that
+can't ship unverified. See the Phase 22 spec's Activation status section.
+
+Gate: tsc clean, eslint 0 warnings, 632 tests, build clean, routes held.
+Live-verified at 390px across NFL detail, Schedule By-week, onboarding,
+Following empty, and a Watching NFL pin.
+
+---
+
 ## NFL alert pipeline + Today reading — Phase 22 gates 3-5 — 2026-07-20
 
 The rest of the buildable NFL surface, everything that could be honestly
