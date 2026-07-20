@@ -38,10 +38,10 @@ const MOMENTS: MomentEntry[] = [
     sport: "NFL",
     title: "NFL Season",
     detail:
-      "Sunday game tracking, drive-led highlights, possession state, weekly reminders. Lands ahead of the 2026 season opener.",
-    accent: "var(--nfl, #6b7280)",
-    soft: "var(--cream-2)",
-    status: "Coming Aug 2026",
+      "Sunday game tracking, drive-led highlights, possession state, weekly reminders. Follow your team now, ahead of the September 9 opener.",
+    accent: "var(--nfl)",
+    soft: "var(--nfl-soft)",
+    status: "Opens September 9",
   },
 ];
 

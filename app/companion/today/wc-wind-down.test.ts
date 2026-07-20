@@ -49,7 +49,7 @@ describe("WC wind-down closing moment", () => {
     expect(payload.closing?.kind).toBe("tournament");
     expect(payload.closing?.eyebrow).toBe("Tournament wrapped");
     // Headline stays safe/generic; the card names the champion when revealed.
-    expect(payload.closing?.headline).toBe("The World Cup is over.");
+    expect(payload.closing?.headline).toBe("Summer Soccer is over.");
     expect(payload.closing?.champion?.code).toBe("FRA");
   });
 

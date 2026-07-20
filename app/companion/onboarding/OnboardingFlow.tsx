@@ -8,6 +8,8 @@ import { SportsBallLoader } from "../atoms/SportsBallLoader";
 import { useReducedMotion } from "../hooks/use-reduced-motion";
 import { notifyNativePushPermissionChanged } from "../push/native-push-events";
 import { markPushPermissionDeniedThisSession } from "../push/permission-session";
+import { FOLLOW_MOMENTS } from "../following/FollowChoice";
+import { tournamentPhase } from "../following/data/tournament-phase";
 
 // First-run onboarding — shown ONCE to truly-fresh installs (no follows
 // yet, hasn't completed onboarding). Three steps:
@@ -20,8 +22,27 @@ import { markPushPermissionDeniedThisSession } from "../push/permission-session"
 // Gated by prefs.onboardingComplete (one-way). Latches active on first
 // qualifying render so following a team mid-flow doesn't dismiss it.
 
-const NBA_TOURNAMENT = "nba-playoffs-2025";
-const WC_TOURNAMENT = "fifa-world-cup-2026";
+// The build-your-circle quick-pick, derived from the moment directory by
+// LIFECYCLE (2026-07-20) so it always offers what's actually followable now:
+// a concluded moment (last playoffs, a wrapped World Cup) drops off, a
+// pre-season one (NFL before its opener) stays. No hardcoded moment set to
+// go stale between seasons. Whole-tournament ("all") follows, so the id is
+// the tournament id.
+function circleMoments(): {
+  id: string;
+  name: string;
+  sub: string;
+  accent: string;
+}[] {
+  return FOLLOW_MOMENTS.filter(
+    (m) => m.tournamentId && tournamentPhase(m.tournamentId) !== "concluded"
+  ).map((m) => ({
+    id: m.tournamentId as string,
+    name: m.name,
+    sub: m.description,
+    accent: m.accent,
+  }));
+}
 
 async function requestNotifications(hasFollow: boolean): Promise<void> {
   // Never ask the OS for push permission before the user has chosen at
@@ -196,10 +217,7 @@ export function OnboardingFlow() {
               add more later.
             </p>
             <div className="mt-5 space-y-2">
-              {[
-                { id: NBA_TOURNAMENT, name: "NBA Playoffs", sub: "The bracket through the Finals.", accent: "var(--nba)" },
-                { id: WC_TOURNAMENT, name: "Summer Soccer 2026", sub: "Group stage through the final.", accent: "var(--wc)" },
-              ].map((m) => {
+              {circleMoments().map((m) => {
                 const on = isFollowing("tournament", m.id);
                 return (
                   <button

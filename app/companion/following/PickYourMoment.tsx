@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Display } from "../atoms/Display";
 import { useFollows } from "../providers";
-import { FOLLOW_MOMENTS } from "./FollowChoice";
+import { FOLLOW_MOMENTS, type FollowMoment } from "./FollowChoice";
+import { tournamentPhase } from "./data/tournament-phase";
 
 // PickYourMoment — Phase 21C-3.
 //
@@ -25,12 +26,17 @@ import { FOLLOW_MOMENTS } from "./FollowChoice";
 //   • The skip link is always visible from the first paint. Users
 //     who came in motivated bail to the full picker in one tap.
 //
-// The active moments (NBA Playoffs + Summer Soccer 2026) get the two big
-// cards. Coming-soon moments (NFL 2026) are surfaced as a quiet
-// footnote below — the user knows what's next without it competing
-// with the active options.
+// Phase-aware (2026-07-20): moment cards are derived from each moment's
+// LIFECYCLE, not a hardcoded set. Any moment whose tournament isn't concluded
+// gets a card (live/upcoming). A concluded moment (last season's playoffs, a
+// wrapped World Cup) drops off — you can't newly follow a finished thing here.
+// So as the World Cup wraps and NFL opens, the picker follows the calendar
+// with no code edit.
 
-const ACTIVE_MOMENT_IDS = new Set(["nba-playoffs", "fifa-wc-2026"]);
+function momentIsActive(m: FollowMoment): boolean {
+  if (!m.tournamentId) return true; // no lifecycle → always offerable
+  return tournamentPhase(m.tournamentId) !== "concluded";
+}
 
 export function PickYourMoment({
   onSkip,
@@ -46,12 +52,7 @@ export function PickYourMoment({
   if (!hydrated) return null;
   if (follows.length > 0) return null;
 
-  const activeMoments = FOLLOW_MOMENTS.filter((m) =>
-    ACTIVE_MOMENT_IDS.has(m.id)
-  );
-  const upcomingMoments = FOLLOW_MOMENTS.filter(
-    (m) => !ACTIVE_MOMENT_IDS.has(m.id) && m.comingSoon
-  );
+  const activeMoments = FOLLOW_MOMENTS.filter(momentIsActive);
 
   return (
     <section
@@ -77,18 +78,6 @@ export function PickYourMoment({
           <MomentCard key={moment.id} moment={moment} />
         ))}
       </div>
-
-      {/* Coming-soon footnote. Surfaced quietly so users know about
-          the next moment without it competing for the tap. */}
-      {upcomingMoments.length > 0 ? (
-        <p
-          className="mt-3 text-[12px] leading-snug"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          {upcomingMoments.map((m) => m.name).join(", ")} coming when the
-          season opens.
-        </p>
-      ) : null}
 
       {/* The escape hatch — visible from first paint. A motivated
           user bails to the full picker in one tap. */}

@@ -132,21 +132,10 @@ export function buildScheduleCompetitions(
       accent: entry.accent,
       followed: followsCompetition(entry.id, follows),
     };
-    if (entry.comingSoon) {
-      // A competition can be "coming soon" to FOLLOW (no picker / push loop
-      // yet) while its SCHEDULE is already public. NFL's Week-1 schedule is
-      // real ESPN data now, so an All-sports browser can read it pre-season;
-      // the follow side stays gated (followed: false, no picker). WC/NBA
-      // have no comingSoon entry, so this only ever lights up NFL.
-      const fam = competitionFamily(entry.id);
-      if (fam === "nfl") {
-        const phase = tournamentPhase(entry.id, new Date(now));
-        out.push({ ...base, status: statusFor(phase), views: NFL_VIEWS });
-        continue;
-      }
-      out.push({ ...base, status: "comingsoon", views: [] });
-      continue;
-    }
+    // Legacy comingSoon short-circuit removed 2026-07-20: no entry sets it
+    // anymore, and NFL now flows through the general phase-derived branch
+    // below (same result — statusFor(phase) + NFL_VIEWS). A future staged
+    // competition should use the phase system, not a static gate.
     const phase = tournamentPhase(entry.id, new Date(now));
     if (phase === "concluded") {
       const at = concludedAt(entry, phase);

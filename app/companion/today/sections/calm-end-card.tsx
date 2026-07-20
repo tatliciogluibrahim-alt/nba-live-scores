@@ -96,7 +96,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
     ? `${moment.champion!.name} are world champions.`
     : moment.headline;
   const detail = nameChampion
-    ? "That's the World Cup. We'll be back when the next moment matters."
+    ? "That's Summer Soccer. We'll be back when the next moment matters."
     : moment.detail;
 
   return (

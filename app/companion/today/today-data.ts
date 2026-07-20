@@ -1766,7 +1766,7 @@ function pickClosing(
       id: "tournament:wc-2026",
       kind: "tournament",
       eyebrow: "Tournament wrapped",
-      headline: "The World Cup is over.",
+      headline: "Summer Soccer is over.",
       detail: "We'll be back when the next moment matters.",
       dots: [],
       champion: followsChampion ? undefined : champion,

@@ -120,6 +120,7 @@ export const FOLLOW_MOMENTS: FollowMoment[] = [
     description: "Regular season and playoffs · 32 teams.",
     accent: "var(--nfl)",
     icon: "🏈",
+    tournamentId: "nfl-season-2026",
     granularities: [
       {
         eyebrow: "Season",

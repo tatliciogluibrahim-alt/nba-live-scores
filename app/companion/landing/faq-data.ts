@@ -29,6 +29,6 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     q: "When does NFL ship?",
-    a: "August 2026, a few weeks before the season opener. The data layer and design are in place. Not rushing the rest.",
+    a: "It's here. You can follow your team and browse the full schedule now. Live scores and alerts turn on for the September 9 season opener.",
   },
 ];

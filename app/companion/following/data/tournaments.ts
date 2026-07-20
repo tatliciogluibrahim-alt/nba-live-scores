@@ -11,10 +11,11 @@ export type TournamentEntry = {
    *  row, etc). Hand-picked because slicing the first 3 chars of `name`
    *  produces garbage like "FIF" for FIFA tournaments. */
   chip: string;
-  /** When set, the tournament is visible in the picker but follows are
-   *  disabled — the data layer is staged but the live feed / event
-   *  detection isn't wired yet. Used for NFL Season 2026 between Phase
-   *  9 scaffolding and Phase 12 build. */
+  /** Deprecated (2026-07-20): the old static "visible but not followable"
+   *  gate, used only for NFL between Phase 9 scaffolding and its activation.
+   *  No entry sets it now — lifecycle is date-derived via tournamentPhase.
+   *  Kept optional so the few surfaces that still branch on it compile and
+   *  take the followable path. Remove once those readers are cleaned up. */
   comingSoon?: {
     /** Short label rendered in the picker, e.g. "Coming Aug 2026". */
     label: string;
@@ -41,19 +42,17 @@ export const TOURNAMENTS: TournamentEntry[] = [
     chip: "SOC",
   },
   {
-    // NFL Season 2026 scaffolding (Phase 9). The data layer + picker
-    // surface land now so users discover NFL is coming and can browse
-    // the team directory; live feed + event detection arrive in Phase
-    // 12 in August. Players, big plays, and fantasy-tier defaults are
-    // covered in docs/nfl-design.md.
+    // NFL Season 2026 — ACTIVATED 2026-07-20 (WC just wrapped). The picker,
+    // Schedule (real Week-1 data), game detail, and event detectors are all
+    // built, so NFL is a first-class followable moment now. Its lifecycle is
+    // date-derived (tournament-phase.ts nflPhase → "pre" until the Sep 9
+    // opener), so surfaces show a pre-season countdown rather than a live
+    // state; no static comingSoon gate. Alerts stay dormant until real games.
     id: "nfl-season-2026",
     name: "NFL Season 2026",
     detail: "Regular season and playoffs · 32 teams",
     accent: "var(--nfl)",
     chip: "NFL",
-    comingSoon: {
-      label: "Coming Aug 2026",
-    },
   },
 ];
 
