@@ -110,20 +110,16 @@ export const FOLLOW_MOMENTS: FollowMoment[] = [
     ],
   },
   {
-    // NFL Season 2026 — scaffolding-only in Phase 9. Picker shows the
-    // section + ladder, but rows are static and a "Coming Aug 2026" chip
-    // sits on the header (the app build lands Aug 2026; the season kicks
-    // off in September). Per-play touchdown + big-play events arrive in
-    // Phase 12 ahead of kickoff. See docs/nfl-design.md for the full event
-    // taxonomy and fantasy-tier model.
+    // NFL Season 2026 — followable ahead of the Sept 9 opener (Phase 22
+    // gate 3). The team picker creates CANONICAL follows (nfl-team route →
+    // addMomentFollow), so an NFL "LAC" never collides with the NBA one.
+    // Push alerts light up with the scan loop nearer kickoff; following now
+    // builds the roster so Today/the relay have an audience.
     id: "nfl-season-2026",
     name: "NFL Season 2026",
     description: "Regular season and playoffs · 32 teams.",
     accent: "var(--nfl)",
     icon: "🏈",
-    comingSoon: {
-      label: "Coming Aug 2026",
-    },
     granularities: [
       {
         eyebrow: "Season",
@@ -135,7 +131,7 @@ export const FOLLOW_MOMENTS: FollowMoment[] = [
         eyebrow: "Team",
         title: "A team",
         detail: "All 32 NFL teams.",
-        href: "/following/team",
+        href: "/following/nfl-team",
       },
     ],
   },

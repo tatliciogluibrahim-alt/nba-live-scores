@@ -66,6 +66,17 @@ type FollowsCtx = {
     scopeId: string | null,
     preset?: AlertPreset
   ) => void;
+  /** Canonical follow check — no derived kind/id collision (NFL picker). */
+  isFollowingMoment: (
+    momentId: string,
+    scope: ScopeKind,
+    scopeId: string | null
+  ) => boolean;
+  removeMomentFollow: (
+    momentId: string,
+    scope: ScopeKind,
+    scopeId: string | null
+  ) => void;
   removeFollow: (kind: FollowKind, id: string) => void;
   setFollowAlertEnabled: (kind: FollowKind, id: string, enabled: boolean) => void;
   setFollowAlertTier: (kind: FollowKind, id: string, preset: AlertPreset) => void;
@@ -317,6 +328,33 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Canonical (Path B) follow checks — moment + scope + entity, no derived
+  // kind/id collision. The NFL picker MUST use these: a derived
+  // isFollowing("team","LAC") can't tell the Chargers from the Clippers,
+  // which is the exact ambiguity the schema kills.
+  const isFollowingMoment = useCallback(
+    (momentId: string, scope: ScopeKind, scopeId: string | null) =>
+      follows.some(
+        (f) =>
+          f.momentId === momentId && f.scope === scope && f.scopeId === scopeId
+      ),
+    [follows]
+  );
+
+  const removeMomentFollow = useCallback(
+    (momentId: string, scope: ScopeKind, scopeId: string | null) => {
+      setFollows((prev) => {
+        const next = prev.filter(
+          (f) =>
+            !(f.momentId === momentId && f.scope === scope && f.scopeId === scopeId)
+        );
+        writeJSON(STORAGE_KEYS.follows, next);
+        return next;
+      });
+    },
+    []
+  );
+
   const setFollowAlertEnabled = useCallback(
     (kind: FollowKind, id: string, enabled: boolean) => {
       setFollows((prev) => {
@@ -515,6 +553,8 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       isFollowing,
       addFollow,
       addMomentFollow,
+      isFollowingMoment,
+      removeMomentFollow,
       removeFollow,
       setFollowAlertEnabled,
       setFollowAlertTier,
@@ -527,6 +567,8 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       isFollowing,
       addFollow,
       addMomentFollow,
+      isFollowingMoment,
+      removeMomentFollow,
       removeFollow,
       setFollowAlertEnabled,
       setFollowAlertTier,

@@ -12,7 +12,9 @@ import {
   getCountry,
 } from "../following/data/countries";
 import { getTeam, teamDisplayName } from "../following/data/teams";
+import { getNFLTeam, nflTeamDisplayName } from "../following/data/nfl-teams";
 import { getTournament } from "../following/data/tournaments";
+import { momentSport } from "../state/moments";
 import type { Follow } from "../state/types";
 
 export type FollowIdentity = {
@@ -31,12 +33,26 @@ export type FollowIdentity = {
 export function resolveFollowIdentity(follow: Follow): FollowIdentity {
   switch (follow.kind) {
     case "team": {
-      const team = getTeam(follow.id);
+      // Path B: the follow's MOMENT decides the sport, so an NFL "LAC"
+      // (Chargers) resolves against the NFL directory, never the NBA one.
+      // scopeId is the team code; momentSport is prefix-tolerant.
+      const code = follow.scopeId ?? follow.id;
+      if (momentSport(follow.momentId) === "nfl") {
+        const nfl = getNFLTeam(code);
+        return {
+          kindLabel: "Team · NFL",
+          name: nflTeamDisplayName(code),
+          detail: nfl?.division,
+          chip: code,
+          accent: "var(--nfl)",
+        };
+      }
+      const team = getTeam(code);
       return {
         kindLabel: "Team · NBA",
-        name: teamDisplayName(follow.id),
+        name: teamDisplayName(code),
         detail: team ? `${team.conference}ern Conference` : undefined,
-        chip: follow.id,
+        chip: code,
         accent: "var(--nba)",
       };
     }
