@@ -4,6 +4,8 @@
 
 import type { Follow, PinnedGame, AlertPreset } from "../state/types";
 import type { WCChampion } from "../../lib/wc-champion";
+import type { NFLGameLite } from "../../api/nfl-scores/normalize";
+import { momentSport } from "../state/moments";
 import { NFL_2026_SEASON_OPENER } from "../following/data/nfl-dates";
 import { getCountry } from "../following/data/countries";
 import { getTournament } from "../following/data/tournaments";
@@ -121,7 +123,7 @@ export type YouFollowItem = {
 
 /** Tag every Today item with the source league so consumers can branch
  *  without sniffing optional fields like `stage`. */
-export type TodaySource = "nba" | "wc";
+export type TodaySource = "nba" | "wc" | "nfl";
 
 export type UpNextItem = {
   source: TodaySource;
@@ -994,6 +996,24 @@ function nbaToUpNext(g: NBAGame, pinned: boolean, personal: boolean): UpNextItem
   };
 }
 
+function nflToUpNext(g: NFLGameLite, pinned: boolean, personal: boolean): UpNextItem {
+  return {
+    source: "nfl",
+    id: g.id,
+    pinned,
+    personal,
+    eyebrow: `NFL · ${formatGameDay(g.date)}`,
+    headline: `${g.away.abbreviation} at ${g.home.abbreviation}`,
+    detail: `${formatGameTime(g.date)} · Week ${g.week}`,
+    dateIso: g.date,
+    isToday: isSameDay(g.date),
+    dayWord: headlineDayWord(g.date),
+    watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
+    href: withGameOrigin(`/game/${g.id}`, "today"),
+    spoilerSubject: `${g.away.name} at ${g.home.name}`,
+  };
+}
+
 export function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): UpNextItem {
   // ESPN publishes upper-round fixtures before the teams are decided, with
   // slot codes as abbreviations ("QFW1" = quarterfinal winner 1). Those
@@ -1032,11 +1052,21 @@ export function wcToUpNext(g: WCGameLite, pinned: boolean, personal: boolean): U
 function buildUpNext(
   nba: NBAGame[],
   wc: WCGameLite[],
+  nfl: NFLGameLite[],
   follows: Follow[],
   pinned: PinnedGame[]
 ): UpNextItem[] {
+  // Sport-aware team sets (Path B): an NFL "LAC" follow must match only NFL
+  // games, never the NBA LAC. The follow's MOMENT decides the sport.
   const followedTeams = new Set(
-    follows.filter((f) => f.kind === "team").map((f) => f.id)
+    follows
+      .filter((f) => f.kind === "team" && momentSport(f.momentId) === "nba")
+      .map((f) => f.scopeId ?? f.id)
+  );
+  const followedNflTeams = new Set(
+    follows
+      .filter((f) => f.kind === "team" && momentSport(f.momentId) === "nfl")
+      .map((f) => f.scopeId ?? f.id)
   );
   const followedCountries = new Set(
     follows.filter((f) => f.kind === "country").map((f) => f.id)
@@ -1059,6 +1089,9 @@ function buildUpNext(
   );
   const followsWcTournament = followedTournaments.some(
     (t) => t.accent === "var(--wc)"
+  );
+  const followsNflTournament = follows.some(
+    (f) => f.kind === "tournament" && momentSport(f.momentId) === "nfl"
   );
   const pinnedIds = new Set(pinned.map((p) => p.gameId));
 
@@ -1092,6 +1125,10 @@ function buildUpNext(
     .filter((g) => g.status === "upcoming" && onSlate(g.date))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  const nflUpcoming = nfl
+    .filter((g) => g.status === "upcoming" && onSlate(g.date))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
   // "Personal" = a game the user explicitly follows: their team, their
   // country, a series they follow (both teams in it), OR any game in a
   // tournament they follow. Tournament/series support was missing, so a
@@ -1107,6 +1144,12 @@ function buildUpNext(
   const wcIsPersonal = (g: WCGameLite): boolean => {
     if (followsWcTournament) return true;
     return [...followedCountries].some((code) => gameIncludesCountry(g, code));
+  };
+  const nflIsPersonal = (g: NFLGameLite): boolean => {
+    if (followsNflTournament) return true;
+    const away = g.away.abbreviation;
+    const home = g.home.abbreviation;
+    return followedNflTeams.has(away) || followedNflTeams.has(home);
   };
 
   // ONLY the user's followed games — never generic filler. "Follow what
@@ -1143,6 +1186,18 @@ function buildUpNext(
       pinned,
       item: {
         ...wcToUpNext(g, pinned, true),
+        imminent: kickoffImminent(g.date) || undefined,
+      },
+    });
+  }
+  for (const g of nflUpcoming) {
+    if (!nflIsPersonal(g)) continue;
+    const pinned = pinnedIds.has(g.id);
+    candidates.push({
+      date: new Date(g.date).getTime(),
+      pinned,
+      item: {
+        ...nflToUpNext(g, pinned, true),
         imminent: kickoffImminent(g.date) || undefined,
       },
     });
@@ -2061,6 +2116,7 @@ export function buildTodayPayload({
   nba,
   nbaRecent,
   wc,
+  nfl,
   follows,
   pinned,
   champion = null,
@@ -2075,6 +2131,9 @@ export function buildTodayPayload({
    *  seriesGames (older deploy / failure). */
   nbaRecent?: NBAGame[];
   wc: WCGameLite[];
+  /** Current-week NFL games (Phase 22). Feeds a followed team's next game
+   *  into Up Next; empty out of season. */
+  nfl?: NFLGameLite[];
   follows: Follow[];
   pinned: PinnedGame[];
   /** The frozen tournament champion (from the WC feed), or null until the
@@ -2083,6 +2142,7 @@ export function buildTodayPayload({
   now?: Date;
 }): TodayPayload {
   const recentForWrap = nbaRecent && nbaRecent.length > 0 ? nbaRecent : nba;
+  const nflGames = nfl ?? [];
   const hero = pickHero(nba, wc, follows, pinned, now);
   const youFollow = buildYouFollow(nba, wc, follows, now);
   // Up Next uses the WIDER window (seriesGames, ~2 weeks ahead), not the
@@ -2090,7 +2150,7 @@ export function buildTodayPayload({
   // (e.g. Games 3-4 land next week), and they must appear before the
   // Summer Soccer openers. buildUpNext filters to status==="upcoming", so the
   // wider window's past finals are dropped — only the forward games stay.
-  const upNext = buildUpNext(recentForWrap, wc, follows, pinned);
+  const upNext = buildUpNext(recentForWrap, wc, nflGames, follows, pinned);
   const quietWrap = buildQuietWrap(recentForWrap, wc, follows, now);
   const recapFinals = buildRecapFinals(recentForWrap, wc, follows, now);
   const reminder = buildReminder(follows, now);

@@ -13,6 +13,7 @@ import {
   type WCGameLite,
 } from "./today-data";
 import type { WCChampion } from "../../lib/wc-champion";
+import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 
 // Empty payload used during loading and as the safe fallback when both
 // API calls fail. Keeps the page shape stable so we don't flash empties.
@@ -57,6 +58,8 @@ type FetchedData = {
   /** Frozen tournament champion (from the WC feed), or null until the final
    *  is decided. Drives the WC wind-down moment. */
   champion: WCChampion | null;
+  /** Current-week NFL games (Phase 22). Empty out of season. */
+  nfl: NFLGameLite[];
   updatedAt: Date | null;
 };
 
@@ -103,6 +106,17 @@ async function fetchWC(): Promise<{
   }
 }
 
+async function fetchNFL(): Promise<{ games: NFLGameLite[] }> {
+  try {
+    const res = await fetch("/api/nfl-scores", { cache: "no-store" });
+    if (!res.ok) return { games: [] };
+    const json = (await res.json()) as { games?: NFLGameLite[] };
+    return { games: json.games ?? [] };
+  } catch {
+    return { games: [] };
+  }
+}
+
 // Seed initial state from the shared feed cache so a tab switch paints
 // the last-known slate instantly instead of an empty shell. The poll
 // refreshes within its interval; if nothing's cached (fresh load) we
@@ -113,7 +127,7 @@ function seedData(): FetchedData {
   );
   const wc = readFeed<WCGameLite[]>(FEED_KEYS.worldCup);
   if (!ls && !wc) {
-    return { nba: [], nbaRecent: [], wc: [], champion: null, updatedAt: null };
+    return { nba: [], nbaRecent: [], wc: [], champion: null, nfl: [], updatedAt: null };
   }
   return {
     nba: ls?.games ?? [],
@@ -122,6 +136,7 @@ function seedData(): FetchedData {
     // Champion isn't cached (server-derived); it repopulates on the first
     // poll. Null until then.
     champion: null,
+    nfl: [],
     updatedAt: new Date(),
   };
 }
@@ -135,6 +150,7 @@ export function useTodayData() {
   // bump when a poll returns byte-identical data (a quiet tick).
   const nbaSigRef = useRef<string>("");
   const wcSigRef = useRef<string>("");
+  const nflSigRef = useRef<string>("");
   // If we seeded from cache, treat the tab as already loaded so no
   // loading shell flashes before the first poll lands.
   const [hasLoadedOnce, setHasLoadedOnce] = useState(
@@ -210,9 +226,22 @@ export function useTodayData() {
       setData(dataRef.current);
       if (wc.length > 0) setHasLoadedOnce(true);
     };
+    const applyNfl = (res: { games: NFLGameLite[] }) => {
+      if (isCancelled()) return;
+      const sig = JSON.stringify(res.games);
+      if (sig === nflSigRef.current && dataRef.current.updatedAt !== null) {
+        if (res.games.length > 0) setHasLoadedOnce(true);
+        return;
+      }
+      nflSigRef.current = sig;
+      dataRef.current = { ...dataRef.current, nfl: res.games, updatedAt: new Date() };
+      setData(dataRef.current);
+      if (res.games.length > 0) setHasLoadedOnce(true);
+    };
     await Promise.allSettled([
       fetchNBA().then(applyNba),
       fetchWC().then(applyWc),
+      fetchNFL().then(applyNfl),
     ]);
     // Both settled — flip even if both came back empty so a genuinely
     // quiet day leaves the loading shell instead of hanging.
@@ -239,6 +268,7 @@ export function useTodayData() {
       nba: data.nba,
       nbaRecent: data.nbaRecent,
       wc: data.wc,
+      nfl: data.nfl,
       follows,
       pinned,
       champion: data.champion,
@@ -251,6 +281,7 @@ export function useTodayData() {
     data.nba,
     data.nbaRecent,
     data.wc,
+    data.nfl,
     data.champion,
     dayKey,
     follows,
