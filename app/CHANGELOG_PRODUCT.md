@@ -2,6 +2,33 @@
 
 ---
 
+## NFL data spine — Phase 22 gate 2 (spine complete) — 2026-07-20
+
+The foundation for the NFL build, seven weeks ahead of the Sept 9 opener.
+Feed shape captured from REAL ESPN before any code (the WC 100-cap rule):
+docs/reference/nfl-espn-feed-capture-2026-07-20.md.
+
+- `/api/nfl-scores` route + `normalizeNFLGame` (scoreboard event →
+  NFLGameLite: week, season-type, Q<n>/Final/OT status, teams + winner,
+  broadcasts). Single-fetch (ESPN serves a whole week per call); ?week=N
+  paging; KV-cached 30s; stale/empty-503 degrade. Both LIVE-VERIFIED
+  against real ESPN — 16 Week-1 games flow end to end (NE@SEA/NBC,
+  SF@LAR/Netflix).
+- tournamentPhase + concludedAt nfl-season branches (pre before Sept 9,
+  active in-season, concluded the day after Super Bowl LXI Feb 14 2027).
+  The adaptive view model is registered: NFL = [byweek, standings],
+  dormant behind NFL's comingSoon until gate 3 drops it.
+
+Honest gate status: the SPINE is built + unit/live-verified now. The
+gate's own go/no-go — preseason games rendering on Today/Schedule/
+Watching at phone width — is calendar-gated to ~Aug 6 (no NFL game is
+live until then). The By-week view component + Today/Watching NFL reading
+are folded into gate 3, where NFL goes live on Schedule and real
+preseason data exists to verify against — not speculatively built now.
+593 tests, build 93 pages.
+
+---
+
 ## Path B — moment + scope follow schema — 2026-07-19
 
 Gate 1 of the NFL phase, executed in the dead zone (the one window with

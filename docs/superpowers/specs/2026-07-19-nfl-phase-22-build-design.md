@@ -84,7 +84,19 @@ surfaces), executed against today's code with these reconciliations:
 Go/no-go: all existing follows migrate losslessly (unit + on-device),
 dispatcher behavior-lock suite green, zero user-visible change.
 
-### Gate 2 — NFL data spine (~Jul 28–Aug 8)
+### Gate 2 — NFL data spine (~Jul 28–Aug 8) — SPINE SHIPPED 2026-07-20
+
+STATUS: the data spine is built + verified early. Done: `/api/nfl-scores`
+route + `normalizeNFLGame` (both live-verified vs real ESPN, 16 Week-1
+games), nflPhase + concludedAt branches, nfl-dates season-end constant,
+Schedule view registration (NFL = byweek/standings, dormant behind
+comingSoon). Feed captured in docs/reference/nfl-espn-feed-capture-2026-07-20.md.
+DEFERRED to gate 3 / preseason (calendar-gated, per this gate's own
+go/no-go which requires live preseason games ~Aug 6): the By-week view
+COMPONENT, Today/Watching NFL game reading, standings with real records.
+Not speculatively built — verify against live data when it exists.
+
+Original scope:
 
 `/api/nfl-scores` route + normalizer on the NBA pattern (scoreboard +
 `summary?event={id}` for drives/scoringPlays), the ~25 type unions get

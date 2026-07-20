@@ -654,6 +654,21 @@ carried).
 Route count: 84. Gate: lint 0 / 380 tests / build / live-verify, per
 ship-gate.
 
+## Session wrap 2026-07-20 — Phase 22 gate 2 spine SHIPPED
+
+NFL data spine is built + live-verified 7 weeks before the opener.
+/api/nfl-scores + normalizeNFLGame (real ESPN, 16 Week-1 games),
+nflPhase/concludedAt branches, NFL Schedule views registered
+(byweek/standings, dormant behind comingSoon). Feed shape captured at
+docs/reference/nfl-espn-feed-capture-2026-07-20.md (scoreboard = game
+state; summary scoringPlays/drives = gate-4 detectors). NEXT: gate 3
+(Following live — NFL team picker, drop comingSoon, one-tap whole-season
+follow) is where NFL goes live on Schedule; the By-week view component +
+Today/Watching NFL reading land there with preseason data (~Aug 6) to
+verify against. Gate 2's remaining go/no-go (preseason render) is
+calendar-gated, not blocked. See CHANGELOG "NFL data spine" + the Phase
+22 spec gate-2 status note.
+
 ## Session wrap 2026-07-19 (late) — Path B SHIPPED (gate 1 complete)
 
 Gate 1 of Phase 22 is DONE, same day it opened: the full Path B
