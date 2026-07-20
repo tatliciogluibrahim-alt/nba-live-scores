@@ -2,6 +2,20 @@
 
 ---
 
+## NFL Schedule live — By-week view browsable — 2026-07-20
+
+Correcting an earlier over-conservative call: NFL's Week-1 schedule is
+real, public ESPN data NOW, so there's no reason to hide it until
+preseason. It's browsable under the All-sports scope on Schedule (follows
+stay gated until the gate-3 picker + push loop). The adaptive view model
+lit up for its second competition: NFL renders By-week (the week is the
+chronological spine) + a Standings placeholder, fed by /api/nfl-scores.
+Verified live at phone width — all 16 real Week-1 games with matchups,
+broadcasts, kickoff times, System D grammar, zero errors. Live/final
+score states render once games are played (~Aug 6).
+
+---
+
 ## NFL push detectors — Phase 22 gate 4 (pure core) — 2026-07-20
 
 The push pipeline's pure, testable core — built now (calendar-independent)

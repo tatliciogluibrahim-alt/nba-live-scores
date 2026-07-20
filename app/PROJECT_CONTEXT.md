@@ -654,6 +654,18 @@ carried).
 Route count: 84. Gate: lint 0 / 380 tests / build / live-verify, per
 ship-gate.
 
+## Session wrap 2026-07-20 (cont. 2) — NFL Schedule live + gate 4 core
+
+Corrected an over-conservative deferral: the NFL By-week Schedule view is
+BUILT + verified live (16 real Week-1 games render under All-sports).
+NFL's schedule is public data, browsable now; follows stay gated until
+the gate-3 picker. The adaptive view model has now proven itself on a
+second competition. Remaining calendar-gated to preseason (~Aug 6): NFL
+team picker + Today/Watching NFL game reading (rest of gate 3), the
+scan-nfl cron + detector→dispatch wiring (gate 4), native + Week-1
+go-live (gates 5-6). All the discovery-heavy work (feed, play
+classification, tier calibration, By-week view) is done + verified.
+
 ## Session wrap 2026-07-20 (cont.) — Phase 22 gate 4 pure core SHIPPED
 
 After the gate-2 spine, built gate 4's calendar-independent core: NFL
