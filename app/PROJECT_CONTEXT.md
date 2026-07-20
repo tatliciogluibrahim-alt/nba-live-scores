@@ -654,6 +654,19 @@ carried).
 Route count: 84. Gate: lint 0 / 380 tests / build / live-verify, per
 ship-gate.
 
+## Session wrap 2026-07-19 (late) — Path B SHIPPED (gate 1 complete)
+
+Gate 1 of Phase 22 is DONE, same day it opened: the full Path B
+moment+scope follow refactor is live (see CHANGELOG "Path B" entry).
+Follows are canonical (momentId/scope/scopeId) with derived legacy views;
+storage v2 with lossless on-device-verified migration; canonical wire
+with dual-shape acceptance; dispatcher matches by momentSport with the
+significance contract intact. NEXT: gate 2 (NFL data spine — start with
+a live capture of ESPN's real NFL scoreboard+summary JSON; preseason
+~Aug 6 is the live test bed), then gate 3 (Following live + one-tap
+whole-moment follow, folded from gate 1). Presentational .kind readers
+sweep with gate 2's type-union pass (safe until NFL follows exist).
+
 ## Session wrap 2026-07-19 — World Cup concluded, Phase 22 opened
 
 **The World Cup is over: Spain champions (ESP 1-0 ARG, Jul 19).** The

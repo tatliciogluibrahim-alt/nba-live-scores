@@ -2,6 +2,43 @@
 
 ---
 
+## Path B — moment + scope follow schema — 2026-07-19
+
+Gate 1 of the NFL phase, executed in the dead zone (the one window with
+near-zero push traffic — the design doc's "focused window because the
+migration is touchy"). Every follow is now WHERE (momentId) + WHAT
+(scope + entity) instead of a flat kind/id, killing the sport ambiguity
+that would have made an NFL "LAC" collide with the Clippers.
+
+- MOMENTS directory (nba-playoffs-2025 / fifa-world-cup-2026 /
+  nfl-season-2026 — the NFL moment type-checks against the schema, the
+  design doc's own risk gate). One pure migration shared by client and
+  server; hideSpoilers carried (postdates the design doc), deprecated
+  alertPreset fallback, idempotent, junk-safe, oldest-wins dedupe.
+- Storage → no-noise:follows:v2; v1 stays on disk untouched ≥2 releases
+  (rollback-safe). Runtime Follow carries derived presentational kind/id
+  (injective, correct-by-construction until NFL follows exist) so ~40
+  reader files needed zero changes; every sport-DECIDING site
+  (dispatcher, sync validator, follow-sync, stores, reminders, admin,
+  competitions) moved to canonical moment+scope. providers keeps the
+  (kind,id) sugar API + gains addMomentFollow (v2-native, for the NFL
+  picker + one-tap follows).
+- Wire is canonical; the validator accepts BOTH shapes so old stored KV
+  alerts and stale clients migrate on read. Dispatcher matches sport via
+  momentSport then per-scope predicates — adding NFL is a new sport
+  value, zero dispatcher changes. Significance contract preserved
+  exactly (entity scopes = direct = boost + start/final floor;
+  whole-moment = threshold-only); behavior-lock tests re-expressed,
+  assertions unchanged, plus an explicit LAC-never-crosses-sports case.
+- On-device verify (Playwright): a seeded v1 blob with all four kinds +
+  hideSpoilers + alertPreset migrates losslessly, v1 byte-untouched,
+  corrupt v1 safe, v2 idempotent across reloads, Following renders
+  identically, zero page errors. Gate: lint 0, 586 tests, tsc 0, build
+  93 pages. One-tap whole-moment follow folded into gate 3 (its first
+  real consumer is the NFL row).
+
+---
+
 ## P0/P1 trust and continuity pass — 2026-07-15
 
 App-wide hardening of the two highest-priority UX classes: trust failures

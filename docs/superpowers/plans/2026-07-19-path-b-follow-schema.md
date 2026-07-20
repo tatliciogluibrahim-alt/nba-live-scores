@@ -80,6 +80,22 @@ Matching: event sport (wc-prefix / future nfl-prefix / default nba) → follow's
 
 **Steps:** lint 0 → full vitest → build (93 pages) → **live migration verify**: dev server, seed a v1 blob with all four kinds + hideSpoilers + alertPreset in localStorage, load app, assert v2 written + v1 untouched + Following renders identically + Playwright screenshot; repeat with empty/corrupt v1 → CHANGELOG + PROJECT_CONTEXT + spec status → commit + push.
 
+## Execution adjustments (recorded live, 2026-07-19)
+
+- **Derived-view strategy for the flip (PB3):** `Follow` carries canonical
+  momentId/scope/scopeId PLUS derived presentational `kind`/`id`
+  (injective; constructed only via toFollow/legacyRefToFollow). Rationale:
+  no NFL follow can exist until the gate-3 picker, so derived reads cannot
+  mis-decide sport — the ~40 presentational reader files stay
+  correct-by-construction and sweep with gate 2's type-union pass instead
+  of one 180-site atomic rewrite. PB6's exit criterion is therefore
+  "no sport-DECIDING .kind reads" — satisfied (dispatcher, validator,
+  follow-sync, stores, reminders, admin, competitions all canonical).
+- **PB7 folded into gate 3:** one-tap whole-moment follow's first real
+  consumer is the NFL "whole season" row; wiring it now would ship a dead
+  control on a picker with zero active moments. addMomentFollow (the
+  mechanism) is live and tested.
+
 ## Self-review
 
 Doc's 11a→11d covered (11c trimmed to live scope, justified). hideSpoilers reconciliation added (doc gap). Types consistent Task 1→6 (`Follow`, `LegacyFollow`, `followIsDirect`, `momentSport`). Event-side `momentId` tagging from the doc deferred: dispatcher derives sport from event type prefix today, which is equivalent until two same-sport moments coexist — noted for the NFL gates. No placeholders.
