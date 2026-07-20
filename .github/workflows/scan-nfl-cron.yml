@@ -1,0 +1,25 @@
+name: scan-nfl-cron
+
+on:
+  # Scheduled trigger disabled — cron-job.org drives this (GitHub Actions
+  # cron is unreliable). Kept commented as a fallback. cron-job.org runs
+  # NFL at a live-window cadence (Sundays + prime-time slots) once the
+  # season opens; no user pushes fire during preseason (nfl-design.md).
+  # schedule:
+  #   - cron: '*/1 * * * *'
+  workflow_dispatch:
+
+# Least-privilege: only curls an external endpoint.
+permissions: {}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Trigger NFL push scan
+        run: |
+          curl -fsS \
+            --retry 3 --retry-delay 5 --retry-all-errors \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://nonoisescores.app/api/cron/scan-nfl

@@ -22,7 +22,7 @@ const BUCKET_TTL_SECONDS = 7 * 24 * 60 * 60;
 // WANT a stale timestamp to persist so an outage is visible, not expire.
 const LAST_SCAN_PREFIX = "nns:ops:last-scan:v1:";
 
-export type ScanScope = "wc" | "nba";
+export type ScanScope = "wc" | "nba" | "nfl";
 
 /** Stamp the wall-clock time of a scan tick for a scope. Fire-and-forget;
  *  logs but never throws so a heartbeat write can't break the scan. */
