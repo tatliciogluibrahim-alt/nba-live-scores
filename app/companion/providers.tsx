@@ -16,11 +16,13 @@ import {
   type Follow,
   type FollowKind,
   type PinnedGame,
+  type ScopeKind,
   type UserPrefs,
 } from "./state/types";
+import { legacyRefToFollow, toFollow } from "./state/follow-migration";
 import {
   STORAGE_KEYS,
-  normalizeStoredFollows,
+  normalizeStoredFollowsV2,
   normalizeStoredPinned,
   normalizeStoredPrefs,
   readJSON,
@@ -56,6 +58,14 @@ type FollowsCtx = {
   alertSlotCap: number;
   isFollowing: (kind: FollowKind, id: string) => boolean;
   addFollow: (kind: FollowKind, id: string, preset?: AlertPreset) => void;
+  /** Path B native adder: momentId + scope + entity. The NFL picker and
+   *  one-tap whole-moment follows use this — no legacy-kind inference. */
+  addMomentFollow: (
+    momentId: string,
+    scope: ScopeKind,
+    scopeId: string | null,
+    preset?: AlertPreset
+  ) => void;
   removeFollow: (kind: FollowKind, id: string) => void;
   setFollowAlertEnabled: (kind: FollowKind, id: string, enabled: boolean) => void;
   setFollowAlertTier: (kind: FollowKind, id: string, preset: AlertPreset) => void;
@@ -154,8 +164,13 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
   // SSR hydration matching. We render with defaults on the server, then
   // upgrade once on the client.
   useEffect(() => {
-    const storedFollows = normalizeStoredFollows(
-      readJSON<unknown>(STORAGE_KEYS.follows, [])
+    // Path B hydration: prefer the v2 blob; a first-run-after-deploy device
+    // falls back to the untouched v1 blob, which the SAME normalizer
+    // migrates. The writeJSON below then persists v2; v1 stays on disk
+    // (rollback-safe, ≥2 releases).
+    const rawV2 = readJSON<unknown>(STORAGE_KEYS.follows, null);
+    const storedFollows = normalizeStoredFollowsV2(
+      rawV2 ?? readJSON<unknown>(STORAGE_KEYS.followsLegacy, [])
     );
     const rawPinned = normalizeStoredPinned(
       readJSON<unknown>(STORAGE_KEYS.pinned, [])
@@ -207,7 +222,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
 
     function handleStorage(e: StorageEvent) {
       if (e.key === STORAGE_KEYS.follows) {
-        setFollows(normalizeStoredFollows(readStorageEventValue(e.newValue)));
+        setFollows(normalizeStoredFollowsV2(readStorageEventValue(e.newValue)));
       }
       if (e.key === STORAGE_KEYS.pinned) {
         setPinned(normalizeStoredPinned(readStorageEventValue(e.newValue)));
@@ -239,16 +254,54 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
         if (prev.some((f) => f.kind === kind && f.id === id)) return prev;
         const enabledCount = prev.filter((f) => f.alertEnabled).length;
         const tier = preset ?? prefs.defaultAlertTier;
-        const next = [
-          ...prev,
-          {
-            kind,
-            id,
-            alertEnabled: enabledCount < MAX_FREE_ALERT_SLOTS,
-            alertTier: tier,
-            followedAt: Date.now(),
-          },
-        ];
+        // Legacy-ref sugar (the design doc's "callers keep their shape"):
+        // (kind, id) resolves through the SAME mapping storage migration
+        // uses, so a UI reference and a stored record can't disagree.
+        const follow = legacyRefToFollow(kind, id, {
+          alertEnabled: enabledCount < MAX_FREE_ALERT_SLOTS,
+          alertTier: tier,
+          followedAt: Date.now(),
+        });
+        if (!follow) return prev;
+        const next = [...prev, follow];
+        writeJSON(STORAGE_KEYS.follows, next);
+        return next;
+      });
+    },
+    [prefs.defaultAlertTier]
+  );
+
+  // Path B native adder — momentId + scope + entity, no legacy inference.
+  // The gate-3 NFL picker and one-tap whole-moment follows use this; it is
+  // what makes a future NFL "LAC" unambiguous from day one.
+  const addMomentFollow = useCallback(
+    (
+      momentId: string,
+      scope: ScopeKind,
+      scopeId: string | null,
+      preset?: AlertPreset
+    ) => {
+      setFollows((prev) => {
+        if (
+          prev.some(
+            (f) =>
+              f.momentId === momentId &&
+              f.scope === scope &&
+              f.scopeId === scopeId
+          )
+        ) {
+          return prev;
+        }
+        const enabledCount = prev.filter((f) => f.alertEnabled).length;
+        const follow = toFollow({
+          momentId,
+          scope,
+          scopeId,
+          alertEnabled: enabledCount < MAX_FREE_ALERT_SLOTS,
+          alertTier: preset ?? prefs.defaultAlertTier,
+          followedAt: Date.now(),
+        });
+        const next = [...prev, follow];
         writeJSON(STORAGE_KEYS.follows, next);
         return next;
       });
@@ -461,6 +514,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       alertSlotCap: MAX_FREE_ALERT_SLOTS,
       isFollowing,
       addFollow,
+      addMomentFollow,
       removeFollow,
       setFollowAlertEnabled,
       setFollowAlertTier,
@@ -472,6 +526,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
       alertSlotCount,
       isFollowing,
       addFollow,
+      addMomentFollow,
       removeFollow,
       setFollowAlertEnabled,
       setFollowAlertTier,

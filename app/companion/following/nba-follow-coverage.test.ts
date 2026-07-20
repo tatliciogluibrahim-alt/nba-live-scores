@@ -1,18 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { Follow } from "../state/types";
+import { legacyRefToFollow } from "../state/follow-migration";
 import {
   buildNBAFollowCoverage,
   nbaGameMatchesFollowCoverage,
 } from "./nba-follow-coverage";
 
 function follow(kind: Follow["kind"], id: string): Follow {
-  return {
-    kind,
-    id,
+  return legacyRefToFollow(kind, id, {
     alertEnabled: false,
     alertTier: "quiet",
     followedAt: 1,
-  };
+  })!;
 }
 
 describe("NBA follow coverage", () => {

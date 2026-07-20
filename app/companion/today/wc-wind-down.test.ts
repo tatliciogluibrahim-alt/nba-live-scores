@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { buildTodayPayload } from "./today-data";
 import type { WCChampion } from "../../lib/wc-champion";
 import type { Follow } from "../state/types";
+import { legacyRefToFollow } from "../state/follow-migration";
 import type { WCGameLite } from "./today-data";
 
 // The WC wind-down closing moment (pickClosing WC branch), exercised through
@@ -17,13 +18,14 @@ const CHAMP: WCChampion = {
 };
 
 function follow(over: Partial<Follow> = {}): Follow {
+  const { kind = "country", id = "FRA", ...rest } = over;
   return {
-    kind: "country",
-    id: "FRA",
-    alertEnabled: false,
-    alertTier: "quiet",
-    followedAt: 0,
-    ...over,
+    ...legacyRefToFollow(kind, id, {
+      alertEnabled: false,
+      alertTier: "quiet",
+      followedAt: 0,
+    })!,
+    ...rest,
   };
 }
 

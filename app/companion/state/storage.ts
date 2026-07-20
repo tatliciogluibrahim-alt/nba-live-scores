@@ -6,21 +6,24 @@
 // and we never want a storage error to break a render.
 
 import {
-  DEFAULT_ALERT_PRESET,
   DEFAULT_PREFS,
   MAX_FREE_ALERT_SLOTS,
   type AlertPreset,
   type Follow,
-  type FollowKind,
   type PinnedGame,
   type UserPrefs,
 } from "./types";
+import { migrateFollowList, toFollow } from "./follow-migration";
 
 const NS = "no-noise";
 const VERSION = "v1";
 
 export const STORAGE_KEYS = {
-  follows: `${NS}:follows:${VERSION}`,
+  // Path B (2026-07-19): follows moved to a v2 blob (moment + scope
+  // schema). v1 stays on disk, untouched, for ≥2 releases so a rollback
+  // still finds it. All reads and writes go to v2.
+  follows: `${NS}:follows:v2`,
+  followsLegacy: `${NS}:follows:${VERSION}`,
   pinned: `${NS}:pinned:${VERSION}`,
   prefs: `${NS}:prefs:${VERSION}`,
 } as const;
@@ -54,12 +57,6 @@ export function removeKey(key: string): void {
   }
 }
 
-const FOLLOW_KINDS = new Set<FollowKind>([
-  "team",
-  "country",
-  "series",
-  "tournament",
-]);
 const ALERT_PRESETS = new Set<AlertPreset>(["quiet", "companion", "all"]);
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -74,43 +71,14 @@ function isLocalDate(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-export function normalizeStoredFollows(value: unknown): Follow[] {
-  if (!Array.isArray(value)) return [];
-
-  const normalized = value.flatMap((item, index): Follow[] => {
-    if (!isObject(item)) return [];
-    const kind = item.kind;
-    const id = item.id;
-    if (typeof kind !== "string" || !FOLLOW_KINDS.has(kind as FollowKind)) {
-      return [];
-    }
-    if (typeof id !== "string" || id.trim().length === 0) return [];
-
-    const tier = ALERT_PRESETS.has(item.alertTier as AlertPreset)
-      ? (item.alertTier as AlertPreset)
-      : ALERT_PRESETS.has(item.alertPreset as AlertPreset)
-      ? (item.alertPreset as AlertPreset)
-      : DEFAULT_ALERT_PRESET;
-
-    const followedAt =
-      typeof item.followedAt === "number" && Number.isFinite(item.followedAt)
-        ? item.followedAt
-        : index;
-
-    return [{
-      kind: kind as FollowKind,
-      id: id.trim(),
-      alertEnabled: typeof item.alertEnabled === "boolean" ? item.alertEnabled : true,
-      alertTier: tier,
-      hideSpoilers: item.hideSpoilers === true ? true : undefined,
-      followedAt,
-    }];
-  });
-
-  // Migration guard: legacy follows all had implicit alerts. Keep the
-  // oldest three enabled, turn the rest into visible-only follows.
+/** Path B normalizer: accepts a v2 blob, a v1 blob, or a mid-migration
+ *  mix (one pure migration shared with the server), decorates with the
+ *  derived legacy view, and applies the same oldest-three alert-slot cap
+ *  the v1 normalizer enforced. */
+export function normalizeStoredFollowsV2(value: unknown): Follow[] {
+  const migrated = migrateFollowList(value).map(toFollow);
   let enabled = 0;
-  return normalized
+  return migrated
     .sort((a, b) => a.followedAt - b.followedAt)
     .map((follow) => {
       if (!follow.alertEnabled) return follow;

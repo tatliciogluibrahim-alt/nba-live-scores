@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Follow, FollowKind } from "../state/types";
+import { legacyRefToFollow } from "../state/follow-migration";
 import { followHidesParticipants } from "./follow-match";
 
 function follow(
@@ -8,12 +9,12 @@ function follow(
   hideSpoilers = true
 ): Follow {
   return {
-    kind,
-    id,
+    ...legacyRefToFollow(kind, id, {
+      alertEnabled: true,
+      alertTier: "companion",
+      followedAt: 1,
+    })!,
     hideSpoilers,
-    alertEnabled: true,
-    alertTier: "companion",
-    followedAt: 1,
   };
 }
 

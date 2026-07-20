@@ -1,4 +1,12 @@
-import type { AlertPreset, FollowV2, LegacyFollow, ScopeKind } from "./types";
+import type {
+  AlertPreset,
+  Follow,
+  FollowKind,
+  FollowV2,
+  LegacyFollow,
+  ScopeKind,
+} from "./types";
+import { legacyKindOf, legacyIdOf } from "./moments";
 
 // Path B migration (gate 1). ONE pure function family used by BOTH the
 // client (providers hydration, v1 localStorage → v2) and the server
@@ -86,6 +94,32 @@ function isLegacyShape(raw: unknown): raw is LegacyFollow {
 /** Stable identity for dedupe: one follow per (moment, scope, entity). */
 export function followIdentity(f: FollowV2): string {
   return `${f.momentId}::${f.scope}::${f.scopeId ?? ""}`;
+}
+
+/** Decorate a canonical v2 core with its derived legacy view — the ONLY
+ *  way a runtime `Follow` is constructed. group/round/stage scopes have no
+ *  legacy kind; they fall back to "tournament" (broad) — impossible today
+ *  (no picker creates them) and flagged for the presentational sweep when
+ *  those scopes ship. */
+export function toFollow(core: FollowV2): Follow {
+  return {
+    ...core,
+    kind: legacyKindOf(core) ?? "tournament",
+    id: legacyIdOf(core),
+  };
+}
+
+/** Resolve a legacy (kind, id) reference — the providers sugar API every
+ *  existing picker/card calls — to a full Follow. Same mapping as the
+ *  storage migration, so a UI reference and a stored record can never
+ *  disagree about identity. */
+export function legacyRefToFollow(
+  kind: FollowKind,
+  id: string,
+  init: { alertEnabled: boolean; alertTier: AlertPreset; followedAt: number }
+): Follow | null {
+  const core = migrateFollow({ kind, id, ...init });
+  return core ? toFollow(core) : null;
 }
 
 /** Migrate a whole stored blob — v1 array, v2 array, or a mid-migration

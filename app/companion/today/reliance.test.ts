@@ -1,15 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { buildTodayPayload, type WCGameLite } from "./today-data";
 import type { Follow } from "../state/types";
+import { legacyRefToFollow } from "../state/follow-migration";
 
 function follow(over: Partial<Follow> = {}): Follow {
+  const { kind = "country", id = "FRA", ...rest } = over;
   return {
-    kind: "country",
-    id: "FRA",
-    alertEnabled: true,
-    alertTier: "companion",
-    followedAt: 0,
-    ...over,
+    ...legacyRefToFollow(kind, id, {
+      alertEnabled: true,
+      alertTier: "companion",
+      followedAt: 0,
+    })!,
+    ...rest,
   };
 }
 
@@ -73,13 +75,11 @@ describe("reliancePrompt (the alert truth loop)", () => {
       ...base,
       wc: [wcFinal()],
       follows: [
-        {
-          kind: "tournament",
-          id: "fifa-world-cup-2026",
+        legacyRefToFollow("tournament", "fifa-world-cup-2026", {
           alertEnabled: true,
           alertTier: "quiet",
           followedAt: 0,
-        },
+        })!,
         follow({ alertTier: "all" }),
       ],
       now: new Date(),

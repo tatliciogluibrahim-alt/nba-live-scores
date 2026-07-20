@@ -20,6 +20,7 @@ import {
   rejectRateLimited,
 } from "../../../lib/push/request-guards";
 import type { Follow } from "../../../companion/state/types";
+import { legacyRefToFollow } from "../../../companion/state/follow-migration";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,7 +49,9 @@ function sanitizeFollow(raw: unknown): Follow | null {
       : "companion";
   const followedAt =
     typeof r.followedAt === "number" ? r.followedAt : Date.now();
-  return { kind, id, alertEnabled, alertTier, followedAt };
+  // Path B: resolve the wire's legacy (kind, id) through the canonical
+  // mapping so stored subscriber follows carry moment + scope too.
+  return legacyRefToFollow(kind, id, { alertEnabled, alertTier, followedAt });
 }
 
 export async function POST(req: Request) {

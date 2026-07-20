@@ -2,17 +2,19 @@ import { describe, it, expect } from "vitest";
 import { buildFollowingView, tierStampProps } from "./following-view";
 import type { FollowCardData } from "./FollowCard";
 import type { AlertPreset, Follow, FollowKind } from "../state/types";
+import { legacyRefToFollow } from "../state/follow-migration";
 
 // ── Test builders ──────────────────────────────────────────────────────
 
 function makeFollow(over: Partial<Follow> = {}): Follow {
+  const { kind = "country" as FollowKind, id = "USA", ...rest } = over;
   return {
-    kind: "country" as FollowKind,
-    id: "USA",
-    alertEnabled: true,
-    alertTier: "companion" as AlertPreset,
-    followedAt: 1,
-    ...over,
+    ...legacyRefToFollow(kind, id, {
+      alertEnabled: true,
+      alertTier: "companion" as AlertPreset,
+      followedAt: 1,
+    })!,
+    ...rest,
   };
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Follow } from "../state/types";
+import { legacyRefToFollow } from "../state/follow-migration";
 import {
   buildTodayPayload,
   WC_KICKOFF,
@@ -8,13 +9,11 @@ import {
 } from "./today-data";
 
 function follow(kind: Follow["kind"], id: string): Follow {
-  return {
-    kind,
-    id,
+  return legacyRefToFollow(kind, id, {
     alertEnabled: false,
     alertTier: "quiet",
     followedAt: 1,
-  };
+  })!;
 }
 
 function nbaLive(): NBAGame {

@@ -5,6 +5,7 @@ import {
   type WCGameLite,
 } from "./today-data";
 import type { Follow } from "../state/types";
+import { legacyRefToFollow } from "../state/follow-migration";
 
 // Quiet Wrap was NBA-only until the WC feed was wired into buildQuietWrap.
 // These lock the fix: Summer Soccer finals appear, follow-aware ordering
@@ -26,21 +27,19 @@ function wcFinal(over: Partial<WCGameLite> = {}): WCGameLite {
   };
 }
 
-const country = (id: string): Follow => ({
-  kind: "country",
-  id,
-  alertEnabled: false,
-  alertTier: "quiet",
-  followedAt: 0,
-});
+const country = (id: string): Follow =>
+  legacyRefToFollow("country", id, {
+    alertEnabled: false,
+    alertTier: "quiet",
+    followedAt: 0,
+  })!;
 
-const follow = (kind: Follow["kind"], id: string): Follow => ({
-  kind,
-  id,
-  alertEnabled: false,
-  alertTier: "quiet",
-  followedAt: 0,
-});
+const follow = (kind: Follow["kind"], id: string): Follow =>
+  legacyRefToFollow(kind, id, {
+    alertEnabled: false,
+    alertTier: "quiet",
+    followedAt: 0,
+  })!;
 
 function nbaFinal(over: Partial<NBAGame> = {}): NBAGame {
   return {

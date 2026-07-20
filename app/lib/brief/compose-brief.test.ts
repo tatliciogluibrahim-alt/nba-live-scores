@@ -3,6 +3,7 @@ import { composeBrief, shouldSendBrief } from "./compose-brief";
 import type { BriefSubscriber } from "./subscriber-store";
 import type { Game } from "../../nba/types";
 import type { Follow } from "../../companion/state/types";
+import { legacyRefToFollow } from "../../companion/state/follow-migration";
 
 // Brief composition coverage. The daily email is unsupervised — once
 // cron-job.org calls /api/cron/send-briefs at 8:30 AM ET, whatever
@@ -65,13 +66,12 @@ function sub(over: Partial<BriefSubscriber> = {}): BriefSubscriber {
   };
 }
 
-const teamFollow = (id: string): Follow => ({
-  kind: "team",
-  id,
-  alertEnabled: true,
-  alertTier: "companion",
-  followedAt: 0,
-});
+const teamFollow = (id: string): Follow =>
+  legacyRefToFollow("team", id, {
+    alertEnabled: true,
+    alertTier: "companion",
+    followedAt: 1,
+  })!;
 
 describe("composeBrief — shouldSendBrief gating", () => {
   it("returns false (skip) when subscriber has no follows and no games", () => {

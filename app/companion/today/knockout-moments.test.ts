@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildKnockoutMoments } from "./today-data";
 import type { Follow } from "../state/types";
+import { legacyRefToFollow } from "../state/follow-migration";
 
 // Minimal WCGameLite-ish fixture (only the fields buildKnockoutMoments reads).
 function wc(over: Record<string, unknown> = {}) {
@@ -19,13 +20,12 @@ function wc(over: Record<string, unknown> = {}) {
   } as Parameters<typeof buildKnockoutMoments>[0][number];
 }
 
-const follow = (kind: Follow["kind"], id: string): Follow => ({
-  kind,
-  id,
-  alertEnabled: false,
-  alertTier: "companion",
-  followedAt: 1,
-});
+const follow = (kind: Follow["kind"], id: string): Follow =>
+  legacyRefToFollow(kind, id, {
+    alertEnabled: false,
+    alertTier: "companion",
+    followedAt: 1,
+  })!;
 
 describe("buildKnockoutMoments", () => {
   it("returns nothing when the user follows no countries", () => {

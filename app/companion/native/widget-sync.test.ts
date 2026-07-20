@@ -1,16 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { Follow } from "../state/types";
+import { legacyRefToFollow } from "../state/follow-migration";
 import type { NBAGame } from "../today/today-data";
 import { buildLiveEntries } from "./WidgetSync";
 
 function follow(kind: Follow["kind"], id: string): Follow {
-  return {
-    kind,
-    id,
+  return legacyRefToFollow(kind, id, {
     alertEnabled: false,
     alertTier: "quiet",
     followedAt: 1,
-  };
+  })!;
 }
 
 function nbaLive(id: string, away: string, home: string): NBAGame {

@@ -6,28 +6,20 @@ export type FollowKind = "team" | "country" | "series" | "tournament";
 
 export type AlertPreset = "quiet" | "companion" | "all";
 
-export type Follow = {
+/** The canonical follow record (Path B flip, 2026-07-19). Canonical
+ *  identity is momentId + scope + scopeId (see FollowV2 below); `kind` and
+ *  `id` are DERIVED legacy views kept on the runtime object so the ~180
+ *  presentational readers stay correct through the flip. They are safe
+ *  because the derivation is injective and no NFL follow can exist until
+ *  the gate-3 picker ships — sport-DECIDING code must use momentId/scope
+ *  (dispatcher, sync, competitions, spoiler matching already do).
+ *  Construct only via toFollow()/legacyRefToFollow() in follow-migration. */
+export type Follow = FollowV2 & {
+  /** @deprecated Derived presentational view — never sport-deciding.
+   *  scope team→"team", country→"country", series→"series", all→"tournament". */
   kind: FollowKind;
-  /** Stable identifier: team abbr ("NYK"), country code ("BIH"),
-   *  series key ("NYK-PHI"), or tournament slug ("nba-playoffs-2025"). */
+  /** @deprecated Derived presentational view: scopeId ?? momentId. */
   id: string;
-  /** Whether this follow contributes pushes. Capped per plan
-   *  (MAX_FREE_ALERT_SLOTS). Visible-only follows still surface on
-   *  Today + Following — only the push fanout is gated. */
-  alertEnabled: boolean;
-  /** Tier when alertEnabled === true. Ignored otherwise. */
-  alertTier: AlertPreset;
-  /** Per-follow No-Spoilers (the premium "selective" pitch). When true,
-   *  any game this follow is part of is hidden behind the reveal gate,
-   *  even when the global No-Spoilers toggle is off. The global toggle
-   *  (free) hides everything; this hides only what you choose. */
-  hideSpoilers?: boolean;
-  /** Stable creation timestamp. Used to deterministically pick which
-   *  follows get the alert slots after a migration (oldest-first). */
-  followedAt: number;
-  /** @deprecated Pre-v2 field. Storage normalizer migrates this into
-   *  alertTier and removes it. */
-  alertPreset?: AlertPreset;
 };
 
 // ── Path B (gate 1, 2026-07-19): moment + scope follow schema ─────────

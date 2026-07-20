@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { Follow } from "../state/types";
+import { legacyRefToFollow } from "../state/follow-migration";
 import { buildFollowSyncState, followSyncHash } from "./follow-sync";
 
 function follow(over: Partial<Follow> & Pick<Follow, "kind" | "id">): Follow {
+  const { kind, id, ...rest } = over;
   return {
-    alertEnabled: false,
-    alertTier: "companion",
-    followedAt: 1,
-    ...over,
+    ...legacyRefToFollow(kind, id, {
+      alertEnabled: false,
+      alertTier: "companion",
+      followedAt: 1,
+    })!,
+    ...rest,
   };
 }
 

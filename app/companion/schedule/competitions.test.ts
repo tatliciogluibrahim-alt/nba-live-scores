@@ -6,13 +6,17 @@ import {
 } from "./competitions";
 import { TOURNAMENTS } from "../following/data/tournaments";
 import type { Follow } from "../state/types";
+import { legacyRefToFollow } from "../state/follow-migration";
 
 function f(over: Partial<Follow> & Pick<Follow, "kind" | "id">): Follow {
+  const { kind, id, ...rest } = over;
   return {
-    alertEnabled: false,
-    alertTier: "quiet",
-    followedAt: 0,
-    ...over,
+    ...legacyRefToFollow(kind, id, {
+      alertEnabled: false,
+      alertTier: "quiet",
+      followedAt: 0,
+    })!,
+    ...rest,
   };
 }
 
