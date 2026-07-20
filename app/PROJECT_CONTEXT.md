@@ -654,6 +654,28 @@ carried).
 Route count: 84. Gate: lint 0 / 380 tests / build / live-verify, per
 ship-gate.
 
+## Session wrap 2026-07-19 — World Cup concluded, Phase 22 opened
+
+**The World Cup is over: Spain champions (ESP 1-0 ARG, Jul 19).** The
+champion persistence system VERIFIED in production — /api/world-cup/
+schedule serves the frozen champion (ESP, gameId 760517), so the
+wind-down moment, tournament banner, and bracket crown run on real data.
+The dead zone has begun; the Moment Relay (nfl-2026) is armed.
+
+**Phase 22 (NFL) is now the active phase.** Design spec written and
+committed: docs/superpowers/specs/2026-07-19-nfl-phase-22-build-design.md
+— six gates: (1) full Path B follow-schema refactor NOW in the dead zone
+(follow-moments-design.md, reconciled against the significance engine +
+continuity pass; kills the LAC Clippers/Chargers collision), (2) NFL data
+spine + type unions with preseason (~Aug 6) as live test bed, (3)
+Following live, (4) push pipeline (both event families: game-state +
+per-play TDs/big plays), (5) native wiring + full NBA-parity detail
+(core-first ordering), (6) Week 1 go-live — fire the relay ~Sept 1,
+reliance ledger at NFL volume. Opener Wed Sept 9. Decisions locked
+2026-07-19: both event families by Week 1, full Path B now, relay fires
+when picker+pushes both work, full-parity detail with a pre-drawn cut
+line at depth.
+
 ## Session wrap 2026-07-14 — Batch 2 shipped
 
 Batch 2 (the tournament ending) is committed. Full detail in the
