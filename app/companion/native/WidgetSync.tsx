@@ -53,6 +53,7 @@ const LIVE_REFRESH_MS = 15 * 1000;
 
 const ACCENT_NBA = "#e55b2a";
 const ACCENT_WC = "#1e6b3c";
+const ACCENT_NFL = "#1f3a6b";
 
 // Return null on FAILURE (network/HTTP error) vs [] on a genuine empty
 // feed. The caller uses null to decide whether to skip the snapshot
@@ -100,8 +101,16 @@ function widgetLiveStatus(statusText: string): string {
   return /\d/.test(statusText) ? "Live" : statusText;
 }
 
+const ACCENT_BY_SPORT: Record<WidgetUpcoming["sport"], string> = {
+  nba: ACCENT_NBA,
+  wc: ACCENT_WC,
+  nfl: ACCENT_NFL,
+};
+
 function itemToUpcoming(item: UpNextItem): WidgetUpcoming {
-  const sport: WidgetUpcoming["sport"] = item.source === "wc" ? "wc" : "nba";
+  // TodaySource and the widget sport union are the same values now (Phase
+  // 22) — pass the source straight through instead of collapsing to nba/wc.
+  const sport: WidgetUpcoming["sport"] = item.source;
   return {
     id: item.id,
     sport,
@@ -109,7 +118,7 @@ function itemToUpcoming(item: UpNextItem): WidgetUpcoming {
     matchup: item.headline,
     detail: item.detail,
     broadcast: item.watch?.channel,
-    accentHex: sport === "wc" ? ACCENT_WC : ACCENT_NBA,
+    accentHex: ACCENT_BY_SPORT[sport],
     // Widgets are system entry points, not Today links. Keep the canonical
     // game URL source-free so a cold tap uses game detail's safe Today
     // fallback instead of claiming an in-app surface opened it.
@@ -140,10 +149,11 @@ export function buildLiveEntries(
     }
   }
 
-  const hideFor = (away: string, home: string, sport: "nba" | "wc"): boolean => {
+  const hideFor = (away: string, home: string, sport: "nba" | "wc" | "nfl"): boolean => {
     if (noSpoilers) return true;
     return followHidesParticipants(
       follows,
+      // WC matches on country codes; NBA + NFL both match on team codes.
       sport === "wc"
         ? { countryCodes: [away, home] }
         : { teamCodes: [away, home] }
