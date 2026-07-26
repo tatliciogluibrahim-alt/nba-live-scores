@@ -2,6 +2,39 @@
 
 ---
 
+## NFL activation — QA follow-ups + follow-hub polish — 2026-07-20
+
+Live-QA of the freshly activated NFL surfaces surfaced three fixes:
+
+- **Paged NFL Schedule weeks showed last season's final scores.** The
+  season-type-aware week pager sent `?week=N&seasontype=2` to ESPN with no
+  year; ESPN defaults that to the last COMPLETED season (2025, all finals),
+  so every week past the current one rendered 2025 scores on the 2026
+  schedule. Fixed by pinning `dates=<season-year>` on a paged request (the
+  bare "current week" request is left alone — a bare `dates=<year>` spans
+  the whole year and trips ESPN's 100-event cap). Season year derives from
+  NFL_2026_SEASON_OPENER.
+- **Duplicate React key when the same code exists in two sports.** Following
+  both an NFL "CLE" (Browns) and an NBA "CLE" (Cavaliers) produced
+  `team-CLE` twice in several follow-keyed maps — React can drop/duplicate
+  rows, and in the Following dashboard the key also drove per-row expand
+  state (expanding one Cleveland follow expanded both). Fixed by threading
+  the follow's sport into the keys (YouFollowItem gained a `sport` field;
+  FollowingDashboard's keyOf includes momentId). FollowLine's follow-dot
+  color now keys on sport too (an NFL follow was getting the NBA-red dot).
+- **Follow hub led with dead wrapped seasons.** The "Follow more" picker
+  opened with two full "SEASON WRAPPED" ladders (NBA, Summer Soccer) before
+  the one followable moment (NFL), buried third and off-screen. Now the hub
+  leads with followable moments (full ladder); concluded ones demote to a
+  "Recently wrapped" divider, collapsed to head + one-line description
+  (MomentSection gained a `collapsed` mode). Breadth signal stays, clutter
+  goes. Both new-user follow paths now lead with what's followable.
+
+All verified live at 390px (+ 1024px for the hub), zero console errors.
+Gate on each: tsc clean, eslint 0, 633 tests, build clean.
+
+---
+
 ## NFL activated early + app-wide sports-agnostic sweep — 2026-07-20
 
 The World Cup wrapped (final Jul 19). NFL was activated as a first-class

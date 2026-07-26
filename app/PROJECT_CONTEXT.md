@@ -373,6 +373,24 @@ covered by the NFL up-next pointer (built + wired). Full detail in
 `docs/superpowers/specs/2026-07-19-nfl-phase-22-build-design.md`
 (Activation status section).
 
+**Post-activation QA + polish (same session, all shipped + pushed):**
+
+7. **Paged NFL Schedule weeks showed last season's scores** — the pager
+   sent `?week=N&seasontype=2` with no year, so ESPN served the 2025
+   season (all finals). Fixed by pinning `dates=<season-year>` on paged
+   requests only (`app/api/nfl-scores/route.ts`, year from nfl-dates).
+8. **Duplicate React key across sports** — following the same code in two
+   sports (NFL "CLE" + NBA "CLE") produced `team-CLE` twice; React dropped/
+   duplicated rows and shared expand state. Fixed by threading `sport` into
+   the follow keys (`YouFollowItem.sport`, FollowingDashboard `keyOf` +
+   momentId). Found by a collision stress-test in the QA sweep.
+9. **Follow hub led with dead wrapped seasons** — `/following/add` opened
+   with two full "SEASON WRAPPED" ladders before NFL. Now leads with
+   followable moments; concluded ones collapse under a "Recently wrapped"
+   divider (MomentSection `collapsed` mode). All three follow pickers
+   (PickYourMoment, FollowingEmpty, FollowingAdd) are now phase-aware — a
+   candidate for a shared `partitionMomentsByPhase` helper if a 4th appears.
+
 ---
 
 Phases 1–8, A/B/C, and **9–20** are complete (see `CHANGELOG_PRODUCT.md`
