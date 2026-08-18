@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import type { TodayHeadline } from "./today-data";
+import { accentFor, type TodayHeadline } from "./today-data";
 import { Monument } from "../system/Monument";
 import { rungFor, peakEligible } from "../system/register";
 import { GameSpoilerScope, useFollowHidesGame, useReveal } from "../spoiler/reveal";
@@ -34,6 +34,7 @@ let leadEntered = false;
 const TONE_COLOR: Record<TodayHeadline["eyebrow"]["tone"], string> = {
   nba: "var(--nba)",
   wc: "var(--wc)",
+  nfl: "var(--nfl)",
   mute: "var(--mute-1)",
 };
 
@@ -137,8 +138,8 @@ export function FrontPageLead({
   // deck implies game everywhere the data layer builds a lead; the guard
   // keeps a game-less deck (only constructible in tests) on the legacy path.
   if (game && deck) {
-    const sport: "nba" | "wc" = game.source === "wc" ? "wc" : "nba";
-    const accent = sport === "wc" ? "var(--wc)" : "var(--nba)";
+    const sport = game.source;
+    const accent = accentFor(sport);
     // Elimination law (spec §1): WC peaks from the quarterfinals when
     // followed. Today's lead is the user's cared-about pick (pickHero
     // prefers pinned/followed games), so followed=true here; D2 threads
@@ -147,7 +148,11 @@ export function FrontPageLead({
     const peak =
       sport === "wc" && game.stage
         ? peakEligible({ sport: "wc", stage: game.stage, followed: true })
-        : false; // D2: thread NBA gameContext flags for the elimination law
+        : sport === "nfl"
+          // nflLeadGame sets `stage` only for postseason rounds, so a
+          // preseason or regular-season game can never claim the peak field.
+          ? peakEligible({ sport: "nfl", isPlayoff: Boolean(game.stage) })
+          : false; // D2: thread NBA gameContext flags for the elimination law
     const rung = rungFor({ status: game.status, peak });
     const progress = computeLiveActivityProgress(
       sport,
@@ -297,7 +302,12 @@ function LegacyLead({ lead, rise }: { lead: TodayHeadline; rise: string }) {
   const size = headlineSize(lead.headline.length);
   const deck = lead.deck;
   const chips = deck ? chipPair(deck.matchup) : null;
-  const chipBg = deck?.accent === "var(--wc)" ? "var(--wc-soft)" : "var(--nba-soft)";
+  const chipBg =
+    deck?.accent === "var(--wc)"
+      ? "var(--wc-soft)"
+      : deck?.accent === "var(--nfl)"
+        ? "var(--nfl-soft)"
+        : "var(--nba-soft)";
   const lines = deck ? deckLines(deck.detail, deck.broadcast) : null;
 
   return (

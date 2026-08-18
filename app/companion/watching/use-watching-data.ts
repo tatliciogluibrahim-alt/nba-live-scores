@@ -8,6 +8,7 @@ import { FEED_KEYS, readFeed, writeFeed } from "../hooks/feed-cache";
 import type { Game } from "../../nba/types";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
+import { nextNFLWeek } from "../following/data/nfl-dates";
 import {
   buildWatchingPayload,
   nbaToPinned,
@@ -62,14 +63,32 @@ async function fetchWC(): Promise<WCGameLite[]> {
   }
 }
 
-// Current-week NFL games (Phase 22). Empty out of season; a pinned NFL game
-// not in this week's slate resolves via the same path as any other stale pin.
+// Current-week NFL games (Phase 22), plus a one-step lookahead. ESPN keeps
+// serving the current week for days after its last game, so a game the user
+// tracked from Today's NEXT pointer (next week's) would otherwise read as a
+// stale pin the moment they opened Watching. Only fetched when the current
+// week has nothing left to play. Anything further out still resolves via the
+// same path as any other stale pin.
 async function fetchNFL(): Promise<NFLGameLite[]> {
   try {
     const res = await fetch("/api/nfl-scores", { cache: "no-store" });
     if (!res.ok) return [];
-    const json = (await res.json()) as { games?: NFLGameLite[] };
-    return json.games ?? [];
+    const json = (await res.json()) as {
+      games?: NFLGameLite[];
+      week?: number;
+      seasonType?: number;
+    };
+    const games = json.games ?? [];
+    if (games.some((g) => g.status !== "final")) return games;
+    const next = nextNFLWeek(json.seasonType ?? 0, json.week ?? 0);
+    if (!next) return games;
+    const res2 = await fetch(
+      `/api/nfl-scores?week=${next.week}&seasontype=${next.seasonType}`,
+      { cache: "no-store" }
+    );
+    if (!res2.ok) return games;
+    const json2 = (await res2.json()) as { games?: NFLGameLite[] };
+    return [...games, ...(json2.games ?? [])];
   } catch {
     return [];
   }

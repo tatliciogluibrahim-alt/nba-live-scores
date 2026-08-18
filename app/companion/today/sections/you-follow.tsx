@@ -3,7 +3,7 @@
 import { SecHead } from "../../system/SecHead";
 import { AgateRow } from "../../system/AgateRow";
 import { Stamp } from "../../system/Stamp";
-import type { YouFollowItem } from "../today-data";
+import { accentFor, type YouFollowItem } from "../today-data";
 
 // System D "You follow" rail (D4b) — the desktop right-rail register of the
 // user's sports circle. Unboxed agate: a SecHead over one ruled row per
@@ -54,9 +54,11 @@ export function YouFollow({ items }: { items: YouFollowItem[] }) {
 // and an ink "Live" stamp; at rest → muted mark with a faint state stamp.
 function FollowRailRow({ item }: { item: YouFollowItem }) {
   const live = item.tone === "live";
-  // Country follows are Summer Soccer (green); team/series/tournament lean NBA
-  // (orange). Only live rows carry a dot + full ink.
-  const dotColor = item.kind === "country" ? "var(--wc)" : "var(--nba)";
+  // The dot follows the item's SPORT, never a kind guess: "country → soccer,
+  // everything else → NBA" gave a live NFL follow the NBA red dot (the same
+  // class of bug the mobile FollowLine was fixed for on 2026-07-20). Only
+  // live rows carry a dot + full ink.
+  const dotColor = accentFor(item.sport);
   return (
     <AgateRow
       main={

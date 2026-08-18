@@ -14,6 +14,7 @@ import {
 } from "./today-data";
 import type { WCChampion } from "../../lib/wc-champion";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
+import { nextNFLWeek } from "../following/data/nfl-dates";
 
 // Empty payload used during loading and as the safe fallback when both
 // API calls fail. Keeps the page shape stable so we don't flash empties.
@@ -106,12 +107,37 @@ async function fetchWC(): Promise<{
   }
 }
 
+type NFLWeekPayload = {
+  games?: NFLGameLite[];
+  week?: number;
+  seasonType?: number;
+};
+
+// The NFL feed is a WEEK, not a day — and ESPN keeps serving the current
+// week for days after its last game ends. So between weeks (Tue/Wed) every
+// game reads final and a followed team looks like it has nothing coming up,
+// while it actually kicks off Thursday. When the current week has nothing
+// upcoming left, pull the next week too so Today's NEXT pointer keeps
+// working. One extra request, and only on those in-between days.
 async function fetchNFL(): Promise<{ games: NFLGameLite[] }> {
   try {
     const res = await fetch("/api/nfl-scores", { cache: "no-store" });
     if (!res.ok) return { games: [] };
-    const json = (await res.json()) as { games?: NFLGameLite[] };
-    return { games: json.games ?? [] };
+    const json = (await res.json()) as NFLWeekPayload;
+    const games = json.games ?? [];
+    if (games.some((g) => g.status !== "final")) return { games };
+
+    const next = nextNFLWeek(json.seasonType ?? 0, json.week ?? 0);
+    if (!next) return { games };
+    const res2 = await fetch(
+      `/api/nfl-scores?week=${next.week}&seasontype=${next.seasonType}`,
+      { cache: "no-store" }
+    );
+    if (!res2.ok) return { games };
+    const json2 = (await res2.json()) as NFLWeekPayload;
+    // Keep the wrapped week: Quiet Wrap reads recent finals from the same
+    // array, and its own 3-day window decides what still belongs there.
+    return { games: [...games, ...(json2.games ?? [])] };
   } catch {
     return { games: [] };
   }
@@ -254,7 +280,8 @@ export function useTodayData() {
       const current = dataRef.current;
       const hasLive =
         current.nba.some((g) => g.status === "live") ||
-        current.wc.some((g) => g.status === "live");
+        current.wc.some((g) => g.status === "live") ||
+        current.nfl.some((g) => g.status === "live");
       return hasLive ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
     }
   );

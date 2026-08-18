@@ -93,11 +93,9 @@ export function TodayClient() {
   // docs/superpowers/design-directions/d-mix). `leadHasMonument` mirrors
   // FrontPageLead's Monument branch (game && deck); only then does an "01"
   // render.
-  const leadHasMonument = Boolean(lead?.game && lead?.deck);
   const bandCount = hydrated
     ? bandShownCount(scoreboard, lead?.game?.gameId)
     : 0;
-  const slateStart = slateStartIndex(leadHasMonument, bandCount);
   // UP NEXT renders (and consumes indices) only when it isn't folded into the
   // resting state; QUIET WRAP picks up right after whatever UP NEXT showed.
   // ── Today slim (S1, 2026-07-06): today + exactly one pointer ──
@@ -115,6 +113,13 @@ export function TodayClient() {
     (lead.live ||
       (lead.deck != null &&
         todayUpNext.some((i) => i.href === lead.deck?.href)));
+
+  // Only a Monument that actually RENDERS may claim index 01. A future-day
+  // lead (quiet Tuesday, next game Saturday) has game+deck but renders as
+  // the NEXT pointer instead — counting it left the slate starting at 02
+  // with no 01 anywhere on screen.
+  const leadHasMonument = Boolean(lead?.game && lead?.deck) && showLead;
+  const slateStart = slateStartIndex(leadHasMonument, bandCount);
 
   const todayVisible = todayUpNext.filter(
     (i) => !lead?.deck?.href || !showLead || i.href !== lead.deck.href

@@ -21,10 +21,15 @@ export function slateStartIndex(hasLead: boolean, bandShownCount: number): numbe
   return (hasLead ? 1 : 0) + bandShownCount + 1;
 }
 
-/** Split a "AWAY vs HOME" matchup/headline into its two codes. Falls back to
- *  the whole string as the away side if there's no " vs " separator. */
+/** Split an "AWAY vs HOME" / "AWAY at HOME" matchup or headline into its two
+ *  codes. Falls back to the whole string as the away side when neither
+ *  separator is present. */
 export function matchupCodes(s: string): { away: string; home: string } {
-  const parts = s.split(/\s+vs\s+/i).map((p) => p.trim());
+  // Two connectors: soccer/basketball say "vs", football says "at" (the
+  // away team travels). Splitting on "vs" alone left an NFL headline
+  // ("LAC at KC") unparsed, so the row rendered "LAC at KC · " with an
+  // empty home cell.
+  const parts = s.split(/\s+(?:vs|at)\s+/i).map((p) => p.trim());
   return { away: parts[0] ?? s, home: parts[1] ?? "" };
 }
 
@@ -53,6 +58,18 @@ export function upNextCountLabel(items: { source: TodaySource }[]): string {
   const allWc = n > 0 && items.every((i) => i.source === "wc");
   const noun = allWc ? (n === 1 ? "match" : "matches") : n === 1 ? "game" : "games";
   return `${n} ${noun}`.toUpperCase();
+}
+
+/** The NEXT pointer's note cell. The pointer is ONE row at phone width
+ *  (matchup · note · stamp · arrow), so a long note squeezes the matchup
+ *  into a two-line wrap — seen at 390px with NFL's "Preseason · Wk 3 ·
+ *  NFL Net". The channel is the least load-bearing part of a pointer (the
+ *  stamp answers "when", the row answers "who"), so it drops when the
+ *  context already fills the line. Soccer's "Group D · FOX" and the NBA's
+ *  "Game 6 · TNT" are well under the cap and keep both. */
+export function pointerNote(context: string, channel?: string): string {
+  const full = [context, channel].filter(Boolean).join(" · ");
+  return full.length > 20 ? context || full : full;
 }
 
 /** QUIET WRAP count label — sport-neutral wrapped noun ("2 WRAPPED"). */

@@ -331,6 +331,56 @@ When making code changes:
 
 ## Current Priority
 
+### Session wrap 2026-08-18 — NFL live-render branches (August pre-season build)
+
+Preseason is live (week 2 wrapped Aug 15-16, week 3 kicks off Aug 20), so
+the render branches deferred in July landed and were verified against the
+real feed. All shipped + gated (tsc, eslint 0, **661 tests**, build clean at
+**94 route lines** — the expected page count; a drop is a regression).
+
+1. **Today reads NFL** end to end: `pickHero` NFL live hero (navy accent,
+   "Chiefs are live.", cross-sport followed-live count), scoreboard tiles +
+   ALSO LIVE band, Quiet Wrap, recapFinals/slateComplete, and the
+   You-follow chip. Type unions widened once (`TodayAccent`,
+   `HeadlineTone`, `RecapFinal.source`) so a half-threaded sport won't
+   compile.
+2. **Football's register**: "at" not "vs", nicknames in the lead
+   ("Chargers at Chiefs today."), "today" not "tonight", "One-score game."
+   at eight points, season-type-aware week labels everywhere (a preseason
+   game never reads "Week 2").
+3. **Preseason alerts gated for real** (`app/lib/push/nfl-preseason.ts`).
+   scan-nfl was detecting AND dispatching; the only thing stopping a push
+   was "nobody follows NFL yet", which stopped being true on Jul 20.
+   Detection still runs (gate-4 verification), fan-out is held + logged.
+4. **Between-weeks blindness fixed.** ESPN serves a finished week for days,
+   so Today showed "Nothing live or coming up" while a followed team played
+   Thursday. Today, Watching, and game detail take one step to the next
+   week when the current one is played out (`nextNFLWeek`).
+5. Live-QA fixes: `matchupCodes` now parses "AWAY at HOME" (the NEXT
+   pointer rendered "LAC at KC · " with an empty cell); the slate no longer
+   starts at 02 on pointer days; the desktop You-follow dot follows sport,
+   not a kind guess; the NEXT row stays one line at 390px (`pointerNote`).
+
+**Verified live** at 390px + 1280px, light + dark, against the real
+preseason feed and a mocked live slate. Harness: `scripts/nfl-shots.mjs`
+(QA_STATE=real|live|nospoilers, QA_THEME=light|dark).
+
+**Cron**: setup steps + the job inventory now live in `docs/CRON_SETUP.md`
+(previously nowhere). Two additions that pass turned up: `/api/push/inspect`
+reported `lastScanAt` for wc + nba only, so the NFL heartbeat was invisible
+even though scan-nfl stamped it; and scan-nfl's per-game summary fetch had
+no timeout, so one hung ESPN connection could stall a 16-game Sunday tick
+past the scheduler's 30s limit. Both fixed.
+
+**Still open for Phase 22:** gate 4's live-slate verification (create the
+cron-job.org entry per the runbook, run it against week 3, Aug 20-22, and
+read the held-event logs), gate 5 (Live Activity on a real NFL game, `?preview=
+nfl-sunday`), and gate 6 (relay + reliance prompt NFL rows — deliberately
+NOT added while alerts are held, since asking "were the alerts enough?"
+about a game that fired none would be a lie).
+
+---
+
 ### Session wrap 2026-07-20 — NFL activated early (World Cup wrapped)
 
 The World Cup concluded (final Jul 19). Per user decision, **NFL was

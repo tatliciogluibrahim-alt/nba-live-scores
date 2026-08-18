@@ -4,6 +4,7 @@ import { computeLiveActivityProgress } from "../../lib/push/live-activity-progre
 import { GameSpoilerScope, useFollowHidesGame } from "../spoiler/reveal";
 import { useNoSpoilers } from "../providers";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
+import { nflWeekLabel } from "../following/data/nfl-dates";
 import type { LiveActivityStartInput } from "../native/live-activity";
 import { Monument } from "../system/Monument";
 import { SecHead } from "../system/SecHead";
@@ -26,9 +27,7 @@ import { TrackControl } from "./TrackControl";
 const NFL_ACCENT_HEX = "#1f3a6b";
 
 function weekTail(game: NFLGameLite): string {
-  if (game.seasonType === 1) return `Preseason · Wk ${game.week}`;
-  if (game.seasonType === 3) return `Playoffs · Wk ${game.week}`;
-  return `Week ${game.week}`;
+  return nflWeekLabel(game.seasonType, game.week);
 }
 
 export function NFLGameDetail({

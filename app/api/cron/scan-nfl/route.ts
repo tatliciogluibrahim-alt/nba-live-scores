@@ -6,10 +6,15 @@
 // game detail), then dispatches via the shared dispatcher.
 //
 // Drive externally (cron-job.org). 30s cadence during live windows is
-// plenty for football's slow clock. No user pushes fire during preseason
-// (nfl-design.md) — the scan still runs so the detectors + state cache are
-// exercised against live data; alert fan-out is gated by follows, and no
-// preseason follower audience exists yet.
+// plenty for football's slow clock.
+//
+// PRESEASON: detection runs, dispatch does not. Phase 22 puts preseason
+// pushes out of scope (nfl-design.md) — a follower who turned alerts on for
+// September must not be woken by an August exhibition game. Relying on "no
+// preseason audience exists yet" was not a gate: NFL follows have been
+// live since 2026-07-20 and carry alertEnabled. So preseason events are
+// detected, counted, and logged (that IS the gate-4 verification against
+// live data) and then held before fan-out.
 
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
@@ -29,6 +34,10 @@ import {
   nflStateChanged,
 } from "../../../lib/push/nfl-state-cache";
 import { readFiredNFLPlays, writeFiredNFLPlays } from "../../../lib/push/nfl-play-cache";
+import {
+  heldPreseasonGameIds,
+  partitionPreseasonEvents,
+} from "../../../lib/push/nfl-preseason";
 import { isStateRelevant } from "../../../lib/push/scan-relevance";
 import { incrCounter, writeLastScanAt } from "../../../lib/push/ops-metrics";
 import type { PushEvent } from "../../../lib/push/event-detector";
@@ -40,6 +49,8 @@ export const maxDuration = 60;
 
 const SUMMARY_URL =
   "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=";
+const SUMMARY_TIMEOUT_MS = 5000;
+
 
 function resolveBaseUrl(req: Request): string {
   return new URL(req.url).origin;
@@ -71,13 +82,22 @@ function toFresh(g: NFLGameLite): FreshNFLGameState {
 
 // Fetch a live game's summary for the per-play detector. Returns empty
 // arrays on any failure — a missed play is better than a crashed scan.
+//
+// Timed out for the same reason the scoreboard fetch is: a Sunday slate
+// walks up to 16 of these sequentially, and one hung ESPN connection would
+// stall the whole tick past the scheduler's request timeout (cron-job.org
+// gives up at 30s and counts it a failure; enough consecutive failures and
+// it disables the job).
 async function fetchSummary(
   gameId: string
 ): Promise<{ scoringPlays: NFLScoringPlay[]; drivePlays: NFLDrivePlay[] }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SUMMARY_TIMEOUT_MS);
   try {
     const res = await fetch(`${SUMMARY_URL}${gameId}`, {
       cache: "no-store",
       headers: { Accept: "application/json" },
+      signal: controller.signal,
     });
     if (!res.ok) return { scoringPlays: [], drivePlays: [] };
     const json = (await res.json()) as {
@@ -91,6 +111,8 @@ async function fetchSummary(
     };
   } catch {
     return { scoringPlays: [], drivePlays: [] };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -120,6 +142,8 @@ export async function GET(req: Request) {
 
   const nowMs = Date.now();
   const relevant = games.filter((g) => isStateRelevant(g.status, g.date, nowMs));
+  // Games whose events must never reach a device this phase.
+  const heldGameIds = heldPreseasonGameIds(relevant);
 
   await incrCounter("cron.scans");
   await writeLastScanAt("nfl");
@@ -183,10 +207,24 @@ export async function GET(req: Request) {
     );
   }
 
+  // Preseason hold — detected and logged above, dropped before fan-out.
+  const { sendable, held: heldEvents } = partitionPreseasonEvents(
+    allEvents,
+    heldGameIds
+  );
+  const held = heldEvents.length;
+  if (held > 0) {
+    console.log("scan-nfl preseason hold", {
+      held,
+      games: [...heldGameIds],
+      types: heldEvents.map((e) => `${e.gameId}:${e.type}`),
+    });
+  }
+
   let dispatchResult: Awaited<ReturnType<typeof dispatchEvents>> | null = null;
-  if (allEvents.length > 0) {
+  if (sendable.length > 0) {
     try {
-      dispatchResult = await dispatchEvents(allEvents);
+      dispatchResult = await dispatchEvents(sendable);
     } catch (err) {
       return NextResponse.json(
         { ok: false, error: err instanceof Error ? err.message : "dispatch failed" },
@@ -200,6 +238,8 @@ export async function GET(req: Request) {
     processed,
     stateErrors,
     events: allEvents.map((e) => `${e.gameId}:${e.type}`),
+    // Detected but deliberately not delivered (preseason).
+    heldPreseason: held,
     delivered: dispatchResult?.deliveries.filter((d) => d.delivered).length ?? 0,
     skipped: dispatchResult?.deliveries.filter((d) => !d.delivered).length ?? 0,
     pruned: dispatchResult?.pruned ?? 0,

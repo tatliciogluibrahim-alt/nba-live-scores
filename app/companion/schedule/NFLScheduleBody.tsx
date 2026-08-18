@@ -6,45 +6,17 @@ import { SecHead } from "../system/SecHead";
 import { kickoffStamp } from "../today/agate-slate";
 import { useNFLSchedule } from "./useNFLSchedule";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
+import {
+  nflPagerLabel,
+  nflSeasonBounds,
+  nflWeekHeader,
+} from "../following/data/nfl-dates";
 
 // NFL Schedule — the By-week view (adaptive view model: NFL's chronological
 // spine is the week, not the day). A week header + one ruled agate row per
 // game, with a prev/next week pager. Standings is a placeholder until the
 // season produces real records. The schedule is public data, browsable
 // pre-season; live/final score states light up once games are played.
-
-// ESPN season types: 1 preseason · 2 regular · 3 postseason. The week ceiling
-// and labels differ per type, so the pager must never assume "of 18".
-function seasonBounds(seasonType: number): { min: number; max: number } {
-  if (seasonType === 1) return { min: 1, max: 4 }; // HOF week through preseason 3
-  if (seasonType === 3) return { min: 1, max: 5 }; // Wild Card through Super Bowl
-  return { min: 1, max: 18 }; // regular season
-}
-
-// Postseason weeks have names, not numbers. Week 4 (old Pro Bowl slot) is
-// skipped in the modern schedule, so it falls through to the generic label.
-function postseasonLabel(week: number): string {
-  const names: Record<number, string> = {
-    1: "Wild Card",
-    2: "Divisional",
-    3: "Conf. Championship",
-    5: "Super Bowl",
-  };
-  return names[week] ?? `Playoffs · Wk ${week}`;
-}
-
-function weekLabel(seasonType: number, week: number): string {
-  if (seasonType === 1) return `Preseason · Wk ${week}`;
-  if (seasonType === 3) return postseasonLabel(week);
-  return `Week ${week} of 18`;
-}
-
-// Compact header name (the SecHead eyebrow), season-type aware.
-function weekHeader(seasonType: number, week: number): string {
-  if (seasonType === 1) return `Preseason Week ${week}`;
-  if (seasonType === 3) return postseasonLabel(week);
-  return `Week ${week}`;
-}
 
 export function NFLScheduleBody({
   views,
@@ -70,7 +42,7 @@ export function NFLScheduleBody({
   // Prefer the pinned season type (a page action) over the last fetch, so the
   // label doesn't flicker mid-fetch; fall back to the feed's current type.
   const shownSeasonType = seasonType ?? schedule.seasonType ?? 2;
-  const { min, max } = seasonBounds(shownSeasonType);
+  const { min, max } = nflSeasonBounds(shownSeasonType);
   const shownWeek = schedule.week || min;
 
   const page = (delta: number) => {
@@ -86,7 +58,7 @@ export function NFLScheduleBody({
       {activeView === "byweek" ? (
         <>
           <WeekPager
-            label={weekLabel(shownSeasonType, shownWeek)}
+            label={nflPagerLabel(shownSeasonType, shownWeek)}
             canPrev={shownWeek > min}
             canNext={shownWeek < max}
             onPrev={() => page(-1)}
@@ -102,7 +74,7 @@ export function NFLScheduleBody({
           ) : (
             <section>
               <SecHead
-                name={weekHeader(shownSeasonType, shownWeek)}
+                name={nflWeekHeader(shownSeasonType, shownWeek)}
                 count={String(schedule.games.length)}
               />
               {schedule.games.map((g) => (

@@ -6,8 +6,9 @@ import type { Follow, PinnedGame, AlertPreset, Sport } from "../state/types";
 import type { WCChampion } from "../../lib/wc-champion";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import { momentSport, teamFollowCodes } from "../state/moments";
-import { NFL_2026_SEASON_OPENER } from "../following/data/nfl-dates";
+import { NFL_2026_SEASON_OPENER, nflWeekLabel } from "../following/data/nfl-dates";
 import { getCountry } from "../following/data/countries";
+import { getNFLTeam } from "../following/data/nfl-teams";
 import { getTournament } from "../following/data/tournaments";
 import { tournamentPhase } from "../following/data/tournament-phase";
 import {
@@ -72,9 +73,15 @@ export type WCMatchEventLite = {
 export type TodayHeroKind =
   | "nba-live"
   | "wc-live"
+  | "nfl-live"
   | "nba-upcoming"
   | "wc-countdown"
   | null;
+
+/** Accent token for a sport-tinted surface (hero, deck, eyebrow). One
+ *  union so a new sport can't be half-threaded: widening it here makes
+ *  every consumer branch fail to compile until it handles the new case. */
+export type TodayAccent = "var(--nba)" | "var(--wc)" | "var(--nfl)";
 
 export type TodayHero = {
   kind: NonNullable<TodayHeroKind>;
@@ -86,7 +93,7 @@ export type TodayHero = {
    *  line under the deck. */
   stake?: string;
   live: boolean;
-  accent: "var(--nba)" | "var(--wc)";
+  accent: TodayAccent;
   /** True when this hero is being surfaced because the user pinned the game. */
   pinned?: boolean;
   /** When the live hero is a team/country you follow, the followed subject's
@@ -128,6 +135,10 @@ export type YouFollowItem = {
 /** Tag every Today item with the source league so consumers can branch
  *  without sniffing optional fields like `stage`. */
 export type TodaySource = "nba" | "wc" | "nfl";
+
+/** Sport register for headline copy + eyebrow color. Mirrors TodaySource;
+ *  named separately because the headline also has a sport-less "mute". */
+export type HeadlineTone = TodaySource;
 
 export type UpNextItem = {
   source: TodaySource;
@@ -331,7 +342,7 @@ export type KnockoutMomentItem = {
 };
 
 export type RecapFinal = {
-  source: "nba" | "wc";
+  source: TodaySource;
   id: string;
   awayCode: string;
   homeCode: string;
@@ -501,6 +512,14 @@ function gameIncludesTeam(g: NBAGame, abbr: string): boolean {
   return g.away.abbreviation === abbr || g.home.abbreviation === abbr;
 }
 
+function gameIncludesNflTeam(g: NFLGameLite, abbr: string): boolean {
+  const code = abbr.toUpperCase();
+  return (
+    g.away.abbreviation.toUpperCase() === code ||
+    g.home.abbreviation.toUpperCase() === code
+  );
+}
+
 function gameIncludesCountry(g: WCGameLite, code: string): boolean {
   return g.away.abbreviation === code || g.home.abbreviation === code;
 }
@@ -596,6 +615,31 @@ export function nbaLeadGame(g: NBAGame): TodayLeadGame {
   };
 }
 
+export function nflLeadGame(g: NFLGameLite): TodayLeadGame {
+  const upcoming = g.status === "upcoming";
+  return {
+    source: "nfl",
+    gameId: g.id,
+    awayCode: g.away.abbreviation,
+    homeCode: g.home.abbreviation,
+    awayName: g.away.name,
+    homeName: g.home.name,
+    awayScore: upcoming ? null : g.away.score,
+    homeScore: upcoming ? null : g.home.score,
+    status: g.status,
+    // "Q3 8:24" — parseable by computeLiveActivityProgress (15-min quarters).
+    statusLine: g.statusText,
+    // Postseason only — the register's elimination law peaks on playoff
+    // football, never on a preseason or regular-season game. Doubles as the
+    // isPlayoff signal for consumers that only see TodayLeadGame.
+    stage: g.seasonType === 3 ? nflWeekLabel(g.seasonType, g.week) : undefined,
+    // Season-type aware: a preseason game must never read "Week 2" as if it
+    // counted, and a playoff week gets its name ("Wild Card").
+    contextLabel: nflWeekLabel(g.seasonType, g.week),
+    spoilerSubject: `${g.away.abbreviation} at ${g.home.abbreviation}`,
+  };
+}
+
 // ── Hero pick ─────────────────────────────────────────────────────────
 // One earned, personal moment. A game can lead only when it is pinned or
 // covered by a team, country, series, or tournament follow. Today never fills
@@ -613,6 +657,7 @@ function scoreClosenessRank(g: NBAGame): number {
 function pickHero(
   nba: NBAGame[],
   wc: WCGameLite[],
+  nfl: NFLGameLite[],
   follows: Follow[],
   pinned: PinnedGame[],
   now: Date = new Date()
@@ -638,6 +683,14 @@ function pickHero(
       f.kind === "tournament" &&
       getTournament(f.id)?.accent === "var(--wc)"
   );
+  // Path B collision guard again: NFL team codes resolve through the NFL
+  // moment only (an NBA "LAC" follow must never light up the Chargers).
+  const followedNflTeams = teamFollowCodes(follows, "nfl");
+  const followsNflTour = follows.some(
+    (f) =>
+      f.kind === "tournament" &&
+      getTournament(f.id)?.accent === "var(--nfl)"
+  );
 
   const nbaIsPersonal = (g: NBAGame): boolean => {
     if (followsNbaTour) return true;
@@ -652,24 +705,33 @@ function pickHero(
   const wcIsPersonal = (g: WCGameLite): boolean =>
     followsWcTour ||
     [...followedCountries].some((code) => gameIncludesCountry(g, code));
+  const nflIsPersonal = (g: NFLGameLite): boolean =>
+    followsNflTour ||
+    [...followedNflTeams].some((abbr) => gameIncludesNflTeam(g, abbr));
 
   const live = [...nba.filter((g) => g.status === "live")].sort(
     (a, b) => scoreClosenessRank(a) - scoreClosenessRank(b)
   );
   const wcLive = wc.filter((g) => g.status === "live");
+  const nflLive = nfl.filter((g) => g.status === "live");
 
   // Pinned wins across sports, then a followed NBA game wins a same-strength
   // tie with a followed WC match. With no personal match, both remain null.
   const pinnedNba = live.find((g) => pinnedIds.has(g.id));
   const pinnedWc = wcLive.find((g) => pinnedIds.has(g.id));
+  const pinnedNfl = nflLive.find((g) => pinnedIds.has(g.id));
   const followedNba = live.find(nbaIsPersonal);
   const followedWc = wcLive.find(wcIsPersonal);
+  const followedNfl = nflLive.find(nflIsPersonal);
   let heroLive: NBAGame | null = null;
   let heroWcLive: WCGameLite | null = null;
+  let heroNflLive: NFLGameLite | null = null;
   if (pinnedNba) heroLive = pinnedNba;
   else if (pinnedWc) heroWcLive = pinnedWc;
+  else if (pinnedNfl) heroNflLive = pinnedNfl;
   else if (followedNba) heroLive = followedNba;
   else if (followedWc) heroWcLive = followedWc;
+  else if (followedNfl) heroNflLive = followedNfl;
 
   // Followed-live counts (both sports) drive the personal headline rungs
   // ("United States are live." / "Two of yours are live."). A WC tournament
@@ -686,7 +748,11 @@ function pickHero(
       pinnedIds.has(g.id) ||
       nbaIsPersonal(g)
   ).length;
-  const followedLiveCount = followedWcLiveCount + followedNbaLiveCount;
+  const followedNflLiveCount = nflLive.filter(
+    (g) => pinnedIds.has(g.id) || nflIsPersonal(g)
+  ).length;
+  const followedLiveCount =
+    followedWcLiveCount + followedNbaLiveCount + followedNflLiveCount;
 
   if (heroWcLive) {
     const isPinned = pinnedIds.has(heroWcLive.id);
@@ -753,6 +819,39 @@ function pickHero(
       spoilerSubject: heroLive.matchup,
       watch,
       game: nbaLeadGame(heroLive),
+    };
+  }
+
+  if (heroNflLive) {
+    const isPinned = pinnedIds.has(heroNflLive.id);
+    const weekLabel = nflWeekLabel(heroNflLive.seasonType, heroNflLive.week);
+    const baseEyebrow = `NFL · ${weekLabel}`;
+    // Nickname, not the code: "Chiefs are live." reads like a person wrote it.
+    const subjectAbbr = [...followedNflTeams].find((abbr) =>
+      gameIncludesNflTeam(heroNflLive, abbr)
+    );
+    const matchup = `${heroNflLive.away.abbreviation} at ${heroNflLive.home.abbreviation}`;
+    return {
+      kind: "nfl-live",
+      eyebrow: isPinned ? `Pinned · ${baseEyebrow}` : baseEyebrow,
+      headline: deriveNFLLiveHeadline(heroNflLive),
+      subject: subjectAbbr ? getNFLTeam(subjectAbbr)?.name : undefined,
+      followedLiveCount,
+      context:
+        followedNflLiveCount > 1
+          ? `${followedNflLiveCount} NFL games live now.`
+          : undefined,
+      live: true,
+      accent: "var(--nfl)",
+      pinned: isPinned,
+      href: withGameOrigin(`/game/${heroNflLive.id}`, "today"),
+      spoilerMatchup: matchup,
+      spoilerKind: "live",
+      spoilerSubject: matchup,
+      watch: heroNflLive.broadcasts[0]
+        ? { channel: heroNflLive.broadcasts[0] }
+        : undefined,
+      game: nflLeadGame(heroNflLive),
     };
   }
 
@@ -842,6 +941,22 @@ function deriveLiveHeadline(g: NBAGame): string {
   return "Game is live.";
 }
 
+// Football-bespoke live headline. Calm, score-free — the score lives on
+// the detail screen. One possession is 8 points (TD + two-point try), so
+// that, not basketball's 3, is football's "still anyone's game" line.
+export function deriveNFLLiveHeadline(g: NFLGameLite): string {
+  const text = (g.statusText ?? "").toLowerCase();
+  if (text.includes("half")) return "Halftime.";
+  const diff = Math.abs(g.home.score - g.away.score);
+  const isOT = g.period >= 5 || text.includes("ot");
+  if (isOT) return "Overtime.";
+  if (g.period >= 4 && diff <= 8) return "One-score game.";
+  if (g.period === 4) return "Fourth quarter underway.";
+  if (g.period === 3) return "Third quarter underway.";
+  if (g.period === 2) return "Second quarter underway.";
+  return "Game is live.";
+}
+
 // Soccer-bespoke live headline for the hero. Calm, score-free.
 export function deriveWCLiveHeadline(g: WCGameLite): string {
   const text = (g.statusText ?? "").toLowerCase();
@@ -863,6 +978,7 @@ export function deriveWCLiveHeadline(g: WCGameLite): string {
 function buildYouFollow(
   nba: NBAGame[],
   wc: WCGameLite[],
+  nfl: NFLGameLite[],
   follows: Follow[],
   now = new Date()
 ): YouFollowItem[] {
@@ -873,11 +989,36 @@ function buildYouFollow(
       // NFL "CLE" (Browns) from an NBA "CLE" (Cavaliers).
       const sport: Sport = momentSport(f.momentId) ?? "nba";
       // NFL team follow (Path B): never match NBA games or the NBA team
-      // page (the LAC collision). Route to the NFL schedule for now — the
-      // NFL team-detail page is a later build. NFL live-game status in the
-      // chip is deferred to preseason (nfl games aren't threaded here yet).
+      // page (the LAC collision). With a game on the current-week feed the
+      // chip carries its real state; otherwise it routes to the NFL
+      // schedule (the NFL team-detail page is a later build).
       if (f.kind === "team" && sport === "nfl") {
         const code = f.scopeId ?? f.id;
+        const g = pickRelevantGame(
+          nfl.filter((x) => gameIncludesNflTeam(x, code))
+        );
+        if (g) {
+          return {
+            kind: "team",
+            sport,
+            id: code,
+            label: code,
+            chip: code,
+            statusLabel:
+              g.status === "live"
+                ? "Live"
+                : g.status === "upcoming"
+                  ? formatGameDay(g.date, now)
+                  : "Final",
+            tone:
+              g.status === "live"
+                ? "live"
+                : g.status === "upcoming"
+                  ? "upcoming"
+                  : "final",
+            href: withGameOrigin(`/game/${g.id}`, "today"),
+          };
+        }
         return {
           kind: "team",
           sport,
@@ -1035,13 +1176,17 @@ function nflToUpNext(g: NFLGameLite, pinned: boolean, personal: boolean): UpNext
     personal,
     eyebrow: `NFL · ${formatGameDay(g.date)}`,
     headline: `${g.away.abbreviation} at ${g.home.abbreviation}`,
-    detail: `${formatGameTime(g.date)} · Week ${g.week}`,
+    // Season-type aware — a preseason game read "Week 2" as if it counted.
+    detail: `${formatGameTime(g.date)} · ${nflWeekLabel(g.seasonType, g.week)}`,
     dateIso: g.date,
     isToday: isSameDay(g.date),
     dayWord: headlineDayWord(g.date),
     watch: g.broadcasts[0] ? { channel: g.broadcasts[0] } : undefined,
     href: withGameOrigin(`/game/${g.id}`, "today"),
     spoilerSubject: `${g.away.name} at ${g.home.name}`,
+    // Without this the NFL lead fell back to the legacy editorial render
+    // instead of the System D Monument (which needs the raw game facts).
+    game: nflLeadGame(g),
   };
 }
 
@@ -1268,6 +1413,7 @@ const QUIET_WRAP_WINDOW_DAYS = 3;
 function personalFinalMatchers(follows: Follow[]): {
   nba: (game: NBAGame) => boolean;
   wc: (game: WCGameLite) => boolean;
+  nfl: (game: NFLGameLite) => boolean;
 } {
   // Path B collision guard: only NBA team follows match NBA games (an NFL
   // "LAC" follow must never light up the NBA Clippers).
@@ -1287,6 +1433,10 @@ function personalFinalMatchers(follows: Follow[]): {
   );
   const followsWcTournament = followedTournaments.some(
     (t) => t.accent === "var(--wc)"
+  );
+  const followedNflTeams = teamFollowCodes(follows, "nfl");
+  const followsNflTournament = followedTournaments.some(
+    (t) => t.accent === "var(--nfl)"
   );
 
   return {
@@ -1308,6 +1458,9 @@ function personalFinalMatchers(follows: Follow[]): {
     wc: (game) =>
       followsWcTournament ||
       [...followedCountries].some((code) => gameIncludesCountry(game, code)),
+    nfl: (game) =>
+      followsNflTournament ||
+      [...followedNflTeams].some((abbr) => gameIncludesNflTeam(game, abbr)),
   };
 }
 
@@ -1324,6 +1477,7 @@ function isSameLocalDay(date: string, now: Date): boolean {
 function buildRecapFinals(
   nbaRecent: NBAGame[],
   wc: WCGameLite[],
+  nfl: NFLGameLite[],
   follows: Follow[],
   now: Date
 ): RecapFinal[] {
@@ -1367,12 +1521,28 @@ function buildRecapFinals(
       homeCode: game.home.abbreviation,
     });
   }
+  for (const game of nfl) {
+    if (
+      game.status !== "final" ||
+      !isSameLocalDay(game.date, now) ||
+      !personal.nfl(game)
+    ) {
+      continue;
+    }
+    add({
+      source: "nfl",
+      id: game.id,
+      awayCode: game.away.abbreviation,
+      homeCode: game.home.abbreviation,
+    });
+  }
   return finals;
 }
 
 function buildQuietWrap(
   nbaRecent: NBAGame[],
   wc: WCGameLite[],
+  nfl: NFLGameLite[],
   follows: Follow[],
   now = new Date()
 ): QuietWrapItem[] {
@@ -1390,7 +1560,8 @@ function buildQuietWrap(
   // last night's NBA game.
   type Entry =
     | { source: "nba"; ms: number; personal: boolean; g: NBAGame }
-    | { source: "wc"; ms: number; personal: boolean; g: WCGameLite };
+    | { source: "wc"; ms: number; personal: boolean; g: WCGameLite }
+    | { source: "nfl"; ms: number; personal: boolean; g: NFLGameLite };
 
   const nbaEntries: Entry[] = nbaRecent
     .filter((g) => g.status === "final" && inWindow(g.date))
@@ -1410,10 +1581,19 @@ function buildQuietWrap(
       g,
     }));
 
+  const nflEntries: Entry[] = nfl
+    .filter((g) => g.status === "final" && inWindow(g.date))
+    .map((g) => ({
+      source: "nfl",
+      ms: new Date(g.date).getTime(),
+      personal: personal.nfl(g),
+      g,
+    }));
+
   // Today's contract is "only what you follow". There is no discovery fill:
   // a fresh user sees no wrap, and a returning user never gets unrelated
   // finals just because fewer than three personal games have wrapped.
-  const selected = [...nbaEntries, ...wcEntries]
+  const selected = [...nbaEntries, ...wcEntries, ...nflEntries]
     .filter((e) => e.personal)
     .sort((a, b) => b.ms - a.ms)
     .slice(0, 3);
@@ -1424,6 +1604,24 @@ function buildQuietWrap(
     // Wrap card is a final-score line, not a series label.
     const matchup = `${e.g.away.abbreviation} vs ${e.g.home.abbreviation}`;
     const scoreLine = `${e.g.away.score} – ${e.g.home.score}`;
+
+    if (e.source === "nfl") {
+      const g = e.g;
+      return {
+        source: "nfl",
+        id: g.id,
+        // The week label carries the honesty a preseason final needs — the
+        // row must never read like a game that counted.
+        eyebrow: `${dayLabel} · ${nflWeekLabel(g.seasonType, g.week)}`,
+        // Football says "at", not "vs" — the away team travels.
+        matchup: `${g.away.abbreviation} at ${g.home.abbreviation}`,
+        scoreLine,
+        context: "Final.",
+        spoilerSubject: `${g.away.abbreviation} at ${g.home.abbreviation}`,
+        kind: "final",
+        href: withGameOrigin(`/game/${g.id}`, "today"),
+      };
+    }
 
     if (e.source === "wc") {
       return {
@@ -1987,20 +2185,24 @@ function buildPinnedSummary(
 function buildScoreboard(
   nba: NBAGame[],
   wc: WCGameLite[],
+  nfl: NFLGameLite[],
   follows: Follow[],
   pinned: PinnedGame[]
 ): ScoreboardTile[] {
   const pinnedIds = new Set(pinned.map((p) => p.gameId));
   const nbaFollowCoverage = buildNBAFollowCoverage(follows);
   const wcCodes = new Set<string>();
+  const nflCodes = teamFollowCodes(follows, "nfl");
   let wcTour = false;
   let nbaTour = false;
+  let nflTour = false;
   for (const f of follows) {
     if (f.kind === "country") wcCodes.add(f.id.toUpperCase());
     else if (f.kind === "tournament") {
       const accent = getTournament(f.id)?.accent;
       if (accent === "var(--wc)") wcTour = true;
       if (accent === "var(--nba)") nbaTour = true;
+      if (accent === "var(--nfl)") nflTour = true;
     }
   }
   const covered = (away: string, home: string, sport: "nba" | "wc", id: string) =>
@@ -2044,6 +2246,29 @@ function buildScoreboard(
       status: "live",
       statusLine: g.statusText || "Live",
       stageLine: g.stage ? `Summer Soccer · ${g.stage}` : "Summer Soccer",
+      href: withGameOrigin(`/game/${g.id}`, "today"),
+      lead: leadOf(g.away.score, g.home.score),
+    });
+  }
+  for (const g of nfl) {
+    if (g.status !== "live") continue;
+    // Path B collision guard: NFL codes come from NFL follows only.
+    const coveredNfl =
+      pinnedIds.has(g.id) ||
+      nflTour ||
+      nflCodes.has(g.away.abbreviation.toUpperCase()) ||
+      nflCodes.has(g.home.abbreviation.toUpperCase());
+    if (!coveredNfl) continue;
+    tiles.push({
+      id: g.id,
+      source: "nfl",
+      awayCode: g.away.abbreviation,
+      homeCode: g.home.abbreviation,
+      awayScore: g.away.score,
+      homeScore: g.home.score,
+      status: "live",
+      statusLine: g.statusText || "Live",
+      stageLine: `NFL · ${nflWeekLabel(g.seasonType, g.week)}`,
       href: withGameOrigin(`/game/${g.id}`, "today"),
       lead: leadOf(g.away.score, g.home.score),
     });
@@ -2169,19 +2394,19 @@ export function buildTodayPayload({
 }): TodayPayload {
   const recentForWrap = nbaRecent && nbaRecent.length > 0 ? nbaRecent : nba;
   const nflGames = nfl ?? [];
-  const hero = pickHero(nba, wc, follows, pinned, now);
-  const youFollow = buildYouFollow(nba, wc, follows, now);
+  const hero = pickHero(nba, wc, nflGames, follows, pinned, now);
+  const youFollow = buildYouFollow(nba, wc, nflGames, follows, now);
   // Up Next uses the WIDER window (seriesGames, ~2 weeks ahead), not the
   // current calendar week. The full playoff slate runs past this week
   // (e.g. Games 3-4 land next week), and they must appear before the
   // Summer Soccer openers. buildUpNext filters to status==="upcoming", so the
   // wider window's past finals are dropped — only the forward games stay.
   const upNext = buildUpNext(recentForWrap, wc, nflGames, follows, pinned);
-  const quietWrap = buildQuietWrap(recentForWrap, wc, follows, now);
-  const recapFinals = buildRecapFinals(recentForWrap, wc, follows, now);
+  const quietWrap = buildQuietWrap(recentForWrap, wc, nflGames, follows, now);
+  const recapFinals = buildRecapFinals(recentForWrap, wc, nflGames, follows, now);
   const reminder = buildReminder(follows, now);
 
-  const scoreboard = buildScoreboard(nba, wc, follows, pinned);
+  const scoreboard = buildScoreboard(nba, wc, nflGames, follows, pinned);
   // The feed can contain unrelated live games. Today state and calm endings
   // key off the user's personal live slate, not the provider-wide feed.
   const hasLive = scoreboard.length > 0;
@@ -2319,12 +2544,12 @@ export type TodayHeadlineDeck = {
   /** Scheduled start passed, feed not live yet — the kicker reads
    *  "STARTING" instead of the stale kickoff time. */
   imminent?: boolean;
-  accent: "var(--nba)" | "var(--wc)";
+  accent: TodayAccent;
   href: string;
 };
 
 export type TodayHeadline = {
-  eyebrow: { label: string; tone: "nba" | "wc" | "mute" };
+  eyebrow: { label: string; tone: HeadlineTone | "mute" };
   headline: string;
   /** Optional support line under the deck (a stake, when we have one). */
   support?: string;
@@ -2379,6 +2604,20 @@ export function wcKnockoutStake(game?: TodayLeadGame): string | undefined {
 /** Build the lead game from the live hero (preferred), then the first
  *  up-next item, then any non-countdown hero. Returns null for non-game
  *  leads (WC countdown, quiet day). */
+/** The accent token for a source. One switch so a new sport can't be
+ *  half-threaded through the headline layer. */
+export function accentFor(source: TodaySource): TodayAccent {
+  if (source === "wc") return "var(--wc)";
+  if (source === "nfl") return "var(--nfl)";
+  return "var(--nba)";
+}
+
+function toneForAccent(accent: TodayAccent | undefined): HeadlineTone {
+  if (accent === "var(--wc)") return "wc";
+  if (accent === "var(--nfl)") return "nfl";
+  return "nba";
+}
+
 function leadGame(payload: TodayPayload): LeadGame | null {
   const hero = payload.hero;
 
@@ -2414,7 +2653,7 @@ function leadGame(payload: TodayPayload): LeadGame | null {
         broadcast: up.watch?.channel,
         dateIso: up.dateIso,
         imminent: up.imminent,
-        accent: up.source === "wc" ? "var(--wc)" : "var(--nba)",
+        accent: accentFor(up.source),
         href: up.href,
       },
       stake: up.stake ?? wcKnockoutStake(up.game),
@@ -2440,16 +2679,17 @@ function leadGame(payload: TodayPayload): LeadGame | null {
   return null;
 }
 
-// NBA playoff games are evening events → "tonight"; Summer Soccer games
-// skew daytime → "today". The headline is about the day you care about,
-// not a generic "up next" — the eyebrow carries the live/upcoming state.
-function whenWord(tone: "nba" | "wc"): string {
-  return tone === "wc" ? "today" : "tonight";
+// NBA playoff games are evening events → "tonight"; Summer Soccer and NFL
+// games run through the afternoon → "today" (a 1:00 PM Sunday kickoff is
+// not "tonight"). The headline is about the day you care about, not a
+// generic "up next" — the eyebrow carries the live/upcoming state.
+function whenWord(tone: HeadlineTone): string {
+  return tone === "nba" ? "tonight" : "today";
 }
 
 // Plural form — "matches" / "games". "match" pluralizes with -es, so a
 // blunt `${noun}s` produced the "matchs" typo.
-function sportNounPlural(tone: "nba" | "wc"): string {
+function sportNounPlural(tone: HeadlineTone): string {
   return tone === "wc" ? "matches" : "games";
 }
 
@@ -2457,7 +2697,17 @@ function sportNounPlural(tone: "nba" | "wc"): string {
 // country codes to names (Summer Soccer); NBA codes pass through (no name
 // table, and not the live season). Spoiler-safe — it names the fixture,
 // never a score, so it's the same exposure as the deck below it.
-function editorialMatchup(matchup: string, tone: "nba" | "wc"): string {
+function editorialMatchup(matchup: string, tone: HeadlineTone): string {
+  if (tone === "nfl") {
+    // "LAC at KC" -> "Chargers at Chiefs". Nicknames, not cities: the
+    // headline stays one line and reads the way people talk.
+    const parts = matchup.split(/\s+at\s+/i);
+    if (parts.length !== 2) return matchup;
+    const [a, b] = parts.map(
+      (p) => getNFLTeam(p.trim().toUpperCase())?.name ?? p.trim()
+    );
+    return `${a} at ${b}`;
+  }
   if (tone !== "wc") return matchup;
   const parts = matchup.split(/\s+vs\s+/i);
   if (parts.length !== 2) return matchup;
@@ -2471,8 +2721,7 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
   const lead = leadGame(payload);
   const deck = lead?.deck ?? null;
   const heroLive = payload.hero?.live === true;
-  const heroTone: "nba" | "wc" =
-    payload.hero?.accent === "var(--wc)" ? "wc" : "nba";
+  const heroTone: HeadlineTone = toneForAccent(payload.hero?.accent);
 
   // Live takes the lead. The headline counts LIVE games and says so, to
   // match the "Live now" eyebrow — saying "One game today" while the
@@ -2516,7 +2765,7 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
 
     if (todayItems.length > 0) {
       const n = todayItems.length;
-      const tone: "nba" | "wc" = todayItems[0].source === "wc" ? "wc" : "nba";
+      const tone: HeadlineTone = todayItems[0].source;
       const when = whenWord(tone);
       return {
         eyebrow: { label: "Up next", tone },
@@ -2538,7 +2787,7 @@ export function deriveTodayHeadline(payload: TodayPayload): TodayHeadline {
     const lead0 = payload.upNext[0];
     const day = lead0.dayWord;
     const n = payload.upNext.filter((u) => u.dayWord === day).length;
-    const tone: "nba" | "wc" = lead0.source === "wc" ? "wc" : "nba";
+    const tone: HeadlineTone = lead0.source;
     return {
       eyebrow: { label: "Up next", tone },
       headline:

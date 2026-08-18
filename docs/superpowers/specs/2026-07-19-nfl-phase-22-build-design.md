@@ -223,7 +223,34 @@ it deliberately deferred:
 - **Trademark**: the two in-app CalmEndCard "World Cup" strings → "Summer
   Soccer" (website/SEO keeps the factual nominative reference).
 
-### Deferred to the August pre-season build (dated, deliberate)
+### Deferred to the August pre-season build — DONE 2026-08-18
+
+The section below is the July statement of what was deferred. It all landed
+on 2026-08-18 against the live preseason feed: `pickHero`, `buildScoreboard`,
+`buildQuietWrap`, `buildRecapFinals`, the You-follow chip, and the type
+widenings (`TodayAccent`, `HeadlineTone`, `RecapFinal.source`). The LLM
+concern in point 2 turned out not to apply — Quiet Wrap and the recap are
+structural copy ("Final.", a score line, a count), no generated narrative, so
+nothing unverifiable shipped.
+
+Also landed in that pass, beyond the deferred list:
+
+- **Preseason delivery gate** (`app/lib/push/nfl-preseason.ts`). Gate 4's
+  "preseason pushes are out of scope" was an assumption, not a gate: scan-nfl
+  dispatched, and NFL follows have carried `alertEnabled` since Jul 20.
+  Detection still runs; fan-out is held and logged.
+- **One-step week lookahead** (`nextNFLWeek`). ESPN serves a finished week
+  for days, so Today/Watching/detail all went blind between weeks.
+- Live-QA fixes: "AWAY at HOME" parsing, slate index on pointer days, the
+  desktop You-follow sport dot, the 390px NEXT row wrap.
+
+`ReliancePrompt.sport` is deliberately still `"nba" | "wc"` — it asks whether
+alerts were enough, and NFL alerts are held until the opener. It joins at
+gate 6 with the relay.
+
+Harness for re-verification: `scripts/nfl-shots.mjs`.
+
+### Deferred to the August pre-season build (July statement, now closed)
 
 The **live-game Today render branches** — `pickHero`, `buildScoreboard`,
 `quiet-wrap`, and `recap` NFL cases — are NOT built. Rationale:

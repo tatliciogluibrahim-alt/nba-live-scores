@@ -3,7 +3,7 @@
 import { SecHead } from "../../system/SecHead";
 import { AgateRow } from "../../system/AgateRow";
 import { Stamp } from "../../system/Stamp";
-import { matchupCodes, kickoffStamp } from "../agate-slate";
+import { matchupCodes, kickoffStamp, pointerNote } from "../agate-slate";
 import type { UpNextItem } from "../today-data";
 
 // The NEXT pointer (S1, 2026-07-06). Today's one allowed not-today item:
@@ -17,7 +17,7 @@ export function NextPointer({ item }: { item: UpNextItem }) {
   const { away, home } = matchupCodes(item.headline);
   const parts = item.detail.split(" · ").map((s) => s.trim()).filter(Boolean);
   const context = parts.slice(1).join(" · ");
-  const note = [context, item.watch?.channel].filter(Boolean).join(" · ");
+  const note = pointerNote(context, item.watch?.channel);
   const stamp = item.dateIso
     ? kickoffStamp(item.dateIso, new Date())
     : parts[0] ?? "";

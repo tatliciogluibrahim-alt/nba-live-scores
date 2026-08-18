@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { YouFollowItem } from "./today-data";
+import { accentFor, type YouFollowItem } from "./today-data";
 
 // System D mobile follow line (Task 8) — the de-chipped variant of YouFollow
 // from docs/superpowers/design-directions/d-mix `.follow`. A mono "YOU FOLLOW"
@@ -72,12 +72,7 @@ export function FollowLine({ items }: { items: YouFollowItem[] }) {
           const live = item.tone === "live";
           // Dot color follows the item's SPORT (not a kind guess): Summer
           // Soccer green, NFL blue, NBA red. Only live tokens carry a dot.
-          const dotColor =
-            item.sport === "wc"
-              ? "var(--wc)"
-              : item.sport === "nfl"
-                ? "var(--nfl)"
-                : "var(--nba)";
+          const dotColor = accentFor(item.sport);
           return (
             <span
               key={`${item.sport}-${item.kind}-${item.id}`}

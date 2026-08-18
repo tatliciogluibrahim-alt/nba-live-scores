@@ -10,6 +10,7 @@ import { readFeed, FEED_KEYS } from "../hooks/feed-cache";
 import { buildWatchingPayload } from "../watching/watching-data";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
+import { nextNFLWeek } from "../following/data/nfl-dates";
 import type { Game } from "../../nba/types";
 import { NBALiveCompanion } from "./NBALiveCompanion";
 import { WCGameDetail } from "./WCGameDetail";
@@ -43,7 +44,7 @@ function mergeNBAGames(
   return Array.from(byId.values());
 }
 
-async function fetchGames(): Promise<{
+async function fetchGames(gameId: string): Promise<{
   nba: NBAGame[];
   allNBA: NBAGame[];
   wc: WCGameLite[];
@@ -56,11 +57,13 @@ async function fetchGames(): Promise<{
     // appear in real /api/world-cup data and the page falls through
     // to the "Game snapshot unavailable" NotFound.
     //
-    // NFL: the scoreboard serves the current week only. That covers the
-    // primary tap paths (Today, Watching, the default Schedule week). A
-    // game the user paged to in another week resolves via neither feed nor
-    // (yet) a snapshot, so it lands on the calm NotFound — an any-week
-    // resolver via the summary endpoint is a documented follow-up.
+    // NFL: the scoreboard serves the current week only, and ESPN keeps
+    // serving it for days after its last game — so Today's NEXT pointer can
+    // name a game (next week's) that the current week doesn't contain. When
+    // the tapped id isn't in the current week we try the NEXT week, the same
+    // one-step lookahead Today uses. A game further out still lands on the
+    // calm NotFound — an any-week resolver via the summary endpoint is a
+    // documented follow-up.
     const [nbaRes, wcRes, nflRes] = await Promise.all([
       fetch("/api/live-scores", { cache: "no-store" }),
       fetch(wcFeedUrl(), { cache: "no-store" }),
@@ -74,13 +77,31 @@ async function fetchGames(): Promise<{
       : { games: [] };
     const nflJson =
       nflRes && nflRes.ok
-        ? ((await nflRes.json()) as { games?: NFLGameLite[] })
-        : { games: [] };
+        ? ((await nflRes.json()) as {
+            games?: NFLGameLite[];
+            week?: number;
+            seasonType?: number;
+          })
+        : { games: [] as NFLGameLite[], week: 0, seasonType: 0 };
+    let nfl = nflJson.games ?? [];
+    if (!nfl.some((g) => g.id === gameId)) {
+      const next = nextNFLWeek(nflJson.seasonType ?? 0, nflJson.week ?? 0);
+      if (next) {
+        const res = await fetch(
+          `/api/nfl-scores?week=${next.week}&seasontype=${next.seasonType}`,
+          { cache: "no-store" }
+        ).catch(() => null);
+        if (res && res.ok) {
+          const json = (await res.json()) as { games?: NFLGameLite[] };
+          nfl = [...nfl, ...(json.games ?? [])];
+        }
+      }
+    }
     return {
       nba,
       allNBA,
       wc: wcJson.games ?? [],
-      nfl: nflJson.games ?? [],
+      nfl,
     };
   } catch {
     return { nba: [], allNBA: [], wc: [], nfl: [] };
@@ -162,7 +183,7 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
     const mounted = { current: true };
 
     async function resolve() {
-      const { nba, allNBA, wc, nfl } = await fetchGames();
+      const { nba, allNBA, wc, nfl } = await fetchGames(gameId);
       if (!mounted.current) return;
 
       // Keep the slot-meter source fresh regardless of which game resolves.

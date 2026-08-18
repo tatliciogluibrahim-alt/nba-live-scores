@@ -3,6 +3,7 @@ import {
   padIdx,
   slateStartIndex,
   matchupCodes,
+  pointerNote,
   parseScoreLine,
   agateScore,
   upNextCountLabel,
@@ -102,8 +103,31 @@ describe("matchupCodes", () => {
   it("is case-insensitive on the separator", () => {
     expect(matchupCodes("KOR VS RSA")).toEqual({ away: "KOR", home: "RSA" });
   });
+  it("splits football's AWAY at HOME", () => {
+    // The NFL up-next headline is "LAC at KC"; splitting on "vs" alone left
+    // the NEXT pointer rendering "LAC at KC · " with an empty home cell.
+    expect(matchupCodes("LAC at KC")).toEqual({ away: "LAC", home: "KC" });
+  });
+  it("is case-insensitive on the at separator", () => {
+    expect(matchupCodes("CLE AT CHI")).toEqual({ away: "CLE", home: "CHI" });
+  });
   it("falls back to the whole string with no separator", () => {
     expect(matchupCodes("Solo")).toEqual({ away: "Solo", home: "" });
+  });
+});
+
+describe("pointerNote", () => {
+  it("keeps the channel when the line has room", () => {
+    expect(pointerNote("Group D", "FOX")).toBe("Group D · FOX");
+    expect(pointerNote("Game 6", "TNT")).toBe("Game 6 · TNT");
+  });
+  it("drops the channel when the context already fills the row", () => {
+    // At 390px "Preseason · Wk 3 · NFL Net" squeezed the matchup into a
+    // two-line wrap.
+    expect(pointerNote("Preseason · Wk 3", "NFL Net")).toBe("Preseason · Wk 3");
+  });
+  it("keeps a lone channel when there is no context", () => {
+    expect(pointerNote("", "NFL Net")).toBe("NFL Net");
   });
 });
 

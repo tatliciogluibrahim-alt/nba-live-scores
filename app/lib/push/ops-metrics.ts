@@ -38,20 +38,27 @@ export async function writeLastScanAt(
 }
 
 /** Read the last scan timestamp per scope (for /api/push/inspect). Null when
- *  a scope has never scanned (or KV is unreachable). */
-export async function readLastScanAt(): Promise<{
-  wc: string | null;
-  nba: string | null;
-}> {
+ *  a scope has never scanned (or KV is unreachable). Keyed by ScanScope so
+ *  adding a sport can't leave its heartbeat invisible — scan-nfl stamped
+ *  "nfl" from day one, but inspect only read wc + nba, so the operator had
+ *  no way to see whether the NFL scheduler was alive. */
+export type LastScanAt = Record<ScanScope, string | null>;
+
+const SCAN_SCOPES: ScanScope[] = ["wc", "nba", "nfl"];
+
+export async function readLastScanAt(): Promise<LastScanAt> {
+  const empty = { wc: null, nba: null, nfl: null } as LastScanAt;
   try {
-    const [wc, nba] = await Promise.all([
-      kv.get<string>(`${LAST_SCAN_PREFIX}wc`),
-      kv.get<string>(`${LAST_SCAN_PREFIX}nba`),
-    ]);
-    return { wc: wc ?? null, nba: nba ?? null };
+    const values = await Promise.all(
+      SCAN_SCOPES.map((scope) => kv.get<string>(`${LAST_SCAN_PREFIX}${scope}`))
+    );
+    return SCAN_SCOPES.reduce<LastScanAt>(
+      (acc, scope, i) => ({ ...acc, [scope]: values[i] ?? null }),
+      empty
+    );
   } catch (err) {
     console.error("ops.readLastScanAt failed", { err });
-    return { wc: null, nba: null };
+    return empty;
   }
 }
 

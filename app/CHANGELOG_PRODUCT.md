@@ -2,6 +2,67 @@
 
 ---
 
+## NFL live-render branches + preseason delivery gate — 2026-08-18
+
+The August pre-season build. Preseason week 2 finals were on the real feed
+and week 3 kicks off Aug 20, so the branches deferred on 2026-07-20 (they
+"render nothing until Sep 9") were now live-verifiable — and two of them
+were already wrong on screen.
+
+**Today renders NFL games.** `pickHero` (live hero, sport-correct accent,
+"Chiefs are live." subject, cross-sport followed-live count),
+`buildScoreboard` (live tiles + ALSO LIVE band), `buildQuietWrap`,
+`buildRecapFinals` / slateComplete, and the You-follow chip all read NFL
+now. Types widened once (`TodayAccent`, `HeadlineTone`, `RecapFinal.source`)
+so a half-threaded sport fails to compile. Football's register: "at" not
+"vs", nicknames in the lead ("Chargers at Chiefs today."), "today" not
+"tonight", "One-score game." at eight points.
+
+**Preseason honesty.** Week labels are season-type aware everywhere (a
+preseason game never reads "Week 2" as if it counted). The three copies of
+that logic (Schedule pager, game detail, Today) collapsed into
+`nfl-dates.ts`.
+
+**Preseason alerts are now actually gated.** `scan-nfl` detected and
+dispatched preseason events; the only thing stopping a push was the
+assumption that nobody follows NFL yet — but follows have been live since
+July 20 and carry `alertEnabled`. Detection still runs (that IS the gate-4
+verification against live data); fan-out is held and logged
+(`app/lib/push/nfl-preseason.ts`).
+
+Bugs the live pass found, all fixed:
+
+- **The NEXT pointer went blank between weeks.** ESPN keeps serving the
+  finished week for days, so on a Tuesday every game read final and a
+  followed team looked like it had nothing coming — while it kicked off
+  Thursday. Today, Watching, and game detail now take one step to the next
+  week when the current one is played out (`nextNFLWeek`). Today's false
+  "Your circle is quiet right now. Nothing live or coming up." went with it.
+- **"LAC at KC" didn't parse.** `matchupCodes` split on " vs " only, so the
+  NEXT pointer rendered "LAC at KC · " with an empty home cell.
+- **The slate numbering started at 02.** `leadHasMonument` counted a lead
+  that renders as a pointer, not a Monument, reserving 01 for nothing.
+- **A live NFL follow got the NBA red dot** in the desktop You-follow rail
+  (kind-guess instead of sport — the same class fixed on mobile in July).
+- **The NEXT row wrapped to two lines at 390px** once the note carried
+  "Preseason · Wk 3 · NFL Net". The channel now drops when the context
+  fills the row (`pointerNote`).
+
+Cron groundwork for turning scan-nfl on (`docs/CRON_SETUP.md` — the job
+inventory and setup steps had no home before): `/api/push/inspect` reported
+`lastScanAt` for wc + nba only, so the NFL heartbeat was invisible even
+though scan-nfl stamped it every tick; and the per-game summary fetch had no
+timeout, so one hung ESPN connection could stall a 16-game Sunday tick past
+cron-job.org's 30s request limit (enough consecutive timeouts and it
+disables the job). Both fixed.
+
+Gate: tsc clean, eslint 0, 661 tests, build clean (94 route lines).
+Live-verified at 390px and 1280px, light + dark, against the real preseason
+feed and a mocked live slate (`scripts/nfl-shots.mjs`), plus game detail for
+a wrapped week-2 final and an unplayed week-3 game.
+
+---
+
 ## NFL activation — QA follow-ups + follow-hub polish — 2026-07-20
 
 Live-QA of the freshly activated NFL surfaces surfaced three fixes:
