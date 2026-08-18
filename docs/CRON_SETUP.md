@@ -8,9 +8,9 @@ daily Brief. Everything time-sensitive runs from **cron-job.org**.
 
 | Job | Route | Cadence | Notes |
 |---|---|---|---|
-| No Noise WC scan | `/api/cron/scan-wc` | 1 min | Pause it. Summer Soccer concluded 2026-07-19. |
-| No Noise NBA scan | `/api/cron/scan-nba` | 1 min | Pause it out of season. |
-| No Noise NFL scan | `/api/cron/scan-nfl` | 1 min | **The live one.** Preseason detects but never delivers. |
+| No Noise WC scan | `/api/cron/scan-wc` | 1 min | Stopped 2026-08-18 11:57Z. Summer Soccer concluded 2026-07-19. |
+| No Noise NBA scan | `/api/cron/scan-nba` | 1 min | No heartbeat on record. Off season. |
+| No Noise NFL scan | `/api/cron/scan-nfl` | 1 min | **Live since 2026-08-18.** Preseason detects but never delivers. |
 | Brief | `send-briefs-cron.yml` | daily | GitHub Actions, not cron-job.org. |
 
 Every scan route self-throttles: `isStateRelevant()` skips any game that

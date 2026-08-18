@@ -2,6 +2,42 @@
 
 ---
 
+## NFL game detail: the score story — 2026-08-18
+
+A tapped NFL game showed the Monument, a broadcast row, and a schedule link.
+No scoring plays, no leaders, no quarter line. That was the July cut line
+(depth, never surface) and this closes it. Three sections, all from
+`/api/nfl-game-detail` — the same ESPN summary `scan-nfl` already calls for
+the play detector, so no new provider and nothing an LLM phrases:
+
+- **Scoring** — the ink field, newest first: `Q4 2:14 · Erik Ezukanma 6 Yd
+  pass from Cole Payton · PHI · 7-24`. Football's answer to the Summer
+  Soccer match-events register. Long pass-touchdown lines wrap rather than
+  truncating the passer off half the score story.
+- **Who mattered** (**Top performers** while live) — passing, rushing,
+  receiving, one row per team per category.
+- **By quarter** — the same grid the NBA detail uses. `PeriodScoreTable`
+  was extracted so quarters render from one component in both sports.
+
+Team stat tables stay out: six rows of third-down efficiency is the
+"unnecessary stats" the brand rule bans.
+
+Under No-Spoilers the scoring field collapses to a single "Hidden · tap to
+reveal" row, leaders hide entirely (a stat line names the scorer), and the
+quarter labels stay while the numbers blur.
+
+Also fixed: a finished game was told **"Lock screen tracking starts at
+kickoff."** TrackControl only knew whether a game was live, so final and
+upcoming shared a branch. Sport-agnostic — NBA and Summer Soccer finals said
+it too.
+
+Gate: tsc clean, eslint 0, 674 tests, build clean (95 route lines — 94 plus
+the new API route). Live-verified at 390px, light + dark, No-Spoilers on and
+off, against the real PHI 7 at BAL 24 preseason final, plus a mocked live
+slate for what a real game can't exercise until Thursday.
+
+---
+
 ## NFL live-render branches + preseason delivery gate — 2026-08-18
 
 The August pre-season build. Preseason week 2 finals were on the real feed

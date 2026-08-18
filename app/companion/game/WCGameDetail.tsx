@@ -337,6 +337,7 @@ export function WCGameDetail({
           <TrackControl
             gameId={game.id}
             live={isLive}
+            upcoming={isUpcoming}
             pinned={pinned}
             onPin={onPin}
             onUnpin={onUnpin}

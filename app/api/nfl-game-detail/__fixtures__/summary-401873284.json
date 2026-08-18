@@ -1,0 +1,326 @@
+{
+ "scoringPlays": [
+  {
+   "id": "4018732841328",
+   "type": {
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Ja'Kobi Lane 16 Yd pass from Joe Fagnano (Tyler Loop Kick)",
+   "awayScore": 0,
+   "homeScore": 7,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "9:24"
+   },
+   "team": {
+    "id": "33",
+    "abbreviation": "BAL",
+    "displayName": "Baltimore Ravens"
+   }
+  },
+  {
+   "id": "4018732842259",
+   "type": {
+    "text": "Field Goal Good",
+    "abbreviation": "FG"
+   },
+   "text": "Tyler Loop 42 Yd Field Goal",
+   "awayScore": 0,
+   "homeScore": 10,
+   "period": {
+    "number": 3
+   },
+   "clock": {
+    "displayValue": "10:27"
+   },
+   "team": {
+    "id": "33",
+    "abbreviation": "BAL",
+    "displayName": "Baltimore Ravens"
+   }
+  },
+  {
+   "id": "4018732843011",
+   "type": {
+    "text": "Rushing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Adam Randall 4 Yd Rush (Tyler Loop Kick)",
+   "awayScore": 0,
+   "homeScore": 17,
+   "period": {
+    "number": 4
+   },
+   "clock": {
+    "displayValue": "11:24"
+   },
+   "team": {
+    "id": "33",
+    "abbreviation": "BAL",
+    "displayName": "Baltimore Ravens"
+   }
+  },
+  {
+   "id": "4018732843467",
+   "type": {
+    "text": "Rushing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Austin Reed 14 Yd Rush (Tyler Loop Kick)",
+   "awayScore": 0,
+   "homeScore": 24,
+   "period": {
+    "number": 4
+   },
+   "clock": {
+    "displayValue": "5:07"
+   },
+   "team": {
+    "id": "33",
+    "abbreviation": "BAL",
+    "displayName": "Baltimore Ravens"
+   }
+  },
+  {
+   "id": "4018732843798",
+   "type": {
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Erik Ezukanma 6 Yd pass from Cole Payton (Jake Elliott Kick)",
+   "awayScore": 7,
+   "homeScore": 24,
+   "period": {
+    "number": 4
+   },
+   "clock": {
+    "displayValue": "2:14"
+   },
+   "team": {
+    "id": "21",
+    "abbreviation": "PHI",
+    "displayName": "Philadelphia Eagles"
+   }
+  }
+ ],
+ "leaders": [
+  {
+   "team": {
+    "id": "33",
+    "abbreviation": "BAL",
+    "displayName": "Baltimore Ravens"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "22/28, 224 YDS, 1 TD, 1 INT",
+       "athlete": {
+        "shortName": "J. Fagnano",
+        "displayName": "Joe Fagnano"
+       }
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "12 CAR, 46 YDS, 1 TD",
+       "athlete": {
+        "shortName": "A. Randall",
+        "displayName": "Adam Randall"
+       }
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "6 REC, 66 YDS",
+       "athlete": {
+        "shortName": "E. Sarratt",
+        "displayName": "Elijah Sarratt"
+       }
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "1",
+       "athlete": {
+        "shortName": "K. Martin",
+        "displayName": "Keyon Martin"
+       }
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "4",
+       "athlete": {
+        "shortName": "K. Martin",
+        "displayName": "Keyon Martin"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "team": {
+    "id": "21",
+    "abbreviation": "PHI",
+    "displayName": "Philadelphia Eagles"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "4/9, 37 YDS, 1 TD",
+       "athlete": {
+        "shortName": "C. Payton",
+        "displayName": "Cole Payton"
+       }
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "3 CAR, 45 YDS",
+       "athlete": {
+        "shortName": "C. Payton",
+        "displayName": "Cole Payton"
+       }
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "2 REC, 21 YDS",
+       "athlete": {
+        "shortName": "D. Cooper",
+        "displayName": "Darius Cooper"
+       }
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "1",
+       "athlete": {
+        "shortName": "T. Jackson",
+        "displayName": "Tarron Jackson"
+       }
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "10",
+       "athlete": {
+        "shortName": "M. McWilliams",
+        "displayName": "Mac McWilliams"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "header": {
+  "competitions": [
+   {
+    "status": {
+     "type": {
+      "detail": "Final"
+     }
+    },
+    "competitors": [
+     {
+      "homeAway": "home",
+      "score": "24",
+      "team": {
+       "id": "33",
+       "abbreviation": "BAL",
+       "displayName": "Baltimore Ravens"
+      },
+      "linescores": [
+       {
+        "displayValue": "0",
+        "value": null
+       },
+       {
+        "displayValue": "7",
+        "value": null
+       },
+       {
+        "displayValue": "3",
+        "value": null
+       },
+       {
+        "displayValue": "14",
+        "value": null
+       }
+      ]
+     },
+     {
+      "homeAway": "away",
+      "score": "7",
+      "team": {
+       "id": "21",
+       "abbreviation": "PHI",
+       "displayName": "Philadelphia Eagles"
+      },
+      "linescores": [
+       {
+        "displayValue": "0",
+        "value": null
+       },
+       {
+        "displayValue": "0",
+        "value": null
+       },
+       {
+        "displayValue": "0",
+        "value": null
+       },
+       {
+        "displayValue": "7",
+        "value": null
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

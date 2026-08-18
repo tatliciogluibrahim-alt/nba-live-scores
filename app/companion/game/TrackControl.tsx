@@ -43,6 +43,7 @@ type TrackState = "default" | "held" | "full" | "denied";
 export function TrackControl({
   gameId,
   live,
+  upcoming = false,
   pinned,
   onPin,
   onUnpin,
@@ -55,6 +56,11 @@ export function TrackControl({
   /** Whether the game is live right now. Only live games can be tracked on
    *  the lock screen; non-live pins are Watching-only. */
   live: boolean;
+  /** Whether the game hasn't kicked off yet. Distinguishes the two non-live
+   *  states, which used to share a branch: a FINAL game was told "lock
+   *  screen tracking starts at kickoff", a kickoff that already happened
+   *  and never will again. */
+  upcoming?: boolean;
   pinned: boolean;
   onPin: () => void;
   onUnpin: () => void;
@@ -173,7 +179,7 @@ export function TrackControl({
       {state === "default" ? (
         <DefaultCta
           lockScreen={lockScreen}
-          nativeUpcoming={native && !live}
+          nativeUpcoming={native && upcoming}
           onTap={handleTap}
         />
       ) : null}

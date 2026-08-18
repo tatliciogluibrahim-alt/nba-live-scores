@@ -144,7 +144,17 @@ no user fan-out.
 Go/no-go: a full live preseason Sunday slate produces correct events in
 logs, zero misfires, Upstash budget holds at 16 concurrent games.
 
-### Gate 5 — Native + detail parity (~Aug 24–Sept 4, overlaps 4)
+### Gate 5 — Native + detail parity (~Aug 24–Sept 4, overlaps 4) — DETAIL SHIPPED 2026-08-18
+
+Detail parity is done: SCORING (ink field), WHO MATTERED / TOP PERFORMERS,
+and BY QUARTER now render from `/api/nfl-game-detail` (pure normalizers,
+tested against a real captured summary). `PeriodScoreTable` is shared with
+the NBA detail. Team stat tables deliberately skipped (brand rule). The
+TrackControl "starts at kickoff" copy bug on finished games went with it.
+REMAINING in this gate: Live Activity on a real live NFL game, the
+`?preview=nfl-sunday` harness, and the v1.0.3 store-asset list.
+
+Original scope:
 
 WidgetSync/LiveActivitySync send `sport: "nfl"` (Swift theme already
 exists), Live Activity for NFL games, game detail to NBA parity

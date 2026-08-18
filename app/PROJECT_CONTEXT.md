@@ -331,12 +331,54 @@ When making code changes:
 
 ## Current Priority
 
+### Session wrap 2026-08-18 (cont.) — NFL game detail depth (gate 5 core)
+
+The lean NFL detail shell grew its score story. Three sections, all from
+`/api/nfl-game-detail` (the same ESPN summary `scan-nfl` already calls for
+the play detector, so no new provider):
+
+1. **SCORING** — the ink field, newest-first, football's answer to the WC
+   match-events register: mono `Q4 2:14`, the play with its team dimmed
+   after it, running score right. Long pass-TD lines wrap to a second line
+   rather than truncating the passer off every passing touchdown.
+2. **WHO MATTERED / TOP PERFORMERS** — passing, rushing, receiving, one row
+   per team per category. Defensive categories (sacks, tackles) are in the
+   feed and deliberately dropped; six rows is the cap of a calm read.
+3. **BY QUARTER** — the NBA grid, now shared. `PeriodScoreTable` was
+   extracted from `PeriodScoreLine` (which stays the NBA-typed wrapper), so
+   quarters render from one component in both sports. Verified unchanged
+   against the dev gallery.
+
+Team stat tables are deliberately NOT read (`boxscore.teams`): six rows of
+third-down efficiency is the "unnecessary stats" the brand rule bans.
+
+No-Spoilers: the SCORING field collapses to one "Hidden · tap to reveal"
+row (the §9 collapse the WC events field uses), leaders hide entirely (a
+stat line names the scorer), and quarter labels stay with the numbers
+blurred (structural, not spoiler).
+
+Also fixed: **TrackControl told a finished game "Lock screen tracking starts
+at kickoff."** It only received `live: boolean`, so final and upcoming
+shared a branch. It now takes `upcoming` too, threaded from all three detail
+surfaces (the bug was sport-agnostic — NBA and WC finals said it too).
+
+Normalizers are pure and tested against a real captured payload
+(`app/api/nfl-game-detail/__fixtures__/summary-401873284.json`, PHI 7 at BAL
+24). Gate: tsc clean, eslint 0, **674 tests**, build clean at **95 route
+lines** (94 + the new API route). Live-verified at 390px, light + dark,
+No-Spoilers on and off, plus a mocked live slate for the sections a real
+game can't exercise until Thursday. Harness:
+`scripts/nfl-detail-shots.mjs`.
+
+---
+
 ### Session wrap 2026-08-18 — NFL live-render branches (August pre-season build)
 
 Preseason is live (week 2 wrapped Aug 15-16, week 3 kicks off Aug 20), so
 the render branches deferred in July landed and were verified against the
 real feed. All shipped + gated (tsc, eslint 0, **661 tests**, build clean at
-**94 route lines** — the expected page count; a drop is a regression).
+**94 route lines** — 95 after the gate-5 API route below; a drop is a
+regression).
 
 1. **Today reads NFL** end to end: `pickHero` NFL live hero (navy accent,
    "Chiefs are live.", cross-sport followed-live count), scoreboard tiles +
@@ -372,9 +414,12 @@ even though scan-nfl stamped it; and scan-nfl's per-game summary fetch had
 no timeout, so one hung ESPN connection could stall a 16-game Sunday tick
 past the scheduler's 30s limit. Both fixed.
 
-**Still open for Phase 22:** gate 4's live-slate verification (create the
-cron-job.org entry per the runbook, run it against week 3, Aug 20-22, and
-read the held-event logs), gate 5 (Live Activity on a real NFL game, `?preview=
+**scan-nfl cron is LIVE** (created 2026-08-18, verified ticking at 1/min via
+`lastScanAt.nfl`). The WC job stopped the same day (last heartbeat 11:57Z);
+NBA has no heartbeat on record. One active sport at a time.
+
+**Still open for Phase 22:** gate 4's live-slate verification (watch the
+week-3 slate, Aug 20-22, for `heldPreseason` > 0 with `delivered: 0`), gate 5 (Live Activity on a real NFL game, `?preview=
 nfl-sunday`), and gate 6 (relay + reliance prompt NFL rows — deliberately
 NOT added while alerts are held, since asking "were the alerts enough?"
 about a game that fired none would be a lie).
