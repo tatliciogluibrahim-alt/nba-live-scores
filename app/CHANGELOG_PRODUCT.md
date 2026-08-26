@@ -2,6 +2,45 @@
 
 ---
 
+## Fix: no NFL push could ever fire — 2026-08-26
+
+Reported as "I didn't get any push notifications" after a full week of
+preseason games. The immediate answer was the preseason hold working as
+designed. The real answer was worse.
+
+The dispatcher classified an event's sport as a binary — Summer Soccer
+types, else NBA — so every `nfl-*` type read as `"nba"`. Two silent
+failures, opposite directions:
+
+- An NFL follow failed the sport gate on **every** NFL event. No NFL alert
+  could fire, at any tier, for any team. The Sep 9 opener would have
+  delivered nothing.
+- The mirror image: an NBA follow of a colliding code (CLE, LAC, 12 others)
+  matched NFL events it has nothing to do with. A Clippers follower would
+  have been woken by a Chargers game.
+
+The preseason hold masked it — no NFL event ever reached the matcher, so a
+week of live games produced no evidence either way. Noticing the silence is
+what surfaced it.
+
+Same collision class closed app-wide on 2026-07-20, except the dispatcher
+was never swept: the app readers resolve sport through the follow's moment,
+this resolved it through the **event**, which is where the binary lived.
+
+`eventSport()` now derives from the type prefix, so a new `wc-` or `nfl-`
+type classifies correctly the day it's added instead of falling through to
+`"nba"`. Every EVENT_TYPE is locked to its expected sport in a test, and all
+three sports must be represented, so a convention-breaking type fails loudly.
+
+Fixed at all three sites: the tier matcher, the selective No-Spoilers matcher
+(an NBA "CLE" hide-follow was redacting Browns pushes), and the Live Activity
+offer's sport tag. Eight new dispatcher tests cover both directions; all
+eight failed before the fix.
+
+Gate: tsc clean, eslint 0, 688 tests, build clean (95 route lines).
+
+---
+
 ## NFL game detail: the score story — 2026-08-18
 
 A tapped NFL game showed the Monument, a broadcast row, and a schedule link.

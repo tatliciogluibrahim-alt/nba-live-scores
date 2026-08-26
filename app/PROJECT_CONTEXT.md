@@ -331,6 +331,40 @@ When making code changes:
 
 ## Current Priority
 
+### 2026-08-26 — the dispatcher sport gate (NFL push was dead)
+
+User reported no push notifications after preseason week 3. The preseason
+hold was the proximate answer; underneath it, **no NFL push could ever have
+fired**. The dispatcher classified an event's sport as WC-or-NBA, so every
+`nfl-*` type read as `"nba"`: NFL follows failed the sport gate on every
+event, and NBA follows of colliding codes (CLE/LAC + 12) matched NFL events.
+Fixed via a prefix-derived `eventSport()` at all three sites (tier matcher,
+selective No-Spoilers matcher, Live Activity offer tag), locked by a
+taxonomy test that maps every EVENT_TYPE to a sport. 688 tests.
+
+**The lesson worth keeping:** the July collision sweep fixed every reader
+that resolves sport through the FOLLOW's moment. The dispatcher resolves it
+through the EVENT, and was never swept. When a sport is added, grep for
+both directions.
+
+**Still open before Sep 9 (opener Sep 9, 8:20pm ET):**
+
+1. **Prove delivery end-to-end on a real device.** No NFL push has ever been
+   delivered. `POST /api/admin/push/test-event?type=nfl-kickoff&away=LAC&
+   home=KC` fires a synthetic event through the real dispatcher (bearer:
+   ADMIN_TOKEN or CRON_SECRET). Requires an NFL follow with alerts on for
+   one of the codes. Before today's fix this would have matched zero
+   devices; that is now the test that proves the fix.
+2. **Preseason week 4 (Aug 27-28) is the last live slate** before the
+   opener. Watch a scan tick for `events` non-empty + `heldPreseason`
+   matching + `delivered: 0`.
+3. **Observability gap**: `heldPreseason` is only in the per-tick response
+   and Vercel logs — there is no counter, and `/api/admin/push/status` reads
+   only today + yesterday, so week 3's detection history is unreachable via
+   the API. Worth a `events.held.preseason` counter before the opener.
+
+---
+
 ### Session wrap 2026-08-18 (cont.) — NFL game detail depth (gate 5 core)
 
 The lean NFL detail shell grew its score story. Three sections, all from
