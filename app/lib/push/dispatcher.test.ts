@@ -57,6 +57,27 @@ function wcEvent(over: Partial<PushEvent> = {}): PushEvent {
   };
 }
 
+function nflEvent(over: Partial<PushEvent> = {}): PushEvent {
+  const e: PushEvent = {
+    type: "nfl-final",
+    gameId: "n1",
+    awayCode: "LAC",
+    homeCode: "KC",
+    awayScore: 0,
+    homeScore: 0,
+    ...over,
+  };
+  return {
+    ...e,
+    significance:
+      over.significance ??
+      scoreEvent({
+        type: e.type,
+        margin: Math.abs(e.awayScore - e.homeScore),
+      }),
+  };
+}
+
 function sub(
   alerts: SyncedAlert[],
   noSpoilers = false,
@@ -610,5 +631,130 @@ describe("wantsLiveActivityOffer", () => {
 
   it("treats undefined lockScreenOffers as on (default)", () => {
     expect(wantsLiveActivityOffer({}, nbaEvent({ type: "tipoff" }))).toBe(true);
+  });
+});
+
+// ── NFL fan-out (the Sep-9 gate) ──────────────────────────────────────
+// Every NFL alert was silently dropped here: the dispatcher classified an
+// event's sport as a WC-or-NBA binary, so an "nfl-*" type read as "nba".
+// An NFL follow (momentSport "nfl") then failed the sport gate on every
+// event, and — the mirror image — an NBA follow of a colliding code (CLE,
+// LAC, and 12 others) matched NFL events it has nothing to do with.
+// Preseason's delivery hold masked it: no NFL event ever reached the matcher.
+
+describe("subscriberWantsEvent — NFL fan-out", () => {
+  const nflTeam = (scopeId: string): SyncedAlert => ({
+    momentId: "nfl-season-2026",
+    scope: "team",
+    scopeId,
+    tier: "companion",
+  });
+  const nbaTeam = (scopeId: string): SyncedAlert => ({
+    momentId: "nba-playoffs-2025",
+    scope: "team",
+    scopeId,
+    tier: "companion",
+  });
+
+  it("matches an NFL team follow on the home side", () => {
+    expect(subscriberWantsEvent(sub([nflTeam("KC")]), nflEvent())).toBe(true);
+  });
+
+  it("matches an NFL team follow on the away side", () => {
+    expect(subscriberWantsEvent(sub([nflTeam("LAC")]), nflEvent())).toBe(true);
+  });
+
+  it("matches a whole-season NFL follow on any NFL event", () => {
+    const all: SyncedAlert = {
+      momentId: "nfl-season-2026",
+      scope: "all",
+      scopeId: null,
+      tier: "companion",
+    };
+    expect(subscriberWantsEvent(sub([all]), nflEvent({ type: "nfl-kickoff" }))).toBe(
+      true
+    );
+  });
+
+  it("does NOT match an NFL follow for a different team", () => {
+    expect(subscriberWantsEvent(sub([nflTeam("BUF")]), nflEvent())).toBe(false);
+  });
+
+  it("collision guard: an NBA 'LAC' follow never matches an NFL LAC event", () => {
+    // The Clippers follower must not be woken by a Chargers game.
+    expect(subscriberWantsEvent(sub([nbaTeam("LAC")]), nflEvent())).toBe(false);
+  });
+
+  it("collision guard: an NFL 'LAC' follow never matches an NBA LAC event", () => {
+    expect(
+      subscriberWantsEvent(
+        sub([nflTeam("LAC")]),
+        nbaEvent({ awayCode: "LAC", homeCode: "GSW" })
+      )
+    ).toBe(false);
+  });
+
+  it("a direct NFL follow gets kickoff and final on Quiet (the tier floor)", () => {
+    const quiet: SyncedAlert = {
+      momentId: "nfl-season-2026",
+      scope: "team",
+      scopeId: "KC",
+      tier: "quiet",
+    };
+    expect(
+      subscriberWantsEvent(sub([quiet]), nflEvent({ type: "nfl-kickoff" }))
+    ).toBe(true);
+    expect(subscriberWantsEvent(sub([quiet]), nflEvent({ type: "nfl-final" }))).toBe(
+      true
+    );
+  });
+
+  it("Quiet does NOT get a mid-game NFL touchdown", () => {
+    const quiet: SyncedAlert = {
+      momentId: "nfl-season-2026",
+      scope: "team",
+      scopeId: "KC",
+      tier: "quiet",
+    };
+    expect(
+      subscriberWantsEvent(sub([quiet]), nflEvent({ type: "nfl-td-rushing" }))
+    ).toBe(false);
+  });
+});
+
+describe("selective No-Spoilers — NFL", () => {
+  it("an NFL hide-spoilers follow redacts its own game", () => {
+    expect(
+      subscriberUsesNoSpoilersForEvent(
+        sub([], false, [
+          { momentId: "nfl-season-2026", scope: "team", scopeId: "KC" },
+        ]),
+        nflEvent()
+      )
+    ).toBe(true);
+  });
+
+  it("an NBA hide-spoilers follow does NOT redact a same-code NFL game", () => {
+    // Hiding the Cavaliers must not silently redact Browns pushes.
+    expect(
+      subscriberUsesNoSpoilersForEvent(
+        sub([], false, [
+          { momentId: "nba-playoffs-2025", scope: "team", scopeId: "CLE" },
+        ]),
+        nflEvent({ awayCode: "CLE", homeCode: "CHI" })
+      )
+    ).toBe(false);
+  });
+});
+
+describe("liveActivityOfferData — sport tag", () => {
+  it("tags an NFL offer as nfl (the native side themes on this)", () => {
+    expect(liveActivityOfferData(nflEvent({ type: "nfl-kickoff" })).sport).toBe(
+      "nfl"
+    );
+  });
+  it("still tags wc and nba correctly", () => {
+    expect(liveActivityOfferData(wcEvent({ type: "wc-kickoff" })).sport).toBe("wc");
+    expect(liveActivityOfferData(nbaEvent({ type: "tipoff" })).sport).toBe("nba");
   });
 });

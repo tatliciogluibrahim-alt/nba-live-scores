@@ -28,6 +28,7 @@ import {
 } from "./narrate-push";
 import { claimDelivery, releaseDelivery } from "./dedupe";
 import { momentSport } from "../../companion/state/moments";
+import type { Sport } from "../../companion/state/types";
 import {
   listSubscriptions,
   removeSubscription,
@@ -41,7 +42,7 @@ import {
 import { sendApnsPush } from "./apns-sender";
 import type { SyncedAlert, SyncedFollow } from "./sync-validation";
 import { isWithinQuietHours } from "./quiet-hours";
-import type { EventType, PushEvent } from "./event-detector";
+import type { PushEvent } from "./event-detector";
 import { incrCounter } from "./ops-metrics";
 import { runChunked } from "./run-chunked";
 
@@ -52,16 +53,23 @@ import { runChunked } from "./run-chunked";
 // run-chunked.ts for the rationale.
 const PUSH_FANOUT_CONCURRENCY = 10;
 
-const WC_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
-  "wc-kickoff",
-  "wc-halftime",
-  "wc-second-half",
-  "wc-goal",
-  "wc-final",
-]);
-
-function isWCEvent(event: PushEvent): boolean {
-  return WC_EVENT_TYPES.has(event.type);
+/** The event's sport, for the Path B follow gate.
+ *
+ *  This was a WC-or-NBA binary, which meant every "nfl-*" type read as
+ *  "nba": an NFL follow failed the sport gate on every event (no NFL alert
+ *  could ever fire), and an NBA follow of a colliding code — CLE, LAC, and
+ *  12 others — matched NFL events it has nothing to do with. Preseason's
+ *  delivery hold masked it, so nothing surfaced before Sep 9.
+ *
+ *  Derived from the type prefix rather than a hand-kept set: a new "wc-" or
+ *  "nfl-" event type then classifies correctly the day it's added, instead
+ *  of silently falling through to "nba" the way this one did.
+ *  event-types.test.ts locks every EVENT_TYPE to its expected sport, so a
+ *  type that breaks the naming convention fails loudly. */
+export function eventSport(event: PushEvent): Sport {
+  if (event.type.startsWith("wc-")) return "wc";
+  if (event.type.startsWith("nfl-")) return "nfl";
+  return "nba";
 }
 
 type DeliveryResult = {
@@ -482,9 +490,8 @@ function selectiveFollowMatchesEvent(
 ): boolean {
   // Sport gate first (Path B): the follow's moment must belong to the
   // event's sport. This is what keeps an NFL "LAC" from matching an NBA
-  // LAC event once gate 3 ships.
-  const wc = isWCEvent(event);
-  if (momentSport(follow.momentId) !== (wc ? "wc" : "nba")) return false;
+  // LAC event.
+  if (momentSport(follow.momentId) !== eventSport(event)) return false;
   const id = (follow.scopeId ?? "").trim().toUpperCase();
   if (!id) return false;
   const away = event.awayCode.trim().toUpperCase();
@@ -541,8 +548,7 @@ export function subscriberWantsEvent(
   }
 
   const alerts = Array.isArray(sub.alerts) ? sub.alerts : [];
-  const wc = isWCEvent(event);
-  const eventSport = wc ? "wc" : "nba";
+  const sport = eventSport(event);
   // Significance gate (2026-07-14 engine). Tiers are thresholds, not event
   // lists: a directly-followed entity's tense moment breaks through even on
   // Quiet, and low-stakes events are suppressed everywhere but Full Details.
@@ -554,9 +560,8 @@ export function subscriberWantsEvent(
   // predicate. An entity scope (team / country / series) is "direct" and
   // earns the personal boost + the start/final invariant floor; the
   // whole-moment scope ("all", the old tournament follow) is threshold-only.
-  // Adding NFL is a new momentSport value — zero changes here.
   return alerts.some((f) => {
-    if (momentSport(f.momentId) !== eventSport) return false;
+    if (momentSport(f.momentId) !== sport) return false;
 
     let matched = false;
     let direct = false;
@@ -681,7 +686,7 @@ export function liveActivityOfferData(event: PushEvent): Record<string, string> 
   return {
     type: "live-activity-offer",
     gameId: event.gameId,
-    sport: isWCEvent(event) ? "wc" : "nba",
+    sport: eventSport(event),
     url: `/game/${event.gameId}?offer=live-activity`,
   };
 }
