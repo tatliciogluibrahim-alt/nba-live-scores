@@ -7,8 +7,10 @@ import type { Follow } from "../state/types";
 function nflGame(over: Partial<NFLGameLite> = {}): NFLGameLite {
   return {
     id: "nfl1",
-    // ~2h out so it stays on the slate.
-    date: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    // 60s out: still upcoming and on the slate, but never crosses local
+    // midnight the way "+2h" did — CI's first-ever run (22:01 UTC) caught
+    // the "today." assertion reading "tomorrow." on the runner.
+    date: new Date(Date.now() + 60 * 1000).toISOString(),
     status: "upcoming",
     statusText: "Upcoming",
     week: 1,
@@ -218,7 +220,7 @@ describe("Today renders LIVE NFL games (the Sep-9 render branches)", () => {
   it("an upcoming NFL lead reads in football's register", () => {
     const p = buildTodayPayload({
       ...base,
-      nfl: [nflGame({ date: new Date(Date.now() + 2 * 3600_000).toISOString() })],
+      nfl: [nflGame({ date: new Date(Date.now() + 60_000).toISOString() })],
       follows: [nflTeamFollow("KC")],
     });
     const h = deriveTodayHeadline(p);
