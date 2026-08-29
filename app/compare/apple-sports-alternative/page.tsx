@@ -42,18 +42,20 @@ export default function VsAppleSportsPage() {
           [
             "OS integration",
             "Live Activities, Lock Screen widgets, watch complication",
-            "Live Activities coming to the iPhone app",
+            "Live Activities and Lock Screen widgets in the iPhone app",
           ],
-          ["Sport breadth", "Many sports, all seasons", "NBA Playoffs + Summer Soccer + NFL coming"],
-          ["Install friction", "App Store, free, one tap", "Add to Home Screen on iPhone"],
+          ["Sport breadth", "Many sports, all seasons", "The NFL season now, plus the moments as they come"],
+          ["Install friction", "App Store, free, one tap", "App Store, free, one tap (or the web app)"],
           ["Distribution", "Pre-installed-ish on iPhone", "Web link, share-of-mouth"],
         ]}
       />
       <P>
         If raw speed-to-score matters most to you, Apple Sports is the
-        right pick. Their cold launch is faster. The OS-integration gap
-        is closing, though: the native iPhone app brings Live Activities
-        to No Noise Scores too.
+        right pick. Their cold launch is faster. On OS integration the two
+        now match: Live Activities and Lock Screen widgets ship in the No
+        Noise Scores iPhone app too. What Apple Sports does not have is a
+        spoiler mode. Notifications there are on or off; here the push
+        preview itself stays vague until you tap.
       </P>
 
       <H2>Where No Noise Scores wins</H2>

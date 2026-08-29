@@ -85,7 +85,14 @@ export function ScheduleClient({
   // Selection normalizes against what's in scope, so flipping scope or losing
   // a competition never leaves a dangling selection.
   const selected =
-    inScope.find((c) => c.id === selectedId) ?? inScope[0] ?? null;
+    inScope.find((c) => c.id === selectedId) ??
+    inScope[0] ??
+    // Zero-follow fallthrough (Preseason Review): with both tournaments
+    // wrapped, a visitor following nothing hit a dead-end idle card while
+    // the product had exactly ONE competition to show. One active
+    // competition in the whole product means there is nothing to disambiguate
+    // — show it. The idle card keeps its job for the multi-competition case.
+    (all.length === 1 ? all[0] : null);
 
   // Whether the scope toggle earns its place: only when scoping actually
   // changes what's shown (more than one competition exists, or the single one
@@ -509,7 +516,9 @@ function IdleState({
     ? "You don't follow it yet. See what's on across every sport."
     : upcoming
       ? "You don't follow it yet. See what's on across every sport."
-      : `NFL opens ${NFL_2026_SEASON_OPENER.label}. Until then, see what else is on.`;
+      : new Date() < new Date(NFL_2026_SEASON_OPENER.iso)
+        ? `NFL opens ${NFL_2026_SEASON_OPENER.label}. Until then, see what else is on.`
+        : "See what's on across every sport.";
   return (
     <section
       className="mt-6"

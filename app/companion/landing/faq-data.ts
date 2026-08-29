@@ -17,7 +17,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     q: "What sports are covered?",
-    a: "NBA Playoffs and Summer Soccer 2026 right now. NFL lands ahead of the September 2026 season opener. More sports get added as their moment arrives.",
+    a: "The NFL season is the current moment: follow your team, browse the full schedule, and get alerts from kickoff to the Super Bowl. NBA Playoffs and Summer Soccer 2026 had their moments earlier this year. More sports get added as their moment arrives.",
   },
   {
     q: "How is this different from Apple Sports?",
@@ -28,7 +28,7 @@ export const FAQ_ITEMS: FAQItem[] = [
     a: "Only when you want them. Turn No-Spoilers on in Alerts & Notifications and scores, headlines, and outcomes blur across every screen, including push previews. Tap to reveal one at a time.",
   },
   {
-    q: "When does NFL ship?",
-    a: "It's here. You can follow your team and browse the full schedule now. Live scores and alerts turn on for the September 9 season opener.",
+    q: "Is the NFL live?",
+    a: "Yes. Follow your team, browse the full schedule, and track games on your Lock Screen. Alerts run from the season opener through the Super Bowl.",
   },
 ];

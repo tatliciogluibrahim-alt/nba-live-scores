@@ -1,7 +1,9 @@
+import { NFL_2026_SEASON_OPENER } from "../following/data/nfl-dates";
 import { SectionHeader } from "./HowItWorksCapsule";
 
-// "Built for the moments" — three moment cards: NBA Playoffs, FIFA
-// Summer Soccer 2026, NFL (coming). The product is narrow on purpose;
+// "Built for the moments" — three moment cards, live moment first: NFL
+// Season, then the wrapped NBA Playoffs and Summer Soccer 2026 as the
+// track record. The product is narrow on purpose;
 // this section makes that narrowness feel intentional and curated,
 // not lacking.
 
@@ -19,6 +21,15 @@ type MomentEntry = {
 
 const MOMENTS: MomentEntry[] = [
   {
+    sport: "NFL",
+    title: "NFL Season",
+    detail:
+      "Follow your team through the season: kickoff and final alerts, live scores on your Lock Screen, the full week-by-week schedule. Quiet by default.",
+    accent: "var(--nfl)",
+    soft: "var(--nfl-soft)",
+    status: nflStatus(),
+  },
+  {
     sport: "NBA",
     title: "NBA Playoffs",
     detail:
@@ -34,16 +45,16 @@ const MOMENTS: MomentEntry[] = [
     accent: "var(--wc)",
     soft: "var(--wc-soft)",
   },
-  {
-    sport: "NFL",
-    title: "NFL Season",
-    detail:
-      "Sunday game tracking, drive-led highlights, possession state, weekly reminders. Follow your team now, ahead of the September 9 opener.",
-    accent: "var(--nfl)",
-    soft: "var(--nfl-soft)",
-    status: "Opens September 9",
-  },
 ];
+
+// Date-derived so this band never reads future-tense after the opener
+// (Preseason Review: "Opens September 9" would have been wrong forever
+// from Sep 10). Before the opener it names the date; after, it reads live.
+function nflStatus(): string | undefined {
+  return new Date() < new Date(NFL_2026_SEASON_OPENER.iso)
+    ? `Kicks off ${NFL_2026_SEASON_OPENER.label}`
+    : "In season";
+}
 
 export function MomentsBand() {
   return (

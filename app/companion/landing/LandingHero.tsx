@@ -34,7 +34,7 @@ export function LandingHero() {
               fontWeight: 700,
             }}
           >
-            NBA Playoffs · Summer Soccer 2026 · NFL soon
+            NFL Season · NBA Playoffs · Summer Soccer 2026
           </p>
 
           {/* The tagline as the hero statement; the type enacts it — "Skip the
@@ -267,7 +267,7 @@ function PhonePreview() {
             className="mt-1 text-[13px] leading-snug"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
-            One pinned game is live. Knicks · Spurs.
+            Your team plays tonight. NE at SEA, 8:20 PM.
           </p>
         </div>
 
@@ -301,7 +301,7 @@ function PhonePreview() {
               color: "var(--ink)",
             }}
           >
-            Knicks pulled ahead in Q4.
+            Seahawks are live.
           </p>
           <div className="mt-2 flex items-baseline gap-2">
             <span
@@ -314,7 +314,7 @@ function PhonePreview() {
                 textTransform: "uppercase",
               }}
             >
-              NYK · SA
+              NE · SEA
             </span>
             <span
               style={{
@@ -325,7 +325,7 @@ function PhonePreview() {
                 fontVariantNumeric: "tabular-nums",
               }}
             >
-              98-89
+              17-24
             </span>
           </div>
         </div>
@@ -344,9 +344,9 @@ function PhonePreview() {
         </p>
         <div className="mb-3 flex flex-wrap gap-1.5">
           {[
-            { code: "NYK", live: true },
-            { code: "USA", live: false },
+            { code: "SEA", live: true },
             { code: "KC", live: false },
+            { code: "DET", live: false },
           ].map((c) => (
             <span
               key={c.code}
@@ -395,13 +395,13 @@ function PhonePreview() {
             className="text-[12px]"
             style={{ color: "var(--ink)", fontWeight: 700 }}
           >
-            USA vs PAR
+            TB at CIN
           </p>
           <p
             className="mt-0.5 text-[11px]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
-            Group D · Thu 8:00 PM · FOX
+            Week 1 · Sun 1:00 PM · FOX
           </p>
         </div>
 
@@ -421,13 +421,13 @@ function PhonePreview() {
               color: "var(--nfl)",
             }}
           >
-            NFL Season
+            The Margin
           </p>
           <p
             className="mt-0.5 text-[12px]"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
-            Chiefs vs Bills. Opens September.
+            Your morning brief. Quiet by design.
           </p>
         </div>
         </div>
@@ -454,6 +454,7 @@ function PreviewTabBar() {
       }}
     >
       <TabSlot label="Today" active icon={<TabSunIcon />} />
+      <TabSlot label="Schedule" icon={<TabGridIcon />} />
       <TabSlot label="Following" icon={<TabHeartIcon />} />
       <TabSlot label="Watching" icon={<TabPinIcon />} />
     </nav>
@@ -519,6 +520,25 @@ function TabSunIcon() {
     >
       <circle cx="12" cy="12" r="4" />
       <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </svg>
+  );
+}
+
+function TabGridIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
     </svg>
   );
 }

@@ -44,7 +44,7 @@ export default function VsESPNPage() {
           ["Betting odds / spreads", "Yes, integrated", "No"],
           ["Social / comments", "Some", "No"],
           ["Push notifications", "Frequent, sometimes promotional", "Per-follow tier you control"],
-          ["Sport breadth", "Every major sport, every season", "NBA Playoffs + Summer Soccer + NFL coming"],
+          ["Sport breadth", "Every major sport, every season", "The NFL season now, plus the moments as they come"],
           ["No-Spoilers mode", "No", "End-to-end"],
           ["Editorial voice", "Headline-y, breaking-news flavor", "Calm, plain"],
           ["Ads", "Many", "None"],

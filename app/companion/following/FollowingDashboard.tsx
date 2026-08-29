@@ -416,7 +416,7 @@ function FollowingMobile({
       <div className="mt-[26px]">
         <Link
           href="/following/add"
-          aria-label="Follow more (NBA Playoffs or Summer Soccer)"
+          aria-label="Follow more teams and moments"
           className="flex w-full items-center justify-center rounded-full transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",
@@ -736,7 +736,7 @@ function FollowingDesktop({
         <div className="mt-[26px]">
           <Link
             href="/following/add"
-            aria-label="Follow more (NBA Playoffs or Summer Soccer)"
+            aria-label="Follow more teams and moments"
             className="flex w-full items-center justify-center rounded-full transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",

@@ -2037,9 +2037,14 @@ function pickClosing(
           kind: "deadzone",
           eyebrow: "Quiet stretch",
           headline: "Your circle is quiet right now.",
-          // NFL is the next scheduled moment in the product. The 2026
-          // opener is confirmed (see nfl-dates.ts), so we name the date.
-          detail: `Nothing live or coming up. NFL opens ${NFL_2026_SEASON_OPENER.label}.`,
+          // Before the opener, name the confirmed date; after it, the
+          // season is on and "opens September 9" would read future-tense
+          // forever (Preseason Review). Dead-zone days mid-season point at
+          // the week rhythm instead.
+          detail:
+            now < new Date(NFL_2026_SEASON_OPENER.iso)
+              ? `Nothing live or coming up. NFL opens ${NFL_2026_SEASON_OPENER.label}.`
+              : "Nothing live or coming up. Your circle comes back on game day.",
           dots: [],
           circleHeading: "You still follow",
           circle,
