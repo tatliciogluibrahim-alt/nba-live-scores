@@ -331,6 +331,32 @@ When making code changes:
 
 ## Current Priority
 
+### 2026-08-29 — gate 4 CLOSED on live preseason data
+
+First real live NFL game (DET@IND, preseason wk 4) verified the whole live
+path in production: Today hero Monument, SCORING/TOP PERFORMERS/BY QUARTER
+on detail, all real data, console clean. Shipped off that pass: live-kicker
+nowrap on all four surfaces (NFL's "Q3 10:24" wrapped mid-clock; NBA/WC
+clocks were just short enough to hide it) + the `events.held.preseason`
+durable counter.
+
+**Gate 4 go/no-go: PASSED**, read from /api/admin/push/status by the user:
+1440 scans/day with 0 errors, 153+82 events detected across real slates,
+heldPreseason 5 (counter live mid-game, caught the DET@IND tail),
+**dispatch.delivered 0 across the whole preseason** — the hold held, zero
+escapes. Honest caveat: the 16-concurrent-games volume test can only happen
+on the first regular Sunday (Sep 13) — preseason peaks ~6 concurrent.
+
+**Still open before Sep 9:** the user's on-device delivery proof
+(POST /api/admin/push/test-event?type=nfl-kickoff — bypasses the hold, must
+return delivered ≥ 1 on a followed team), then gate 6 at the opener (drop
+the preseason hold's effect naturally via seasonType 2, fire the relay,
+reliance NFL rows). Kickoff is 2:20am CEST Sep 10 local — the user's own
+quiet hours may suppress their opener pushes; judge delivery by counters,
+not by one phone.
+
+---
+
 ### 2026-08-26 — the dispatcher sport gate (NFL push was dead)
 
 User reported no push notifications after preseason week 3. The preseason
