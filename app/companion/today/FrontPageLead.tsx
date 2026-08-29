@@ -258,7 +258,11 @@ export function FrontPageLead({
                   />
                 ) : null}
                 {lead.live ? (
+                  // shrink-0 + nowrap: NFL's "Q3 10:24" clock wrapped
+                  // mid-segment beside a long tail (live 2026-08-29).
+                  // The clock holds; the truncating context gives.
                   <span
+                    className="shrink-0 whitespace-nowrap"
                     style={
                       // On the peak field the kicker is already full
                       // cream (contrast law) — no accent-on-accent.

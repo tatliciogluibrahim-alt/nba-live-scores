@@ -66,6 +66,11 @@ export type OpsCounter =
   | "cron.scans"
   | "cron.scan.error"
   | "events.detected"
+  // Preseason hold (Phase 22): NFL events detected but deliberately not
+  // delivered. Durable — the per-tick `heldPreseason` response field and
+  // Vercel logs age out, so without this a week of preseason detection
+  // leaves no readable record that the detectors fired and the hold held.
+  | "events.held.preseason"
   | "dispatch.delivered"
   | "dispatch.deduped"
   | "dispatch.gone"
@@ -139,6 +144,7 @@ const COUNTER_NAMES: OpsCounter[] = [
   "cron.scans",
   "cron.scan.error",
   "events.detected",
+  "events.held.preseason",
   "dispatch.delivered",
   "dispatch.deduped",
   "dispatch.gone",

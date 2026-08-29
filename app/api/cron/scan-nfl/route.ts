@@ -214,6 +214,9 @@ export async function GET(req: Request) {
   );
   const held = heldEvents.length;
   if (held > 0) {
+    // Durable record (events.held.preseason): the response field and logs
+    // age out; the counter is what proves detection + hold after the fact.
+    await incrCounter("events.held.preseason", held);
     console.log("scan-nfl preseason hold", {
       held,
       games: [...heldGameIds],

@@ -210,7 +210,10 @@ export function NBALiveCompanion({
         />
       ) : null}
       {isLive ? (
-        <span style={isPeak ? undefined : { color: "var(--nba)", fontWeight: 700 }}>
+        <span
+          className="shrink-0 whitespace-nowrap"
+          style={isPeak ? undefined : { color: "var(--nba)", fontWeight: 700 }}
+        >
           Live{liveClock ? ` · ${liveClock}` : ""}
         </span>
       ) : null}

@@ -161,7 +161,10 @@ export function WCGameDetail({
         />
       ) : null}
       {isLive ? (
-        <span style={isPeak ? undefined : { color: "var(--wc)", fontWeight: 700 }}>
+        <span
+          className="shrink-0 whitespace-nowrap"
+          style={isPeak ? undefined : { color: "var(--wc)", fontWeight: 700 }}
+        >
           Live · {liveClock}
         </span>
       ) : null}

@@ -121,7 +121,12 @@ export function NFLGameDetail({
         />
       ) : null}
       {isLive ? (
-        <span style={isPeak ? undefined : { color: "var(--nfl)", fontWeight: 700 }}>
+        // shrink-0 + nowrap: "Live · Q3 10:24" must never wrap mid-clock
+        // (seen live 2026-08-29, DET@IND) — the muted tail truncates instead.
+        <span
+          className="shrink-0 whitespace-nowrap"
+          style={isPeak ? undefined : { color: "var(--nfl)", fontWeight: 700 }}
+        >
           Live · {game.statusText}
         </span>
       ) : null}

@@ -53,6 +53,7 @@ function summarize(snap: OpsSnapshot) {
       scanErrors: c["cron.scan.error"],
     },
     events: c["events.detected"],
+    heldPreseason: c["events.held.preseason"],
     dispatch: {
       delivered: c["dispatch.delivered"],
       deduped: c["dispatch.deduped"],
