@@ -81,7 +81,7 @@ export function FollowRow({
               fontSize: 10,
               fontWeight: 700,
               letterSpacing: "0.12em",
-              color: "var(--live)",
+              color: "var(--live-text)",
             }}
           >
             <span

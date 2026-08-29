@@ -38,8 +38,19 @@ export function AgateRow({
   stamp,
   href,
   spoilerGameId,
-  linkLabel = "Open details",
+  linkLabel,
 }: AgateRowProps) {
+  // Accessible-name fallback (Preseason Review a11y): most call sites never
+  // pass linkLabel, so VoiceOver read a bare "Open details" on every row.
+  // When main/note are plain strings, derive the name from the row's own
+  // content; the generic label is now the last resort, not the default.
+  const derivedLabel =
+    linkLabel ??
+    [typeof main === "string" ? main : null, note]
+      .filter(Boolean)
+      .join(", ") ??
+    undefined;
+  const label = derivedLabel || "Open details";
   const scoreHidden = useEffectiveNoSpoilers(spoilerGameId ?? "");
   const inner = (
     <>
@@ -101,7 +112,7 @@ export function AgateRow({
       <div className={`relative ${cls}`} style={rowStyle}>
         <Link
           href={href}
-          aria-label={linkLabel}
+          aria-label={label}
           className="absolute inset-0 active:bg-[var(--paper)]"
         />
         {inner}

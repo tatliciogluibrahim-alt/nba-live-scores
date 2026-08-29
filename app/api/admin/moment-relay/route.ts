@@ -10,7 +10,7 @@
 //     "https://nonoisescores.app/api/admin/moment-relay?moment=nfl-2026"
 
 import { NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
+import { requireAdminBearer } from "../../../lib/request-guards";
 import {
   encodePushPayload,
   getWebPush,
@@ -46,22 +46,9 @@ const RELAY_COPY: Record<string, PushPayload> = {
   },
 };
 
-function isAuthorized(req: Request): boolean {
-  const header = req.headers.get("authorization") ?? "";
-  if (!header.startsWith("Bearer ")) return false;
-  const provided = Buffer.from(header.slice("Bearer ".length).trim());
-  for (const envName of ["ADMIN_TOKEN", "CRON_SECRET"]) {
-    const expected = process.env[envName];
-    if (!expected) continue;
-    const b = Buffer.from(expected);
-    if (provided.length !== b.length) continue;
-    if (timingSafeEqual(provided, b)) return true;
-  }
-  return false;
-}
 
 export async function POST(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!requireAdminBearer(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

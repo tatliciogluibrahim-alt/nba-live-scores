@@ -55,6 +55,10 @@ html, body {
      this color anywhere else in the product. Sport accents (--nba, --wc)
      stay separate so basketball / football cards retain their identity. */
   --live:       #b85a2a;
+  /* Text-grade live: --live is a PIP color (3.86:1 on cream — fine for
+     dots and fills, fails AA for the 9-13px LIVE stamps that use it as
+     text every NFL Sunday). Darkened to clear 4.5:1; pips keep --live. */
+  --live-text:  #9a4517;
 
   /* System D brand chrome (C4 color lock — spec §5 v3, color-c4.html is the
      source of truth). Vermilion lives on CHROME, confidently: the masthead
@@ -172,6 +176,7 @@ html, body {
   --critical:                  #e2554a;
   --pos:                       #3d9d5d;
   --live:                      #f47743;
+  --live-text:                 #f4854f;
 
   /* System D brand chrome — DESIGNED for the dark ground, not auto-flipped
      (spec §5 v3 / §9). Vermilion brightens to #ec5f42 so 10-11px index/count

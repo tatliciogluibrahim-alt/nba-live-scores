@@ -1,0 +1,24 @@
+# CI gate (Preseason Review quick win): 724 tests and a zero-warning lint
+# rule exist, but nothing ran them automatically — an AI-assisted push to
+# main only failed when a human next ran the suite. This turns that into a
+# same-minute red X. Mirrors the local ship gate: lint (0 warnings), tests,
+# build.
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint -- --max-warnings 0
+      - run: npm test
+      - run: npm run build

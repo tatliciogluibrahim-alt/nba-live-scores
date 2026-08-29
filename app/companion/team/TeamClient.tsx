@@ -339,7 +339,7 @@ function NextGameBlock({
   return (
     <section className="mt-4">
       <div className="mb-2 flex items-center gap-3">
-        <Eyebrow color={isLive ? "var(--live)" : undefined}>
+        <Eyebrow color={isLive ? "var(--live-text)" : undefined}>
           {isLive ? "Live now" : "Next game"}
         </Eyebrow>
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />

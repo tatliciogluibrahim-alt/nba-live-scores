@@ -22,7 +22,8 @@
 //   • One subscriber's send errors → swallowed per-sub, loop
 //     continues. Same fault-isolation pattern as the push dispatcher.
 
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash } from "node:crypto";
+import { requireCronBearer } from "../../../lib/request-guards";
 import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
 import { listSubscribers } from "../../../lib/brief/subscriber-store";
@@ -91,17 +92,6 @@ async function claimBriefSendOnce(
   }
 }
 
-function isAuthorized(req: Request): boolean {
-  const expected = process.env.CRON_SECRET;
-  if (!expected) return false;
-  const header = req.headers.get("authorization") ?? "";
-  if (!header.startsWith("Bearer ")) return false;
-  const provided = header.slice("Bearer ".length).trim();
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
-}
 
 function resolveBaseUrl(req: Request): string {
   return new URL(req.url).origin;
@@ -250,7 +240,7 @@ async function runNarrativeShadow(
 }
 
 export async function GET(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!requireCronBearer(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

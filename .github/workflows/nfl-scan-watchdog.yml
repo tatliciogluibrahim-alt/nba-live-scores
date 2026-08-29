@@ -1,0 +1,31 @@
+# Heartbeat watchdog (Preseason Review quick win): cron-job.org is the
+# single scheduler for scan-nfl and auto-disables itself after repeated
+# failures — silently. Every scan tick stamps lastScanAt.nfl in KV; this
+# checks the stamp every 15 minutes and fails the run (-> GitHub failure
+# email) when it goes stale. No secrets needed: /api/push/inspect is the
+# public read-only diagnostic endpoint.
+name: nfl-scan-watchdog
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check scan-nfl heartbeat
+        run: |
+          set -e
+          STAMP=$(curl -sf --max-time 20 \
+            "https://nonoisescores.app/api/push/inspect?token=watchdog0" \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)['lastScanAt']['nfl'] or '')")
+          if [ -z "$STAMP" ]; then
+            echo "::error::No NFL heartbeat recorded at all"; exit 1
+          fi
+          AGE=$(( $(date -u +%s) - $(date -u -d "$STAMP" +%s) ))
+          echo "lastScanAt.nfl = $STAMP (${AGE}s ago)"
+          # 3 missed minutes is jitter; 10 is a dead scheduler.
+          if [ "$AGE" -gt 600 ]; then
+            echo "::error::scan-nfl heartbeat is ${AGE}s old — the cron-job.org job is likely disabled"; exit 1
+          fi

@@ -212,7 +212,7 @@ function ScheduleRow({
           style={{
             fontFamily: "var(--font-mono)",
             letterSpacing: "0.06em",
-            color: live ? "var(--live)" : "var(--mute-1)",
+            color: live ? "var(--live-text)" : "var(--mute-1)",
             fontWeight: 700,
           }}
         >

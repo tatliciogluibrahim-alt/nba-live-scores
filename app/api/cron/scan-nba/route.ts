@@ -22,8 +22,8 @@
 //   • web-push delivery fails for one device → dispatcher swallows it
 //     and records the reason. Cron continues for other devices.
 
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { requireCronBearer } from "../../../lib/request-guards";
 import { detectEvents, type FreshGameState, type PushEvent } from "../../../lib/push/event-detector";
 import { dispatchEvents } from "../../../lib/push/dispatcher";
 import { readCachedState, writeCachedState, nbaStateChanged } from "../../../lib/push/state-cache";
@@ -157,21 +157,6 @@ function resolveBaseUrl(req: Request): string {
   return new URL(req.url).origin;
 }
 
-function isAuthorized(req: Request): boolean {
-  const expected = process.env.CRON_SECRET;
-  if (!expected) return false; // fail closed — never run without a secret
-  const header = req.headers.get("authorization") ?? "";
-  if (!header.startsWith("Bearer ")) return false;
-  const provided = header.slice("Bearer ".length).trim();
-
-  // Constant-time compare. Plain `===` leaks length and byte-by-byte
-  // match timing. The check is low-value (the secret is long and
-  // random) but the fix is one line. (Codex QA #5.)
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
-}
 
 function toFresh(game: NormalizedGame): FreshGameState {
   return {
@@ -195,7 +180,7 @@ function toFresh(game: NormalizedGame): FreshGameState {
 }
 
 export async function GET(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!requireCronBearer(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

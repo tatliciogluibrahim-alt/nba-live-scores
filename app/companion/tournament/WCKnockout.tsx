@@ -144,7 +144,7 @@ function KnockoutPreviewRow({
         fontFamily: "var(--font-mono)",
         fontWeight: 700,
         fontSize: 14,
-        color: live ? "var(--live)" : "var(--ink)",
+        color: live ? "var(--live-text)" : "var(--ink)",
         ...(resultHidden ? { position: "relative", zIndex: 1 } : {}),
       }}
     >

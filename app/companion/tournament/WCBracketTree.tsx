@@ -280,7 +280,7 @@ function FeederRow({
           fontFamily: "var(--font-mono)",
           fontSize: 9,
           letterSpacing: "0.1em",
-          color: live ? "var(--live)" : "var(--mute-1)",
+          color: live ? "var(--live-text)" : "var(--mute-1)",
           fontWeight: 600,
         }}
       >
@@ -412,7 +412,7 @@ function SlotCell({
           color: championSide
             ? "var(--brand)"
             : live
-              ? "var(--live)"
+              ? "var(--live-text)"
               : "var(--mute-1)",
           fontWeight: championSide ? 700 : 600,
         }}

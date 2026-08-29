@@ -20,28 +20,17 @@
 // you exactly what went wrong (BadDeviceToken, ExpiredProviderToken,
 // etc.).
 
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { requireAdminBearer } from "../../../lib/request-guards";
 import { listIosTokens, removeIosToken } from "../../../lib/push/ios-token-store";
 import { sendApnsPush } from "../../../lib/push/apns-sender";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function isAuthorized(req: Request): boolean {
-  const expected = process.env.CRON_SECRET;
-  if (!expected) return false;
-  const header = req.headers.get("authorization") ?? "";
-  if (!header.startsWith("Bearer ")) return false;
-  const provided = header.slice("Bearer ".length).trim();
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
-}
 
 export async function POST(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!requireAdminBearer(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

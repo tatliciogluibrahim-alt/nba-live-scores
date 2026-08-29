@@ -6,8 +6,8 @@
 // Phase 2.1 observability. Lets the operator answer "is push working?"
 // without combing through cron logs.
 
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { requireAdminBearer } from "../../../../lib/request-guards";
 import {
   listSubscriptionsByTeams,
   subscriptionCount,
@@ -17,23 +17,6 @@ import { readRecentSnapshots, type OpsSnapshot } from "../../../../lib/push/ops-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Accept either ADMIN_TOKEN (preferred) or CRON_SECRET (fallback) so
- *  the operator doesn't have to manage a second secret just to read
- *  ops metrics. Phase 8 friend-test debugging convenience. */
-function isAuthorized(req: Request): boolean {
-  const header = req.headers.get("authorization") ?? "";
-  if (!header.startsWith("Bearer ")) return false;
-  const provided = Buffer.from(header.slice("Bearer ".length).trim());
-
-  for (const envName of ["ADMIN_TOKEN", "CRON_SECRET"]) {
-    const expected = process.env[envName];
-    if (!expected) continue;
-    const b = Buffer.from(expected);
-    if (provided.length !== b.length) continue;
-    if (timingSafeEqual(provided, b)) return true;
-  }
-  return false;
-}
 
 function summarize(snap: OpsSnapshot) {
   const c = snap.counters;
@@ -69,7 +52,7 @@ function summarize(snap: OpsSnapshot) {
 }
 
 export async function GET(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!requireAdminBearer(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

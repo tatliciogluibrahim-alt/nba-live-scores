@@ -180,20 +180,32 @@ function ScopeToggle({
               if (!on) onScope(key);
             }}
             aria-pressed={on}
-            className="uppercase transition active:opacity-70"
+            // min-h 44 per the System D affordance law (a11y quick win):
+            // the visual pill stays 26px; the tap target does not.
+            className="inline-flex min-h-[44px] items-center uppercase transition active:opacity-70"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10.5,
               letterSpacing: "0.12em",
               fontWeight: on ? 700 : 600,
               color: on ? "var(--cream)" : "var(--mute-1)",
-              background: on ? "var(--ink)" : "transparent",
-              border: `1px solid ${on ? "var(--ink)" : "var(--line)"}`,
-              borderRadius: 999,
-              padding: "5px 12px",
+              background: "transparent",
+              border: "none",
+              padding: 0,
             }}
           >
-            {label}
+            <span
+              className="inline-flex items-center"
+              style={{
+                color: "inherit",
+                background: on ? "var(--ink)" : "transparent",
+                border: `1px solid ${on ? "var(--ink)" : "var(--line)"}`,
+                borderRadius: 999,
+                padding: "5px 12px",
+              }}
+            >
+              {label}
+            </span>
           </button>
         );
       })}
@@ -221,7 +233,7 @@ function CompetitionSwitcher({
             type="button"
             onClick={() => onSelect(c.id)}
             aria-pressed={on}
-            className="shrink-0 whitespace-nowrap uppercase transition active:opacity-70"
+            className="inline-flex min-h-[44px] shrink-0 items-center whitespace-nowrap uppercase transition active:opacity-70"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,

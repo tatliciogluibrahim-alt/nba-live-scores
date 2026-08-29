@@ -189,7 +189,7 @@ function NowMark({ kind }: { kind: "now" | "next" }) {
           fontSize: 10,
           fontWeight: 700,
           letterSpacing: "0.18em",
-          color: live ? "var(--live)" : "var(--ink)",
+          color: live ? "var(--live-text)" : "var(--ink)",
         }}
       >
         {live ? "Now" : "Next"}
@@ -436,7 +436,7 @@ function BracketMatchRow({
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
           fontSize: 14,
-          color: live ? "var(--live)" : "var(--ink)",
+          color: live ? "var(--live-text)" : "var(--ink)",
           ...(resultHidden ? { position: "relative", zIndex: 1 } : {}),
         }}
       >

@@ -19,8 +19,8 @@
 //
 // Auth: Bearer CRON_SECRET (timing-safe), same as the scan crons.
 
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { requireCronBearer } from "../../../lib/request-guards";
 import {
   encodePushPayload,
   getWebPush,
@@ -54,16 +54,6 @@ const DEFAULT_REMIND_MINUTES = 30;
 // reminder lead time the UI offers is 60 min; the slack covers cron jitter.
 const MAX_LOOKAHEAD_MS = 185 * 60 * 1000;
 
-function isAuthorized(req: Request): boolean {
-  const expected = process.env.CRON_SECRET;
-  if (!expected) return false;
-  const header = req.headers.get("authorization") ?? "";
-  if (!header.startsWith("Bearer ")) return false;
-  const provided = Buffer.from(header.slice("Bearer ".length).trim());
-  const b = Buffer.from(expected);
-  if (provided.length !== b.length) return false;
-  return timingSafeEqual(provided, b);
-}
 
 async function fetchGames(url: string): Promise<FeedGame[]> {
   try {
@@ -88,7 +78,7 @@ type UpcomingGame = {
 };
 
 export async function GET(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!requireCronBearer(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

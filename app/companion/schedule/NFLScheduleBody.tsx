@@ -132,6 +132,8 @@ function ViewTabs({
               letterSpacing: "0.12em",
               fontWeight: on ? 700 : 600,
               color: on ? "var(--ink)" : "var(--mute-2)",
+              // 44px total tap height (a11y): 2 + text + bottom padding.
+              minHeight: 44,
               paddingTop: 2,
               paddingBottom: 10,
               background: "transparent",
@@ -165,8 +167,9 @@ function WeekPager({
     fontSize: 13,
     fontWeight: 700,
     color: "var(--ink)",
-    padding: "6px 10px",
-    minHeight: 40,
+    padding: "6px 14px",
+    minHeight: 44,
+    minWidth: 44,
   } as const;
   return (
     <div className="mb-1 flex items-center justify-between">
@@ -286,7 +289,7 @@ function NFLGameRow({
             fontSize: 9,
             letterSpacing: "0.1em",
             fontWeight: 600,
-            color: live ? "var(--live)" : "var(--mute-2)",
+            color: live ? "var(--live-text)" : "var(--mute-2)",
           }}
         >
           {stamp}

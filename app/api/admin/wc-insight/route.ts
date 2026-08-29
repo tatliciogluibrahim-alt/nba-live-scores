@@ -25,7 +25,7 @@
 //     "https://nonoisescores.app/api/admin/wc-insight?id=12345&fresh=1"
 
 import { NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
+import { requireAdminBearer } from "../../../lib/request-guards";
 import { buildWCFactsFromGame } from "../../../lib/wc-insights/wc-facts";
 import { getOrGenerateNarrative } from "../../../lib/narrative/service";
 import { rankSignals } from "../../../lib/narrative/significance";
@@ -36,19 +36,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-function isAuthorized(req: Request): boolean {
-  const header = req.headers.get("authorization") ?? "";
-  if (!header.startsWith("Bearer ")) return false;
-  const provided = Buffer.from(header.slice("Bearer ".length).trim());
-  for (const envName of ["ADMIN_TOKEN", "CRON_SECRET"]) {
-    const expected = process.env[envName];
-    if (!expected) continue;
-    const b = Buffer.from(expected);
-    if (provided.length !== b.length) continue;
-    if (timingSafeEqual(provided, b)) return true;
-  }
-  return false;
-}
 
 async function resolveMatch(
   baseUrl: string,
@@ -68,7 +55,7 @@ async function resolveMatch(
 }
 
 export async function GET(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!requireAdminBearer(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
