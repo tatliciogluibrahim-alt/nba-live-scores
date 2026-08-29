@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { tournamentPhase } from "./tournament-phase";
+import {
+  tournamentPhase,
+  activeAlertSlotCount,
+  occupiesAlertSlot,
+} from "./tournament-phase";
 
 const WC = "fifa-world-cup-2026";
 
@@ -70,5 +74,37 @@ describe("tournamentPhase — NBA playoffs (active vs concluded by season year)"
     expect(tournamentPhase("ncaa-madness-2027", new Date("2027-03-20T00:00:00Z"))).toBe(
       "group"
     );
+  });
+});
+
+describe("alert slot occupancy (Preseason Review)", () => {
+  // Today (2026-08-29): NBA playoffs and Summer Soccer are concluded,
+  // the NFL season is pre/active. The deadlock this locks: a beta user
+  // carrying 3 wrapped-era alert follows adds their NFL team and hits
+  // "Alert slots are full" with the toggle disabled.
+  const f = (momentId: string, alertEnabled = true) => ({ momentId, alertEnabled });
+
+  it("a concluded moment's follow consumes no slot", () => {
+    expect(occupiesAlertSlot(f("nba-playoffs-2025"))).toBe(false);
+    expect(occupiesAlertSlot(f("fifa-world-cup-2026"))).toBe(false);
+  });
+
+  it("an active or pre moment's follow consumes a slot", () => {
+    expect(occupiesAlertSlot(f("nfl-season-2026"))).toBe(true);
+  });
+
+  it("alerts-off follows never consume a slot", () => {
+    expect(occupiesAlertSlot(f("nfl-season-2026", false))).toBe(false);
+  });
+
+  it("three wrapped follows leave all three slots free", () => {
+    expect(
+      activeAlertSlotCount([
+        f("nba-playoffs-2025"),
+        f("fifa-world-cup-2026"),
+        f("nba-playoffs-2025"),
+        f("nfl-season-2026"),
+      ])
+    ).toBe(1);
   });
 });

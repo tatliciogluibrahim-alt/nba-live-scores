@@ -6,6 +6,7 @@ import {
   seriesFollowIds,
   followsWholeSport,
   momentSport,
+  defaultAlertTierForMoment,
 } from "./moments";
 import { followHidesParticipants } from "../spoiler/follow-match";
 import { buildNBAFollowCoverage } from "../following/nba-follow-coverage";
@@ -137,5 +138,15 @@ describe("followHidesParticipants sport gate", () => {
     expect(
       followHidesParticipants(follows, { teamCodes: ["CLE", "BOS"] })
     ).toBe(true);
+  });
+});
+
+describe("defaultAlertTierForMoment", () => {
+  it("NFL seeds Quiet (nfl-design: kickoff + final only by default)", () => {
+    expect(defaultAlertTierForMoment("nfl-season-2026")).toBe("quiet");
+  });
+  it("tournament sports defer to the user's global default", () => {
+    expect(defaultAlertTierForMoment("nba-playoffs-2025")).toBeNull();
+    expect(defaultAlertTierForMoment("fifa-world-cup-2026")).toBeNull();
   });
 });

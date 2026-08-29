@@ -20,6 +20,8 @@ import {
   type UserPrefs,
 } from "./state/types";
 import { legacyRefToFollow, toFollow } from "./state/follow-migration";
+import { activeAlertSlotCount } from "./following/data/tournament-phase";
+import { defaultAlertTierForMoment } from "./state/moments";
 import {
   STORAGE_KEYS,
   normalizeStoredFollowsV2,
@@ -254,8 +256,10 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     [follows]
   );
 
+  // Concluded moments release their slots (Preseason Review 2026-08-29):
+  // three wrapped NBA/WC alert follows must not deadlock an NFL add.
   const alertSlotCount = useMemo(
-    () => follows.filter((f) => f.alertEnabled).length,
+    () => activeAlertSlotCount(follows),
     [follows]
   );
 
@@ -263,17 +267,24 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
     (kind: FollowKind, id: string, preset?: AlertPreset) => {
       setFollows((prev) => {
         if (prev.some((f) => f.kind === kind && f.id === id)) return prev;
-        const enabledCount = prev.filter((f) => f.alertEnabled).length;
+        const enabledCount = activeAlertSlotCount(prev);
         const tier = preset ?? prefs.defaultAlertTier;
         // Legacy-ref sugar (the design doc's "callers keep their shape"):
         // (kind, id) resolves through the SAME mapping storage migration
         // uses, so a UI reference and a stored record can't disagree.
-        const follow = legacyRefToFollow(kind, id, {
+        let follow = legacyRefToFollow(kind, id, {
           alertEnabled: enabledCount < MAX_FREE_ALERT_SLOTS,
           alertTier: tier,
           followedAt: Date.now(),
         });
         if (!follow) return prev;
+        // Sport default beats the global default when the caller didn't
+        // choose (nfl-design: NFL seeds Quiet). Resolved after the ref so
+        // the moment is known.
+        if (!preset) {
+          const sportDefault = defaultAlertTierForMoment(follow.momentId);
+          if (sportDefault) follow = { ...follow, alertTier: sportDefault };
+        }
         const next = [...prev, follow];
         writeJSON(STORAGE_KEYS.follows, next);
         return next;
@@ -303,13 +314,16 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
         ) {
           return prev;
         }
-        const enabledCount = prev.filter((f) => f.alertEnabled).length;
+        const enabledCount = activeAlertSlotCount(prev);
         const follow = toFollow({
           momentId,
           scope,
           scopeId,
           alertEnabled: enabledCount < MAX_FREE_ALERT_SLOTS,
-          alertTier: preset ?? prefs.defaultAlertTier,
+          alertTier:
+            preset ??
+            defaultAlertTierForMoment(momentId) ??
+            prefs.defaultAlertTier,
           followedAt: Date.now(),
         });
         const next = [...prev, follow];
@@ -361,7 +375,7 @@ export function CompanionProviders({ children }: { children: ReactNode }) {
         const current = prev.find((f) => f.kind === kind && f.id === id);
         if (!current) return prev;
         if (current.alertEnabled === enabled) return prev;
-        if (enabled && prev.filter((f) => f.alertEnabled).length >= MAX_FREE_ALERT_SLOTS) {
+        if (enabled && activeAlertSlotCount(prev) >= MAX_FREE_ALERT_SLOTS) {
           return prev;
         }
         const next = prev.map((f) =>

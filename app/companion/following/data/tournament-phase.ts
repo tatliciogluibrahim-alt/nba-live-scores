@@ -79,3 +79,26 @@ function wcPhase(now: Date): TournamentPhase {
   if (t < finalKickoff + DAY_MS) return "knockout";
   return "concluded";
 }
+
+// ── Alert slots ───────────────────────────────────────────────────────
+// A follow occupies one of the 3 free alert slots only while its moment
+// can still produce an alert (Preseason Review 2026-08-29): a beta user
+// carrying 3 NBA/WC-era alert follows was DEADLOCKED adding their NFL team
+// — "Alert slots are full" with the escape toggle disabled — because
+// concluded moments still counted. The wrapped follows keep their flag (it
+// revives if a moment ever un-concludes and it documents intent); they
+// just stop consuming capacity.
+
+export function occupiesAlertSlot(follow: {
+  alertEnabled: boolean;
+  momentId: string;
+}): boolean {
+  if (!follow.alertEnabled) return false;
+  return tournamentPhase(follow.momentId) !== "concluded";
+}
+
+export function activeAlertSlotCount(
+  follows: readonly { alertEnabled: boolean; momentId: string }[]
+): number {
+  return follows.filter(occupiesAlertSlot).length;
+}

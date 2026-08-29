@@ -14,6 +14,7 @@ import {
   type UserPrefs,
 } from "./types";
 import { migrateFollowList, toFollow } from "./follow-migration";
+import { occupiesAlertSlot } from "../following/data/tournament-phase";
 
 const NS = "no-noise";
 const VERSION = "v1";
@@ -82,6 +83,11 @@ export function normalizeStoredFollowsV2(value: unknown): Follow[] {
     .sort((a, b) => a.followedAt - b.followedAt)
     .map((follow) => {
       if (!follow.alertEnabled) return follow;
+      // A concluded moment's follow keeps its flag but consumes no slot —
+      // the same occupancy rule providers uses (Preseason Review
+      // 2026-08-29). Without this, three wrapped playoff follows disabled
+      // a legitimately-added fourth on every reload.
+      if (!occupiesAlertSlot(follow)) return follow;
       enabled += 1;
       if (enabled <= MAX_FREE_ALERT_SLOTS) return follow;
       return { ...follow, alertEnabled: false };

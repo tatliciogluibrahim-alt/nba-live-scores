@@ -88,6 +88,18 @@ export function momentSport(
   return null;
 }
 
+/** Per-sport default alert tier for a NEW follow, or null to use the
+ *  user's global default. NFL locked Quiet in docs/nfl-design.md ("kickoff
+ *  + final only; loud-mode fantasy is an explicit opt-in") — an ~12-push
+ *  Companion game from an app named No Noise is the wrong first
+ *  impression for the September cohort. Tournament sports keep the global
+ *  default: their per-game alert volume is what Companion was tuned on. */
+export function defaultAlertTierForMoment(
+  momentId: string
+): "quiet" | null {
+  return momentSport(momentId) === "nfl" ? "quiet" : null;
+}
+
 /** Direct = a specific entity (your team / country / series). Drives the
  *  significance engine's PERSONAL_BOOST + the start/final invariant floor.
  *  A whole-moment follow ("all") is the old tournament follow: threshold
