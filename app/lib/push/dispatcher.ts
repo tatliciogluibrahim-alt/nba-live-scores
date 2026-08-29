@@ -607,7 +607,7 @@ function scoreLine(event: PushEvent): string {
  *  so wc-goal folds the scoreline into the tag — each distinct scoreline
  *  is its own dedupe slot, while a repeated identical tick is still
  *  suppressed. */
-function dedupeTagFor(event: PushEvent): string {
+export function dedupeTagFor(event: PushEvent): string {
   if (event.type === "wc-goal") {
     return `${event.gameId}:wc-goal:${event.awayScore}-${event.homeScore}`;
   }
@@ -615,12 +615,44 @@ function dedupeTagFor(event: PushEvent): string {
     // Distinct milestones / players in one game must each get through.
     return `${event.gameId}:nba-highlight:${event.note ?? ""}`;
   }
+  // NFL repeatable plays (Preseason Review 2026-08-29): a bare
+  // `${gameId}:${type}` claimed the FIRST receiving TD and swallowed every
+  // later one in the same game — wc-goal got the scoreline carve-out, the
+  // NFL taxonomy didn't. Scoring plays fold the running score (unique per
+  // score); turnovers and big plays fold the play note (score may not move).
+  if (NFL_SCORING_PLAY_TYPES.has(event.type)) {
+    return `${event.gameId}:${event.type}:${event.awayScore}-${event.homeScore}`;
+  }
+  if (NFL_NOTE_PLAY_TYPES.has(event.type)) {
+    return `${event.gameId}:${event.type}:${event.note ?? ""}`;
+  }
   return `${event.gameId}:${event.type}`;
 }
 
+const NFL_SCORING_PLAY_TYPES = new Set<PushEvent["type"]>([
+  "nfl-td-rushing",
+  "nfl-td-receiving",
+  "nfl-td-defensive",
+  "nfl-fg",
+  "nfl-safety",
+  "nfl-2pt",
+]);
+const NFL_NOTE_PLAY_TYPES = new Set<PushEvent["type"]>([
+  "nfl-turnover",
+  "nfl-big-play-rush",
+  "nfl-big-play-rec",
+]);
+
 /** Start-of-game events that the lock-screen offer rides on. The offer
  *  variant only ever replaces these. */
-const START_EVENT_TYPES = new Set<PushEvent["type"]>(["tipoff", "wc-kickoff"]);
+const START_EVENT_TYPES = new Set<PushEvent["type"]>([
+  "tipoff",
+  "wc-kickoff",
+  // Preseason Review 2026-08-29: the lock-screen offer never rode NFL
+  // kickoffs — the flagship native feature had no entry point on the
+  // sport it was readied for.
+  "nfl-kickoff",
+]);
 
 /** True when the event is a game-start event (NBA tipoff or WC kickoff). */
 export function isStartEvent(event: PushEvent): boolean {
@@ -639,16 +671,18 @@ export function wantsLiveActivityOffer(
 
 /** The matchup used as the offer title, e.g. "BRA vs JPN". */
 function offerMatchup(event: PushEvent): string {
-  return `${event.awayCode} vs ${event.homeCode}`;
+  // Football says "at" — the away team travels.
+  const joiner = eventSport(event) === "nfl" ? "at" : "vs";
+  return `${event.awayCode} ${joiner} ${event.homeCode}`;
 }
 
 /** The collapse tag for a start event — must match the tag buildPayload
  *  uses for the same event so the offer and the normal start push share a
  *  Notification Center slot. */
 function startTag(event: PushEvent): string {
-  return event.type === "wc-kickoff"
-    ? `${event.gameId}:wc-state`
-    : `${event.gameId}:tipoff`;
+  if (event.type === "wc-kickoff") return `${event.gameId}:wc-state`;
+  if (event.type === "nfl-kickoff") return `${event.gameId}:nfl-state`;
+  return `${event.gameId}:tipoff`;
 }
 
 /** Stakes line for the offer subtitle. Spoiler-safe (carries no score —
@@ -674,7 +708,8 @@ export function buildLiveActivityOfferPayload(event: PushEvent): PushPayload {
   return {
     title: offerMatchup(event),
     subtitle: offerSubtitle(event),
-    body: "Track this match on your Lock Screen.",
+    // Domain-correct noun: soccer says match, the clock sports say game.
+    body: `Track this ${eventSport(event) === "wc" ? "match" : "game"} on your Lock Screen.`,
     url: `/game/${event.gameId}?offer=live-activity`,
     tag: startTag(event),
   };

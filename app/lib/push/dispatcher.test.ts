@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  dedupeTagFor,
   subscriberWantsEvent,
   subscriberUsesNoSpoilersForEvent,
   isStartEvent,
@@ -589,7 +590,8 @@ describe("live-activity offer builders", () => {
     const p = buildLiveActivityOfferPayload(nbaEvent({ type: "tipoff", isGame7: true }));
     expect(p.subtitle).toBe("Game 7 · series on the line");
     expect(p.title).toBe("OKC vs SA");
-    expect(p.body).toBe("Track this match on your Lock Screen.");
+    // Domain-correct noun (voice rule): basketball says game, not match.
+    expect(p.body).toBe("Track this game on your Lock Screen.");
   });
 
   it("uses the knockout round as the offer subtitle for a WC knockout kickoff", () => {
@@ -786,5 +788,43 @@ describe("stored-row resilience", () => {
         nbaEvent()
       )
     ).not.toThrow();
+  });
+});
+
+describe("NFL dedupe + offer (Preseason Review)", () => {
+  it("two same-type touchdowns at different scores both get through", () => {
+    // Pre-fix, `${gameId}:${type}` claimed the first receiving TD and
+    // swallowed every later one in the same game.
+    const a = nflEvent({ type: "nfl-td-receiving", awayScore: 7, homeScore: 0 });
+    const b = nflEvent({ type: "nfl-td-receiving", awayScore: 14, homeScore: 0 });
+    expect(dedupeTagFor(a)).not.toBe(dedupeTagFor(b));
+  });
+  it("a repeated identical scoring tick still dedupes", () => {
+    const a = nflEvent({ type: "nfl-fg", awayScore: 3, homeScore: 0 });
+    const b = nflEvent({ type: "nfl-fg", awayScore: 3, homeScore: 0 });
+    expect(dedupeTagFor(a)).toBe(dedupeTagFor(b));
+  });
+  it("two turnovers at the same score are distinct via the play note", () => {
+    const a = nflEvent({ type: "nfl-turnover", note: "Fumble by Jones" });
+    const b = nflEvent({ type: "nfl-turnover", note: "INT by Smith" });
+    expect(dedupeTagFor(a)).not.toBe(dedupeTagFor(b));
+  });
+  it("game-state events keep the plain one-per-game tag", () => {
+    expect(dedupeTagFor(nflEvent({ type: "nfl-halftime" }))).toBe(
+      "n1:nfl-halftime"
+    );
+  });
+  it("nfl-kickoff is a start event and its offer reads football", () => {
+    expect(isStartEvent(nflEvent({ type: "nfl-kickoff" }))).toBe(true);
+    const offer = buildLiveActivityOfferPayload(nflEvent({ type: "nfl-kickoff" }));
+    expect(offer.title).toBe("LAC at KC");
+    expect(offer.body).toBe("Track this game on your Lock Screen.");
+    // Collapse tag must match the nfl-kickoff push tag so they share a slot.
+    expect(offer.tag).toBe("n1:nfl-state");
+  });
+  it("the soccer offer still says match / vs", () => {
+    const offer = buildLiveActivityOfferPayload(wcEvent({ type: "wc-kickoff" }));
+    expect(offer.title).toBe("BRA vs ARG");
+    expect(offer.body).toBe("Track this match on your Lock Screen.");
   });
 });

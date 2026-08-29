@@ -39,6 +39,12 @@ import {
   partitionPreseasonEvents,
 } from "../../../lib/push/nfl-preseason";
 import { isStateRelevant } from "../../../lib/push/scan-relevance";
+import {
+  pushLiveActivityUpdates,
+  type ActivityUpdateInput,
+} from "../../../lib/push/live-activity-update";
+import { computeLiveActivityProgress } from "../../../lib/push/live-activity-progress";
+import { nflWeekLabel } from "../../../companion/following/data/nfl-dates";
 import { incrCounter, writeLastScanAt } from "../../../lib/push/ops-metrics";
 import type { PushEvent } from "../../../lib/push/event-detector";
 import type { NFLGameLite } from "../../nfl-scores/normalize";
@@ -77,6 +83,51 @@ function toFresh(g: NFLGameLite): FreshNFLGameState {
     homeCode: g.home.abbreviation,
     awayScore: g.away.score,
     homeScore: g.home.score,
+  };
+}
+
+// Mirrors NFL_ACCENT_HEX in NFLGameDetail.tsx / ACCENT_NFL in
+// LiveActivitySync.tsx — server refresh and on-tap dock must agree.
+const ACCENT_NFL = "#1f3a6b";
+
+/** Lock-screen status line. The normalizer already formats live clocks as
+ *  "Q3 8:24"; halftime arrives via ESPN's shortDetail fallback. */
+function nflStatusLine(g: NFLGameLite): string {
+  if (g.status === "final") return "Final";
+  if (g.status === "upcoming") return "Kickoff soon";
+  if (/half/i.test(g.statusText)) return "Halftime";
+  return g.statusText || "Live";
+}
+
+/** Map a scoreboard game to a Live Activity content snapshot (Preseason
+ *  Review 2026-08-29 — this loop existed in scan-nba and scan-wc but was
+ *  never wired here, so a tracked NFL game froze at its kickoff score).
+ *  WC pattern: meaningfulSig excludes the clock, so a clock-only tick is a
+ *  low-priority update the system can batch; scores and period changes push
+ *  at full priority. NOT gated by the preseason hold — a docked game is
+ *  user-initiated tracking, not an alert. */
+function toActivityInput(g: NFLGameLite): ActivityUpdateInput {
+  const statusLine = nflStatusLine(g);
+  // Coarse clock bucket (NBA pattern): "Q3 8:24" → minute bucket, so the
+  // lock-screen clock moves between scores without hammering APNs.
+  const tm = g.statusText.match(/(\d+):(\d{2})/);
+  const clockBucket = tm ? `${g.period}-${tm[1]}` : `${g.period}-x`;
+  const meaningfulSig = `${g.away.score}-${g.home.score}-${g.status}-${g.period}`;
+  return {
+    gameId: g.id,
+    status: g.status,
+    contentState: {
+      awayCode: g.away.abbreviation,
+      awayScore: g.away.score,
+      homeCode: g.home.abbreviation,
+      homeScore: g.home.score,
+      statusLine,
+      subline: nflWeekLabel(g.seasonType, g.week).toUpperCase(),
+      accentHex: ACCENT_NFL,
+      progress: computeLiveActivityProgress("nfl", statusLine, g.status),
+    },
+    sig: `${meaningfulSig}-${clockBucket}`,
+    meaningfulSig,
   };
 }
 
@@ -170,30 +221,39 @@ export async function GET(req: Request) {
   }
 
   // Per-play events — only for LIVE games (a summary fetch per live game).
+  // PARALLEL per game (Preseason Review 2026-08-29): the sequential loop's
+  // worst case was 16 games x 5s timeout = 80s against a 60s maxDuration —
+  // and repeated timeouts are what make cron-job.org auto-disable the job
+  // mid-slate. Each game's fetch + play-cache write is independent, so the
+  // whole pass now costs one slowest-fetch, not the sum.
   const liveGames = relevant.filter((g) => g.status === "live");
-  for (const game of liveGames) {
-    try {
-      const { scoringPlays, drivePlays } = await fetchSummary(game.id);
-      if (scoringPlays.length === 0 && drivePlays.length === 0) continue;
-      const firedPlayIds = await readFiredNFLPlays(game.id);
-      const result = detectNFLPlays({
-        gameId: game.id,
-        awayCode: game.away.abbreviation,
-        homeCode: game.home.abbreviation,
-        awayScore: game.away.score,
-        homeScore: game.home.score,
-        scoringPlays,
-        drivePlays,
-        firedPlayIds,
-      });
-      if (result.events.length > 0) {
-        allEvents.push(...result.events);
-        await writeFiredNFLPlays(game.id, result.firedPlayIds);
+  const playBatches = await Promise.all(
+    liveGames.map(async (game) => {
+      try {
+        const { scoringPlays, drivePlays } = await fetchSummary(game.id);
+        if (scoringPlays.length === 0 && drivePlays.length === 0) return [];
+        const firedPlayIds = await readFiredNFLPlays(game.id);
+        const result = detectNFLPlays({
+          gameId: game.id,
+          awayCode: game.away.abbreviation,
+          homeCode: game.home.abbreviation,
+          awayScore: game.away.score,
+          homeScore: game.home.score,
+          scoringPlays,
+          drivePlays,
+          firedPlayIds,
+        });
+        if (result.events.length > 0) {
+          await writeFiredNFLPlays(game.id, result.firedPlayIds);
+        }
+        return result.events;
+      } catch (err) {
+        console.error("scan-nfl play error", { gameId: game.id, err });
+        return [];
       }
-    } catch (err) {
-      console.error("scan-nfl play error", { gameId: game.id, err });
-    }
-  }
+    })
+  );
+  for (const batch of playBatches) allEvents.push(...batch);
 
   if (allEvents.length > 0) await incrCounter("events.detected", allEvents.length);
 
@@ -224,16 +284,45 @@ export async function GET(req: Request) {
     });
   }
 
-  let dispatchResult: Awaited<ReturnType<typeof dispatchEvents>> | null = null;
-  if (sendable.length > 0) {
-    try {
-      dispatchResult = await dispatchEvents(sendable);
-    } catch (err) {
-      return NextResponse.json(
-        { ok: false, error: err instanceof Error ? err.message : "dispatch failed" },
-        { status: 500 }
-      );
-    }
+  // Dispatch + Live Activity refresh in parallel (scan-nba pattern). LA
+  // updates are NOT held in preseason: a docked game is user-initiated
+  // tracking. Final games still push once so the lock screen settles on
+  // the final score instead of freezing mid-Q4. LA errors log and never
+  // block the response; a dispatch error stays a 500 so the scheduler
+  // alarms.
+  const laGames = relevant.filter(
+    (g) => g.status === "live" || g.status === "final"
+  );
+  const [dispatchSettled, laSettled] = await Promise.allSettled([
+    (async () => {
+      if (sendable.length === 0) return null;
+      return await dispatchEvents(sendable);
+    })(),
+    (async () => {
+      if (laGames.length === 0) return null;
+      return await pushLiveActivityUpdates(laGames.map(toActivityInput));
+    })(),
+  ]);
+
+  if (dispatchSettled.status === "rejected") {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          dispatchSettled.reason instanceof Error
+            ? dispatchSettled.reason.message
+            : "dispatch failed",
+      },
+      { status: 500 }
+    );
+  }
+  const dispatchResult = dispatchSettled.value;
+  let liveActivity: Awaited<ReturnType<typeof pushLiveActivityUpdates>> | null =
+    null;
+  if (laSettled.status === "rejected") {
+    console.error("scan-nfl live-activity error", laSettled.reason);
+  } else {
+    liveActivity = laSettled.value;
   }
 
   return NextResponse.json({
@@ -246,5 +335,6 @@ export async function GET(req: Request) {
     delivered: dispatchResult?.deliveries.filter((d) => d.delivered).length ?? 0,
     skipped: dispatchResult?.deliveries.filter((d) => !d.delivered).length ?? 0,
     pruned: dispatchResult?.pruned ?? 0,
+    liveActivity,
   });
 }
