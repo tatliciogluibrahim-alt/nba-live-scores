@@ -344,8 +344,15 @@ migrateStoredAlerts/migrateStoredFollows in sync-validation. 695 tests.
 **Chain to remember:** preseason hold → masked the sport-gate binary
 (Aug 26) → masked the unmigrated rows (today). A dormant pipeline hides
 its bugs in series; only a synthetic end-to-end send flushes them out.
-**The user still needs to re-run the test-event curl and see delivered ≥ 1
-on their phone.**
+
+**DELIVERY PROVEN 2026-08-29:** after the fix deployed, the user re-ran
+the synthetic test-event and received "Kickoff · DET vs IND" on their
+physical iPhone. The full path — dispatcher, sport gate, tier match,
+read-seam migration, APNs — is verified end to end. Nothing left to do
+before Sep 9. Remaining Phase 22 items: gate 5 leftovers (Live Activity
+on a real live NFL game, v1.0.3 store assets) and gate 6 at the opener
+(relay, reliance NFL rows, dead-zone card retires); the preseason hold
+releases itself when games arrive with seasonType 2.
 
 ---
 
