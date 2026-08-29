@@ -9,6 +9,8 @@ import { createHash } from "node:crypto";
 import { kv } from "@vercel/kv";
 import type { ValidPushSubscription } from "./subscription-validation";
 import {
+  migrateStoredAlerts,
+  migrateStoredFollows,
   preserveSelectiveSpoilers,
   type SyncedAlert,
   type SyncedFollow,
@@ -139,18 +141,23 @@ function normalizeStored(
 ): StoredSubscription | null {
   if (!row || !row.keys?.p256dh || !row.keys?.auth) return null;
   const legacyPreset = (row.alertPreset as AlertPreset | undefined) ?? "companion";
+  // Read-seam identity migration: rows written before Path B (2026-07-19)
+  // carry legacy {kind, id} identities with no momentId, and a device that
+  // never re-synced never triggers the sync-time migration. Passing them
+  // through raw crashed the whole dispatch batch. Unplaceable rows drop.
   const alerts = Array.isArray(row.alerts)
-    ? row.alerts
+    ? migrateStoredAlerts(row.alerts, legacyPreset)
     : Array.isArray(row.follows)
-      ? row.follows.map((f) => ({ ...f, tier: legacyPreset }))
+      ? migrateStoredAlerts(
+          row.follows.map((f) => ({ ...f, tier: legacyPreset })),
+          legacyPreset
+        )
       : [];
   return {
     endpoint: row.endpoint ?? endpoint,
     keys: { p256dh: row.keys.p256dh, auth: row.keys.auth },
     alerts,
-    spoilerFollows: Array.isArray(row.spoilerFollows)
-      ? row.spoilerFollows
-      : [],
+    spoilerFollows: migrateStoredFollows(row.spoilerFollows),
     follows: Array.isArray(row.follows) ? row.follows : undefined,
     alertPreset: row.alertPreset,
     noSpoilers: typeof row.noSpoilers === "boolean" ? row.noSpoilers : false,

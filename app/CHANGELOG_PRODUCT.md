@@ -2,6 +2,42 @@
 
 ---
 
+## Fix: one stale subscription crashed the whole dispatch batch — 2026-08-29
+
+The first on-device delivery test (the synthetic test-event) returned
+`Cannot read properties of undefined (reading 'startsWith')` — the real
+dispatcher crashing on real stored data.
+
+Root cause: subscriptions written before Path B (2026-07-19) carry legacy
+`{kind, id}` identities with no `momentId`. The Path B "lazy migration"
+only runs when a device syncs; rows at rest were passed to the dispatcher
+raw, where `momentSport(undefined)` threw. One such row killed the ENTIRE
+batch, every subscriber's pushes. Invisible for six weeks because nothing
+has dispatched since the exact day Path B landed (WC ended, NBA off, NFL
+held) — the Sep 9 opener's first event would have 500'd every tick.
+
+Three layers, deepest first:
+
+- `momentSport()` tolerates a missing momentId (returns null → the row
+  fails the sport gate instead of throwing). One poisoned row can never
+  take down the batch again.
+- Read-seam migration (`migrateStoredAlerts` / `migrateStoredFollows` in
+  sync-validation): both stores (web push + iOS tokens) now canonicalize
+  legacy rows on every read, so a device that never re-synced keeps its
+  alerts working instead of silently matching nothing. Unplaceable rows
+  drop.
+- Tests: migration matrix + a dispatcher resilience lock (a malformed row
+  reaching the matcher must not throw).
+
+This closes a three-bug chain, each masking the next: the preseason hold
+hid the dispatcher's WC-or-NBA sport binary (fixed Aug 26), which hid the
+unmigrated rows (this fix). All three found by the same discipline:
+synthetic delivery tests before opening night, never trusting silence.
+
+Gate: tsc clean, eslint 0, 695 tests, build clean (95 route lines).
+
+---
+
 ## Fix: no NFL push could ever fire — 2026-08-26
 
 Reported as "I didn't get any push notifications" after a full week of

@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   preserveSelectiveSpoilers,
   validateSyncPayload,
+  migrateStoredAlerts,
+  migrateStoredFollows,
 } from "./sync-validation";
 
 describe("validateSyncPayload lockScreenOffers", () => {
@@ -137,5 +139,84 @@ describe("validateSyncPayload selective No-Spoilers", () => {
     ]);
     expect(parsed.spoilerFollows).toEqual([]);
     expect(parsed.noSpoilers).toBe(false);
+  });
+});
+
+// ── Read-seam migration ───────────────────────────────────────────────
+// Rows written before Path B (2026-07-19) carry legacy {kind, id}
+// identities and no momentId. Devices that never re-synced never hit the
+// sync-time migration, and both stores passed those rows to the dispatcher
+// raw — where momentSport(undefined) crashed the ENTIRE dispatch batch
+// (found 2026-08-29 by the synthetic delivery test; dispatch had been
+// dormant since the exact day Path B landed).
+
+describe("migrateStoredAlerts (rows at rest)", () => {
+  it("migrates a legacy {kind, id} alert to a Path B identity", () => {
+    const out = migrateStoredAlerts([
+      { kind: "team", id: "NYK", tier: "quiet" },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].momentId).toBeTruthy();
+    expect(out[0].scope).toBe("team");
+    expect(out[0].scopeId).toBe("NYK");
+    expect(out[0].tier).toBe("quiet");
+  });
+
+  it("passes a v2 row through unchanged, keeping hideSpoilers", () => {
+    const out = migrateStoredAlerts([
+      {
+        momentId: "nfl-season-2026",
+        scope: "team",
+        scopeId: "KC",
+        tier: "companion",
+        hideSpoilers: true,
+      },
+    ]);
+    expect(out).toEqual([
+      {
+        momentId: "nfl-season-2026",
+        scope: "team",
+        scopeId: "KC",
+        tier: "companion",
+        hideSpoilers: true,
+      },
+    ]);
+  });
+
+  it("drops unplaceable garbage instead of crashing dispatch", () => {
+    expect(
+      migrateStoredAlerts([
+        null,
+        42,
+        {},
+        { kind: "team" }, // no id
+        { momentId: "nba-playoffs-2025", scope: "team", scopeId: null }, // entity scope, no entity
+      ])
+    ).toEqual([]);
+  });
+
+  it("defaults an invalid tier to the fallback", () => {
+    const out = migrateStoredAlerts(
+      [{ kind: "team", id: "NYK", tier: "loud" }],
+      "quiet"
+    );
+    expect(out[0].tier).toBe("quiet");
+  });
+
+  it("tolerates a non-array", () => {
+    expect(migrateStoredAlerts(undefined)).toEqual([]);
+    expect(migrateStoredAlerts("nope")).toEqual([]);
+  });
+});
+
+describe("migrateStoredFollows (rows at rest)", () => {
+  it("migrates legacy spoiler follows and drops garbage", () => {
+    const out = migrateStoredFollows([
+      { kind: "country", id: "USA" },
+      { bogus: true },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].scope).toBe("country");
+    expect(out[0].scopeId).toBe("USA");
   });
 });

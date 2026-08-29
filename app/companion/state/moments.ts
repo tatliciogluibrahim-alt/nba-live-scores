@@ -73,7 +73,15 @@ export function getMoment(id: string): Moment | undefined {
 /** Sport for a momentId, prefix-tolerant so future seasons
  *  ("nba-playoffs-2027") resolve without a directory edit. Null for an
  *  unknown family — callers must treat that as "matches nothing". */
-export function momentSport(momentId: string): Sport | null {
+export function momentSport(
+  momentId: string | null | undefined
+): Sport | null {
+  // Stored pre-Path-B rows (KV subscriptions written before 2026-07-19)
+  // have no momentId at all. undefined.startsWith here crashed the ENTIRE
+  // dispatch batch — every subscriber's pushes — the first time dispatch
+  // ran after the migration (found by the 2026-08-29 synthetic delivery
+  // test; dispatch had been dormant since the exact day Path B landed).
+  if (!momentId) return null;
   if (momentId.startsWith("nba-playoffs")) return "nba";
   if (momentId.startsWith("fifa-world-cup")) return "wc";
   if (momentId.startsWith("nfl-season")) return "nfl";

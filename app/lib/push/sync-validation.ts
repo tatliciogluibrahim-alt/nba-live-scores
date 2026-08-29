@@ -22,6 +22,50 @@ export type SyncedAlert = SyncedFollow & {
   hideSpoilers?: true;
 };
 
+// ── Stored-row migration (read seam) ─────────────────────────────────
+// canonicalSyncIdentity migrates legacy {kind, id} rows when a device
+// SYNCS — but devices that never re-synced after Path B (2026-07-19) still
+// hold legacy rows in KV, and both stores passed them to the dispatcher
+// raw. One such row crashed the whole dispatch batch (momentId undefined).
+// These run at every store read so rows-at-rest match again without
+// waiting for the device to reopen the app. Unplaceable rows drop.
+
+const VALID_TIERS = new Set<AlertPreset>(["quiet", "companion", "all"]);
+
+export function migrateStoredFollows(raw: unknown): SyncedFollow[] {
+  if (!Array.isArray(raw)) return [];
+  const out: SyncedFollow[] = [];
+  for (const row of raw) {
+    if (typeof row !== "object" || row === null) continue;
+    const canon = canonicalSyncIdentity(row as Record<string, unknown>);
+    if (canon) out.push(canon);
+  }
+  return out;
+}
+
+export function migrateStoredAlerts(
+  raw: unknown,
+  fallbackTier: AlertPreset = "companion"
+): SyncedAlert[] {
+  if (!Array.isArray(raw)) return [];
+  const out: SyncedAlert[] = [];
+  for (const row of raw) {
+    if (typeof row !== "object" || row === null) continue;
+    const r = row as Record<string, unknown>;
+    const canon = canonicalSyncIdentity(r);
+    if (!canon) continue;
+    const tier = VALID_TIERS.has(r.tier as AlertPreset)
+      ? (r.tier as AlertPreset)
+      : fallbackTier;
+    out.push({
+      ...canon,
+      tier,
+      ...(r.hideSpoilers === true ? { hideSpoilers: true as const } : {}),
+    });
+  }
+  return out;
+}
+
 export type ValidSyncPayload = {
   alerts: SyncedAlert[];
   /** False for legacy/touch payloads that did not send an alert snapshot. */

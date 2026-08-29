@@ -24,6 +24,8 @@
 
 import { kv } from "@vercel/kv";
 import {
+  migrateStoredAlerts,
+  migrateStoredFollows,
   preserveSelectiveSpoilers,
   type SyncedAlert,
   type SyncedFollow,
@@ -82,10 +84,10 @@ function normalizeStored(
   const now = Date.now();
   return {
     token: raw.token ?? token,
-    alerts: Array.isArray(raw.alerts) ? raw.alerts : [],
-    spoilerFollows: Array.isArray(raw.spoilerFollows)
-      ? raw.spoilerFollows
-      : [],
+    // Read-seam identity migration (see subscription-store): pre-Path-B
+    // rows have no momentId and crashed the dispatch batch when raw.
+    alerts: migrateStoredAlerts(raw.alerts),
+    spoilerFollows: migrateStoredFollows(raw.spoilerFollows),
     noSpoilers: typeof raw.noSpoilers === "boolean" ? raw.noSpoilers : false,
     lockScreenOffers:
       typeof raw.lockScreenOffers === "boolean" ? raw.lockScreenOffers : true,

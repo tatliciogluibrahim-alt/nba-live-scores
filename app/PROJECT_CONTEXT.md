@@ -331,6 +331,24 @@ When making code changes:
 
 ## Current Priority
 
+### 2026-08-29 (cont.) — dispatch crash on pre-Path-B rows (third bug in the chain)
+
+The user's first synthetic delivery test crashed the dispatcher:
+`momentSport(undefined)` on subscriptions stored before Path B (no
+momentId; the lazy migration only ran at sync time, never on read). ONE
+stale row killed the whole batch. Dormant since Jul 19 — the opener would
+have 500'd every tick. Fixed: null-safe momentSport + read-seam migration
+in BOTH stores (subscription-store + ios-token-store) via
+migrateStoredAlerts/migrateStoredFollows in sync-validation. 695 tests.
+
+**Chain to remember:** preseason hold → masked the sport-gate binary
+(Aug 26) → masked the unmigrated rows (today). A dormant pipeline hides
+its bugs in series; only a synthetic end-to-end send flushes them out.
+**The user still needs to re-run the test-event curl and see delivered ≥ 1
+on their phone.**
+
+---
+
 ### 2026-08-29 — gate 4 CLOSED on live preseason data
 
 First real live NFL game (DET@IND, preseason wk 4) verified the whole live

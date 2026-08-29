@@ -758,3 +758,33 @@ describe("liveActivityOfferData — sport tag", () => {
     expect(liveActivityOfferData(nbaEvent({ type: "tipoff" })).sport).toBe("nba");
   });
 });
+
+describe("stored-row resilience", () => {
+  it("an alert row with no momentId never crashes the matcher", () => {
+    // Belt and braces under the read-seam migration: even if a malformed
+    // row reaches the matcher, momentSport(undefined) returns null and the
+    // row simply fails the sport gate instead of throwing — one poisoned
+    // subscriber must never take down the whole dispatch batch.
+    const legacy = {
+      alerts: [
+        { kind: "team", id: "NYK", tier: "companion" } as unknown as SyncedAlert,
+      ],
+      noSpoilers: false,
+      spoilerFollows: [],
+    };
+    expect(() => subscriberWantsEvent(legacy, nbaEvent())).not.toThrow();
+    expect(subscriberWantsEvent(legacy, nbaEvent())).toBe(false);
+    expect(() =>
+      subscriberUsesNoSpoilersForEvent(
+        {
+          alerts: [],
+          noSpoilers: false,
+          spoilerFollows: [
+            { kind: "team", id: "CLE" } as unknown as SyncedFollow,
+          ],
+        },
+        nbaEvent()
+      )
+    ).not.toThrow();
+  });
+});
