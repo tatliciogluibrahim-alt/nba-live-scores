@@ -331,6 +331,33 @@ When making code changes:
 
 ## Current Priority
 
+### 2026-08-29 (cont. 2) — the Preseason Review (8-agent cross-discipline audit)
+
+Full review across UX/IA, code, reliability, copy, product, market, native.
+Report: https://claude.ai/code/artifact/04e6ac6f-a9ad-4dde-b21c-041668481d3a
+(raw findings JSON in the session scratchpad; 328 evidence-cited reads).
+
+**Supersedes "nothing left before Sep 9."** Strongest finding, triple-
+confirmed + hand-verified: **scan-nfl never wires Live Activity updates**
+(0 refs vs 5 each in scan-nba/scan-wc) — a tracked opener game would
+freeze at the kickoff score on the lock screen. Also confirmed: dedupe tag
+swallows the second same-type TD per game; nfl-kickoff missing from
+START_EVENT_TYPES (no lock-screen offer); App Store keywords contain zero
+football terms; NFL Schedule renders finals ignoring No-Spoilers (the one
+surface that does); concluded-moment follows deadlock the 3 alert slots;
+NFL default tier is Companion where nfl-design.md locked Quiet.
+
+**Before Sep 9 (5, in order):** (1) opener push batch: LA updates in
+scan-nfl + dedupe tag + chunked summary fetches + nfl-kickoff start event;
+(2) v1.0.3 store submission by Sep 3-4 (NFL keywords/screenshots; promo
+text editable in Connect today); (3) slot-deadlock fix + NFL Quiet
+default; (4) Spoiler-gate NFL Schedule scores; (5) stale acquisition copy
+sweep (hero mockup, FAQ contradiction, compare pages, dated Sep 9
+strings). Backlog ranked 1-12 + 10 quick wins + 6 explicit do-not-dos in
+the report.
+
+---
+
 ### 2026-08-29 (cont.) — dispatch crash on pre-Path-B rows (third bug in the chain)
 
 The user's first synthetic delivery test crashed the dispatcher:
