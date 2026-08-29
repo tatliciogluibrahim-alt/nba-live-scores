@@ -331,6 +331,45 @@ When making code changes:
 
 ## Current Priority
 
+### 2026-08-30 — Preseason Review before-Sep-9 batch IMPLEMENTED
+
+All five before-Sep-9 items + the independent quick wins shipped in five
+gated commits (3335f34..52ec3a3), each tsc/lint-0/tests/build clean:
+
+1. **Opener push batch**: Live Activity updates wired into scan-nfl (WC
+   meaningfulSig pattern, NOT behind the preseason hold — a docked game is
+   user-initiated), dedupe folds score/note into repeatable NFL tags,
+   summary fetches parallel per game (80s worst case → one slowest fetch),
+   nfl-kickoff in START_EVENT_TYPES with a domain-correct offer.
+2. **Slot deadlock + Quiet default**: concluded moments release alert
+   slots (occupiesAlertSlot, all 4 provider sites + storage cap); NFL
+   follows seed Quiet (defaultAlertTierForMoment).
+3. **Schedule No-Spoilers**: NFL rows frost scores + read "Played" behind
+   the standard reveal. Live-verified against the real week-4 slate.
+4. **Acquisition sweep**: hero mock is an NFL Today with REAL fixtures
+   (NE at SEA Sep 9, TB at CIN Wk 1) + the 4-tab bar; FAQ consistent;
+   MomentsBand NFL-first with date-derived status; compare pages stop
+   conceding shipped features; both "NFL opens Sep 9" strings branch on
+   the opener.
+5. **Store content**: docs/APP_STORE_CONTENT_v1.0.3.md is paste-ready
+   (NFL keywords replacing the zero-football-terms list, DVR-framed
+   description, What's New, screenshot list). USER ACTIONS: update promo
+   text in Connect today; capture screenshots; submit by Sep 3-4.
+
+Quick wins: ci.yml (lint+test+build on push), nfl-scan-watchdog.yml
+(15-min heartbeat check), --live-text AA token (8 text usages swapped),
+44px hit areas on Schedule controls, AgateRow accessible-name fallback,
+request-guards.ts (12 routes on one tested bearer check), progress-parser
+table tests. 729 tests.
+
+Left deliberately on the report's backlog (post-opener sequencing):
+onboarding NFL team-pick (by Sep 13), Brief NFL (by Sep 13-14), scan
+resilience follow-ups, By-week group heads, follows-predicate
+consolidation, widget week-step, today-data split. Report:
+https://claude.ai/code/artifact/04e6ac6f-a9ad-4dde-b21c-041668481d3a
+
+---
+
 ### 2026-08-29 (cont. 2) — the Preseason Review (8-agent cross-discipline audit)
 
 Full review across UX/IA, code, reliability, copy, product, market, native.
