@@ -5,6 +5,13 @@ import Link from "next/link";
 import { SecHead } from "../system/SecHead";
 import { kickoffStamp } from "../today/agate-slate";
 import { useNFLSchedule } from "./useNFLSchedule";
+import {
+  GameSpoilerScope,
+  useFollowHidesGame,
+  useReveal,
+} from "../spoiler/reveal";
+import { Spoiler } from "../spoiler/Spoiler";
+import { useNoSpoilers } from "../providers";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import {
   nflPagerLabel,
@@ -208,16 +215,34 @@ function NFLGameRow({
 }) {
   const played = game.status !== "upcoming";
   const live = game.status === "live";
+  // No-Spoilers (Preseason Review 2026-08-29): this was the ONE surface in
+  // the app rendering finals with the toggle on — on the recorded-game
+  // sport, while spoiler-safe alerts are the product's pitch. Same seam as
+  // WCBracket: global toggle OR a hide-spoilers follow covering either
+  // team; one tap reveals just this game, session-scoped. Structure (who
+  // plays, when, channel) stays visible; only the score and the winner-
+  // implying Final/OT stamp hide.
+  const globalHidden = useNoSpoilers();
+  const followHidden = useFollowHidesGame({
+    teamCodes: [game.away.abbreviation, game.home.abbreviation],
+    sport: "nfl",
+  });
+  const hidden = globalHidden || followHidden;
+  const { isRevealed } = useReveal();
+  const resultHidden = played && hidden && !isRevealed(game.id);
   const stamp = live
     ? game.statusText
     : played
-      ? game.statusText // "Final" / "Final/OT"
+      ? resultHidden
+        ? "Played" // "Final/OT" leaks that it was close; keep it structural
+        : game.statusText // "Final" / "Final/OT"
       : game.date
         ? kickoffStamp(game.date, new Date())
         : "";
   const scoreOrNet = played
     ? `${game.away.score}–${game.home.score}`
     : game.broadcasts[0] ?? "";
+  const aria = `${game.away.abbreviation} at ${game.home.abbreviation}`;
 
   const inner = (
     <div
@@ -240,9 +265,18 @@ function NFLGameRow({
               fontSize: 12,
               fontWeight: played ? 700 : 500,
               color: played ? "var(--ink)" : "var(--mute-1)",
+              // A hidden score must sit above the row's overlay link so
+              // the reveal tap wins (AgateRow's zIndex pattern).
+              ...(resultHidden ? { position: "relative", zIndex: 1 } : {}),
             }}
           >
-            {scoreOrNet}
+            {played ? (
+              <Spoiler gameId={game.id} ariaSubject={aria}>
+                {scoreOrNet}
+              </Spoiler>
+            ) : (
+              scoreOrNet
+            )}
           </span>
         ) : null}
         <span
@@ -262,13 +296,16 @@ function NFLGameRow({
   );
 
   return (
-    <Link
-      href={`/game/${game.id}?from=${gameReturnTo}`}
-      aria-label={`${game.away.name} at ${game.home.name}`}
-      className="block transition active:bg-[var(--paper)]"
-    >
-      {inner}
-    </Link>
+    <GameSpoilerScope gameId={game.id} hidden={hidden}>
+      <div className="relative">
+        <Link
+          href={`/game/${game.id}?from=${gameReturnTo}`}
+          aria-label={`${game.away.name} at ${game.home.name}`}
+          className="absolute inset-0 transition active:bg-[var(--paper)]"
+        />
+        {inner}
+      </div>
+    </GameSpoilerScope>
   );
 }
 
