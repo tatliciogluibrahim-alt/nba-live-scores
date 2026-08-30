@@ -11,7 +11,9 @@ import {
   useReveal,
 } from "../spoiler/reveal";
 import { Spoiler } from "../spoiler/Spoiler";
-import { useNoSpoilers } from "../providers";
+import { useNoSpoilers, useFollows } from "../providers";
+import { teamFollowCodes } from "../state/moments";
+import { groupByWindow } from "./nfl-windows";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import {
   nflPagerLabel,
@@ -36,6 +38,12 @@ export function NFLScheduleBody({
   onView: (view: "byweek" | "standings") => void;
   gameReturnTo: string;
 }) {
+  // Followed-team emphasis (L3): followed rows carry full ink + the
+  // identity mark; the rest of the slate sits muted. Sport-scoped codes
+  // (Path B) — an NBA "LAC" follow must not light the Chargers row.
+  const { follows } = useFollows();
+  const followedTeams = teamFollowCodes(follows, "nfl");
+
   // Null week/season type = the current week ESPN serves. Once the user pages,
   // both are pinned so paging stays WITHIN the current season type (preseason
   // week 4 does not roll into regular-season week 1 — that's a type change).
@@ -84,8 +92,22 @@ export function NFLScheduleBody({
                 name={nflWeekHeader(shownSeasonType, shownWeek)}
                 count={String(schedule.games.length)}
               />
-              {schedule.games.map((g) => (
-                <NFLGameRow key={g.id} game={g} gameReturnTo={gameReturnTo} />
+              {/* L3 doctrine (Preseason Review #4): the week reads by
+                  broadcast WINDOW, not as a flat 16-row wall — THU NIGHT /
+                  SUN 1 PM / SUN 4 PM / SUN NIGHT / MON NIGHT, ET-defined.
+                  Games arrive date-sorted, so grouping preserves order. */}
+              {groupByWindow(schedule.games).map((w) => (
+                <div key={`${w.label}-${w.games[0].id}`}>
+                  <WindowHead label={w.label} />
+                  {w.games.map((g) => (
+                    <NFLGameRow
+                      key={g.id}
+                      game={g}
+                      gameReturnTo={gameReturnTo}
+                      followedTeams={followedTeams}
+                    />
+                  ))}
+                </div>
               ))}
             </section>
           )}
@@ -209,13 +231,39 @@ function WeekPager({
   );
 }
 
+// Window sub-head — lighter than SecHead (the week already owns one):
+// mono caps on a hairline, the same agate grammar as the rows it heads.
+function WindowHead({ label }: { label: string }) {
+  return (
+    <p
+      className="uppercase"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: "0.14em",
+        color: "var(--mute-1)",
+        padding: "14px 0 4px",
+        borderBottom: "1px solid var(--line)",
+      }}
+    >
+      {label}
+    </p>
+  );
+}
+
 function NFLGameRow({
   game,
   gameReturnTo,
+  followedTeams,
 }: {
   game: NFLGameLite;
   gameReturnTo: string;
+  followedTeams: ReadonlySet<string>;
 }) {
+  const awayFollowed = followedTeams.has(game.away.abbreviation.toUpperCase());
+  const homeFollowed = followedTeams.has(game.home.abbreviation.toUpperCase());
+  const rowFollowed = awayFollowed || homeFollowed;
   const played = game.status !== "upcoming";
   const live = game.status === "live";
   // No-Spoilers (Preseason Review 2026-08-29): this was the ONE surface in
@@ -252,13 +300,40 @@ function NFLGameRow({
       className="flex items-baseline justify-between gap-3 py-[11px]"
       style={{ borderBottom: "1px solid var(--line)" }}
     >
+      {/* L3 emphasis: your team's row carries full ink + the identity
+          dot; the rest of the slate sits at mute so a 16-game Sunday
+          scans in one pass. The followed CODE inside the row goes 800,
+          matching the WC group-table register. */}
       <span
-        className="truncate"
-        style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, color: "var(--ink)" }}
+        className="flex min-w-0 items-center truncate"
+        style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600 }}
       >
-        {game.away.abbreviation}
-        <span style={{ color: "var(--mute-1)", padding: "0 6px" }}>at</span>
-        {game.home.abbreviation}
+        {rowFollowed ? (
+          <span
+            aria-hidden
+            className="mr-1.5 inline-block h-[6px] w-[6px] shrink-0 rounded-full"
+            style={{ background: "var(--nfl)" }}
+          />
+        ) : null}
+        <span
+          style={{
+            color: rowFollowed ? "var(--ink)" : "var(--mute-1)",
+            fontWeight: awayFollowed ? 800 : 600,
+          }}
+        >
+          {game.away.abbreviation}
+        </span>
+        <span style={{ color: "var(--mute-1)", padding: "0 6px", fontWeight: 500 }}>
+          at
+        </span>
+        <span
+          style={{
+            color: rowFollowed ? "var(--ink)" : "var(--mute-1)",
+            fontWeight: homeFollowed ? 800 : 600,
+          }}
+        >
+          {game.home.abbreviation}
+        </span>
       </span>
       <span className="flex shrink-0 items-baseline gap-2">
         {scoreOrNet ? (
