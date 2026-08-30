@@ -82,8 +82,9 @@ export function AgateRow({
         <span
           className="tabular-nums lining-nums"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
+            fontFamily: "var(--font-display)",
+            fontStretch: "var(--display-stretch)",
+            fontWeight: 800,
             fontSize: 16,
             ...(spoilerGameId && scoreHidden
               ? { position: "relative", zIndex: 1 }

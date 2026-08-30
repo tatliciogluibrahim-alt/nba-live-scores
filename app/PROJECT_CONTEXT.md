@@ -351,6 +351,21 @@ Monday Wrap = The Margin's Monday edition (no fourth recap name);
 tiers unchanged. "Courtside/glass/arena" are internal words, never
 user-facing.
 
+**C1 SHIPPED 2026-08-31** (user overrode the wait-for-week-1
+sequencing: tiny beta audience, and the new face can ride the v1.0.3
+screenshots). The visible flip: porcelain/arena tokens in globals.css
+(two-gray light chassis, live #c93d2e light / #ff4d3a dark, brand
+chrome monochrome ink, plates flattened to surface); fonts Archivo
+(display + the old mono role, wdth axis) + Hanken Grotesk (body),
+JetBrains/Bricolage/Inter retired; --display-stretch/--label-stretch
+tokens wired into Monument numerals (900), AgateRow scores, SecHead
+(hairline rule, mute Archivo label), TabBar. FOUND + FIXED: globals'
+:root declared the --font-* variables with literal old-family stacks
+and beat the next/font classes in the cascade — next/font is now the
+single source. Live-verified at 390px on Today/Schedule/Following.
+Remaining C1 debt: sport-accent dual-ramp values still base (lands
+with C3 arena); peak accent fields unchanged.
+
 **C0 SHIPPED 2026-08-31**: `/dev/courtside-preview` — both rooms, all
 tokens, Archivo wdth-125 via next/font (route-scoped, zero weight on
 product surfaces), and the held-chip interaction with digits provably

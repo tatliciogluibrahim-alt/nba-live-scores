@@ -1,9 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import {
-  Bricolage_Grotesque,
-  Inter,
-  JetBrains_Mono,
-} from "next/font/google";
+import { Archivo, Hanken_Grotesk } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { CompanionProviders } from "./companion/providers";
@@ -15,39 +11,42 @@ import "./globals.css";
 // / var(--font-body) / var(--font-mono) picks the new faces up with
 // zero per-component changes.
 //
-// • Bricolage Grotesque — variable display sans with a tight, confident
-//   condensed feel. Replaces Impact while keeping the "sports
-//   broadcast" energy.
-// • Inter — body grotesque, premium reading rhythm.
-// • JetBrains Mono — warm coding-style mono for tabular numbers,
-//   eyebrows, and freshness readouts.
+// Courtside C1 (spec 2026-08-31):
+// • Archivo — variable grotesk whose WIDTH axis (62..125) is the
+//   identity: display numerals/headers at --display-stretch (125%),
+//   labels at --label-stretch (112%). Carries the old mono role too.
+// • Hanken Grotesk — body, warm and quick.
+// • JetBrains Mono retired; tabular numerals via font-variant-numeric.
 //
 // `display: "swap"` lets the cream background paint immediately and
 // swap to the web font once it loads — no FOIT, no white flash.
 
-const displayFont = Bricolage_Grotesque({
+const displayFont = Archivo({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
-  // Variable font: pull the full weight + width axes so we can dial
-  // both the condensed display headlines and the lighter weights some
-  // small labels need. `next/font` requires omitting `weight` (or
-  // setting it to "variable") whenever `axes` is present.
+  // Width axis is the Courtside signature; weight comes free with the
+  // variable font. `next/font` requires omitting `weight` when `axes`
+  // is present.
   axes: ["wdth"],
 });
 
-const bodyFont = Inter({
+const bodyFont = Hanken_Grotesk({
   subsets: ["latin"],
   variable: "--font-body",
   display: "swap",
-  weight: ["400", "500", "600", "700", "800"],
 });
 
-const monoFont = JetBrains_Mono({
+// The ~90 var(--font-mono) call sites keep working: the variable now
+// resolves to Archivo (same instance family as display; next/font
+// dedupes the download). Their letter-spacing + tabular-nums classes
+// carry the agate register at 100% width unless a component opts into
+// --label-stretch.
+const monoFont = Archivo({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
-  weight: ["500", "600", "700"],
+  axes: ["wdth"],
 });
 
 export const metadata: Metadata = {

@@ -27,16 +27,20 @@ export function SecHead({
   return (
     <div
       className="flex items-baseline justify-between"
-      style={{ paddingBottom: 8, borderBottom: "2px solid var(--ink)", marginBottom: 2 }}
+      // Courtside C1: the heavy 2px rule retires — section heads sit on a
+      // hairline and the label carries the register (Archivo at label
+      // width, muted). Structure moves from weight-of-rule to type.
+      style={{ paddingBottom: 8, borderBottom: "1px solid var(--line)", marginBottom: 2 }}
     >
       <span
         className="uppercase"
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-display)",
+          fontStretch: "var(--label-stretch)",
           fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: "0.16em",
-          color: "var(--ink)",
+          fontWeight: 800,
+          letterSpacing: "0.14em",
+          color: "var(--mute-1)",
         }}
       >
         {name}
@@ -55,7 +59,7 @@ export function SecHead({
           {/* C4 (§5 v3): the section count is confident brand chrome. The "?"
               help affordance stays muted (it's a control, not a count). */}
           {count && (
-            <span style={{ color: "var(--brand)", fontWeight: 700, fontSize: 11 }}>
+            <span style={{ color: "var(--mute-1)", fontWeight: 700, fontSize: 11 }}>
               {count}
             </span>
           )}

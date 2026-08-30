@@ -77,10 +77,11 @@ export function TabBar() {
                 <span
                   className="uppercase"
                   style={{
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-display)",
+                    fontStretch: "var(--label-stretch)",
                     fontSize: 11,
-                    fontWeight: active ? 700 : 600,
-                    letterSpacing: "0.16em",
+                    fontWeight: active ? 800 : 600,
+                    letterSpacing: "0.14em",
                   }}
                 >
                   {label}

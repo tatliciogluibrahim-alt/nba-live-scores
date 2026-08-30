@@ -280,9 +280,12 @@ function ScoreRow({
           className="flex-none tabular-nums lining-nums"
           style={{
             fontFamily: "var(--font-display)",
+            // Courtside C1: the width axis is the identity — numerals
+            // run at full display stretch, weight steps up to 900.
+            fontStretch: "var(--display-stretch)",
             fontVariantNumeric: "tabular-nums lining-nums",
             fontSize,
-            fontWeight: 800,
+            fontWeight: 900,
             lineHeight: 0.88,
             letterSpacing: "-0.04em",
             color,
