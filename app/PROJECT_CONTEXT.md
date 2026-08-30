@@ -351,9 +351,12 @@ Monday Wrap = The Margin's Monday edition (no fourth recap name);
 tiers unchanged. "Courtside/glass/arena" are internal words, never
 user-facing.
 
-NOTHING IS BUILT YET. C0 (preview gallery behind /dev) can start
-anytime; C1 (the big light-chassis flip) waits until NFL week 1
-settles. Phase 22 opener work stays the priority through Sep 9.
+**C0 SHIPPED 2026-08-31**: `/dev/courtside-preview` — both rooms, all
+tokens, Archivo wdth-125 via next/font (route-scoped, zero weight on
+product surfaces), and the held-chip interaction with digits provably
+absent from the DOM until reveal. Route count is now **96** (was 95).
+C1 (the big light-chassis flip) waits until NFL week 1 settles.
+Phase 22 opener work stays the priority through Sep 9.
 
 ---
 
