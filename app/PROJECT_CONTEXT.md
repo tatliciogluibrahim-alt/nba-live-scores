@@ -331,6 +331,32 @@ When making code changes:
 
 ## Current Priority
 
+### 2026-08-31 — Courtside: next visual generation DECIDED (spec, not build)
+
+A design exploration (33 mock artboards, then a 6-agent design review)
+landed on "Courtside" as the next visual generation, and Ibrahim ruled
+the eight unlock decisions. Full spec:
+`docs/superpowers/specs/2026-08-31-courtside-design.md` — the four-idea
+simplicity contract, one-page tokens, data-level redaction rule, arena
+state machine (room-scoped, conservative v1), native equivalents, and
+chapters C0-C6. Canvas with all mocks:
+https://claude.ai/code/artifact/9ccebe15-230a-463e-bfd9-85687a1f1cb3
+
+Key rulings: arena dark is room-scoped (game/Watching/Today hero card;
+Schedule+Following never flip — the no-auto-flip law survives); C4
+color lock reopened (porcelain replaces cream, chapter by chapter);
+Hanken+Archivo replace Bricolage+JetBrains; logos KEPT (dots are
+additions); leader emphasis stays ink/mute; CL league phase NOT built;
+Monday Wrap = The Margin's Monday edition (no fourth recap name);
+tiers unchanged. "Courtside/glass/arena" are internal words, never
+user-facing.
+
+NOTHING IS BUILT YET. C0 (preview gallery behind /dev) can start
+anytime; C1 (the big light-chassis flip) waits until NFL week 1
+settles. Phase 22 opener work stays the priority through Sep 9.
+
+---
+
 ### 2026-08-30 — Preseason Review before-Sep-9 batch IMPLEMENTED
 
 All five before-Sep-9 items + the independent quick wins shipped in five
