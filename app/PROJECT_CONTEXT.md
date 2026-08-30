@@ -351,6 +351,25 @@ Monday Wrap = The Margin's Monday edition (no fourth recap name);
 tiers unchanged. "Courtside/glass/arena" are internal words, never
 user-facing.
 
+**C3 SHIPPED 2026-08-31** (same session): the arena as ROOMS. The
+dark-token block now serves two selectors — the manual whole-app
+toggle AND [data-chassis="arena"] subtrees — so a room dims without
+the app auto-flipping. Rooms: game detail (screen, while THAT game is
+live), Watching (while any tracked game is live), Today's hero
+(CARD-level: the monument region dims, the page stays porcelain — no
+tab strobe). .nns-room cross-fades 400ms, instant under reduced
+motion. v1 is live-only; the halftime/grace refinements come later.
+NFL display names prefer ESPN's shortDisplayName (nicknames — full
+names truncated on the Monument under Archivo). Verified via mocked
+live slate: all three rooms mount arena, chrome stays lit.
+
+**C2 SHIPPED 2026-08-31**: redaction is data-level. Spoiler's hidden
+state renders derived placeholder glyphs ("121 – 109" → "•• – ••") on
+the chip tokens — the real digits never enter the DOM until reveal
+(the review's #1 blocker: the old blur exposed digits to VoiceOver,
+copy, find-in-page). One seam, every surface upgraded. redactScore()
+table-locked; verified zero digit leakage live with NS on.
+
 **C1 SHIPPED 2026-08-31** (user overrode the wait-for-week-1
 sequencing: tiny beta audience, and the new face can ride the v1.0.3
 screenshots). The visible flip: porcelain/arena tokens in globals.css

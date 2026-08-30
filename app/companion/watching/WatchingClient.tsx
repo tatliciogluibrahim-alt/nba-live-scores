@@ -43,9 +43,19 @@ export function WatchingClient() {
     );
   }
 
+  // Courtside C3: Watching is an arena room only while something tracked
+  // is actually live — a review finding killed the always-dark version
+  // (dark with nothing live read as surface-dark, not state-dark).
+  const arenaLive = payload.items.some((i) => i.status === "live");
+
   return (
-    <PullToRefresh onRefresh={refetch}>
-      <WatchingDashboard payload={payload} />
-    </PullToRefresh>
+    <div
+      data-chassis={arenaLive ? "arena" : undefined}
+      className="nns-room -mx-4 px-4 md:mx-0 md:px-0"
+    >
+      <PullToRefresh onRefresh={refetch}>
+        <WatchingDashboard payload={payload} />
+      </PullToRefresh>
+    </div>
   );
 }

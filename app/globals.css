@@ -153,7 +153,25 @@ html, body {
    is my sports app suddenly different?" surprise on first install.
    They can still opt in to dark via the Theme selector. */
 
-:root[data-theme="dark"] {
+/* The room wrapper: paints its own ground from the tokens in scope and
+   cross-fades when the arena state flips (400ms per the spec's state
+   machine; instant under reduced motion). */
+.nns-room {
+  background: var(--cream);
+  color: var(--ink);
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nns-room { transition: none; }
+}
+
+/* Courtside C3: the same arena tokens serve two masters — the manual
+   whole-app dark toggle (data-theme on <html>) AND the room-scoped
+   arena (data-chassis on a subtree). A room flips to the arena while a
+   followed game is LIVE there; browsing chrome around it stays lit, so
+   the locked "never auto-flip" law holds for every browsing surface. */
+:root[data-theme="dark"],
+[data-chassis="arena"] {
   --background:                #1d1812;
   --foreground:                #f1ead8;
 

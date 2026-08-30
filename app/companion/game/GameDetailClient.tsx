@@ -325,8 +325,22 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
 
   if (resolved === null) return <LoadingShell />;
 
+  // Courtside C3: the game screen is an arena room — it dims while THIS
+  // game is live and lightens again at the final (grace period and the
+  // fuller state machine are later refinements; live-only is v1). The
+  // chrome around the room never flips.
+  const arenaLive = resolved.game?.status === "live";
+  const room = (children: React.ReactNode) => (
+    <div
+      data-chassis={arenaLive ? "arena" : undefined}
+      className="nns-room min-h-screen"
+    >
+      {children}
+    </div>
+  );
+
   if (resolved.source === "nba") {
-    return (
+    return room(
       <>
         <GameKeyboardNav gameId={gameId} />
         <NBALiveCompanion
@@ -342,7 +356,7 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
   }
 
   if (resolved.source === "wc") {
-    return (
+    return room(
       <>
         <GameKeyboardNav gameId={gameId} />
         <WCGameDetail
@@ -357,7 +371,7 @@ export function GameDetailClient({ gameId }: { gameId: string }) {
   }
 
   if (resolved.source === "nfl") {
-    return (
+    return room(
       <>
         <GameKeyboardNav gameId={gameId} />
         <NFLGameDetail

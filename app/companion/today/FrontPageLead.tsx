@@ -222,7 +222,14 @@ export function FrontPageLead({
       // column, where the Monument sits at the column's left edge with its
       // own 18px inset. The legacy md-only Front Page card render is gone —
       // D4b ends the desktop-frozen law for Today.
-      <div className={`${rise} -mx-4 md:mx-0 ${flush ? "mb-1" : "mb-5"}`}>
+      // Courtside C3: the hero is a CARD-level arena — the monument's
+      // region dims while the lead game is live; the page around it
+      // stays porcelain, so Today never whole-screen strobes on tab
+      // switches (the review's core arena objection).
+      <div
+        data-chassis={lead.live ? "arena" : undefined}
+        className={`nns-room ${rise} -mx-4 md:mx-0 ${flush ? "mb-1" : "mb-5"}`}
+      >
         <GameSpoilerScope gameId={game.gameId} hidden={baseHidden}>
           <Monument
             sport={sport}

@@ -103,7 +103,11 @@ export function normalizeNFLGame(
   const awayC = competitors.find((c) => c.homeAway === "away");
 
   const side = (c: ESPNCompetitor | undefined) => ({
-    name: c?.team?.displayName ?? c?.team?.shortDisplayName ?? "TBD",
+    // Courtside C1/C3: the nickname is the display language ("Seahawks",
+    // not "Seattle Seahawks") — full names truncated on the Monument once
+    // Archivo replaced the condensed Bricolage, and every mock speaks
+    // nicknames. ESPN's shortDisplayName IS the nickname.
+    name: c?.team?.shortDisplayName ?? c?.team?.displayName ?? "TBD",
     abbreviation: c?.team?.abbreviation ?? "TBD",
     score: Number(c?.score ?? 0),
     winner: c?.winner === true,
