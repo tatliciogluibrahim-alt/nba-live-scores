@@ -89,7 +89,7 @@ export function WatchingEmpty() {
                 color: "var(--mute-2)",
               }}
             >
-              Every match in the competition
+              Every game on the schedule
             </span>
           </span>
           <span aria-hidden className="text-[16px]" style={{ color: "var(--mute-1)" }}>

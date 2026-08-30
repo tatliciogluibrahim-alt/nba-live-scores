@@ -10,6 +10,9 @@ import { notifyNativePushPermissionChanged } from "../push/native-push-events";
 import { markPushPermissionDeniedThisSession } from "../push/permission-session";
 import { FOLLOW_MOMENTS } from "../following/FollowChoice";
 import { tournamentPhase } from "../following/data/tournament-phase";
+import { NFL_TEAMS } from "../following/data/nfl-teams";
+import type { Follow } from "../state/types";
+import { momentSport } from "../state/moments";
 
 // First-run onboarding — shown ONCE to truly-fresh installs (no follows
 // yet, hasn't completed onboarding). Three steps:
@@ -44,6 +47,47 @@ function circleMoments(): {
   }));
 }
 
+const NFL_MOMENT = "nfl-season-2026";
+
+/** The step-2 lock-screen mock, keyed off what the user actually picked
+ *  (Preseason Review rank 1: the preview was hardcoded NBA — an OKC/SA
+ *  score shown to a September NFL cohort). Pure so the copy branches are
+ *  testable. Literal colors are deliberate: lock-screen mocks never flip
+ *  with the theme (brand rule). */
+export function alertPreviewFor(
+  follows: readonly Pick<Follow, "momentId" | "scope" | "scopeId">[],
+  nflFollowable: boolean
+): { eyebrow: string; headline: string; dotHex: string } {
+  const nflTeam = follows.find(
+    (f) => f.scope === "team" && momentSport(f.momentId) === "nfl" && f.scopeId
+  );
+  if (nflTeam) {
+    // Their team, one score behind, late Q4 — the exact ping the Quiet
+    // default would send them toward. Generic opponent code kept real
+    // (KC) unless it IS their team, then the mirror matchup.
+    const code = (nflTeam.scopeId as string).toUpperCase();
+    const opp = code === "KC" ? "BUF" : "KC";
+    return {
+      eyebrow: "NFL · Q4 · 2:14",
+      headline: `One-score game. ${code} 20, ${opp} 24.`,
+      dotHex: "#4a78c4",
+    };
+  }
+  if (nflFollowable) {
+    return {
+      eyebrow: "NFL · Q4 · 2:14",
+      headline: "One-score game. Kickoff and final on Quiet.",
+      dotHex: "#4a78c4",
+    };
+  }
+  // Off-NFL fallback (post-Super-Bowl installs): the NBA mock.
+  return {
+    eyebrow: "NBA · Q4 · 4:21",
+    headline: "One-possession game. OKC 96, SA 94.",
+    dotHex: "#e55b2a",
+  };
+}
+
 async function requestNotifications(hasFollow: boolean): Promise<void> {
   // Never ask the OS for push permission before the user has chosen at
   // least one follow — the permission is meaningless without something to
@@ -67,7 +111,15 @@ async function requestNotifications(hasFollow: boolean): Promise<void> {
 
 export function OnboardingFlow() {
   const { prefs, completeOnboarding, dismissNotifPrompt, hydrated } = useUserPrefs();
-  const { follows, isFollowing, addFollow, removeFollow } = useFollows();
+  const {
+    follows,
+    isFollowing,
+    addFollow,
+    removeFollow,
+    isFollowingMoment,
+    addMomentFollow,
+    removeMomentFollow,
+  } = useFollows();
 
   const [phase, setPhase] = useState<"idle" | "active" | "done">("idle");
   const [step, setStep] = useState(0);
@@ -104,6 +156,14 @@ export function OnboardingFlow() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPhase("active");
   }, [phase, hydrated, prefs.onboardingComplete, follows.length]);
+
+  // Split the followable slate: NFL gets the team-first treatment, any
+  // other active moment keeps the card row. Derived per render — cheap,
+  // and it follows the calendar the way circleMoments() does.
+  const moments = circleMoments();
+  const nflMoment = moments.find((m) => m.id === NFL_MOMENT) ?? null;
+  const otherMoments = moments.filter((m) => m.id !== NFL_MOMENT);
+  const preview = alertPreviewFor(follows, nflMoment !== null);
 
   if (phase !== "active") return null;
 
@@ -163,7 +223,8 @@ export function OnboardingFlow() {
             className="h-1.5 rounded-full transition-all"
             style={{
               width: i === step ? 20 : 6,
-              background: i === step ? "var(--nba)" : "var(--line)",
+              // Brand chrome, not a sport accent — the flow is sport-agnostic.
+              background: i === step ? "var(--brand)" : "var(--line)",
             }}
           />
         ))}
@@ -197,7 +258,7 @@ export function OnboardingFlow() {
         ) : null}
 
         {step === 1 ? (
-          <div>
+          <div className="flex min-h-0 flex-col">
             <h1
               style={{
                 fontFamily: "var(--font-display)",
@@ -207,17 +268,111 @@ export function OnboardingFlow() {
                 letterSpacing: "-0.02em",
               }}
             >
-              Pick your first follows.
+              {nflMoment ? "Pick your team." : "Pick your first follows."}
             </h1>
             <p
               className="mt-3 text-[15px] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
-              These shape Today, alerts, widgets, and the Brief. You can
-              add more later.
+              {nflMoment
+                ? "Their games shape Today, alerts, widgets, and the Brief."
+                : "These shape Today, alerts, widgets, and the Brief. You can add more later."}
             </p>
+            {/* NFL is the live moment: the pick is a TEAM, not a 272-game
+                season (Preseason Review rank 1 — "my team" is the NFL
+                mental model, and the Monument doctrine assumes it). Follows
+                are canonical from the first tap (momentId + scope + entity),
+                the same records NFLTeamPicker writes. */}
+            {nflMoment ? (
+              <div className="mt-5 min-h-0 flex-1 overflow-y-auto pb-1">
+                <div className="grid grid-cols-4 gap-1.5">
+                  {NFL_TEAMS.map((t) => {
+                    const on = isFollowingMoment(NFL_MOMENT, "team", t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() =>
+                          on
+                            ? removeMomentFollow(NFL_MOMENT, "team", t.id)
+                            : addMomentFollow(NFL_MOMENT, "team", t.id)
+                        }
+                        aria-pressed={on}
+                        aria-label={`${on ? "Unfollow" : "Follow"} ${t.city} ${t.name}`}
+                        className="flex min-h-[48px] flex-col items-center justify-center rounded-[12px] border transition active:scale-[0.97]"
+                        style={{
+                          background: on ? "var(--ink)" : "transparent",
+                          borderColor: on ? "var(--ink)" : "var(--line)",
+                        }}
+                      >
+                        <span
+                          className="text-[13px]"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontWeight: 700,
+                            letterSpacing: "0.04em",
+                            color: on ? "var(--cream)" : "var(--ink)",
+                          }}
+                        >
+                          {t.id}
+                        </span>
+                        <span
+                          className="text-[9px]"
+                          style={{
+                            fontWeight: 600,
+                            color: on ? "var(--cream)" : "var(--mute-1)",
+                          }}
+                        >
+                          {t.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* The whole season stays available, demoted to secondary. */}
+                <button
+                  onClick={() => toggleTournament(nflMoment.id)}
+                  aria-pressed={isFollowing("tournament", nflMoment.id)}
+                  className="mt-3 flex w-full items-center justify-between gap-3 rounded-[12px] border px-4 py-3 text-left transition active:scale-[0.99]"
+                  style={{
+                    background: isFollowing("tournament", nflMoment.id)
+                      ? "var(--paper)"
+                      : "transparent",
+                    borderColor: isFollowing("tournament", nflMoment.id)
+                      ? nflMoment.accent
+                      : "var(--line)",
+                  }}
+                >
+                  <span>
+                    <span className="block text-[14px]" style={{ fontWeight: 700 }}>
+                      Or follow the whole season
+                    </span>
+                    <span
+                      className="mt-0.5 block text-[11px]"
+                      style={{ color: "var(--mute-1)", fontWeight: 500 }}
+                    >
+                      Every game, every week. Louder.
+                    </span>
+                  </span>
+                  <span
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[13px]"
+                    style={{
+                      background: isFollowing("tournament", nflMoment.id)
+                        ? nflMoment.accent
+                        : "transparent",
+                      border: isFollowing("tournament", nflMoment.id)
+                        ? "none"
+                        : "1.5px solid var(--line)",
+                      color: "#fff",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {isFollowing("tournament", nflMoment.id) ? "✓" : ""}
+                  </span>
+                </button>
+              </div>
+            ) : null}
             <div className="mt-5 space-y-2">
-              {circleMoments().map((m) => {
+              {otherMoments.map((m) => {
                 const on = isFollowing("tournament", m.id);
                 return (
                   <button
@@ -290,7 +445,9 @@ export function OnboardingFlow() {
               nothing else gets through. You can change this anytime.
             </p>
 
-            {/* A peek at what an alert looks like — the lock-screen ping. */}
+            {/* A peek at what an alert looks like — the lock-screen ping,
+                keyed off what they just picked (their team's code, their
+                sport) instead of the old hardcoded NBA mock. */}
             <div
               className="mt-5 rounded-[16px] px-4 py-3"
               style={{ background: "#14100c" }}
@@ -299,20 +456,20 @@ export function OnboardingFlow() {
                 <span
                   aria-hidden
                   className="inline-block h-[5px] w-[5px] rounded-full"
-                  style={{ background: "#e55b2a" }}
+                  style={{ background: preview.dotHex }}
                 />
                 <span
                   className="text-[10px] uppercase"
                   style={{ color: "#8a7d62", fontWeight: 700, letterSpacing: "0.1em" }}
                 >
-                  NBA · Q4 · 4:21
+                  {preview.eyebrow}
                 </span>
               </div>
               <p
                 className="mt-1 text-[15px]"
                 style={{ color: "#efe6d2", fontWeight: 700 }}
               >
-                One-possession game. OKC 96, SA 94.
+                {preview.headline}
               </p>
             </div>
 
@@ -354,7 +511,7 @@ export function OnboardingFlow() {
                 finish();
               }}
               className="w-full rounded-full py-3.5 text-[15px] font-semibold active:scale-[0.99]"
-              style={{ background: "var(--nba)", color: "#fff", opacity: working ? 0.7 : 1 }}
+              style={{ background: "var(--brand)", color: "#fff", opacity: working ? 0.7 : 1 }}
             >
               {working ? "Setting up…" : "Turn on alerts"}
             </button>

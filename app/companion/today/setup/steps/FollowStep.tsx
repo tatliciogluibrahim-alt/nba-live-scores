@@ -22,7 +22,7 @@ export function FollowStep() {
         className="mt-1 text-[14px] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 600 }}
       >
-        Follow your first team or country.
+        Follow your first team.
       </p>
       <p
         className="mt-1 text-[12px] leading-snug"
