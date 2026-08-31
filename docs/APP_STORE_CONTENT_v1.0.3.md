@@ -127,6 +127,15 @@ preseason week 3 finals, the real PHI@NE detail payload):
    device screenshot during a live game (Sep 10-13), then re-upload.
 5. `05-following` — Seahawks/Chiefs/Lions circle, Quiet · Companion ·
    Off tags visible.
+6. `06-nba` — the real 2026 NBA Finals Game 5 (Knicks 94, Spurs 90,
+   close out the series 4-1; ESPN archive). Real Who Mattered leaders
+   (Brunson 45) and quarter line. Clock frozen the night of the game.
+7. `07-worldcup` — the real frozen bracket: quarterfinals through
+   ARG 0-1 ESP with the Champions star, YOUR PATH via an ESP follow.
+   Clock frozen the evening of the final (Jul 19).
+
+Set order in Connect: NFL first (1-5), breadth after (6-7). 14 PNGs
+total per size.
 
 Optional post-opener refresh: rerun the script after Sep 13 and shots
 2 + 3 pick up real regular-season finals automatically (recapture the

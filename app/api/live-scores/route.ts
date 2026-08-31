@@ -421,7 +421,11 @@ function normalizeTeam(competitor?: ESPNCompetitor): Team {
 
   return {
     id: team?.id ?? competitor?.id,
-    name: team?.displayName ?? team?.shortDisplayName ?? "Team",
+    // Courtside (2026-08-31): the nickname is the display language —
+    // "Knicks", not "New York Knicks". Full names truncated on the
+    // Monument once Archivo replaced the condensed face (same ruling as
+    // the NFL normalizer, C1). ESPN's shortDisplayName IS the nickname.
+    name: team?.shortDisplayName ?? team?.displayName ?? "Team",
     abbreviation: canonicalAbbreviation(team?.abbreviation),
     score: Number(competitor?.score ?? 0),
     logo: team?.logos?.[0]?.href ?? team?.logo ?? "",

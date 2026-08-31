@@ -31,6 +31,12 @@ const now = Date.now();
 const week1 = JSON.parse(await readFile("scripts/fixtures/nfl-week1-2026.json", "utf8"));
 const pre3 = JSON.parse(await readFile("scripts/fixtures/nfl-pre3-2026.json", "utf8"));
 const detailPhiNe = JSON.parse(await readFile("scripts/fixtures/nfl-detail-401873293.json", "utf8"));
+// Multi-sport shots (v1.0.3 addendum): the real 2026 NBA Finals Game 5
+// (Knicks close out the Spurs 4-1, ESPN archive) and the real frozen
+// World Cup record (Spain champions) — no invented results anywhere.
+const nbaG5 = JSON.parse(await readFile("scripts/fixtures/nba-finals-g5-2026.json", "utf8"));
+const nbaG5Detail = JSON.parse(await readFile("scripts/fixtures/nba-detail-401859967.json", "utf8"));
+const wcFrozen = JSON.parse(await readFile("scripts/fixtures/wc-frozen-schedule-2026.json", "utf8"));
 
 // Shot 1 live-hero state: the browser clock is FROZEN mid-Sunday of real
 // week 1 (Sep 13, 2:45 PM ET), so the 1 PM slate is in the third quarter
@@ -77,6 +83,9 @@ const prefsBase = {
   pushRecoveryDismissed: true, firstFollowEducated: true,
 };
 
+const EMPTY_NBA = JSON.stringify({ games: [], seriesGames: [] });
+const EMPTY_WC = JSON.stringify({ games: [] });
+
 const SHOTS = [
   { n: 1, name: "today", path: "/app", frozen: "2026-09-13T18:45:00Z",
     follows: [nflFollow("DET", "quiet", true, 8000), nflFollow("GB", "companion", true, 7000)],
@@ -96,6 +105,23 @@ const SHOTS = [
   { n: 5, name: "following", path: "/following", follows: followsCircle, nfl: week1,
     headline: "Alerts exactly as loud as you want.",
     sub: "Quiet, Companion, or Full Details. Per team." },
+  // Multi-sport breadth. Clock frozen inside each moment's real window so
+  // the concluded gates stay open and every date agrees with the record.
+  { n: 6, name: "nba", path: "/game/401859967", frozen: "2026-06-14T04:15:00Z",
+    follows: [{ momentId: "nba-playoffs-2025", scope: "team", scopeId: "NYK",
+      alertEnabled: true, alertTier: "companion", followedAt: now - 9000 }],
+    nba: nbaG5, nbaDetail: nbaG5Detail, nfl: { games: [], week: 0, seasonType: 0 },
+    headline: "Every game knows the series.",
+    sub: "Playoff rounds, stakes, and the series score, in place." },
+  { n: 7, name: "worldcup", path: "/app",
+    clientNav: { tabHref: "/schedule", clickText: "Bracket", scrollToText: "Quarterfinal 3" },
+    frozen: "2026-07-19T22:30:00Z",
+    follows: [{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "ESP",
+      alertEnabled: true, alertTier: "companion", followedAt: now - 9000 }],
+    wcSchedule: wcFrozen, wcDay: { games: [], count: 0, champion: wcFrozen.champion },
+    nfl: { games: [], week: 0, seasonType: 0 },
+    headline: "Built for the moments that matter.",
+    sub: "NBA Playoffs. The World Cup. The NFL season." },
 ];
 
 const SIZES = [
@@ -158,10 +184,18 @@ async function main() {
       }catch(e){}`);
       const json = (b) => (r) => r.fulfill({ status: 200, contentType: "application/json", body: b });
       await context.route("**/api/nfl-scores**", json(JSON.stringify(shot.nfl)));
-      await context.route("**/api/live-scores**", json(JSON.stringify({ games: [], seriesGames: [] })));
-      await context.route("**/api/world-cup**", json(JSON.stringify({ games: [] })));
+      await context.route("**/api/live-scores**", json(shot.nba ? JSON.stringify(shot.nba) : EMPTY_NBA));
+      // Order matters: the schedule route's pattern also matches the day
+      // feed's — register the more specific one first.
+      if (shot.wcSchedule) {
+        await context.route("**/api/world-cup/schedule**", json(JSON.stringify(shot.wcSchedule)));
+      }
+      await context.route("**/api/world-cup", json(shot.wcDay ? JSON.stringify(shot.wcDay) : EMPTY_WC));
       if (shot.detail) {
         await context.route("**/api/nfl-game-detail**", json(JSON.stringify(detailPhiNe)));
+      }
+      if (shot.nbaDetail) {
+        await context.route("**/api/nba-game-detail**", json(JSON.stringify(shot.nbaDetail)));
       }
       const page = await context.newPage();
       if (shot.frozen) {
@@ -172,6 +206,27 @@ async function main() {
       }
       await page.goto(`${BASE}${shot.path}`, { waitUntil: "load", timeout: 45000 });
       await page.waitForTimeout(2600);
+      // Kill the dev overlay BEFORE any clicking — it eats pointer events.
+      await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
+      if (shot.clientNav) {
+        await page.click(`a[href="${shot.clientNav.tabHref}"]:visible`);
+        await page.waitForURL(`**${shot.clientNav.tabHref}**`, { timeout: 15000 });
+        await page.waitForTimeout(1200);
+        if (shot.clientNav.clickText) {
+          await page.click(`text=${shot.clientNav.clickText}`);
+          await page.waitForTimeout(1800);
+        }
+        if (shot.clientNav.scrollToText) {
+          // Align a section head just under the sticky chrome so the frame
+          // starts on a boundary instead of a clipped card.
+          const target = page.locator(`text=${shot.clientNav.scrollToText}`).first();
+          const box = await target.boundingBox();
+          if (box) {
+            await page.evaluate((y) => window.scrollTo(0, window.scrollY + y - 150), box.y);
+          }
+          await page.waitForTimeout(900);
+        }
+      }
       await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
       const buf = await page.screenshot({ fullPage: false });
       imgData = `data:image/png;base64,${buf.toString("base64")}`;
@@ -192,7 +247,7 @@ async function main() {
     }
   }
   await browser.close();
-  console.log("done — 10 store PNGs in", OUT);
+  console.log("done — 14 store PNGs in", OUT);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
