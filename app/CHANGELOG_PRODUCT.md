@@ -2,6 +2,16 @@
 
 ---
 
+## Opener hardening: scan resilience, widget week fix, v1.0.3 store set — 2026-08-31
+
+Push pipeline: scan-nfl state writes moved after dispatch settlement
+(mid-tick death no longer swallows events), cold-start fired-play
+seeding (no stale-push burst on cron re-enable), 8h final lookback for
+weather delays. Widget: next-week merge kills the Mon-Wed blank tile;
+the dead World Cup countdown fallback now points at the NFL opener.
+Store: full v1.0.3 screenshot set generated from real fixtures
+(scripts/store-shots-v103.mjs), shot 4 pending a real device capture.
+
 ## Courtside ships: C0-C3 in one day, plus the Brief learns NFL — 2026-08-31
 
 The next visual generation went from decided spec to shipped product in

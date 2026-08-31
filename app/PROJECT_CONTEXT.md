@@ -331,6 +331,43 @@ When making code changes:
 
 ## Current Priority
 
+### 2026-08-31 (cont.) — Scan resilience + widget week fix + v1.0.3 store assets
+
+Same autonomous session, after C3. Three items closed:
+
+- **Scan resilience (Preseason Review #3)** — `scan-nfl` now commits
+  `writeCachedNFLState` / `writeFiredNFLPlays` only AFTER the dispatch
+  settles (a mid-tick death used to swallow events permanently: next
+  tick saw new state, re-detected nothing). Dispatch rejection = 500
+  with NO writes, so the next tick re-detects; dedupe absorbs any
+  double-fire from a tick dying after dispatch. Cold start on a live
+  game with a scoring backlog seeds the fired-play set silently (no
+  stale-push burst when the cron is re-enabled mid-game). Final
+  lookback 5h → 8h in scan-relevance.ts for weather delays.
+- **WidgetSync week boundary** — ESPN's default scoreboard stays on
+  the finished week until midweek, so Mon–Wed the upcoming tile
+  blanked. fetchNFL now merges `nextNFLWeek` when the current week is
+  all finals (game detail's proven pattern). The dead WC-countdown
+  anticipation fallback (WC concluded) now points at the NFL season
+  opener for any NFL follow.
+- **v1.0.3 store screenshots GENERATED** — 10 PNGs in
+  `store-assets/v1.0.3/` via `scripts/store-shots-v103.mjs`, real
+  fixtures frozen in `scripts/fixtures/`. Shot 1 uses Playwright's
+  clock.install frozen mid-Sunday of real week 1 so masthead, live
+  hero, and up-next all agree with real kickoffs. Shot 4 (lock
+  screen) is a placeholder composite — replace with a device
+  screenshot during a live game Sep 10–13. Doc updated:
+  `docs/APP_STORE_CONTENT_v1.0.3.md`.
+
+Route-count note: the build's route list is verified by DIFF against
+main (byte-identical), counted 93 route lines with
+`grep -E "^[┌├└]" | grep -E "○|●|ƒ"` — earlier "96" used a different
+counting method; the diff is the real gate.
+
+Still user-only: v1.0.3 submission in Connect (Sep 3–4), promo text
+swap (editable today), on-device lock-screen track during a live
+game, opener-morning `dispatch.delivered > 0` check.
+
 ### 2026-08-31 — Courtside: next visual generation DECIDED (spec, not build)
 
 A design exploration (33 mock artboards, then a 6-agent design review)
