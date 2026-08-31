@@ -351,6 +351,14 @@ Monday Wrap = The Margin's Monday edition (no fourth recap name);
 tiers unchanged. "Courtside/glass/arena" are internal words, never
 user-facing.
 
+**Brief NFL SHIPPED 2026-08-31** (Preseason Review backlog #2, due
+Sep 13): composeBrief takes the NFL slate — Monday carries Sunday's
+finals ("Final · Week N"), game day carries the kickoff row, preseason
+finals excluded, includeScores gates the score line, and the LAC
+collision guard holds in email (Path B matcher, momentSport-gated).
+send-briefs fetches /api/nfl-scores. Renderer needed nothing: its
+"at" default is football-correct. 6 new tests.
+
 **C3 SHIPPED 2026-08-31** (same session): the arena as ROOMS. The
 dark-token block now serves two selectors — the manual whole-app
 toggle AND [data-chassis="arena"] subtrees — so a room dims without

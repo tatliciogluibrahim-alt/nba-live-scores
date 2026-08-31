@@ -31,6 +31,7 @@ import {
   composeBrief,
   shouldSendBrief,
   type BriefWCGame,
+  type BriefNFLGame,
 } from "../../../lib/brief/compose-brief";
 import {
   renderBriefHtml,
@@ -128,6 +129,26 @@ async function fetchWC(baseUrl: string): Promise<BriefWCGame[]> {
     });
     if (!res.ok) return [];
     const json = (await res.json()) as { games?: BriefWCGame[] };
+    return json.games ?? [];
+  } catch {
+    return [];
+  }
+}
+
+// NFL slate for the brief (Preseason Review backlog #2: the Brief was
+// NFL-blind — "Your alerts" named the Chiefs while Yesterday/Today never
+// showed their games). The scoreboard serves the current week; the
+// composer's isYesterday/isToday windows do the rest. ESPN keeps serving
+// a finished week for days (the 2026-08-18 lesson), which is exactly
+// right here — Monday's brief needs Sunday's finals from that same week.
+async function fetchNFL(baseUrl: string): Promise<BriefNFLGame[]> {
+  try {
+    const res = await fetch(`${baseUrl}/api/nfl-scores`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { games?: BriefNFLGame[] };
     return json.games ?? [];
   } catch {
     return [];
@@ -259,6 +280,7 @@ export async function GET(req: Request) {
   const baseUrl = resolveBaseUrl(req);
   const nba = await enrichFinalLeaders(await fetchNBA(baseUrl), baseUrl);
   const wc = await fetchWC(baseUrl);
+  const nfl = await fetchNFL(baseUrl);
 
   // Quiet evaluation of the narrative pilot. No-op unless opted in.
   await runNarrativeShadow(nba, baseUrl);
@@ -290,7 +312,7 @@ export async function GET(req: Request) {
         continue;
       }
 
-      const payload = composeBrief({ subscriber: sub, nba, wc });
+      const payload = composeBrief({ subscriber: sub, nba, wc, nfl });
       if (!shouldSendBrief(payload)) {
         results.push({ email: sub.email, delivered: false, skipped: true });
         continue;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { composeBrief, shouldSendBrief } from "./compose-brief";
+import { composeBrief, shouldSendBrief, type BriefNFLGame } from "./compose-brief";
 import type { BriefSubscriber } from "./subscriber-store";
 import type { Game } from "../../nba/types";
 import type { Follow } from "../../companion/state/types";
@@ -169,5 +169,131 @@ describe("composeBrief — follow filtering correctness", () => {
       now: NOW,
     });
     expect(payload.today.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ── NFL in the Brief (Preseason Review backlog #2) ───────────────────
+// The Brief was NFL-blind: "Your alerts" named the Chiefs while
+// Yesterday/Today never showed their games. These lock the weekly
+// cadence: Monday morning carries Sunday's final, game day carries the
+// kickoff row, preseason stays out, and the LAC collision guard holds
+// in the email exactly as it does in the app.
+
+function nflGame(over: Partial<BriefNFLGame> = {}): BriefNFLGame {
+  return {
+    id: "nfl-b1",
+    date: "2026-09-13T17:00:00Z",
+    status: "final",
+    statusText: "Final",
+    week: 1,
+    seasonType: 2,
+    home: { abbreviation: "DET", name: "Lions", score: 24 },
+    away: { abbreviation: "NO", name: "Saints", score: 17 },
+    ...over,
+  };
+}
+
+function nflFollow(scopeId: string): Follow {
+  return {
+    momentId: "nfl-season-2026",
+    scope: "team",
+    scopeId,
+    kind: "team",
+    id: scopeId,
+    alertEnabled: true,
+    alertTier: "quiet",
+    followedAt: 1,
+  };
+}
+
+// Monday Sep 14 morning, after the Sunday slate.
+const MONDAY = new Date("2026-09-14T12:00:00Z");
+
+describe("composeBrief — NFL", () => {
+  it("Monday's brief carries Sunday's final for a followed team", () => {
+    const p = composeBrief({
+      subscriber: sub({ follows: [nflFollow("DET")] }),
+      nba: [],
+      nfl: [nflGame()],
+      now: MONDAY,
+    });
+    expect(p.yesterday).toHaveLength(1);
+    expect(p.yesterday[0].source).toBe("nfl");
+    expect(p.yesterday[0].matchup).toBe("NO · DET");
+    expect(p.yesterday[0].scoreLine).toBe("17 – 24");
+    expect(p.yesterday[0].context).toBe("Final · Week 1");
+  });
+
+  it("no-spoilers subscribers get the row without the score", () => {
+    const p = composeBrief({
+      subscriber: sub({ follows: [nflFollow("DET")], includeScores: false }),
+      nba: [],
+      nfl: [nflGame()],
+      now: MONDAY,
+    });
+    expect(p.yesterday[0].scoreLine).toBeNull();
+    expect(p.yesterday[0].context).toBe("Final.");
+  });
+
+  it("game day carries the kickoff row with the week label", () => {
+    const p = composeBrief({
+      subscriber: sub({ follows: [nflFollow("DET")] }),
+      nba: [],
+      nfl: [nflGame({ status: "upcoming", statusText: "Upcoming", date: "2026-09-13T17:00:00Z" })],
+      now: new Date("2026-09-13T12:00:00Z"),
+    });
+    expect(p.today).toHaveLength(1);
+    expect(p.today[0].source).toBe("nfl");
+    expect(p.today[0].context).toContain("Week 1");
+  });
+
+  it("preseason finals never reach the brief", () => {
+    const p = composeBrief({
+      subscriber: sub({ follows: [nflFollow("DET")] }),
+      nba: [],
+      nfl: [nflGame({ seasonType: 1, date: "2026-09-13T17:00:00Z" })],
+      now: MONDAY,
+    });
+    expect(p.yesterday).toHaveLength(0);
+  });
+
+  it("collision guard: an NBA LAC follow never matches an NFL LAC game", () => {
+    const nbaLac = legacyRefToFollow("team", "LAC", {
+      alertEnabled: true,
+      alertTier: "companion",
+      followedAt: 1,
+    }) as Follow;
+    const p = composeBrief({
+      subscriber: sub({ follows: [nbaLac] }),
+      nba: [],
+      nfl: [
+        nflGame({
+          home: { abbreviation: "KC", name: "Chiefs", score: 24 },
+          away: { abbreviation: "LAC", name: "Chargers", score: 17 },
+        }),
+      ],
+      now: MONDAY,
+    });
+    expect(p.yesterday).toHaveLength(0);
+  });
+
+  it("a whole-season NFL follow sees every game", () => {
+    const all: Follow = {
+      momentId: "nfl-season-2026",
+      scope: "all",
+      scopeId: null,
+      kind: "tournament",
+      id: "nfl-season-2026",
+      alertEnabled: true,
+      alertTier: "quiet",
+      followedAt: 1,
+    };
+    const p = composeBrief({
+      subscriber: sub({ follows: [all] }),
+      nba: [],
+      nfl: [nflGame()],
+      now: MONDAY,
+    });
+    expect(p.yesterday).toHaveLength(1);
   });
 });

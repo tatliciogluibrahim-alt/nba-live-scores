@@ -75,7 +75,7 @@ function followLabel(follow: Follow): string {
 }
 
 export type BriefGameRow = {
-  source: "nba" | "wc";
+  source: "nba" | "wc" | "nfl";
   matchup: string;          // "NYK · CLE"
   scoreLine: string | null; // "121 – 98" (final) or null (upcoming)
   status: "live" | "upcoming" | "final";
@@ -335,6 +335,37 @@ export type BriefWCGame = {
   penaltyAway?: number | null;
 };
 
+/** The NFL slate for the brief, in the /api/nfl-scores shape. Declared
+ *  minimally here (the composer only reads these fields), same posture
+ *  as BriefWCGame. */
+export type BriefNFLGame = {
+  id: string;
+  date: string;
+  status: "live" | "upcoming" | "final";
+  statusText: string;
+  week: number;
+  seasonType: number;
+  home: { abbreviation: string; name: string; score: number };
+  away: { abbreviation: string; name: string; score: number };
+};
+
+/** Path B sport gate: only a follow whose MOMENT is NFL can match an
+ *  NFL game — an NBA "LAC" follow must never light up the Chargers in
+ *  the email (the same collision class the app closed 2026-07-20). */
+function nflGameMatchesFollow(game: BriefNFLGame, follow: Follow): boolean {
+  const sport = momentSport(follow.momentId);
+  if (follow.kind === "team") {
+    if (sport !== "nfl") return false;
+    const code = (follow.scopeId ?? follow.id).toUpperCase();
+    return (
+      game.home.abbreviation.toUpperCase() === code ||
+      game.away.abbreviation.toUpperCase() === code
+    );
+  }
+  if (follow.kind === "tournament") return sport === "nfl";
+  return false;
+}
+
 function wcGameMatchesFollow(game: BriefWCGame, follow: Follow): boolean {
   switch (follow.kind) {
     case "country":
@@ -418,6 +449,7 @@ export function composeBrief({
   subscriber,
   nba,
   wc = [],
+  nfl = [],
   now = new Date(),
 }: {
   subscriber: BriefSubscriber;
@@ -428,6 +460,9 @@ export function composeBrief({
    *  covers yesterday + today). Optional so NBA-only callers and the
    *  test suite stay valid; defaults to an empty slate. */
   wc?: BriefWCGame[];
+  /** NFL slate from /api/nfl-scores (current week + the one-step
+   *  lookahead). Optional so existing callers and tests stay valid. */
+  nfl?: BriefNFLGame[];
   /** Optional fixed clock for testing / preview. */
   now?: Date;
 }): BriefPayload {
@@ -498,6 +533,32 @@ export function composeBrief({
       href: `/game/${g.id}`,
     }));
 
+  // Yesterday, NFL: finals for followed teams. Monday morning after a
+  // Sunday slate is this section's whole reason to exist for 17 weeks.
+  // Preseason finals are excluded — the season's record starts Sep 9,
+  // and a brief that celebrates an exhibition final reads as noise.
+  const nflYesterday: BriefGameRow[] = nfl
+    .filter(
+      (g) =>
+        g.status === "final" &&
+        g.seasonType !== 1 &&
+        isYesterday(g.date, now) &&
+        follows.some((f) => nflGameMatchesFollow(g, f))
+    )
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .map((g) => ({
+      source: "nfl" as const,
+      matchup: `${g.away.abbreviation} · ${g.home.abbreviation}`,
+      scoreLine: subscriber.includeScores
+        ? `${g.away.score} – ${g.home.score}`
+        : null,
+      status: g.status,
+      context: subscriber.includeScores
+        ? `Final · Week ${g.week}`
+        : "Final.",
+      href: `/game/${g.id}`,
+    }));
+
   // Today: upcoming/live games matching any follow.
   const todayGames = nba.filter(
     (g) =>
@@ -551,6 +612,32 @@ export function composeBrief({
         g.status === "live"
           ? `Live${g.stage ? ` · ${g.stage}` : ""}`
           : `${formatGameTime(g.date)}${g.stage ? ` · ${g.stage}` : ""}`,
+      href: `/game/${g.id}`,
+    }));
+
+  // Today, NFL: a followed team's game today (or live right now). One
+  // row a week per team is the whole cadence — which is exactly why it
+  // must never be missing.
+  const nflToday: BriefGameRow[] = nfl
+    .filter(
+      (g) =>
+        (g.status === "upcoming" || g.status === "live") &&
+        isToday(g.date, now) &&
+        follows.some((f) => nflGameMatchesFollow(g, f))
+    )
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map((g) => ({
+      source: "nfl" as const,
+      matchup: `${g.away.abbreviation} · ${g.home.abbreviation}`,
+      scoreLine:
+        g.status === "live" && subscriber.includeScores
+          ? `${g.away.score} – ${g.home.score}`
+          : null,
+      status: g.status,
+      context:
+        g.status === "live"
+          ? `Live · ${g.statusText}`
+          : `${formatGameTime(g.date)} · Week ${g.week}`,
       href: `/game/${g.id}`,
     }));
 
@@ -688,8 +775,10 @@ export function composeBrief({
     monthDay,
     yesterdayMonthDay,
     issueNumber,
-    yesterday: [...yesterday, ...wcYesterday],
-    today: [...today, ...wcToday],
+    // Sport-by-sport ordering (NBA, soccer, NFL) — calmer than
+    // time-interleaving for a multi-sport follower.
+    yesterday: [...yesterday, ...wcYesterday, ...nflYesterday],
+    today: [...today, ...wcToday, ...nflToday],
     worthKnowing,
     countdown,
     alerts: {
