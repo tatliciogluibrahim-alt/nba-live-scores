@@ -8,7 +8,6 @@ import { isCapacitorNative } from "../dev/native-detect";
 import {
   buildTodayPayload,
   daysUntil,
-  WC_KICKOFF,
   type NBAGame,
   type WCGameLite,
   type UpNextItem,
@@ -27,7 +26,15 @@ import {
   nbaGameMatchesFollowCoverage,
 } from "../following/nba-follow-coverage";
 import { followHidesParticipants } from "../spoiler/follow-match";
-import { teamFollowCodes, followsWholeSport } from "../state/moments";
+import {
+  teamFollowCodes,
+  followsWholeSport,
+  momentSport,
+} from "../state/moments";
+import {
+  nextNFLWeek,
+  NFL_2026_SEASON_OPENER,
+} from "../following/data/nfl-dates";
 import {
   selectiveHiddenFollowKey,
   shouldResetRevealLevels,
@@ -96,12 +103,36 @@ async function fetchWC(): Promise<WCGameLite[] | null> {
 // Current-week NFL games (Phase 22). Null on failure so a blip doesn't blank
 // the tile; empty out of season. Lets a followed team's next NFL game reach
 // the home-screen upcoming widget pre-season.
+//
+// Week-boundary lookahead (Preseason Review): ESPN's default scoreboard
+// stays on the finished week until midweek, so from Monday night's final to
+// roughly Wednesday every game in the response is final and the upcoming
+// tile blanked for NFL-only followers. When the current week holds nothing
+// upcoming, merge in the next week (same pattern as game detail's fetch).
 async function fetchNFL(): Promise<NFLGameLite[] | null> {
   try {
     const res = await fetch("/api/nfl-scores", { cache: "no-store" });
     if (!res.ok) return null;
-    const json = (await res.json()) as { games?: NFLGameLite[] };
-    return json.games ?? [];
+    const json = (await res.json()) as {
+      games?: NFLGameLite[];
+      week?: number;
+      seasonType?: number;
+    };
+    let games = json.games ?? [];
+    if (games.length > 0 && !games.some((g) => g.status !== "final")) {
+      const next = nextNFLWeek(json.seasonType ?? 0, json.week ?? 0);
+      if (next) {
+        const nextRes = await fetch(
+          `/api/nfl-scores?week=${next.week}&seasontype=${next.seasonType}`,
+          { cache: "no-store" }
+        ).catch(() => null);
+        if (nextRes && nextRes.ok) {
+          const nextJson = (await nextRes.json()) as { games?: NFLGameLite[] };
+          games = [...games, ...(nextJson.games ?? [])];
+        }
+      }
+    }
+    return games;
   } catch {
     return null;
   }
@@ -329,25 +360,26 @@ export function WidgetSync() {
       : null;
 
     // Anticipation fallback: the user follows something, but nothing is
-    // scheduled in the feed window yet (e.g. they follow the Summer Soccer a
-    // week before kickoff). Instead of a blank widget with a "follow
-    // something" CTA — which is wrong, they already did — show a calm
-    // countdown. Today that's the Summer Soccer pre-kickoff; a WC tournament
-    // or country follow qualifies.
+    // scheduled in the feed window yet. Instead of a blank widget with a
+    // "follow something" CTA — which is wrong, they already did — show a
+    // calm countdown. This used to count down to the World Cup (concluded
+    // Jul 19, so that branch went dead); the next moment on the calendar is
+    // the NFL season opener, and any NFL follow qualifies.
     if (upcoming.length === 0 && !moment) {
-      const followsWc = followsRef.current.some(
-        (f) =>
-          (f.kind === "tournament" &&
-            getTournament(f.id)?.accent === "var(--wc)") ||
-          f.kind === "country"
+      const followsNfl = followsRef.current.some(
+        (f) => momentSport(f.momentId) === "nfl"
       );
-      if (followsWc) {
-        const days = daysUntil(WC_KICKOFF);
+      if (followsNfl) {
+        const days = daysUntil(
+          new Date(`${NFL_2026_SEASON_OPENER.iso}T00:00:00-04:00`)
+        );
         if (days > 0) {
           moment = {
-            text: "Summer Soccer 2026",
+            text: "NFL season",
             detail:
-              days === 1 ? "Kicks off tomorrow" : `Kicks off in ${days} days`,
+              days === 1
+                ? "Kicks off tomorrow"
+                : `Kicks off ${NFL_2026_SEASON_OPENER.label}`,
           };
         }
       }

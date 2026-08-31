@@ -26,7 +26,10 @@ const UPCOMING_LEAD_MS = 30 * 60 * 1000;
 // Keep processing a final game this long after its scheduled start, to
 // cover the live→final transition tick and a short tail. NBA games run
 // ~2.5h, WC ~2h; 5h comfortably covers either plus pre-game drift.
-const FINAL_LOOKBACK_MS = 5 * 60 * 60 * 1000;
+// 8h, not 5 (Preseason Review #3): an NFL game with a weather delay can
+// finish 6-7 hours after its scheduled start, and dropping it early
+// means the live->final tick — and the final alert — never fires.
+const FINAL_LOOKBACK_MS = 8 * 60 * 60 * 1000;
 
 export function isStateRelevant(
   status: "live" | "upcoming" | "final",

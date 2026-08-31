@@ -191,6 +191,15 @@ export async function GET(req: Request) {
   const allEvents: PushEvent[] = [];
   let processed = 0;
   let stateErrors = 0;
+  // Deferred writes (Preseason Review #3): commit state ONLY after the
+  // dispatch settles. The old order (write, then dispatch at the end of
+  // the tick) meant a crash or timeout between the two permanently
+  // swallowed the events — the next tick read the new state and had
+  // nothing left to detect. Now a dead tick re-detects and re-dispatches;
+  // the dedupe layer absorbs any double-fire from a tick that died AFTER
+  // dispatch.
+  const pendingStateWrites: Parameters<typeof writeCachedNFLState>[0][] = [];
+  const pendingPlayWrites: { gameId: string; ids: string[] }[] = [];
 
   for (const game of relevant) {
     try {
@@ -199,7 +208,7 @@ export async function GET(req: Request) {
       const { events, nextState } = detectNFLEvents(prev, fresh);
       if (events.length > 0) allEvents.push(...events);
       if (nflStateChanged(prev, nextState)) {
-        await writeCachedNFLState(nextState);
+        pendingStateWrites.push(nextState);
       }
       processed += 1;
     } catch (err) {
@@ -222,6 +231,19 @@ export async function GET(req: Request) {
         const { scoringPlays, drivePlays } = await fetchSummary(game.id);
         if (scoringPlays.length === 0 && drivePlays.length === 0) return [];
         const firedPlayIds = await readFiredNFLPlays(game.id);
+        // Cold-start seed (Preseason Review #3): an empty fired-set on a
+        // game that already has a scoring backlog means the scheduler was
+        // (re)enabled mid-game — every past play would burst out as stale
+        // pushes at once. Seed the cache silently and fire only from the
+        // NEXT play onward. Written immediately (not deferred): seeding
+        // twice is harmless, bursting once is not.
+        if (firedPlayIds.length === 0 && scoringPlays.length > 0) {
+          const seed = scoringPlays
+            .map((sp) => sp.id)
+            .filter((id): id is string => Boolean(id));
+          await writeFiredNFLPlays(game.id, seed);
+          return [];
+        }
         const result = detectNFLPlays({
           gameId: game.id,
           awayCode: game.away.abbreviation,
@@ -233,7 +255,7 @@ export async function GET(req: Request) {
           firedPlayIds,
         });
         if (result.events.length > 0) {
-          await writeFiredNFLPlays(game.id, result.firedPlayIds);
+          pendingPlayWrites.push({ gameId: game.id, ids: result.firedPlayIds });
         }
         return result.events;
       } catch (err) {
@@ -294,6 +316,8 @@ export async function GET(req: Request) {
   ]);
 
   if (dispatchSettled.status === "rejected") {
+    // Dispatch died: deliberately do NOT commit state or fired-play
+    // writes — the next tick re-detects everything and tries again.
     return NextResponse.json(
       {
         ok: false,
@@ -304,6 +328,24 @@ export async function GET(req: Request) {
       },
       { status: 500 }
     );
+  }
+
+  // Dispatch settled — commit the tick's state so tomorrow's detections
+  // start from here. Write failures are logged, not fatal: an uncommitted
+  // state just re-detects next tick, and dedupe absorbs the repeat.
+  for (const nextState of pendingStateWrites) {
+    try {
+      await writeCachedNFLState(nextState);
+    } catch (err) {
+      console.error("scan-nfl deferred state write failed", err);
+    }
+  }
+  for (const w of pendingPlayWrites) {
+    try {
+      await writeFiredNFLPlays(w.gameId, w.ids);
+    } catch (err) {
+      console.error("scan-nfl deferred play write failed", err);
+    }
   }
   const dispatchResult = dispatchSettled.value;
   let liveActivity: Awaited<ReturnType<typeof pushLiveActivityUpdates>> | null =
