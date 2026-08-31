@@ -114,7 +114,7 @@ const SHOTS = [
     headline: "Every game knows the series.",
     sub: "Playoff rounds, stakes, and the series score, in place." },
   { n: 7, name: "worldcup", path: "/app",
-    clientNav: { tabHref: "/schedule", clickText: "Bracket", scrollToText: "Quarterfinal 3" },
+    clientNav: { tabHref: "/schedule", clickText: "Bracket" },
     frozen: "2026-07-19T22:30:00Z",
     follows: [{ momentId: "fifa-world-cup-2026", scope: "country", scopeId: "ESP",
       alertEnabled: true, alertTier: "companion", followedAt: now - 9000 }],
@@ -215,16 +215,6 @@ async function main() {
         if (shot.clientNav.clickText) {
           await page.click(`text=${shot.clientNav.clickText}`);
           await page.waitForTimeout(1800);
-        }
-        if (shot.clientNav.scrollToText) {
-          // Align a section head just under the sticky chrome so the frame
-          // starts on a boundary instead of a clipped card.
-          const target = page.locator(`text=${shot.clientNav.scrollToText}`).first();
-          const box = await target.boundingBox();
-          if (box) {
-            await page.evaluate((y) => window.scrollTo(0, window.scrollY + y - 150), box.y);
-          }
-          await page.waitForTimeout(900);
         }
       }
       await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
