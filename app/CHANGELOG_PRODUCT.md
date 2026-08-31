@@ -2,6 +2,49 @@
 
 ---
 
+## Courtside ships: C0-C3 in one day, plus the Brief learns NFL — 2026-08-31
+
+The next visual generation went from decided spec to shipped product in
+one session, on the owner's call (tiny beta audience; the new face rides
+the v1.0.3 screenshots). Spec:
+`docs/superpowers/specs/2026-08-31-courtside-design.md`.
+
+- **C0** — preview gallery at /dev/courtside-preview (route-scoped
+  fonts + tokens, judged on-device before anything flipped).
+- **C1** — the visible flip. Porcelain light chassis (two grays,
+  hierarchy by weight), arena dark palette behind the manual toggle,
+  monochrome chrome (vermilion retires), live tokens per chassis.
+  Archivo (width axis, the identity) + Hanken Grotesk replace
+  Bricolage/Inter/JetBrains; --display-stretch/--label-stretch wired
+  into Monument (900 numerals), AgateRow, SecHead (hairline rule),
+  TabBar. Found and fixed: globals' :root font literals were fighting
+  next/font for the variables — next/font is now the single source.
+- **C2** — redaction is data-level. A hidden score renders a chip of
+  derived placeholder glyphs ("121 – 109" → "•• – ••"); the real
+  digits never enter the DOM until reveal. One seam (Spoiler), every
+  surface upgraded, and the old blur's exposure to VoiceOver, copy,
+  and find-in-page is gone. Glyphs never encode magnitude.
+- **C3** — the arena as rooms. Game detail dims while that game is
+  live, Watching while something tracked is live, Today's hero at
+  card level only — the page stays porcelain, tabs never strobe, and
+  the locked "never auto-flip" law survives. 400ms cross-fade,
+  instant under reduced motion. NFL names go nickname-first
+  (shortDisplayName) — full names truncated under Archivo.
+- **The Brief learns NFL** (review backlog #2, due Sep 13): Monday
+  carries Sunday's finals, game day carries the kickoff row,
+  preseason stays out, the LAC collision guard holds in email.
+- Also: the CI midnight flake killed for good (frozen test clock,
+  after it bit a second time at 23:59 UTC).
+
+Deliberately not shipped: C4 (native + store assets — needs Xcode and
+Apple review), C5 rituals, C6 Pro, dual-ramp team colors, the
+halftime/grace arena states. All sequenced in the spec.
+
+Gate on every chapter: tsc clean, eslint 0, tests green (755 by close),
+build clean (96 routes), live-verified at 390px per chapter.
+
+---
+
 ## Fix: one stale subscription crashed the whole dispatch batch — 2026-08-29
 
 The first on-device delivery test (the synthetic test-event) returned
