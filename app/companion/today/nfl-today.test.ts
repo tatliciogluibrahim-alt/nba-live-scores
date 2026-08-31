@@ -1,4 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+
+// Frozen clock: these fixtures build kickoff times relative to "now",
+// and the payload's day logic reads the real clock internally — so any
+// relative offset can cross local midnight on a CI runner (it did,
+// twice: at 22:01 UTC with a +2h offset, then at 23:59 with +60s).
+// Freezing the system time at a Sunday mid-day kills the whole class.
+beforeAll(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-09-13T16:00:00Z"));
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
 import { buildTodayPayload, deriveTodayHeadline } from "./today-data";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import type { NBAGame } from "./today-data";
@@ -7,10 +20,8 @@ import type { Follow } from "../state/types";
 function nflGame(over: Partial<NFLGameLite> = {}): NFLGameLite {
   return {
     id: "nfl1",
-    // 60s out: still upcoming and on the slate, but never crosses local
-    // midnight the way "+2h" did — CI's first-ever run (22:01 UTC) caught
-    // the "today." assertion reading "tomorrow." on the runner.
-    date: new Date(Date.now() + 60 * 1000).toISOString(),
+    // ~2h out (frozen clock above — offsets are deterministic now).
+    date: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
     status: "upcoming",
     statusText: "Upcoming",
     week: 1,
@@ -220,7 +231,7 @@ describe("Today renders LIVE NFL games (the Sep-9 render branches)", () => {
   it("an upcoming NFL lead reads in football's register", () => {
     const p = buildTodayPayload({
       ...base,
-      nfl: [nflGame({ date: new Date(Date.now() + 60_000).toISOString() })],
+      nfl: [nflGame({ date: new Date(Date.now() + 2 * 3600_000).toISOString() })],
       follows: [nflTeamFollow("KC")],
     });
     const h = deriveTodayHeadline(p);
