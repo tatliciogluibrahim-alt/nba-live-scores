@@ -358,6 +358,14 @@ Same autonomous session, after C3. Three items closed:
   screen) is a placeholder composite — replace with a device
   screenshot during a live game Sep 10–13. Doc updated:
   `docs/APP_STORE_CONTENT_v1.0.3.md`.
+- **Multi-sport shots 6–7 added** (user ask, same session): the real
+  2026 NBA Finals Game 5 from ESPN's archive (Knicks over the Spurs
+  4–1) and the real frozen World Cup bracket (ARG 0–1 ESP, Champions
+  star, YOUR PATH). 14 PNGs total. Two gotchas recorded: the schedule
+  page hydration-crashes under a Playwright frozen clock on direct
+  load (fix: land on /app, client-navigate in), and the NBA
+  normalizer needed the same nickname ruling as NFL
+  (shortDisplayName first) or Monument names truncate under Archivo.
 
 Route-count note: the build's route list is verified by DIFF against
 main (byte-identical), counted 93 route lines with
