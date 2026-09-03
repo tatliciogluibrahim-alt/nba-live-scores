@@ -331,6 +331,44 @@ When making code changes:
 
 ## Current Priority
 
+### PICKUP HERE (written 2026-09-03, session paused)
+
+**The clock item is the v1.0.3 App Store submission — the window is
+NOW (Sep 3-4).** Everything is ready and user-only:
+
+1. In App Store Connect: swap the promotional text (no review needed),
+   paste the new keywords + description, upload the 14 screenshots
+   from `store-assets/v1.0.3/` (69/ and 67/; order: NFL shots 1-5,
+   breadth 6-7), submit build. All paste-ready copy is in
+   `docs/APP_STORE_CONTENT_v1.0.3.md`.
+2. Shot 4 (lock screen) is a placeholder composite. Either submit
+   with it or recapture on device during a live game Sep 10-13 and
+   swap in an update.
+3. Opener Sep 9 (~8:20 PM ET, 2:20 AM user-local): next morning check
+   `dispatch.delivered > 0` via the status readout. The scan watchdog
+   is green as of Sep 3 morning (cron alive).
+4. One on-device lock-screen track during a real game.
+
+**State of the code** (all pushed, CI green through c4f2bd6):
+scan resilience batch shipped (deferred writes, cold-start seed, 8h
+lookback), WidgetSync week-boundary + NFL opener fallback shipped,
+NBA normalizer speaks nicknames (C1 ruling mirrored), full v1.0.3
+store set generated from real fixtures (`scripts/store-shots-v103.mjs`
++ `scripts/fixtures/`). Bracket shot framed unscrolled on purpose —
+max scroll starts mid-card and looks broken as a static frame.
+
+**Next build work, in order** (nothing blocking the submission):
+- Post-opener: rerun store shots after Sep 13 so shots 2+3 pick up
+  real regular-season finals (recapture fixtures first).
+- Courtside C5 (Margin Monday edition in-app, quiet-day strip — strip
+  needs a season-results source, likely a new ESPN team-schedule
+  route). C4 (native restyle) waits for Xcode/device access.
+- NFL Standings tab is still a placeholder that breaks its promise
+  once games count (Sep 10+) — flagged, not yet scheduled.
+- Review backlog: follows-predicate consolidation (5 copies),
+  today-data.ts split, measurement layer, Follow-vs-Pin guide
+  rewrite, WC SEO past-tense sweep.
+
 ### 2026-08-31 (cont.) — Scan resilience + widget week fix + v1.0.3 store assets
 
 Same autonomous session, after C3. Three items closed:
