@@ -36,8 +36,14 @@ export type NFLLeaderLite = {
   category: string;
   /** "J. Fagnano". */
   name: string;
-  /** "22/28, 224 YDS, 1 TD, 1 INT". */
+  /** "22/28, 224 YDS, 1 TD, 1 INT" — ESPN's line, verbatim. It is
+   *  category-scoped: a rushing leader's "1 TD" counts rushing TDs only. */
   line: string;
+  /** TDs this player scored OUTSIDE the row's category, read from the
+   *  scoring plays ("1 receiving TD", "2 rushing TD"). Absent when there are
+   *  none. Added 2026-09-20 after Gibbs (DET rushing leader, scored on a
+   *  catch) rendered as "16 CAR, 52 YDS" with no TD in sight. */
+  tdNote?: string;
 };
 
 export type NFLGameDetailPayload = {
@@ -142,8 +148,66 @@ const LEADER_CATEGORIES: Record<string, string> = {
 };
 const CATEGORY_ORDER = ["passingYards", "rushingYards", "receivingYards"];
 
+// ── TD credit across categories ───────────────────────────────────────
+// ESPN's leader line only counts the row's own category, so a running back
+// who leads in rushing and scored on a catch shows no TD at all. The scoring
+// plays carry every TD with the scorer's full name; tally them per player and
+// append what the line omits. Names match ESPN's displayName EXACTLY — a
+// near-miss credits nothing rather than guessing.
+
+type TDCategory = "passing" | "rushing" | "receiving" | "return";
+const TD_CATEGORY_ORDER: TDCategory[] = ["passing", "rushing", "receiving", "return"];
+const LEADER_TD_CATEGORY: Record<string, TDCategory> = {
+  passingYards: "passing",
+  rushingYards: "rushing",
+  receivingYards: "receiving",
+};
+type TDTally = Record<TDCategory, number>;
+
+function tallyTouchdowns(data: ESPNNFLSummary): Map<string, TDTally> {
+  const tally = new Map<string, TDTally>();
+  const bump = (name: string, category: TDCategory) => {
+    const key = name.trim();
+    if (!key) return;
+    const row = tally.get(key) ?? { passing: 0, rushing: 0, receiving: 0, return: 0 };
+    row[category] += 1;
+    tally.set(key, row);
+  };
+  for (const p of data.scoringPlays ?? []) {
+    if ((p.type?.abbreviation ?? "").toUpperCase() !== "TD") continue;
+    // "Jahmyr Gibbs 11 Yd pass from Jared Goff" · "Josh Allen 1 Yd Rush" ·
+    // "Devin Lloyd 16 Yd Interception Return" (kick parenthetical trimmed).
+    const m = trimPlayText(p.text ?? "").match(/^(.+?) \d+ Yd (.+)$/i);
+    if (!m) continue;
+    const scorer = m[1];
+    const how = m[2];
+    const passer = how.match(/^pass from (.+)$/i)?.[1];
+    if (passer) {
+      bump(scorer, "receiving");
+      bump(passer, "passing");
+    } else if (/^(rush|run)\b/i.test(how)) {
+      bump(scorer, "rushing");
+    } else if (/return/i.test(how)) {
+      bump(scorer, "return");
+    }
+    // Anything else (a fumble recovery in the end zone, a lateral) stays
+    // uncredited: the row says less rather than something invented.
+  }
+  return tally;
+}
+
+function tdNoteFor(row: TDTally | undefined, own: TDCategory): string | undefined {
+  if (!row) return undefined;
+  const parts = TD_CATEGORY_ORDER.filter((c) => c !== own && row[c] > 0).map(
+    // "2 rushing TD" — no plural s, matching the line's own "3 TD" agate.
+    (c) => `${row[c]} ${c} TD`
+  );
+  return parts.length > 0 ? parts.join(", ") : undefined;
+}
+
 export function normalizeNFLLeaders(data: ESPNNFLSummary): NFLLeaderLite[] {
   const out: NFLLeaderLite[] = [];
+  const touchdowns = tallyTouchdowns(data);
   for (const team of data.leaders ?? []) {
     const teamCode = team.team?.abbreviation ?? "";
     if (!teamCode) continue;
@@ -158,7 +222,17 @@ export function normalizeNFLLeaders(data: ESPNNFLSummary): NFLLeaderLite[] {
       const line = top?.displayValue ?? "";
       // A leader with no name or no stat line is noise, not data.
       if (!name || !line) continue;
-      out.push({ teamCode, category: LEADER_CATEGORIES[key], name, line });
+      const tdNote = tdNoteFor(
+        touchdowns.get((top?.athlete?.displayName ?? "").trim()),
+        LEADER_TD_CATEGORY[key]
+      );
+      out.push({
+        teamCode,
+        category: LEADER_CATEGORIES[key],
+        name,
+        line,
+        ...(tdNote ? { tdNote } : {}),
+      });
     }
   }
   return out;

@@ -128,9 +128,11 @@ function toActivityInput(g: NFLGameLite): ActivityUpdateInput {
 // stall the whole tick past the scheduler's request timeout (cron-job.org
 // gives up at 30s and counts it a failure; enough consecutive failures and
 // it disables the job).
-async function fetchSummary(
-  gameId: string
-): Promise<{ scoringPlays: NFLScoringPlay[]; drivePlays: NFLDrivePlay[] }> {
+async function fetchSummary(gameId: string): Promise<{
+  scoringPlays: NFLScoringPlay[];
+  drivePlays: NFLDrivePlay[];
+  driveTeamCode?: string;
+}> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SUMMARY_TIMEOUT_MS);
   try {
@@ -142,12 +144,16 @@ async function fetchSummary(
     if (!res.ok) return { scoringPlays: [], drivePlays: [] };
     const json = (await res.json()) as {
       scoringPlays?: NFLScoringPlay[];
-      drives?: { current?: { plays?: NFLDrivePlay[] } };
+      drives?: {
+        current?: { plays?: NFLDrivePlay[]; team?: { abbreviation?: string } };
+      };
     };
     return {
       scoringPlays: json.scoringPlays ?? [],
       // Only the CURRENT drive's plays (cheap) — big plays + turnovers.
       drivePlays: json.drives?.current?.plays ?? [],
+      // The offense on that drive, so those events carry a team too.
+      driveTeamCode: json.drives?.current?.team?.abbreviation,
     };
   } catch {
     return { scoringPlays: [], drivePlays: [] };
@@ -228,7 +234,7 @@ export async function GET(req: Request) {
   const playBatches = await Promise.all(
     liveGames.map(async (game) => {
       try {
-        const { scoringPlays, drivePlays } = await fetchSummary(game.id);
+        const { scoringPlays, drivePlays, driveTeamCode } = await fetchSummary(game.id);
         if (scoringPlays.length === 0 && drivePlays.length === 0) return [];
         const firedPlayIds = await readFiredNFLPlays(game.id);
         // Cold-start seed (Preseason Review #3): an empty fired-set on a
@@ -252,6 +258,7 @@ export async function GET(req: Request) {
           homeScore: game.home.score,
           scoringPlays,
           drivePlays,
+          driveTeamCode,
           firedPlayIds,
         });
         if (result.events.length > 0) {

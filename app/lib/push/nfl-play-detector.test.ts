@@ -127,3 +127,41 @@ describe("detectNFLPlays — big plays + turnovers (current drive)", () => {
     expect(events).toHaveLength(0);
   });
 });
+
+describe("detectNFLPlays — team attribution (own-team Companion gate)", () => {
+  it("carries the scoring team on every scoring-play event", () => {
+    const { events } = detectNFLPlays({
+      ...base,
+      scoringPlays: fixture.scoringPlays,
+      firedPlayIds: [],
+    });
+    expect(events.map((e) => e.teamCode)).toEqual(
+      fixture.scoringPlays.map((p) => p.team?.abbreviation)
+    );
+    expect(events.every((e) => e.teamCode === "CHI" || e.teamCode === "MIN")).toBe(true);
+  });
+
+  it("carries the current drive's team on big plays and turnovers", () => {
+    const { events } = detectNFLPlays({
+      ...base,
+      scoringPlays: [],
+      driveTeamCode: "MIN",
+      drivePlays: [
+        { id: "d1", statYardage: 45, type: { text: "Rush" }, text: "A. Jones 45 yd run" },
+        { id: "d2", isTurnover: true, text: "J. McCarthy INTERCEPTED" },
+      ],
+      firedPlayIds: [],
+    });
+    expect(events).toHaveLength(2);
+    expect(events.map((e) => e.teamCode)).toEqual(["MIN", "MIN"]);
+  });
+
+  it("leaves teamCode unset when the feed carries no team", () => {
+    const { events } = detectNFLPlays({
+      ...base,
+      scoringPlays: [{ id: "s1", type: { abbreviation: "FG" }, text: "Kicker 40 Yd Field Goal" }],
+      firedPlayIds: [],
+    });
+    expect(events[0].teamCode).toBeUndefined();
+  });
+});

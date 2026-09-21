@@ -58,7 +58,15 @@ scoring summary, and yardage. Parsing it gives:
 | `nfl-2pt` | 2-point conversion attempted (made or missed) | All only |
 | `nfl-big-play-rush` | Rush ≥ 40 yards (regardless of TD) | All only |
 | `nfl-big-play-rec` | Reception ≥ 40 yards (regardless of TD) | All only |
-| `nfl-turnover` | INT or fumble lost | Companion (own-team only) · All |
+| `nfl-turnover` | INT or fumble lost | All only (moved out of Companion 2026-09-20: no score change, ~2 per game both teams) |
+
+"Own-team only" is enforced literally since 2026-09-20: every per-play
+event carries `teamCode` (the scoring team, or the offense on a big play
+or turnover) and the dispatcher grants the personal boost only when the
+follow's team made the play. Before that the event carried no team and a
+Companion follower received both sides' touchdowns. Per-play pushes also
+share one collapse slot per game (`{id}:nfl-play`) alongside the
+game-state slot (`{id}:nfl-state`).
 
 Volume sanity-check: a typical NFL game has ~5 TDs total across both
 teams. A 16-game Sunday slate has ~80 TDs. **An "All moments" user

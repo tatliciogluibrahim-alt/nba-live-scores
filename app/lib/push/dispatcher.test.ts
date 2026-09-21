@@ -828,3 +828,95 @@ describe("NFL dedupe + offer (Preseason Review)", () => {
     expect(offer.body).toBe("Track this match on your Lock Screen.");
   });
 });
+
+describe("NFL own-team Companion gate (2026-09-20)", () => {
+  // docs/nfl-design.md always said Companion TDs are own-team only. Until
+  // this gate the event carried no scoring team, so a KC follower on
+  // Companion got LAC's touchdowns too — the volume driver on a Sunday.
+  const kc = (tier: SyncedAlert["tier"]): SyncedAlert => ({
+    momentId: "nfl-season-2026",
+    scope: "team",
+    scopeId: "KC",
+    tier,
+  });
+
+  it("Companion gets its own team's touchdown", () => {
+    expect(
+      subscriberWantsEvent(
+        sub([kc("companion")]),
+        nflEvent({ type: "nfl-td-rushing", teamCode: "KC" })
+      )
+    ).toBe(true);
+  });
+
+  it("Companion does NOT get the opponent's touchdown", () => {
+    for (const type of ["nfl-td-rushing", "nfl-td-receiving", "nfl-td-defensive"] as const) {
+      expect(
+        subscriberWantsEvent(sub([kc("companion")]), nflEvent({ type, teamCode: "LAC" }))
+      ).toBe(false);
+    }
+  });
+
+  it("Full Details gets both teams' touchdowns", () => {
+    expect(
+      subscriberWantsEvent(sub([kc("all")]), nflEvent({ type: "nfl-td-receiving", teamCode: "LAC" }))
+    ).toBe(true);
+    expect(
+      subscriberWantsEvent(sub([kc("all")]), nflEvent({ type: "nfl-td-receiving", teamCode: "KC" }))
+    ).toBe(true);
+  });
+
+  it("a touchdown with no team attribution keeps the boost (fail-open, never silently drops)", () => {
+    expect(
+      subscriberWantsEvent(sub([kc("companion")]), nflEvent({ type: "nfl-td-rushing" }))
+    ).toBe(true);
+  });
+
+  it("the own-team rule does not touch game-state beats (halftime is about the game, not a side)", () => {
+    expect(
+      subscriberWantsEvent(
+        sub([kc("companion")]),
+        nflEvent({ type: "nfl-halftime", teamCode: "LAC" })
+      )
+    ).toBe(true);
+  });
+
+  it("Companion no longer gets turnovers, Full Details still does", () => {
+    expect(
+      subscriberWantsEvent(sub([kc("companion")]), nflEvent({ type: "nfl-turnover", teamCode: "KC" }))
+    ).toBe(false);
+    expect(
+      subscriberWantsEvent(sub([kc("all")]), nflEvent({ type: "nfl-turnover", teamCode: "LAC" }))
+    ).toBe(true);
+  });
+});
+
+describe("NFL play pushes collapse per game (2026-09-20)", () => {
+  it("every play push in a game shares one Notification Center slot", () => {
+    const tags = new Set(
+      (
+        [
+          nflEvent({ type: "nfl-td-rushing", awayScore: 7, homeScore: 0 }),
+          nflEvent({ type: "nfl-td-receiving", awayScore: 14, homeScore: 0 }),
+          nflEvent({ type: "nfl-fg", awayScore: 14, homeScore: 3 }),
+          nflEvent({ type: "nfl-safety", awayScore: 16, homeScore: 3 }),
+          nflEvent({ type: "nfl-2pt", awayScore: 18, homeScore: 3 }),
+          nflEvent({ type: "nfl-turnover", note: "INT by Smith" }),
+          nflEvent({ type: "nfl-big-play-rec", note: "Kelce 44 yd catch" }),
+        ] as PushEvent[]
+      ).map((e) => buildPayload(e, false).tag)
+    );
+    expect(tags).toEqual(new Set(["n1:nfl-play"]));
+  });
+
+  it("play pushes do not replace the game-state slot (kickoff, halftime, final)", () => {
+    expect(buildPayload(nflEvent({ type: "nfl-final" }), false).tag).toBe("n1:nfl-state");
+    expect(buildPayload(nflEvent({ type: "nfl-td-rushing" }), false).tag).not.toBe("n1:nfl-state");
+  });
+
+  it("collapsing the slot does not collapse the dedupe (each score still gets through)", () => {
+    const a = nflEvent({ type: "nfl-td-rushing", awayScore: 7, homeScore: 0 });
+    const b = nflEvent({ type: "nfl-td-rushing", awayScore: 14, homeScore: 0 });
+    expect(dedupeTagFor(a)).not.toBe(dedupeTagFor(b));
+  });
+});

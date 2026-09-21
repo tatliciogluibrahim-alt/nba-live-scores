@@ -142,9 +142,13 @@ export function scoreEvent(i: SignificanceInput): number {
     // Calibrated to the design-doc tier mapping under the {0,42,70}
     // thresholds + 25 boost: kickoff/final are invariants (own team, every
     // tier); a TD reaches own-team Companion (40+25=65) but not Quiet, and
-    // any team via All; FG/safety/2pt/big-play are All-only (score < 17 so
-    // even own-team+boost stays under Companion); a game reaching OT is a
-    // "big moment" that breaks through to own-team Quiet (48+25=73).
+    // any team via All; FG/safety/2pt/big-play/turnover are All-only (score
+    // < 17 so even own-team+boost stays under Companion); a game reaching
+    // OT is a "big moment" that breaks through to own-team Quiet (48+25=73).
+    // "Own team" on a TD is literal since 2026-09-20: the dispatcher only
+    // grants the boost when the follow's team is the one that scored.
+    // Turnovers left Companion the same day (Week 2 audit: ~2 per game,
+    // both teams, no score change — the next TD or break tells the story).
     case "nfl-kickoff":
       return clamp(45);
     case "nfl-final":
@@ -160,7 +164,7 @@ export function scoreEvent(i: SignificanceInput): number {
     case "nfl-td-defensive":
       return clamp(40);
     case "nfl-turnover":
-      return clamp(38);
+      return clamp(16);
     case "nfl-big-play-rush":
     case "nfl-big-play-rec":
       // Longer runs read louder, but stay All-only (< 17 even at 60+ yds).

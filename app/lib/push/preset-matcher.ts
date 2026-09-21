@@ -51,8 +51,10 @@ const MATRIX: Record<EventType, ReadonlySet<AlertPreset>> = {
   // engine is what actually gates at dispatch; this matrix documents the
   // intended tier per event (and keeps the taxonomy-exhaustiveness test
   // meaningful). Game state: kickoff/final are bookends (every tier), the
-  // quarter pulses + OT are Companion+. Per-play: TDs + turnovers are
-  // Companion (own team) + All; FG/safety/2pt/big plays are the loud tier.
+  // quarter pulses + OT are Companion+. Per-play: TDs are Companion (own
+  // team only, literally — the dispatcher checks the scoring team) + All;
+  // FG/safety/2pt/big plays/turnovers are the loud tier (turnovers moved
+  // there 2026-09-20).
   "nfl-kickoff": new Set<AlertPreset>(["quiet", "companion", "all"]),
   "nfl-eoq-1": new Set<AlertPreset>(["companion", "all"]),
   "nfl-halftime": new Set<AlertPreset>(["companion", "all"]),
@@ -62,7 +64,7 @@ const MATRIX: Record<EventType, ReadonlySet<AlertPreset>> = {
   "nfl-td-rushing": new Set<AlertPreset>(["companion", "all"]),
   "nfl-td-receiving": new Set<AlertPreset>(["companion", "all"]),
   "nfl-td-defensive": new Set<AlertPreset>(["companion", "all"]),
-  "nfl-turnover": new Set<AlertPreset>(["companion", "all"]),
+  "nfl-turnover": new Set<AlertPreset>(["all"]),
   "nfl-fg": new Set<AlertPreset>(["all"]),
   "nfl-safety": new Set<AlertPreset>(["all"]),
   "nfl-2pt": new Set<AlertPreset>(["all"]),

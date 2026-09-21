@@ -104,6 +104,11 @@ export type PushEvent = {
    *  parseable — the dispatcher falls back to a plain "Goal" line.
    *  No-Spoilers users never see it. */
   scorer?: string;
+  /** NFL per-play events: the team credited with the play — the scoring
+   *  team, or the offense on a big play / turnover. The dispatcher's own-team
+   *  Companion gate reads it (docs/nfl-design.md: Companion TDs are own-team
+   *  only). Absent = no attribution, and the gate fails open. */
+  teamCode?: string;
   /** Significance score 0–100 (significance.ts scoreEvent), computed at
    *  detection where the game state is richest. The dispatcher gates each
    *  subscriber's tier on it. Optional for back-compat: a missing score

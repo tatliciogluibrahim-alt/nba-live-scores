@@ -2,6 +2,52 @@
 
 ---
 
+## Week 2 audit: the TD the row forgot, and the Sunday that buzzed too much — 2026-09-20
+
+Two owner reports from live NFL use, traced against real Week 2 payloads
+(Thursday BUF at DET plus the 13 Sunday games that had finished).
+
+- **Who mattered credits the TD the line omits.** ESPN's leader line is
+  category-scoped: a rushing leader's "1 TD" counts rushing TDs only, so
+  Gibbs (DET rushing leader, scored on an 11 yd catch) and Hubbard (CAR,
+  same shape) rendered as "16 CAR, 52 YDS" with no TD anywhere. Two of
+  14 Week 2 games. Rows now lead with a mono category tag (PASS / RUSH /
+  REC) so the line has context, and append TDs from other categories read
+  off the scoring plays: "16 CAR, 52 YDS · 1 receiving TD", "20/31, 248
+  YDS, 3 TD · 2 rushing TD" (Allen). Matched on ESPN's full display name
+  only. A near-miss credits nothing. New real fixture (summary-401872932).
+- **Companion touchdowns are own-team only, literally.** The design doc
+  said so since gate 4, but the push event never carried the scoring team,
+  so a Companion team follow got both sides' TDs. Play events now carry
+  `teamCode`; the dispatcher grants the personal boost on a per-play event
+  only when the follow's team made the play. Opponent TDs still reach Full
+  Details. No attribution on the event keeps the boost (fail-open).
+- **Turnovers move to Full Details.** About 2 per game, both teams, no
+  score change. The next TD or quarter break tells the story.
+- **Play pushes collapse per game.** One Notification Center slot per game
+  for plays (`{id}:nfl-play`), one for state (`{id}:nfl-state`), so a
+  Full Details follower sees two cards per game instead of a pile of 16.
+  The dedupe tag is untouched: every score still fires. Web caveat: sw.js
+  sets no `renotify`, so on web a same-tag replacement arrives silently,
+  the same way game-state beats already did.
+- **Big plays untouched.** They never reached Companion (12 to 16 plus the
+  25 boost stays under 42) and were about 2 of 16 pushes on Full Details.
+  "Limit big plays" pointed at the wrong lever.
+
+Week 2 volume per game, averaged across the 13 finished Sunday games:
+TD 3.7 (both teams), FG 3.4, turnovers 2.1, non-scoring 40+ yd plays 2.1.
+A Companion team follow got about 11 pushes per game before this change
+and gets about 7 after (kickoff, three breaks, own-team TDs, final). Full
+Details stays at about 16 by count, collapsed on the lock screen. The
+owner follows at Full Details; that tier's promise ("every moment, every
+game") is unchanged and thinning it is a separate decision.
+
+Gate: lint 0, tsc clean, 774 tests, build clean (no routes touched),
+live-verified on the real BUF at DET and ATL at CAR payloads at the 354px
+phone content column. The push changes are unit-locked; first live
+observation is the next NFL window.
+
+
 ## Opener hardening: scan resilience, widget week fix, v1.0.3 store set — 2026-08-31
 
 Push pipeline: scan-nfl state writes moved after dispatch settlement

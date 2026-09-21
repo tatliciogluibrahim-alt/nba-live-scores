@@ -90,9 +90,10 @@ describe("scoreEvent — NFL (design-doc tier mapping under the significance gat
     expect(reaches(scoreEvent({ type: "nfl-ot" }), "quiet", true)).toBe(true);
   });
 
-  it("a turnover reaches own-team Companion", () => {
-    expect(reaches(scoreEvent({ type: "nfl-turnover" }), "companion", true)).toBe(true);
+  it("a turnover is Full-Details-only (2026-09-20: it moves no score, the next TD or break tells the story)", () => {
+    expect(reaches(scoreEvent({ type: "nfl-turnover" }), "companion", true)).toBe(false);
     expect(reaches(scoreEvent({ type: "nfl-turnover" }), "quiet", true)).toBe(false);
+    expect(reaches(scoreEvent({ type: "nfl-turnover" }), "all", false)).toBe(true);
   });
 
   it("a longer big play scores higher but stays under Companion", () => {

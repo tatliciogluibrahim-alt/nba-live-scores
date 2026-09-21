@@ -40,6 +40,13 @@ const NFL_ACCENT_HEX = "#1f3a6b";
 function weekTail(game: NFLGameLite): string {
   return nflWeekLabel(game.seasonType, game.week);
 }
+// Category micro-label for a Who mattered row — box-score agate, mono.
+const LEADER_TAG: Record<string, string> = {
+  Passing: "PASS",
+  Rushing: "RUSH",
+  Receiving: "REC",
+};
+
 
 export function NFLGameDetail({
   game,
@@ -213,7 +220,11 @@ export function NFLGameDetail({
           ) : null}
 
           {/* WHO MATTERED — passing / rushing / receiving, one row each per
-              team. Hidden under No-Spoilers: a stat line names the scorer. */}
+              team. Hidden under No-Spoilers: a stat line names the scorer.
+              The row leads with its category as a mono micro-label (PASS /
+              RUSH / REC) because the ESPN line is category-scoped: a
+              rushing leader's "1 TD" is rushing TDs only. TDs the line
+              omits ride in from the scoring plays as `tdNote`. */}
           {leaders.length > 0 && !hidden ? (
             <section className="px-[18px] pt-6">
               <SecHead name={isLive ? "Top performers" : "Who mattered"} />
@@ -221,21 +232,38 @@ export function NFLGameDetail({
                 <AgateRow
                   key={`${leader.teamCode}-${leader.category}-${i}`}
                   main={
-                    <span className="block truncate">
-                      {leader.name}
+                    <span className="flex min-w-0 items-center">
+                      <span className="sr-only">{leader.category} </span>
                       <span
+                        aria-hidden
                         style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          letterSpacing: "0.06em",
                           color: "var(--mute-1)",
-                          fontWeight: 500,
-                          fontSize: 12.5,
+                          width: 38,
+                          flex: "none",
                         }}
                       >
-                        {" "}
-                        · {leader.teamCode}
+                        {LEADER_TAG[leader.category] ?? ""}
+                      </span>
+                      <span className="block min-w-0 truncate">
+                        {leader.name}
+                        <span
+                          style={{
+                            color: "var(--mute-1)",
+                            fontWeight: 500,
+                            fontSize: 12.5,
+                          }}
+                        >
+                          {" "}
+                          · {leader.teamCode}
+                        </span>
                       </span>
                     </span>
                   }
-                  note={leader.line}
+                  note={leader.tdNote ? `${leader.line} · ${leader.tdNote}` : leader.line}
                 />
               ))}
             </section>

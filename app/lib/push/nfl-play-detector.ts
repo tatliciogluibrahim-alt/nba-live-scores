@@ -38,6 +38,9 @@ export type NFLPlayInput = {
   scoringPlays: NFLScoringPlay[];
   /** Plays from the CURRENT drive only (cheap) — big plays + turnovers. */
   drivePlays?: NFLDrivePlay[];
+  /** The offense on the current drive (`drives.current.team.abbreviation`),
+   *  so big plays + turnovers carry a team like scoring plays do. */
+  driveTeamCode?: string;
   /** Play ids already pushed for this game. */
   firedPlayIds: string[];
 };
@@ -79,9 +82,11 @@ export function detectNFLPlays(input: NFLPlayInput): NFLPlayResult {
     const type = classifyScoringPlay(p);
     if (!type) continue;
     fired.add(p.id);
+    const scoringTeam = p.team?.abbreviation?.trim();
     events.push({
       ...base,
       type,
+      ...(scoringTeam ? { teamCode: scoringTeam } : {}),
       awayScore: p.awayScore ?? input.awayScore,
       homeScore: p.homeScore ?? input.homeScore,
       // The play description IS the fantasy payload ("Caleb Williams 9 Yd
@@ -94,6 +99,8 @@ export function detectNFLPlays(input: NFLPlayInput): NFLPlayResult {
   // Current-drive plays — ≥40yd big plays + turnovers (non-scoring; a scoring
   // big play already fired above). Only the current drive is scanned, so this
   // stays cheap on every tick.
+  const driveTeam = input.driveTeamCode?.trim();
+  const driveBase = driveTeam ? { ...base, teamCode: driveTeam } : base;
   for (const p of input.drivePlays ?? []) {
     if (!p.id || fired.has(p.id) || p.scoringPlay) continue;
     const text = (p.text ?? "").toLowerCase();
@@ -103,7 +110,7 @@ export function detectNFLPlays(input: NFLPlayInput): NFLPlayResult {
     if (p.isTurnover) {
       fired.add(p.id);
       events.push({
-        ...base,
+        ...driveBase,
         type: "nfl-turnover",
         awayScore: input.awayScore,
         homeScore: input.homeScore,
@@ -117,7 +124,7 @@ export function detectNFLPlays(input: NFLPlayInput): NFLPlayResult {
       const type: PushEvent["type"] = isRec ? "nfl-big-play-rec" : "nfl-big-play-rush";
       fired.add(p.id);
       events.push({
-        ...base,
+        ...driveBase,
         type,
         awayScore: input.awayScore,
         homeScore: input.homeScore,

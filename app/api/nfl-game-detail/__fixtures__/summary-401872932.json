@@ -1,0 +1,450 @@
+{
+ "header": {
+  "competitions": [
+   {
+    "competitors": [
+     {
+      "homeAway": "home",
+      "score": "41",
+      "team": {
+       "id": "2",
+       "abbreviation": "BUF",
+       "displayName": "Buffalo Bills"
+      },
+      "linescores": [
+       {
+        "displayValue": "14"
+       },
+       {
+        "displayValue": "13"
+       },
+       {
+        "displayValue": "7"
+       },
+       {
+        "displayValue": "7"
+       }
+      ]
+     },
+     {
+      "homeAway": "away",
+      "score": "31",
+      "team": {
+       "id": "8",
+       "abbreviation": "DET",
+       "displayName": "Detroit Lions"
+      },
+      "linescores": [
+       {
+        "displayValue": "0"
+       },
+       {
+        "displayValue": "10"
+       },
+       {
+        "displayValue": "7"
+       },
+       {
+        "displayValue": "14"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "leaders": [
+  {
+   "team": {
+    "id": "2",
+    "abbreviation": "BUF",
+    "displayName": "Buffalo Bills"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "20/31, 248 YDS, 3 TD",
+       "athlete": {
+        "shortName": "J. Allen",
+        "displayName": "Josh Allen"
+       }
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "21 CAR, 135 YDS, 1 TD",
+       "athlete": {
+        "shortName": "J. Cook III",
+        "displayName": "James Cook III"
+       }
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "7 REC, 95 YDS, 1 TD",
+       "athlete": {
+        "shortName": "D. Kincaid",
+        "displayName": "Dalton Kincaid"
+       }
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "2",
+       "athlete": {
+        "shortName": "G. Rousseau",
+        "displayName": "Greg Rousseau"
+       }
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "8",
+       "athlete": {
+        "shortName": "C. Benford",
+        "displayName": "Christian Benford"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "team": {
+    "id": "8",
+    "abbreviation": "DET",
+    "displayName": "Detroit Lions"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "26/38, 327 YDS, 4 TD",
+       "athlete": {
+        "shortName": "J. Goff",
+        "displayName": "Jared Goff"
+       }
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "16 CAR, 52 YDS",
+       "athlete": {
+        "shortName": "J. Gibbs",
+        "displayName": "Jahmyr Gibbs"
+       }
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "9 REC, 142 YDS, 2 TD",
+       "athlete": {
+        "shortName": "A. St. Brown",
+        "displayName": "Amon-Ra St. Brown"
+       }
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "1",
+       "athlete": {
+        "shortName": "D. Barnes",
+        "displayName": "Derrick Barnes"
+       }
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "11",
+       "athlete": {
+        "shortName": "C. Clark",
+        "displayName": "Chuck Clark"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "scoringPlays": [
+  {
+   "id": "401872932317",
+   "type": {
+    "id": "68",
+    "text": "Rushing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Josh Allen 1 Yd Rush (Tyler Bass Kick)",
+   "awayScore": 0,
+   "homeScore": 7,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 549,
+    "displayValue": "9:09"
+   },
+   "team": {
+    "id": "2",
+    "abbreviation": "BUF"
+   }
+  },
+  {
+   "id": "401872932640",
+   "type": {
+    "id": "67",
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Joshua Palmer 43 Yd pass from Josh Allen (Tyler Bass Kick)",
+   "awayScore": 0,
+   "homeScore": 14,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 222,
+    "displayValue": "3:42"
+   },
+   "team": {
+    "id": "2",
+    "abbreviation": "BUF"
+   }
+  },
+  {
+   "id": "4018729321146",
+   "type": {
+    "id": "67",
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Dawson Knox 1 Yd pass from Josh Allen (Tyler Bass Kick)",
+   "awayScore": 0,
+   "homeScore": 21,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 708,
+    "displayValue": "11:48"
+   },
+   "team": {
+    "id": "2",
+    "abbreviation": "BUF"
+   }
+  },
+  {
+   "id": "4018729321523",
+   "type": {
+    "id": "67",
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Jahmyr Gibbs 11 Yd pass from Jared Goff (Jake Bates Kick)",
+   "awayScore": 7,
+   "homeScore": 21,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 303,
+    "displayValue": "5:03"
+   },
+   "team": {
+    "id": "8",
+    "abbreviation": "DET"
+   }
+  },
+  {
+   "id": "4018729321712",
+   "type": {
+    "id": "67",
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Dalton Kincaid 16 Yd pass from Josh Allen (Tyler Bass PAT Failed)",
+   "awayScore": 7,
+   "homeScore": 27,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 172,
+    "displayValue": "2:52"
+   },
+   "team": {
+    "id": "2",
+    "abbreviation": "BUF"
+   }
+  },
+  {
+   "id": "4018729322363",
+   "type": {
+    "id": "59",
+    "text": "Field Goal Good",
+    "abbreviation": "FG"
+   },
+   "text": "Jake Bates 31 Yd Field Goal",
+   "awayScore": 10,
+   "homeScore": 27,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 0,
+    "displayValue": "0:00"
+   },
+   "team": {
+    "id": "8",
+    "abbreviation": "DET"
+   }
+  },
+  {
+   "id": "4018729322706",
+   "type": {
+    "id": "67",
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Amon-Ra St. Brown 2 Yd pass from Jared Goff (Jake Bates Kick)",
+   "awayScore": 17,
+   "homeScore": 27,
+   "period": {
+    "number": 3
+   },
+   "clock": {
+    "value": 569,
+    "displayValue": "9:29"
+   },
+   "team": {
+    "id": "8",
+    "abbreviation": "DET"
+   }
+  },
+  {
+   "id": "4018729323135",
+   "type": {
+    "id": "68",
+    "text": "Rushing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Josh Allen 2 Yd Rush (Tyler Bass Kick)",
+   "awayScore": 17,
+   "homeScore": 34,
+   "period": {
+    "number": 3
+   },
+   "clock": {
+    "value": 67,
+    "displayValue": "1:07"
+   },
+   "team": {
+    "id": "2",
+    "abbreviation": "BUF"
+   }
+  },
+  {
+   "id": "4018729323573",
+   "type": {
+    "id": "67",
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Sam LaPorta 1 Yd pass from Jared Goff (Jake Bates Kick)",
+   "awayScore": 24,
+   "homeScore": 34,
+   "period": {
+    "number": 4
+   },
+   "clock": {
+    "value": 653,
+    "displayValue": "10:53"
+   },
+   "team": {
+    "id": "8",
+    "abbreviation": "DET"
+   }
+  },
+  {
+   "id": "4018729324101",
+   "type": {
+    "id": "68",
+    "text": "Rushing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "James Cook III 1 Yd Rush (Tyler Bass Kick)",
+   "awayScore": 24,
+   "homeScore": 41,
+   "period": {
+    "number": 4
+   },
+   "clock": {
+    "value": 170,
+    "displayValue": "2:50"
+   },
+   "team": {
+    "id": "2",
+    "abbreviation": "BUF"
+   }
+  },
+  {
+   "id": "4018729324330",
+   "type": {
+    "id": "67",
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Amon-Ra St. Brown 27 Yd pass from Jared Goff (Jake Bates Kick)",
+   "awayScore": 31,
+   "homeScore": 41,
+   "period": {
+    "number": 4
+   },
+   "clock": {
+    "value": 102,
+    "displayValue": "1:42"
+   },
+   "team": {
+    "id": "8",
+    "abbreviation": "DET"
+   }
+  }
+ ]
+}

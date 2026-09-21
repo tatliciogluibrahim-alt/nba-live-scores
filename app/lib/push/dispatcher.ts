@@ -590,7 +590,21 @@ export function subscriberWantsEvent(
     // threshold governs the middle (goals, breaks, close games) + tournament
     // follows, where breakthrough still applies.
     if (direct && TIER_INVARIANT_EVENTS.has(event.type)) return true;
-    const score = significance + (direct ? PERSONAL_BOOST : 0);
+    // Own-team rule for NFL per-play events (docs/nfl-design.md: "Companion
+    // (own-team only)"). A team follow earns the personal boost on a play
+    // only when ITS team made the play; the opponent's touchdown still
+    // reaches Full Details (threshold 0) but no longer clears Companion on
+    // the boost. Before 2026-09-20 the event carried no team, so a KC
+    // follower on Companion got LAC's touchdowns too — roughly double the
+    // intended volume. No attribution on the event = keep the boost
+    // (fail-open, same posture as an unscored event).
+    const opponentPlay =
+      direct &&
+      f.scope === "team" &&
+      NFL_PLAY_TYPES.has(event.type) &&
+      Boolean(event.teamCode) &&
+      scopeId !== event.teamCode;
+    const score = significance + (direct && !opponentPlay ? PERSONAL_BOOST : 0);
     return score >= SIGNIFICANCE_THRESHOLD[f.tier];
   });
 }
@@ -641,6 +655,13 @@ const NFL_NOTE_PLAY_TYPES = new Set<PushEvent["type"]>([
   "nfl-turnover",
   "nfl-big-play-rush",
   "nfl-big-play-rec",
+]);
+/** Every NFL per-play event — the ones that carry a `teamCode` and are
+ *  subject to the own-team Companion rule, and the ones that share the
+ *  per-game `nfl-play` collapse slot. */
+const NFL_PLAY_TYPES = new Set<PushEvent["type"]>([
+  ...NFL_SCORING_PLAY_TYPES,
+  ...NFL_NOTE_PLAY_TYPES,
 ]);
 
 /** Start-of-game events that the lock-screen offer rides on. The offer
@@ -907,10 +928,14 @@ function buildTemplatePayload(event: PushEvent, noSpoilers: boolean): PushPayloa
       };
 
     // ── NFL (Phase 22). Game-state events share one collapse tag
-    // (`${id}:nfl-state`) like the WC lifecycle, so each replaces the last;
-    // per-play events keep their own tag so goals/TDs persist. No-Spoilers
-    // drops the score AND the player name (a name is itself a fantasy
-    // spoiler, per docs/nfl-design.md) — the title stays neutral. ──────────
+    // (`${id}:nfl-state`) like the WC lifecycle, so each replaces the last.
+    // Per-play events share a second per-game slot (`${id}:nfl-play`,
+    // 2026-09-20): a Full Details follower saw ~16 stacked cards per game
+    // on the lock screen (Week 2 audit), so each play now replaces the
+    // last. The DEDUPE tag (dedupeTagFor) stays per-play, so every score
+    // still fires — only the pile collapses. No-Spoilers drops the score
+    // AND the player name (a name is itself a fantasy spoiler, per
+    // docs/nfl-design.md) — the title stays neutral. ────────────────────
     case "nfl-kickoff":
       return nflPayload(event, "Kickoff", noSpoilers ? "The game is underway." : matchup, `${event.gameId}:nfl-state`);
     case "nfl-eoq-1":
@@ -926,18 +951,18 @@ function buildTemplatePayload(event: PushEvent, noSpoilers: boolean): PushPayloa
     case "nfl-td-rushing":
     case "nfl-td-receiving":
     case "nfl-td-defensive":
-      return nflPayload(event, "Touchdown", noSpoilers ? "A touchdown was scored." : event.note ?? scoreLine(event), `${event.gameId}:${event.type}:${event.awayScore}-${event.homeScore}`);
+      return nflPayload(event, "Touchdown", noSpoilers ? "A touchdown was scored." : event.note ?? scoreLine(event), `${event.gameId}:nfl-play`);
     case "nfl-fg":
-      return nflPayload(event, "Field goal", noSpoilers ? "A field goal was made." : event.note ?? scoreLine(event), `${event.gameId}:nfl-fg:${event.awayScore}-${event.homeScore}`);
+      return nflPayload(event, "Field goal", noSpoilers ? "A field goal was made." : event.note ?? scoreLine(event), `${event.gameId}:nfl-play`);
     case "nfl-safety":
-      return nflPayload(event, "Safety", noSpoilers ? "A safety was scored." : event.note ?? scoreLine(event), `${event.gameId}:nfl-safety:${event.awayScore}-${event.homeScore}`);
+      return nflPayload(event, "Safety", noSpoilers ? "A safety was scored." : event.note ?? scoreLine(event), `${event.gameId}:nfl-play`);
     case "nfl-2pt":
-      return nflPayload(event, "Two-point try", noSpoilers ? "A two-point conversion was attempted." : event.note ?? scoreLine(event), `${event.gameId}:nfl-2pt:${event.awayScore}-${event.homeScore}`);
+      return nflPayload(event, "Two-point try", noSpoilers ? "A two-point conversion was attempted." : event.note ?? scoreLine(event), `${event.gameId}:nfl-play`);
     case "nfl-turnover":
-      return nflPayload(event, "Turnover", noSpoilers ? "A turnover changed possession." : event.note ?? matchup, `${event.gameId}:nfl-turnover:${event.note ?? ""}`);
+      return nflPayload(event, "Turnover", noSpoilers ? "A turnover changed possession." : event.note ?? matchup, `${event.gameId}:nfl-play`);
     case "nfl-big-play-rush":
     case "nfl-big-play-rec":
-      return nflPayload(event, "Big play", noSpoilers ? "A big play just happened." : event.note ?? matchup, `${event.gameId}:${event.type}:${event.note ?? ""}`);
+      return nflPayload(event, "Big play", noSpoilers ? "A big play just happened." : event.note ?? matchup, `${event.gameId}:nfl-play`);
   }
 }
 

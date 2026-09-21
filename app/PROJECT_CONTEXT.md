@@ -331,43 +331,96 @@ When making code changes:
 
 ## Current Priority
 
-### PICKUP HERE (written 2026-09-03, session paused)
+### PICKUP HERE (written 2026-09-20, session paused)
 
-**The clock item is the v1.0.3 App Store submission — the window is
-NOW (Sep 3-4).** Everything is ready and user-only:
+**v1.0.3 is live** (owner confirmed 2026-09-20). The opener, Week 1 and
+Week 2 have run on the live pipeline. The 2026-09-20 batch below is
+built, gated and live-verified locally but **not committed** (commits are
+owner-initiated).
 
-1. In App Store Connect: swap the promotional text (no review needed),
-   paste the new keywords + description, upload the 14 screenshots
-   from `store-assets/v1.0.3/` (69/ and 67/; order: NFL shots 1-5,
-   breadth 6-7), submit build. All paste-ready copy is in
-   `docs/APP_STORE_CONTENT_v1.0.3.md`.
-2. Shot 4 (lock screen) is a placeholder composite. Either submit
-   with it or recapture on device during a live game Sep 10-13 and
-   swap in an update.
-3. Opener Sep 9 (~8:20 PM ET, 2:20 AM user-local): next morning check
-   `dispatch.delivered > 0` via the status readout. The scan watchdog
-   is green as of Sep 3 morning (cron alive).
-4. One on-device lock-screen track during a real game.
+**Next, in order:**
+1. Commit + push the 2026-09-20 batch (Who mattered TD credit, own-team
+   Companion gate, turnovers to Full Details, per-game play collapse).
+2. First real-world look at the push changes on the next NFL window
+   (Mon Sep 21 LAR at NYG, then Sunday Sep 27): on the owner's Full
+   Details follow expect two stacked cards per game (plays + state), not
+   a pile. Companion behavior needs a Companion follow to observe.
+3. NFL Standings tab is still a placeholder that breaks its promise now
+   that games count. Flagged Sep 3, unchanged.
+4. Post-opener store shots rerun (shots 2+3 with real regular-season
+   finals), Courtside C5, review backlog. Unchanged from Sep 3.
 
-**State of the code** (all pushed, CI green through c4f2bd6):
-scan resilience batch shipped (deferred writes, cold-start seed, 8h
-lookback), WidgetSync week-boundary + NFL opener fallback shipped,
-NBA normalizer speaks nicknames (C1 ruling mirrored), full v1.0.3
-store set generated from real fixtures (`scripts/store-shots-v103.mjs`
-+ `scripts/fixtures/`). Bracket shot framed unscrolled on purpose —
-max scroll starts mid-card and looks broken as a static frame.
+**Open decision for the owner:** Full Details is "every moment, every
+game" (~16 pushes per game by count). The owner follows at Full Details
+and found it heavy. The intended answer is Companion (~7 per game after
+the gate). Thinning Full Details would change that tier's promise;
+decide explicitly rather than by retune.
 
-**Next build work, in order** (nothing blocking the submission):
-- Post-opener: rerun store shots after Sep 13 so shots 2+3 pick up
-  real regular-season finals (recapture fixtures first).
-- Courtside C5 (Margin Monday edition in-app, quiet-day strip — strip
-  needs a season-results source, likely a new ESPN team-schedule
-  route). C4 (native restyle) waits for Xcode/device access.
-- NFL Standings tab is still a placeholder that breaks its promise
-  once games count (Sep 10+) — flagged, not yet scheduled.
-- Review backlog: follows-predicate consolidation (5 copies),
-  today-data.ts split, measurement layer, Follow-vs-Pin guide
-  rewrite, WC SEO past-tense sweep.
+### 2026-09-20 — Week 2 audit: leader TD credit, own-team Companion gate, play collapse
+
+Owner reported two things from live use: the Who mattered rows sometimes
+showed no TD for a player who scored, and NFL notifications were heavy
+("maybe limit big plays?"). Both traced against real Week 2 payloads
+(BUF at DET Thursday plus the 13 finished Sunday games) before any code.
+
+**Findings.**
+- ESPN leader lines are category-scoped. A rushing leader's "1 TD" is
+  rushing TDs only. Gibbs (DET) and Hubbard (CAR) were both rushing
+  leaders who scored on a catch and rendered with no TD. 2 of 14 games.
+  The row also dropped its category word, so the reader couldn't tell it
+  was a rushing row.
+- Big plays were the wrong lever: they never reach Companion (12 to 16 +
+  25 boost < 42) and were ~2 of ~16 pushes per game on Full Details.
+- The real driver: `docs/nfl-design.md` said Companion TDs and turnovers
+  are own-team only, but `PushEvent` carried no scoring team, so the
+  dispatcher treated "you follow a team in this game" as "own team" and
+  fired both sides. Companion team follow: ~11 pushes per game.
+- Week 2 per-game averages: TD 3.7, FG 3.4, turnovers 2.1, non-scoring
+  40+ yd plays 2.1. Full Details ~16.4, Companion ~10.8.
+
+**Shipped (TDD, all RED then GREEN).**
+- `app/api/nfl-game-detail/normalize.ts`: `tallyTouchdowns` reads the
+  scoring plays, keyed on the scorer's / passer's full name; each leader
+  gets `tdNote` for TDs outside its category ("1 receiving TD",
+  "2 rushing TD", "1 passing TD" on a QB's rushing row, "1 return TD").
+  Exact `athlete.displayName` match only; validated across all 14 games
+  (71 of 71 leader names matched, the 27 unmatched scorers were simply
+  not leaders). `tdNote` stays a separate field from ESPN's `line`.
+  New trimmed real fixture `__fixtures__/summary-401872932.json`.
+- `NFLGameDetail.tsx`: rows lead with a 38px mono micro-label
+  (PASS / RUSH / REC, `--mute-1`, sr-only full word), then name · team,
+  note = line plus " · tdNote". Fits the 354px content column with no
+  truncation on the longest real row (Allen).
+- `PushEvent.teamCode` (event-detector.ts); `detectNFLPlays` sets it
+  from `scoringPlay.team.abbreviation` and a new `driveTeamCode` input;
+  scan-nfl passes `drives.current.team.abbreviation`.
+- Dispatcher `subscriberWantsEvent`: for NFL per-play types, a team
+  follow gets the personal boost only when `scopeId === event.teamCode`.
+  Missing teamCode keeps the boost (fail-open). Game-state beats
+  untouched.
+- `nfl-turnover` significance 38 → 16 (All-only); preset-matcher matrix
+  updated.
+- Per-play payload tag → `{id}:nfl-play` (was per-score / per-note).
+  `dedupeTagFor` unchanged.
+- Tests: 7 new normalize cases, 3 play-detector, 9 dispatcher, 1
+  significance flipped. 774 total.
+
+**Gate.** lint 0, tsc clean, 774 tests, `next build` clean. Route count
+by manifest: 94 app routes (84 static + 10 dynamic), 91 prerendered; no
+routes were touched. Live-verified with `next start` on the real BUF at
+DET, ATL at CAR and the in-progress KC at IND payloads (partial leaders
+render fine). Chrome's minimum viewport on this Mac is 570px, so the 390
+check constrained the section to 354px via JS and confirmed zero overflow.
+
+**Gotchas.**
+- ESPN `drives.current.plays` carry `statYardage`, `isTurnover`,
+  `scoringPlay` but NO team; the team is on the drive object.
+- `isTurnover` is a real change of possession (recovered own fumbles and
+  penalty-nullified INTs are false).
+- Vitest does not type-check: `teamCode` compiled in tests before the
+  type existed. tsc is the type gate, not the test run.
+- Web push: sw.js sets no `renotify`, so a same-tag replacement is
+  silent on web. APNs collapse-id still alerts per push. Left as is.
 
 ### 2026-08-31 (cont.) — Scan resilience + widget week fix + v1.0.3 store assets
 
