@@ -335,12 +335,11 @@ When making code changes:
 
 **v1.0.3 is live** (owner confirmed 2026-09-20). The opener, Week 1 and
 Week 2 have run on the live pipeline. The 2026-09-20 batch below is
-built, gated and live-verified locally but **not committed** (commits are
-owner-initiated).
+committed as `981cca1` (Who mattered TD credit, own-team Companion gate,
+turnovers to Full Details, per-game play collapse) and **not yet pushed**.
 
 **Next, in order:**
-1. Commit + push the 2026-09-20 batch (Who mattered TD credit, own-team
-   Companion gate, turnovers to Full Details, per-game play collapse).
+1. Push `981cca1` so production picks it up before the next NFL window.
 2. First real-world look at the push changes on the next NFL window
    (Mon Sep 21 LAR at NYG, then Sunday Sep 27): on the owner's Full
    Details follow expect two stacked cards per game (plays + state), not
