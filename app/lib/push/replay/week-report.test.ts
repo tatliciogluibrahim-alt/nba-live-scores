@@ -39,10 +39,27 @@ describe("buildWeekReport", () => {
     expect(report.contract.ok).toBe(true);
   });
 
-  it("lists every opening score the cold-start seed swallowed", () => {
-    const swallowed = report.findings.coldStartSwallowed;
-    expect(swallowed.map((s) => s.matchup)).toContain("DET at BUF");
-    expect(swallowed.find((s) => s.matchup === "DET at BUF")?.text).toMatch(/Josh Allen 1 Yd Rush/);
+  it("finds nothing swallowed in a week the scanner watched from kickoff", () => {
+    expect(report.findings.coldStartSwallowed).toEqual([]);
+  });
+
+  it("lists every score the cold-start seed swallowed when the scanner joined late", () => {
+    const summary = load("nfl-summary-401872932-det-at-buf.json");
+    const probe = replayNFLGame(summary, []);
+    const joinAtMs = probe.timeline.plays.find((p) => p.id === "401872932640")!.visibleAtMs + 1;
+    const replay = replayNFLGame(summary, standardGameProfiles("DET", "BUF"), { joinAtMs });
+    const late = buildWeekReport({
+      season: 2026,
+      seasonType: 2,
+      week: 2,
+      generatedAt: "2026-09-22T11:00:00Z",
+      games: [{ replay, scheduledAt: "2026-09-18T00:15Z", contract: checkNFLSummaryContract(summary) }],
+      scoreboardProblems: [],
+    });
+    expect(late.findings.coldStartSwallowed.map((s) => s.text)).toEqual([
+      "Josh Allen 1 Yd Rush (Tyler Bass Kick)",
+      "Joshua Palmer 43 Yd pass from Josh Allen (Tyler Bass Kick)",
+    ]);
   });
 
   it("lists the walk-off that landed with the final", () => {
@@ -118,7 +135,7 @@ describe("renderWeekReportMarkdown", () => {
   });
 
   it("carries the findings with the play text", () => {
-    expect(md).toContain("Josh Allen 1 Yd Rush");
+    expect(md).toContain("Harrison Butker 40 Yd Field Goal");
     expect(md).toMatch(/[Hh]alftime push/);
   });
 

@@ -48,11 +48,24 @@ describe("replayNFLGame: play accounting", () => {
     expect(scoring).toHaveLength(11);
   });
 
-  it("records the opening touchdown as swallowed by the cold-start seed (production as of 2026-09-28)", () => {
+  it("pushes the opening touchdown of a game watched since before kickoff", () => {
+    // Until 2026-09-28 the cold-start seed swallowed it (30 of 47 games).
     const opening = r.accounting.find((a) => a.playId === OPENING_TD)!;
-    expect(opening.outcome).toBe("suppressed-cold-start");
+    expect(opening.outcome).toBe("detected");
     const pushed = r.accounting.filter((a) => a.outcome === "detected");
-    expect(pushed).toHaveLength(10);
+    expect(pushed).toHaveLength(11);
+  });
+
+  it("seeds the backlog silently when the scanner joins mid-game", () => {
+    const secondTd = r.timeline.plays.find((p) => p.id === "401872932640")!;
+    const joined = replayNFLGame(DET_AT_BUF, [], { joinAtMs: secondTd.visibleAtMs + 1 });
+    const seeded = joined.accounting
+      .filter((a) => a.outcome === "suppressed-cold-start")
+      .map((a) => a.playId);
+    expect(seeded).toEqual([OPENING_TD, "401872932640"]);
+    expect(joined.accounting.filter((a) => a.outcome === "detected")).toHaveLength(9);
+    // No kickoff for a game first seen already live.
+    expect(joined.events.some((e) => e.event.type === "nfl-kickoff")).toBe(false);
   });
 });
 
@@ -97,21 +110,21 @@ describe("replayNFLGame: deliveries per profile", () => {
 
   it("Companion team follow: the beats plus own-team touchdowns only", () => {
     const buf = got("BUF.companion.web");
-    // 5 game-state beats + BUF's 6 TDs minus the swallowed opener.
-    expect(buf).toHaveLength(10);
-    expect(buf.filter((x) => x.title === "Touchdown")).toHaveLength(5);
+    // 5 game-state beats + BUF's 6 TDs.
+    expect(buf).toHaveLength(11);
+    expect(buf.filter((x) => x.title === "Touchdown")).toHaveLength(6);
     const det = got("DET.companion.web");
     expect(det.filter((x) => x.title === "Touchdown")).toHaveLength(4);
     expect(det.some((x) => x.title === "Field goal")).toBe(false);
   });
 
   it("Full Details team follow gets every detected moment", () => {
-    expect(got("DET.all.ios")).toHaveLength(15);
+    expect(got("DET.all.ios")).toHaveLength(16);
   });
 
   it("No-Spoilers never puts a score or a player name in a delivery", () => {
     const d = got("DET.all.ios.ns");
-    expect(d).toHaveLength(15);
+    expect(d).toHaveLength(16);
     for (const x of d) {
       // Quarter labels ("End of Q1") are fine. A scoreline never is.
       expect(`${x.title} ${x.subtitle ?? ""}`).not.toMatch(/\d+\s*[–-]\s*\d+/);

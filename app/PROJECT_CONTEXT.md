@@ -339,14 +339,17 @@ of it" to three plays on 2026-09-28: (1) the replay lab, (2) Courtside C4
 native via a simulator loop, (3) a scheduled Tuesday cloud routine. MLB
 2026 is skipped (owner decision, see ROADMAP).
 
-**Play 1, the replay lab, is BUILT** (see the 2026-09-28 record below):
-`npm run replay:nfl` replays any week through the production pipeline.
-Its first run found two production bugs, fixes prepared separately and
-held for the owner's go: the cold-start seed swallowed the opening score
-of 30 of 47 games, and the halftime push lands ~15 minutes late.
+**Play 1, the replay lab, is BUILT and pushed** (`e1bb00f`, see the
+2026-09-28 record below): `npm run replay:nfl` replays any week through
+the production pipeline. Its first run found two production bugs:
+- the cold-start seed swallowed the opening score of 30 of 47 games:
+  **FIXED and pushed 2026-09-28** (owner go), 0 of 47 lost on replay.
+- the halftime push lands ~15 minutes late (quarter breaks 3-4): fix
+  waits on the MNF PHI at CHI live capture
+  (`.replay/live/mnf-2026-09-28.jsonl`) to confirm ESPN's break fields.
 
 **Next, in order:**
-1. Owner go on the two push fixes (cold-start seed, break timing).
+1. Break-timing fix once the live capture confirms ESPN's halftime shape.
 2. Courtside C4 native (play 2): contact sheet before any device build.
 3. Tuesday shift routine (play 3), reads `npm run replay:nfl`.
 4. NFL Standings tab placeholder, store shots 2+3 rerun, Courtside C5.

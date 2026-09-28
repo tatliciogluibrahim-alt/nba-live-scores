@@ -12,7 +12,11 @@
 //
 // Measured maxima, Weeks 1-3 (iPhone):
 //   team follow, one game   Quiet 3 (2/h) · Companion 13 (6/h) · Full Details 25 (12/h)
-//   whole season, one week  Quiet 16 (9/h) · Companion 34 (13/h) · Full Details 289 (59/h)
+//   whole season, one week  Quiet 16 (9/h) · Companion 34 (13/h) · Full Details 300 (60/h)
+//
+// The Full Details week moved 289 → 300 (59 → 60/h) with the 2026-09-28
+// cold-start fix: the opening score of 30 games pushes again. Correctness,
+// not creep.
 //   three teams, one window Quiet 4/h · Companion 12/h · Full Details 23/h
 
 import type { AlertPreset } from "../../../companion/state/types";
@@ -35,7 +39,7 @@ export const NOISE_BUDGET: {
   seasonWeek: {
     quiet: { pushes: 16, busiest60m: 9 },
     companion: { pushes: 34, busiest60m: 13 },
-    all: { pushes: 289, busiest60m: 59 },
+    all: { pushes: 300, busiest60m: 60 },
   },
   threeTeam: {
     quiet: { busiest60m: 4 },

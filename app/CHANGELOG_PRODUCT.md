@@ -2,6 +2,28 @@
 
 ---
 
+## The opening score pushes again (2026-09-28)
+
+Found by the replay lab on its first run: the opening score of 30 of 47
+NFL games in Weeks 1-3 never pushed.
+
+- **Cause.** scan-nfl's cold-start guard seeded the fired-play set silently
+  whenever it was empty and scores existed, to stop a stale burst when the
+  scheduler rejoins a game already under way. A game the cron had watched
+  since kickoff looks exactly like that at its first score, unless a big
+  play or turnover had fired first.
+- **Fix.** The seed now requires that the play scanner has never completed
+  a scan of the game, read from the fired-play record's existence (the
+  first completed scan writes the set, even empty). A mid-game join still
+  seeds, including one whose first summary fetch times out. One extra KV
+  write per game, once.
+- **Measured.** Replaying Weeks 1-3 on the fixed pipeline: 0 of 47
+  opening scores lost. Companion and Full Details followers get up to one
+  more push per game. The whole-season Full Details week ceiling moves
+  289 to 300 in the noise budget for the same reason.
+
+---
+
 ## Replay lab: every real NFL game is now a push test (2026-09-28)
 
 Internal tooling, no product behavior change. Built so the alert matrix

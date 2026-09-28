@@ -45,16 +45,35 @@ const base = {
 };
 
 describe("scanNFLGamePlays", () => {
-  it("seeds silently when the fired set is empty and a scoring backlog exists", () => {
+  it("seeds silently when the scanner first sees a game mid-way, with a scoring backlog", () => {
     const r = scanNFLGamePlays({
       ...base,
       scoringPlays: [TD, FG],
       drivePlays: [],
       firedPlayIds: [],
+      firstObservation: true,
     });
     expect(r.kind).toBe("seeded");
     expect(r.events).toEqual([]);
     expect(r.firedPlayIds).toEqual(["p1", "p2"]);
+  });
+
+  it("fires the opening score of a game the scanner has watched since before kickoff", () => {
+    // The 2026-09-28 replay-lab finding: an empty fired set is ALSO what a
+    // watched game looks like at its first score. Seeding there swallowed
+    // the opening score of 30 of 47 games in Weeks 1-3.
+    const r = scanNFLGamePlays({
+      ...base,
+      awayScore: 0,
+      homeScore: 7,
+      scoringPlays: [TD],
+      drivePlays: [],
+      firedPlayIds: [],
+      firstObservation: false,
+    });
+    expect(r.kind).toBe("detected");
+    expect(r.events.map((e) => e.type)).toEqual(["nfl-td-rushing"]);
+    expect(r.firedPlayIds).toEqual(["p1"]);
   });
 
   it("fires a new scoring play once the fired set is warm", () => {
@@ -63,6 +82,7 @@ describe("scanNFLGamePlays", () => {
       scoringPlays: [TD, FG],
       drivePlays: [],
       firedPlayIds: ["p1"],
+      firstObservation: false,
     });
     expect(r.kind).toBe("detected");
     expect(r.events.map((e) => e.type)).toEqual(["nfl-fg"]);
@@ -75,6 +95,9 @@ describe("scanNFLGamePlays", () => {
       scoringPlays: [],
       drivePlays: [BIG_RUN],
       firedPlayIds: [],
+      // Even on a first look: the seed only exists to hold back a SCORING
+      // backlog.
+      firstObservation: true,
     });
     expect(r.kind).toBe("detected");
     expect(r.events.map((e) => e.type)).toEqual(["nfl-big-play-rush"]);

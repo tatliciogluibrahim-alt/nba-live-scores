@@ -10,6 +10,13 @@ import {
   type NFLPlayInput,
 } from "./nfl-play-detector";
 
+export type NFLPlayScanInput = NFLPlayInput & {
+  /** True when the play scanner has never completed a scan of this game
+   *  (no fired-play record exists). Only then can an empty fired set plus
+   *  a scoring backlog mean "joined mid-game". */
+  firstObservation: boolean;
+};
+
 export type NFLPlayScanResult = {
   /** "seeded" = cold start: persist `firedPlayIds`, fire nothing.
    *  "detected" = normal tick: persist `firedPlayIds` when events fired. */
@@ -18,12 +25,23 @@ export type NFLPlayScanResult = {
   firedPlayIds: string[];
 };
 
-export function scanNFLGamePlays(input: NFLPlayInput): NFLPlayScanResult {
-  // Cold-start seed (Preseason Review #3): an empty fired-set on a game
-  // that already has a scoring backlog means the scheduler was (re)enabled
-  // mid-game — every past play would burst out as stale pushes at once.
-  // Seed the set silently and fire only from the NEXT play onward.
-  if (input.firedPlayIds.length === 0 && input.scoringPlays.length > 0) {
+export function scanNFLGamePlays(input: NFLPlayScanInput): NFLPlayScanResult {
+  // Cold-start seed (Preseason Review #3): when the scheduler first sees a
+  // game that is already under way, every past score would burst out as a
+  // stale push at once. Seed the set silently and fire from the NEXT play.
+  //
+  // Gated on firstObservation (2026-09-28): an empty fired set with a
+  // scoring backlog is ALSO what a game the scanner has watched since
+  // kickoff looks like at its first score. Without the gate the opening
+  // score of 30 of 47 games (Weeks 1-3) was seeded instead of pushed.
+  // The route derives it from the fired-play record's existence, not from
+  // the state cache: a mid-game join whose first summary fetch fails still
+  // seeds on the next tick instead of bursting the backlog.
+  if (
+    input.firstObservation &&
+    input.firedPlayIds.length === 0 &&
+    input.scoringPlays.length > 0
+  ) {
     return {
       kind: "seeded",
       events: [],

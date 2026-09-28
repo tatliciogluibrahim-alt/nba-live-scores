@@ -80,7 +80,12 @@ const DEDUPE_TTL_MS = DEDUPE_TTL_SECONDS * 1000;
 export function replayNFLGame(
   summary: ReplaySummary,
   profiles: ReplayProfile[],
-  opts: { tickMs?: number } = {}
+  opts: {
+    tickMs?: number;
+    /** Simulate the cron first seeing this game at this time (it was down
+     *  or disabled before). Ticks before it are never observed. */
+    joinAtMs?: number;
+  } = {}
 ): NFLGameReplay {
   const timeline = buildNFLTimeline(summary, opts);
   const { gameId, awayCode, homeCode } = timeline;
@@ -89,10 +94,14 @@ export function replayNFLGame(
   const events: ReplayEvent[] = [];
   let prev: CachedNFLGameState | null = null;
   let fired: string[] = [];
+  // Mirrors the route: the fired-play record exists once the play scanner
+  // has completed a scan of the game (seeded or not).
+  let scannedOnce = false;
   const seeded = new Set<string>();
   const detectedAt = new Map<string, number>();
 
   for (const tick of timeline.ticks) {
+    if (opts.joinAtMs !== undefined && tick.atMs < opts.joinAtMs) continue;
     const { events: stateEvents, nextState } = detectNFLEvents(prev, tick.fresh);
     prev = nextState;
     for (const event of stateEvents) events.push({ atMs: tick.atMs, event });
@@ -112,7 +121,9 @@ export function replayNFLGame(
       drivePlays: tick.drivePlays,
       driveTeamCode: tick.driveTeamCode,
       firedPlayIds: fired,
+      firstObservation: !scannedOnce,
     });
+    scannedOnce = true;
     const added = scan.firedPlayIds.filter((id) => !before.has(id));
     if (scan.kind === "seeded") {
       for (const id of added) seeded.add(id);

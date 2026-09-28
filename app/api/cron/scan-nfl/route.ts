@@ -236,7 +236,8 @@ export async function GET(req: Request) {
       try {
         const { scoringPlays, drivePlays, driveTeamCode } = await fetchSummary(game.id);
         if (scoringPlays.length === 0 && drivePlays.length === 0) return [];
-        const firedPlayIds = await readFiredNFLPlays(game.id);
+        // null = the play scanner has never completed a scan of this game.
+        const stored = await readFiredNFLPlays(game.id);
         // The decision itself is pure and shared with the replay lab
         // (nfl-play-scan.ts), so the lab exercises this exact code path.
         const result = scanNFLGamePlays({
@@ -248,7 +249,8 @@ export async function GET(req: Request) {
           scoringPlays,
           drivePlays,
           driveTeamCode,
-          firedPlayIds,
+          firedPlayIds: stored ?? [],
+          firstObservation: stored === null,
         });
         // Cold-start seed: written immediately (not deferred) — seeding
         // twice is harmless, bursting once is not.
@@ -256,7 +258,10 @@ export async function GET(req: Request) {
           await writeFiredNFLPlays(game.id, result.firedPlayIds);
           return [];
         }
-        if (result.events.length > 0) {
+        // First completed scan of a watched game: write the (maybe empty)
+        // set so the record exists and a later first score is not mistaken
+        // for a cold start. One extra KV write per game, once.
+        if (result.events.length > 0 || stored === null) {
           pendingPlayWrites.push({ gameId: game.id, ids: result.firedPlayIds });
         }
         return result.events;
