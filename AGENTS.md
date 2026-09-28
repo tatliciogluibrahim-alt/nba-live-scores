@@ -121,6 +121,14 @@ Preserve:
 - current sponsor placement
 - current sports picker structure
 
+Courtside note (2026-09-28): Courtside is the current generation
+(`docs/superpowers/specs/2026-08-31-courtside-design.md`). C0-C3 shipped on
+the web 2026-08-31; C4 (lock screen, Dynamic Island, widgets) is built and
+awaiting the owner's look. Native tokens live in
+`ios/App/NoNoiseWidgets/CourtsideTokens.swift`, locked to globals.css by
+`app/lib/native/courtside-parity.test.ts`. The System D note below is
+history for the surfaces Courtside has not replaced yet.
+
 System D note: on the **app surfaces** (Today in D1; game detail, Watching,
 docking, Starting XI in D2; Following + Tournament + device-feedback wave in D3; C4 color lock + D4a fixes + D4b desktop-everywhere + §15 native restyle shipped 2026-07-04 — System D is now the ONLY system at every width; store assets for v1.0.2 ready in store-assets/), the card-style and
 rounded-corners bullets are superseded by the System D editorial grammar

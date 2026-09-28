@@ -348,10 +348,27 @@ the production pipeline. Its first run found two production bugs:
   waits on the MNF PHI at CHI live capture
   (`.replay/live/mnf-2026-09-28.jsonl`) to confirm ESPN's break fields.
 
+**Play 2, Courtside C4, is BUILT and simulator-verified, NOT committed**
+(owner reviews first). Contact sheet:
+https://claude.ai/artifact/8fx6XJEiWYvrtBzRXfaAwo. See the C4 record below.
+On "ship C4": commit, push (the web half deploys: porcelain ground, held
+snapshot placeholders, NFL names on the tile), then the owner's device
+pass and the v1.0.4 archive/submit (store shot 4 is ready in
+`store-assets/v1.0.4`).
+
+**Play 3, the Tuesday shift, is LIVE** as a cloud routine
+(https://claude.ai/code/routines/trig_01BguGmG6hJL4u3xjJZmugdJ, Opus 5.5,
+Tuesdays 11:00 UTC, emails the owner). Its test run proved setup, npm,
+the email and the stop rule, and hit one wall: **the cloud environment
+blocks site.api.espn.com**. OWNER ACTION: claude.ai/code, environment
+picker, Default, gear, Network access Custom, add `site.api.espn.com`,
+keep "Also include default list of common package managers" checked.
+
 **Next, in order:**
-1. Break-timing fix once the live capture confirms ESPN's halftime shape.
-2. Courtside C4 native (play 2): contact sheet before any device build.
-3. Tuesday shift routine (play 3), reads `npm run replay:nfl`.
+1. Break-timing fix once the MNF live capture confirms ESPN's halftime
+   shape (recorder running, `.replay/live/mnf-2026-09-28.jsonl`).
+2. Owner: look at the C4 contact sheet; the ESPN allowlist click.
+3. C4b (held scores out of ActivityKit), designed in the Courtside spec.
 4. NFL Standings tab placeholder, store shots 2+3 rerun, Courtside C5.
 
 **Open decision for the owner:** Full Details is "every moment, every
@@ -360,6 +377,66 @@ up to 289 a week and 59 in one hour for a whole-season follow. The
 intended answer is Companion (about 8 per game, max 13). Thinning Full
 Details changes that tier's promise; decide explicitly (the budget in
 `app/lib/push/replay/noise-budget.ts` is where the decision lands).
+
+### 2026-09-28: Courtside C4 (play 2), the closed surfaces
+
+Built and verified in the real iOS host; uncommitted pending the owner's
+look at https://claude.ai/artifact/8fx6XJEiWYvrtBzRXfaAwo.
+
+**Native.** `CourtsideTokens.swift` (porcelain + arena palettes, SF Pro
+expanded standing in for Archivo 125, shared atoms: LiveDot, HeldChip,
+FillBar, ScoreRow, BrandGlyph, GamePhase). `NoNoiseLiveActivity.swift`:
+the arena tile (stacked rows, leader in text, trailer in mute, live-red
+clock, sport color only in the fill, the held chip IS the reveal button),
+compact/minimal/expanded island. `NoNoiseUpcomingWidget.swift`: view layer
+only (porcelain at rest, the small widget turns arena while live, the
+large widget holds a live game in a card-level arena room; retired
+vermilion rules, 01/02 row numbers, monospace, green live). ContentState
+gains optional `awayName`/`homeName` (decode to "" when absent).
+
+**Web.** Widget snapshot writes placeholder scores for held games
+(`snapshotSides`, test-first). NFL Live Activity start + scan-nfl updates
+carry team names (NFL only: every ActivityKit update replaces the whole
+state, so a sport sends names on start AND every push, or not at all).
+Every ground paint moved from cream to porcelain together: `html, body`
+defensive paint, `--background`/`--foreground` (C1 had left them cream,
+visible on overscroll), themeColor, manifest, capacitor.config, the launch
+screen. Dark `--background` is now the arena black. OG image: porcelain,
+Courtside ink/mute, stale "NFL coming" line replaced with "NFL · NBA
+Playoffs · Summer Soccer". Settings notification mock and global-error
+page off cream.
+
+**Harness.** `scripts/native/render-widget-snapshots.sh` renders 37
+states to PNG on the simulator via `ios/WidgetSnapshots` (copies of the
+extension sources). DEBUG-only `-NNDemoLiveActivity live|held|final`
+starts a demo tile 15s after launch (after the web launch reconcile).
+`app/lib/native/courtside-parity.test.ts` locks every native hex to the
+CSS variable it names (its first run caught a parser bug on a comment
+that contained "--live:", fixed by stripping comments).
+
+**Caught by looking.** On the real lock screen ActivityKit applied
+`minimumScaleFactor` eagerly ("Packers" at ~80% beside "Lions"): removed
+from score rows. Compact island truncated "DET 24": regular-width type
+that scales. Large widget drew an empty progress track for NFL (reads as
+0%): now nothing. "+2 more today" listed other days: "+2 more". Tile was
+157pt against iOS's 160pt cap: now ~140pt.
+
+**Gate.** lint 0, tsc clean, 901 tests, build clean, 95/95 static pages,
+routes identical; widget extension and full app build for the simulator;
+live checks at 390px (porcelain ground computed, theme-color, no page
+errors), OG image, notification mock.
+
+**Store.** `store-assets/v1.0.4/{69,67}/04-lockscreen.png`: a real Pro Max
+simulator lock screen with the tile, in the v1.0.3 canvas. Notes and a
+What's New draft in `store-assets/v1.0.4/README.md`.
+
+**Gotchas.**
+- The simulator asks "Allow Live Activities?" once per install. A CGEvent
+  click (Swift script) dismisses it; System Events `click at` is refused.
+- The reveal intent can't be tested on an unsigned simulator build: the
+  App Group isn't shared without entitlements. Device pass covers it.
+- `xcrun simctl status_bar override --time` does not move the lock
+  screen's big clock.
 
 ### 2026-09-28: Replay lab (play 1), every real NFL game as a push test
 

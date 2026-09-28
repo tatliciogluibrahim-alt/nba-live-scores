@@ -2,6 +2,45 @@
 
 ---
 
+## Courtside reaches the lock screen (C4, built 2026-09-28, pending the owner's look)
+
+The lock screen, the Dynamic Island and every widget move from System D to
+Courtside, so the phone's most-seen surfaces finally match the app.
+
+- **Lock screen.** The arena room: brand mark, "LIVE · WEEK 4", the clock
+  in live red, the teams stacked away over home with big numerals, the
+  sport color only in the progress fill. Leader in text, trailer in mute.
+  NFL tiles show team names (Lions, Packers).
+- **No-Spoilers.** A held score is the placeholder chip, and the chip is
+  the reveal button. Both teams render in text color so the dimming can't
+  leak who leads. The widget snapshot now carries placeholder scores for
+  held games, so the real digits never reach it.
+- **Dynamic Island.** Compact holds "DET 24" and "17 GB" either side of
+  the camera, the held glyphs alone on the right.
+- **Widgets.** Porcelain white at rest. The small widget turns arena dark
+  while live, the large widget holds the live game in a dark card. The
+  "as of" time stays on every live score.
+- **Ground.** Launch screen, webview background, manifest, theme color and
+  the page ground all moved from cream to porcelain together (the page
+  ground had stayed cream since C1, visible on overscroll). The share
+  image lost its stale "NFL coming" line.
+- **Store.** A real lock-screen capture replaces the placeholder shot 4.
+
+Verified on the iPhone simulator's real lock screen and island, which
+caught one thing no render did: ActivityKit shrank a trailing team name
+to about 80%. Fixed.
+
+## The Tuesday shift (2026-09-28)
+
+A scheduled cloud agent (Opus 5.5, Tuesdays 7am ET) replays the week's
+real NFL games with the replay lab, checks the contract, the noise budget
+and the tier promises, fixes real bugs on a branch with a failing test
+first, and emails the owner a short report. Nothing lands on main without
+the owner. Its first run stopped cleanly on one setup gap: the cloud
+environment's network policy blocks ESPN until the owner allows the host.
+
+---
+
 ## The opening score pushes again (2026-09-28)
 
 Found by the replay lab on its first run: the opening score of 30 of 47

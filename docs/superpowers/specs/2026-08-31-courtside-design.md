@@ -145,3 +145,44 @@ latest unrevealed result renders as a chip-gray block, not a color.
 
 Out of scope for all chapters: CL league phase, team-color leader
 emphasis, whole-app auto-dark, logo removal, any new recap name.
+
+## C4 status (2026-09-28): built, simulator-verified, awaiting owner look
+
+Contact sheet (every state, plus the real simulator captures):
+https://claude.ai/artifact/8fx6XJEiWYvrtBzRXfaAwo
+
+- Native tokens live in `ios/App/NoNoiseWidgets/CourtsideTokens.swift`,
+  each hex annotated with the CSS variable it mirrors;
+  `app/lib/native/courtside-parity.test.ts` fails when they drift.
+- Every state renders to PNG on the simulator through
+  `scripts/native/render-widget-snapshots.sh` (the `ios/WidgetSnapshots`
+  package compiles copies of the extension sources, never edit those).
+- Real-host check: DEBUG builds accept `-NNDemoLiveActivity live|held|final`
+  (AppDelegate.swift), started 15s after launch so the web layer's launch
+  reconcile does not end it.
+- Found on the real lock screen and fixed: ActivityKit applied
+  `minimumScaleFactor` eagerly (a trailing "Packers" at ~80% beside
+  "Lions"), so score-row names no longer scale.
+- The widget snapshot carries placeholder scores for held games (web
+  change, compatible with v1.0.3's decoder, which never draws a score
+  while `redacted` is true).
+
+## C4b: held scores out of ActivityKit (designed, not built)
+
+Today the server pushes real digits to every Live Activity token and the
+tile only hides them. Closing the redaction rule for ActivityKit:
+
+1. Registration carries two flags per token: `redacted` (the start
+   attribute) and `heldCapable` (native build >= the C4b build).
+2. Fan-out: a token that is redacted, held-capable and not revealed gets
+   `awayScore: 0, homeScore: 0` plus `held: true`. Every other token gets
+   real digits, so older builds never show a placeholder as a score.
+3. Swift: `ContentState.held` (decodes false when absent). A held state
+   always renders the chip, whatever the reveal flag says.
+4. Reveal: `RevealScoreIntent` fetches the current score for its game,
+   updates the activity locally, and tells the server the token is
+   revealed so later pushes carry digits. No network, no reveal: the tile
+   stays held and a tap opens the app.
+5. Tests: fan-out table (redacted x capable x revealed), decode defaults,
+   and a replay-lab profile that asserts no held token ever receives a
+   digit.
