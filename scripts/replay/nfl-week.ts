@@ -6,8 +6,16 @@
 //   npm run replay:nfl -- --save-fixture 401872932   lock a game as a test fixture
 //   npm run replay:nfl -- --strict        exit 1 on a contract or budget failure
 //
-// Fetches the week's scoreboard and every finished game's summary from ESPN,
-// replays each game through the production push pipeline
+// Offline, for machines that cannot reach ESPN (the Tuesday shift's cloud
+// environment): the replay-data GitHub Action runs
+//   npm run replay:nfl -- --fetch-to replay-data
+// which saves the latest finished week and the week before as
+//   replay-data/nfl-<season>-w<week>/{meta,scoreboard}.json + summary-<id>.json
+// on the replay-data branch, and anyone can then replay a saved week with
+//   npm run replay:nfl -- --data-dir <that week folder>
+//
+// Online, it fetches the week's scoreboard and every finished game's summary
+// from ESPN, replays each game through the production push pipeline
 // (app/lib/push/replay), and writes report.md + report.json +
 // deliveries.json to .replay/nfl-<season>-w<week>/. The markdown also goes
 // to stdout. Summaries are cached trimmed in .replay-cache/ (a finished
@@ -43,6 +51,10 @@ type Args = {
   games?: string[];
   saveFixture?: string;
   strict: boolean;
+  /** Save weeks to this folder instead of replaying (needs ESPN). */
+  fetchTo?: string;
+  /** Replay a week saved by --fetch-to (no network). */
+  dataDir?: string;
 };
 
 function parseArgs(argv: string[]): Args {
@@ -62,6 +74,8 @@ function parseArgs(argv: string[]): Args {
     else if (flag === "--games") args.games = value().split(",").map((s) => s.trim());
     else if (flag === "--save-fixture") args.saveFixture = value();
     else if (flag === "--strict") args.strict = true;
+    else if (flag === "--fetch-to") args.fetchTo = resolve(value());
+    else if (flag === "--data-dir") args.dataDir = resolve(value());
     else throw new Error(`unknown flag ${flag}`);
   }
   return args;
@@ -114,17 +128,79 @@ async function resolveWeek(args: Args) {
   return { season, seasonType, week };
 }
 
+const scoreboardUrl = (season: number, seasonType: number, week: number) =>
+  `${ESPN}/scoreboard?seasontype=${seasonType}&week=${week}&dates=${season}`;
+
 type CachedGame = { contract: ContractResult; summary: ReplaySummary };
+
+async function fetchGame(id: string): Promise<CachedGame> {
+  const raw = await getJSON(`${ESPN}/summary?event=${id}`);
+  // The contract is checked against the RAW payload, before trimming.
+  return { contract: checkNFLSummaryContract(raw), summary: trimNFLSummary(raw) };
+}
 
 async function loadGame(id: string, cacheDir: string): Promise<CachedGame> {
   const path = join(cacheDir, `nfl-${id}.json`);
   if (existsSync(path)) return JSON.parse(readFileSync(path, "utf8")) as CachedGame;
-  const raw = await getJSON(`${ESPN}/summary?event=${id}`);
-  // The contract is checked against the RAW payload, before trimming.
-  const game: CachedGame = { contract: checkNFLSummaryContract(raw), summary: trimNFLSummary(raw) };
+  const game = await fetchGame(id);
   mkdirSync(cacheDir, { recursive: true });
   writeFileSync(path, JSON.stringify(game));
   return game;
+}
+
+type WeekMeta = {
+  season: number;
+  seasonType: number;
+  week: number;
+  fetchedAt: string;
+  games: string[];
+};
+
+/** --fetch-to: save the resolved week (and the week before, when the week
+ *  was not given) with every finished game, for an offline replay. */
+async function fetchWeeks(args: Args, dir: string) {
+  const { season, seasonType, week } = await resolveWeek(args);
+  const weeks = args.week ? [week] : [week, week - 1].filter((w) => w >= 1);
+  for (const w of weeks) {
+    const scoreboard = (await getJSON(scoreboardUrl(season, seasonType, w))) as Scoreboard;
+    const ids = (scoreboard.events ?? []).filter(completed).map((e) => e.id);
+    const out = join(dir, `nfl-${season}-w${w}`);
+    mkdirSync(out, { recursive: true });
+    writeFileSync(join(out, "scoreboard.json"), JSON.stringify(scoreboard));
+    for (const id of ids) {
+      writeFileSync(join(out, `summary-${id}.json`), JSON.stringify(await fetchGame(id)));
+    }
+    const meta: WeekMeta = { season, seasonType, week: w, fetchedAt: new Date().toISOString(), games: ids };
+    writeFileSync(join(out, "meta.json"), JSON.stringify(meta, null, 2));
+    console.log(`saved ${out} (${ids.length} finished games)`);
+  }
+}
+
+type WeekSource = {
+  season: number;
+  seasonType: number;
+  week: number;
+  scoreboard: Scoreboard;
+  load: (id: string) => Promise<CachedGame>;
+};
+
+async function networkSource(args: Args): Promise<WeekSource> {
+  const { season, seasonType, week } = await resolveWeek(args);
+  const scoreboard = (await getJSON(scoreboardUrl(season, seasonType, week))) as Scoreboard;
+  return { season, seasonType, week, scoreboard, load: (id) => loadGame(id, args.cache) };
+}
+
+function diskSource(dir: string): WeekSource {
+  const meta = JSON.parse(readFileSync(join(dir, "meta.json"), "utf8")) as WeekMeta;
+  const scoreboard = JSON.parse(readFileSync(join(dir, "scoreboard.json"), "utf8")) as Scoreboard;
+  return {
+    season: meta.season,
+    seasonType: meta.seasonType,
+    week: meta.week,
+    scoreboard,
+    load: async (id) =>
+      JSON.parse(readFileSync(join(dir, `summary-${id}.json`), "utf8")) as CachedGame,
+  };
 }
 
 async function main() {
@@ -139,10 +215,13 @@ async function main() {
     return;
   }
 
-  const { season, seasonType, week } = await resolveWeek(args);
-  const scoreboard = (await getJSON(
-    `${ESPN}/scoreboard?seasontype=${seasonType}&week=${week}&dates=${season}`
-  )) as Scoreboard;
+  if (args.fetchTo) {
+    await fetchWeeks(args, args.fetchTo);
+    return;
+  }
+
+  const source = args.dataDir ? diskSource(args.dataDir) : await networkSource(args);
+  const { season, seasonType, week, scoreboard } = source;
   const scoreboardContract = checkNFLScoreboardContract(scoreboard);
   const events = (scoreboard.events ?? [])
     .filter(completed)
@@ -150,7 +229,7 @@ async function main() {
 
   const games: GameInput[] = [];
   for (const e of events) {
-    const { contract, summary } = await loadGame(e.id, args.cache);
+    const { contract, summary } = await source.load(e.id);
     const probe = replayNFLGame(summary, []);
     const replay = replayNFLGame(summary, standardGameProfiles(probe.awayCode, probe.homeCode));
     games.push({ replay, contract, scheduledAt: e.competitions?.[0]?.date ?? e.date });

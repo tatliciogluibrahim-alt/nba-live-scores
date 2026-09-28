@@ -1,0 +1,60 @@
+# Replay data: the Tuesday shift's input.
+#
+# The Tuesday shift (a Claude Code cloud routine) runs in an environment that
+# cannot reach ESPN. This job, on GitHub's runners, fetches the latest
+# finished NFL week and the week before (scripts/replay/nfl-week.ts
+# --fetch-to) and commits them under data/ on the replay-data branch. The
+# routine reads that branch (GitHub is always reachable from a cloud
+# session) and replays offline with --data-dir. Never touches main.
+name: replay-data
+
+on:
+  schedule:
+    # Tuesdays 08:00 UTC, hours after Monday Night Football ends, plus a
+    # 10:00 UTC backup for a slow scheduler day. The Tuesday shift runs at
+    # 11:00 UTC.
+    - cron: '0 8 * * 2'
+    - cron: '0 10 * * 2'
+  workflow_dispatch:
+
+# Pushes the replay-data branch, nothing else.
+permissions:
+  contents: write
+
+concurrency:
+  group: replay-data
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Fetch the latest finished week and the one before from ESPN
+        run: npm run replay:nfl -- --fetch-to "$RUNNER_TEMP/replay-data"
+      - name: Commit to the replay-data branch
+        run: |
+          set -euo pipefail
+          git config user.name "replay-data"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch --depth 1 origin replay-data; then
+            git checkout -B replay-data FETCH_HEAD
+          else
+            git checkout --orphan replay-data
+            git rm -rf --quiet .
+          fi
+          mkdir -p data
+          cp -R "$RUNNER_TEMP/replay-data/." data/
+          git add data
+          if git diff --cached --quiet; then
+            echo "no change"
+          else
+            git commit -m "replay data $(date -u +%Y-%m-%d)"
+            git push origin replay-data
+          fi

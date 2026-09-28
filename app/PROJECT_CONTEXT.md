@@ -358,16 +358,19 @@ https://claude.ai/artifact/8fx6XJEiWYvrtBzRXfaAwo.
 
 **Play 3, the Tuesday shift, is LIVE** as a cloud routine
 (https://claude.ai/code/routines/trig_01BguGmG6hJL4u3xjJZmugdJ, Opus 5.5,
-Tuesdays 11:00 UTC, emails the owner). Its test run proved setup, npm,
-the email and the stop rule, and hit one wall: **the cloud environment
-blocks site.api.espn.com**. OWNER ACTION: claude.ai/code, environment
-picker, Default, gear, Network access Custom, add `site.api.espn.com`,
-keep "Also include default list of common package managers" checked.
+Tuesdays 11:00 UTC, emails the owner). The cloud environment cannot reach
+site.api.espn.com (a Custom allowlist entry saved by the owner did not take
+effect; the proxy still answered 403), so ESPN data now arrives through
+GitHub: the `replay-data` Action (Tuesdays 08:00 + 10:00 UTC) runs
+`npm run replay:nfl -- --fetch-to` and commits the latest finished week
+and the one before to the `replay-data` branch under `data/`, and the
+routine replays offline with `--data-dir`. Offline and online reports
+match byte for byte (Week 2 checked).
 
 **Next, in order:**
 1. Break-timing fix once the MNF live capture confirms ESPN's halftime
    shape (recorder running, `.replay/live/mnf-2026-09-28.jsonl`).
-2. Owner: the ESPN allowlist click; the v1.0.4 device pass + submit.
+2. Owner: the v1.0.4 device pass + submit.
 3. C4b (held scores out of ActivityKit), designed in the Courtside spec.
 4. NFL Standings tab placeholder, store shots 2+3 rerun, Courtside C5.
 
