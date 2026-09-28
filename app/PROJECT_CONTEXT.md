@@ -348,13 +348,13 @@ the production pipeline. Its first run found two production bugs:
   waits on the MNF PHI at CHI live capture
   (`.replay/live/mnf-2026-09-28.jsonl`) to confirm ESPN's break fields.
 
-**Play 2, Courtside C4, is BUILT and simulator-verified, NOT committed**
-(owner reviews first). Contact sheet:
-https://claude.ai/artifact/8fx6XJEiWYvrtBzRXfaAwo. See the C4 record below.
-On "ship C4": commit, push (the web half deploys: porcelain ground, held
-snapshot placeholders, NFL names on the tile), then the owner's device
-pass and the v1.0.4 archive/submit (store shot 4 is ready in
-`store-assets/v1.0.4`).
+**Play 2, Courtside C4, is COMMITTED AND PUSHED** (`259f4ff`, 2026-09-28,
+owner go). The web half is live in production (porcelain ground, share
+image, held snapshot placeholders, NFL names on tile updates; confirmed
+theme-color #f4f3ef served). The native half ships with v1.0.4: owner
+device pass, then archive/submit. Store shot 4 is ready in
+`store-assets/v1.0.4`. Contact sheet:
+https://claude.ai/artifact/8fx6XJEiWYvrtBzRXfaAwo.
 
 **Play 3, the Tuesday shift, is LIVE** as a cloud routine
 (https://claude.ai/code/routines/trig_01BguGmG6hJL4u3xjJZmugdJ, Opus 5.5,
@@ -367,7 +367,7 @@ keep "Also include default list of common package managers" checked.
 **Next, in order:**
 1. Break-timing fix once the MNF live capture confirms ESPN's halftime
    shape (recorder running, `.replay/live/mnf-2026-09-28.jsonl`).
-2. Owner: look at the C4 contact sheet; the ESPN allowlist click.
+2. Owner: the ESPN allowlist click; the v1.0.4 device pass + submit.
 3. C4b (held scores out of ActivityKit), designed in the Courtside spec.
 4. NFL Standings tab placeholder, store shots 2+3 rerun, Courtside C5.
 
