@@ -110,6 +110,8 @@ function toActivityInput(g: NFLGameLite): ActivityUpdateInput {
       awayScore: g.away.score,
       homeCode: g.home.abbreviation,
       homeScore: g.home.score,
+      awayName: g.away.name,
+      homeName: g.home.name,
       statusLine,
       subline: nflWeekLabel(g.seasonType, g.week).toUpperCase(),
       accentHex: ACCENT_NFL,

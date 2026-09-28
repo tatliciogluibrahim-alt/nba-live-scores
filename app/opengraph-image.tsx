@@ -31,7 +31,7 @@ export default async function OGImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: 80,
-          background: "#f1ead8",
+          background: "#f4f3ef",
           fontFamily: "system-ui, -apple-system, sans-serif",
         }}
       >
@@ -60,7 +60,7 @@ export default async function OGImage() {
             style={{
               fontSize: 30,
               fontWeight: 800,
-              color: "#1a1612",
+              color: "#17181a",
               letterSpacing: "-0.01em",
             }}
           >
@@ -74,7 +74,7 @@ export default async function OGImage() {
             style={{
               fontSize: 96,
               fontWeight: 800,
-              color: "#1a1612",
+              color: "#17181a",
               letterSpacing: "-0.02em",
               lineHeight: 1.02,
               maxWidth: 1000,
@@ -86,7 +86,7 @@ export default async function OGImage() {
             style={{
               fontSize: 32,
               fontWeight: 500,
-              color: "#6b6147",
+              color: "#716f67",
               letterSpacing: "-0.005em",
               lineHeight: 1.25,
               maxWidth: 900,
@@ -109,21 +109,19 @@ export default async function OGImage() {
             style={{
               fontSize: 20,
               fontWeight: 700,
-              color: "#e55b2a",
-              letterSpacing: "0.16em",
+              color: "#716f67",
+              letterSpacing: "0.14em",
               textTransform: "uppercase",
-              fontFamily: "monospace",
             }}
           >
-            NBA · Summer Soccer 2026 · NFL coming
+            NFL · NBA Playoffs · Summer Soccer
           </div>
           <div
             style={{
               fontSize: 18,
               fontWeight: 600,
-              color: "#6b6147",
-              letterSpacing: "0.06em",
-              fontFamily: "monospace",
+              color: "#17181a",
+              letterSpacing: "0.02em",
             }}
           >
             nonoisescores.app

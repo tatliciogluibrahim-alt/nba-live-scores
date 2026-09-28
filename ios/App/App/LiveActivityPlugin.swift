@@ -154,7 +154,9 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             // Stadium Panel rail value; sent by LiveActivitySync via
             // computeLiveActivityProgress() so the rail opens at the
             // right point in the match instead of empty.
-            progress: call.getDouble("progress") ?? 0
+            progress: call.getDouble("progress") ?? 0,
+            awayName: call.getString("awayName") ?? "",
+            homeName: call.getString("homeName") ?? ""
         )
 
         do {

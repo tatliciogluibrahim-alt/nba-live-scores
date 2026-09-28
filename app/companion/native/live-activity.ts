@@ -58,6 +58,10 @@ export type LiveActivityStartInput = {
    *  (it lives in the Activity's static attributes), so server-pushed
    *  score updates can't un-redact it. */
   redacted: boolean;
+  /** Team display names ("Lions") for the lock-screen rows (Courtside
+   *  C4). Optional: the tile falls back to the codes. */
+  awayName?: string;
+  homeName?: string;
 };
 
 export type LiveActivityPushTokenEvent = { gameId: string; token: string };

@@ -3,40 +3,26 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-// Ink Board — the No Noise Scores Live Activity (System D, §15).
+// The No Noise Scores Live Activity, Courtside (C4).
 //
-// The Live Room register carried to the OS: a full ink panel that reads
-// as the slot it is. A masthead header line ("● LIVE · <round>" left,
-// minute right), a board row where two team codes flank one large
-// tabular combined score, and a period-aware progress rail underneath.
-// Generalizes across three sports via SportTheme: World Cup (soccer),
-// NBA, NFL.
+// The arena room carried to the OS: the lock-screen tile and the Dynamic
+// Island are the dark room, because they only exist while a game you track
+// is on. Tokens, type and the shared atoms live in CourtsideTokens.swift.
 //
-// Locked design contract (do NOT drift):
-//   • Bright = leader / winner / active. Dim (mute) = trailer / past.
-//     Carried on the team CODES: the leader's code renders nnCream, the
-//     trailer's nnMute (ink = ahead, mute = behind). The combined score
-//     stays bright — it carries both numbers.
-//   • On a tie, both codes render bright.
-//   • Accent (sport color) is used SPARINGLY — only the live pip and the
-//     progress rail/fill. Never two competing accents. Never convey
-//     leader/trailer by color alone.
+// Lock screen: a header line (brand mark, "LIVE · WEEK 4", the live clock
+// in live red), the two teams stacked away over home with big numerals on
+// the right, and the progress fill in the sport color.
 //
-// Widget extensions cannot load custom fonts. SF system fonts only:
-// .rounded for numerals, .monospaced for codes/labels. Always
-// .monospacedDigit() on scores so width doesn't jump from "9" to "10".
-
-// MARK: - Ink Board brand tokens (warm dark surface only)
+// Locked contract (unchanged from System D, do not drift):
+//   • Leader in the room's text color, trailer in mute. On a tie both stay
+//     text. Never convey leader or trailer by color alone: sport color only
+//     ever fills the progress bar.
+//   • No-Spoilers: while held, no score digits are drawn anywhere on the
+//     tile or the island, and both teams render in text color so the
+//     dimming cannot leak who is ahead. The held chip is the reveal button.
 //
-// Same hex values as the rest of the app's dark mode palette so the
-// activity reads as part of the family. Color(hex: String) helper is
-// declared in NoNoiseGameAttributes.swift.
-private let nnInk      = Color(hex: "efe6d2")   // combined score + minute
-private let nnCream    = Color(hex: "d3c6a6")   // leader team codes
-private let nnMute     = Color(hex: "8a7d62")   // trailer + captions
-private let nnBg       = Color(hex: "1d1812")   // Live Activity surface
-private let nnHair     = Color.white.opacity(0.12)
-private let nnHairStr  = Color.white.opacity(0.22)
+// Widget extensions cannot load custom fonts: SF Pro `.width(.expanded)`
+// stands in for Archivo width 125 (see CSFont).
 
 // ActivityKit opens this URL when the user taps the lock-screen tile or
 // Dynamic Island. The game id is part of the Activity's static attributes,
@@ -48,236 +34,226 @@ private func liveActivityDeepLink(_ gameId: String) -> URL? {
     return URL(string: "nonoisescores://app/game/\(gameId)")
 }
 
-// MARK: - Per-sport theming
-//
-// accent = the brand sport color LIFTED for legibility on the dark
-// surface. ContentState.accentHex still carries the brand color in case
-// other surfaces want it; the Ink Board ignores it and uses the lifted
-// tone below so the rail / pip always read.
-private struct SportTheme {
-    let tag: String         // "WORLD CUP" | "NBA" | "NFL"
-    let accent: Color       // lifted accent for dark
-    let endLeft: String     // rail start label
-    let endRight: String    // rail end label
-    let ticks: [Double]     // period boundaries on the rail (0...1)
+// MARK: - Derived state
 
-    static let wc  = SportTheme(tag: "WORLD CUP", accent: Color(hex: "46a06a"),
-                                endLeft: "KICKOFF", endRight: "90'", ticks: [0.5])
-    static let nba = SportTheme(tag: "NBA",       accent: Color(hex: "ef7a4a"),
-                                endLeft: "TIP",     endRight: "FINAL", ticks: [0.25, 0.5, 0.75])
-    static let nfl = SportTheme(tag: "NFL",       accent: Color(hex: "6e93d6"),
-                                endLeft: "KICKOFF", endRight: "FINAL", ticks: [0.25, 0.5, 0.75])
-
-    static func from(_ sport: String) -> SportTheme {
-        switch sport.lowercased() {
-        case "nba": return .nba
-        case "nfl": return .nfl
-        default:    return .wc
-        }
-    }
-}
-
-// MARK: - Leader / trailer derivation
-//
 // Leader/trailer is DERIVED from scores, never stored. On a tie both
-// teams render bright per the contract.
-private extension NoNoiseGameAttributes.ContentState {
+// teams render in text color per the contract.
+extension NoNoiseGameAttributes.ContentState {
     var tie: Bool { homeScore == awayScore }
     var leadHome: Bool { homeScore > awayScore }
-    /// Returns true if the given side should render in the dim/trailer
-    /// treatment. Tie → both bright (returns false either way).
+    /// True when the given side renders dim (the trailer). Tie: never.
     func dim(home: Bool) -> Bool {
         if tie { return false }
         return home ? !leadHome : leadHome
     }
+    /// Team names when the feed sent them ("Lions"), codes otherwise.
+    var awayLabel: String { awayName.isEmpty ? awayCode : awayName }
+    var homeLabel: String { homeName.isEmpty ? homeCode : homeName }
 }
 
-// MARK: - Atoms
-
-// A flanking team code. Leader → nnCream, trailer → nnMute; while
-// redacted (No-Spoilers) the dimming is dropped so ink-vs-mute can't
-// leak who's ahead.
-private struct CodeLabel: View {
-    let code: String
-    let dim: Bool
-    var compact: Bool = false
-    var redacted: Bool = false
-
-    var body: some View {
-        Text(code)
-            .font(.system(size: compact ? 12 : 17, weight: .heavy, design: .monospaced))
-            .tracking(1.0)
-            .foregroundStyle(redacted ? nnCream : (dim ? nnMute : nnCream))
-            .lineLimit(1)
-    }
+/// "LIVE · WEEK 4" while live or at a break, the bare context once final
+/// (the right side already says Final).
+private func headerText(_ state: NoNoiseGameAttributes.ContentState,
+                        stage: String, phase: GamePhase) -> String {
+    let context = (state.subline.isEmpty ? stage : state.subline).uppercased()
+    if phase == .final { return context.isEmpty ? "NO NOISE" : context }
+    return context.isEmpty ? "LIVE" : "LIVE \u{00b7} \(context)"
 }
 
-// Pulsing live pip. .symbolEffect(.pulse, options: .repeating) is the
-// ActivityKit-safe way to animate on the lock screen: iOS throttles
-// arbitrary opacity animations but honors SF Symbol effects on live
-// activities since iOS 17.
-private struct LivePip: View {
-    let accent: Color
-    var size: CGFloat = 5
-    var body: some View {
-        Image(systemName: "circle.fill")
-            .font(.system(size: size))
-            .foregroundStyle(accent)
-            .symbolEffect(.pulse, options: .repeating)
-    }
-}
+// MARK: - Lock-screen tile
 
-// Period-aware progress rail. Track + accent fill + tick marks at
-// period boundaries + a small accent knob at the current progress
-// position with a 2pt screen-colored ring so it reads as elevated.
-private struct ProgressRail: View {
-    let progress: Double
-    let theme: SportTheme
-    var height: CGFloat = 3
-    var knob: CGFloat = 8
-
-    private var clamped: Double { max(0, min(1, progress)) }
-
-    var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            ZStack(alignment: .leading) {
-                // Track
-                Capsule().fill(nnHair)
-                // Fill to current progress
-                Capsule()
-                    .fill(theme.accent)
-                    .frame(width: max(0, w * clamped))
-                // Period tick marks
-                ForEach(theme.ticks, id: \.self) { t in
-                    Rectangle()
-                        .fill(nnHairStr)
-                        .frame(width: 1, height: height + 3)
-                        .offset(x: w * t - 0.5, y: -1.5)
-                }
-                // Knob at current progress (with ring against the surface)
-                Circle()
-                    .fill(theme.accent)
-                    .frame(width: knob, height: knob)
-                    .overlay(Circle().stroke(nnBg, lineWidth: 2))
-                    .offset(x: w * clamped - knob / 2, y: (height - knob) / 2)
-            }
-        }
-        .frame(height: height)
-    }
-}
-
-// MARK: - Lock-screen tile (Ink Board)
-
-private struct StadiumPanelLockView: View {
+struct CourtsideLockView: View {
     let state: NoNoiseGameAttributes.ContentState
-    // sport + redacted live on the attributes (set-once, never update),
-    // not on ContentState. Threaded in from the ActivityConfiguration body.
+    // sport + held come from the static attributes (set once), not from
+    // ContentState. Threaded in from the ActivityConfiguration body.
     let sport: String
-    // Static stage line ("NBA · Game 6"); a fallback for the header round
-    // context when the live subline is empty. Also threaded from the body.
     var stage: String = ""
-    // `redacted` here means "currently hidden": redacted attribute AND not
-    // yet revealed on this device. When true the tile shows a Reveal button
-    // (iOS 17+) wired to the game's id.
-    var redacted: Bool = false
+    /// Currently hidden: the redacted attribute is set AND this device has
+    /// not revealed the game yet.
+    var held: Bool = false
     var gameId: String = ""
-    private var theme: SportTheme { .from(sport) }
 
-    // Header-left round context: the live subline (round / stake) if
-    // present, else the static stage line.
-    private var contextLabel: String {
-        (state.subline.isEmpty ? stage : state.subline).uppercased()
-    }
-    private var headerText: String {
-        contextLabel.isEmpty ? "LIVE" : "LIVE \u{00b7} \(contextLabel)"
-    }
-    private var centerScore: String {
-        redacted ? "\u{2022}\u{2022}\u{2022}"
-                 : "\(state.awayScore)\u{2013}\(state.homeScore)"
-    }
+    private var phase: GamePhase { GamePhase(statusLine: state.statusLine) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
-            // Header line — "● LIVE · <round>" left, minute right.
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                LivePip(accent: theme.accent)
-                Text(headerText)
-                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                    .tracking(1.1)
-                    .foregroundStyle(nnMute)
+        // iOS caps the lock-screen tile at 160pt: keep the natural height
+        // near 140 so larger text settings still fit.
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 8) {
+                BrandGlyph(size: 16, ringed: true)
+                Text(headerText(state, stage: stage, phase: phase))
+                    .font(CSFont.label(11))
+                    .tracking(1.0)
+                    .foregroundStyle(Arena.mute)
                     .lineLimit(1)
                 Spacer(minLength: 8)
-                Text(state.statusLine)
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .monospacedDigit()
-                    .foregroundStyle(nnInk)
-                    .lineLimit(1)
-            }
-
-            // Board row — codes flank a large tabular combined score.
-            // Away on the left, home on the right (ESPN "away at home"
-            // order, matching every other surface).
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                CodeLabel(code: state.awayCode, dim: state.dim(home: false), redacted: redacted)
-                Spacer(minLength: 4)
-                Text(centerScore)
-                    .font(.system(size: 40, weight: .heavy, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(nnInk)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.55)
-                Spacer(minLength: 4)
-                CodeLabel(code: state.homeCode, dim: state.dim(home: true), redacted: redacted)
-            }
-
-            // Progress rail + KICKOFF / 90' (or sport ends) labels.
-            VStack(spacing: 7) {
-                ProgressRail(progress: state.progress, theme: theme)
-                HStack {
-                    Text(theme.endLeft)
-                    Spacer()
-                    Text(theme.endRight)
+                HStack(spacing: 6) {
+                    if phase != .final {
+                        LiveDot(color: Arena.live, size: 6, pulsing: phase == .live)
+                    }
+                    Text(state.statusLine)
+                        .font(CSFont.body(12, .bold))
+                        .monospacedDigit()
+                        .foregroundStyle(phase == .final ? Arena.mute : Arena.live)
+                        .lineLimit(1)
                 }
-                .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                .tracking(1.2)
-                .foregroundStyle(nnMute)
             }
 
-            if redacted { revealButton }
+            if held { heldBlock } else { scoreBlock }
+
+            FillBar(progress: state.progress, room: .arena, sport: sport)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 15)
-        .activityBackgroundTint(nnBg)
-        .activitySystemActionForegroundColor(nnInk)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 14)
+        .activityBackgroundTint(Arena.surface)
+        .activitySystemActionForegroundColor(Arena.text)
     }
 
-    // No-Spoilers reveal control. iOS 17+ only (interactive Live Activity
-    // buttons need App Intents); on 16.x the tile simply stays hidden and
-    // tapping it opens the app, where the in-app reveal still works.
-    @ViewBuilder private var revealButton: some View {
+    private var scoreBlock: some View {
+        VStack(spacing: 2) {
+            ScoreRow(name: state.awayLabel, score: state.awayScore,
+                     dim: state.dim(home: false), room: .arena, numeralSize: 28)
+            ScoreRow(name: state.homeLabel, score: state.homeScore,
+                     dim: state.dim(home: true), room: .arena, numeralSize: 28)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var heldContent: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(state.awayLabel)
+                Text(state.homeLabel)
+            }
+            .font(CSFont.body(15, .bold))
+            .foregroundStyle(Arena.text)
+            .lineLimit(1)
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 6) {
+                HeldChip(room: .arena, size: 15)
+                Text("Tap to reveal")
+                    .font(CSFont.body(11, .medium))
+                    .foregroundStyle(Arena.mute)
+            }
+        }
+    }
+
+    // No-Spoilers reveal: the whole held block is the control (iOS 17+
+    // interactive Live Activity buttons need App Intents; the widget target
+    // is 17.0, the check stays as a guard).
+    @ViewBuilder private var heldBlock: some View {
         if #available(iOS 17.0, *) {
             Button(intent: RevealScoreIntent(gameId: gameId)) {
-                Text("Tap to reveal score")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .tracking(0.8)
-                    .foregroundStyle(theme.accent)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
+                heldContent.contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Score hidden. Tap to reveal.")
+        } else {
+            heldContent
         }
+    }
+}
+
+// MARK: - Dynamic Island parts
+
+// The compact slots either side of the camera are narrow (the island
+// only grows so far), so compact type is regular width and scales down
+// rather than truncating. Expanded width is for the lock tile and the
+// expanded island.
+private let compactCode = Font.system(size: 12, weight: .heavy)
+private let compactScore = Font.system(size: 14, weight: .black).monospacedDigit()
+
+/// Compact leading: the away side, or the matchup while held.
+struct IslandCompactLeading: View {
+    let state: NoNoiseGameAttributes.ContentState
+    var held: Bool
+
+    var body: some View {
+        if held {
+            Text("\(state.awayCode)\u{00b7}\(state.homeCode)")
+                .font(compactCode)
+                .foregroundStyle(Arena.text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        } else {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(state.awayCode).font(compactCode)
+                Text("\(state.awayScore)").font(compactScore)
+            }
+            .foregroundStyle(state.dim(home: false) ? Arena.mute : Arena.text)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+        }
+    }
+}
+
+/// Compact trailing: the home side, or the held glyphs alone.
+struct IslandCompactTrailing: View {
+    let state: NoNoiseGameAttributes.ContentState
+    var held: Bool
+
+    var body: some View {
+        if held {
+            Text("\u{2022}\u{2022}\u{2013}\u{2022}\u{2022}")
+                .font(compactCode)
+                .foregroundStyle(Arena.mute)
+                .accessibilityLabel("Score hidden")
+        } else {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text("\(state.homeScore)").font(compactScore)
+                Text(state.homeCode).font(compactCode)
+            }
+            .foregroundStyle(state.dim(home: true) ? Arena.mute : Arena.text)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+        }
+    }
+}
+
+/// Expanded bottom: the two rows (or the held block) and the fill.
+struct IslandExpandedBody: View {
+    let state: NoNoiseGameAttributes.ContentState
+    let sport: String
+    var held: Bool
+
+    var body: some View {
+        VStack(spacing: 10) {
+            if held {
+                HStack {
+                    Text("\(state.awayLabel) \u{00b7} \(state.homeLabel)")
+                        .font(CSFont.body(15, .bold))
+                        .foregroundStyle(Arena.text)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    Spacer(minLength: 8)
+                    HeldChip(room: .arena, size: 14)
+                }
+            } else {
+                VStack(spacing: 2) {
+                    ScoreRow(name: state.awayLabel, score: state.awayScore,
+                             dim: state.dim(home: false), room: .arena,
+                             nameSize: 16, numeralSize: 28)
+                    ScoreRow(name: state.homeLabel, score: state.homeScore,
+                             dim: state.dim(home: true), room: .arena,
+                             nameSize: 16, numeralSize: 28)
+                }
+            }
+            FillBar(progress: state.progress, room: .arena, sport: sport)
+        }
+        .padding(.horizontal, 6)
+        .padding(.top, 2)
     }
 }
 
 // MARK: - Interactive No-Spoilers reveal (iOS 17+)
 //
-// Tapping "Reveal" on the lock screen flips a per-game flag in the App
-// Group. The real score is already on-device in ContentState (the redacted
-// attribute only hides it), so reveal is a pure local display toggle —
-// no network, no new push. We re-render the activity so it re-reads the
-// flag immediately; future server pushes re-read it too, so the score
-// stays revealed.
+// Tapping the held block flips a per-game flag in the App Group. The score
+// the lock screen shows after reveal is the one already in ContentState
+// (the server still sends real scores to every token; keeping digits out of
+// ActivityKit for held activities is the separate protocol change in the
+// Courtside spec follow-ups). We re-render the activity so it re-reads the
+// flag immediately; future server pushes re-read it too, so it stays open.
 @available(iOS 17.0, *)
 struct RevealScoreIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Reveal score"
@@ -308,72 +284,65 @@ struct NoNoiseLiveActivity: Widget {
             // Hide the score only while redacted AND not yet revealed on
             // this device. The reveal flag is device-local (App Group), so
             // the next server score push can't re-hide it.
-            let hideScore = context.attributes.redacted
+            let held = context.attributes.redacted
                 && !WidgetStore.isRevealed(context.attributes.gameId)
-            StadiumPanelLockView(
+            CourtsideLockView(
                 state: context.state,
                 sport: context.attributes.sport,
                 stage: context.attributes.stage,
-                redacted: hideScore,
+                held: held,
                 gameId: context.attributes.gameId
             )
             .widgetURL(liveActivityDeepLink(context.attributes.gameId))
         } dynamicIsland: { context in
             let s = context.state
-            let theme = SportTheme.from(context.attributes.sport)
-            let redacted = context.attributes.redacted
+            let sport = context.attributes.sport
+            let phase = GamePhase(statusLine: s.statusLine)
+            let held = context.attributes.redacted
                 && !WidgetStore.isRevealed(context.attributes.gameId)
             return DynamicIsland {
-                // Expanded — score-forward (§15 treatment B): the combined
-                // score dominates center-wide, codes + live minute beneath.
-                DynamicIslandExpandedRegion(.center) {
-                    Text(redacted
-                         ? "\u{2022}\u{2022}\u{2022}"
-                         : "\(s.awayScore) \u{2013} \(s.homeScore)")
-                        .font(.system(size: 32, weight: .heavy, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(nnInk)
+                DynamicIslandExpandedRegion(.leading) {
+                    Text(headerText(s, stage: context.attributes.stage, phase: phase))
+                        .font(CSFont.label(10))
+                        .tracking(0.9)
+                        .foregroundStyle(Arena.mute)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .frame(maxWidth: .infinity)
+                        .padding(.leading, 6)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    HStack(spacing: 5) {
+                        if phase != .final {
+                            LiveDot(color: Arena.live, size: 5, pulsing: phase == .live)
+                        }
+                        Text(s.statusLine)
+                            .font(CSFont.body(12, .bold))
+                            .monospacedDigit()
+                            .foregroundStyle(phase == .final ? Arena.mute : Arena.live)
+                            .lineLimit(1)
+                    }
+                    .padding(.trailing, 6)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    HStack(spacing: 8) {
-                        CodeLabel(code: s.awayCode, dim: s.dim(home: false),
-                                  compact: true, redacted: redacted)
-                        Spacer()
-                        HStack(spacing: 4) {
-                            LivePip(accent: theme.accent)
-                            Text(s.statusLine)
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .monospacedDigit()
-                                .foregroundStyle(theme.accent)
-                                .lineLimit(1)
-                        }
-                        Spacer()
-                        CodeLabel(code: s.homeCode, dim: s.dim(home: true),
-                                  compact: true, redacted: redacted)
-                    }
-                    .padding(.horizontal, 4)
-                    .padding(.top, 2)
+                    IslandExpandedBody(state: s, sport: sport, held: held)
                 }
             } compactLeading: {
-                // Pulsing accent pip via .symbolEffect, the only animation
-                // ActivityKit honors on the lock surface without battling
-                // the OS throttler.
-                LivePip(accent: theme.accent, size: 7)
+                IslandCompactLeading(state: s, held: held)
             } compactTrailing: {
-                Text(redacted ? "\u{2022}\u{2022}\u{2022}" : "\(s.awayScore)\u{2013}\(s.homeScore)")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .monospacedDigit()
-                    .foregroundStyle(nnInk)
+                IslandCompactTrailing(state: s, held: held)
             } minimal: {
-                Text(redacted ? "\u{2022}\u{2022}\u{2022}" : "\(s.awayScore)\u{2013}\(s.homeScore)")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .monospacedDigit()
-                    .foregroundStyle(nnInk)
+                if held {
+                    Text("\u{2022}\u{2022}")
+                        .font(CSFont.display(12, .heavy))
+                        .foregroundStyle(Arena.mute)
+                        .accessibilityLabel("Score hidden")
+                } else {
+                    Text("\(s.awayScore)\u{2013}\(s.homeScore)")
+                        .font(CSFont.numeral(11))
+                        .foregroundStyle(Arena.text)
+                        .minimumScaleFactor(0.7)
+                }
             }
-            .keylineTint(theme.accent)
+            .keylineTint(Room.arena.sport(sport))
             .widgetURL(liveActivityDeepLink(context.attributes.gameId))
         }
     }

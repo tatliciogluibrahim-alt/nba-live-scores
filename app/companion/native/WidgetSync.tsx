@@ -173,6 +173,23 @@ function itemToUpcoming(item: UpNextItem): WidgetUpcoming {
   };
 }
 
+// Held games carry placeholder scores, so a hidden score's digits never
+// enter the App Group snapshot (Courtside data-level redaction, spec
+// 2026-08-31). The fields stay numeric because the shipped Swift decoder
+// requires them; every widget build only draws scores when `redacted` is
+// false, so the zeros are never displayed.
+function snapshotSides(
+  away: { abbreviation: string; score: number },
+  home: { abbreviation: string; score: number },
+  redacted: boolean
+): Pick<WidgetLive, "away" | "home" | "redacted"> {
+  return {
+    away: { code: away.abbreviation, score: redacted ? 0 : away.score },
+    home: { code: home.abbreviation, score: redacted ? 0 : home.score },
+    redacted,
+  };
+}
+
 // Live followed games for the live-score widget. A game counts as followed
 // for a direct team/country, an exact two-team series matchup, or a matching
 // tournament. Score is redacted when global No-Spoilers is on, or when a
@@ -223,10 +240,8 @@ export function buildLiveEntries(
     out.push({
       id: g.id,
       sport: "nba",
-      away: { code: g.away.abbreviation, score: g.away.score },
-      home: { code: g.home.abbreviation, score: g.home.score },
+      ...snapshotSides(g.away, g.home, hideFor(a, h, "nba")),
       statusLine: widgetLiveStatus(g.statusText),
-      redacted: hideFor(a, h, "nba"),
       accentHex: ACCENT_NBA,
       href: `/game/${g.id}`,
     });
@@ -239,10 +254,8 @@ export function buildLiveEntries(
     out.push({
       id: g.id,
       sport: "wc",
-      away: { code: g.away.abbreviation, score: g.away.score },
-      home: { code: g.home.abbreviation, score: g.home.score },
+      ...snapshotSides(g.away, g.home, hideFor(a, h, "wc")),
       statusLine: widgetLiveStatus(g.statusText),
-      redacted: hideFor(a, h, "wc"),
       accentHex: ACCENT_WC,
       href: `/game/${g.id}`,
     });
@@ -255,10 +268,8 @@ export function buildLiveEntries(
     out.push({
       id: g.id,
       sport: "nfl",
-      away: { code: g.away.abbreviation, score: g.away.score },
-      home: { code: g.home.abbreviation, score: g.home.score },
+      ...snapshotSides(g.away, g.home, hideFor(a, h, "nfl")),
       statusLine: widgetLiveStatus(g.statusText),
-      redacted: hideFor(a, h, "nfl"),
       accentHex: ACCENT_NFL,
       href: `/game/${g.id}`,
     });

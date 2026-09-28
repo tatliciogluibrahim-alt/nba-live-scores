@@ -1,13 +1,15 @@
 @import "tailwindcss";
 
-/* Defensive cream paint. Locks the page background to brand cream from
-   the very first frame, before --background resolves, before React
-   hydrates, even if CSS variables fail to evaluate in the WebView.
+/* Defensive ground paint. Locks the page background to the porcelain
+   ground from the very first frame, before --background resolves, before
+   React hydrates, even if CSS variables fail to evaluate in the WebView.
    Catches the "black screen on Capacitor TestFlight" case where the
-   WKWebView mounts but the React tree fails to paint. Users see cream
-   plus any error message instead of solid black. */
+   WKWebView mounts but the React tree fails to paint. Users see porcelain
+   plus any error message instead of solid black. Courtside C4 retired the
+   old cream here, with the launch screen, Capacitor, manifest and
+   themeColor (all five paint the same ground and move together). */
 html, body {
-  background-color: #f1ead8 !important;
+  background-color: #f4f3ef !important;
 }
 
 :root {
@@ -16,8 +18,8 @@ html, body {
      mostly use hardcoded Tailwind arbitrary values (e.g. bg-[#f5f1ea])
      and are unaffected by these token changes. New companion shell
      consumes var(--*) only. */
-  --background: #f1ead8;
-  --foreground: #1a1612;
+  --background: #f4f3ef;
+  --foreground: #17181a;
 
   /* Cohesion tokens */
   --cream:    #f4f3ef;
@@ -172,8 +174,8 @@ html, body {
    the locked "never auto-flip" law holds for every browsing surface. */
 :root[data-theme="dark"],
 [data-chassis="arena"] {
-  --background:                #1d1812;
-  --foreground:                #f1ead8;
+  --background:                #0c0d0f;
+  --foreground:                #f2f3f5;
 
   --cream:                     #0c0d0f;
   --cream-2:                   #1b1d21;

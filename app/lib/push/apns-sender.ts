@@ -362,6 +362,12 @@ export type LiveActivityContentState = {
    *  push. The Swift ContentState is non-optional — omitting this field
    *  will fail Codable decode and the activity won't update. */
   progress: number;
+  /** Team display names ("Lions"), Courtside C4. NFL only today: every
+   *  update replaces the whole state, so a sport sends names on start AND
+   *  on every server push, or not at all. Optional: the lock screen falls
+   *  back to the codes, and older app builds ignore unknown keys. */
+  awayName?: string;
+  homeName?: string;
 };
 
 /** Set once when starting via push-to-start. Decoded by `ActivityAttributes`. */

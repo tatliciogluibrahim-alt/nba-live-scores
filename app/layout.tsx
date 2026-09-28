@@ -110,11 +110,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   minimumScale: 1,
   viewportFit: "cover",
-  // Light cream is the default — we don't auto-flip with
+  // Light porcelain is the default — we don't auto-flip with
   // prefers-color-scheme. Users who pick Dark in Alerts & Notifications
-  // get warm dark; everyone else gets cream regardless of OS setting.
-  // Keeps the brand identity stable on first install.
-  themeColor: "#f1ead8",
+  // get the dark palette; everyone else gets porcelain regardless of OS
+  // setting. Keeps the brand identity stable on first install.
+  themeColor: "#f4f3ef",
   colorScheme: "light",
 };
 

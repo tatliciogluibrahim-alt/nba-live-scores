@@ -32,8 +32,8 @@ export default function GlobalError({
         style={{
           margin: 0,
           minHeight: "100vh",
-          background: "#f1ead8",
-          color: "#2b2520",
+          background: "#f4f3ef",
+          color: "#17181a",
           fontFamily:
             "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
           display: "flex",
@@ -88,8 +88,8 @@ export default function GlobalError({
               padding: "0 20px",
               borderRadius: 999,
               border: 0,
-              background: "#2b2520",
-              color: "#f1ead8",
+              background: "#17181a",
+              color: "#f4f3ef",
               fontSize: 13,
               fontWeight: 700,
               letterSpacing: "0.06em",

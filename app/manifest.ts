@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#f1ead8",
-    theme_color: "#f1ead8",
+    background_color: "#f4f3ef",
+    theme_color: "#f4f3ef",
     categories: ["sports", "news"],
     // Icons: SVG covers vector-capable browsers; 192/512 are the two
     // sizes Chrome/Edge install heuristics check for installability; 1024

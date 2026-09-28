@@ -116,6 +116,10 @@ function itemToStartInput(
     awayScore: away,
     homeCode: item.homeCode,
     homeScore: home,
+    // Names only where the server's updates carry them too (NFL): each
+    // ActivityKit update replaces the whole state, so a tile that started
+    // with names would drop to codes on the first NBA/WC push.
+    ...(sport === "nfl" ? { awayName: item.awayName, homeName: item.homeName } : {}),
     statusLine: item.detailLine,
     // Center-bug context line. Server may refine on the first update;
     // we seed it from the contextEyebrow so the tile reads correctly

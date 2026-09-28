@@ -152,6 +152,8 @@ export function NFLGameDetail({
         awayCode: game.away.abbreviation,
         awayScore: game.away.score,
         homeCode: game.home.abbreviation,
+        awayName: game.away.name,
+        homeName: game.home.name,
         homeScore: game.home.score,
         statusLine: game.statusText || "",
         subline: weekTail(game),

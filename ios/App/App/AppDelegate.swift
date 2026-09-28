@@ -1,5 +1,8 @@
 import UIKit
 import Capacitor
+#if DEBUG
+import ActivityKit
+#endif
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,8 +11,50 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private var pendingAppDestination: URL?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        #if DEBUG
+        startDemoLiveActivityIfRequested()
+        #endif
         return true
     }
+
+    #if DEBUG
+    // Simulator QA for the Live Activity (Courtside C4), DEBUG builds only:
+    //   xcrun simctl launch booted com.nonoisescores.app -NNDemoLiveActivity live
+    // starts a tile from fixture data (live | held | final) so the lock
+    // screen and Dynamic Island can be captured without a real game or the
+    // web flow. Compiled out of Release, so it never ships. Starts 15s
+    // after launch: the web layer's launch reconcile ends any activity it
+    // did not pin, and it only polls again while games are pinned.
+    private func startDemoLiveActivityIfRequested() {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-NNDemoLiveActivity"), i + 1 < args.count else { return }
+        let kind = args[i + 1]
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
+            self.requestDemoLiveActivity(kind)
+        }
+    }
+
+    private func requestDemoLiveActivity(_ kind: String) {
+        let attrs = NoNoiseGameAttributes(
+            matchup: "DET vs GB", stage: "NFL \u{00b7} Week 4", sport: "nfl",
+            redacted: kind == "held", gameId: "demo-\(kind)")
+        let final = kind == "final"
+        let state = NoNoiseGameAttributes.ContentState(
+            awayCode: "DET", awayScore: final ? 31 : 24,
+            homeCode: "GB", homeScore: final ? 27 : 17,
+            statusLine: final ? "Final" : "Q3 8:12", subline: "WEEK 4",
+            accentHex: "#1f3a6b", progress: final ? 1 : 0.62,
+            awayName: "Lions", homeName: "Packers")
+        do {
+            _ = try Activity.request(
+                attributes: attrs,
+                content: ActivityContent(state: state, staleDate: nil),
+                pushType: nil)
+        } catch {
+            print("[DemoLiveActivity] request failed: \(error)")
+        }
+    }
+    #endif
 
     func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.

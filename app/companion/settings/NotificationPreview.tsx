@@ -193,9 +193,10 @@ function PresetPreviewCard({ preset }: { preset: AlertPreset }) {
  *  inverted under dark mode, producing a cream tile on a dark page
  *  with poor contrast. This component represents the phone's
  *  lockscreen — it shouldn't follow the app's theme. */
-const LOCK_DARK = "#2b2520";
-const LOCK_DARK_BORDER = "#1a1612";
-const LOCK_CREAM = "#f1ead8";
+// Courtside arena values (C4), the same the Live Activity tile uses.
+const LOCK_DARK = "#14161a";
+const LOCK_DARK_BORDER = "#23262b";
+const LOCK_CREAM = "#f2f3f5";
 
 function LockScreenPushMock({ preview }: { preview: PreviewExample }) {
   return (

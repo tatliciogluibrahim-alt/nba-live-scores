@@ -19,9 +19,9 @@ const config: CapacitorConfig = {
     allowNavigation: ["nonoisescores.app"],
   },
   ios: {
-    // Match the app's cream background so the overscroll bounce area
+    // Match the app's porcelain ground so the overscroll bounce area
     // doesn't flash white/black behind the content.
-    backgroundColor: "#f1ead8",
+    backgroundColor: "#f4f3ef",
     // Disable the rubber-band bounce on scroll edges so pulling down
     // doesn't reveal an awkward gap above the content.
     scrollEnabled: true,

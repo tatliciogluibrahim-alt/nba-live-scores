@@ -3,45 +3,27 @@ import SwiftUI
 import AppIntents
 import UIKit
 
-// Home-screen widgets: the "paper agate" front page (§15 System D).
+// Home-screen and lock-screen widgets, Courtside (C4).
 // Reads the App Group snapshot the app writes (WidgetBridge plugin).
 //
 // Two widget kinds live here:
-//   • NoNoiseUpcomingWidget  (S / M / L) — the front page. Leads with a
-//     live followed game when one is on, otherwise what's next. Small
-//     flips to the ink board when live; medium/large show the agate slate.
-//   • NoNoiseLiveScoreWidget (S / M)     — the dedicated live surface.
+//   • NoNoiseUpcomingWidget  (S / M / L + lock-screen accessories). Leads
+//     with a live followed game when one is on, otherwise what's next.
+//   • NoNoiseLiveScoreWidget (S / M). The dedicated live surface.
+//
+// Two rooms, as in the app: porcelain white at rest, arena dark where a
+// game is live. The small widget becomes the arena while live; the large
+// widget holds the live game in an arena card and keeps the page light.
+// Resting widgets are ALWAYS light (device QA 2026-07-04: the live flip is
+// the signal, so rest never goes dark, and the brand never auto-flips).
 //
 // Home-screen widgets can't tick in real time (iOS throttles refreshes
 // and they get no pushes), so any live score shows the LATEST KNOWN value
-// with an "as of" time — never a confident-but-stale lie. The Live
+// with an "as of" time, never a confident-but-stale lie. The Live
 // Activity owns true real-time.
 //
-// SF system fonts only (Bricolage doesn't load in extensions): .monospaced
-// for codes/labels, .rounded for numerals. This is a view-layer restyle —
-// providers, timelines, intents, deep links, and update cadence unchanged.
-
-// MARK: - Paper agate palette
-//
-// The resting widget is ALWAYS paper — literal colors, like the BrandMark.
-// Device QA (2026-07-04): the designed-dark variant made resting widgets ink
-// in system dark mode, which killed the locked "cream at rest, ink only when
-// live" pair — the live flip IS the signal, so rest never goes dark. Brand
-// law agrees: light default, never auto-flip. Color(hex:) is declared in
-// NoNoiseGameAttributes.swift (member of this target).
-private let wSurface = Color(hex: "f1ead8")  // paper, always
-private let wInk     = Color(hex: "1a1612")  // primary text
-private let wMute    = Color(hex: "6b6257")  // secondary text
-private let wLine    = Color(hex: "d8cdb4")  // hairline
-private let wBrand   = Color(hex: "b4361d")  // vermilion chrome
-private let wLive    = Color(hex: "1e6b3c")  // green, live only
-
-// Ink board (the live small): always warm-black — the state IS the color
-// change, so it does not adapt to the system scheme.
-private let bBg    = Color(hex: "161210")
-private let bText  = Color(hex: "efe6d2")
-private let bMute  = Color(hex: "9c8f72")
-private let bGreen = Color(hex: "46a06a")
+// View layer only: providers, timelines, intents, deep links and update
+// cadence are unchanged. Tokens and atoms: CourtsideTokens.swift.
 
 // The medium widget's dormant paging offset (kept for the interactive
 // "next" intent below). One game per page.
@@ -77,6 +59,17 @@ private func stampFor(_ g: WidgetUpcoming) -> String {
 
 private func roundFor(_ g: WidgetUpcoming) -> String { detailParts(g.detail).round }
 
+// The round every shown upcoming row shares ("Week 4"), or "" when they
+// differ. Rows skip a shared round so it isn't repeated down the widget.
+private func sharedRound(_ items: [AgateItem]) -> String {
+    let rounds = items.compactMap { item -> String? in
+        if case .up(let g) = item { return roundFor(g) } else { return nil }
+    }
+    guard let first = rounds.first, !first.isEmpty,
+          rounds.allSatisfy({ $0 == first }) else { return "" }
+    return first
+}
+
 private func sportTag(_ s: String) -> String {
     switch s.lowercased() {
     case "nba": return "NBA"
@@ -91,10 +84,9 @@ private func countLabel(sport: String, n: Int) -> String {
     return "\(n) \(noun)"
 }
 
-// Best-effort live rail fill. The snapshot contract carries no progress
+// Best-effort live progress. The snapshot contract carries no progress
 // value, so we derive one ONLY from a soccer minute ("67'") and never
-// fabricate a position for other sports (nil → a faint full "live"
-// underline that claims nothing).
+// fabricate a position for other sports (nil → the bare track, no claim).
 private func railFill(_ status: String) -> Double? {
     let t = status.trimmingCharacters(in: .whitespaces)
     guard t.contains("'") else { return nil }
@@ -103,12 +95,9 @@ private func railFill(_ status: String) -> Double? {
     return min(1.0, Double(m) / 95.0)
 }
 
-private func liveScorePair(_ live: WidgetLive) -> String {
-    live.redacted ? "\u{2022}\u{2022}\u{2022}" : "\(live.away.score)\u{2013}\(live.home.score)"
-}
-
+// Accessories (OS-tinted): per-team score or the held glyph pair.
 private func accScore(_ t: WidgetLiveTeam, redacted: Bool) -> String {
-    redacted ? "\u{2022}" : "\(t.score)"
+    redacted ? "\u{2022}\u{2022}" : "\(t.score)"
 }
 
 private func asOfText(_ generatedAt: Double) -> String {
@@ -117,6 +106,15 @@ private func asOfText(_ generatedAt: Double) -> String {
     let f = DateFormatter()
     f.dateFormat = "h:mm a"
     return "as of \(f.string(from: d))"
+}
+
+// Leader/trailer for a snapshot game. Held (redacted) or tied: nobody dims,
+// so the dimming can never leak who is ahead.
+private extension WidgetLive {
+    func dim(home isHome: Bool) -> Bool {
+        if redacted || away.score == home.score { return false }
+        return isHome ? home.score < away.score : away.score < home.score
+    }
 }
 
 // Ordered "front page" slate: live games first, then upcoming.
@@ -208,8 +206,8 @@ struct UpcomingProvider: TimelineProvider {
 }
 
 // Interactive "next page" intent (iOS 17+). Retained so the App Group
-// paging state and its contract stay intact; the §15 multi-row agate
-// layouts show several games at once, so no visible paging control renders.
+// paging state and its contract stay intact; the multi-row layouts show
+// several games at once, so no visible paging control renders.
 struct AdvanceUpcomingIntent: AppIntent {
     static var title: LocalizedStringResource = "Show more games"
 
@@ -264,12 +262,12 @@ struct UpcomingWidgetView: View {
     }
     private var hasLive: Bool { !(entry.snapshot?.live?.isEmpty ?? true) }
 
-    // Small flips to the ink board when live → warm-black surface. Every
-    // other case stays paper. Accessories are OS-tinted → transparent.
+    // Small becomes the arena when live. Everything else stays porcelain.
+    // Accessories are OS-tinted, so transparent.
     private var surface: AnyShapeStyle {
         if isAccessory { return AnyShapeStyle(.clear) }
-        if family == .systemSmall && hasLive { return AnyShapeStyle(bBg) }
-        return AnyShapeStyle(wSurface)
+        if family == .systemSmall && hasLive { return AnyShapeStyle(Arena.ground) }
+        return AnyShapeStyle(Porcelain.surface)
     }
 
     var body: some View {
@@ -301,56 +299,57 @@ struct UpcomingWidgetView: View {
 
 // MARK: - Lock-screen accessory bodies (OS-tinted, monochrome by rule)
 
-private struct AccessoryRectBody: View {
+struct AccessoryRectBody: View {
     let snap: WidgetSnapshot?
 
     var body: some View {
         if let live = snap?.live?.first {
             VStack(alignment: .leading, spacing: 1) {
                 Text(live.statusLine.uppercased())
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(CSFont.label(11))
                     .widgetAccentable()
                 Text("\(live.away.code) \(accScore(live.away, redacted: live.redacted))\u{2013}\(accScore(live.home, redacted: live.redacted)) \(live.home.code)")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(CSFont.display(16, .heavy))
+                    .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
         } else if let up = snap?.upcoming.first {
             VStack(alignment: .leading, spacing: 1) {
                 Text("UP NEXT")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(CSFont.label(10))
                     .widgetAccentable()
-                Text(up.matchup)
-                    .font(.system(size: 16, weight: .bold))
+                Text(dotMatchup(up.matchup))
+                    .font(CSFont.display(16, .heavy))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 Text(up.detail)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(CSFont.body(11, .medium))
                     .lineLimit(1)
             }
         } else {
-            Text("No games up").font(.system(size: 13, weight: .medium))
+            Text("No games up").font(CSFont.body(13, .medium))
         }
     }
 }
 
-private struct AccessoryInlineBody: View {
+struct AccessoryInlineBody: View {
     let snap: WidgetSnapshot?
 
     var body: some View {
         if let live = snap?.live?.first {
             Text("\(live.away.code) \(accScore(live.away, redacted: live.redacted))\u{2013}\(accScore(live.home, redacted: live.redacted)) \(live.home.code)")
         } else if let up = snap?.upcoming.first {
-            Text("\(up.matchup) \u{00b7} \(up.detail.components(separatedBy: " \u{00b7} ").first ?? up.detail)")
+            Text("\(dotMatchup(up.matchup)) \u{00b7} \(up.detail.components(separatedBy: " \u{00b7} ").first ?? up.detail)")
         } else {
             Text("No games up")
         }
     }
 }
 
-// MARK: - Small (paper agate, or ink board when live)
+// MARK: - Small
 
-private struct SmallBody: View {
+struct SmallBody: View {
     let snap: WidgetSnapshot
     let startIndex: Int
 
@@ -362,9 +361,9 @@ private struct SmallBody: View {
 
     var body: some View {
         if let live = snap.live?.first {
-            InkBoardSmall(live: live, generatedAt: snap.generatedAt)
+            ArenaSmall(live: live, generatedAt: snap.generatedAt)
         } else if let g = soonest {
-            PaperSmall(game: g)
+            NextSmall(game: g)
         } else if let m = snap.moment {
             MomentSmall(moment: m)
         } else {
@@ -373,108 +372,130 @@ private struct SmallBody: View {
     }
 }
 
-// Paper agate small (mock 3A): green sport-tag eyebrow, vermilion rule,
-// mono matchup, time \u{00b7} round, broadcast stamp. Clean — no brand footer.
-private struct PaperSmall: View {
+// Porcelain small: what's next. One label, the matchup, and the day and
+// time as the big numerals.
+struct NextSmall: View {
     let game: WidgetUpcoming
+
+    private var day: String { dayFrom(game.eyebrow).uppercased() }
+    private var time: String { detailParts(game.detail).time }
+    private var footnote: String {
+        [roundFor(game), game.broadcast ?? ""].filter { !$0.isEmpty }
+            .joined(separator: " \u{00b7} ")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(game.eyebrow.uppercased())
-                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                .tracking(0.6)
-                .foregroundStyle(wLive)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Rectangle().fill(wBrand).frame(width: 38, height: 2).padding(.top, 6)
-            Spacer(minLength: 8)
+            Text("NEXT")
+                .font(CSFont.label(10))
+                .tracking(1.0)
+                .foregroundStyle(Porcelain.mute)
             Text(dotMatchup(game.matchup))
-                .font(.system(size: 16, weight: .heavy, design: .monospaced))
-                .tracking(0.4)
-                .foregroundStyle(wInk)
+                .font(CSFont.display(17, .heavy))
+                .foregroundStyle(Porcelain.ink)
                 .lineLimit(2)
-                .minimumScaleFactor(0.75)
-            Text(game.detail)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(wMute)
+                .minimumScaleFactor(0.7)
+                .padding(.top, 8)
+            Spacer(minLength: 6)
+            if !day.isEmpty {
+                Text(day)
+                    .font(CSFont.label(11))
+                    .foregroundStyle(Porcelain.mute)
+            }
+            Text(time)
+                .font(CSFont.numeral(22))
+                .foregroundStyle(Porcelain.ink)
                 .lineLimit(1)
-                .padding(.top, 3)
-            Spacer(minLength: 8)
-            if let b = game.broadcast, !b.isEmpty {
-                StampLabel(text: b)
+                .minimumScaleFactor(0.6)
+            if !footnote.isEmpty {
+                Text(footnote)
+                    .font(CSFont.body(10, .medium))
+                    .foregroundStyle(Porcelain.mute)
+                    .lineLimit(1)
+                    .padding(.top, 2)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-// Ink board small (mock 3B): warm-black, green LIVE \u{00b7} minute, mono matchup,
-// big tabular score, live rail, and an "as of" honesty line.
-private struct InkBoardSmall: View {
+// Arena small: the live game. Two rows, big numerals, the clock, and the
+// honest "as of" time.
+struct ArenaSmall: View {
     let live: WidgetLive
     let generatedAt: Double
 
+    private var phase: GamePhase { GamePhase(statusLine: live.statusLine) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 5) {
-                Circle().fill(bGreen).frame(width: 5, height: 5)
-                Text("LIVE \u{00b7} \(live.statusLine)")
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .tracking(0.8)
-                    .foregroundStyle(bGreen)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+            HStack {
+                Text(phase == .final ? "FINAL" : "LIVE")
+                    .font(CSFont.label(10))
+                    .tracking(1.0)
+                    .foregroundStyle(Arena.mute)
+                Spacer()
+                if phase != .final {
+                    LiveDot(color: Arena.live, size: 6, pulsing: phase == .live)
+                }
             }
             Spacer(minLength: 6)
-            Text("\(live.away.code) \u{00b7} \(live.home.code)")
-                .font(.system(size: 14, weight: .heavy, design: .monospaced))
-                .tracking(0.6)
-                .foregroundStyle(bText)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(liveScorePair(live))
-                .font(.system(size: 30, weight: .heavy))
+            if live.redacted {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(live.away.code)
+                    Text(live.home.code)
+                }
+                .font(CSFont.display(14, .heavy))
+                .foregroundStyle(Arena.text)
+                HeldChip(room: .arena, size: 12).padding(.top, 8)
+            } else {
+                VStack(spacing: 4) {
+                    ScoreRow(name: live.away.code, score: live.away.score,
+                             dim: live.dim(home: false), room: .arena,
+                             nameSize: 13, numeralSize: 26)
+                    ScoreRow(name: live.home.code, score: live.home.score,
+                             dim: live.dim(home: true), room: .arena,
+                             nameSize: 13, numeralSize: 26)
+                }
+            }
+            Spacer(minLength: 6)
+            Text(live.statusLine)
+                .font(CSFont.body(11, .bold))
                 .monospacedDigit()
-                .foregroundStyle(bText)
+                .foregroundStyle(phase == .final ? Arena.mute : Arena.live)
                 .lineLimit(1)
-                .minimumScaleFactor(0.6)
-                .padding(.top, 2)
-            Spacer(minLength: 8)
-            InkRail(fill: railFill(live.statusLine))
             if !asOfText(generatedAt).isEmpty {
                 Text(asOfText(generatedAt))
-                    .font(.system(size: 8, weight: .medium, design: .monospaced))
-                    .foregroundStyle(bMute)
-                    .padding(.top, 4)
+                    .font(CSFont.body(9, .medium))
+                    .foregroundStyle(Arena.mute)
+                    .padding(.top, 1)
             }
         }
     }
 }
 
 // Small fallback: nothing upcoming, just the moment line, kept calm.
-private struct MomentSmall: View {
+struct MomentSmall: View {
     let moment: WidgetMoment
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("NO NOISE")
-                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                .tracking(0.8)
-                .foregroundStyle(wMute)
-            Rectangle().fill(wBrand).frame(width: 38, height: 2).padding(.top, 6)
+            BrandGlyph(size: 16)
             Spacer()
             Text(moment.text)
-                .font(.system(size: 15, weight: .heavy))
-                .foregroundStyle(wInk)
+                .font(CSFont.display(15, .heavy))
+                .foregroundStyle(Porcelain.ink)
                 .lineLimit(4)
                 .minimumScaleFactor(0.8)
             Spacer()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-// MARK: - Medium (the strip: two agate rows)
+// MARK: - Medium (two rows)
 
-private struct MediumBody: View {
+struct MediumBody: View {
     let snap: WidgetSnapshot
 
     var body: some View {
@@ -483,32 +504,24 @@ private struct MediumBody: View {
         let total = (snap.live?.count ?? 0) + snap.upcoming.count
 
         VStack(alignment: .leading, spacing: 0) {
-            WEyebrow(left: headerLeft(snap),
-                     right: countLabel(sport: leadSport(snap), n: total))
-            VermilionRule().padding(.top, 6).padding(.bottom, 2)
+            WHeader(left: headerLeft(snap),
+                    right: countLabel(sport: leadSport(snap), n: total))
 
             ForEach(Array(shown.enumerated()), id: \.offset) { i, item in
-                AgateRow(item: item, index: i + 1, border: i < shown.count - 1)
+                WRow(item: item, border: i < shown.count - 1,
+                     sharedRound: shown.count > 1 ? sharedRound(shown) : "")
             }
 
             Spacer(minLength: 4)
 
-            HStack(alignment: .bottom, spacing: 6) {
-                if anyLive(shown), !asOfText(snap.generatedAt).isEmpty {
-                    Text(asOfText(snap.generatedAt))
-                        .font(.system(size: 8, weight: .medium, design: .monospaced))
-                        .foregroundStyle(wMute)
-                }
-                Spacer()
-                BrandFooter()
-            }
+            WFooter(asOf: anyLive(shown) ? asOfText(snap.generatedAt) : "")
         }
     }
 }
 
-// MARK: - Large (the mini front page: lead board + agate slate)
+// MARK: - Large (a lead, then the slate)
 
-private struct LargeBody: View {
+struct LargeBody: View {
     let snap: WidgetSnapshot
 
     var body: some View {
@@ -518,35 +531,33 @@ private struct LargeBody: View {
         let total = (snap.live?.count ?? 0) + snap.upcoming.count
         let hidden = max(0, total - 1 - rows.count)
 
-        // Content is top-anchored and tight (lead flows straight into the
-        // slate); ONE flexible spacer pushes the brand footer to the bottom.
-        // Device QA 2026-07-04: two flexible spacers spread short content
-        // across the full height and left dead zones mid-widget.
+        // Top-anchored and tight: the lead flows straight into the slate,
+        // ONE flexible spacer pushes the footer down (device QA 2026-07-04:
+        // two spacers left dead zones mid-widget).
         VStack(alignment: .leading, spacing: 0) {
-            WEyebrow(left: headerLeft(snap),
-                     right: countLabel(sport: leadSport(snap), n: total))
-            VermilionRule().padding(.top, 6).padding(.bottom, 2)
+            WHeader(left: headerLeft(snap),
+                    right: countLabel(sport: leadSport(snap), n: total))
 
             leadView(lead)
-                .padding(.bottom, 10)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
 
             ForEach(Array(rows.enumerated()), id: \.offset) { i, item in
-                AgateRow(item: item, index: i + 2, border: i < rows.count - 1)
+                WRow(item: item, border: i < rows.count - 1,
+                     sharedRound: rows.count > 1 ? sharedRound(rows) : "")
             }
 
             // No silent caps: if the day holds more than fits, say so.
             if hidden > 0 {
-                Text("+\(hidden) more today")
-                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                    .kerning(1.2)
-                    .textCase(.uppercase)
-                    .foregroundStyle(wMute)
+                Text("+\(hidden) more")
+                    .font(CSFont.body(11, .semibold))
+                    .foregroundStyle(Porcelain.mute)
                     .padding(.top, 8)
             }
 
             Spacer(minLength: 6)
 
-            HStack { Spacer(); BrandFooter() }
+            WFooter(asOf: "")
         }
     }
 
@@ -554,21 +565,21 @@ private struct LargeBody: View {
         switch lead {
         case .live(let l):
             gameLink(l.href) {
-                LeadBoard(live: l, generatedAt: snap.generatedAt)
+                ArenaCard(live: l, generatedAt: snap.generatedAt)
             }
         case .up(let g):
             gameLink(g.href) {
-                UpcomingLead(game: g)
+                NextLead(game: g)
             }
         case nil:
             VStack(alignment: .leading, spacing: 6) {
                 Text("Quiet for now.")
-                    .font(.system(size: 20, weight: .heavy))
-                    .foregroundStyle(wMute)
+                    .font(CSFont.display(20, .heavy))
+                    .foregroundStyle(Porcelain.mute)
                 if let m = snap.moment {
                     Text(m.text)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(wMute)
+                        .font(CSFont.body(13, .medium))
+                        .foregroundStyle(Porcelain.mute)
                         .lineLimit(2)
                 }
             }
@@ -577,294 +588,230 @@ private struct LargeBody: View {
     }
 }
 
-// The live lead: codes flank a big tabular score, a green LIVE \u{00b7} minute
-// line with the honest "as of" time, then the live rail.
-private struct LeadBoard: View {
+// The live lead inside the large widget: a card-level arena room. The
+// page around it stays porcelain (the Today hero rule from C3).
+struct ArenaCard: View {
     let live: WidgetLive
     let generatedAt: Double
 
+    private var phase: GamePhase { GamePhase(statusLine: live.statusLine) }
+
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(live.away.code)
-                    .font(.system(size: 16, weight: .heavy, design: .monospaced))
-                    .tracking(0.6)
-                    .foregroundStyle(wInk)
-                Spacer()
-                Text(liveScorePair(live))
-                    .font(.system(size: 34, weight: .heavy))
-                    .monospacedDigit()
-                    .foregroundStyle(wInk)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Spacer()
-                Text(live.home.code)
-                    .font(.system(size: 16, weight: .heavy, design: .monospaced))
-                    .tracking(0.6)
-                    .foregroundStyle(wInk)
-            }
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
-                Circle().fill(wLive).frame(width: 5, height: 5)
-                Text("LIVE \u{00b7} \(live.statusLine)")
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .tracking(0.6)
-                    .foregroundStyle(wLive)
+                if phase != .final {
+                    LiveDot(color: Arena.live, size: 6, pulsing: phase == .live)
+                }
+                Text(live.statusLine)
+                    .font(CSFont.body(12, .bold))
+                    .monospacedDigit()
+                    .foregroundStyle(phase == .final ? Arena.mute : Arena.live)
+                    .lineLimit(1)
                 Spacer()
                 if !asOfText(generatedAt).isEmpty {
                     Text(asOfText(generatedAt))
-                        .font(.system(size: 9, weight: .medium, design: .monospaced))
-                        .foregroundStyle(wMute)
+                        .font(CSFont.body(10, .medium))
+                        .foregroundStyle(Arena.mute)
                 }
             }
-            WRail(fill: railFill(live.statusLine))
+            if live.redacted {
+                HStack {
+                    Text("\(live.away.code) \u{00b7} \(live.home.code)")
+                        .font(CSFont.display(16, .heavy))
+                        .foregroundStyle(Arena.text)
+                    Spacer()
+                    HeldChip(room: .arena, size: 13)
+                }
+            } else {
+                VStack(spacing: 2) {
+                    ScoreRow(name: live.away.code, score: live.away.score,
+                             dim: live.dim(home: false), room: .arena,
+                             nameSize: 15, numeralSize: 28)
+                    ScoreRow(name: live.home.code, score: live.home.score,
+                             dim: live.dim(home: true), room: .arena,
+                             nameSize: 15, numeralSize: 28)
+                }
+            }
+            // Progress only where the feed gives a real position (a soccer
+            // minute). No position, no bar: an empty track would read 0%.
+            if let p = railFill(live.statusLine) {
+                FillBar(progress: p, room: .arena, sport: live.sport)
+            }
         }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 16).fill(Arena.ground))
     }
 }
 
-// The not-live lead: soonest match as a calm monument (matchup + stamp).
-private struct UpcomingLead: View {
+// The not-live lead: soonest game as a calm monument.
+struct NextLead: View {
     let game: WidgetUpcoming
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(dotMatchup(game.matchup))
-                .font(.system(size: 30, weight: .heavy, design: .monospaced))
-                .tracking(0.5)
-                .foregroundStyle(wInk)
+                .font(CSFont.display(28, .heavy))
+                .foregroundStyle(Porcelain.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.55)
-            HStack(spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(roundFor(game).isEmpty ? "Up next" : roundFor(game))
-                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(wMute)
+                    .font(CSFont.body(12, .medium))
+                    .foregroundStyle(Porcelain.mute)
+                    .lineLimit(1)
                 Spacer()
-                StampLabel(text: stampFor(game))
+                Text(stampFor(game))
+                    .font(CSFont.display(13, .heavy))
+                    .foregroundStyle(Porcelain.ink)
+                    .lineLimit(1)
             }
         }
         .padding(.vertical, 2)
     }
 }
 
-// MARK: - Agate rows
+// MARK: - Rows
 
-private struct AgateRow: View {
-    let item: AgateItem
-    let index: Int
+struct WRow: View {
+    fileprivate let item: AgateItem
     var border: Bool = true
+    /// A round every row shares; the row leaves it out.
+    var sharedRound: String = ""
 
     var body: some View {
         gameLink(item.href) {
-            row
+            VStack(spacing: 0) {
+                row.padding(.vertical, 8)
+                if border { Rectangle().fill(Porcelain.line).frame(height: 1) }
+            }
         }
     }
 
     @ViewBuilder private var row: some View {
         switch item {
-        case .live(let l): AgateLiveRow(index: index, live: l, showBorder: border)
-        case .up(let g):   AgateUpcomingRow(index: index, game: g, showBorder: border)
+        case .live(let l): LiveRow(live: l)
+        case .up(let g):   UpcomingRow(game: g, hideRound: !sharedRound.isEmpty)
         }
     }
 }
 
-private struct AgateUpcomingRow: View {
-    let index: Int
+struct UpcomingRow: View {
     let game: WidgetUpcoming
-    var showBorder: Bool = true
+    var hideRound: Bool = false
 
     var body: some View {
-        let round = roundFor(game)
-        VStack(spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                RowIndex(index)
-                Text(dotMatchup(game.matchup))
-                    .font(.system(size: 13.5, weight: .heavy, design: .monospaced))
-                    .tracking(0.4)
-                    .foregroundStyle(wInk)
+        let round = hideRound ? "" : roundFor(game)
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(dotMatchup(game.matchup))
+                .font(CSFont.display(13.5, .heavy))
+                .foregroundStyle(Porcelain.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Spacer(minLength: 6)
+            if !round.isEmpty {
+                Text(round)
+                    .font(CSFont.body(10.5, .medium))
+                    .foregroundStyle(Porcelain.mute)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Spacer(minLength: 6)
-                if !round.isEmpty {
-                    Text(round)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(wMute)
-                        .lineLimit(1)
-                        .layoutPriority(-1)
-                }
-                StampLabel(text: stampFor(game))
+                    .layoutPriority(-1)
             }
-            .padding(.vertical, 7)
-            if showBorder { Rectangle().fill(wLine).frame(height: 1) }
+            Text(stampFor(game))
+                .font(CSFont.label(10.5))
+                .foregroundStyle(Porcelain.ink)
+                .lineLimit(1)
+                .fixedSize()
         }
     }
 }
 
-private struct AgateLiveRow: View {
-    let index: Int
+struct LiveRow: View {
     let live: WidgetLive
-    var showBorder: Bool = true
+
+    private var phase: GamePhase { GamePhase(statusLine: live.statusLine) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                RowIndex(index)
-                Text("\(live.away.code) \u{00b7} \(live.home.code)")
-                    .font(.system(size: 13.5, weight: .heavy, design: .monospaced))
-                    .tracking(0.4)
-                    .foregroundStyle(wInk)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Spacer(minLength: 6)
-                HStack(spacing: 4) {
-                    Circle().fill(wLive).frame(width: 5, height: 5)
-                    Text(live.statusLine)
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundStyle(wLive)
-                        .lineLimit(1)
+        HStack(alignment: .center, spacing: 8) {
+            Text("\(live.away.code) \u{00b7} \(live.home.code)")
+                .font(CSFont.display(13.5, .heavy))
+                .foregroundStyle(Porcelain.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Spacer(minLength: 6)
+            HStack(spacing: 4) {
+                if phase != .final {
+                    LiveDot(color: Porcelain.live, size: 5, pulsing: phase == .live)
                 }
-                Text(liveScorePair(live))
-                    .font(.system(size: 14, weight: .heavy))
+                Text(live.statusLine)
+                    .font(CSFont.body(10.5, .bold))
                     .monospacedDigit()
-                    .foregroundStyle(wInk)
+                    .foregroundStyle(phase == .final ? Porcelain.mute : Porcelain.live)
                     .lineLimit(1)
             }
-            .padding(.vertical, 7)
-            if showBorder { Rectangle().fill(wLine).frame(height: 1) }
+            if live.redacted {
+                HeldChip(room: .porcelain, size: 11)
+            } else {
+                Text("\(live.away.score)\u{2013}\(live.home.score)")
+                    .font(CSFont.numeral(15))
+                    .foregroundStyle(Porcelain.ink)
+                    .lineLimit(1)
+            }
         }
-    }
-}
-
-private struct RowIndex: View {
-    let value: Int
-    init(_ v: Int) { value = v }
-    var body: some View {
-        Text(String(format: "%02d", value))
-            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-            .foregroundStyle(wBrand)
     }
 }
 
 // MARK: - Shared chrome
 
-private struct WEyebrow: View {
+// The one label line per widget: context left, count right, a hairline.
+struct WHeader: View {
     let left: String
     let right: String
-    var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(left)
-                .font(.system(size: 9.5, weight: .bold, design: .monospaced))
-                .tracking(0.8)
-                .foregroundStyle(wLive)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Spacer(minLength: 6)
-            Text(right)
-                .font(.system(size: 9.5, weight: .bold, design: .monospaced))
-                .tracking(0.8)
-                .foregroundStyle(wBrand)
-                .lineLimit(1)
-        }
-    }
-}
 
-private struct VermilionRule: View {
-    var body: some View { Rectangle().fill(wBrand).frame(height: 2) }
-}
-
-// Bordered mono stamp (broadcast / day-time), matching the agate `.st`.
-private struct StampLabel: View {
-    let text: String
     var body: some View {
-        Text(text.uppercased())
-            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-            .foregroundStyle(wInk)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 2)
-            .overlay(Rectangle().stroke(wLine, lineWidth: 1))
-            .fixedSize()
-    }
-}
-
-// Live progress rail (adaptive paper surface).
-private struct WRail: View {
-    var fill: Double?
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Rectangle().fill(wLine).frame(height: 2)
-                if let f = fill {
-                    Rectangle().fill(wLive)
-                        .frame(width: max(3, geo.size.width * f), height: 2)
-                } else {
-                    Rectangle().fill(wLive.opacity(0.5)).frame(height: 2)
-                }
+        VStack(spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(left)
+                    .font(CSFont.label(10))
+                    .tracking(0.9)
+                    .foregroundStyle(Porcelain.mute)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Spacer(minLength: 6)
+                Text(right)
+                    .font(CSFont.body(11, .semibold))
+                    .foregroundStyle(Porcelain.mute)
+                    .lineLimit(1)
             }
+            Rectangle().fill(Porcelain.line).frame(height: 1)
         }
-        .frame(height: 2)
     }
 }
 
-// Live rail on the ink board (dark surface).
-private struct InkRail: View {
-    var fill: Double?
+// Footer: the honest "as of" time when a row is live, the mark on the right.
+struct WFooter: View {
+    var asOf: String
+
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Rectangle().fill(Color.white.opacity(0.14)).frame(height: 2)
-                if let f = fill {
-                    Rectangle().fill(bGreen)
-                        .frame(width: max(3, geo.size.width * f), height: 2)
-                } else {
-                    Rectangle().fill(bGreen.opacity(0.6)).frame(height: 2)
-                }
+        HStack(alignment: .center, spacing: 6) {
+            if !asOf.isEmpty {
+                Text(asOf)
+                    .font(CSFont.body(10, .medium))
+                    .foregroundStyle(Porcelain.mute)
             }
+            Spacer()
+            BrandGlyph(size: 13)
         }
-        .frame(height: 2)
-    }
-}
-
-// Brand footer (medium + large): the mark + mono "NO NOISE", bottom-right.
-private struct BrandFooter: View {
-    var body: some View {
-        HStack(spacing: 5) {
-            BrandGlyph()
-            Text("NO NOISE")
-                .font(.system(size: 8, weight: .bold, design: .monospaced))
-                .tracking(0.8)
-                .foregroundStyle(wMute)
-        }
-    }
-}
-
-// No Noise Scores glyph: ink rounded square + cream pill + rust dot.
-// Brand identity → LITERAL hex, so the mark never flips in dark mode
-// (the cream pill + rust dot carry it on the warm-dark surface).
-struct BrandGlyph: View {
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 3.2).fill(Color(hex: "1a1612"))
-            RoundedRectangle(cornerRadius: 1).fill(Color(hex: "faf5e8"))
-                .frame(width: 10, height: 4.6)
-            Circle().fill(Color(hex: "b85a2a"))
-                .frame(width: 1.6, height: 1.6)
-                .offset(x: 3.8, y: -1.2)
-        }
-        .frame(width: 14, height: 14)
     }
 }
 
 // Empty: nothing followed / nothing upcoming.
-private struct EmptyBody: View {
+struct EmptyBody: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("NO NOISE")
-                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                .tracking(0.8)
-                .foregroundStyle(wMute)
-            Rectangle().fill(wBrand).frame(width: 38, height: 2).padding(.top, 6)
+            BrandGlyph(size: 16)
             Spacer()
             Text("Follow a team, country, or tournament to see what's next.")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(wInk)
+                .font(CSFont.body(14, .semibold))
+                .foregroundStyle(Porcelain.ink)
                 .lineLimit(4)
             Spacer()
         }
@@ -925,10 +872,10 @@ struct LiveScoreWidgetView: View {
 
     private var live: [WidgetLive] { entry.snapshot?.live ?? [] }
 
-    // Small goes ink board when live; medium stays paper agate.
+    // Small is the arena when live; medium stays porcelain.
     private var surface: AnyShapeStyle {
-        if family == .systemSmall && !live.isEmpty { return AnyShapeStyle(bBg) }
-        return AnyShapeStyle(wSurface)
+        if family == .systemSmall && !live.isEmpty { return AnyShapeStyle(Arena.ground) }
+        return AnyShapeStyle(Porcelain.surface)
     }
 
     var body: some View {
@@ -942,61 +889,54 @@ struct LiveScoreWidgetView: View {
         } else if family == .systemMedium {
             MediumLiveBody(live: Array(live.prefix(2)), sport: live[0].sport, generatedAt: at)
         } else {
-            InkBoardSmall(live: live[0], generatedAt: at)
+            ArenaSmall(live: live[0], generatedAt: at)
         }
     }
 }
 
-private struct MediumLiveBody: View {
+struct MediumLiveBody: View {
     let live: [WidgetLive]
     let sport: String
     let generatedAt: Double
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            WEyebrow(left: "\(sportTag(sport)) \u{00b7} LIVE",
-                     right: countLabel(sport: sport, n: live.count))
-            VermilionRule().padding(.top, 6).padding(.bottom, 2)
+            WHeader(left: "\(sportTag(sport)) \u{00b7} LIVE",
+                    right: countLabel(sport: sport, n: live.count))
 
             ForEach(Array(live.enumerated()), id: \.offset) { i, g in
                 gameLink(g.href) {
-                    AgateLiveRow(index: i + 1, live: g, showBorder: i < live.count - 1)
+                    VStack(spacing: 0) {
+                        LiveRow(live: g).padding(.vertical, 8)
+                        if i < live.count - 1 {
+                            Rectangle().fill(Porcelain.line).frame(height: 1)
+                        }
+                    }
                 }
             }
 
             Spacer(minLength: 4)
 
-            HStack(alignment: .bottom, spacing: 6) {
-                if !asOfText(generatedAt).isEmpty {
-                    Text(asOfText(generatedAt))
-                        .font(.system(size: 8, weight: .medium, design: .monospaced))
-                        .foregroundStyle(wMute)
-                }
-                Spacer()
-                BrandFooter()
-            }
+            WFooter(asOf: asOfText(generatedAt))
         }
     }
 }
 
-private struct EmptyLiveBody: View {
+struct EmptyLiveBody: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("NO NOISE")
-                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                .tracking(0.8)
-                .foregroundStyle(wMute)
-            Rectangle().fill(wBrand).frame(width: 38, height: 2).padding(.top, 6)
+            BrandGlyph(size: 16)
             Spacer()
             Text("No live games")
-                .font(.system(size: 15, weight: .heavy))
-                .foregroundStyle(wInk)
+                .font(CSFont.display(15, .heavy))
+                .foregroundStyle(Porcelain.ink)
             Text("We'll show the score when a game you follow is on.")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(wMute)
+                .font(CSFont.body(11, .medium))
+                .foregroundStyle(Porcelain.mute)
                 .lineLimit(2)
                 .padding(.top, 2)
             Spacer()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

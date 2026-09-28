@@ -61,3 +61,26 @@ describe("WidgetSync live follow eligibility", () => {
     ]);
   });
 });
+
+// Courtside data-level redaction (spec 2026-08-31): a held score's digits
+// never enter the widget App Group snapshot. The snapshot keeps numeric
+// placeholder scores because the v1.0.3 Swift decoder requires them (it
+// only ever renders them when `redacted` is false), so the real digits are
+// replaced, not merely flagged.
+describe("WidgetSync held scores stay out of the snapshot", () => {
+  const game = nbaLive("held", "NYK", "BOS"); // 74-76, real digits
+
+  it("replaces the real score when No-Spoilers is on", () => {
+    const [entry] = buildLiveEntries([game], [], [], [follow("team", "BOS")], true);
+    expect(entry.redacted).toBe(true);
+    expect(entry.away.score).toBe(0);
+    expect(entry.home.score).toBe(0);
+    expect(JSON.stringify(entry)).not.toMatch(/74|76/);
+  });
+
+  it("keeps the real score when nothing hides the game", () => {
+    const [entry] = buildLiveEntries([game], [], [], [follow("team", "BOS")], false);
+    expect(entry.redacted).toBe(false);
+    expect([entry.away.score, entry.home.score]).toEqual([74, 76]);
+  });
+});

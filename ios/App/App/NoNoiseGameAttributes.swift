@@ -18,16 +18,23 @@ struct NoNoiseGameAttributes: ActivityAttributes {
         // computeLiveActivityProgress() on the JS side. Decodes from JSON;
         // older payloads without it fall back to 0 via the custom init.
         var progress: Double
+        // Team display names ("Lions"), Courtside C4. The lock screen shows
+        // names when present and falls back to codes. Optional on the wire:
+        // pushes from a server that predates the field decode to "".
+        var awayName: String
+        var homeName: String
 
         // Custom decode so a missing `progress` field falls back to 0.
         // Prevents Codable decode failure if an old update push arrives
         // before the server side has been deployed.
         init(awayCode: String, awayScore: Int, homeCode: String, homeScore: Int,
-             statusLine: String, subline: String, accentHex: String, progress: Double) {
+             statusLine: String, subline: String, accentHex: String, progress: Double,
+             awayName: String = "", homeName: String = "") {
             self.awayCode = awayCode; self.awayScore = awayScore
             self.homeCode = homeCode; self.homeScore = homeScore
             self.statusLine = statusLine; self.subline = subline
             self.accentHex = accentHex; self.progress = progress
+            self.awayName = awayName; self.homeName = homeName
         }
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -39,6 +46,8 @@ struct NoNoiseGameAttributes: ActivityAttributes {
             subline = try c.decode(String.self, forKey: .subline)
             accentHex = try c.decode(String.self, forKey: .accentHex)
             progress = (try? c.decode(Double.self, forKey: .progress)) ?? 0
+            awayName = (try? c.decode(String.self, forKey: .awayName)) ?? ""
+            homeName = (try? c.decode(String.self, forKey: .homeName)) ?? ""
         }
     }
     // Set once at start, never changes:
