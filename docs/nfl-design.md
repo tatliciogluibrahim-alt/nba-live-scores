@@ -78,6 +78,25 @@ their own-team's TDs fire (Companion) or none at all (Quiet). The
 "company-of-one" Sunday — bookends-only for casuals, fantasy-loud for
 those who want it.
 
+### Measured volume and the noise budget (2026-09-28)
+
+The volume sanity-check above was an estimate. The replay lab
+(`npm run replay:nfl`, spec in
+`docs/superpowers/specs/2026-09-28-replay-lab-design.md`) now measures it
+by replaying real games through the production pipeline. Weeks 1-3, all
+47 finished games, iPhone:
+
+| Follow | Quiet | Companion | Full Details |
+|---|---|---|---|
+| One team, one game (median / max) | 2 / 3 | about 8 / 13 | about 17 / 25 |
+| Whole season, one week | 16 (9 in one hour) | 34 (13 in one hour) | up to 289 (59 in one hour) |
+
+The whole-season Quiet follow is threshold-only: every game's final
+clears Quiet (72 over 70), so a Sunday afternoon can bring 9 finals in
+an hour. The ceilings live in `app/lib/push/replay/noise-budget.ts`
+(provisional, the loudest real case) and a test holds every committed
+real game to them.
+
 ### Quiet hours respect
 
 All NFL events already flow through the `quietHours` user pref. A

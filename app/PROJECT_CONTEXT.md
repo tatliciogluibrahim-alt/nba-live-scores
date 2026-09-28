@@ -331,29 +331,82 @@ When making code changes:
 
 ## Current Priority
 
-### PICKUP HERE (written 2026-09-20, session paused)
+### PICKUP HERE (written 2026-09-28, session in progress)
 
-**v1.0.3 is live** (owner confirmed 2026-09-20). The opener, Week 1 and
-Week 2 have run on the live pipeline. The 2026-09-20 batch below is
-committed as `981cca1` (Who mattered TD credit, own-team Companion gate,
-turnovers to Full Details, per-game play collapse) and **not yet pushed**.
+**v1.0.3 is live.** `981cca1` (Week 2 audit batch) was pushed 2026-09-20
+20:38 ET and has been live since MNF Sep 21. The owner said "give me all
+of it" to three plays on 2026-09-28: (1) the replay lab, (2) Courtside C4
+native via a simulator loop, (3) a scheduled Tuesday cloud routine. MLB
+2026 is skipped (owner decision, see ROADMAP).
+
+**Play 1, the replay lab, is BUILT** (see the 2026-09-28 record below):
+`npm run replay:nfl` replays any week through the production pipeline.
+Its first run found two production bugs, fixes prepared separately and
+held for the owner's go: the cold-start seed swallowed the opening score
+of 30 of 47 games, and the halftime push lands ~15 minutes late.
 
 **Next, in order:**
-1. Push `981cca1` so production picks it up before the next NFL window.
-2. First real-world look at the push changes on the next NFL window
-   (Mon Sep 21 LAR at NYG, then Sunday Sep 27): on the owner's Full
-   Details follow expect two stacked cards per game (plays + state), not
-   a pile. Companion behavior needs a Companion follow to observe.
-3. NFL Standings tab is still a placeholder that breaks its promise now
-   that games count. Flagged Sep 3, unchanged.
-4. Post-opener store shots rerun (shots 2+3 with real regular-season
-   finals), Courtside C5, review backlog. Unchanged from Sep 3.
+1. Owner go on the two push fixes (cold-start seed, break timing).
+2. Courtside C4 native (play 2): contact sheet before any device build.
+3. Tuesday shift routine (play 3), reads `npm run replay:nfl`.
+4. NFL Standings tab placeholder, store shots 2+3 rerun, Courtside C5.
 
 **Open decision for the owner:** Full Details is "every moment, every
-game" (~16 pushes per game by count). The owner follows at Full Details
-and found it heavy. The intended answer is Companion (~7 per game after
-the gate). Thinning Full Details would change that tier's promise;
-decide explicitly rather than by retune.
+game". Measured: about 17 pushes per game for a team follow (max 25),
+up to 289 a week and 59 in one hour for a whole-season follow. The
+intended answer is Companion (about 8 per game, max 13). Thinning Full
+Details changes that tier's promise; decide explicitly (the budget in
+`app/lib/push/replay/noise-budget.ts` is where the decision lands).
+
+### 2026-09-28: Replay lab (play 1), every real NFL game as a push test
+
+Spec: `docs/superpowers/specs/2026-09-28-replay-lab-design.md`. No product
+behavior change.
+
+**Built.**
+- `app/lib/push/replay/`: `nfl-summary.ts` (trim + contract checks for the
+  ESPN summary and scoreboard), `nfl-ticks.ts` (rebuild a game as 60s
+  cron ticks from play-by-play), `replay-nfl.ts` (drive the production
+  detectors + dispatcher decisions per synthetic profile, account for
+  every play that could push), `profiles.ts`, `noise.ts`,
+  `noise-budget.ts` (provisional ceilings), `week-report.ts` (report +
+  markdown). Four trimmed real fixtures in `__fixtures__/` (DET at BUF,
+  IND at KC OT, CAR at ATL, LV at LAC).
+- `app/lib/push/nfl-play-scan.ts`: scan-nfl's per-game play decision,
+  extracted with identical behavior so the replay runs the production
+  code. Route diff reviewed: same logic, same KV order.
+- `scripts/replay/nfl-week.ts` (`npm run replay:nfl`, flags `--week`,
+  `--season`, `--games`, `--save-fixture`, `--strict`) and
+  `scripts/replay/record-nfl-live.ts` (`npm run replay:record`). Output in
+  `.replay/` and `.replay-cache/` (gitignored). `tsx` added as a dev dep.
+- Tests: 99 new (873 total). The budget test replays every committed
+  fixture and fails on a louder tier or a broken tier promise
+  (mutation-checked both ways).
+
+**Findings (all 47 finished games, Weeks 1-3).**
+- Cold-start seed swallows the opening score: 30 of 47 games. The guard
+  "empty fired set + scoring backlog = scheduler rejoined mid-game" is
+  also true at the first score of any game where no big play or
+  turnover fired first.
+- Halftime push lands 13.8 to 18.2 minutes after the half (median 15.0),
+  at the second-half kickoff. Quarter breaks 3 to 4 minutes late. Modeled
+  on ESPN holding `status.period` through breaks; the live recorder ran
+  on MNF PHI at CHI to confirm.
+- Five game-ending plays (3 walk-off FGs, 2 final-play INTs) share a tick
+  with the final whistle and get no push of their own. Logged as
+  arguably calmer, not changed.
+- ESPN feed quirks absorbed: missing wallclocks (10 games), backwards
+  period/game-end stamps (5 games), and SF at LAR with a dozen plays
+  stamped exactly one day ahead.
+
+**Gate.** lint 0, tsc clean, 873 tests, build clean, 95/95 static pages,
+route list byte-identical to main (93 lines).
+
+**Gotchas.**
+- ESPN's scoring play text differs from the drive log ("Harrison Butker
+  40 Yd Field Goal" vs "H.Butker 40 yard field goal is GOOD").
+- tsx runs `scripts/replay/*.ts` as CJS (no `"type": "module"` in
+  package.json): no top-level await, wrap in `main()`.
 
 ### 2026-09-20 — Week 2 audit: leader TD credit, own-team Companion gate, play collapse
 

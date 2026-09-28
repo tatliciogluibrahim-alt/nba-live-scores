@@ -2,6 +2,58 @@
 
 ---
 
+## Replay lab: every real NFL game is now a push test (2026-09-28)
+
+Internal tooling, no product behavior change. Built so the alert matrix
+gets measured instead of felt.
+
+- **What it does.** ESPN keeps full play-by-play after a game ends (each
+  play has its time, running score and drive). `npm run replay:nfl`
+  rebuilds every finished game of a week minute by minute and runs it
+  through the production push pipeline: the same detectors, the same
+  dispatcher matching, dedupe, No-Spoilers and payload code. Out comes the
+  exact lock-screen stack each tier and follow type received, a noise
+  summary, a contract check on every ESPN field the pipeline reads, and a
+  budget check. Report lands in `.replay/nfl-<season>-w<week>/`.
+- **One source of truth.** scan-nfl's per-game play decision moved into
+  `app/lib/push/nfl-play-scan.ts` (identical behavior) so the replay runs
+  that code rather than a copy.
+- **Noise budget.** `app/lib/push/replay/noise-budget.ts` holds a ceiling
+  per tier (per game, per busiest hour, per week for the season follow,
+  per window for a three-team follower). Provisional values are the
+  loudest real case from Weeks 1-3, so nothing gets louder without a
+  decision. A test replays every committed real game and fails if a tier
+  gets louder or breaks its promise (Quiet: kickoff, OT, final only.
+  Companion: the beats plus its own touchdowns only).
+- **Live recorder.** `npm run replay:record` captures what ESPN serves
+  during a live game, to check the replay's modeled parts against reality.
+
+What the first run found across all 47 finished games (Weeks 1-3):
+
+- **The opening score of 30 of 47 games never pushed.** scan-nfl's
+  cold-start guard (seed the fired set silently when it is empty and
+  scores exist, meant for "the scheduler came back mid-game") also fires
+  on the first score of any game where no big play or turnover fired
+  first. Full Details followers lost it every time. Companion followers
+  lost their own team's opening touchdown when it was the game's first
+  score. Fix prepared separately for the owner's go.
+- **Halftime push lands 14 to 18 minutes late** (median 15), as the second
+  half kicks off. The detector fires on the period changing, and ESPN
+  holds period 2 through halftime (modeled; the live recorder confirms it
+  tonight). Quarter-break pushes are 3 to 4 minutes late for the same
+  reason.
+- **Walk-off plays get no push of their own.** Five game-ending plays
+  (three walk-off field goals, two final-play interceptions) landed in the
+  same tick as the final whistle, and scan-nfl stops scanning plays once a
+  game reads final. The final push carries the score, which is arguably
+  the calmer outcome. Logged, not changed.
+- **Measured volume, iPhone.** Team follow per game: Quiet 2 (max 3),
+  Companion about 8 (max 13), Full Details about 17 (max 25). Whole-season
+  follow per week: Quiet 16 finals with up to 9 in one hour, Companion 34,
+  Full Details up to 289 with 59 in one hour.
+
+---
+
 ## Week 2 audit: the TD the row forgot, and the Sunday that buzzed too much — 2026-09-20
 
 Two owner reports from live NFL use, traced against real Week 2 payloads

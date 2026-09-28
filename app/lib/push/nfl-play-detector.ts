@@ -8,7 +8,7 @@
 import type { PushEvent } from "./event-detector";
 import { scoreEvent } from "./significance";
 
-const BIG_PLAY_YARDS = 40;
+export const BIG_PLAY_YARDS = 40;
 
 export type NFLScoringPlay = {
   id: string;

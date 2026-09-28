@@ -22,11 +22,11 @@ import {
   detectNFLEvents,
   type FreshNFLGameState,
 } from "../../../lib/push/nfl-event-detector";
-import {
-  detectNFLPlays,
-  type NFLScoringPlay,
-  type NFLDrivePlay,
+import type {
+  NFLScoringPlay,
+  NFLDrivePlay,
 } from "../../../lib/push/nfl-play-detector";
+import { scanNFLGamePlays } from "../../../lib/push/nfl-play-scan";
 import { dispatchEvents } from "../../../lib/push/dispatcher";
 import {
   readCachedNFLState,
@@ -237,20 +237,9 @@ export async function GET(req: Request) {
         const { scoringPlays, drivePlays, driveTeamCode } = await fetchSummary(game.id);
         if (scoringPlays.length === 0 && drivePlays.length === 0) return [];
         const firedPlayIds = await readFiredNFLPlays(game.id);
-        // Cold-start seed (Preseason Review #3): an empty fired-set on a
-        // game that already has a scoring backlog means the scheduler was
-        // (re)enabled mid-game — every past play would burst out as stale
-        // pushes at once. Seed the cache silently and fire only from the
-        // NEXT play onward. Written immediately (not deferred): seeding
-        // twice is harmless, bursting once is not.
-        if (firedPlayIds.length === 0 && scoringPlays.length > 0) {
-          const seed = scoringPlays
-            .map((sp) => sp.id)
-            .filter((id): id is string => Boolean(id));
-          await writeFiredNFLPlays(game.id, seed);
-          return [];
-        }
-        const result = detectNFLPlays({
+        // The decision itself is pure and shared with the replay lab
+        // (nfl-play-scan.ts), so the lab exercises this exact code path.
+        const result = scanNFLGamePlays({
           gameId: game.id,
           awayCode: game.away.abbreviation,
           homeCode: game.home.abbreviation,
@@ -261,6 +250,12 @@ export async function GET(req: Request) {
           driveTeamCode,
           firedPlayIds,
         });
+        // Cold-start seed: written immediately (not deferred) — seeding
+        // twice is harmless, bursting once is not.
+        if (result.kind === "seeded") {
+          await writeFiredNFLPlays(game.id, result.firedPlayIds);
+          return [];
+        }
         if (result.events.length > 0) {
           pendingPlayWrites.push({ gameId: game.id, ids: result.firedPlayIds });
         }

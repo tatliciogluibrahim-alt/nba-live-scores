@@ -15,7 +15,7 @@ import { createHash } from "node:crypto";
 import { kv } from "@vercel/kv";
 
 const DEDUPE_KEY_PREFIX = "nns:push:fired:v1:";
-const DEDUPE_TTL_SECONDS = 60 * 60;
+export const DEDUPE_TTL_SECONDS = 60 * 60;
 
 function dedupeKey(eventTag: string, endpoint: string): string {
   const hash = createHash("sha256").update(endpoint).digest("hex");

@@ -461,6 +461,14 @@ sports are a poor fit by default (see AGENTS.md Product Rule).
 
 ### 1. MLB Playoffs — STRONG FIT (recommended next after NFL)
 
+**2026: SKIPPED (owner decision 2026-09-28).** The September scaffold
+never happened, the Wild Card round opened Sep 29 and World Series
+Game 1 is Oct 23. A fourth sport on top of an alert matrix that had
+just been measured for the first time (replay lab, same day) is
+breadth over depth. **Target MLB 2027 instead: scaffold from Sep 1,
+2027**, launch about 3 weeks before that Wild Card round. The fit
+analysis below still stands.
+
 **Window:** Wild Card ~early October 2026 → World Series late October.
 **Lead time:** ~3-4 weeks part-time. Scaffold data in September, right
 after the NFL build settles. Launch ~3 weeks before the Wild Card round.
@@ -526,6 +534,9 @@ Don't ingest anything during the World Cup. Treat **MLB Playoffs as
 the planned post-NFL moment** (Phase 23-ish), scaffold in September,
 launch ~3 weeks before the Wild Card round. Park F1 and PGA as
 "diversify later" decisions, not roadmap commitments.
+
+Update 2026-09-28: MLB 2026 skipped (see above). MLB 2027, scaffold
+from Sep 1, 2027.
 
 ---
 

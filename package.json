@@ -9,6 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "replay:nfl": "tsx scripts/replay/nfl-week.ts",
+    "replay:record": "tsx scripts/replay/record-nfl-live.ts",
     "cap:sync": "cap sync",
     "ios:sync": "cap sync ios",
     "ios:open": "cap open ios",
@@ -47,6 +49,7 @@
     "playwright": "^1.61.1",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^4.1.7"
   }

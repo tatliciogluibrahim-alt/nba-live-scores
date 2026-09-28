@@ -60,3 +60,7 @@ qa-d4/
 qa-d4-*/
 qa-d4b/
 qa-d4b-*/
+
+# replay lab (npm run replay:nfl) output + ESPN cache
+/.replay/
+/.replay-cache/
