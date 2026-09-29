@@ -38,6 +38,9 @@ and the tier promises, fixes real bugs on a branch with a failing test
 first, and emails the owner a short report. Nothing lands on main without
 the owner. Its first run stopped cleanly on one setup gap: the cloud
 environment's network policy blocks ESPN until the owner allows the host.
+The owner's allowlist lived on a separate environment named ESPN while the
+routine ran in Default. On 2026-09-29 it moved to the ESPN environment and
+now fetches ESPN directly, with the replay-data branch as its backup.
 
 ---
 

@@ -364,14 +364,18 @@ https://claude.ai/artifact/8fx6XJEiWYvrtBzRXfaAwo.
 
 **Play 3, the Tuesday shift, is LIVE** as a cloud routine
 (https://claude.ai/code/routines/trig_01BguGmG6hJL4u3xjJZmugdJ, Opus 5.5,
-Tuesdays 11:00 UTC, emails the owner). The cloud environment cannot reach
-site.api.espn.com (a Custom allowlist entry saved by the owner did not take
-effect; the proxy still answered 403), so ESPN data now arrives through
-GitHub: the `replay-data` Action (Tuesdays 08:00 + 10:00 UTC) runs
+Tuesdays 11:00 UTC, emails the owner). It runs in the owner's **ESPN**
+cloud environment (Custom network allowlist with site.api.espn.com) and
+fetches ESPN directly. The early 403s were an environment mix-up, not a
+proxy bug: the allowlist was saved on a separate environment named ESPN
+while the routine was pinned to Default. Moved 2026-09-29 after a probe
+run from the ESPN environment got 200 from the ESPN scoreboard, the ESPN
+summary and npm. The `replay-data` Action (Tuesdays 08:00 + 10:00 UTC)
+stays as the backup route and the archive. It runs
 `npm run replay:nfl -- --fetch-to` and commits the latest finished week
 and the one before to the `replay-data` branch under `data/`, and the
-routine replays offline with `--data-dir`. Offline and online reports
-match byte for byte (Week 2 checked).
+routine replays those with `--data-dir` only when ESPN fails. Offline and
+online reports match byte for byte (Week 2 checked).
 
 **Next, in order:**
 1. Owner: the v1.0.4 device pass + submit.
@@ -380,7 +384,10 @@ match byte for byte (Week 2 checked).
    found a real bug on its own (web NFL kickoff body repeated the
    subtitle): fixed on `tuesday-shift/2026-09-29-nfl-kickoff-body`,
    reviewed, cherry-picked to main as `2b5f9c9`. The remote branch can be
-   deleted.
+   deleted. This morning's run replays Week 3 again (Week 4 starts
+   Thursday Oct 1), now on the direct ESPN route, so the kickoff check
+   should come back clean. The first new week is Week 4, reported
+   Tuesday Oct 6.
 3. C4b (held scores out of ActivityKit), designed in the Courtside spec.
 4. NFL Standings tab placeholder, store shots 2+3 rerun, Courtside C5.
 

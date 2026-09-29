@@ -1,11 +1,11 @@
 # Replay data: the Tuesday shift's input.
 #
-# The Tuesday shift (a Claude Code cloud routine) runs in an environment that
-# cannot reach ESPN. This job, on GitHub's runners, fetches the latest
-# finished NFL week and the week before (scripts/replay/nfl-week.ts
-# --fetch-to) and commits them under data/ on the replay-data branch. The
-# routine reads that branch (GitHub is always reachable from a cloud
-# session) and replays offline with --data-dir. Never touches main.
+# The Tuesday shift (a Claude Code cloud routine) fetches ESPN directly from
+# the owner's ESPN cloud environment. This job is its backup route and the
+# archive: on GitHub's runners it fetches the latest finished NFL week and
+# the week before (scripts/replay/nfl-week.ts --fetch-to) and commits them
+# under data/ on the replay-data branch. When ESPN fails, the routine reads
+# that branch and replays offline with --data-dir. Never touches main.
 name: replay-data
 
 on:

@@ -6,8 +6,8 @@
 //   npm run replay:nfl -- --save-fixture 401872932   lock a game as a test fixture
 //   npm run replay:nfl -- --strict        exit 1 on a contract or budget failure
 //
-// Offline, for machines that cannot reach ESPN (the Tuesday shift's cloud
-// environment): the replay-data GitHub Action runs
+// Offline, for machines that cannot reach ESPN (and the Tuesday shift's
+// backup route): the replay-data GitHub Action runs
 //   npm run replay:nfl -- --fetch-to replay-data
 // which saves the latest finished week and the week before as
 //   replay-data/nfl-<season>-w<week>/{meta,scoreboard}.json + summary-<id>.json
