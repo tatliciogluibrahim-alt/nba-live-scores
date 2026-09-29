@@ -173,3 +173,22 @@ describe("standardGameProfiles", () => {
     expect(ids).toContain("DET.all.ios.ns");
   });
 });
+
+// PHI at CHI, Monday 2026-09-28 (Tuesday shift, Week 3). A web kickoff
+// push read "Kickoff · PHI vs CHI · PHI vs CHI": the body repeated the
+// subtitle word for word, on every web kickoff of Weeks 2 and 3.
+describe("replayNFLGame: web kickoff copy (PHI at CHI, 2026-09-28)", () => {
+  const r = replayNFLGame(fixture("nfl-summary-401872963-phi-at-chi.json"), [
+    teamProfile("CHI", "quiet", { platform: "web" }),
+    teamProfile("CHI", "companion", { platform: "web", noSpoilers: true }),
+  ]);
+
+  it("web kickoff body says the game is underway and never repeats the subtitle", () => {
+    for (const id of ["CHI.quiet.web", "CHI.companion.web.ns"]) {
+      const kickoff = r.deliveries[id].find((x) => x.eventType === "nfl-kickoff")!;
+      expect(kickoff.subtitle, id).toBe("PHI vs CHI");
+      expect(kickoff.body, id).not.toBe(kickoff.subtitle);
+      expect(kickoff.body, id).toBe("The game is underway. Tap to follow along.");
+    }
+  });
+});

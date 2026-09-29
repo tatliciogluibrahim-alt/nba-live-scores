@@ -937,7 +937,10 @@ function buildTemplatePayload(event: PushEvent, noSpoilers: boolean): PushPayloa
     // AND the player name (a name is itself a fantasy spoiler, per
     // docs/nfl-design.md) — the title stays neutral. ────────────────────
     case "nfl-kickoff":
-      return nflPayload(event, "Kickoff", noSpoilers ? "The game is underway." : matchup, `${event.gameId}:nfl-state`);
+      // No score at kickoff, so one body for everyone. It used to be the
+      // matchup, which repeated the subtitle word for word on the web
+      // (Tuesday shift, 2026-09-29). iPhone gets the Live Activity offer.
+      return nflPayload(event, "Kickoff", "The game is underway. Tap to follow along.", `${event.gameId}:nfl-state`);
     case "nfl-eoq-1":
       return nflPayload(event, "End of Q1", noSpoilers ? "First quarter wrapped." : scoreLine(event), `${event.gameId}:nfl-state`);
     case "nfl-halftime":
