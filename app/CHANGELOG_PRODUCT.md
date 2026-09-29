@@ -41,7 +41,16 @@ environment's network policy blocks ESPN until the owner allows the host.
 
 ---
 
-## Halftime pushes at the half (2026-09-29, pending the owner's push)
+## The kickoff push stops repeating itself (2026-09-29, found by the Tuesday shift)
+
+The Tuesday shift's first real run caught it on its own: every web NFL
+kickoff push read "Kickoff · PHI vs CHI · PHI vs CHI", the body repeating
+the subtitle. It wrote a failing test on Monday's PHI at CHI, fixed it on
+a branch, and emailed the report. The body now reads "The game is
+underway. Tap to follow along.", the same shape as the NBA and Summer
+Soccer kickoffs. iPhone was unaffected (it gets the lock-screen offer).
+
+## Halftime pushes at the half (2026-09-29)
 
 The replay lab measured the halftime push landing about 15 minutes late,
 and the live capture of Monday night's PHI at CHI confirmed why: ESPN

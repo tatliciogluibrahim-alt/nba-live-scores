@@ -347,9 +347,10 @@ the production pipeline. Its first run found two production bugs:
 - the halftime push landed ~15 minutes late, at the Q3 kickoff:
   CONFIRMED by the MNF PHI at CHI live capture (ESPN served
   STATUS_HALFTIME, period 2, clock 0:00 from 9:38 to 9:53pm and flipped to
-  period 3 only at the kickoff). **FIX BUILT 2026-09-29** (halftime fires
-  on ESPN's halftime state; the scoreboard reads "Halftime" instead of
-  "Q2 0:00"), pending the owner's push go. Quarter breaks were never late:
+  period 3 only at the kickoff). **FIXED and pushed 2026-09-29**
+  (`f1bbf9f`, owner go): halftime fires on ESPN's halftime state and the
+  scoreboard reads "Halftime" instead of "Q2 0:00". Replays of Weeks 1-3
+  now land it within a minute of the half. Quarter breaks were never late:
   ESPN flips the period at the Q1/Q3 buzzer (the replay model had assumed
   otherwise and is corrected).
 
@@ -373,8 +374,13 @@ routine replays offline with `--data-dir`. Offline and online reports
 match byte for byte (Week 2 checked).
 
 **Next, in order:**
-1. Owner go to push the halftime fix (built and gated 2026-09-29).
-2. Owner: the v1.0.4 device pass + submit.
+1. Owner: the v1.0.4 device pass + submit.
+2. Watch the first scheduled Tuesday shift (2026-09-29 11:00 UTC). Its
+   test run at 03:39 UTC worked end to end off the replay-data branch and
+   found a real bug on its own (web NFL kickoff body repeated the
+   subtitle): fixed on `tuesday-shift/2026-09-29-nfl-kickoff-body`,
+   reviewed, cherry-picked to main as `2b5f9c9`. The remote branch can be
+   deleted.
 3. C4b (held scores out of ActivityKit), designed in the Courtside spec.
 4. NFL Standings tab placeholder, store shots 2+3 rerun, Courtside C5.
 
