@@ -72,6 +72,9 @@ function toFresh(g: NFLGameLite): FreshNFLGameState {
     homeCode: g.home.abbreviation,
     awayScore: g.away.score,
     homeScore: g.home.score,
+    // The normalizer turns ESPN's STATUS_HALFTIME into "Halftime", so the
+    // halftime push fires at the half instead of the Q3 kickoff.
+    halftime: g.status === "live" && g.statusText === "Halftime",
   };
 }
 

@@ -33,6 +33,32 @@ function cached(over: Partial<CachedNFLGameState> = {}): CachedNFLGameState {
 const types = (r: ReturnType<typeof detectNFLEvents>) =>
   r.events.map((e) => e.type);
 
+describe("detectNFLEvents — halftime at the half (live capture, PHI at CHI 2026-09-28)", () => {
+  // ESPN held period 2 with STATUS_HALFTIME for 15 minutes and only moved
+  // to period 3 at the second-half kickoff. Keyed on the period change
+  // alone, the halftime push landed as the third quarter began.
+  it("fires halftime when the scoreboard reads halftime, still in period 2", () => {
+    const r = detectNFLEvents(
+      cached({ period: 2, eoq1Fired: true, awayScore: 7, homeScore: 10 }),
+      fresh({ period: 2, halftime: true, awayScore: 7, homeScore: 10 })
+    );
+    expect(types(r)).toEqual(["nfl-halftime"]);
+    expect(r.nextState.halftimeFired).toBe(true);
+  });
+
+  it("does not fire a second halftime when the third quarter starts", () => {
+    const atHalf = detectNFLEvents(
+      cached({ period: 2, eoq1Fired: true }),
+      fresh({ period: 2, halftime: true })
+    ).nextState;
+    expect(types(detectNFLEvents(atHalf, fresh({ period: 3 })))).toEqual([]);
+  });
+
+  it("does not backfill halftime on the first look at a game already at the half", () => {
+    expect(types(detectNFLEvents(null, fresh({ period: 2, halftime: true })))).toEqual([]);
+  });
+});
+
 describe("detectNFLEvents — game state", () => {
   it("fires kickoff on upcoming → live only", () => {
     expect(types(detectNFLEvents(cached({ status: "upcoming" }), fresh()))).toEqual([

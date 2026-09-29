@@ -41,6 +41,23 @@ environment's network policy blocks ESPN until the owner allows the host.
 
 ---
 
+## Halftime pushes at the half (2026-09-29, pending the owner's push)
+
+The replay lab measured the halftime push landing about 15 minutes late,
+and the live capture of Monday night's PHI at CHI confirmed why: ESPN
+holds period 2 with STATUS_HALFTIME for the whole break and only moves to
+period 3 at the second-half kickoff, which is what the detector waited
+for.
+
+- **Fix.** The scoreboard normalizer reads ESPN's halftime state as
+  "Halftime", and the detector fires the halftime push on it (the Q3
+  kickoff stays as a fallback, fired once). Replaying Weeks 1-3: the push
+  lands within a minute of the half in every game.
+- **Also fixed by the same line.** For the 15 minutes of halftime the app
+  rows and the lock-screen tile read "Q2 0:00". They now read "Halftime".
+- **Corrected.** Quarter-break pushes were never late: ESPN flips the
+  period at the Q1 and Q3 buzzer. The replay model now does the same.
+
 ## The opening score pushes again (2026-09-28)
 
 Found by the replay lab on its first run: the opening score of 30 of 47
@@ -100,9 +117,10 @@ What the first run found across all 47 finished games (Weeks 1-3):
   score. Fix prepared separately for the owner's go.
 - **Halftime push lands 14 to 18 minutes late** (median 15), as the second
   half kicks off. The detector fires on the period changing, and ESPN
-  holds period 2 through halftime (modeled; the live recorder confirms it
-  tonight). Quarter-break pushes are 3 to 4 minutes late for the same
-  reason.
+  holds period 2 through halftime (confirmed by that night's live
+  capture). A first draft of this entry said quarter-break pushes were 3
+  to 4 minutes late too. The capture disproved it: ESPN flips the period
+  at the buzzer, so they are on time.
 - **Walk-off plays get no push of their own.** Five game-ending plays
   (three walk-off field goals, two final-play interceptions) landed in the
   same tick as the final whistle, and scan-nfl stops scanning plays once a

@@ -318,7 +318,7 @@ export function renderWeekReportMarkdown(r: WeekReport): string {
   for (const s of f.neverVisible) L.push(`  - ${s.matchup}: ${s.kind}, ${s.text ?? ""}`);
   if (f.halftimeLateMin) {
     L.push(
-      `- Halftime push lands ${f.halftimeLateMin.min} to ${f.halftimeLateMin.max} minutes after the half ends (median ${f.halftimeLateMin.median}), as the second half kicks off (modeled: assumes ESPN holds period 2 through halftime).`
+      `- Halftime push lands ${f.halftimeLateMin.min} to ${f.halftimeLateMin.max} minutes after the half ends (median ${f.halftimeLateMin.median}). Modeled on ESPN's live halftime state (STATUS_HALFTIME, captured 2026-09-28).`
     );
   }
   L.push("");

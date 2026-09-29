@@ -7,7 +7,7 @@
 // Event taxonomy (game-state family):
 //   • nfl-kickoff   — status upcoming → live
 //   • nfl-eoq-1     — period 1 → 2
-//   • nfl-halftime  — period 2 → 3
+//   • nfl-halftime  — the scoreboard reads halftime (else period 2 → 3)
 //   • nfl-eoq-3     — period 3 → 4
 //   • nfl-ot        — period reaches 5 (overtime)
 //   • nfl-final     — status live → final
@@ -43,6 +43,11 @@ export type FreshNFLGameState = {
   homeCode: string;
   awayScore: number;
   homeScore: number;
+  /** The scoreboard says halftime (ESPN STATUS_HALFTIME). ESPN keeps
+   *  period 2 for the whole break and only moves to 3 at the second-half
+   *  kickoff, so the period alone fires halftime ~15 minutes late
+   *  (live capture, PHI at CHI 2026-09-28). */
+  halftime?: boolean;
 };
 
 // Once a game moves forward along this axis, treat any regression as a feed
@@ -104,7 +109,9 @@ export function detectNFLEvents(
       events.push(withScore("nfl-eoq-1"));
       eoq1Fired = true;
     }
-    if (!halftimeFired && crossed(3)) {
+    // Halftime fires when the scoreboard says halftime, or at the latest
+    // when the third quarter starts (a feed that skips the halftime state).
+    if (!halftimeFired && (crossed(3) || (next.halftime === true && period >= 2))) {
       events.push(withScore("nfl-halftime"));
       halftimeFired = true;
     }

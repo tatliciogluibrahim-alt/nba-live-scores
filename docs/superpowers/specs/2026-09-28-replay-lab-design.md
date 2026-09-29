@@ -39,11 +39,18 @@ play's time). A missing wallclock inherits the previous visible time.
 - Current drive at t: the drive of the last visible play, its visible
   plays, its team. This models ESPN's `drives.current`.
 
+Break behavior (measured, live capture of PHI at CHI 2026-09-28, 20s polls):
+- End of Q1 and Q3: ESPN's scoreboard flips straight to the next period
+  ("0:26 - 1st", then "15:00 - 2nd"). The rebuild moves the period on at
+  an "End Period" play logged at 0:00. The log has carried a stray one
+  with time left (ATL at PIT 2026-09-13, 1:06 of Q2); it is treated as
+  noise on the inference that the scoreboard follows the game clock (that
+  game was not captured live).
+- Halftime: ESPN holds period 2, clock 0:00, `STATUS_HALFTIME` until the
+  Q3 kickoff. The rebuild keeps period 2 after "End of Half" and sets
+  `halftime: true`.
+
 Known fidelity limits (inference, not measurement):
-- During quarter breaks and halftime the rebuilt period holds at the ended
-  quarter until the next quarter's first play. This matches how the
-  production detector reads ESPN's scoreboard `status.period`, and must be
-  confirmed against a live capture (`scripts/replay/record-nfl-live.ts`).
 - Stat corrections, late-arriving plays and ESPN's exact final flip are not
   modeled.
 - A replay is trusted only after it matches a real delivered notification

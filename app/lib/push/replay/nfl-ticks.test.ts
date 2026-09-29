@@ -202,6 +202,27 @@ describe("buildNFLTimeline", () => {
     expect(late.drivePlays.map((p) => p.id)).toEqual(["b1"]);
   });
 
+  it("ignores an end-of-quarter marker logged with time left (ESPN, ATL at PIT 2026-09-13)", () => {
+    // ESPN's play log carried a stray "End Period" at 1:06 of Q2, 7.5
+    // minutes before the real "End of Half". The scoreboard follows the
+    // game clock, not that entry, so the period must not move on it.
+    const tl = buildNFLTimeline(
+      summary([
+        [
+          "BUF",
+          [
+            { id: "p1", sec: 30, period: { number: 2 } },
+            { id: "stray", sec: 100, period: { number: 2 }, type: { text: "End Period" }, clock: { displayValue: "1:06" } },
+            { id: "p2", sec: 300, period: { number: 2 } },
+            { id: "half", sec: 600, period: { number: 2 }, type: { text: "End of Half" }, clock: { displayValue: "0:00" } },
+          ],
+        ],
+      ])
+    );
+    const beforeHalf = tl.ticks.filter((t) => t.atMs >= T0 + 100_000 && t.atMs < T0 + 600_000);
+    expect(beforeHalf.every((t) => t.fresh.period === 2 && !t.fresh.halftime)).toBe(true);
+  });
+
   it("returns no ticks for a game with no plays", () => {
     expect(buildNFLTimeline(summary([])).ticks).toEqual([]);
   });
@@ -221,14 +242,29 @@ describe("buildNFLTimeline", () => {
       });
     });
 
-    it("holds period 2 through halftime until the Q3 kickoff (modeled scoreboard)", () => {
+    // Scoreboard behavior at breaks, as captured live on PHI at CHI
+    // 2026-09-28: halftime holds period 2 with STATUS_HALFTIME until the
+    // Q3 kickoff, and the end of Q1/Q3 flips straight to the next period.
+    it("holds period 2 and flags halftime through the break until the Q3 kickoff", () => {
       const endHalf = tl.plays.find((p) => p.type?.text === "End of Half")!;
       const q3 = tl.plays.find((p) => p.period.number === 3)!;
       const during = tl.ticks.filter(
         (t) => t.atMs >= endHalf.visibleAtMs && t.atMs < q3.visibleAtMs
       );
       expect(during.length).toBeGreaterThan(10);
-      expect(during.every((t) => t.fresh.period === 2)).toBe(true);
+      expect(during.every((t) => t.fresh.period === 2 && t.fresh.halftime === true)).toBe(true);
+      const after = tl.ticks.find((t) => t.atMs >= q3.visibleAtMs)!;
+      expect(after.fresh.halftime).toBeFalsy();
+    });
+
+    it("flips to the next quarter at the end-of-quarter marker", () => {
+      const endQ1 = tl.plays.find((p) => p.type?.text === "End Period" && p.period.number === 1)!;
+      const firstQ2 = tl.plays.find((p) => p.period.number === 2)!;
+      const between = tl.ticks.filter(
+        (t) => t.atMs >= endQ1.visibleAtMs && t.atMs < firstQ2.visibleAtMs
+      );
+      expect(between.length).toBeGreaterThan(0);
+      expect(between.every((t) => t.fresh.period === 2)).toBe(true);
     });
   });
 });

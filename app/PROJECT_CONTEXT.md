@@ -344,9 +344,14 @@ native via a simulator loop, (3) a scheduled Tuesday cloud routine. MLB
 the production pipeline. Its first run found two production bugs:
 - the cold-start seed swallowed the opening score of 30 of 47 games:
   **FIXED and pushed 2026-09-28** (owner go), 0 of 47 lost on replay.
-- the halftime push lands ~15 minutes late (quarter breaks 3-4): fix
-  waits on the MNF PHI at CHI live capture
-  (`.replay/live/mnf-2026-09-28.jsonl`) to confirm ESPN's break fields.
+- the halftime push landed ~15 minutes late, at the Q3 kickoff:
+  CONFIRMED by the MNF PHI at CHI live capture (ESPN served
+  STATUS_HALFTIME, period 2, clock 0:00 from 9:38 to 9:53pm and flipped to
+  period 3 only at the kickoff). **FIX BUILT 2026-09-29** (halftime fires
+  on ESPN's halftime state; the scoreboard reads "Halftime" instead of
+  "Q2 0:00"), pending the owner's push go. Quarter breaks were never late:
+  ESPN flips the period at the Q1/Q3 buzzer (the replay model had assumed
+  otherwise and is corrected).
 
 **Play 2, Courtside C4, is COMMITTED AND PUSHED** (`259f4ff`, 2026-09-28,
 owner go). The web half is live in production (porcelain ground, share
@@ -368,8 +373,7 @@ routine replays offline with `--data-dir`. Offline and online reports
 match byte for byte (Week 2 checked).
 
 **Next, in order:**
-1. Break-timing fix once the MNF live capture confirms ESPN's halftime
-   shape (recorder running, `.replay/live/mnf-2026-09-28.jsonl`).
+1. Owner go to push the halftime fix (built and gated 2026-09-29).
 2. Owner: the v1.0.4 device pass + submit.
 3. C4b (held scores out of ActivityKit), designed in the Courtside spec.
 4. NFL Standings tab placeholder, store shots 2+3 rerun, Courtside C5.
@@ -472,9 +476,10 @@ behavior change.
   also true at the first score of any game where no big play or
   turnover fired first.
 - Halftime push lands 13.8 to 18.2 minutes after the half (median 15.0),
-  at the second-half kickoff. Quarter breaks 3 to 4 minutes late. Modeled
-  on ESPN holding `status.period` through breaks; the live recorder ran
-  on MNF PHI at CHI to confirm.
+  at the second-half kickoff. Confirmed by the MNF live capture the same
+  night. (This record first said quarter breaks were 3 to 4 minutes late
+  too. The capture disproved it: ESPN flips the period at the Q1/Q3
+  buzzer, so those pushes are on time.)
 - Five game-ending plays (3 walk-off FGs, 2 final-play INTs) share a tick
   with the final whistle and get no push of their own. Logged as
   arguably calmer, not changed.

@@ -31,12 +31,13 @@ describe("replayNFLGame: game-state events", () => {
     expect([final.awayScore, final.homeScore]).toEqual([31, 41]);
   });
 
-  it("lands the halftime push when the second half kicks off, 15 minutes after the half ended", () => {
+  it("lands the halftime push at the half, within one cron tick", () => {
+    // Before 2026-09-29 it landed at the Q3 kickoff, 15 minutes late.
     const endHalf = r.timeline.plays.find((p) => p.type?.text === "End of Half")!;
     const halftime = r.events.find((e) => e.event.type === "nfl-halftime")!;
     const lateMin = (halftime.atMs - endHalf.visibleAtMs) / 60_000;
-    expect(lateMin).toBeGreaterThan(15);
-    expect(lateMin).toBeLessThan(17);
+    expect(lateMin).toBeGreaterThanOrEqual(0);
+    expect(lateMin).toBeLessThanOrEqual(1);
   });
 });
 

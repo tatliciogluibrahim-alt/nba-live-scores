@@ -90,6 +90,29 @@ describe("normalizeNFLGame — synthetic states", () => {
     expect(g.away.winner).toBe(false);
   });
 
+  it("halftime reads Halftime, not Q2 0:00 (ESPN, PHI at CHI, 2026-09-28)", () => {
+    // The real status ESPN served for all 15 minutes of halftime: period 2,
+    // clock 0:00, STATUS_HALFTIME. The old text read "Q2 0:00" on every
+    // row and on the lock screen for the whole break.
+    const half = ev();
+    half.competitions![0].status = {
+      period: 2,
+      displayClock: "0:00",
+      type: {
+        state: "in",
+        completed: false,
+        name: "STATUS_HALFTIME",
+        description: "Halftime",
+        detail: "Halftime",
+        shortDetail: "Halftime",
+      },
+    };
+    const g = normalizeNFLGame(half, 3, 2)!;
+    expect(g.status).toBe("live");
+    expect(g.period).toBe(2);
+    expect(g.statusText).toBe("Halftime");
+  });
+
   it("overtime reads OT, not Q5", () => {
     const otEvent = ev();
     otEvent.competitions![0].status!.period = 5;

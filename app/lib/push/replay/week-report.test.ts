@@ -66,9 +66,10 @@ describe("buildWeekReport", () => {
     expect(report.findings.landedWithFinal.map((s) => s.matchup)).toContain("IND at KC");
   });
 
-  it("measures how late the halftime push lands", () => {
+  it("measures how late the halftime push lands (at the half since 2026-09-29)", () => {
     const late = report.findings.halftimeLateMin!;
-    expect(late.min).toBeGreaterThan(10);
+    expect(late.min).toBeGreaterThanOrEqual(0);
+    expect(late.max).toBeLessThanOrEqual(1);
     expect(late.max).toBeGreaterThanOrEqual(late.median);
   });
 

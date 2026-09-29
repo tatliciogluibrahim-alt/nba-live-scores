@@ -3,12 +3,17 @@
 // score and drive, so a game can be replayed as the sequence of scoreboard
 // states + summary slices the cron would have read on each tick.
 //
-// MODELED, not measured (see docs/superpowers/specs/2026-09-28-replay-lab-design.md):
+// MODELED on a live capture of ESPN's scoreboard (PHI at CHI, 2026-09-28,
+// polled every 20s; see docs/superpowers/specs/2026-09-28-replay-lab-design.md):
 //   • ticks every 60s (the cron-job.org cadence)
-//   • during quarter breaks the period holds at the ended quarter until the
-//     next quarter's first play, which is how the detector reads ESPN's
-//     scoreboard `status.period`
-//   • `drives.current` is the drive of the last visible play
+//   • at the end of a quarter ESPN flips straight to the next period
+//     ("0:26 - 1st" then "15:00 - 2nd"), so an "End Period" play moves
+//     the period on at once
+//   • at halftime ESPN holds period 2 with STATUS_HALFTIME until the Q3
+//     kickoff, so after "End of Half" the tick stays in period 2 and
+//     carries `halftime: true`
+//   • `drives.current` is the drive of the last visible play (not yet
+//     checked against the capture)
 
 import type { FreshNFLGameState } from "../nfl-event-detector";
 import type { NFLDrivePlay, NFLScoringPlay } from "../nfl-play-detector";
@@ -43,6 +48,8 @@ export type NFLGameTimeline = {
 };
 
 const END_OF_GAME = "End of Game";
+const END_PERIOD = "End Period";
+const END_OF_HALF = "End of Half";
 // Guard against a malformed feed spinning forever: no NFL game runs a day.
 const MAX_TICKS = 24 * 60;
 // No real gap between consecutive plays comes near this, weather delays
@@ -83,6 +90,13 @@ function flattenPlays(summary: ReplaySummary): TimedPlay[] {
     }
   });
   return out;
+}
+
+/** A real end of quarter: the "End Period" marker at 0:00. ESPN's log has
+ *  carried a stray one with time left (1:06 of Q2, ATL at PIT
+ *  2026-09-13); the scoreboard follows the clock, not that entry. */
+function endsQuarter(p: TimedPlay): boolean {
+  return p.type?.text === END_PERIOD && (p.clock?.displayValue ?? "0:00") === "0:00";
 }
 
 function toDrivePlay(p: TimedPlay): NFLDrivePlay {
@@ -129,6 +143,7 @@ export function buildNFLTimeline(
       homeScore = plays[idx].homeScore ?? homeScore;
     }
     const last = idx >= 0 ? plays[idx] : null;
+    const marker = last?.type?.text;
     const status: FreshNFLGameState["status"] = !last
       ? "upcoming"
       : endOfGame && t >= endOfGame.visibleAtMs
@@ -145,11 +160,12 @@ export function buildNFLTimeline(
       fresh: {
         gameId,
         status,
-        period: last ? last.period.number : 0,
+        period: !last ? 0 : endsQuarter(last) ? last.period.number + 1 : last.period.number,
         awayCode,
         homeCode,
         awayScore,
         homeScore,
+        ...(status === "live" && marker === END_OF_HALF ? { halftime: true } : {}),
       },
       scoringPlays: summary.scoringPlays.filter((sp) => {
         const v = visibleAt.get(sp.id);

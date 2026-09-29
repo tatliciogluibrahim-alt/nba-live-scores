@@ -26,6 +26,8 @@ export type NFLGameLite = {
 type ESPNStatusType = {
   state?: string;
   completed?: boolean;
+  /** "STATUS_IN_PROGRESS" | "STATUS_HALFTIME" | "STATUS_FINAL" | ... */
+  name?: string;
   description?: string;
   detail?: string;
   shortDetail?: string;
@@ -72,6 +74,13 @@ function statusText(
     return /final\s*\/\s*ot/i.test(detail) ? "Final/OT" : "Final";
   }
   if (state === "upcoming") return "Upcoming";
+  // Halftime: ESPN holds period 2 with the clock at 0:00 for the whole
+  // break (STATUS_HALFTIME, confirmed live 2026-09-28), so the clock rule
+  // below would read "Q2 0:00" for fifteen minutes. The halftime push and
+  // the Live Activity status line both key off this text.
+  if (status?.type?.name === "STATUS_HALFTIME" || /^halftime$/i.test(status?.type?.shortDetail ?? "")) {
+    return "Halftime";
+  }
   // Live: "Q<period> <clock>", falling back to the feed's shortDetail.
   const period = status?.period ?? 0;
   const clock = status?.displayClock?.trim() ?? "";
