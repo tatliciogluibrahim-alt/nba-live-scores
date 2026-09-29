@@ -1,6 +1,8 @@
 # Replay lab: every real NFL game as a push test
 
-Status: **building 2026-09-28.** Owner go: "give me all of it" (plays 1-3).
+Status: **shipped 2026-09-28** (`e1bb00f`). Runs weekly as the Tuesday shift
+(cloud routine, ESPN data via the `replay-data` branch). Owner go: "give me
+all of it" (plays 1-3).
 
 ## Why
 
@@ -88,6 +90,8 @@ whole-season follow and a three-team follower across one window.
 - Contract check: every ESPN field the pipeline reads is present.
 
 `npm run replay:nfl -- --week N` writes `report.md` + `report.json`.
+`--fetch-to <dir>` saves a week's ESPN data, `--data-dir <dir>` replays it
+offline (the cloud routine cannot reach ESPN).
 
 ## Not in this chapter
 
