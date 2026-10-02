@@ -387,8 +387,12 @@ for byte (Week 2 checked).
    `-NNDemoLiveActivity live` scores twice (10s and 20s after the tile
    appears, so lock the phone once the tile is up) and both numerals
    roll, a held tile reveals with the push,
-   and revealing in the app gives a light tap. Version and build still
-   need setting (the repo says 1.0.2, build 17).
+   and revealing in the app gives a light tap. Version set to 1.0.4,
+   build 20 (2026-10-01), archived to Xcode's Organizer. The owner's
+   iPhone runs iOS 27, which Xcode 26.4.1 cannot install test builds on,
+   so the device pass runs on the TestFlight build. The v1.0.3 version
+   bump was never committed and its archive is not on this Mac (newest
+   local archive was 1.0.2, build 17).
 2. The Tuesday shift's first scheduled run (2026-09-29) was all clear on
    Week 3 (Contract PASS, Budget PASS, halftime median 0.2 minutes,
    opening score 0 of 16, kickoff fix clean) but ran on the backup data.
