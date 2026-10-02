@@ -16,4 +16,5 @@ reads better.
 What's New (draft, owner to edit):
 
 > A new look for the lock screen, the Dynamic Island and the widgets,
-> matched to the app. Scores you hide stay hidden there too.
+> matched to the app. Scores roll to the new number when they change.
+> Scores you hide stay hidden there too.

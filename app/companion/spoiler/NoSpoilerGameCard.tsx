@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useReveal, useEffectiveNoSpoilers } from "./reveal";
+import { revealHaptic } from "../native/haptics";
 
 // Score-hidden card with explicit, context-aware reveal copy:
 //   - 'live'   → "Tap to reveal score"
@@ -96,7 +97,13 @@ export function NoSpoilerGameCard({
 
       <button
         type="button"
-        onClick={() => (gameId ? reveal(gameId) : setInternalRevealed(true))}
+        onClick={() => {
+          if (gameId) reveal(gameId);
+          else {
+            setInternalRevealed(true);
+            revealHaptic();
+          }
+        }}
         aria-label={aria}
         className="no-noise-reveal-focus mt-2 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
         style={{

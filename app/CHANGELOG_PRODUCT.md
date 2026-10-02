@@ -2,6 +2,17 @@
 
 ---
 
+## Scores roll on the lock screen (2026-10-01, rides v1.0.4)
+
+When a score changes, the numerals on the lock screen, the Dynamic Island
+and the live widget roll to the new number. Revealing a hidden score there
+pushes the chip away as the digits come up. In the app, revealing a score
+gives a light tap. Nothing else moves besides the live dot: motion only
+where the state changed. The tap needs the v1.0.4 app, and older installs
+skip it.
+
+---
+
 ## Courtside reaches the lock screen (C4, built 2026-09-28, pending the owner's look)
 
 The lock screen, the Dynamic Island and every widget move from System D to

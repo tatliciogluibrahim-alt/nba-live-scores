@@ -93,6 +93,10 @@ legibility".
 Radii: 20 card · 999 pill · 8 chip. Hit targets: 44px everywhere, the
 reveal target is the whole row. Motion: one cross-fade (arena), one
 develop (reveal), one haptic (reveal commit); nothing else animates.
+Amended 2026-10-01 (owner): on the closed surfaces the score numerals
+roll to their new value when the score changes (SwiftUI numeric text),
+and a reveal there pushes the chip out as the digits come up. The haptic
+is a light impact through @capacitor/haptics, native only.
 
 ## Redaction is data-level (blocker fix, non-negotiable)
 
@@ -166,6 +170,16 @@ https://claude.ai/artifact/8fx6XJEiWYvrtBzRXfaAwo
 - The widget snapshot carries placeholder scores for held games (web
   change, compatible with v1.0.3's decoder, which never draws a score
   while `redacted` is true).
+- Motion (2026-10-01, owner go, rides v1.0.4): score numerals roll on
+  change on the lock screen, the Dynamic Island and the live widget
+  (`ScoreRow`), a reveal pushes the held block out as the digits come up,
+  and the app gives a light haptic on reveal
+  (`app/companion/native/haptics.ts`, skipped on binaries without the
+  plugin). The DEBUG demo `live` scores twice, 10s and 20s after the tile
+  appears, so the roll can be watched. Lock only after the tile appears
+  (ActivityKit starts activities from the foreground only). A locked app
+  is suspended within seconds, so the demo holds a background task until
+  its second score.
 
 ## C4b: held scores out of ActivityKit (designed, not built)
 

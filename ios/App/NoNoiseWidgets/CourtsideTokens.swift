@@ -156,6 +156,8 @@ struct FillBar: View {
 
 /// One team row: name on the left, numeral on the right. Leader in the
 /// room's text color, trailer in mute. A tie keeps both in text.
+/// The numeral rolls to its new value when the score changes (Courtside
+/// motion rule, amended 2026-10-01: the score is the one thing that moves).
 struct ScoreRow: View {
     var name: String
     var score: Int
@@ -180,6 +182,7 @@ struct ScoreRow: View {
                 .font(CSFont.numeral(numeralSize))
                 .foregroundStyle(dim ? room.mute : room.text)
                 .lineLimit(1)
+                .contentTransition(.numericText(value: Double(score)))
         }
     }
 }

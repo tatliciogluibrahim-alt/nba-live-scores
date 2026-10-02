@@ -382,7 +382,13 @@ runs started at 14:35 and 16:15), which is why the routine moved from
 for byte (Week 2 checked).
 
 **Next, in order:**
-1. Owner: the v1.0.4 device pass + submit.
+1. Owner: the v1.0.4 device pass + submit. v1.0.4 now also carries the
+   score roll and the reveal haptic (2026-10-01). Check: DEBUG demo
+   `-NNDemoLiveActivity live` scores twice (10s and 20s after the tile
+   appears, so lock the phone once the tile is up) and both numerals
+   roll, a held tile reveals with the push,
+   and revealing in the app gives a light tap. Version and build still
+   need setting (the repo says 1.0.2, build 17).
 2. The Tuesday shift's first scheduled run (2026-09-29) was all clear on
    Week 3 (Contract PASS, Budget PASS, halftime median 0.2 minutes,
    opening score 0 of 16, kickoff fix clean) but ran on the backup data.

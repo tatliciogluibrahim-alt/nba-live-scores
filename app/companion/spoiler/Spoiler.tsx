@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useReveal, useEffectiveNoSpoilers } from "./reveal";
+import { revealHaptic } from "../native/haptics";
 
 // Inline score wrapper. When No-Spoilers is on, the wrapped content is
 // REDACTED AT THE DATA LEVEL (Courtside C2, spec 2026-08-31): the real
@@ -93,7 +94,10 @@ export function Spoiler({
         e.preventDefault();
         e.stopPropagation();
         if (gameId) reveal(gameId);
-        else setLocalRevealed(true);
+        else {
+          setLocalRevealed(true);
+          revealHaptic();
+        }
         setJustRevealed(true);
       }}
       aria-label={label}

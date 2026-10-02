@@ -18,6 +18,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     #if DEBUG
+    private var demoRollTask: UIBackgroundTaskIdentifier = .invalid
+
+    private func endDemoRollTask() {
+        guard demoRollTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(demoRollTask)
+        demoRollTask = .invalid
+    }
+
     // Simulator QA for the Live Activity (Courtside C4), DEBUG builds only:
     //   xcrun simctl launch booted com.nonoisescores.app -NNDemoLiveActivity live
     // starts a tile from fixture data (live | held | final) so the lock
@@ -46,10 +54,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             accentHex: "#1f3a6b", progress: final ? 1 : 0.62,
             awayName: "Lions", homeName: "Packers")
         do {
-            _ = try Activity.request(
+            let activity = try Activity.request(
                 attributes: attrs,
                 content: ActivityContent(state: state, staleDate: nil),
                 pushType: nil)
+            guard kind == "live" else { return }
+            // Two scores so the numeral roll can be watched on the lock
+            // screen and in the island: a Packers touchdown 10s in (24-24,
+            // both rows go to text), then a Lions field goal 10s later.
+            var touchdown = state
+            touchdown.homeScore += 7
+            touchdown.statusLine = "Q3 6:40"
+            touchdown.progress = 0.66
+            var fieldGoal = touchdown
+            fieldGoal.awayScore += 3
+            fieldGoal.statusLine = "Q3 2:05"
+            fieldGoal.progress = 0.70
+            // The phone is usually locked by the time these land, and iOS
+            // suspends a locked app within seconds. A background task keeps
+            // it alive until the second score.
+            demoRollTask = UIApplication.shared.beginBackgroundTask(withName: "NNDemoRoll") { [weak self] in
+                self?.endDemoRollTask()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+                Task { await activity.update(ActivityContent(state: touchdown, staleDate: nil)) }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
+                Task { @MainActor in
+                    await activity.update(ActivityContent(state: fieldGoal, staleDate: nil))
+                    self?.endDemoRollTask()
+                }
+            }
         } catch {
             print("[DemoLiveActivity] request failed: \(error)")
         }

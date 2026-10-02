@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { useNoSpoilers, useFollows } from "../providers";
+import { revealHaptic } from "../native/haptics";
 import {
   followHidesParticipants,
   type SpoilerParticipants,
@@ -103,6 +104,8 @@ export function RevealProvider({ children }: { children: ReactNode }) {
 
   const reveal = useCallback((gameId: string) => {
     if (!gameId) return;
+    // The reveal commit. Every caller is a tap on a hidden surface.
+    revealHaptic();
     setLevels((prev) => {
       if (prev.get(gameId) === FULL_REVEAL) return prev;
       const next = new Map(prev);

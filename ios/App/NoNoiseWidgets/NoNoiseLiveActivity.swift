@@ -23,6 +23,11 @@ import WidgetKit
 //
 // Widget extensions cannot load custom fonts: SF Pro `.width(.expanded)`
 // stands in for Archivo width 125 (see CSFont).
+//
+// Motion (Courtside rule, amended 2026-10-01): score numerals roll to the
+// new value when they change, and a reveal pushes the held chip up and out
+// as the digits come up into place. Nothing else moves except the live
+// dot's pulse.
 
 // ActivityKit opens this URL when the user taps the lock-screen tile or
 // Dynamic Island. The game id is part of the Activity's static attributes,
@@ -99,7 +104,11 @@ struct CourtsideLockView: View {
                 }
             }
 
-            if held { heldBlock } else { scoreBlock }
+            if held {
+                heldBlock.transition(.push(from: .bottom))
+            } else {
+                scoreBlock.transition(.push(from: .bottom))
+            }
 
             FillBar(progress: state.progress, room: .arena, sport: sport)
         }
@@ -176,14 +185,17 @@ struct IslandCompactLeading: View {
                 .foregroundStyle(Arena.text)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
+                .transition(.push(from: .bottom))
         } else {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(state.awayCode).font(compactCode)
                 Text("\(state.awayScore)").font(compactScore)
+                    .contentTransition(.numericText(value: Double(state.awayScore)))
             }
             .foregroundStyle(state.dim(home: false) ? Arena.mute : Arena.text)
             .lineLimit(1)
             .minimumScaleFactor(0.7)
+            .transition(.push(from: .bottom))
         }
     }
 }
@@ -199,14 +211,17 @@ struct IslandCompactTrailing: View {
                 .font(compactCode)
                 .foregroundStyle(Arena.mute)
                 .accessibilityLabel("Score hidden")
+                .transition(.push(from: .bottom))
         } else {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text("\(state.homeScore)").font(compactScore)
+                    .contentTransition(.numericText(value: Double(state.homeScore)))
                 Text(state.homeCode).font(compactCode)
             }
             .foregroundStyle(state.dim(home: true) ? Arena.mute : Arena.text)
             .lineLimit(1)
             .minimumScaleFactor(0.7)
+            .transition(.push(from: .bottom))
         }
     }
 }
@@ -229,6 +244,7 @@ struct IslandExpandedBody: View {
                     Spacer(minLength: 8)
                     HeldChip(room: .arena, size: 14)
                 }
+                .transition(.push(from: .bottom))
             } else {
                 VStack(spacing: 2) {
                     ScoreRow(name: state.awayLabel, score: state.awayScore,
@@ -238,6 +254,7 @@ struct IslandExpandedBody: View {
                              dim: state.dim(home: true), room: .arena,
                              nameSize: 16, numeralSize: 28)
                 }
+                .transition(.push(from: .bottom))
             }
             FillBar(progress: state.progress, room: .arena, sport: sport)
         }
@@ -335,11 +352,14 @@ struct NoNoiseLiveActivity: Widget {
                         .font(CSFont.display(12, .heavy))
                         .foregroundStyle(Arena.mute)
                         .accessibilityLabel("Score hidden")
+                        .transition(.push(from: .bottom))
                 } else {
                     Text("\(s.awayScore)\u{2013}\(s.homeScore)")
                         .font(CSFont.numeral(11))
                         .foregroundStyle(Arena.text)
                         .minimumScaleFactor(0.7)
+                        .contentTransition(.numericText())
+                        .transition(.push(from: .bottom))
                 }
             }
             .keylineTint(Room.arena.sport(sport))
