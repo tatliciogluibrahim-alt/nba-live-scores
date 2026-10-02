@@ -51,7 +51,7 @@ export function WatchingClient() {
   return (
     <div
       data-chassis={arenaLive ? "arena" : undefined}
-      className="nns-room -mx-4 px-4 md:mx-0 md:px-0"
+      className={`nns-room -mx-4 px-4 md:mx-0 md:px-0${arenaLive ? " nns-room-fill" : ""}`}
     >
       <PullToRefresh onRefresh={refetch}>
         <WatchingDashboard payload={payload} />

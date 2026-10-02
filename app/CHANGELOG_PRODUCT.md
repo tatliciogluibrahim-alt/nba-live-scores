@@ -16,6 +16,12 @@ current app, porcelain behind the browse shots and arena behind the live
 ones. The live scores in them are a real moment (3:55 PM ET, Sep 27),
 rebuilt from ESPN's play-by-play, so no shot carries an invented score.
 
+Making that set caught a layout bug on phones: a live Watching room
+stopped at its last row, leaving a lit band above the tab bar, and its
+title sat tight against the brand bar. A live room now fills the screen
+down behind the tab bar with space above the title, and never adds a
+scroll on a short list.
+
 ---
 
 ## Courtside reaches the lock screen (C4, built 2026-09-28, pending the owner's look)

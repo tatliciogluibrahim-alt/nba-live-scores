@@ -167,6 +167,25 @@ html, body {
   .nns-room { transition: none; }
 }
 
+/* A live room on a phone fills the screen: from the brand bar's bottom
+   edge down behind the tab bar, instead of stopping at its last row with
+   a lit band underneath, and the title gets space under the brand bar.
+   The negative bottom margin hands back what <main> (16px) and
+   CompanionFrame (tab bar reserve) pad below it, so a short room never
+   adds a scroll. The matching padding keeps the last row clear of the tab
+   bar. The brand bar height is overestimated by a few px on purpose, so
+   any rounding lands under the tab bar instead of showing as a lit band. */
+@media (max-width: 767px) {
+  .nns-room-fill {
+    --room-below: calc(16px + 84px + max(env(safe-area-inset-bottom), 12px));
+    margin-top: -4px;
+    padding-top: 20px;
+    padding-bottom: var(--room-below);
+    margin-bottom: calc(-1 * var(--room-below));
+    min-height: calc(100svh - max(env(safe-area-inset-top), 12px) - 40px);
+  }
+}
+
 /* Courtside C3: the same arena tokens serve two masters — the manual
    whole-app dark toggle (data-theme on <html>) AND the room-scoped
    arena (data-chassis on a subtree). A room flips to the arena while a
