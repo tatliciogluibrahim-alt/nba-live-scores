@@ -364,32 +364,36 @@ https://claude.ai/artifact/8fx6XJEiWYvrtBzRXfaAwo.
 
 **Play 3, the Tuesday shift, is LIVE** as a cloud routine
 (https://claude.ai/code/routines/trig_01BguGmG6hJL4u3xjJZmugdJ, Opus 5.5,
-Tuesdays 11:00 UTC, emails the owner). It runs in the owner's **ESPN**
-cloud environment (Custom network allowlist with site.api.espn.com) and
-fetches ESPN directly. The early 403s were an environment mix-up, not a
-proxy bug: the allowlist was saved on a separate environment named ESPN
-while the routine was pinned to Default. Moved 2026-09-29 after a probe
-run from the ESPN environment got 200 from the ESPN scoreboard, the ESPN
-summary and npm. The `replay-data` Action (Tuesdays 08:00 + 10:00 UTC)
-stays as the backup route and the archive. It runs
-`npm run replay:nfl -- --fetch-to` and commits the latest finished week
-and the one before to the `replay-data` branch under `data/`, and the
-routine replays those with `--data-dir` only when ESPN fails. Offline and
-online reports match byte for byte (Week 2 checked).
+Tuesdays 18:00 UTC, which is 2pm ET and 1pm after the Nov 1 clock
+change, emails the owner). It runs in the owner's **ESPN** cloud
+environment (Custom network allowlist with site.api.espn.com). The early
+403s there were an environment mix-up (allowlist on the ESPN environment,
+routine pinned to Default), fixed 2026-09-29. ESPN's Akamai edge still
+blocks the cloud sandbox unpredictably: on Sep 29 Node's default
+User-Agent got 403 while curl got 200, and on Oct 1 Node's default got 200
+while a custom app User-Agent got 403. So the routine tries ESPN directly
+first and falls back to the `replay-data` branch. A User-Agent change is
+not a fix. The `replay-data` Action (Tuesdays 06:23, 08:47 and 11:17 UTC)
+runs `npm run replay:nfl -- --fetch-to` and commits the latest finished
+week and the one before to the `replay-data` branch under `data/`. GitHub
+runs this repo's crons late or skips them (Sep 29: the 08:00 and 10:00 UTC
+runs started at 14:35 and 16:15), which is why the routine moved from
+11:00 to 18:00 UTC on 2026-10-01. Offline and online reports match byte
+for byte (Week 2 checked).
 
 **Next, in order:**
 1. Owner: the v1.0.4 device pass + submit.
-2. Watch the first scheduled Tuesday shift (2026-09-29 11:00 UTC). Its
-   test run at 03:39 UTC worked end to end off the replay-data branch and
-   found a real bug on its own (web NFL kickoff body repeated the
-   subtitle): fixed on `tuesday-shift/2026-09-29-nfl-kickoff-body`,
-   reviewed, cherry-picked to main as `2b5f9c9`. The remote branch can be
-   deleted. This morning's run replays Week 3 again (Week 4 starts
-   Thursday Oct 1), now on the direct ESPN route, so the kickoff check
-   should come back clean. The first new week is Week 4, reported
-   Tuesday Oct 6.
+2. The Tuesday shift's first scheduled run (2026-09-29) was all clear on
+   Week 3 (Contract PASS, Budget PASS, halftime median 0.2 minutes,
+   opening score 0 of 16, kickoff fix clean) but ran on the backup data.
+   Next run Tuesday Oct 6, 18:00 UTC, on Week 4. The remote branch
+   `tuesday-shift/2026-09-29-nfl-kickoff-body` can be deleted.
 3. C4b (held scores out of ActivityKit), designed in the Courtside spec.
 4. NFL Standings tab placeholder, store shots 2+3 rerun, Courtside C5.
+5. The nfl-scan-watchdog is `*/15` but GitHub runs it about 4 times a day
+   (measured Sep 29 to Oct 1), so a stalled scan could go unnoticed for
+   hours. Move the check to a scheduler that keeps time (cron-job.org
+   with failure emails, or an uptime monitor) before the playoffs.
 
 **Open decision for the owner:** Full Details is "every moment, every
 game". Measured: about 17 pushes per game for a team follow (max 25),

@@ -1,7 +1,8 @@
 # Replay data: the Tuesday shift's input.
 #
-# The Tuesday shift (a Claude Code cloud routine) fetches ESPN directly from
-# the owner's ESPN cloud environment. This job is its backup route and the
+# The Tuesday shift (a Claude Code cloud routine, Tuesdays 18:00 UTC) tries
+# ESPN directly from the owner's ESPN cloud environment, but ESPN's edge
+# blocks that sandbox unpredictably. This job is its backup route and the
 # archive: on GitHub's runners it fetches the latest finished NFL week and
 # the week before (scripts/replay/nfl-week.ts --fetch-to) and commits them
 # under data/ on the replay-data branch. When ESPN fails, the routine reads
@@ -10,11 +11,13 @@ name: replay-data
 
 on:
   schedule:
-    # Tuesdays 08:00 UTC, hours after Monday Night Football ends, plus a
-    # 10:00 UTC backup for a slow scheduler day. The Tuesday shift runs at
-    # 11:00 UTC.
-    - cron: '0 8 * * 2'
-    - cron: '0 10 * * 2'
+    # Three tries on Tuesday morning, at odd minutes because GitHub delays
+    # top-of-the-hour crons the most. On 2026-09-29 the 08:00 and 10:00 UTC
+    # runs started 6.5 hours late. Even that late, these land before the
+    # Tuesday shift at 18:00 UTC.
+    - cron: '23 6 * * 2'
+    - cron: '47 8 * * 2'
+    - cron: '17 11 * * 2'
   workflow_dispatch:
 
 # Pushes the replay-data branch, nothing else.

@@ -41,6 +41,9 @@ environment's network policy blocks ESPN until the owner allows the host.
 The owner's allowlist lived on a separate environment named ESPN while the
 routine ran in Default. On 2026-09-29 it moved to the ESPN environment and
 now fetches ESPN directly, with the replay-data branch as its backup.
+On 2026-10-01 it moved to Tuesdays at 2pm ET. ESPN still blocks the cloud
+some weeks, and GitHub ran the morning data jobs hours late, so the
+afternoon slot gives the backup data time to land.
 
 ---
 
