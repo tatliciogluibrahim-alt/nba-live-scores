@@ -30,7 +30,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     //   xcrun simctl launch booted com.nonoisescores.app -NNDemoLiveActivity live
     // starts a tile from fixture data (live | held | final) so the lock
     // screen and Dynamic Island can be captured without a real game or the
-    // web flow. Compiled out of Release, so it never ships. Starts 15s
+    // web flow. Add `-NNDemoState '<json>'` to show a real game moment
+    // instead of the sample (store captures). Compiled out of Release, so it never ships. Starts 15s
     // after launch: the web layer's launch reconcile ends any activity it
     // did not pin, and it only polls again while games are pinned.
     private func startDemoLiveActivityIfRequested() {
@@ -42,23 +43,43 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
     }
 
+    /// A real game moment for store captures, passed as JSON after
+    /// `-NNDemoState`. Any field left out keeps the sample value. With an
+    /// override the tile holds still (no scripted scores).
+    private struct DemoOverride: Decodable {
+        var awayCode: String?, homeCode: String?
+        var awayName: String?, homeName: String?
+        var awayScore: Int?, homeScore: Int?
+        var statusLine: String?, subline: String?, stage: String?
+        var progress: Double?
+    }
+
+    private func demoOverride() -> DemoOverride? {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-NNDemoState"), i + 1 < args.count,
+              let data = args[i + 1].data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(DemoOverride.self, from: data)
+    }
+
     private func requestDemoLiveActivity(_ kind: String) {
+        let o = demoOverride()
+        let away = o?.awayCode ?? "DET", home = o?.homeCode ?? "GB"
         let attrs = NoNoiseGameAttributes(
-            matchup: "DET vs GB", stage: "NFL \u{00b7} Week 4", sport: "nfl",
+            matchup: "\(away) vs \(home)", stage: o?.stage ?? "NFL \u{00b7} Week 4", sport: "nfl",
             redacted: kind == "held", gameId: "demo-\(kind)")
         let final = kind == "final"
         let state = NoNoiseGameAttributes.ContentState(
-            awayCode: "DET", awayScore: final ? 31 : 24,
-            homeCode: "GB", homeScore: final ? 27 : 17,
-            statusLine: final ? "Final" : "Q3 8:12", subline: "WEEK 4",
-            accentHex: "#1f3a6b", progress: final ? 1 : 0.62,
-            awayName: "Lions", homeName: "Packers")
+            awayCode: away, awayScore: o?.awayScore ?? (final ? 31 : 24),
+            homeCode: home, homeScore: o?.homeScore ?? (final ? 27 : 17),
+            statusLine: o?.statusLine ?? (final ? "Final" : "Q3 8:12"), subline: o?.subline ?? "WEEK 4",
+            accentHex: "#1f3a6b", progress: o?.progress ?? (final ? 1 : 0.62),
+            awayName: o?.awayName ?? "Lions", homeName: o?.homeName ?? "Packers")
         do {
             let activity = try Activity.request(
                 attributes: attrs,
                 content: ActivityContent(state: state, staleDate: nil),
                 pushType: nil)
-            guard kind == "live" else { return }
+            guard kind == "live", o == nil else { return }
             // Two scores so the numeral roll can be watched on the lock
             // screen and in the island: a Packers touchdown 10s in (24-24,
             // both rows go to text), then a Lions field goal 10s later.

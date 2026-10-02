@@ -392,7 +392,11 @@ for byte (Week 2 checked).
    iPhone runs iOS 27, which Xcode 26.4.1 cannot install test builds on,
    so the device pass runs on the TestFlight build. The v1.0.3 version
    bump was never committed and its archive is not on this Mac (newest
-   local archive was 1.0.2, build 17).
+   local archive was 1.0.2, build 17). Store set REGENERATED 2026-10-01:
+   all eight shots new in Courtside (`store-assets/v1.0.4/`, harness
+   `scripts/store-shots-v104.mjs`), every number real (one rebuilt live
+   moment, 3:55 PM ET Sep 27). Connect still showed the 1.0.2 set, so
+   upload all eight in the 1.0.4 version.
 2. The Tuesday shift's first scheduled run (2026-09-29) was all clear on
    Week 3 (Contract PASS, Budget PASS, halftime median 0.2 minutes,
    opening score 0 of 16, kickoff fix clean) but ran on the backup data.

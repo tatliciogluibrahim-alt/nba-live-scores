@@ -11,6 +11,11 @@ gives a light tap. Nothing else moves besides the live dot: motion only
 where the state changed. The tap needs the v1.0.4 app, and older installs
 skip it.
 
+The v1.0.4 store set is all new in the same pass: eight screenshots of the
+current app, porcelain behind the browse shots and arena behind the live
+ones. The live scores in them are a real moment (3:55 PM ET, Sep 27),
+rebuilt from ESPN's play-by-play, so no shot carries an invented score.
+
 ---
 
 ## Courtside reaches the lock screen (C4, built 2026-09-28, pending the owner's look)
