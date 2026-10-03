@@ -20,6 +20,8 @@ import { deriveNBARecap } from "../../companion/recap/derive-recap";
 import { getTeam } from "../../companion/following/data/teams";
 import { nflTeamDisplayName } from "../../companion/following/data/nfl-teams";
 import { momentSport } from "../../companion/state/moments";
+import { migrateFollow } from "../../companion/state/follow-migration";
+import { tournamentPhase } from "../../companion/following/data/tournament-phase";
 import {
   countryKnockoutOutcome,
   knockoutResult,
@@ -301,7 +303,29 @@ function gameIncludes(game: Game, code: string): boolean {
   );
 }
 
+/** The follow's moment. Stored pre-Path-B rows (subscribed before
+ *  2026-07-19) carry no momentId, so resolve them the way the app's own
+ *  migration does, never by guessing from a bare code. */
+function momentOf(follow: Follow): string | null {
+  if (follow.momentId) return follow.momentId;
+  return migrateFollow(follow as unknown as Parameters<typeof migrateFollow>[0])?.momentId ?? null;
+}
+
+/** A playoff game: a series round, or the Play-In (which has no series).
+ *  ESPN's NBA feed carries preseason and regular-season games too, with
+ *  neither. */
+function isPlayoffGame(game: Game): boolean {
+  return game.seriesRound !== "" || /play-?in/i.test(game.gameContext ?? "");
+}
+
+// The NBA follows are NBA Playoffs follows. An NBA game counts only for a
+// follow whose moment is NBA (never by the bare code: MIA, CLE and LAC are
+// NFL teams too) and only when it is a playoff game. On 2026-10-03 a
+// preseason exhibition (MIA at TOR, "NBA Canada Games 2026") matched a
+// wrapped NBA Playoffs follow and was the only row in that day's Brief.
 function nbaGameMatchesFollow(game: Game, follow: Follow): boolean {
+  if (momentSport(momentOf(follow)) !== "nba") return false;
+  if (!isPlayoffGame(game)) return false;
   switch (follow.kind) {
     case "team":
       return gameIncludes(game, follow.id);
@@ -725,7 +749,14 @@ export function composeBrief({
   // Alerts summary. Tier labels mirror PRESETS in state/types.ts (kept
   // in sync manually rather than imported to keep this composer free
   // of client-only types).
-  const enabledFollows = follows.filter((f) => f.alertEnabled);
+  // A wrapped moment holds no alert any more (the app's alert-slot rule,
+  // occupiesAlertSlot), so the summary leaves it out instead of listing
+  // NBA Playoffs or Summer Soccer as live in October.
+  const enabledFollows = follows.filter((f) => {
+    if (!f.alertEnabled) return false;
+    const moment = momentOf(f);
+    return !moment || tournamentPhase(moment, now) !== "concluded";
+  });
   const tiers = enabledFollows.slice(0, 5).map((f) => {
     const label =
       f.alertTier === "all"

@@ -30,8 +30,10 @@ function nbaGame(over: Partial<Game> = {}): Game {
     matchup: "OKC vs SA",
     gameContext: "",
     seriesSummary: "",
-    seriesConference: "",
-    seriesRound: "",
+    // A playoff game by default (the Brief only counts playoff games).
+    // OKC and SA are both West, so a Conference Finals game.
+    seriesConference: "West",
+    seriesRound: "Conf Finals",
     home: {
       id: "1",
       abbreviation: "SA",
@@ -295,5 +297,88 @@ describe("composeBrief — NFL", () => {
       now: MONDAY,
     });
     expect(p.yesterday).toHaveLength(1);
+  });
+});
+
+// ── 2026-10-03: a preseason exhibition sent the Brief ──────────────────
+// The owner's Saturday Brief went out with one row, MIA at TOR, "NBA
+// Canada Games 2026": a preseason game, matched by an NBA Playoffs follow
+// that wrapped in June. "Your alerts" listed NBA Playoffs and Summer
+// Soccer as if they were still running. Without that row the Brief was
+// empty and would have been skipped.
+
+const SAT_OCT_3 = new Date("2026-10-03T12:30:00Z"); // 8:30 AM ET, send time
+
+describe("composeBrief — only the moment's own games", () => {
+  const nbaPlayoffs = legacyRefToFollow("tournament", "nba-playoffs-2025", {
+    alertEnabled: true,
+    alertTier: "all",
+    followedAt: 1,
+  })!;
+  const preseason = nbaGame({
+    id: "401902644",
+    date: "2026-10-03T23:00:00Z",
+    matchup: "MIA vs TOR",
+    gameContext: "NBA Canada Games 2026",
+    seriesRound: "",
+    home: { ...nbaGame().home, abbreviation: "TOR", name: "Toronto" },
+    away: { ...nbaGame().away, abbreviation: "MIA", name: "Miami" },
+  });
+
+  it("an NBA Playoffs follow never picks up a preseason game", () => {
+    const p = composeBrief({
+      subscriber: sub({ follows: [nbaPlayoffs] }),
+      nba: [preseason],
+      now: SAT_OCT_3,
+    });
+    expect(p.today).toHaveLength(0);
+    expect(shouldSendBrief(p)).toBe(false);
+  });
+
+  it("a Play-In game still counts for an NBA Playoffs follow", () => {
+    const playIn = nbaGame({ gameContext: "East Play-In Tournament", seriesRound: "" });
+    const p = composeBrief({ subscriber: sub({ follows: [nbaPlayoffs] }), nba: [playIn], now: NOW });
+    expect(p.today).toHaveLength(1);
+  });
+
+  it("an NFL follow never matches an NBA game that shares its code", () => {
+    // MIA is the Dolphins and the Heat.
+    const heat = nbaGame({
+      seriesRound: "Second Round",
+      home: { ...nbaGame().home, abbreviation: "MIA", name: "Miami" },
+    });
+    const p = composeBrief({ subscriber: sub({ follows: [nflFollow("MIA")] }), nba: [heat], now: NOW });
+    expect(p.today).toHaveLength(0);
+  });
+
+  it("Your alerts leaves out wrapped moments", () => {
+    const spain = legacyRefToFollow("country", "ESP", {
+      alertEnabled: true,
+      alertTier: "all",
+      followedAt: 1,
+    })!;
+    const p = composeBrief({
+      subscriber: sub({ follows: [nbaPlayoffs, spain, nflFollow("SEA")] }),
+      nba: [],
+      now: SAT_OCT_3,
+    });
+    expect(p.alerts.tiers).toHaveLength(1);
+    expect(p.alerts.tiers[0]).toMatch(/Quiet$/);
+  });
+
+  it("a stored pre-Path-B row (no momentId) still resolves its moment", () => {
+    // Subscribers from before 2026-07-19 kept their old follow shape in KV.
+    const legacyRow = {
+      kind: "tournament",
+      id: "nba-playoffs-2025",
+      alertEnabled: true,
+      alertTier: "all",
+      followedAt: 1,
+    } as unknown as Follow;
+    const wrapped = composeBrief({ subscriber: sub({ follows: [legacyRow] }), nba: [], now: SAT_OCT_3 });
+    expect(wrapped.alerts.tiers).toHaveLength(0);
+    const finals = nbaGame({ seriesRound: "NBA Finals" });
+    const june = composeBrief({ subscriber: sub({ follows: [legacyRow] }), nba: [finals], now: NOW });
+    expect(june.today).toHaveLength(1);
   });
 });

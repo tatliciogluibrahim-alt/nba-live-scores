@@ -2,6 +2,22 @@
 
 ---
 
+## The Brief stops counting preseason games (2026-10-03)
+
+Saturday's Brief went out with a single row, MIA at TOR in the "NBA
+Canada Games 2026", a preseason exhibition. An NBA Playoffs follow
+matched every NBA game ESPN listed, and "Your alerts" still showed NBA
+Playoffs and Summer Soccer as running. Without that row the Brief was
+empty and would not have been sent.
+
+Now an NBA game counts only for an NBA follow (by its moment, never the
+bare team code, since MIA, CLE and LAC are NFL teams too) and only when
+it is a playoff or Play-In game. Wrapped moments leave "Your alerts".
+Brief follows are still a snapshot taken at signup, so a subscriber
+refreshes them by subscribing again from Settings.
+
+---
+
 ## Scores roll on the lock screen (2026-10-01, rides v1.0.4)
 
 When a score changes, the numerals on the lock screen, the Dynamic Island
