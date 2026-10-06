@@ -165,3 +165,57 @@ describe("detectNFLPlays — team attribution (own-team Companion gate)", () => 
     expect(events[0].teamCode).toBeUndefined();
   });
 });
+
+describe("detectNFLPlays — big plays are scrimmage plays only (PIT at CLE, 2026 Week 4)", () => {
+  const game = JSON.parse(
+    readFileSync(
+      new URL("./replay/__fixtures__/nfl-summary-401872964-pit-at-cle.json", import.meta.url),
+      "utf8"
+    )
+  ) as {
+    drives: { previous: { team?: { abbreviation?: string }; plays: NFLDrivePlay[] }[] };
+  };
+
+  function bigPlaysFor(drive: { team?: { abbreviation?: string }; plays: NFLDrivePlay[] }) {
+    return detectNFLPlays({
+      ...base,
+      awayCode: "PIT",
+      homeCode: "CLE",
+      scoringPlays: [],
+      driveTeamCode: drive.team?.abbreviation,
+      drivePlays: drive.plays,
+      firedPlayIds: [],
+    }).events.filter((e) => e.type.startsWith("nfl-big-play"));
+  }
+
+  it("does not push a missed field goal as a big play", () => {
+    const notes = game.drives.previous.flatMap((d) => bigPlaysFor(d).map((e) => e.note ?? ""));
+    // Real game: C.Boswell's 48-yard miss carries statYardage 48 and went out
+    // as "nfl-big-play-rush". Only the three 40+ yard catches are big plays.
+    expect(notes.some((n) => /field goal/i.test(n))).toBe(false);
+    expect(notes).toHaveLength(3);
+    expect(notes.every((n) => / pass /.test(n))).toBe(true);
+  });
+
+  it("does not push kickoff or punt returns as big rushes", () => {
+    const events = bigPlaysFor({
+      team: { abbreviation: "PHI" },
+      plays: [
+        {
+          id: "k1",
+          statYardage: 55,
+          type: { text: "Kickoff" },
+          text: "C.Ryland kicks 65 yards from ARZ 35 to NYG 0. T.Tracy pushed ob at ARZ 45 for 55 yards (K.Clark).",
+        },
+        {
+          id: "p1",
+          statYardage: 41,
+          type: { text: "Punt" },
+          text: "E.Evans punts 51 yards to PHI 42, Center-J.Cardona. B.Covey pushed ob at LA 17 for 41 yards (O.Speights).",
+        },
+        { id: "r1", statYardage: 45, type: { text: "Rush" }, text: "S.Barkley right end to LA 20 for 45 yards." },
+      ],
+    });
+    expect(events.map((e) => e.type)).toEqual(["nfl-big-play-rush"]);
+  });
+});

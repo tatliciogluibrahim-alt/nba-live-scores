@@ -13,7 +13,7 @@ import {
   type CachedNFLGameState,
 } from "../nfl-event-detector";
 import { scanNFLGamePlays } from "../nfl-play-scan";
-import { BIG_PLAY_YARDS } from "../nfl-play-detector";
+import { isBigPlay } from "../nfl-play-detector";
 import { DEDUPE_TTL_SECONDS } from "../dedupe";
 import {
   buildLiveActivityOfferPayload,
@@ -149,7 +149,7 @@ export function replayNFLGame(
       ? "scoring"
       : p.isTurnover && !p.scoringPlay
         ? "turnover"
-        : !p.scoringPlay && (p.statYardage ?? 0) >= BIG_PLAY_YARDS
+        : isBigPlay(p)
           ? "big-play"
           : null;
     if (!kind) continue;

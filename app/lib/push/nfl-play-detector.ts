@@ -29,6 +29,19 @@ export type NFLDrivePlay = {
   text?: string;
 };
 
+/** A non-scoring 40+ yard rush or catch. Kicks carry their distance as
+ *  statYardage too (a missed 48-yard FG reads 48), and kickoff/punt returns
+ *  are not rushes, so special teams never count. */
+export function isBigPlay(p: NFLDrivePlay): boolean {
+  if (p.scoringPlay || (p.statYardage ?? 0) < BIG_PLAY_YARDS) return false;
+  const text = (p.text ?? "").toLowerCase();
+  const typeText = (p.type?.text ?? "").toLowerCase();
+  const isSpecialTeams =
+    /field goal|kickoff|punt|extra point/.test(typeText) ||
+    /field goal| kicks | punts /.test(text);
+  return !isSpecialTeams;
+}
+
 export type NFLPlayInput = {
   gameId: string;
   awayCode: string;
@@ -119,7 +132,7 @@ export function detectNFLPlays(input: NFLPlayInput): NFLPlayResult {
       });
       continue;
     }
-    if (yards >= BIG_PLAY_YARDS) {
+    if (isBigPlay(p)) {
       const isRec = /reception|pass/.test(typeText) || / pass /.test(text);
       const type: PushEvent["type"] = isRec ? "nfl-big-play-rec" : "nfl-big-play-rush";
       fired.add(p.id);
