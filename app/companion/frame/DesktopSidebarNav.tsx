@@ -76,7 +76,7 @@ function NavRow({
       className="relative flex min-h-[44px] items-center pl-[14px] uppercase transition-opacity active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: size,
+        fontSize: `${size / 16}rem`,
         fontWeight: active ? 700 : 600,
         letterSpacing: "0.16em",
         color: active ? "var(--ink)" : "var(--mute-1)",

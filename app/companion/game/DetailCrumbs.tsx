@@ -48,12 +48,14 @@ export function DetailCrumbs({
   return (
     <>
       {/* Mobile — System D masthead crumb */}
+      {/* The back link is a 44px-tall target (it was 32px), so the
+          header gives back 6px above and below to keep its height. */}
       <header
-        className="flex items-baseline justify-between"
+        className="flex items-center justify-between"
         style={{
-          paddingTop: "max(env(safe-area-inset-top), 14px)",
+          paddingTop: "max(calc(env(safe-area-inset-top) - 6px), 8px)",
           paddingRight: "18px",
-          paddingBottom: "10px",
+          paddingBottom: "4px",
           paddingLeft: "18px",
           borderBottom: "1px solid var(--line)",
         }}
@@ -66,7 +68,7 @@ export function DetailCrumbs({
             e.preventDefault();
             router.back();
           }}
-          className="inline-flex min-h-[32px] items-baseline uppercase"
+          className="inline-flex min-h-[44px] items-center uppercase"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "0.6875rem",

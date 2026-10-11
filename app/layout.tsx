@@ -183,6 +183,20 @@ export default function RootLayout({
             __html: `(function(){try{var t=localStorage.getItem('no-noise-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t)}}catch(e){}})();`,
           }}
         />
+        {/* Larger Text on iPhone and iPad. Safari and the app's web view
+            leave px and rem text alone when the user changes Text Size;
+            only the -apple-system-body font follows it (17px at the
+            default). This reads that size from a hidden probe and scales
+            the root font size to match, so every rem-sized reading style
+            grows with it. Display numerals are px and stay put. Capped at
+            200%. Re-read on return, since the setting changes in Settings.
+            Everywhere else the browser's own font size setting reaches
+            the same rem styles. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var d=document.documentElement,n=navigator;if(!(/iPhone|iPad|iPod/.test(n.userAgent)||(n.platform==='MacIntel'&&n.maxTouchPoints>1)))return;var a=function(){var p=document.createElement('span');p.style.cssText='font:-apple-system-body;position:absolute;visibility:hidden';d.appendChild(p);var px=parseFloat(getComputedStyle(p).fontSize);d.removeChild(p);if(!px)return;var s=Math.min(2,Math.max(0.88,px/17));d.style.fontSize=Math.abs(s-1)<0.01?'':(s*100).toFixed(1)+'%'};a();document.addEventListener('visibilitychange',function(){if(!document.hidden)a()})}catch(e){}})();`,
+          }}
+        />
         {/* Black-screen catcher. If anything throws hard enough to
             keep React from mounting, the user otherwise sees solid
             black on Capacitor's TestFlight WebView. This handler

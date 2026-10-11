@@ -209,8 +209,8 @@ export function FirstFollowTierCard({ active = true }: { active?: boolean }) {
           <button
             type="button"
             onClick={() => applyTier(currentTier)}
-            aria-label={`Keep ${PRESETS[currentTier].label} alerts`}
-            className="mt-3 inline-flex min-h-[40px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
+            aria-label={`Looks good. Keep ${PRESETS[currentTier].label} alerts`}
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",

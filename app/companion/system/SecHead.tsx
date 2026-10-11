@@ -32,7 +32,9 @@ export function SecHead({
       // width, muted). Structure moves from weight-of-rule to type.
       style={{ paddingBottom: 8, borderBottom: "1px solid var(--line)", marginBottom: 2 }}
     >
-      <span
+      {/* A real heading, so VoiceOver's heading rotor can jump between
+          sections (accessibility pass, 2026-10-11). */}
+      <h2
         className="uppercase"
         style={{
           fontFamily: "var(--font-display)",
@@ -44,7 +46,7 @@ export function SecHead({
         }}
       >
         {name}
-      </span>
+      </h2>
 
       {(count || showHelp) && (
         <span

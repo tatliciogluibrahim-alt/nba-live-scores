@@ -27,11 +27,12 @@ html, body {
   --paper:    #ffffff;
   --ink:      #17181a;
   --ink-2:    #2b2520;
-  --mute-1:   #716f67;
-  /* Darkened from #a89c7a (2.27:1, failed WCAG AA on cream) to #746747
-     (4.64:1, passes AA) while staying lighter than --mute-1 so the
-     secondary-text hierarchy holds. */
-  --mute-2:   #716f67;
+  /* Muted text clears 4.5:1 on every light ground: 4.95:1 on --cream,
+     5.50:1 on --paper, 4.66:1 on --cream-2 and chips. #716f67 measured
+     4.26:1 on --cream-2, where the selected alert tier and the alert
+     toggle sit (accessibility pass, 2026-10-11). */
+  --mute-1:   #6b6961;
+  --mute-2:   #6b6961;
   --line:     #e3e1da;
   --rule:     var(--ink);
 
@@ -47,6 +48,9 @@ html, body {
      full event detection arrives in Phase 12 ahead of September. */
   --nfl:        #1f3a6b;
   --nfl-soft:   #e0e5ee;
+  /* Text-grade NFL, like --live-text: --nfl is the fill color. Light
+     --nfl already reads at 10:1, so the two match here. */
+  --nfl-text:   #1f3a6b;
   --up:         #2e5bd7;
   --up-soft:    #dce4f8;
   --critical:   #c9362b;
@@ -60,7 +64,7 @@ html, body {
   /* Text-grade live: --live is a PIP color (3.86:1 on cream — fine for
      dots and fills, fails AA for the 9-13px LIVE stamps that use it as
      text every NFL Sunday). Darkened to clear 4.5:1; pips keep --live. */
-  --live-text:  #c93d2e;
+  --live-text:  #bb3729; /* 5.12:1 on --cream, 4.82:1 on --cream-2 */
 
   /* Courtside C1 (spec 2026-08-31). Archivo's width axis is the
      identity: display numerals/headers run 125%, labels 112%. Chip
@@ -214,6 +218,9 @@ html, body {
   --wc-soft:                   rgba(61, 157, 93, 0.14);
   --nfl:                       #4a78c4;
   --nfl-soft:                  rgba(74, 120, 196, 0.14);
+  /* --nfl as text measured 4.42:1 on the arena ground (the live status
+     line). Text-grade blue: 5.23:1 on --cream, 4.88:1 on --paper. */
+  --nfl-text:                  #5c85c9;
   --up:                        #6a8fdc;
   --up-soft:                   rgba(106, 143, 220, 0.14);
   --critical:                  #e2554a;

@@ -187,7 +187,7 @@ export function ScoreModule({
               className="truncate leading-snug"
               style={{
                 color: "var(--ink)",
-                fontSize: spec.matchupFontSize,
+                fontSize: `${spec.matchupFontSize / 16}rem`,
                 fontWeight: spec.matchupWeight,
                 letterSpacing: "-0.005em",
               }}

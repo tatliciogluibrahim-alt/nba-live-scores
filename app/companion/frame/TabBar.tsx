@@ -10,23 +10,27 @@ import { usePathname } from "next/navigation";
 // register carries better as pure type. The active tab is carried by the
 // ink register itself — full ink + heavier weight + a short brand tick
 // under the word (spec §2 + §5 v3). Inactive tabs sit
-// at --mute-1. Three tabs, three jobs, real Next.js navigation.
+// at --mute-1. Four tabs, four jobs, real Next.js navigation.
+//
+// Larger Text: the bar keeps one size, like a native tab bar (labels and
+// padding in px, so the rem-based text scaling never reaches it). Four
+// words share 390px, and a growing label clipped to "WATCHI" at 150%.
+// Each tab's spoken name is its visible label.
 
 type Tab = {
   id: "today" | "schedule" | "following" | "watching";
   href: string;
   label: string;
-  ariaLabel: string;
 };
 
 // Four tabs, four jobs (S1, 2026-07-06): state → structure → setup →
 // held. Schedule is the competition's full shape (day list, bracket,
 // groups); Today stays personal and now.
 const TABS: Tab[] = [
-  { id: "today", href: "/", label: "Today", ariaLabel: "Today" },
-  { id: "schedule", href: "/schedule", label: "Schedule", ariaLabel: "Schedule and bracket" },
-  { id: "following", href: "/following", label: "Following", ariaLabel: "Following" },
-  { id: "watching", href: "/watching", label: "Watching", ariaLabel: "Watching, pinned games" },
+  { id: "today", href: "/", label: "Today" },
+  { id: "schedule", href: "/schedule", label: "Schedule" },
+  { id: "following", href: "/following", label: "Following" },
+  { id: "watching", href: "/watching", label: "Watching" },
 ];
 
 function isActive(pathname: string | null, href: string) {
@@ -59,17 +63,16 @@ export function TabBar() {
         paddingRight: "env(safe-area-inset-right)",
       }}
     >
-      <ul className="mx-auto flex max-w-md items-stretch justify-around px-4 pt-1">
-        {TABS.map(({ id, href, label, ariaLabel }) => {
+      <ul className="mx-auto flex max-w-md items-stretch justify-around px-[16px] pt-[4px]">
+        {TABS.map(({ id, href, label }) => {
           const active = isActive(pathname, href);
           return (
             <li key={id} className="flex-1">
               <Link
                 href={href}
-                aria-label={ariaLabel}
                 aria-current={active ? "page" : undefined}
                 prefetch
-                className="mx-auto flex min-h-[44px] flex-col items-center justify-center gap-[5px] px-2 py-1 transition-opacity active:opacity-70"
+                className="mx-auto flex min-h-[44px] flex-col items-center justify-center gap-[5px] px-[4px] py-[4px] transition-opacity active:opacity-70"
                 // Ink = here, mute = elsewhere. The active tab reads through
                 // the ink register, no pill or fill.
                 style={{ color: active ? "var(--ink)" : "var(--mute-1)" }}

@@ -191,7 +191,8 @@ export function SevenDotStrip({
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: dotLabel.length > 2 ? "0.625rem" : "0.6875rem",
+                  // Fixed: the label sits inside a 32px dot.
+                  fontSize: dotLabel.length > 2 ? 10 : 11,
                   fontWeight: 700,
                   letterSpacing: 0,
                   lineHeight: 1,

@@ -25,7 +25,7 @@ enum Porcelain {
     static let ground   = Color(hex: "f4f3ef") // light: --cream
     static let surface  = Color(hex: "ffffff") // light: --paper
     static let ink      = Color(hex: "17181a") // light: --ink
-    static let mute     = Color(hex: "716f67") // light: --mute-1
+    static let mute     = Color(hex: "6b6961") // light: --mute-1
     static let line     = Color(hex: "e3e1da") // light: --line
     static let live     = Color(hex: "c93d2e") // light: --live
     static let chipBg   = Color(hex: "eeece6") // light: --chip-bg

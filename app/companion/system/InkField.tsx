@@ -28,7 +28,8 @@ export function InkField({
         padding: "16px 18px 8px",
       }}
     >
-      <div
+      {/* A heading for VoiceOver's rotor, like SecHead. */}
+      <h2
         className="mb-[6px] flex items-center gap-2 uppercase"
         style={{
           fontFamily: "var(--font-mono)",
@@ -46,7 +47,7 @@ export function InkField({
           />
         )}
         {label}
-      </div>
+      </h2>
 
       <div className="[&>*+*]:border-t [&>*+*]:border-[color:var(--line-on-ink)]">{children}</div>
     </div>
