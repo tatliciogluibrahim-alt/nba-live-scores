@@ -111,6 +111,37 @@ describe("feedLive: the whole feed's live count", () => {
     // Nothing personal: the calm state still owns the slot when nothing is live.
     expect(p.isQuietDay).toBe(true);
   });
+
+  it("an NBA preseason game is not one of the product's live games", () => {
+    // ESPN's NBA feed carries October exhibitions ("NBA Canada Games 2026",
+    // the game that sent a one-row Brief on 2026-10-03). Only playoff and
+    // Play-In games are the NBA moment.
+    const nbaLive = (over: Partial<NBAGame>): NBAGame => ({
+      id: "401902644",
+      date: "2026-10-11T19:00:00Z",
+      status: "live",
+      statusText: "Q2 · 5:12",
+      period: 2,
+      matchup: "MIA vs TOR",
+      gameContext: "NBA Canada Games 2026",
+      seriesSummary: "",
+      seriesConference: "",
+      seriesRound: "",
+      home: { name: "Toronto Raptors", abbreviation: "TOR", score: 40, logo: "" },
+      away: { name: "Miami Heat", abbreviation: "MIA", score: 38, logo: "" },
+      broadcasts: [],
+      ...over,
+    });
+    const preseason = buildTodayPayload({ ...base, nba: [nbaLive({})], nfl: [nfl("a")], follows: [], pinned: [] });
+    expect(preseason.feedLive).toEqual({ nba: 0, wc: 0, nfl: 1 });
+    const playIn = buildTodayPayload({
+      ...base,
+      nba: [nbaLive({ gameContext: "East Play-In Tournament" })],
+      follows: [],
+      pinned: [],
+    });
+    expect(playIn.feedLive?.nba).toBe(1);
+  });
 });
 
 describe("Quiet Wrap rows say which day they're from", () => {

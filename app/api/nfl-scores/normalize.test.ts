@@ -256,6 +256,25 @@ describe("normalizeNFLGame — break states read as breaks (MIN at NO, end of th
   it("15:00 of the 3rd is play, not a break (the second half opens with a kickoff)", () => {
     // HOU at TEN: "15:00 - 3rd" with the kickoff as last play.
     expect(captured(T1439, "401872984").statusText).toBe("Q3 15:00");
+    // CLE at NYJ, seconds before its kickoff: ESPN leaves Halftime for
+    // "15:00 - 3rd" with the end-of-half marker still the last play.
+    expect(captured("2026-10-11T14:42:28-04:00", "401872983").statusText).toBe("Q3 15:00");
+  });
+});
+
+describe("normalizeNFLGame — the end of the 3rd across the 1 PM window", () => {
+  // Every game took one of the two shapes; the marker held in each flip.
+  it("a flip with no end-of-period state first still reads End of 3rd (HOU at TEN)", () => {
+    expect(captured("2026-10-11T15:11:02-04:00", "401872984").statusText).toBe("End of 3rd");
+  });
+
+  it("ESPN can call the period ended before it logs the marker (CHI at GB)", () => {
+    // STATUS_END_PERIOD while the last play is still the final snap.
+    expect(captured("2026-10-11T15:19:12-04:00", "401872990").statusText).toBe("End of 3rd");
+  });
+
+  it("the first 4th-quarter snap ends the break under a stale 15:00 (CLE at NYJ)", () => {
+    expect(captured("2026-10-11T15:17:40-04:00", "401872983").statusText).toBe("Q4 15:00");
   });
 });
 

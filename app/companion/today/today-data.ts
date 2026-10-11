@@ -2520,7 +2520,14 @@ export function buildTodayPayload({
     scoreboard,
     reliancePrompt: buildReliancePrompt(recentForWrap, wc, follows, now),
     feedLive: {
-      nba: nba.filter((g) => g.status === "live").length,
+      // The NBA moment is the playoffs: ESPN's feed also carries October
+      // exhibitions, which are not games this product follows (the same
+      // rule as the Brief, compose-brief.ts isPlayoffGame).
+      nba: nba.filter(
+        (g) =>
+          g.status === "live" &&
+          (Boolean(g.seriesRound) || /play-?in/i.test(g.gameContext ?? ""))
+      ).length,
       wc: wc.filter((g) => g.status === "live").length,
       nfl: nflGames.filter((g) => g.status === "live").length,
     },
