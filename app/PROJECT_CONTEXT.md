@@ -422,13 +422,13 @@ for byte (Week 2 checked).
    No spoiler leaks found anywhere. Items 1, 2 and 4 FIXED the same day
    (owner call on Quiet: copy follows the engine). **Everything else
    closed the same evening** ("close out the open items, i want them
-   all"): see the 2026-10-11 close-out record below. Committed locally,
-   push pending the owner's go.
-7. After the push, check in production: game page titles ("Colts at
-   Steelers", read from KV, so local runs without KV show "Game"), the
-   Standings tab against ESPN, Larger Text in the installed app (Settings
-   > Display > Text Size, then reopen Today), and /api/world-cup/schedule
-   returning 104 fixtures. The mute token changed in CourtsideTokens.swift
+   all"): see the 2026-10-11 close-out record below. PUSHED 2026-10-11
+   (`c963890`, then the tip copy fix `cfde963`), CI green, live.
+7. Verified in production the same evening: game page titles ("Broncos at
+   Chargers"), Standings (8 divisions), /api/world-cup/schedule (104
+   fixtures), the live situation data, the home title, and Larger Text in
+   the installed app's web view (simulator, AX-Medium). Still worth a look
+   on the owner's own phone. The mute token changed in CourtsideTokens.swift
    after build 20 was archived: widgets pick it up in the next native
    build (re-archive v1.0.4 first if it isn't uploaded yet, otherwise
    v1.0.5). Larger Text itself needs no native build.
@@ -490,6 +490,12 @@ vitest 1140 in 100 files, build 96/96 (was 95, the new /nfl page).
   a local check needs a proxy that strips the CSP.
 - Game page titles read KV only (capped at 400ms), so they fall back to
   "Game" locally.
+- Heavy automated checks against production from one machine trip
+  Vercel's firewall: every request from that IP gets 403 with
+  `x-vercel-mitigated: challenge`, and headless browsers fail the
+  checkpoint ("Code 21"). It is per IP and expires on its own. To check
+  production from another network, run the nfl-scan-watchdog workflow by
+  hand (read-only, and it also proves the scan heartbeat).
 
 ### 2026-09-28: Courtside C4 (play 2), the closed surfaces
 
