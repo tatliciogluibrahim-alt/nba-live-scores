@@ -194,6 +194,22 @@ export function TodayClient() {
     setLatchedVisitAsk(visitAsk);
   }, [latchedVisitAsk, visitAsk]);
 
+  // The visit starts when onboarding ends. Its overlay covers Today, so an
+  // ask that latched underneath (the first-follow card, once the overlay's
+  // own follow lands) was never seen and blocked the one that matters next:
+  // iPhone Safari finished onboarding with no Install step until a reload
+  // (2026-10-11). Completing onboarding drops that latch once.
+  const onboardingDone = prefs.onboardingComplete === true;
+  const onboardingWasDone = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!prefsHydrated) return;
+    if (onboardingWasDone.current === false && onboardingDone) {
+      // A one-time reset on a real false→true transition, not derived state.
+      setLatchedVisitAsk(null);
+    }
+    onboardingWasDone.current = onboardingDone;
+  }, [prefsHydrated, onboardingDone]);
+
   const setupAsk = setup.step ? `setup:${setup.step}` : null;
   const showCurrentSetupAsk =
     !holdAsks && setupAsk !== null && visitAsk === setupAsk;
