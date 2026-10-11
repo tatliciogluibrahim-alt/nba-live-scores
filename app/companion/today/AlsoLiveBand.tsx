@@ -8,6 +8,7 @@ import { GameSpoilerScope, useFollowHidesGame } from "../spoiler/reveal";
 import { useNoSpoilers } from "../providers";
 import type { ScoreboardTile } from "./today-data";
 import { BAND_MAX_ROWS, bandShownCount } from "./agate-slate";
+import { scheduleLiveHref } from "./live-links";
 
 // System D "Also live" ink band (Task 7). The companion to the lead
 // Monument: the lead is index 01, and every OTHER live followed game renders
@@ -18,9 +19,13 @@ import { BAND_MAX_ROWS, bandShownCount } from "./agate-slate";
 // gutter bleed (-mx-4) relaxes to mx-0 inside the desktop main column.
 //
 // Rung-2 bound (spec §1): at most BAND_MAX_ROWS game rows; any surplus
-// collapses into one "+N MORE LIVE →" row linking /watching (mono, no score).
-// BAND_MAX_ROWS and bandShownCount live in agate-slate.ts so the running
-// index logic (lead 01, band 02..0N, then the slate) is testable in one place.
+// collapses into one "+N MORE LIVE →" row (mono, no score) that opens
+// Schedule on those games' competition, where every live game is listed
+// (persona sweep 2026-10-11: it opened Watching, which holds only tracked
+// games). Tracked games rank first (buildScoreboard), so the rows shown
+// here are the ones the user chose to hold. BAND_MAX_ROWS and
+// bandShownCount live in agate-slate.ts so the running index logic (lead
+// 01, band 02..0N, then the slate) is testable in one place.
 
 export { bandShownCount };
 
@@ -54,7 +59,11 @@ export function AlsoLiveBand({
           />
         ))}
         {overflow > 0 ? (
-          <BoardRow matchup={`+${overflow} MORE LIVE`} href="/watching" />
+          <BoardRow
+            matchup={`+${overflow} MORE LIVE`}
+            href={scheduleLiveHref(others.slice(BAND_MAX_ROWS).map((t) => t.source))}
+            linkLabel={`${overflow} more live. Open Schedule.`}
+          />
         ) : null}
       </InkField>
     </div>

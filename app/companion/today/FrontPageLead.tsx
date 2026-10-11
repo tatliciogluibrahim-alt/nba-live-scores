@@ -10,6 +10,7 @@ import { safeText } from "../spoiler/safe-text";
 import { useNoSpoilers } from "../providers";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
 import { heroKickoffStamp } from "./agate-slate";
+import { liveLine } from "./live-line";
 
 // The lead settles in once per page-load, not on every Today re-mount (each
 // tab return remounts the route). A module flag — reset on a full reload —
@@ -192,26 +193,49 @@ export function FrontPageLead({
     }
     const context = [contextHead, deck.broadcast].filter(Boolean).join(" · ");
 
-    // Deck line: live = the calm status sentence plus the stake/context
+    // No-Spoilers decision for the deck. isRevealed clears baseHidden, so
+    // the full deck returns the moment the user taps "Show score".
+    const deckHidden = baseHidden && !isRevealed(game.gameId);
+
+    // Deck line: live = the calm status line plus the stake/context
     // support; upcoming = the stake alone ("Winner goes through to the
     // quarterfinals." / "OKC leads series 3-2."). The old count headline
     // ("Two matches today.") duplicated the UP NEXT section count, and the
     // day now lives in the kicker — so with no stake the deck stays empty
     // rather than restating what the Monument already shows.
-    const deckText = lead.live
-      ? joinSentences(deck.detail, lead.support)
-      : joinSentences(lead.support);
+    //
+    // The live status line is built here, not taken from the data layer,
+    // because it depends on No-Spoilers (persona sweep 2026-10-11): margin
+    // wording ("One-score game.") and the NFL situation line ("PIT ball ·
+    // 1st & Goal at IND 1") never render for a hidden game, which gets the
+    // neutral period line instead. Shown, the situation stands in for the
+    // generic period line. Summer Soccer keeps its score-free headline.
+    const live =
+      lead.live && sport !== "wc"
+        ? liveLine(
+            {
+              source: sport,
+              statusLine: game.statusLine,
+              period: game.period,
+              awayScore: game.awayScore,
+              homeScore: game.homeScore,
+              situation: game.situation,
+            },
+            deckHidden
+          )
+        : null;
 
-    // No-Spoilers deck suppression (spec §9). The Monument already frosts
-    // the deck visually via its <Spoiler>, but the SAFE-TEXT rule means the
-    // underlying (blurred) string + its a11y text must ALSO be non-spoilery
-    // so nothing leaks before the tap. When the game is hidden, run the deck
-    // through safeText — a spoilery support line ("OKC leads series 3-2.")
-    // blanks the whole deck (whole-line redaction, same as the pinned-card
-    // detail line); a calm status deck ("Second half underway.") passes
-    // through and is just frosted. isRevealed clears baseHidden, so the full
-    // deck returns on reveal. Non-hidden games are untouched.
-    const deckHidden = baseHidden && !isRevealed(game.gameId);
+    // No-Spoilers support suppression (spec §9). The Monument already
+    // frosts the deck via its <Spoiler>, but the SAFE-TEXT rule means the
+    // underlying string + its a11y text must ALSO be non-spoilery. A
+    // spoilery support line ("OKC leads series 3-2.") drops out; the status
+    // line above is already safe for a hidden game.
+    const support = lead.support
+      ? safeText(lead.support, deckHidden) || undefined
+      : undefined;
+    const deckText = lead.live
+      ? joinSentences(live ? live.line : deck.detail, support)
+      : joinSentences(support);
     const safeDeck = deckText
       ? safeText(deckText, deckHidden) || undefined
       : undefined;
@@ -287,6 +311,7 @@ export function FrontPageLead({
               </>
             }
             deck={safeDeck}
+            situation={live?.situation ?? null}
             href={deck.href}
             gameId={game.gameId}
             spoilerSubject={game.spoilerSubject}

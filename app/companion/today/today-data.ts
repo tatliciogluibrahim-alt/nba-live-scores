@@ -4,7 +4,13 @@
 
 import type { Follow, PinnedGame, AlertPreset, Sport } from "../state/types";
 import type { WCChampion } from "../../lib/wc-champion";
-import type { NFLGameLite } from "../../api/nfl-scores/normalize";
+import type { NFLGameLite, NFLSituation } from "../../api/nfl-scores/normalize";
+import {
+  nbaMarginLine,
+  nbaPeriodLine,
+  nflMarginLine,
+  nflPeriodLine,
+} from "./live-line";
 import { momentSport, teamFollowCodes } from "../state/moments";
 import { NFL_2026_SEASON_OPENER, nflWeekLabel } from "../following/data/nfl-dates";
 import { getCountry } from "../following/data/countries";
@@ -185,6 +191,10 @@ export type QuietWrapItem = {
   source: TodaySource;
   id: string;
   eyebrow: string;           // "Yesterday"
+  /** The row's day label ("Today", "Thu"). Unset for yesterday's games,
+   *  which a wrap implies; anything else says which day it was (persona
+   *  sweep 2026-10-11: Thursday's TB · DAL read as last night's). */
+  dayNote?: string;
   matchup: string;           // "Thunder · Spurs"
   scoreLine: string;         // "121 – 109"
   context?: string;          // "Thunder beat Spurs"
@@ -394,6 +404,12 @@ export type TodayPayload = {
    *  had alerts on finished in the last day, we ask once whether the alerts
    *  were enough. Null when there's nothing recent + alerted to ask about. */
   reliancePrompt: ReliancePrompt | null;
+  /** Live games across the whole feed, followed or not, per sport. Today
+   *  stays personal; this only lets a visitor with no follows see a calm
+   *  "8 NFL games are live." instead of "Nothing demanding your attention"
+   *  while games are on (persona sweep 2026-10-11). Optional so a payload
+   *  built elsewhere without it stays valid. */
+  feedLive?: { nba: number; wc: number; nfl: number };
 };
 
 export type ReliancePrompt = {
@@ -421,6 +437,9 @@ export type ScoreboardTile = {
   href: string;
   /** Leader emphasis for live tiles; null on tie / upcoming. */
   lead: "away" | "home" | null;
+  /** In Watching (pinned). Tracked games rank first in ALSO LIVE, and the
+   *  masthead opens Watching only when every live game is tracked. */
+  tracked?: boolean;
 };
 
 // ── Pure helpers ──────────────────────────────────────────────────────
@@ -572,6 +591,12 @@ export type TodayLeadGame = {
    *  NBA gameContext ("Game 6"). */
   contextLabel?: string;
   spoilerSubject: string;
+  /** NBA / NFL period, for the deck's period line ("Third quarter
+   *  underway."). Unset for Summer Soccer, whose clock carries the half. */
+  period?: number;
+  /** NFL only: the live down and distance for the deck's situation line.
+   *  The view drops it for a game hidden by No-Spoilers. */
+  situation?: NFLSituation;
 };
 
 export function wcLeadGame(g: WCGameLite): TodayLeadGame {
@@ -612,6 +637,7 @@ export function nbaLeadGame(g: NBAGame): TodayLeadGame {
     // NBA peak flags (Game 7 / clinch) are D2 — no stage here.
     contextLabel: g.gameContext || undefined,
     spoilerSubject: g.matchup || `${g.away.abbreviation} vs ${g.home.abbreviation}`,
+    period: g.period,
   };
 }
 
@@ -637,6 +663,8 @@ export function nflLeadGame(g: NFLGameLite): TodayLeadGame {
     // counted, and a playoff week gets its name ("Wild Card").
     contextLabel: nflWeekLabel(g.seasonType, g.week),
     spoilerSubject: `${g.away.abbreviation} at ${g.home.abbreviation}`,
+    period: g.period,
+    ...(g.situation ? { situation: g.situation } : {}),
   };
 }
 
@@ -926,35 +954,34 @@ function pickHero(
   return null;
 }
 
+// Live headlines for a game that is SHOWN. Margin wording ("One-possession
+// game.") reveals closeness, so the Today lead re-derives its deck through
+// liveLine (live-line.ts), which gives a hidden game the neutral period line
+// instead. "Game is live." is gone (persona sweep 2026-10-11): it repeated
+// the LIVE label; the period line says where the game is.
 function deriveLiveHeadline(g: NBAGame): string {
-  // Short, calm, score-free statements. The score lives in body type on the
-  // detail screen (Stage 6). Today's hero stays moment-first.
-  const diff = Math.abs(g.home.score - g.away.score);
-  const inLate = g.period >= 4 || g.statusText.toUpperCase().includes("OT");
-
-  if (inLate && diff <= 3) return "One-possession game.";
-  if (inLate && diff <= 6) return "Final minutes are close.";
-  if (g.statusText.toUpperCase().includes("HALF")) return "Halftime.";
-  if (g.period >= 4) return "Fourth quarter underway.";
-  if (g.period === 3) return "Third quarter underway.";
-  if (g.period === 2) return "Second quarter underway.";
-  return "Game is live.";
+  const game = {
+    source: "nba" as const,
+    statusLine: g.statusText,
+    period: g.period,
+    awayScore: g.away.score,
+    homeScore: g.home.score,
+  };
+  return nbaMarginLine(game) ?? nbaPeriodLine(g.statusText, g.period);
 }
 
-// Football-bespoke live headline. Calm, score-free — the score lives on
-// the detail screen. One possession is 8 points (TD + two-point try), so
-// that, not basketball's 3, is football's "still anyone's game" line.
+// Football-bespoke live headline (shown games). One possession is 8 points
+// (TD + two-point try), so that, not basketball's 3, is football's "still
+// anyone's game" line. Breaks read as breaks ("End of the first quarter.").
 export function deriveNFLLiveHeadline(g: NFLGameLite): string {
-  const text = (g.statusText ?? "").toLowerCase();
-  if (text.includes("half")) return "Halftime.";
-  const diff = Math.abs(g.home.score - g.away.score);
-  const isOT = g.period >= 5 || text.includes("ot");
-  if (isOT) return "Overtime.";
-  if (g.period >= 4 && diff <= 8) return "One-score game.";
-  if (g.period === 4) return "Fourth quarter underway.";
-  if (g.period === 3) return "Third quarter underway.";
-  if (g.period === 2) return "Second quarter underway.";
-  return "Game is live.";
+  const game = {
+    source: "nfl" as const,
+    statusLine: g.statusText ?? "",
+    period: g.period,
+    awayScore: g.away.score,
+    homeScore: g.home.score,
+  };
+  return nflMarginLine(game) ?? nflPeriodLine(g.statusText ?? "", g.period);
 }
 
 // Soccer-bespoke live headline for the hero. Calm, score-free.
@@ -1403,6 +1430,17 @@ function quietWrapDayLabel(date: string, now = new Date()): string {
   return d.toLocaleDateString(undefined, { weekday: "short" });
 }
 
+/** The day label a Quiet Wrap ROW shows (persona sweep 2026-10-11):
+ *  "Today" for earlier today, nothing for yesterday (what a wrap implies),
+ *  else the short weekday ("Thu"). Thursday's TB · DAL read as last night's
+ *  on Sunday with no day at all. */
+function quietWrapDayNote(date: string, now = new Date()): string | undefined {
+  const label = quietWrapDayLabel(date, now);
+  if (label === "Yesterday") return undefined;
+  if (label === "Earlier") return "Today";
+  return label;
+}
+
 /** Window for the Quiet Wrap — show finals from the last 3 calendar
  *  days so series that wrapped a couple nights ago are still browsable
  *  from Today instead of vanishing the moment ESPN drops them from the
@@ -1600,6 +1638,8 @@ function buildQuietWrap(
 
   return selected.map<QuietWrapItem>((e) => {
     const dayLabel = quietWrapDayLabel(e.g.date, now);
+    const dayNote = quietWrapDayNote(e.g.date, now);
+    const day = dayNote ? { dayNote } : {};
     // Use "vs" to match the Up Next + game-detail pattern. The Quiet
     // Wrap card is a final-score line, not a series label.
     const matchup = `${e.g.away.abbreviation} vs ${e.g.home.abbreviation}`;
@@ -1610,6 +1650,7 @@ function buildQuietWrap(
       return {
         source: "nfl",
         id: g.id,
+        ...day,
         // The week label carries the honesty a preseason final needs — the
         // row must never read like a game that counted.
         eyebrow: `${dayLabel} · ${nflWeekLabel(g.seasonType, g.week)}`,
@@ -1627,6 +1668,7 @@ function buildQuietWrap(
       return {
         source: "wc",
         id: e.g.id,
+        ...day,
         eyebrow: dayLabel,
         matchup,
         scoreLine,
@@ -1656,6 +1698,7 @@ function buildQuietWrap(
     return {
       source: "nba",
       id: g.id,
+      ...day,
       eyebrow,
       matchup,
       scoreLine,
@@ -2282,6 +2325,12 @@ function buildScoreboard(
   // with channels) — surfacing them here too produced a redundant grid of
   // score-less "—" tiles duplicating that list, especially for a tournament
   // follower whose whole slate is "personal".
+  //
+  // Tracked (Watching) games rank first (persona sweep 2026-10-11: Today
+  // ranked untracked games above tracked ones). A stable sort, so the feed
+  // order holds within each group, and the cap below keeps tracked games.
+  for (const t of tiles) t.tracked = pinnedIds.has(t.id);
+  tiles.sort((a, b) => Number(b.tracked) - Number(a.tracked));
   return tiles.slice(0, 12);
 }
 
@@ -2470,6 +2519,18 @@ export function buildTodayPayload({
     knockoutMoments: buildKnockoutMoments(wc, follows),
     scoreboard,
     reliancePrompt: buildReliancePrompt(recentForWrap, wc, follows, now),
+    feedLive: {
+      // The NBA moment is the playoffs: ESPN's feed also carries October
+      // exhibitions, which are not games this product follows (the same
+      // rule as the Brief, compose-brief.ts isPlayoffGame).
+      nba: nba.filter(
+        (g) =>
+          g.status === "live" &&
+          (Boolean(g.seriesRound) || /play-?in/i.test(g.gameContext ?? ""))
+      ).length,
+      wc: wc.filter((g) => g.status === "live").length,
+      nfl: nflGames.filter((g) => g.status === "live").length,
+    },
   };
 }
 

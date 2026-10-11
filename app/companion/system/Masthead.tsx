@@ -6,7 +6,9 @@ import { BrandMark } from "../frame/BrandMark";
 
 // System D masthead — the broadsheet nameplate (d-mix / d-nba `.masthead`):
 // date left, the BrandMark chip + "No Noise" wordmark centered, and a live
-// count on the right that links to Watching. A heavy 2px rule underneath.
+// count on the right that links to Watching unless the caller passes a
+// better target (Today: the live game, or Schedule). A heavy 2px rule
+// underneath.
 //
 // The date is computed on the client (mount) — not at request time — so the
 // server never bakes in its own timezone and there's no hydration mismatch.
@@ -21,9 +23,17 @@ import { BrandMark } from "../frame/BrandMark";
 export function Masthead({
   liveCount,
   rightExtra,
+  liveHref = "/watching",
+  liveLabel = "Open Watching",
 }: {
   liveCount: number;
   rightExtra?: ReactNode;
+  /** Where "N LIVE →" goes. Defaults to Watching. Today passes the live
+   *  game, or Schedule, so the count never opens an empty Watching
+   *  (persona sweep, 2026-10-11). */
+  liveHref?: string;
+  /** The link's action for VoiceOver ("Open Schedule"). */
+  liveLabel?: string;
 }) {
   const [date, setDate] = useState<string | null>(null);
   // Client-only date so the server never bakes its own timezone into the
@@ -97,7 +107,7 @@ export function Masthead({
         {rightExtra}
         {liveCount > 0 && (
           <Link
-            href="/watching"
+            href={liveHref}
             className="no-noise-reveal-focus inline-flex shrink-0 items-center gap-1 tabular-nums transition active:scale-[0.97]"
             style={{
               fontFamily: "var(--font-mono)",
@@ -107,7 +117,7 @@ export function Masthead({
               letterSpacing: "0.14em",
               color: "var(--brand)",
             }}
-            aria-label={`${liveCount} live now. Open Watching.`}
+            aria-label={`${liveCount} live now. ${liveLabel}.`}
           >
             {liveCount} LIVE
             <span aria-hidden>→</span>

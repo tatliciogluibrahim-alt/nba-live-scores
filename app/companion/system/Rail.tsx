@@ -6,7 +6,10 @@ import type { RegisterRung } from "./register";
 // a position knob, and two mono end labels.
 //
 // Ticks (§10): quarter boundaries 25/50/75 for nba/nfl, the half tick at 50
-// for wc. End labels: Q1 / 0:00 for the clock sports, KICKOFF / 90′ for wc.
+// for wc. End labels name the game's two ends: KICKOFF / FINAL for the NFL
+// and Summer Soccer, TIP-OFF / FINAL for the NBA. They read "Q1 … 0:00"
+// until the persona sweep (2026-10-11): four testers took that pair for a
+// stuck clock on a live game.
 //
 // Colorway flips by rung, because the rail inherits the surface the Monument
 // sits on:
@@ -27,9 +30,9 @@ type RailConfig = {
 };
 
 const RAIL: Record<"nba" | "wc" | "nfl", RailConfig> = {
-  nba: { ticks: [0.25, 0.5, 0.75], endLeft: "Q1", endRight: "0:00", accent: "var(--nba)" },
-  nfl: { ticks: [0.25, 0.5, 0.75], endLeft: "Q1", endRight: "0:00", accent: "var(--nfl)" },
-  wc: { ticks: [0.5], endLeft: "KICKOFF", endRight: "90′", accent: "var(--wc)" },
+  nba: { ticks: [0.25, 0.5, 0.75], endLeft: "TIP-OFF", endRight: "FINAL", accent: "var(--nba)" },
+  nfl: { ticks: [0.25, 0.5, 0.75], endLeft: "KICKOFF", endRight: "FINAL", accent: "var(--nfl)" },
+  wc: { ticks: [0.5], endLeft: "KICKOFF", endRight: "FINAL", accent: "var(--wc)" },
 };
 
 export function Rail({

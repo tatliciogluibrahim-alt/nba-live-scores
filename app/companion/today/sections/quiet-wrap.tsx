@@ -118,6 +118,10 @@ function QuietWrapAgateInner({
     <AgateRow
       idx={idx}
       main={<WrapMatchup away={away} home={home} winner={winner} />}
+      // The row's day ("Today", "Thu") when it isn't yesterday's game:
+      // Thursday's TB · DAL read as last night's on Sunday (persona sweep
+      // 2026-10-11). Timing only, safe under No-Spoilers.
+      note={item.dayNote}
       score={
         <Spoiler gameId={item.id} ariaSubject={item.spoilerSubject}>
           {agateScore(awayScore, homeScore)}

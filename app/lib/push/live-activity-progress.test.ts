@@ -11,7 +11,11 @@ describe("computeLiveActivityProgress — nfl (15-min quarters)", () => {
     ["Q1 15:00", 0],
     ["Q1 7:30", 0.125],
     ["Q2 15:00", 0.25],
+    // Break states (persona sweep 2026-10-11): the normalizer now says
+    // "End of 1st" where it said "Q2 15:00". Same rail position.
+    ["End of 1st", 0.25],
     ["Halftime", 0.5],
+    ["End of 3rd", 0.75],
     ["Q3 15:00", 0.5],
     ["Q4 15:00", 0.75],
     ["Q4 0:00", 1],
