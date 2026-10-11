@@ -5,7 +5,7 @@ import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
 
 // /settings/about — calm reference page explaining the three mechanics
-// that confuse most users: Follow / Pin / No-Spoilers. Linked from the
+// that confuse most users: Follow / Watching / No-Spoilers. Linked from the
 // Settings header. Optional reading; intentionally short.
 
 export function AboutClient() {
@@ -24,21 +24,21 @@ export function AboutClient() {
         />
 
         <Section
-          eyebrow="Pin"
-          headline="Tracks games during play."
-          body="Pin a game to keep it on your Watching tab. Pinning does not send alerts."
+          eyebrow="Watching"
+          headline="Keeps games in view."
+          body="Add a game to Watching to keep it in one place while it's on. In the iPhone app, Track on Lock Screen puts it on your Lock Screen too. Neither sends alerts."
         />
 
         <Section
           eyebrow="No-Spoilers"
           headline="Hides scores everywhere."
-          body="Scores and series outcomes blur until you tap to reveal. Notifications stay calm. Toggle it in Alerts & Notifications."
+          body="Scores and results stay hidden until you tap to reveal a game. Pushes leave the score out. Turn it on for everything in Settings, or for one follow from its row in Following."
         />
 
         <Section
           eyebrow="Tiers"
           headline="How loud you want it."
-          body="Three levels per follow. Quiet: start, final, and the rare big moment. Companion: start, key breaks, scores, final. Full Details: every swing, including close finishes. Three alert slots are available."
+          body="Three levels per follow. Quiet: start, final, and the rare big moment. Companion: start, key breaks, scores, final. Full Details: every swing, including close finishes. Alerts are free on your first three follows."
         />
       </div>
 

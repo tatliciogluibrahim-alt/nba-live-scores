@@ -40,7 +40,7 @@ export function SettingsClient() {
         </div>
         {/* Optional reading for the curious user. The page explains the
             three mechanics that most often confuse new installs:
-            Follow / Pin / No-Spoilers / Tiers. */}
+            Follow / Watching / No-Spoilers / Tiers. */}
         <Link
           href="/settings/about"
           className="shrink-0 text-[12px] underline underline-offset-4 decoration-dotted"
