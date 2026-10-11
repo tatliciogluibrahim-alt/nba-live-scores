@@ -331,7 +331,7 @@ When making code changes:
 
 ## Current Priority
 
-### PICKUP HERE (written 2026-09-28, session in progress)
+### PICKUP HERE (updated 2026-10-11)
 
 **v1.0.3 is live.** `981cca1` (Week 2 audit batch) was pushed 2026-09-20
 20:38 ET and has been live since MNF Sep 21. The owner said "give me all
@@ -403,7 +403,7 @@ for byte (Week 2 checked).
    Next run Tuesday Oct 6, 18:00 UTC, on Week 4. The remote branch
    `tuesday-shift/2026-09-29-nfl-kickoff-body` can be deleted.
 3. C4b (held scores out of ActivityKit), designed in the Courtside spec.
-4. NFL Standings tab placeholder, store shots 2+3 rerun, Courtside C5.
+4. Store shots 2+3 rerun, Courtside C5. (NFL Standings shipped 2026-10-11.)
 5. The nfl-scan-watchdog is `*/15` but GitHub runs it about 4 times a day
    (measured Sep 29 to Oct 1), so a stalled scan could go unnoticed for
    hours. Move the check to a scheduler that keeps time (cron-job.org
@@ -420,7 +420,18 @@ for byte (Week 2 checked).
    - The front door is stuck in June (stale changelog and beta copy, no
      NFL page, empty Today for no-follow visitors).
    No spoiler leaks found anywhere. Items 1, 2 and 4 FIXED the same day
-   (owner call on Quiet: copy follows the engine). Items 3 and 5 open.
+   (owner call on Quiet: copy follows the engine). **Everything else
+   closed the same evening** ("close out the open items, i want them
+   all"): see the 2026-10-11 close-out record below. Committed locally,
+   push pending the owner's go.
+7. After the push, check in production: game page titles ("Colts at
+   Steelers", read from KV, so local runs without KV show "Game"), the
+   Standings tab against ESPN, Larger Text in the installed app (Settings
+   > Display > Text Size, then reopen Today), and /api/world-cup/schedule
+   returning 104 fixtures. The mute token changed in CourtsideTokens.swift
+   after build 20 was archived: widgets pick it up in the next native
+   build (re-archive v1.0.4 first if it isn't uploaded yet, otherwise
+   v1.0.5). Larger Text itself needs no native build.
 
 **Open decision for the owner:** Full Details is "every moment, every
 game". Measured: about 17 pushes per game for a team follow (max 25),
@@ -428,6 +439,57 @@ up to 289 a week and 59 in one hour for a whole-season follow. The
 intended answer is Companion (about 8 per game, max 13). Thinning Full
 Details changes that tier's promise; decide explicitly (the budget in
 `app/lib/push/replay/noise-budget.ts` is where the decision lands).
+
+### 2026-10-11: closing out the persona sweep
+
+Owner: "close out the open items, i want them all." Three agents built in
+parallel git worktrees with fixed file ownership (Track 1 live card +
+Today + Watching, Track 2 Schedule + Standings + Following + Brief preview
++ titles, Track 3 the website). The lead did freshness, then accessibility
+(Track 4) after merging. Gate at the end: lint 0 warnings, tsc clean,
+vitest 1140 in 100 files, build 96/96 (was 95, the new /nfl page).
+
+**Decisions.**
+- Margin wording ("One-score game.") is a spoiler: hidden games get only a
+  neutral period line, and no situation line, not even possession.
+- Summer Soccer titles read "{Away} vs {Home}", the order the match page
+  itself uses (Track 2's call, a one-line flip in game-title.ts).
+- "Schedule & standings" on the game page still lands on the week view.
+  Standings is one tap away, and `?view=standings` deep-links.
+- The Brief preview hides scores under No-Spoilers (it never did, and now
+  carries NFL).
+- Following's live band and masthead count use Today's link rule
+  (liveTargetFor): the one live game, Watching only when it holds every
+  live game, else Schedule. The counts stay follow counts.
+- Onboarding runs on app routes only (app-surface.ts, an allowlist, so a
+  new marketing page is safe by default). The root counts only for a
+  phone, with the same user-agent test app/page.tsx uses.
+- The Summer Soccer record is frozen in app/lib/wc-record-2026.json
+  (moved from scripts/fixtures), served by /api/world-cup/schedule once
+  the tournament is concluded, and pinned by its tests. Locked: never
+  edit it.
+
+**Gotchas worth keeping.**
+- ESPN's soccer scoreboard stopped answering date-range queries for the
+  finished tournament (0 events per range, 1 per single day). A finished
+  competition should be served frozen, not re-fetched.
+- iOS Safari and WKWebView ignore px and rem when the user changes Text
+  Size. Only the -apple-system-body font follows it, so the head script
+  in app/layout.tsx reads that size from a probe and sets the root font
+  size. Reading text must be rem for it to matter:
+  app/lib/a11y/text-size-audit.test.ts fails the gate on a px size of
+  24px or less. Exempt: the masthead, the tab bar, and a "// Fixed"
+  comment for a glyph in a fixed box.
+- Rows that must reflow under Larger Text use .nns-agate (container
+  query in the row's own em) with the tail in .nns-agate-tail.
+- Today shows one setup ask per visit (a latch). Onboarding completing
+  now resets it once, because asks latched under the overlay were unseen.
+- Browser checks: a Playwright context without a phone user agent gets
+  the desktop landing at "/", so test the app at /app. Simulator Safari
+  upgrades http subresources (the CSP has upgrade-insecure-requests), so
+  a local check needs a proxy that strips the CSP.
+- Game page titles read KV only (capped at 400ms), so they fall back to
+  "Game" locally.
 
 ### 2026-09-28: Courtside C4 (play 2), the closed surfaces
 

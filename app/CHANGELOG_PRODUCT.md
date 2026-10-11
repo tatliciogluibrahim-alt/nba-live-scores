@@ -2,6 +2,74 @@
 
 ---
 
+## Closing out the persona sweep (2026-10-11)
+
+Everything else the six test agents found is fixed (Week 5, 1 PM slate,
+docs/qa/2026-10-11-sunday-persona-sweep.md). Three agents built in
+parallel worktrees (live card, Schedule and Following, the website), then
+a pass on accessibility and freshness.
+
+- **The live card says what's happening.**
+  - Live NFL games show the down and distance ("PIT ball · 1st & Goal at
+    IND 1") on Today, Watching and the game page, with a small RED ZONE
+    mark.
+  - Breaks read "End of 1st" instead of "Q2 15:00".
+  - The progress rail reads Kickoff and Final, where "0:00" read like a
+    finished game.
+  - The game page score never trails its own scoring list after a
+    touchdown.
+  - "Game is live." is gone.
+  - Under No-Spoilers none of this shows: no down and distance, no "One-score
+    game.", only "Third quarter underway."
+- **Watching shows what changed.** Come back to a live game and a changed
+  score is tinted, with "Was 7–6" under it for a few seconds. Rows on the
+  web number 01, 02, 03, and the live count appears once.
+- **Live links go somewhere.** "1 LIVE" and the live bands on Today and
+  Following open the live game, or Schedule when several are on. Watching
+  opens only when it holds them all. Tracked games lead "Also live". A
+  visitor with no follows sees "8 NFL games are live." with a link, not
+  "Nothing demanding your attention". Setup cards wait while your game is
+  live.
+- **Standings are real.** Schedule's Standings tab shows every division
+  from ESPN, your team's first. With No-Spoilers on it opens on "Standings
+  show results." and a Show standings button.
+- **Times are yours.** Schedule's slot headers follow your time zone, so
+  Chicago reads "SUN · 12 PM" over noon kickoffs.
+- **Following and the Brief preview know about the NFL.** A team playing
+  now sits under Live now. The Settings preview of the Brief includes NFL
+  games and hides scores under No-Spoilers.
+- **Game pages are titled by matchup** ("Colts at Steelers"), never by
+  score.
+- **Larger Text works.** Text grows with iOS Text Size and with a
+  browser's font size setting (up to 200%). Rows put the score on a second
+  line instead of clipping, and the tab bar keeps one size so "Watching"
+  never clips. VoiceOver reads a game as one sentence ("Panthers 18,
+  Browns 13. Live, 4th quarter, 4:25 left.") and names who scored each
+  touchdown. The game page has headings. Muted gray, live red and the
+  arena's NFL blue now pass contrast. Small links are 44px targets.
+- **Fresher scores.** Live NFL scores refresh from the server every 10
+  seconds (was 30). Sports you don't follow refresh every 5 minutes
+  instead of every 10 seconds.
+- **The website caught up.** The public changelog runs through October.
+  About, Beta and the landing are current. "Get the app" replaces "Join
+  the friend beta". The guides describe the real app. The hero mock shows
+  a real moment, captioned. A new /nfl page explains Sundays, recording a
+  4:25 game and each alert level. The No-Spoilers pages have their own
+  headlines.
+- **Found and fixed along the way.**
+  - The Summer Soccer record had gone empty: ESPN stopped answering the
+    date-range queries, so the bracket read "No knockout matches on the
+    schedule yet." It is now served from the frozen record (Spain 1,
+    Argentina 0, after extra time). Each country page names its finish,
+    and a finished tournament no longer offers a follow.
+  - Onboarding covered marketing pages for phone visitors from search.
+    It now starts only in the app.
+  - On iPhone Safari, the Install step was skipped right after onboarding
+    until a reload.
+  - The in-app guide still said "Pin".
+
+---
+
 ## Fixes from the Sunday persona sweep (2026-10-11)
 
 Six test agents used the app through the Week 5 1 PM slate, each as a

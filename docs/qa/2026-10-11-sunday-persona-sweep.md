@@ -18,15 +18,37 @@ three findings marked "verified" were re-checked by eye.
 
 ## Status
 
-- **Fixed 2026-10-11:** item 1 (Watching flash), item 2 (web alerts
-  onboarding, "Turn off", Quiet copy now matches the engine by owner call)
-  and item 4 (deliberate reveal on Today's lead, drawer state, Pro card).
-- **Open:** item 3 (live situation line, break states, rail labels, hero vs
-  scoring sync), item 5 (front door), and the "Also found" list.
-- **New question from the fix pass.** Under No-Spoilers, Today's lead deck
-  can read "One-score game.", which reveals closeness. It passes safe-text
-  and predates this batch. Decide whether margin wording counts as a
-  spoiler.
+All items closed 2026-10-11. Committed locally, not yet pushed.
+
+- **Items 1, 2 and 4:** fixed the same afternoon (`eb1c1c3`, pushed).
+- **Item 3, the live card:** situation line with a RED ZONE mark, "End
+  of 1st" breaks, Kickoff / Final rail labels, the hero takes the newer
+  of scoreboard and scoring list, no "Game is live.", Watching's "Was
+  7–6", plain web ordinals and one live count (Track 1).
+- **Item 5, the front door:** changelog through October, About, Beta and
+  landing current, "Get the app", guides match the app, the hero mock
+  uses a real captioned moment, a new /nfl page in the sitemap, unique
+  No-Spoilers H1s, a descriptive home title, copy defects fixed (Track 3).
+- **The margin question:** decided, margin wording is a spoiler. Hidden
+  games get only a neutral period line.
+- **Accessibility:** Larger Text reaches the content (rem plus an iOS
+  Text Size probe, a gate test guards it), rows reflow instead of
+  clipping, tab labels hold, VoiceOver names carry status and scores,
+  headings on the game page, contrast fixed (--mute #6b6961,
+  --live-text #bb3729, --nfl-text), 44px targets.
+- **Freshness:** a 10s server cache while a game is live (was 30s), and
+  unfollowed sports poll every 5 minutes instead of every 10 seconds.
+- **Standings, time zones, Brief preview:** real standings with a
+  No-Spoilers gate, Schedule headers in the device's zone, the preview
+  carries NFL and hides scores under No-Spoilers (Track 2).
+- **Dead ends:** "N LIVE" and the live bands on Today and Following open
+  the game or Schedule, tracked games rank first, a no-follow visitor
+  sees the real live count.
+- **Found along the way, also fixed:** the Summer Soccer record had gone
+  empty in production (ESPN stopped answering range queries; now served
+  frozen), onboarding covered marketing pages on phones, the in-app
+  guide still taught "Pin", and the Install step was skipped after
+  onboarding until a reload.
 
 ## Top 5
 

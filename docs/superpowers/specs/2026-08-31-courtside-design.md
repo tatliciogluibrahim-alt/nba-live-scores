@@ -70,16 +70,22 @@ chassis.
 
 Light (default, browsing):
     --bg          #f4f3ef   --surface  #ffffff   --line   #e3e1da
-    --ink         #17181a   --mute     #716f67   (TWO grays only —
+    --ink         #17181a   --mute     #6b6961   (TWO grays only —
     a third gray cannot pass AA on porcelain; #8f8b81 is decorative
-    ≥18.66px bold only)
-    --live        #c93d2e   (passes 4.5:1; dot + clock text)
+    ≥18.66px bold only. Was #716f67 until 2026-10-11: 4.26:1 on
+    --chip-bg, where the selected alert tier sits. Now 4.66:1 there,
+    4.95:1 on --bg.)
+    --live        #c93d2e   (dots and fills) · --live-text #bb3729
+    (clock and stamp text, 4.82:1 on --chip-bg)
     --chip-bg     #eeece6   --chip-line #8a8478  (≥3:1)
 
 Dark (the arena rooms):
     --bg          #0c0d0f   --surface  #14161a   --line   #23262b
     --text        #f2f3f5   --mute     #8d939b
     --live        #ff4d3a   (dark only — it fails on porcelain)
+    --nfl-text    #5c85c9   (sport color as TEXT in the arena: the live
+    status line. --nfl #4a78c4 stays the fill; as text it read 4.42:1.
+    Added 2026-10-11, same split as --live / --live-text.)
     --chip-line   #6a7078
     --gold        #c9b476   (Super Bowl surfaces only, dark only,
     once a year; never on light)
@@ -97,6 +103,24 @@ Amended 2026-10-11 (owner, persona sweep): on a linked card (Today's lead
 Monument) the hidden chips are placeholders and every tap opens the game;
 one explicit "Show score" control reveals in place. The chip-as-reveal
 target holds everywhere else (agate rows, the game page itself).
+Amended 2026-10-11 (close-out of the persona sweep):
+- Live state. The NFL situation line ("PIT ball · 1st & Goal at IND 1")
+  sits under a live score on Today, Watching and the game page. Its one
+  mark is a small-caps RED ZONE in the surface's full ink, never a color.
+  Hidden games get no situation and no margin wording, only a neutral
+  period line. Breaks read "End of 1st". Rail ends read Kickoff / Final
+  (Tip-off for the NBA).
+- Watching's "what changed" note ("Was 7–6") tints the changed score in
+  --live-text until the row has been on screen about 3 seconds.
+- Larger Text. Reading text of 24px and under is rem (a gate test holds
+  it). Display numerals and heroes stay px. The masthead and tab bar keep
+  one size, like native bars. Agate rows move their score, stamp and
+  arrow to a second line when the text outgrows one (container query in
+  the row's own em), and Monument team names cap at 28px. iOS Text Size
+  reaches the web view through the -apple-system-body probe in
+  app/layout.tsx (88% to 200%).
+- VoiceOver. A linked game speaks one sentence (scores, status in words,
+  the action), never scores for a hidden game. Section heads are h2.
 Amended 2026-10-01 (owner): on the closed surfaces the score numerals
 roll to their new value when the score changes (SwiftUI numeric text),
 and a reveal there pushes the chip out as the digits come up. The haptic

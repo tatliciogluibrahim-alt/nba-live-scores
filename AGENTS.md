@@ -154,6 +154,11 @@ When changing code:
 - Preserve current behavior.
 - Avoid overengineering.
 - Make sure the app can build.
+- Set reading text (24px and under) in rem, never px, so iOS Text Size
+  and browser font settings reach it. A gate test enforces this
+  (`app/lib/a11y/text-size-audit.test.ts`). Display numerals stay px. The
+  masthead and tab bar keep one size. Rows that must reflow under Larger
+  Text use `.nns-agate` / `.nns-agate-tail` (see `app/globals.css`).
 
 ## Current Phase
 
