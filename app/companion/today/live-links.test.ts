@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  scheduleLiveHref,
-  mastheadLiveTarget,
-  liveElsewhereLine,
-} from "./live-links";
+import { scheduleLiveHref, mastheadLiveTarget, liveElsewhereLine, liveTargetFor } from "./live-links";
 import type { ScoreboardTile } from "./today-data";
 
 // Where Today's live links go (persona sweep, 2026-10-11). "1 LIVE →"
@@ -99,5 +95,30 @@ describe("liveElsewhereLine (no follows, games live)", () => {
       text: "10 games are live.",
       href: "/schedule?scope=all",
     });
+  });
+});
+
+describe("liveTargetFor (Today's masthead and Following's live links)", () => {
+  const ref = (id: string, tracked = false) => ({
+    href: `/game/${id}`,
+    awayCode: "PIT",
+    homeCode: "CLE",
+    tracked,
+    source: "nfl" as const,
+  });
+
+  it("opens the one live game", () => {
+    expect(liveTargetFor([ref("1")])).toEqual({ href: "/game/1", label: "Open PIT at CLE" });
+  });
+
+  it("opens Watching only when every live game is tracked", () => {
+    expect(liveTargetFor([ref("1", true), ref("2", true)])?.href).toBe("/watching");
+    expect(liveTargetFor([ref("1", true), ref("2")])?.href).toBe(
+      "/schedule?scope=all&competition=nfl-season-2026"
+    );
+  });
+
+  it("is null with nothing live", () => {
+    expect(liveTargetFor([])).toBeNull();
   });
 });

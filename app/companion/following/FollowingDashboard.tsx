@@ -6,7 +6,8 @@ import { Display } from "../atoms/Display";
 import { Masthead } from "../system/Masthead";
 import { SecHead } from "../system/SecHead";
 import { resolveFollowIdentity } from "../follow/identity";
-import { useFollows } from "../providers";
+import { useFollows, usePinned } from "../providers";
+import { liveTargetFor, type LiveTarget } from "../today/live-links";
 import { teamFollowCodes } from "../state/moments";
 import type { Follow } from "../state/types";
 import { type FollowCardData } from "./FollowCard";
@@ -78,7 +79,21 @@ export function FollowingDashboard() {
   // Live keys are sport-scoped and include NFL (persona sweep 2026-10-11:
   // a live Steelers follow sat under UP NEXT). Only followed sports' feeds
   // are read.
-  const liveFollows = useLiveFollows(follows);
+  const { ids: liveFollows, games: liveGames } = useLiveFollows(follows);
+  // Where the live band and the masthead count go: the one live game,
+  // Watching when every live game is tracked there, else Schedule. They
+  // opened an empty Watching (persona sweep, 2026-10-11).
+  const { pinned } = usePinned();
+  const pinnedIds = new Set(pinned.map((p) => p.gameId));
+  const liveTarget = liveTargetFor(
+    liveGames.map((g) => ({
+      href: `/game/${g.id}`,
+      awayCode: g.awayCode,
+      homeCode: g.homeCode,
+      tracked: pinnedIds.has(g.id),
+      source: g.source,
+    }))
+  );
 
   const cards: FollowCardData[] = follows.map((f) => {
     const identity = resolveFollowIdentity(f);
@@ -127,6 +142,7 @@ export function FollowingDashboard() {
           alertSlotCount={alertSlotCount}
           alertSlotCap={alertSlotCap}
           wrappedHoldingSlot={wrappedHoldingSlot}
+          liveTarget={liveTarget}
           onShare={() => setShareOpen(true)}
           onSync={() => setSyncOpen(true)}
         />
@@ -143,6 +159,7 @@ export function FollowingDashboard() {
           alertSlotCount={alertSlotCount}
           alertSlotCap={alertSlotCap}
           wrappedHoldingSlot={wrappedHoldingSlot}
+          liveTarget={liveTarget}
           onShare={() => setShareOpen(true)}
           onSync={() => setSyncOpen(true)}
         />
@@ -185,6 +202,7 @@ function FollowingMobile({
   alertSlotCount,
   alertSlotCap,
   wrappedHoldingSlot,
+  liveTarget,
   onShare,
   onSync,
 }: {
@@ -193,6 +211,8 @@ function FollowingMobile({
   alertSlotCount: number;
   alertSlotCap: number;
   wrappedHoldingSlot: FollowCardData[];
+  /** Where the live band and the masthead count go (liveTargetFor). */
+  liveTarget: LiveTarget | null;
   onShare: () => void;
   onSync: () => void;
 }) {
@@ -309,7 +329,11 @@ function FollowingMobile({
           the screen edges within the page's px-4 gutter. Live count derives
           from the follow cards' live status (the same signal LIVE NOW uses). */}
       <div className="-mx-4 mb-5">
-        <Masthead liveCount={liveNow.length} />
+        <Masthead
+          liveCount={liveNow.length}
+          liveHref={liveTarget?.href}
+          liveLabel={liveTarget?.label}
+        />
       </div>
 
       <Display
@@ -371,9 +395,9 @@ function FollowingMobile({
           (not edge-bleeding) per the mock. */}
       {liveNow.length > 0 ? (
         <Link
-          href="/watching"
-          aria-label={`${liveNow.length} live now. Open Watching.`}
-          className="mt-[18px] flex items-center gap-[9px] transition active:opacity-90"
+          href={liveTarget?.href ?? "/watching"}
+          aria-label={`${liveNow.length} live now. ${liveTarget?.label ?? "Open Watching"}.`}
+          className="nns-agate mt-[18px] flex items-center gap-[9px] transition active:opacity-90"
           style={{
             background: "var(--ink-field-bg)",
             color: "var(--cream-on-ink)",
@@ -397,7 +421,7 @@ function FollowingMobile({
             {liveNow.length} LIVE NOW
           </span>
           <span
-            className="uppercase"
+            className="nns-agate-tail flex uppercase"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "0.6875rem",
@@ -405,7 +429,7 @@ function FollowingMobile({
               color: "var(--cream-on-ink-dim)",
             }}
           >
-            OPEN WATCHING →
+            {liveTarget?.label ?? "Open Watching"} →
           </span>
         </Link>
       ) : null}
@@ -447,7 +471,7 @@ function FollowingMobile({
               type="button"
               onClick={onShare}
               aria-label="Share your sports circle as an image"
-              className="underline transition active:opacity-70"
+              className="-my-[13px] inline-flex min-h-[44px] items-center underline transition active:opacity-70"
               style={{
                 textUnderlineOffset: 3,
                 textDecorationColor: "var(--line)",
@@ -459,8 +483,8 @@ function FollowingMobile({
           <button
             type="button"
             onClick={onSync}
-            aria-label="Sync your follows across devices with a code"
-            className="underline transition active:opacity-70"
+            aria-label="Sync devices with a code"
+            className="-my-[13px] inline-flex min-h-[44px] items-center underline transition active:opacity-70"
             style={{
               textUnderlineOffset: 3,
               textDecorationColor: "var(--line)",
@@ -473,8 +497,8 @@ function FollowingMobile({
               2026-07-03: with the other utility links, not app chrome). */}
           <Link
             href="/settings"
-            aria-label="Alerts and notification settings"
-            className="underline transition active:opacity-70"
+            aria-label="Settings for alerts and notifications"
+            className="-my-[13px] inline-flex min-h-[44px] items-center underline transition active:opacity-70"
             style={{
               textUnderlineOffset: 3,
               textDecorationColor: "var(--line)",
@@ -511,6 +535,7 @@ function FollowingDesktop({
   alertSlotCount,
   alertSlotCap,
   wrappedHoldingSlot,
+  liveTarget,
   onShare,
   onSync,
 }: {
@@ -519,6 +544,8 @@ function FollowingDesktop({
   alertSlotCount: number;
   alertSlotCap: number;
   wrappedHoldingSlot: FollowCardData[];
+  /** Where the live band and the masthead count go (liveTargetFor). */
+  liveTarget: LiveTarget | null;
   onShare: () => void;
   onSync: () => void;
 }) {
@@ -629,7 +656,11 @@ function FollowingDesktop({
       {/* Masthead — full-width broadsheet nameplate; the 2px rule spans the
           content measure (mx-0, the D4b desktop treatment Today uses). */}
       <div className="mb-5">
-        <Masthead liveCount={liveNow.length} />
+        <Masthead
+          liveCount={liveNow.length}
+          liveHref={liveTarget?.href}
+          liveLabel={liveTarget?.label}
+        />
       </div>
 
       {/* 18px editorial gutter — every non-plate block sits here; plates
@@ -691,9 +722,9 @@ function FollowingDesktop({
         {/* The ONE ink band — a calm cross-link to Watching, live only. */}
         {liveNow.length > 0 ? (
           <Link
-            href="/watching"
-            aria-label={`${liveNow.length} live now. Open Watching.`}
-            className="mt-[18px] flex items-center gap-[9px] transition active:opacity-90"
+            href={liveTarget?.href ?? "/watching"}
+            aria-label={`${liveNow.length} live now. ${liveTarget?.label ?? "Open Watching"}.`}
+            className="nns-agate mt-[18px] flex items-center gap-[9px] transition active:opacity-90"
             style={{
               background: "var(--ink-field-bg)",
               color: "var(--cream-on-ink)",
@@ -717,7 +748,7 @@ function FollowingDesktop({
               {liveNow.length} LIVE NOW
             </span>
             <span
-              className="uppercase"
+              className="nns-agate-tail flex uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.6875rem",
@@ -725,7 +756,7 @@ function FollowingDesktop({
                 color: "var(--cream-on-ink-dim)",
               }}
             >
-              OPEN WATCHING →
+              {liveTarget?.label ?? "Open Watching"} →
             </span>
           </Link>
         ) : null}
@@ -767,7 +798,7 @@ function FollowingDesktop({
                 type="button"
                 onClick={onShare}
                 aria-label="Share your sports circle as an image"
-                className="underline transition active:opacity-70"
+                className="-my-[13px] inline-flex min-h-[44px] items-center underline transition active:opacity-70"
                 style={{
                   textUnderlineOffset: 3,
                   textDecorationColor: "var(--line)",
@@ -779,8 +810,8 @@ function FollowingDesktop({
             <button
               type="button"
               onClick={onSync}
-              aria-label="Sync your follows across devices with a code"
-              className="underline transition active:opacity-70"
+              aria-label="Sync devices with a code"
+              className="-my-[13px] inline-flex min-h-[44px] items-center underline transition active:opacity-70"
               style={{
                 textUnderlineOffset: 3,
                 textDecorationColor: "var(--line)",
@@ -790,8 +821,8 @@ function FollowingDesktop({
             </button>
             <Link
               href="/settings"
-              aria-label="Alerts and notification settings"
-              className="underline transition active:opacity-70"
+              aria-label="Settings for alerts and notifications"
+              className="-my-[13px] inline-flex min-h-[44px] items-center underline transition active:opacity-70"
               style={{
                 textUnderlineOffset: 3,
                 textDecorationColor: "var(--line)",

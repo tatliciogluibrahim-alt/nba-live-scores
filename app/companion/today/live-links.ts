@@ -26,13 +26,25 @@ export function scheduleLiveHref(sources: readonly TodaySource[]): string {
 
 export type LiveTarget = { href: string; label: string };
 
+/** A live game a link can point at. ScoreboardTile fits, and so does
+ *  Following's list of live followed games. */
+export type LiveGameRef = Pick<
+  ScoreboardTile,
+  "href" | "awayCode" | "homeCode" | "tracked" | "source"
+>;
+
 /** The masthead's "N LIVE →" target. One live game opens that game. Several
  *  open Watching only when Watching holds every one of them (all tracked),
  *  otherwise Schedule, which lists them all. Null when nothing is live. */
 export function mastheadLiveTarget(
   tiles: readonly ScoreboardTile[]
 ): LiveTarget | null {
-  const live = tiles.filter((t) => t.status === "live");
+  return liveTargetFor(tiles.filter((t) => t.status === "live"));
+}
+
+/** The same rule for any list of live games: Today's masthead, and
+ *  Following's live band and count, which opened an empty Watching. */
+export function liveTargetFor(live: readonly LiveGameRef[]): LiveTarget | null {
   if (live.length === 0) return null;
   if (live.length === 1) {
     const t = live[0];

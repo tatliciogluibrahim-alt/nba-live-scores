@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toFollow } from "../state/follow-migration";
 import type { Follow, ScopeKind } from "../state/types";
-import { buildLiveFollowKeys, isFollowLive } from "./use-live-follows";
+import { buildLiveFollowKeys, isFollowLive, liveFollowGames } from "./use-live-follows";
 
 function follow(momentId: string, scope: ScopeKind, scopeId: string | null): Follow {
   return toFollow({
@@ -94,5 +94,38 @@ describe("isFollowLive: NBA and Summer Soccer", () => {
       nba: [game("live", "MIA", "CHI", { seriesRound: "", gameContext: "East Play-In" })],
     });
     expect(isFollowLive(follow(NBA, "team", "MIA"), live)).toBe(true);
+  });
+});
+
+describe("liveFollowGames: where Following's live links go (2026-10-11)", () => {
+  const withId = (id: string, g: ReturnType<typeof game>) => ({ ...g, id });
+
+  it("lists the live games behind live follows, once each", () => {
+    const games = liveFollowGames(
+      { nfl: [withId("1", game("live", "PIT", "CLE")), withId("2", game("live", "GB", "CHI"))] },
+      [follow(NFL, "team", "PIT"), follow(NFL, "team", "CLE")]
+    );
+    expect(games).toEqual([{ id: "1", source: "nfl", awayCode: "PIT", homeCode: "CLE" }]);
+  });
+
+  it("lists every live game for a whole-season follow", () => {
+    const games = liveFollowGames(
+      { nfl: [withId("1", game("live", "PIT", "CLE")), withId("2", game("final", "GB", "CHI"))] },
+      [follow(NFL, "all", null)]
+    );
+    expect(games.map((g) => g.id)).toEqual(["1"]);
+  });
+
+  it("never lets one sport's code light another sport's game", () => {
+    const games = liveFollowGames(
+      { nba: [withId("9", game("live", "CLE", "BOS", playoff))] },
+      [follow(NFL, "team", "CLE")]
+    );
+    expect(games).toEqual([]);
+  });
+
+  it("skips games with no id", () => {
+    const games = liveFollowGames({ nfl: [game("live", "PIT", "CLE")] }, [follow(NFL, "team", "PIT")]);
+    expect(games).toEqual([]);
   });
 });
