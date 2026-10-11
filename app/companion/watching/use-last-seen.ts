@@ -95,14 +95,15 @@ export function useSinceLastLook(
   }, [node]);
 
   // A look settles once the row has been on screen for three seconds. The
-  // timer restarts when the score changes during the look.
+  // timer restarts when the score changes during the look, and with each
+  // new look (a page return starts one even if the last never settled).
   useEffect(() => {
     if (look.settled || !onScreen) return;
     const t = setTimeout(() => {
       if (pageVisible()) setLook((l) => ({ ...l, settled: true }));
     }, SEEN_AFTER_MS);
     return () => clearTimeout(t);
-  }, [look.settled, onScreen, away, home]);
+  }, [look, onScreen, away, home]);
 
   // Record what is on screen as seen, unless a change is still waiting to
   // be noticed (then the look settling, or leaving, records it).
