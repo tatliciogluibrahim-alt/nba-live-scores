@@ -20,16 +20,16 @@ export default function AboutPage() {
       intro="No Noise Scores is a small sports app I'm building for the games I actually want to watch."
     >
       <P>
-        Most sports apps cover everything and surface it all the same.
-        News, hot takes, fantasy widgets, betting odds, push notifications
-        every five minutes. By the time you find your team&apos;s score, the app
-        has already taken twenty seconds of your attention.
+        Most sports apps cover everything and show it all the same way.
+        News, hot takes, fantasy widgets, betting odds, and a push for every
+        update. Finding your team&apos;s score means getting past all of it.
       </P>
 
       <P>
         This one is narrower on purpose. It covers the events that pull
-        you to the screen. NBA Playoffs, the Summer Soccer, NFL when it
-        gets here. The rest of the time it stays quiet.
+        you to the screen. Right now that&apos;s the NFL season. Earlier
+        this year it was the NBA Playoffs and Summer Soccer 2026. The rest
+        of the time it stays quiet.
       </P>
 
       <H2>What it does</H2>
@@ -37,10 +37,11 @@ export default function AboutPage() {
         items={[
           "Lets you follow teams, countries, series, and tournaments.",
           "Sends per-follow alerts at three levels: Quiet, Companion, Full Details.",
-          "Lets you pin a specific game to Watching for the night.",
-          "Hides scores, headlines, and outcomes across every screen when you want. Push notification previews stay vague.",
-          "Shows a recap card after a game ends so you can catch up without a feed.",
-          "Counts down to tournaments. Anchors country pages around your group.",
+          "Lets you add a game to Watching, or put its live score on your iPhone Lock Screen.",
+          "Hides scores, headlines, and results on every screen when you want. Push notification previews stay vague.",
+          "Shows a recap after a game ends so you can catch up without a feed.",
+          "Lays out the full schedule: by week for the NFL, by day for a tournament.",
+          "Sends a morning Brief by email, if you want one.",
         ]}
       />
 
@@ -58,9 +59,9 @@ export default function AboutPage() {
 
       <H2>Who&apos;s building it</H2>
       <P>
-        Solo project by Ibrahim. Built mobile-first as a Progressive Web
-        App. Install it on your phone and it acts like a regular app
-        with push notifications and a home-screen icon.
+        Solo project by Ibrahim. It&apos;s on the App Store for iPhone, and
+        it runs in any browser on Android and computers. Push notifications
+        work in both.
       </P>
 
       <H2>Get in touch</H2>

@@ -5,6 +5,7 @@ import {
   CompareTable,
   CalloutBox,
 } from "../../companion/landing/ContentPageShell";
+import { APP_STORE_URL } from "../../lib/app-store";
 
 export const metadata = {
   title: "No Noise Scores vs Apple Sports | No Noise Scores",
@@ -16,6 +17,13 @@ export const metadata = {
   },
 };
 
+const linkStyle = {
+  color: "var(--ink)",
+  textDecoration: "underline",
+  textDecorationThickness: "1px",
+  textUnderlineOffset: "3px",
+} as const;
+
 export default function VsAppleSportsPage() {
   return (
     <ContentPageShell
@@ -26,8 +34,8 @@ export default function VsAppleSportsPage() {
       <P>
         Apple Sports launched in 2024 with a clear bet: fast, clean,
         scores-first, deeply integrated with iOS. This one made a
-        different bet: editorial voice, per-follow alert levels, real
-        No-Spoilers mode, web-first.
+        different bet: editorial voice, per-follow alert levels, a real
+        No-Spoilers mode, and the same app on iPhone and the web.
       </P>
       <P>
         Apple Sports is good at what it does. We&apos;re not trying to
@@ -38,7 +46,7 @@ export default function VsAppleSportsPage() {
       <CompareTable
         headers={["", "Apple Sports", "No Noise Scores"]}
         rows={[
-          ["Speed", "Faster cold launch", "Fast, but a PWA opening into Today"],
+          ["Speed", "Faster cold launch", "Fast, opening into Today"],
           [
             "OS integration",
             "Live Activities, Lock Screen widgets, watch complication",
@@ -46,7 +54,7 @@ export default function VsAppleSportsPage() {
           ],
           ["Sport breadth", "Many sports, all seasons", "The NFL season now, plus the moments as they come"],
           ["Install friction", "App Store, free, one tap", "App Store, free, one tap (or the web app)"],
-          ["Distribution", "Pre-installed-ish on iPhone", "Web link, share-of-mouth"],
+          ["Distribution", "Apple's own app", "The App Store and the web, by word of mouth"],
         ]}
       />
       <P>
@@ -54,7 +62,7 @@ export default function VsAppleSportsPage() {
         right pick. Their cold launch is faster. On OS integration the two
         now match: Live Activities and Lock Screen widgets ship in the No
         Noise Scores iPhone app too. What Apple Sports does not have is a
-        spoiler mode. Notifications there are on or off; here the push
+        spoiler mode. Notifications there are on or off. Here, the push
         preview itself stays vague until you tap.
       </P>
 
@@ -75,12 +83,12 @@ export default function VsAppleSportsPage() {
           [
             "No-Spoilers mode",
             "Not available",
-            "End-to-end contract; push previews stay vague too",
+            "End-to-end contract, push previews included",
           ],
           [
             "Series context",
             "Final score, basic series record",
-            "SevenDotStrip, stakes line, recap card with context",
+            "Series dots, a stakes line, and a recap card with context",
           ],
           [
             "Country / tournament pages",
@@ -88,14 +96,14 @@ export default function VsAppleSportsPage() {
             "Full country page with group, path-to-final, alerts",
           ],
           [
-            "Pin one game for the day",
+            "A tab for the games you're tracking",
             "Not available",
-            "Dedicated Watching surface for pinned game",
+            "Watching, plus the Lock Screen on iPhone",
           ],
           [
             "Cross-platform",
             "iPhone / Apple Watch / Mac",
-            "Any device with a browser",
+            "iPhone app, plus any device with a browser",
           ],
         ]}
       />
@@ -105,19 +113,16 @@ export default function VsAppleSportsPage() {
         <strong style={{ color: "var(--ink)" }}>
           Pick Apple Sports if:
         </strong>{" "}
-        you live on iPhone, you mostly want scores with the deepest iOS
-        integration, you don&apos;t need No-Spoilers, you follow more
-        sports than this app covers, or you prefer one-tap App Store
-        install.
+        you want scores across every major sport, you want them on your
+        Apple Watch, or you don&apos;t need No-Spoilers.
       </P>
       <P>
         <strong style={{ color: "var(--ink)" }}>
           Pick No Noise Scores if:
         </strong>{" "}
-        you want editorial voice, you watch games on delay, you want
-        per-follow alert nuance, you&apos;re focused on NBA Playoffs +
-        Summer Soccer (or you&apos;re tired of sports apps being noisy), or
-        you don&apos;t mind a PWA install for a calmer experience.
+        you watch games on delay, you want a different alert level for
+        each team you follow, you mostly care about your team&apos;s NFL
+        season, or you&apos;re tired of sports apps being noisy.
       </P>
 
       <CalloutBox eyebrow="Honest take">
@@ -134,30 +139,14 @@ export default function VsAppleSportsPage() {
 
       <P>
         Try No Noise Scores.{" "}
-        <a
-          href="/app"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
-        >
-          open the app
-        </a>{" "}
-        or{" "}
-        <a
-          href="/guides/how-to-add-to-iphone-home-screen"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
-        >
-          add it to your iPhone home screen
-        </a>{" "}
-        first.
+        <a href={APP_STORE_URL} target="_blank" rel="noopener" style={linkStyle}>
+          Get it on the App Store
+        </a>
+        , or{" "}
+        <a href="/app" style={linkStyle}>
+          open it in your browser
+        </a>
+        .
       </P>
     </ContentPageShell>
   );

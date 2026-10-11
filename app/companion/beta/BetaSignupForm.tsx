@@ -102,7 +102,7 @@ export function BetaSignupForm() {
         background: "var(--paper)",
         borderColor: "var(--line)",
       }}
-      aria-label="Friend beta signup"
+      aria-label="Beta signup"
     >
       <div className="space-y-4">
         <FormField
@@ -159,8 +159,8 @@ export function BetaSignupForm() {
         className="mt-3 text-[12px] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Email goes to KV storage. No confirmation email gets sent. I&apos;ll
-        DM/email you when the next wave opens. See{" "}
+        No confirmation email gets sent. I&apos;ll reach out myself when
+        there&apos;s something new to try. See{" "}
         <a
           href="/privacy"
           style={{

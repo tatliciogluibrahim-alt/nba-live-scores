@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { NFL_2026_SEASON_OPENER } from "../following/data/nfl-dates";
 import { SectionHeader } from "./HowItWorksCapsule";
 
@@ -8,40 +9,50 @@ import { SectionHeader } from "./HowItWorksCapsule";
 // not lacking.
 
 type MomentEntry = {
+  /** Stable key + the moment's name in copy. */
   sport: string;
+  /** Short letter-chip label. Three characters max so it fits the 44px
+   *  chip ("Summer Soccer" spilled out of it). Matches the app's
+   *  hand-picked tournament chip ("SOC"), never a name slice. */
+  chip: string;
   title: string;
   detail: string;
   accent: string;
   soft: string;
-  /** Optional status pill — only shown when set. NBA and WC don't need
-   *  one (they're live or in the pre-window); NFL uses it for the
-   *  ship date. */
+  /** Optional status pill, only shown when set. The wrapped moments carry
+   *  their dates in the detail line instead; NFL uses it for its state. */
   status?: string;
+  /** Optional deeper page for the moment. */
+  link?: { href: string; label: string };
 };
 
 const MOMENTS: MomentEntry[] = [
   {
     sport: "NFL",
+    chip: "NFL",
     title: "NFL Season",
     detail:
       "Follow your team through the season: kickoff and final alerts, live scores on your Lock Screen, the full week-by-week schedule. Quiet by default.",
     accent: "var(--nfl)",
     soft: "var(--nfl-soft)",
     status: nflStatus(),
+    link: { href: "/nfl", label: "How it works for the NFL" },
   },
   {
     sport: "NBA",
+    chip: "NBA",
     title: "NBA Playoffs",
     detail:
-      "Series state, dot strips, recap cards, per-quarter scores, close-game alerts. Built for the postseason.",
+      "Series context, live scores by quarter, recap cards, and close-game alerts through the 2026 postseason. It wrapped in June.",
     accent: "var(--nba)",
     soft: "var(--nba-soft)",
   },
   {
     sport: "Summer Soccer",
+    chip: "SOC",
     title: "Summer Soccer 2026",
     detail:
-      "Country pages with your group, the path to the final, the bracket, and kickoff and full-time alerts. Live across the US, Canada, and Mexico.",
+      "Country pages, the group tables, the bracket, and kickoff and full-time alerts. It ran June 11 to July 19 across the US, Canada, and Mexico.",
     accent: "var(--wc)",
     soft: "var(--wc-soft)",
   },
@@ -75,15 +86,15 @@ export function MomentsBand() {
           className="mt-4 max-w-[60ch] text-[16px] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
-          NBA Playoffs, the Summer Soccer, NFL Sundays. We add sports
-          moment by moment, not all at once.
+          NFL Sundays now. Before that, the NBA Playoffs and Summer Soccer
+          2026. We add sports moment by moment, not all at once.
         </p>
 
         <div className="mt-10 grid gap-6 md:grid-cols-3 lg:gap-8">
           {MOMENTS.map((m) => (
             <article
               key={m.sport}
-              className="rounded-[16px] border px-6 py-7"
+              className="flex flex-col rounded-[16px] border px-6 py-7"
               style={{
                 background: m.soft,
                 borderColor: "var(--line)",
@@ -95,17 +106,17 @@ export function MomentsBand() {
                     tournament + follow chips (replaces an emoji ball). */}
                 <span
                   aria-hidden
-                  className="grid h-11 w-11 place-items-center rounded-[12px]"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-[12px]"
                   style={{
                     background: "var(--paper)",
                     color: m.accent,
                     fontFamily: "var(--font-mono)",
-                    fontSize: m.sport.length > 3 ? 13 : 15,
+                    fontSize: 15,
                     fontWeight: 700,
                     letterSpacing: "0.02em",
                   }}
                 >
-                  {m.sport}
+                  {m.chip}
                 </span>
                 {m.status ? (
                   <span
@@ -144,6 +155,20 @@ export function MomentsBand() {
               >
                 {m.detail}
               </p>
+              {m.link ? (
+                <Link
+                  href={m.link.href}
+                  className="mt-5 inline-flex items-center gap-1 self-start text-[13px] transition hover:underline"
+                  style={{
+                    color: "var(--ink)",
+                    fontWeight: 600,
+                    textUnderlineOffset: 3,
+                  }}
+                >
+                  {m.link.label}
+                  <span aria-hidden>→</span>
+                </Link>
+              ) : null}
             </article>
           ))}
         </div>

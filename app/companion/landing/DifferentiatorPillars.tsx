@@ -16,7 +16,7 @@ const PILLARS = [
   },
   {
     title: "Hide-by-default when you want.",
-    body: "Turn No-Spoilers on and scores, headlines, and outcomes blur across every screen. Push notification previews stay vague. Reveal one moment at a time.",
+    body: "Turn No-Spoilers on and scores, headlines, and results stay hidden on every screen. Push notification previews stay vague. Reveal one game at a time.",
   },
 ];
 

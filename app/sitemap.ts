@@ -17,6 +17,9 @@ const PUBLIC_ROUTES: Array<{ path: string; priority: number }> = [
   // Landing — most important
   { path: "/", priority: 1.0 },
 
+  // The current moment (the NFL season, 2026-27)
+  { path: "/nfl", priority: 0.9 },
+
   // Core content
   { path: "/about", priority: 0.8 },
   { path: "/privacy", priority: 0.3 },
@@ -46,12 +49,11 @@ const PUBLIC_ROUTES: Array<{ path: string; priority: number }> = [
 ];
 
 // WC country landing pages (Phase 21C-2). 48 static pages, one per
-// country in the Summer Soccer 2026. Priority 0.6 — lower than the
+// country in Summer Soccer 2026. Priority 0.6 — lower than the
 // canonical content pages above, higher than zero because they're
-// real indexable content with tournament-specific keywords. The
-// tournament-tied search surge starts ~7-10 days before kickoff
-// (June 11), so these need to be in the sitemap well before then
-// for Google to crawl and index in time.
+// real indexable content with tournament-specific keywords. Kept after
+// the tournament (final 2026-07-19) as a past-tense record: each page
+// still answers "when did [country] play" searches.
 const WC_COUNTRY_ROUTES: Array<{ path: string; priority: number }> =
   WC_COUNTRIES.map((c) => ({
     path: `/wc/${c.id.toLowerCase()}`,
