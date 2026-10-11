@@ -83,7 +83,7 @@ export function MomentsBand() {
           title="The events that pull you to the screen."
         />
         <p
-          className="mt-4 max-w-[60ch] text-[16px] leading-snug"
+          className="mt-4 max-w-[60ch] text-[1rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           NFL Sundays now. Before that, the NBA Playoffs and Summer Soccer
@@ -111,7 +111,7 @@ export function MomentsBand() {
                     background: "var(--paper)",
                     color: m.accent,
                     fontFamily: "var(--font-mono)",
-                    fontSize: 15,
+                    fontSize: "0.9375rem",
                     fontWeight: 700,
                     letterSpacing: "0.02em",
                   }}
@@ -120,7 +120,7 @@ export function MomentsBand() {
                 </span>
                 {m.status ? (
                   <span
-                    className="rounded-full px-2.5 py-1 text-[10px] uppercase"
+                    className="rounded-full px-2.5 py-1 text-[0.625rem] uppercase"
                     style={{
                       background: "var(--paper)",
                       color: m.accent,
@@ -150,7 +150,7 @@ export function MomentsBand() {
                 {m.title}
               </h3>
               <p
-                className="text-[14px] leading-snug"
+                className="text-[0.875rem] leading-snug"
                 style={{ color: "var(--mute-1)", fontWeight: 500 }}
               >
                 {m.detail}
@@ -158,7 +158,7 @@ export function MomentsBand() {
               {m.link ? (
                 <Link
                   href={m.link.href}
-                  className="mt-5 inline-flex items-center gap-1 self-start text-[13px] transition hover:underline"
+                  className="mt-5 inline-flex items-center gap-1 self-start text-[0.8125rem] transition hover:underline"
                   style={{
                     color: "var(--ink)",
                     fontWeight: 600,

@@ -36,13 +36,13 @@ export function NoSpoilersProCard() {
         style={{ background: "var(--paper)", borderColor: "var(--line)" }}
       >
         <p
-          className="text-[14px] leading-snug"
+          className="text-[0.875rem] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 700 }}
         >
           Part of a paid tier, later.
         </p>
         <ul
-          className="mt-2 space-y-1 text-[13px] leading-snug"
+          className="mt-2 space-y-1 text-[0.8125rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           <li>• Alerts on every follow (free covers your first {alertSlotCap}).</li>

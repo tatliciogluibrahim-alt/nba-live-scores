@@ -166,7 +166,7 @@ function ScheduleRow({
           // "BIH 0 · 0 SUI" — canonical away-then-home order. Only the
           // numbers are Spoiler-gated; the matchup stays readable.
           <p
-            className="truncate text-[13px]"
+            className="truncate text-[0.8125rem]"
             style={{ color: "var(--ink)", fontWeight: 700 }}
           >
             {match.awayCode}{" "}
@@ -186,7 +186,7 @@ function ScheduleRow({
           </p>
         ) : (
           <p
-            className="truncate text-[13px]"
+            className="truncate text-[0.8125rem]"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
             {match.awayCode} vs {match.homeCode}
@@ -194,7 +194,7 @@ function ScheduleRow({
         )}
         {!played ? (
           <p
-            className="mt-0.5 text-[10px] uppercase"
+            className="mt-0.5 text-[0.625rem] uppercase"
             style={{
               fontFamily: "var(--font-mono)",
               letterSpacing: "0.05em",
@@ -208,7 +208,7 @@ function ScheduleRow({
       </div>
       {state ? (
         <span
-          className="shrink-0 text-[10px] uppercase"
+          className="shrink-0 text-[0.625rem] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
             letterSpacing: "0.06em",
@@ -266,7 +266,7 @@ function ScheduleList({
         <div key={day}>
           {day > 0 ? (
             <p
-              className="mb-0.5 text-[9px] uppercase"
+              className="mb-0.5 text-[0.5625rem] uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
                 letterSpacing: "0.1em",
@@ -328,7 +328,7 @@ function GroupTableHead() {
         padding: "10px 0 8px",
         borderBottom: "1px solid var(--line)",
         fontFamily: "var(--font-mono)",
-        fontSize: 9,
+        fontSize: "0.5625rem",
         letterSpacing: "0.16em",
         fontWeight: 600,
         color: "var(--mute-2)",
@@ -359,14 +359,14 @@ function GroupTableRowView({
     gap: 8,
     padding: "12px 0",
     borderBottom: cut ? "2px dashed var(--mute-2)" : "1px solid var(--line)",
-    fontSize: 14,
+    fontSize: "0.875rem",
   } as const;
 
   const inner = (
     <>
       <span
         className="tabular-nums lining-nums"
-        style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--mute-2)" }}
+        style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem", fontWeight: 600, color: "var(--mute-2)" }}
       >
         {row.pos}
       </span>
@@ -384,7 +384,7 @@ function GroupTableRowView({
       </span>
       <span
         className="text-right tabular-nums lining-nums"
-        style={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: 15, color: "var(--ink)" }}
+        style={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "0.9375rem", color: "var(--ink)" }}
       >
         {row.pts}
       </span>
@@ -419,7 +419,7 @@ function GroupCutNote() {
       style={{
         marginTop: 8,
         fontFamily: "var(--font-mono)",
-        fontSize: 10,
+        fontSize: "0.625rem",
         letterSpacing: "0.1em",
         color: "var(--mute-2)",
         fontWeight: 600,
@@ -484,7 +484,7 @@ function GroupTableSection({
             className="mt-[12px] flex min-h-[36px] w-full items-center justify-between gap-3 text-left transition active:opacity-70"
           >
             <span
-              className="min-w-0 truncate text-[12px]"
+              className="min-w-0 truncate text-[0.75rem]"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               {nextLine(block)}
@@ -493,7 +493,7 @@ function GroupTableSection({
               className="shrink-0 uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 11,
+                fontSize: "0.6875rem",
                 letterSpacing: "0.1em",
                 fontWeight: 600,
                 color: "var(--ink)",
@@ -613,7 +613,7 @@ export function WCGroups({
           className="mt-[14px] inline-flex items-center gap-[6px] uppercase transition active:opacity-70"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 12,
+            fontSize: "0.75rem",
             fontWeight: 600,
             letterSpacing: "0.06em",
             color: "var(--mute-1)",

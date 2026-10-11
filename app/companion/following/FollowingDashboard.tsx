@@ -174,7 +174,7 @@ export function FollowingDashboard() {
 
 const MOBILE_META_STYLE = {
   fontFamily: "var(--font-mono)",
-  fontSize: 11,
+  fontSize: "0.6875rem",
   fontWeight: 600,
   letterSpacing: "0.12em",
 } as const;
@@ -389,7 +389,7 @@ function FollowingMobile({
             className="flex-1 uppercase tabular-nums lining-nums"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 12,
+              fontSize: "0.75rem",
               fontWeight: 700,
               letterSpacing: "0.1em",
             }}
@@ -400,7 +400,7 @@ function FollowingMobile({
             className="uppercase"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: "0.6875rem",
               letterSpacing: "0.08em",
               color: "var(--cream-on-ink-dim)",
             }}
@@ -424,7 +424,7 @@ function FollowingMobile({
           style={{
             background: "var(--ink)",
             color: "var(--cream)",
-            fontSize: 15,
+            fontSize: "0.9375rem",
             fontWeight: 600,
             padding: 14,
           }}
@@ -436,7 +436,7 @@ function FollowingMobile({
           className="mt-4 flex justify-center gap-[26px] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 12,
+            fontSize: "0.75rem",
             fontWeight: 600,
             letterSpacing: "0.1em",
             color: "var(--mute-1)",
@@ -709,7 +709,7 @@ function FollowingDesktop({
               className="flex-1 uppercase tabular-nums lining-nums"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 12,
+                fontSize: "0.75rem",
                 fontWeight: 700,
                 letterSpacing: "0.1em",
               }}
@@ -720,7 +720,7 @@ function FollowingDesktop({
               className="uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 11,
+                fontSize: "0.6875rem",
                 letterSpacing: "0.08em",
                 color: "var(--cream-on-ink-dim)",
               }}
@@ -744,7 +744,7 @@ function FollowingDesktop({
             style={{
               background: "var(--ink)",
               color: "var(--cream)",
-              fontSize: 15,
+              fontSize: "0.9375rem",
               fontWeight: 600,
               padding: 14,
             }}
@@ -756,7 +756,7 @@ function FollowingDesktop({
             className="mt-4 flex justify-center gap-[26px] uppercase"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 12,
+              fontSize: "0.75rem",
               fontWeight: 600,
               letterSpacing: "0.1em",
               color: "var(--mute-1)",

@@ -36,7 +36,7 @@ export function NextGameBlock({
     >
       <Eyebrow color="var(--nba)">{next.gameNumberLabel}</Eyebrow>
       <p
-        className="mt-2 text-[18px] leading-snug"
+        className="mt-2 text-[1.125rem] leading-snug"
         style={{
           color: "var(--ink)",
           fontFamily: "var(--font-display)",
@@ -46,7 +46,7 @@ export function NextGameBlock({
         {next.awayCode} · {next.homeCode}
       </p>
       <p
-        className="mt-1 text-[13px]"
+        className="mt-1 text-[0.8125rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {dateLabel} · {timeLabel}
@@ -64,7 +64,7 @@ export function NextGameBlock({
       <Link
         href={`/game/${next.id}`}
         aria-label={`Open ${next.awayCode} vs ${next.homeCode} game detail`}
-        className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+        className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
         style={{
           background: "var(--ink)",
           color: "var(--cream)",

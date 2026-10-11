@@ -17,13 +17,13 @@ export function LockScreenWidgetsRow() {
       style={{ background: "var(--paper)", borderColor: "var(--line)" }}
     >
       <h2
-        className="text-[15px]"
+        className="text-[0.9375rem]"
         style={{ color: "var(--ink)", fontWeight: 700, letterSpacing: "-0.01em" }}
       >
         Lock screen and widgets
       </h2>
       <p
-        className="mt-1.5 text-[13px] leading-snug"
+        className="mt-1.5 text-[0.8125rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Pin a live game to follow its score on your lock screen. Up to 3 at
@@ -31,7 +31,7 @@ export function LockScreenWidgetsRow() {
       </p>
 
       <ul
-        className="mt-3 space-y-1.5 text-[12px] leading-snug"
+        className="mt-3 space-y-1.5 text-[0.75rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         <li>

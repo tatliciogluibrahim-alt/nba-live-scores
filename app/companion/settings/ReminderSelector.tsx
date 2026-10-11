@@ -24,7 +24,7 @@ export function ReminderSelector() {
         style={{ background: "var(--paper)", borderColor: "var(--line)" }}
       >
         <p
-          className="mb-2 text-[12px]"
+          className="mb-2 text-[0.75rem]"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Remind me this many minutes before a followed game starts.
@@ -44,7 +44,7 @@ export function ReminderSelector() {
                 aria-checked={active}
                 disabled={!hydrated}
                 onClick={() => setRemindBeforeMinutes(minutes)}
-                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
                 style={{
                   background: active ? "var(--ink)" : "transparent",
                   color: active ? "var(--cream)" : "var(--ink)",

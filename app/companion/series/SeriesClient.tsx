@@ -88,7 +88,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
       </Display>
 
       <p
-        className="mt-1 text-[13px]"
+        className="mt-1 text-[0.8125rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {payload.teamA.name} vs {payload.teamB.name}
@@ -97,7 +97,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
       {/* ── Series state line ─────────────────────────────────────── */}
       {showSpoilerySummary ? (
         <p
-          className="mt-3 text-[16px] leading-snug"
+          className="mt-3 text-[1rem] leading-snug"
           style={{
             color: "var(--ink)",
             fontFamily: "var(--font-display)",
@@ -108,7 +108,7 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
         </p>
       ) : hideResults && hasSpoilerySummary ? (
         <p
-          className="mt-3 text-[11px] uppercase"
+          className="mt-3 text-[0.6875rem] uppercase"
           style={{
             color: "var(--mute-2)",
             fontFamily: "var(--font-mono)",
@@ -127,14 +127,14 @@ export function SeriesClient({ seriesKey }: { seriesKey: string }) {
           <div className="h-px flex-1" style={{ background: "var(--line)" }} />
         </div>
         <p
-          className="text-[13px]"
+          className="text-[0.8125rem]"
           style={{ color: "var(--ink)", fontWeight: 600 }}
         >
           {payload.safeStakeLine}
         </p>
         {showSpoileryStake ? (
           <p
-            className="mt-1 text-[12px]"
+            className="mt-1 text-[0.75rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {payload.spoileryStakeLine}
@@ -229,7 +229,7 @@ function SeriesAwaitingOpponent({ seriesKey }: { seriesKey: string }) {
         {determined ? `${determined} · ?` : "Matchup pending"}
       </Display>
       <p
-        className="mt-1 text-[13px]"
+        className="mt-1 text-[0.8125rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {determined
@@ -247,14 +247,14 @@ function SeriesAwaitingOpponent({ seriesKey }: { seriesKey: string }) {
       >
         <Eyebrow color="var(--nba)">Waiting on the other side</Eyebrow>
         <p
-          className="mt-2 text-[14px] leading-snug"
+          className="mt-2 text-[0.875rem] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 600 }}
         >
           Matchup, schedule, and series tracking unlock once the other
           side&apos;s series wraps.
         </p>
         <p
-          className="mt-2 text-[12px] leading-snug"
+          className="mt-2 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Follow the tournament to get pinged when the matchup is set.
@@ -264,7 +264,7 @@ function SeriesAwaitingOpponent({ seriesKey }: { seriesKey: string }) {
       <div className="mt-4 flex items-center gap-2">
         <Link
           href="/tournament/nba-playoffs-2025"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
           style={{
             background: "transparent",
             color: "var(--ink)",
@@ -275,7 +275,7 @@ function SeriesAwaitingOpponent({ seriesKey }: { seriesKey: string }) {
         </Link>
         <Link
           href="/app"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",
             color: "var(--cream)",
@@ -297,14 +297,14 @@ function SeriesNotFound({ seriesKey }: { seriesKey: string }) {
         Series not in the feed.
       </Display>
       <p
-        className="mt-2 text-[13px]"
+        className="mt-2 text-[0.8125rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         This series isn&apos;t in the current scoreboard window. Try Following
         or Today.
       </p>
       <p
-        className="mt-3 text-[11px]"
+        className="mt-3 text-[0.6875rem]"
         style={{
           fontFamily: "var(--font-mono)",
           color: "var(--mute-2)",
@@ -317,7 +317,7 @@ function SeriesNotFound({ seriesKey }: { seriesKey: string }) {
       <div className="mt-4 flex items-center gap-2">
         <Link
           href="/following"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
           style={{
             background: "transparent",
             color: "var(--ink)",
@@ -328,7 +328,7 @@ function SeriesNotFound({ seriesKey }: { seriesKey: string }) {
         </Link>
         <Link
           href="/app"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",
             color: "var(--cream)",

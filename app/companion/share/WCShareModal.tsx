@@ -266,7 +266,7 @@ export function WCShareModal({
           </button>
         </div>
         {result ? (
-          <p className="text-[12px] font-semibold text-[#8a7a66]" aria-live="polite">
+          <p className="text-[0.75rem] font-semibold text-[#8a7a66]" aria-live="polite">
             {result}
           </p>
         ) : null}

@@ -25,7 +25,7 @@ export function Eyebrow({
       className={`inline-block uppercase ${className ?? ""}`}
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 11,
+        fontSize: "0.6875rem",
         fontWeight: 700,
         letterSpacing: "0.12em",
         color,

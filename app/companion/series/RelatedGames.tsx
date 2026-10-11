@@ -55,7 +55,7 @@ export function RelatedGames({
                   <div className="pointer-events-none min-w-0 flex-1">
                     <Eyebrow>{row.label}</Eyebrow>
                     <p
-                      className="mt-1 text-[14px] leading-snug"
+                      className="mt-1 text-[0.875rem] leading-snug"
                       style={{
                         color: "var(--ink)",
                         fontWeight: 700,
@@ -68,7 +68,7 @@ export function RelatedGames({
 
                   {row.scoreLine ? (
                     <span
-                      className="shrink-0 text-[14px]"
+                      className="shrink-0 text-[0.875rem]"
                       style={{
                         color: "var(--ink)",
                         fontFamily: "var(--font-mono)",

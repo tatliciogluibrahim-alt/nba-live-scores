@@ -48,7 +48,7 @@ export function FollowingAdd() {
         Follow more.
       </Display>
       <p
-        className="mb-4 text-[14px] leading-snug"
+        className="mb-4 text-[0.875rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Pick a moment, then how much of it. We surface only what you follow.
@@ -67,7 +67,7 @@ export function FollowingAdd() {
               className="uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: "0.625rem",
                 fontWeight: 700,
                 letterSpacing: "0.14em",
                 color: "var(--mute-2)",

@@ -84,7 +84,7 @@ function RecapCardBody({ recap, gameId }: { recap: NBARecap; gameId: string }) {
             under No-Spoilers. */}
         <div className="mt-3 flex items-baseline gap-3">
           <span
-            className="text-[14px] uppercase"
+            className="text-[0.875rem] uppercase"
             style={{
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
@@ -121,7 +121,7 @@ function RecapCardBody({ recap, gameId }: { recap: NBARecap; gameId: string }) {
             spoiler-wrapped under NS. Null for non-playoff games. */}
         {recap.seriesLine ? (
           <p
-            className="mt-3 text-[13px] leading-snug"
+            className="mt-3 text-[0.8125rem] leading-snug"
             style={{ color: "var(--ink)", fontWeight: 500 }}
           >
             {noSpoilers ? (
@@ -164,7 +164,7 @@ function RecapCardBody({ recap, gameId }: { recap: NBARecap; gameId: string }) {
         >
           <Eyebrow>Next</Eyebrow>
           <p
-            className="mt-1 text-[13px] leading-snug"
+            className="mt-1 text-[0.8125rem] leading-snug"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
             {recap.nextLine}
@@ -193,7 +193,7 @@ function BulletRow({
         <Eyebrow>{bullet.eyebrow}</Eyebrow>
       </div>
       <p
-        className="mt-0.5 text-[14px] leading-snug"
+        className="mt-0.5 text-[0.875rem] leading-snug"
         style={{
           color: "var(--ink)",
           fontWeight: 700,

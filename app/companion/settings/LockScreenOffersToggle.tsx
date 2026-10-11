@@ -30,13 +30,13 @@ export function LockScreenOffersToggle() {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p
-              className="text-[13px]"
+              className="text-[0.8125rem]"
               style={{ color: on ? "var(--cream)" : "var(--ink)", fontWeight: 700 }}
             >
               {on ? "Lock screen live scores are on." : "Lock screen live scores are off."}
             </p>
             <p
-              className="mt-1 text-[12px] leading-snug"
+              className="mt-1 text-[0.75rem] leading-snug"
               style={{
                 color: on ? "var(--cream)" : "var(--mute-1)",
                 opacity: on ? 0.8 : 1,

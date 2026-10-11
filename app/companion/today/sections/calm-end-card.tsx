@@ -37,7 +37,7 @@ import type { ClosingMoment } from "../today-data";
 
 const monoLink = {
   fontFamily: "var(--font-mono)",
-  fontSize: 12,
+  fontSize: "0.75rem",
   fontWeight: 600,
   letterSpacing: "0.08em",
   color: "var(--ink)",
@@ -125,7 +125,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
               className="uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: "0.625rem",
                 fontWeight: 600,
                 letterSpacing: "0.14em",
                 color: "var(--mute-1)",
@@ -140,7 +140,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
               style={{ color: "var(--mute-1)" }}
               aria-label="Dismiss"
             >
-              <span aria-hidden className="text-[16px] leading-none">
+              <span aria-hidden className="text-[1rem] leading-none">
                 ×
               </span>
             </button>
@@ -152,7 +152,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
 
           {detail ? (
             <p
-              className="text-[13px] leading-snug"
+              className="text-[0.8125rem] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               {detail}
@@ -171,7 +171,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
               ("you're in control"). Calm, factual, no upsell. */}
           {moment.autoDropNote ? (
             <p
-              className="mt-2 text-[12px] leading-snug"
+              className="mt-2 text-[0.75rem] leading-snug"
               style={{ color: "var(--mute-2)", fontWeight: 500 }}
             >
               {moment.autoDropNote}
@@ -187,7 +187,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
               aria-label="Series games"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 11,
+                fontSize: "0.6875rem",
                 fontWeight: 600,
                 letterSpacing: "0.04em",
                 color: "var(--mute-1)",
@@ -230,7 +230,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
               calm prose, never marketing copy. */}
           {!noSpoilers && moment.spoilerSummary && isSeries ? (
             <p
-              className="mt-3 text-[13px] leading-snug"
+              className="mt-3 text-[0.8125rem] leading-snug"
               style={{ color: "var(--ink-2)", fontWeight: 500 }}
             >
               {moment.spoilerSummary}
@@ -263,7 +263,7 @@ export function CalmEndCard({ moment }: { moment: ClosingMoment }) {
                   className="mb-2 uppercase"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 10,
+                    fontSize: "0.625rem",
                     fontWeight: 600,
                     letterSpacing: "0.12em",
                     color: "var(--mute-1)",

@@ -83,7 +83,7 @@ export function NFLScheduleBody({
           />
           {hydrated && schedule.games.length === 0 ? (
             <p
-              className="py-[13px] text-[13px]"
+              className="py-[13px] text-[0.8125rem]"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               No games scheduled for this week yet.
@@ -155,7 +155,7 @@ function ViewTabs({
             className="flex-1 uppercase transition active:opacity-70"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: "0.6875rem",
               letterSpacing: "0.12em",
               fontWeight: on ? 700 : 600,
               color: on ? "var(--ink)" : "var(--mute-2)",
@@ -191,7 +191,7 @@ function WeekPager({
 }) {
   const arrow = {
     fontFamily: "var(--font-mono)",
-    fontSize: 13,
+    fontSize: "0.8125rem",
     fontWeight: 700,
     color: "var(--ink)",
     padding: "6px 14px",
@@ -214,7 +214,7 @@ function WeekPager({
         className="uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 11,
+          fontSize: "0.6875rem",
           fontWeight: 700,
           letterSpacing: "0.14em",
           color: "var(--mute-1)",
@@ -244,7 +244,7 @@ function WindowHead({ label }: { label: string }) {
       className="uppercase"
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 10,
+        fontSize: "0.625rem",
         fontWeight: 700,
         letterSpacing: "0.14em",
         color: "var(--mute-1)",
@@ -311,7 +311,7 @@ function NFLGameRow({
           matching the WC group-table register. */}
       <span
         className="flex min-w-0 items-center truncate"
-        style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600 }}
+        style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem", fontWeight: 600 }}
       >
         {rowFollowed ? (
           <span
@@ -345,7 +345,7 @@ function NFLGameRow({
           <span
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 12,
+              fontSize: "0.75rem",
               fontWeight: played ? 700 : 500,
               color: played ? "var(--ink)" : "var(--mute-1)",
               // A hidden score must sit above the row's overlay link so
@@ -366,7 +366,7 @@ function NFLGameRow({
           className="uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: "0.5625rem",
             letterSpacing: "0.1em",
             fontWeight: 600,
             color: live ? "var(--live-text)" : "var(--mute-2)",

@@ -32,7 +32,7 @@ export function InkField({
         className="mb-[6px] flex items-center gap-2 uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 600,
           letterSpacing: "0.16em",
           color: "var(--cream-on-ink-dim)",

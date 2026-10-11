@@ -91,7 +91,7 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
         className="mt-2 mb-4 flex items-center gap-2 uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 11,
+          fontSize: "0.6875rem",
           fontWeight: 600,
           letterSpacing: "0.12em",
           color: "var(--mute-1)",
@@ -154,7 +154,7 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
         className="mt-4 inline-flex min-h-[44px] items-center gap-1.5 uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 12,
+          fontSize: "0.75rem",
           fontWeight: 600,
           letterSpacing: "0.06em",
           color: "var(--mute-1)",
@@ -172,7 +172,7 @@ function WatchingMobile({ payload }: { payload: WatchingPayload }) {
           style={{
             borderTop: "1px solid var(--line)",
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: "0.6875rem",
             fontWeight: 600,
             letterSpacing: "0.1em",
             color: "var(--mute-2)",
@@ -232,7 +232,7 @@ function WatchingDesktop({ payload }: { payload: WatchingPayload }) {
           className="mt-2 mb-4 flex items-center gap-2 uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: "0.6875rem",
             fontWeight: 600,
             letterSpacing: "0.12em",
             color: "var(--mute-1)",
@@ -296,7 +296,7 @@ function WatchingDesktop({ payload }: { payload: WatchingPayload }) {
           className="mt-4 inline-flex min-h-[44px] items-center gap-1.5 uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 12,
+            fontSize: "0.75rem",
             fontWeight: 600,
             letterSpacing: "0.06em",
             color: "var(--mute-1)",
@@ -314,7 +314,7 @@ function WatchingDesktop({ payload }: { payload: WatchingPayload }) {
             style={{
               borderTop: "1px solid var(--line)",
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: "0.6875rem",
               fontWeight: 600,
               letterSpacing: "0.1em",
               color: "var(--mute-2)",

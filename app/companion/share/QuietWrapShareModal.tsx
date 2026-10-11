@@ -82,7 +82,7 @@ export function QuietWrapShareModal({
         <div className="px-4 pb-4 pt-3">
           <Eyebrow>Share</Eyebrow>
           <h2
-            className="mt-1 text-[20px]"
+            className="mt-1 text-[1.25rem]"
             style={{
               fontFamily: "var(--font-display)",
               color: "var(--ink)",
@@ -92,7 +92,7 @@ export function QuietWrapShareModal({
             Quiet Wrap
           </h2>
           <p
-            className="mt-1 text-[13px]"
+            className="mt-1 text-[0.8125rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Your recent finals. Save the image and share anywhere.
@@ -128,7 +128,7 @@ export function QuietWrapShareModal({
 
           {error ? (
             <p
-              className="mt-3 text-center text-[12px]"
+              className="mt-3 text-center text-[0.75rem]"
               style={{ color: "var(--critical)", fontWeight: 500 }}
             >
               {error}
@@ -139,7 +139,7 @@ export function QuietWrapShareModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "transparent",
                 color: "var(--ink)",
@@ -152,7 +152,7 @@ export function QuietWrapShareModal({
               type="button"
               onClick={handleDownload}
               disabled={downloading}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "var(--ink)",
                 color: "var(--cream)",
@@ -210,7 +210,7 @@ const ShareCardCanvas = forwardRef<HTMLDivElement, ShareCardProps>(
           </svg>
           <span
             style={{
-              fontSize: 22,
+              fontSize: "1.375rem",
               fontWeight: 900,
               letterSpacing: "-0.028em",
               color: "#1a1612",
@@ -225,7 +225,7 @@ const ShareCardCanvas = forwardRef<HTMLDivElement, ShareCardProps>(
           <p
             style={{
               fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
-              fontSize: 14,
+              fontSize: "0.875rem",
               fontWeight: 700,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
@@ -251,7 +251,7 @@ const ShareCardCanvas = forwardRef<HTMLDivElement, ShareCardProps>(
           </h1>
           <p
             style={{
-              fontSize: 18,
+              fontSize: "1.125rem",
               fontWeight: 500,
               color: "#6b6147",
               margin: "16px 0 0",
@@ -267,7 +267,7 @@ const ShareCardCanvas = forwardRef<HTMLDivElement, ShareCardProps>(
           {items.length === 0 ? (
             <p
               style={{
-                fontSize: 18,
+                fontSize: "1.125rem",
                 fontWeight: 500,
                 color: "#6b6147",
                 margin: 0,
@@ -292,7 +292,7 @@ const ShareCardCanvas = forwardRef<HTMLDivElement, ShareCardProps>(
               >
                 <span
                   style={{
-                    fontSize: 22,
+                    fontSize: "1.375rem",
                     fontWeight: 700,
                     color: "#1a1612",
                     letterSpacing: "-0.005em",
@@ -304,7 +304,7 @@ const ShareCardCanvas = forwardRef<HTMLDivElement, ShareCardProps>(
                   style={{
                     fontFamily:
                       "ui-monospace, 'JetBrains Mono', monospace",
-                    fontSize: 22,
+                    fontSize: "1.375rem",
                     fontWeight: 700,
                     color: "#1a1612",
                     fontVariantNumeric: "tabular-nums",
@@ -331,7 +331,7 @@ const ShareCardCanvas = forwardRef<HTMLDivElement, ShareCardProps>(
           <span
             style={{
               fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
-              fontSize: 13,
+              fontSize: "0.8125rem",
               fontWeight: 600,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
@@ -340,7 +340,7 @@ const ShareCardCanvas = forwardRef<HTMLDivElement, ShareCardProps>(
           >
             nonoisescores.app
           </span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#6b6147" }}>
+          <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#6b6147" }}>
             The calm sports app.
           </span>
         </div>

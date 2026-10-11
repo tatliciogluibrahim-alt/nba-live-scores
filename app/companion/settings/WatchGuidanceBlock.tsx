@@ -20,13 +20,13 @@ export function WatchGuidanceBlock() {
         style={{ background: "var(--paper)", borderColor: "var(--line)" }}
       >
         <p
-          className="text-[13px]"
+          className="text-[0.8125rem]"
           style={{ color: "var(--ink)", fontWeight: 600 }}
         >
           One line per game.
         </p>
         <p
-          className="mt-1 text-[12px] leading-snug"
+          className="mt-1 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Watch info appears on game cards when broadcasts are available. We keep it visible even when No-Spoilers is on, so you can still find the game.

@@ -156,7 +156,7 @@ export function TournamentCountdown({ country }: { country: CountryEntry }) {
 
         {headline ? (
           <p
-            className="mt-2 text-[20px] leading-snug"
+            className="mt-2 text-[1.25rem] leading-snug"
             style={{
               color: "var(--ink)",
               fontFamily: "var(--font-display)",
@@ -170,7 +170,7 @@ export function TournamentCountdown({ country }: { country: CountryEntry }) {
         {/* Calm tier: this single line is the whole card, so it reads as
             ink body copy rather than a muted sub-line. */}
         <p
-          className={isCalm ? "text-[15px] leading-snug" : "mt-2 text-[13px] leading-snug"}
+          className={isCalm ? "text-[0.9375rem] leading-snug" : "mt-2 text-[0.8125rem] leading-snug"}
           style={{
             color: isCalm ? "var(--ink)" : "var(--mute-1)",
             fontWeight: 500,

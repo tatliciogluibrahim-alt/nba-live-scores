@@ -120,7 +120,7 @@ function CountryMobile({
         className="uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 11,
+          fontSize: "0.6875rem",
           fontWeight: 600,
           letterSpacing: "0.14em",
           color: "var(--mute-1)",
@@ -219,7 +219,7 @@ function CountryMobile({
             className="mb-1 mt-2 flex items-baseline uppercase"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: "0.5625rem",
               fontWeight: 600,
               letterSpacing: "0.12em",
               color: "var(--mute-2)",
@@ -241,14 +241,14 @@ function CountryMobile({
                 i === 1 && hasStandings
                   ? "2px dashed var(--mute-2)"
                   : "1px solid var(--line)",
-              fontSize: 14,
+              fontSize: "0.875rem",
             }}
           >
             <span
               style={{
                 minWidth: 18,
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: "0.625rem",
                 color: "var(--mute-2)",
               }}
             >
@@ -277,7 +277,7 @@ function CountryMobile({
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: "0.625rem",
                   color: "var(--mute-2)",
                 }}
               >
@@ -303,7 +303,7 @@ function CountryMobile({
             className="mb-3 flex items-baseline justify-between uppercase"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: "0.625rem",
               fontWeight: 600,
               letterSpacing: "0.16em",
             }}
@@ -356,7 +356,7 @@ function CountryMobile({
             className="mt-2 flex justify-between uppercase"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: "0.5625rem",
               fontWeight: 600,
               letterSpacing: "0.1em",
               color: "var(--cream-on-ink-dim)",
@@ -369,7 +369,7 @@ function CountryMobile({
           {currentStage ? (
             <p
               className="mt-3"
-              style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.45 }}
+              style={{ fontSize: "0.875rem", fontWeight: 600, lineHeight: 1.45 }}
             >
               {currentStage.detail}
             </p>
@@ -393,7 +393,7 @@ function CountryMobile({
       <div className="mt-5">
         {alertStateLabel ? (
           <p
-            className="mb-2 text-[12px]"
+            className="mb-2 text-[0.75rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
             aria-label={`Your alert tier for ${country.name}: ${alertStateLabel}`}
           >
@@ -451,13 +451,13 @@ function CountryNotFound({ countryCode }: { countryCode: string }) {
         Country not in the directory.
       </Display>
       <p
-        className="mt-2 text-[13px]"
+        className="mt-2 text-[0.8125rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Try following a country from the picker.
       </p>
       <p
-        className="mt-3 text-[11px]"
+        className="mt-3 text-[0.6875rem]"
         style={{
           fontFamily: "var(--font-mono)",
           color: "var(--mute-2)",
@@ -470,7 +470,7 @@ function CountryNotFound({ countryCode }: { countryCode: string }) {
       <div className="mt-4 flex items-center gap-2">
         <Link
           href="/following/country"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
           style={{
             background: "transparent",
             color: "var(--ink)",
@@ -481,7 +481,7 @@ function CountryNotFound({ countryCode }: { countryCode: string }) {
         </Link>
         <Link
           href="/app"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",
             color: "var(--cream)",

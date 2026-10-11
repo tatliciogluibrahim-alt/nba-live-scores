@@ -210,7 +210,7 @@ function SlotMeter({ used, max }: { used: number; max: number }) {
       className="mb-2.5 flex items-center tabular-nums lining-nums uppercase"
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 10,
+        fontSize: "0.625rem",
         fontWeight: 600,
         letterSpacing: "0.14em",
         color: "var(--mute-1)",
@@ -265,7 +265,7 @@ function DefaultCta({
           gap: 8,
           background: "var(--ink)",
           color: "var(--cream)",
-          fontSize: 14,
+          fontSize: "0.875rem",
           fontWeight: 600,
           padding: 15,
           minHeight: 44,
@@ -363,7 +363,7 @@ function OutlineStamp({
         color: disabled ? "var(--mute-2)" : "var(--ink)",
         background: "transparent",
         fontFamily: "var(--font-mono)",
-        fontSize: 12.5,
+        fontSize: "0.78125rem",
         fontWeight: 700,
         letterSpacing: "0.08em",
         padding: 14,
@@ -382,7 +382,7 @@ function Subnote({ children }: { children: React.ReactNode }) {
       className="text-center"
       style={{
         marginTop: 9,
-        fontSize: 11.5,
+        fontSize: "0.71875rem",
         fontWeight: 500,
         color: "var(--mute-1)",
       }}

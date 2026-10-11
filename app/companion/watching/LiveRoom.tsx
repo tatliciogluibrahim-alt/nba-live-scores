@@ -107,7 +107,7 @@ export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
           className="mb-1 flex items-baseline justify-between uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: "0.625rem",
             fontWeight: 600,
             letterSpacing: "0.16em",
             color: "var(--cream-on-ink-dim)",
@@ -220,18 +220,18 @@ function LiveRoomRow({
           className="flex items-center gap-[10px] tabular-nums lining-nums"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          <span style={{ fontSize: 10, color: "var(--cream-on-ink-dim)", minWidth: 18 }}>
+          <span style={{ fontSize: "0.625rem", color: "var(--cream-on-ink-dim)", minWidth: 18 }}>
             {mark}
           </span>
           <span
             className="min-w-0 flex-1"
-            style={{ fontSize: 16, fontWeight: 700, letterSpacing: "0.02em" }}
+            style={{ fontSize: "1rem", fontWeight: 700, letterSpacing: "0.02em" }}
           >
             {item.awayCode} · {item.homeCode}
           </span>
           <span
             style={{
-              fontSize: 21,
+              fontSize: "1.3125rem",
               fontWeight: 800,
               letterSpacing: "0.01em",
               // The changed score, tinted until it has been seen.
@@ -256,7 +256,7 @@ function LiveRoomRow({
               marginTop: 6,
               paddingLeft: 28,
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: "0.6875rem",
               fontWeight: 600,
               letterSpacing: "0.02em",
               lineHeight: 1.4,
@@ -313,7 +313,7 @@ function ClosestPill({ targetId }: { targetId: string }) {
         href={withGameOrigin(`/game/${targetId}`, "watching")}
         aria-label="Switch to the closest game"
         className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-4 transition active:scale-[0.97]"
-        style={{ background: "var(--cream)", color: "var(--ink)", fontSize: 12, fontWeight: 700 }}
+        style={{ background: "var(--cream)", color: "var(--ink)", fontSize: "0.75rem", fontWeight: 700 }}
       >
         <span
           aria-hidden

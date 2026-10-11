@@ -34,7 +34,7 @@ export function LandingHeader({ sticky = false }: { sticky?: boolean }) {
         <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="No Noise Scores home">
           <BrandMark size={26} />
           <span
-            className="whitespace-nowrap text-[17px]"
+            className="whitespace-nowrap text-[1.0625rem]"
             style={{
               fontFamily: "var(--font-display)",
               fontWeight: 800,
@@ -48,14 +48,14 @@ export function LandingHeader({ sticky = false }: { sticky?: boolean }) {
         <nav className="flex items-center gap-4 md:gap-6">
           <Link
             href="/how-it-works"
-            className="hidden text-[13px] md:inline"
+            className="hidden text-[0.8125rem] md:inline"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             How it works
           </Link>
           <Link
             href="/changelog"
-            className="hidden text-[13px] md:inline"
+            className="hidden text-[0.8125rem] md:inline"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Changelog
@@ -65,7 +65,7 @@ export function LandingHeader({ sticky = false }: { sticky?: boolean }) {
               phone bridge. "Get the app" stays for mobile SEO traffic. */}
           <Link
             href="/app"
-            className="inline-flex min-h-[40px] items-center justify-center whitespace-nowrap rounded-full px-4 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[40px] items-center justify-center whitespace-nowrap rounded-full px-4 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{ background: "var(--ink)", color: "var(--cream)", border: "1px solid var(--ink)" }}
           >
             Open in browser
@@ -74,7 +74,7 @@ export function LandingHeader({ sticky = false }: { sticky?: boolean }) {
             href={APP_STORE_URL}
             target="_blank"
             rel="noopener"
-            className="hidden text-[13px] md:inline"
+            className="hidden text-[0.8125rem] md:inline"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Get the app

@@ -33,7 +33,7 @@ export function LineupsAreInRow() {
       style={{
         padding: "12px 0",
         fontFamily: "var(--font-mono)",
-        fontSize: 13,
+        fontSize: "0.8125rem",
         fontWeight: 600,
         color: "var(--ink)",
       }}
@@ -53,7 +53,7 @@ function XIColumn({ team }: { team: StartingXITeam }) {
         className="tabular-nums lining-nums uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 700,
           letterSpacing: "0.12em",
           color: "var(--mute-1)",
@@ -70,7 +70,7 @@ function XIColumn({ team }: { team: StartingXITeam }) {
           style={{
             padding: "6.5px 0",
             borderBottom: "1px solid var(--line)",
-            fontSize: 12.5,
+            fontSize: "0.78125rem",
             fontWeight: 600,
             // Subbed-off starters keep their row, muted (D4 6c).
             color: player.subbedOffMinute ? "var(--mute-1)" : "var(--ink)",
@@ -80,7 +80,7 @@ function XIColumn({ team }: { team: StartingXITeam }) {
             className="tabular-nums lining-nums shrink-0"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: "0.625rem",
               color: "var(--mute-2)",
               minWidth: 16,
             }}
@@ -97,7 +97,7 @@ function XIColumn({ team }: { team: StartingXITeam }) {
               className="shrink-0 tabular-nums lining-nums"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 9,
+                fontSize: "0.5625rem",
                 color: "var(--mute-2)",
               }}
             >
@@ -116,7 +116,7 @@ function XIColumn({ team }: { team: StartingXITeam }) {
             style={{
               margin: "10px 0 2px",
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: "0.5625rem",
               fontWeight: 600,
               letterSpacing: "0.14em",
               color: "var(--mute-2)",
@@ -131,7 +131,7 @@ function XIColumn({ team }: { team: StartingXITeam }) {
               style={{
                 padding: "5px 0",
                 borderBottom: "1px solid var(--line)",
-                fontSize: 12,
+                fontSize: "0.75rem",
                 fontWeight: 600,
                 color: "var(--ink)",
               }}
@@ -139,7 +139,7 @@ function XIColumn({ team }: { team: StartingXITeam }) {
               <span
                 aria-hidden
                 className="shrink-0"
-                style={{ fontSize: 10, color: "var(--mute-2)" }}
+                style={{ fontSize: "0.625rem", color: "var(--mute-2)" }}
               >
                 ↳
               </span>
@@ -147,7 +147,7 @@ function XIColumn({ team }: { team: StartingXITeam }) {
                 className="tabular-nums lining-nums shrink-0"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: "0.625rem",
                   color: "var(--mute-2)",
                   minWidth: 16,
                 }}
@@ -160,7 +160,7 @@ function XIColumn({ team }: { team: StartingXITeam }) {
                   className="shrink-0 tabular-nums lining-nums"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 9,
+                    fontSize: "0.5625rem",
                     color: "var(--mute-2)",
                   }}
                 >
@@ -211,7 +211,7 @@ export function StartingXI({
             className="uppercase"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: "0.6875rem",
               fontWeight: 600,
               letterSpacing: "0.16em",
               color: "var(--mute-1)",

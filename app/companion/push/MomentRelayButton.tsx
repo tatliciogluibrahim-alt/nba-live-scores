@@ -94,7 +94,7 @@ export function MomentRelayButton({
   if (state === "armed") {
     return (
       <p
-        className="mt-3 text-[13px] leading-snug"
+        className="mt-3 text-[0.8125rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {confirm}
@@ -111,7 +111,7 @@ export function MomentRelayButton({
         className="inline-flex min-h-[44px] items-center gap-1.5 uppercase transition active:opacity-70 disabled:opacity-50"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 12,
+          fontSize: "0.75rem",
           fontWeight: 600,
           letterSpacing: "0.08em",
           color: "var(--ink)",
@@ -123,7 +123,7 @@ export function MomentRelayButton({
       </button>
       {state === "needs-permission" ? (
         <p
-          className="mt-1 text-[12px] leading-snug"
+          className="mt-1 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-2)", fontWeight: 500 }}
         >
           Turn on notifications to be reminded.
@@ -131,7 +131,7 @@ export function MomentRelayButton({
       ) : null}
       {state === "error" ? (
         <p
-          className="mt-1 text-[12px] leading-snug"
+          className="mt-1 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-2)", fontWeight: 500 }}
         >
           Could not set the reminder. Try again in a moment.

@@ -73,7 +73,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
           className="uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: "0.6875rem",
             fontWeight: 700,
             // Aligned to the canonical Eyebrow letter-spacing (0.12em)
             // so the recap's caps mono reads as part of the same
@@ -95,7 +95,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
         </Display>
 
         <p
-          className="mt-2 text-[13px] leading-snug"
+          className="mt-2 text-[0.8125rem] leading-snug"
           style={{ color: "var(--cream-on-dark-secondary)", fontWeight: 500 }}
         >
           {sub}
@@ -109,7 +109,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
                 ? "See tonight's final"
                 : "See tonight's wrap"
             }
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--cream)",
               color: "var(--ink)",
@@ -122,7 +122,7 @@ export function QuietRecap({ payload }: { payload: TodayPayload }) {
             type="button"
             onClick={() => markQuietRecapSeen(today)}
             aria-label="Dismiss recap"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--cream)",

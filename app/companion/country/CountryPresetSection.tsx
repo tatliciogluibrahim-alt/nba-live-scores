@@ -77,7 +77,7 @@ export function CountryPresetSection({
             className="mt-3 inline-flex min-h-[44px] items-center uppercase transition active:opacity-70"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 12,
+              fontSize: "0.75rem",
               fontWeight: 600,
               letterSpacing: "0.08em",
               color: "var(--mute-1)",
@@ -92,7 +92,7 @@ export function CountryPresetSection({
             Summer Soccer 2026 is over.
           </Display>
           <p
-            className="mt-1 text-[12px]"
+            className="mt-1 text-[0.75rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {countryName} has no more matches to follow. Its results stay here.
@@ -104,7 +104,7 @@ export function CountryPresetSection({
             Get told when {countryName} plays.
           </Display>
           <p
-            className="mt-1 text-[12px]"
+            className="mt-1 text-[0.75rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             New follows use your default alert level. Change it later.
@@ -114,7 +114,7 @@ export function CountryPresetSection({
             type="button"
             onClick={handleFollow}
             aria-label={`Follow ${countryName}`}
-            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",

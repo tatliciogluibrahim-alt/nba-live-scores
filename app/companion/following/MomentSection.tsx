@@ -68,7 +68,7 @@ export function MomentSection({
               className="truncate uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 11,
+                fontSize: "0.6875rem",
                 fontWeight: 700,
                 letterSpacing: "0.14em",
                 color: "var(--ink)",
@@ -82,7 +82,7 @@ export function MomentSection({
               className="shrink-0 uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: "0.625rem",
                 fontWeight: 600,
                 letterSpacing: "0.1em",
                 color: "var(--mute-1)",
@@ -95,7 +95,7 @@ export function MomentSection({
           ) : null}
         </div>
         <p
-          className="mt-2 text-[12.5px] leading-snug"
+          className="mt-2 text-[0.78125rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {moment.description}
@@ -110,7 +110,7 @@ export function MomentSection({
                     className="uppercase"
                     style={{
                       fontFamily: "var(--font-mono)",
-                      fontSize: 9.5,
+                      fontSize: "0.59375rem",
                       fontWeight: 600,
                       letterSpacing: "0.14em",
                       color: "var(--mute-2)",
@@ -119,13 +119,13 @@ export function MomentSection({
                     {g.eyebrow}
                   </p>
                   <p
-                    className="mt-0.5 text-[15px]"
+                    className="mt-0.5 text-[0.9375rem]"
                     style={{ fontWeight: 700, letterSpacing: "-0.005em", color: "var(--ink)" }}
                   >
                     {g.title}
                   </p>
                   <p
-                    className="mt-0.5 text-[12px]"
+                    className="mt-0.5 text-[0.75rem]"
                     style={{ color: "var(--mute-1)", fontWeight: 500 }}
                   >
                     {g.detail}
@@ -135,7 +135,7 @@ export function MomentSection({
                   className="shrink-0 uppercase"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: isInactive ? 10 : 12,
+                    fontSize: isInactive ? "0.625rem" : "0.75rem",
                     fontWeight: 600,
                     letterSpacing: "0.08em",
                     color: "var(--mute-2)",
@@ -189,7 +189,7 @@ export function MomentSection({
       {/* Section header — icon, name, description, optional chip. */}
       <header className="px-4 pb-2 pt-3.5">
         <div className="flex items-center gap-2">
-          <span aria-hidden style={{ fontSize: 18, lineHeight: 1 }}>
+          <span aria-hidden style={{ fontSize: "1.125rem", lineHeight: 1 }}>
             {moment.icon}
           </span>
           <Eyebrow color={moment.accent}>{moment.name}</Eyebrow>
@@ -200,7 +200,7 @@ export function MomentSection({
                 background: "var(--cream-2)",
                 color: "var(--mute-1)",
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: "0.625rem",
                 fontWeight: 700,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
@@ -212,7 +212,7 @@ export function MomentSection({
           ) : null}
         </div>
         <p
-          className="mt-1 text-[12px] leading-snug"
+          className="mt-1 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {moment.description}
@@ -233,7 +233,7 @@ export function MomentSection({
               <div className="min-w-0 flex-1">
                 <Eyebrow>{g.eyebrow}</Eyebrow>
                 <p
-                  className="mt-1 text-[14px] leading-snug"
+                  className="mt-1 text-[0.875rem] leading-snug"
                   style={{
                     color: "var(--ink)",
                     fontWeight: 700,
@@ -243,7 +243,7 @@ export function MomentSection({
                   {g.title}
                 </p>
                 <p
-                  className="mt-0.5 text-[12px]"
+                  className="mt-0.5 text-[0.75rem]"
                   style={{ color: "var(--mute-1)", fontWeight: 500 }}
                 >
                   {g.detail}
@@ -251,7 +251,7 @@ export function MomentSection({
               </div>
               {isInactive ? (
                 <span
-                  className="shrink-0 text-[11px] uppercase"
+                  className="shrink-0 text-[0.6875rem] uppercase"
                   style={{
                     fontFamily: "var(--font-mono)",
                     letterSpacing: "0.08em",

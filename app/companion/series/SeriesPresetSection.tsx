@@ -67,13 +67,13 @@ export function SeriesPresetSection({
           style={{ background: "var(--paper)", borderColor: "var(--line)" }}
         >
           <p
-            className="text-[13px]"
+            className="text-[0.8125rem]"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
             This series is done.
           </p>
           <p
-            className="mt-1 text-[12px]"
+            className="mt-1 text-[0.75rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Follow the playoffs to track what happens next.
@@ -81,7 +81,7 @@ export function SeriesPresetSection({
           <Link
             href="/tournament/nba-playoffs-2025"
             aria-label="Open NBA Playoffs"
-            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--ink)",
@@ -129,7 +129,7 @@ export function SeriesPresetSection({
             type="button"
             onClick={handleUnfollow}
             aria-label={`Unfollow ${subjectLabel}`}
-            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--ink)",
@@ -148,13 +148,13 @@ export function SeriesPresetSection({
           }}
         >
           <p
-            className="text-[13px]"
+            className="text-[0.8125rem]"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
             Get told when this series swings.
           </p>
           <p
-            className="mt-1 text-[12px]"
+            className="mt-1 text-[0.75rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             New follows use your default alert level. Change it later.
@@ -163,7 +163,7 @@ export function SeriesPresetSection({
             type="button"
             onClick={handleFollow}
             aria-label={`Follow ${subjectLabel}`}
-            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",

@@ -15,7 +15,7 @@ export function SpotlightBand() {
         style={{ maxWidth: 1100 }}
       >
         <p
-          className="mb-6 text-[11px] uppercase"
+          className="mb-6 text-[0.6875rem] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
             letterSpacing: "0.22em",
@@ -40,7 +40,7 @@ export function SpotlightBand() {
           <span style={{ color: "var(--cream-on-dark-primary)" }}>No noise.</span>
         </h2>
         <p
-          className="mx-auto mt-7 max-w-[52ch] text-[18px] leading-snug"
+          className="mx-auto mt-7 max-w-[52ch] text-[1.125rem] leading-snug"
           style={{ color: "var(--cream-on-dark-secondary)", fontWeight: 500 }}
         >
           The app stays quiet until something you follow happens. Then it tells

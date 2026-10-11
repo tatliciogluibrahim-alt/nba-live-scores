@@ -102,7 +102,7 @@ export function BriefPreviewClient() {
         {payload?.dateLabel ?? "Loading…"}
       </Display>
       <p
-        className="mt-2 text-[12px] leading-snug"
+        className="mt-2 text-[0.75rem] leading-snug"
         style={{ color: "var(--mute-2)", fontWeight: 500 }}
       >
         Preview only. This is what your morning brief looks like, built
@@ -110,7 +110,7 @@ export function BriefPreviewClient() {
       </p>
       {payload && !includeScores ? (
         <p
-          className="mt-1 text-[12px] leading-snug"
+          className="mt-1 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-2)", fontWeight: 500 }}
         >
           Scores stay hidden while No-Spoilers is on.
@@ -132,13 +132,13 @@ export function BriefPreviewClient() {
           {payload.editorialLede ? (
             <Section eyebrow="The Moment" emptyLabel="">
               <p
-                className="text-[18px] leading-tight"
+                className="text-[1.125rem] leading-tight"
                 style={{ color: "var(--ink)", fontWeight: 800, letterSpacing: "-0.3px" }}
               >
                 {payload.editorialLede.headline}
               </p>
               <p
-                className="mt-2 text-[14px] leading-snug"
+                className="mt-2 text-[0.875rem] leading-snug"
                 style={{ color: "var(--ink-2)", fontWeight: 500 }}
               >
                 {payload.editorialLede.body}
@@ -146,7 +146,7 @@ export function BriefPreviewClient() {
               {payload.editorialLede.context.map((line, i) => (
                 <p
                   key={i}
-                  className="mt-1.5 text-[13px] italic leading-snug"
+                  className="mt-1.5 text-[0.8125rem] italic leading-snug"
                   style={{ color: "var(--mute-1)", fontWeight: 500 }}
                 >
                   {line}
@@ -174,7 +174,7 @@ export function BriefPreviewClient() {
                 {payload.worthKnowing.map((w, i) => (
                   <li
                     key={i}
-                    className="text-[14px] leading-snug"
+                    className="text-[0.875rem] leading-snug"
                     style={{ color: "var(--ink)", fontWeight: 500 }}
                   >
                     · {w}
@@ -191,7 +191,7 @@ export function BriefPreviewClient() {
                 {payload.alerts.tiers.map((t, i) => (
                   <li
                     key={i}
-                    className="text-[13px]"
+                    className="text-[0.8125rem]"
                     style={{ color: "var(--ink)", fontWeight: 500 }}
                   >
                     {t}
@@ -210,7 +210,7 @@ export function BriefPreviewClient() {
           >
             <Eyebrow>Footer (in actual email)</Eyebrow>
             <p
-              className="mt-1 text-[11px]"
+              className="mt-1 text-[0.6875rem]"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               Sent because you subscribed. One-click unsubscribe.
@@ -220,7 +220,7 @@ export function BriefPreviewClient() {
 
           <Link
             href="/brief/subscribe"
-            className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",
@@ -250,7 +250,7 @@ function Section({
       <div className="mt-6">
         <Eyebrow>{eyebrow}</Eyebrow>
         <p
-          className="mt-2 text-[13px]"
+          className="mt-2 text-[0.8125rem]"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {emptyLabel}
@@ -289,7 +289,7 @@ function GameRow({
     >
       <div className="flex items-baseline justify-between gap-3">
         <span
-          className="text-[14px]"
+          className="text-[0.875rem]"
           style={{
             color: "var(--ink)",
             fontWeight: 700,
@@ -300,7 +300,7 @@ function GameRow({
         </span>
         {scoreLine ? (
           <span
-            className="tabular-nums text-[14px]"
+            className="tabular-nums text-[0.875rem]"
             style={{
               color: "var(--ink)",
               fontFamily: "var(--font-mono)",
@@ -313,7 +313,7 @@ function GameRow({
         ) : null}
       </div>
       <p
-        className="mt-1 text-[12px]"
+        className="mt-1 text-[0.75rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {context}
@@ -323,7 +323,7 @@ function GameRow({
           {recapBlurbs.map((b, i) => (
             <li
               key={i}
-              className="text-[13px] leading-snug"
+              className="text-[0.8125rem] leading-snug"
               style={{ color: "var(--ink)", fontWeight: 500 }}
             >
               · {b}

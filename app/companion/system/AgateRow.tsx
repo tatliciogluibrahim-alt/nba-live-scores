@@ -59,7 +59,7 @@ export function AgateRow({
           className="tabular-nums lining-nums"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: "0.625rem",
             // C4 (§5 v3): index numerals on cream ground carry the brand.
             fontWeight: 700,
             color: "var(--brand)",
@@ -75,7 +75,7 @@ export function AgateRow({
       </span>
 
       {note && (
-        <span style={{ color: "var(--mute-1)", fontWeight: 500, fontSize: 12.5 }}>{note}</span>
+        <span style={{ color: "var(--mute-1)", fontWeight: 500, fontSize: "0.78125rem" }}>{note}</span>
       )}
 
       {score != null && score !== "" && (
@@ -85,7 +85,7 @@ export function AgateRow({
             fontFamily: "var(--font-display)",
             fontStretch: "var(--display-stretch)",
             fontWeight: 800,
-            fontSize: 16,
+            fontSize: "1rem",
             ...(spoilerGameId && scoreHidden
               ? { position: "relative", zIndex: 1 }
               : {}),
@@ -106,7 +106,7 @@ export function AgateRow({
   );
 
   const cls = "flex items-center gap-[10px] py-[13px]";
-  const rowStyle = { fontSize: 14, borderBottom: "1px solid var(--line)" };
+  const rowStyle = { fontSize: "0.875rem", borderBottom: "1px solid var(--line)" };
 
   if (href) {
     return (

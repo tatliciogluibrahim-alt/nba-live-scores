@@ -98,7 +98,7 @@ function UpNextAgateRow({ item, idx }: { item: UpNextItem; idx: string }) {
         // S2 scale (nowness = size): today's rows step up a notch now that
         // the section is today-only — fewer rows, more room, and the day's
         // games read a clear size above the NEXT pointer.
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 15 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.9375rem" }}>
           {away} · {home}
         </span>
       }

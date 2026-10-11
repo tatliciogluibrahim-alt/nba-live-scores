@@ -349,7 +349,7 @@ function LegacyLead({ lead, rise }: { lead: TodayHeadline; rise: string }) {
   return (
     <section className="mb-5">
       <p
-        className={`${rise} mb-2 flex items-center gap-1.5 text-[12.5px] uppercase`}
+        className={`${rise} mb-2 flex items-center gap-1.5 text-[0.78125rem] uppercase`}
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
@@ -404,7 +404,7 @@ function LegacyLead({ lead, rise }: { lead: TodayHeadline; rise: string }) {
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 11,
+                  fontSize: "0.6875rem",
                   letterSpacing: "0.12em",
                   color: "var(--mute-1)",
                 }}
@@ -419,7 +419,7 @@ function LegacyLead({ lead, rise }: { lead: TodayHeadline; rise: string }) {
             </div>
           ) : (
             <span
-              className="truncate text-[15px]"
+              className="truncate text-[0.9375rem]"
               style={{ color: "var(--ink)", fontWeight: 700, letterSpacing: "-0.01em" }}
             >
               {deck.matchup}
@@ -438,7 +438,7 @@ function LegacyLead({ lead, rise }: { lead: TodayHeadline; rise: string }) {
               className="text-right uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 12,
+                fontSize: "0.75rem",
                 fontWeight: 700,
                 letterSpacing: "0.1em",
                 color: deck.accent,
@@ -452,7 +452,7 @@ function LegacyLead({ lead, rise }: { lead: TodayHeadline; rise: string }) {
                 <div
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 13,
+                    fontSize: "0.8125rem",
                     fontWeight: 600,
                     color: "var(--ink)",
                     fontVariantNumeric: "tabular-nums",
@@ -466,7 +466,7 @@ function LegacyLead({ lead, rise }: { lead: TodayHeadline; rise: string }) {
                   className="mt-0.5 uppercase"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 10,
+                    fontSize: "0.625rem",
                     letterSpacing: "0.12em",
                     color: "var(--mute-1)",
                   }}
@@ -481,7 +481,7 @@ function LegacyLead({ lead, rise }: { lead: TodayHeadline; rise: string }) {
 
       {lead.support ? (
         <p
-          className={`${rise} mt-3.5 text-[14px] leading-snug`}
+          className={`${rise} mt-3.5 text-[0.875rem] leading-snug`}
           style={{ color: "var(--ink-2)", fontWeight: 400, animationDelay: "170ms" }}
         >
           {lead.support}
@@ -500,7 +500,7 @@ function DeckChip({ label, bg, fg }: { label: string; bg: string; fg: string }) 
         background: bg,
         color: fg,
         fontFamily: "var(--font-mono)",
-        fontSize: 10,
+        fontSize: "0.625rem",
         fontWeight: 700,
         letterSpacing: "0.04em",
       }}

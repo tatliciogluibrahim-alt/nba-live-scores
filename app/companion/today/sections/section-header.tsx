@@ -22,7 +22,7 @@ export function SectionHeader({
           wrapper as the flex item, the eyebrow renders in a normal inline
           context and the first letter is safe. */}
       <span className="shrink-0">
-        <Eyebrow color="var(--ink)" style={{ fontSize: 12.5, letterSpacing: "0.1em" }}>
+        <Eyebrow color="var(--ink)" style={{ fontSize: "0.78125rem", letterSpacing: "0.1em" }}>
           {label}
         </Eyebrow>
       </span>

@@ -208,7 +208,7 @@ function SeasonWrappedBanner({
       style={{ background: "var(--paper)", borderColor: "var(--line)" }}
     >
       <p
-        className="text-[11px] uppercase"
+        className="text-[0.6875rem] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
@@ -219,7 +219,7 @@ function SeasonWrappedBanner({
         {eyebrow}
       </p>
       <p
-        className="mt-1 text-[13px] leading-snug"
+        className="mt-1 text-[0.8125rem] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 600 }}
       >
         {headline ??
@@ -294,7 +294,7 @@ function TournamentPagehead({
 
 const MOBILE_META_STYLE = {
   fontFamily: "var(--font-mono)",
-  fontSize: 11,
+  fontSize: "0.6875rem",
   fontWeight: 600,
   letterSpacing: "0.12em",
 } as const;
@@ -330,7 +330,7 @@ function MobilePagehead({
         <WCMetaLine phase={phase} />
       ) : (
         <p
-          className="mt-2 text-[13px] leading-snug"
+          className="mt-2 text-[0.8125rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {tournament.detail}
@@ -384,7 +384,7 @@ function WCMetaLine({ phase }: { phase: TournamentPhase }) {
 function TournamentTabs({ tournamentId }: { tournamentId: string }) {
   const tabStyle = {
     fontFamily: "var(--font-mono)",
-    fontSize: 11,
+    fontSize: "0.6875rem",
     letterSpacing: "0.14em",
     paddingBottom: 9,
   } as const;
@@ -452,7 +452,7 @@ function AlertStatePill({ tournamentId }: { tournamentId: string }) {
         }}
       />
       <span
-        className="text-[11px] uppercase"
+        className="text-[0.6875rem] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 600,
@@ -633,7 +633,7 @@ function NBAPlayoffsBody() {
           <div className="h-px flex-1" style={{ background: "var(--line)" }} />
         </div>
         <p
-          className="rounded-[14px] border px-4 py-3 text-[13px]"
+          className="rounded-[14px] border px-4 py-3 text-[0.8125rem]"
           style={{
             background: "var(--paper)",
             borderColor: "var(--line)",
@@ -732,7 +732,7 @@ function NBASeriesAgateRow({
         className="tabular-nums lining-nums"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 600,
           color: "var(--mute-2)",
           minWidth: 18,
@@ -746,7 +746,7 @@ function NBASeriesAgateRow({
           className="block truncate"
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: 17,
+            fontSize: "1.0625rem",
             fontWeight: 700,
             letterSpacing: "-0.01em",
             color: s.wrapped ? "var(--mute-1)" : "var(--ink)",
@@ -758,7 +758,7 @@ function NBASeriesAgateRow({
           className="mt-[2px] block truncate uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: "0.6875rem",
             fontWeight: 600,
             letterSpacing: "0.1em",
             color: "var(--mute-2)",
@@ -770,7 +770,7 @@ function NBASeriesAgateRow({
         <MiniSeriesStrip gamesPlayed={s.gamesPlayed} />
         {momentum ? (
           <span
-            className="mt-1.5 block truncate text-[12px] leading-snug"
+            className="mt-1.5 block truncate text-[0.75rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {momentum}
@@ -890,7 +890,7 @@ function ComingSoonBody({ tournament }: { tournament: TournamentEntry }) {
           {tournament.comingSoon?.label ?? "Coming soon"}
         </Eyebrow>
         <p
-          className="mt-2 text-[15px] leading-snug"
+          className="mt-2 text-[0.9375rem] leading-snug"
           style={{
             color: "var(--ink)",
             fontFamily: "var(--font-display)",
@@ -901,7 +901,7 @@ function ComingSoonBody({ tournament }: { tournament: TournamentEntry }) {
           {" isn’t live yet."}
         </p>
         <p
-          className="mt-2 text-[13px] leading-snug"
+          className="mt-2 text-[0.8125rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           We&apos;ll surface the schedule and standings as soon as the
@@ -919,7 +919,7 @@ function GenericTournamentBody() {
   return (
     <section className="mt-5">
       <p
-        className="rounded-[14px] border px-4 py-3 text-[13px]"
+        className="rounded-[14px] border px-4 py-3 text-[0.8125rem]"
         style={{
           background: "var(--paper)",
           borderColor: "var(--line)",
@@ -981,7 +981,7 @@ function TournamentPresetSection({
             className="mt-2 inline-flex min-h-[44px] items-center uppercase transition active:opacity-70"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 12,
+              fontSize: "0.75rem",
               fontWeight: 600,
               letterSpacing: "0.08em",
               color: "var(--mute-1)",
@@ -996,7 +996,7 @@ function TournamentPresetSection({
             Follow {tournament.name}.
           </Display>
           <p
-            className="mt-1 text-[12px]"
+            className="mt-1 text-[0.75rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Every game across the tournament. Tier defaults to your
@@ -1013,7 +1013,7 @@ function TournamentPresetSection({
                 ? `${tournament.name} isn't live yet`
                 : `Follow ${tournament.name}`
             }
-            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: tournament.comingSoon
                 ? "transparent"
@@ -1044,13 +1044,13 @@ function TournamentNotFound({ id }: { id: string }) {
         Tournament not in the directory.
       </Display>
       <p
-        className="mt-2 text-[13px]"
+        className="mt-2 text-[0.8125rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Try following one from the picker.
       </p>
       <p
-        className="mt-3 text-[11px]"
+        className="mt-3 text-[0.6875rem]"
         style={{
           fontFamily: "var(--font-mono)",
           color: "var(--mute-2)",
@@ -1063,7 +1063,7 @@ function TournamentNotFound({ id }: { id: string }) {
       <div className="mt-4 flex items-center gap-2">
         <Link
           href="/following/tournament"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
           style={{
             background: "transparent",
             color: "var(--ink)",
@@ -1074,7 +1074,7 @@ function TournamentNotFound({ id }: { id: string }) {
         </Link>
         <Link
           href="/app"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",
             color: "var(--cream)",

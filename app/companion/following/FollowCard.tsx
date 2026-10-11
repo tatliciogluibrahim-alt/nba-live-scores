@@ -149,7 +149,7 @@ export function FollowDrawerBody({
     <>
       {wrapped ? (
         <p
-          className="mb-2 text-[12px] leading-snug"
+          className="mb-2 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Season wrapped. There are no alerts left to send. Keep this for
@@ -177,7 +177,7 @@ export function FollowDrawerBody({
         }}
       >
         <span
-          className="text-[13px]"
+          className="text-[0.8125rem]"
           style={{ color: "var(--ink)", fontWeight: 700 }}
         >
           {follow.alertEnabled
@@ -185,7 +185,7 @@ export function FollowDrawerBody({
             : "Alerts off"}
         </span>
         <span
-          className="text-[11px]"
+          className="text-[0.6875rem]"
           style={{ color: "var(--mute-1)", fontWeight: 600 }}
         >
           {/* Says what the tap does. "Manage" turned alerts off in one tap
@@ -195,7 +195,7 @@ export function FollowDrawerBody({
       </button>
       {!canEnable ? (
         <p
-          className="mt-2 text-[12px] leading-snug"
+          className="mt-2 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Alert slots are full ({alertSlotCount} of {alertSlotCap} on
@@ -221,7 +221,7 @@ export function FollowDrawerBody({
         <div className="mt-3">
           <Eyebrow>No-Spoilers</Eyebrow>
           <p
-            className="mt-2 text-[12px] leading-snug"
+            className="mt-2 text-[0.75rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Hidden. No-Spoilers is on for everything, so {name} scores stay
@@ -243,20 +243,20 @@ export function FollowDrawerBody({
             }}
           >
             <span
-              className="text-[13px]"
+              className="text-[0.8125rem]"
               style={{ color: "var(--ink)", fontWeight: 700 }}
             >
               {follow.hideSpoilers ? "Hiding spoilers" : "Spoilers shown"}
             </span>
             <span
-              className="text-[11px]"
+              className="text-[0.6875rem]"
               style={{ color: "var(--mute-1)", fontWeight: 600 }}
             >
               {follow.hideSpoilers ? "Tap to show" : "Tap to hide"}
             </span>
           </button>
           <p
-            className="mt-2 text-[12px] leading-snug"
+            className="mt-2 text-[0.75rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {follow.hideSpoilers
@@ -270,7 +270,7 @@ export function FollowDrawerBody({
         type="button"
         onClick={handleRemove}
         aria-label={`Unfollow ${name}`}
-        className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+        className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
         style={{
           background: "transparent",
           color: "var(--ink)",
@@ -306,7 +306,7 @@ export function FollowCard({ data }: { data: FollowCardData }) {
               : "var(--cream-2)",
         color: accent ?? "var(--ink)",
         fontFamily: "var(--font-mono)",
-        fontSize: identityMark.length > 4 ? 11 : 14,
+        fontSize: identityMark.length > 4 ? "0.6875rem" : "0.875rem",
         fontWeight: 700,
         letterSpacing: "0.02em",
       }}
@@ -325,7 +325,7 @@ export function FollowCard({ data }: { data: FollowCardData }) {
             className="inline-flex items-center gap-1 rounded-full"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: "0.5625rem",
               fontWeight: 700,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
@@ -352,7 +352,7 @@ export function FollowCard({ data }: { data: FollowCardData }) {
             aria-label="Series wrapped"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: "0.5625rem",
               fontWeight: 700,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
@@ -369,7 +369,7 @@ export function FollowCard({ data }: { data: FollowCardData }) {
         ) : null}
       </div>
       <p
-        className="mt-1 truncate text-[14px] leading-snug"
+        className="mt-1 truncate text-[0.875rem] leading-snug"
         style={{
           // Wrapped series lose a touch of weight + color so the card
           // visually steps back from active follows without disappearing.
@@ -382,7 +382,7 @@ export function FollowCard({ data }: { data: FollowCardData }) {
       </p>
       {detail ? (
         <p
-          className="mt-0.5 text-[12px] leading-snug"
+          className="mt-0.5 text-[0.75rem] leading-snug"
           style={{
             color: "var(--mute-1)",
             fontWeight: 500,
@@ -405,7 +405,7 @@ export function FollowCard({ data }: { data: FollowCardData }) {
           where the user can't easily fix it without freeing a slot). */}
       {!follow.alertEnabled && slotsFull && !expanded ? (
         <p
-          className="mt-0.5 truncate text-[11px]"
+          className="mt-0.5 truncate text-[0.6875rem]"
           style={{ color: "var(--mute-2)", fontWeight: 600 }}
         >
           No alerts (slots full)

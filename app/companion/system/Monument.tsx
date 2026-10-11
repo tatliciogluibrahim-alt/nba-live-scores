@@ -142,7 +142,7 @@ export function Monument({
   // <Link> (href present) so they look identical.
   const kickerStyle = {
     fontFamily: "var(--font-mono)",
-    fontSize: 11,
+    fontSize: "0.6875rem",
     fontWeight: isPeak ? 700 : 600,
     letterSpacing: "0.14em",
     color: kickerColor,
@@ -210,7 +210,7 @@ export function Monument({
         <p
           style={{
             marginTop: 14,
-            fontSize: 14,
+            fontSize: "0.875rem",
             lineHeight: 1.5,
             fontWeight: isPeak ? 600 : 500,
             color: deckColor,
@@ -224,7 +224,7 @@ export function Monument({
         <p
           style={{
             marginTop: situation ? 2 : 14,
-            fontSize: 14,
+            fontSize: "0.875rem",
             lineHeight: 1.5,
             fontWeight: isPeak ? 600 : 500,
             color: deckColor,
@@ -247,7 +247,7 @@ export function Monument({
           style={{
             marginTop: 6,
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: "0.6875rem",
             fontWeight: 600,
             letterSpacing: "0.08em",
             color: deckColor,
@@ -272,7 +272,7 @@ export function Monument({
           className="no-noise-reveal-focus relative z-[1] mt-2 inline-flex min-h-[44px] items-center uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: "0.6875rem",
             fontWeight: 700,
             letterSpacing: "0.14em",
             color: kickerColor,
@@ -328,7 +328,7 @@ function ScoreRow({
         className="min-w-0 flex-1 truncate pr-3"
         style={{
           fontFamily: "var(--font-display)",
-          fontSize: 23,
+          fontSize: "1.4375rem",
           fontWeight: 700,
           letterSpacing: 0,
           color: teamColor,
@@ -372,7 +372,7 @@ export function StakesStamp({ children }: { children: ReactNode }) {
       className="inline-block whitespace-nowrap uppercase"
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 10,
+        fontSize: "0.625rem",
         fontWeight: 700,
         letterSpacing: "0.14em",
         padding: "4px 8px",

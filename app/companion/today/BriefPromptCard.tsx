@@ -24,13 +24,13 @@ export function BriefPromptCard() {
       style={{ borderTop: "1px solid var(--line)", paddingTop: 16 }}
     >
       <p
-        className="text-[15px] leading-snug"
+        className="text-[0.9375rem] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 700 }}
       >
         Want The Margin?
       </p>
       <p
-        className="mt-1 text-[13px] leading-snug"
+        className="mt-1 text-[0.8125rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         A calm morning recap of what your follows did. No noise.
@@ -47,7 +47,7 @@ export function BriefPromptCard() {
           className="inline-flex min-h-[44px] items-center gap-1.5 uppercase transition active:opacity-70"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 12,
+            fontSize: "0.75rem",
             fontWeight: 600,
             letterSpacing: "0.08em",
             color: "var(--ink)",
@@ -63,7 +63,7 @@ export function BriefPromptCard() {
           className="inline-flex min-h-[44px] items-center uppercase transition active:opacity-70"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 12,
+            fontSize: "0.75rem",
             fontWeight: 600,
             letterSpacing: "0.08em",
             color: "var(--mute-1)",

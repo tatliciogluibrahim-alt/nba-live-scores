@@ -32,7 +32,7 @@ export function SettingsClient() {
             Alerts & Notifications.
           </Display>
           <p
-            className="text-[14px] leading-snug"
+            className="text-[0.875rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             No-Spoilers, notifications, theme.
@@ -43,7 +43,7 @@ export function SettingsClient() {
             Follow / Watching / No-Spoilers / Tiers. */}
         <Link
           href="/settings/about"
-          className="shrink-0 text-[12px] underline underline-offset-4 decoration-dotted"
+          className="shrink-0 text-[0.75rem] underline underline-offset-4 decoration-dotted"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           How this works
@@ -74,7 +74,7 @@ export function SettingsClient() {
           and just good manners). The native wrapper loads the live site,
           so these resolve to the real pages / mail client. */}
       <footer
-        className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-4 text-[12px]"
+        className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-4 text-[0.75rem]"
         style={{ borderColor: "var(--line)", color: "var(--mute-1)", fontWeight: 500 }}
       >
         <Link
@@ -107,7 +107,7 @@ export function SettingsClient() {
           logos, or branding, and claims no affiliation. Keeps the IP
           position explicit for users and App Review (Guideline 5.2.1). */}
       <p
-        className="mt-4 text-[11px] leading-relaxed"
+        className="mt-4 text-[0.6875rem] leading-relaxed"
         style={{ color: "var(--mute-2)", fontWeight: 500 }}
       >
         No Noise Scores is an independent app. It is not affiliated with,

@@ -51,7 +51,7 @@ function WebPushPanel() {
     return (
       <section>
         <PanelHeader />
-        <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+        <p className="text-[0.75rem]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
           Checking subscription status…
         </p>
       </section>
@@ -62,7 +62,7 @@ function WebPushPanel() {
     return (
       <section>
         <PanelHeader />
-        <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+        <p className="text-[0.75rem]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
           Push isn&apos;t supported in this browser. On iPhone, install the app to your home screen
           first. Safari tabs can&apos;t receive push.
         </p>
@@ -74,7 +74,7 @@ function WebPushPanel() {
     return (
       <section>
         <PanelHeader />
-        <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+        <p className="text-[0.75rem]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
           Push backend not configured for this environment. Missing{" "}
           <code>NEXT_PUBLIC_VAPID_PUBLIC_KEY</code>.
         </p>
@@ -135,7 +135,7 @@ function WebPushPanel() {
       <PanelHeader />
 
       <p
-        className="mb-3 text-[12px]"
+        className="mb-3 text-[0.75rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {status.state === "subscribed"
@@ -153,7 +153,7 @@ function WebPushPanel() {
               onClick={() => handleTest(0)}
               disabled={working !== null}
               aria-label="Send a test push right now"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "var(--ink)",
                 color: "var(--cream)",
@@ -168,7 +168,7 @@ function WebPushPanel() {
               onClick={() => handleTest(10_000)}
               disabled={working !== null}
               aria-label="Send a test push in 10 seconds so you can close the app first"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "transparent",
                 color: "var(--ink)",
@@ -185,7 +185,7 @@ function WebPushPanel() {
               onClick={handleUnsubscribe}
               disabled={working !== null}
               aria-label="Unsubscribe this device from push"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "transparent",
                 color: "var(--mute-1)",
@@ -201,7 +201,7 @@ function WebPushPanel() {
             onClick={handleSubscribe}
             disabled={working !== null}
             aria-label="Subscribe this device to push"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",
@@ -216,7 +216,7 @@ function WebPushPanel() {
 
       {feedback ? (
         <p
-          className="mt-3 text-[12px]"
+          className="mt-3 text-[0.75rem]"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {feedback}
@@ -351,7 +351,7 @@ function NativePushPanel() {
     return (
       <section>
         <PanelHeader />
-        <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+        <p className="text-[0.75rem]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
           Checking…
         </p>
       </section>
@@ -362,7 +362,7 @@ function NativePushPanel() {
     return (
       <section>
         <PanelHeader />
-        <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+        <p className="text-[0.75rem]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
           Push notifications on. Manage them anytime in iOS Settings.
         </p>
       </section>
@@ -373,7 +373,7 @@ function NativePushPanel() {
     return (
       <section>
         <PanelHeader />
-        <p className="text-[12px]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
+        <p className="text-[0.75rem]" style={{ color: "var(--mute-1)", fontWeight: 500 }}>
           Couldn&apos;t reach iOS for notification status. To check, open iOS Settings, find No Noise Scores, and tap Notifications.
         </p>
       </section>
@@ -392,7 +392,7 @@ function NativePushPanel() {
     <section>
       <PanelHeader />
       <p
-        className="mb-3 text-[12px]"
+        className="mb-3 text-[0.75rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {helpLine}
@@ -402,7 +402,7 @@ function NativePushPanel() {
         onClick={handleTurnOn}
         disabled={working}
         aria-label="Turn on notifications"
-        className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+        className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
         style={{
           background: "var(--ink)",
           color: "var(--cream)",
@@ -414,7 +414,7 @@ function NativePushPanel() {
       </button>
       {feedback ? (
         <p
-          className="mt-3 text-[12px]"
+          className="mt-3 text-[0.75rem]"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {feedback}

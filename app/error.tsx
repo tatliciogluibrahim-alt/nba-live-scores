@@ -35,7 +35,7 @@ export default function RouteError({
       style={{ color: "var(--ink)" }}
     >
       <p
-        className="text-[11px] uppercase"
+        className="text-[0.6875rem] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 600,
@@ -58,7 +58,7 @@ export default function RouteError({
         Something didn&apos;t load.
       </h1>
       <p
-        className="mt-2 text-[14px] leading-snug"
+        className="mt-2 text-[0.875rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Tap to try again.
@@ -66,7 +66,7 @@ export default function RouteError({
       <button
         type="button"
         onClick={() => reset()}
-        className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-full px-5 text-[13px] transition active:scale-[0.97]"
+        className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-full px-5 text-[0.8125rem] transition active:scale-[0.97]"
         style={{
           background: "var(--ink)",
           color: "var(--cream)",

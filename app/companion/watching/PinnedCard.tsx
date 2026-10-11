@@ -149,11 +149,11 @@ export function StaleAgateRow({ pin }: { pin: StalePin }) {
       style={{ borderBottom: "1px solid var(--line)" }}
     >
       <div className="min-w-0">
-        <p className="truncate text-[13px]" style={{ color: "var(--ink)", fontWeight: 600 }}>
+        <p className="truncate text-[0.8125rem]" style={{ color: "var(--ink)", fontWeight: 600 }}>
           This game isn&apos;t in the live feed.
         </p>
         <p
-          className="mt-0.5 text-[12px]"
+          className="mt-0.5 text-[0.75rem]"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           We&apos;ll surface it again if it returns.
@@ -163,7 +163,7 @@ export function StaleAgateRow({ pin }: { pin: StalePin }) {
         type="button"
         onClick={() => unpinGame(pin.id)}
         aria-label="Remove this archived game"
-        className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+        className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
         style={{
           background: "transparent",
           color: "var(--ink)",

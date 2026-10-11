@@ -151,14 +151,14 @@ export function EnableStep({
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <p
-            className="text-[14px] leading-snug"
+            className="text-[0.875rem] leading-snug"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
             {confirmation ?? "Turn on notifications?"}
           </p>
           {!confirmation ? (
             <p
-              className="mt-1 text-[12px] leading-snug"
+              className="mt-1 text-[0.75rem] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               {follows.length === 0
@@ -188,7 +188,7 @@ export function EnableStep({
                   // the three pills feel equally tappable even when
                   // label text widths differ ("Quiet" vs "Companion"
                   // vs "Close games"). Slightly roomier padding too.
-                  className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-2 text-[12px] font-semibold transition active:scale-[0.97]"
+                  className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-2 text-[0.75rem] font-semibold transition active:scale-[0.97]"
                   style={{
                     background: active ? "var(--ink)" : "transparent",
                     color: active ? "var(--cream)" : "var(--ink)",
@@ -201,14 +201,14 @@ export function EnableStep({
             })}
           </div>
           <p
-            className="mt-2 text-[11px] leading-snug"
+            className="mt-2 text-[0.6875rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {PRESETS[tier].detail}
           </p>
           {native ? (
             <p
-              className="mt-1.5 text-[11px] leading-snug"
+              className="mt-1.5 text-[0.6875rem] leading-snug"
               style={{ color: "var(--mute-2)", fontWeight: 500 }}
             >
               Tip: pin live games to follow the score on your lock screen.
@@ -221,7 +221,7 @@ export function EnableStep({
               onClick={onEnable}
               disabled={busy}
               aria-label="Turn on notifications"
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3.5 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.97]"
               style={{
                 background: "var(--ink)",
                 color: "var(--cream)",
@@ -235,7 +235,7 @@ export function EnableStep({
               type="button"
               onClick={() => dismissNotifPrompt()}
               aria-label="Dismiss notification prompt"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.97]"
               style={{
                 background: "transparent",
                 color: "var(--mute-1)",

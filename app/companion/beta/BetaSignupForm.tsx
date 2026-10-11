@@ -56,7 +56,7 @@ export function BetaSignupForm() {
         }}
       >
         <p
-          className="text-[13px] uppercase"
+          className="text-[0.8125rem] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
@@ -67,13 +67,13 @@ export function BetaSignupForm() {
           You&apos;re in
         </p>
         <p
-          className="mt-2 text-[16px] leading-snug"
+          className="mt-2 text-[1rem] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 600 }}
         >
           Got it. I&apos;ll be in touch within a few days.
         </p>
         <p
-          className="mt-2 text-[13px] leading-snug"
+          className="mt-2 text-[0.8125rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Meanwhile, you can open the app at{" "}
@@ -135,7 +135,7 @@ export function BetaSignupForm() {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center rounded-full px-5 text-[14px] font-semibold transition active:scale-[0.98]"
+        className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center rounded-full px-5 text-[0.875rem] font-semibold transition active:scale-[0.98]"
         style={{
           background: "var(--ink)",
           color: "var(--cream)",
@@ -148,7 +148,7 @@ export function BetaSignupForm() {
 
       {errorText ? (
         <p
-          className="mt-3 text-[13px]"
+          className="mt-3 text-[0.8125rem]"
           style={{ color: "var(--critical)", fontWeight: 500 }}
         >
           {errorText}
@@ -156,7 +156,7 @@ export function BetaSignupForm() {
       ) : null}
 
       <p
-        className="mt-3 text-[12px] leading-snug"
+        className="mt-3 text-[0.75rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         No confirmation email gets sent. I&apos;ll reach out myself when
@@ -207,7 +207,7 @@ function FormField({
     <div>
       <label
         htmlFor={id}
-        className="block text-[12px] uppercase"
+        className="block text-[0.75rem] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
@@ -231,7 +231,7 @@ function FormField({
           required={required}
           placeholder={placeholder}
           rows={3}
-          className="mt-1.5 w-full rounded-[10px] px-3 py-2 text-[14px] outline-none no-noise-focus-ring"
+          className="mt-1.5 w-full rounded-[10px] px-3 py-2 text-[0.875rem] outline-none no-noise-focus-ring"
           style={baseStyle}
         />
       ) : (
@@ -242,7 +242,7 @@ function FormField({
           onChange={(e) => onChange(e.target.value)}
           required={required}
           placeholder={placeholder}
-          className="mt-1.5 w-full rounded-[10px] px-3 py-2 text-[14px] outline-none no-noise-focus-ring"
+          className="mt-1.5 w-full rounded-[10px] px-3 py-2 text-[0.875rem] outline-none no-noise-focus-ring"
           style={baseStyle}
         />
       )}

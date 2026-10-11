@@ -57,7 +57,7 @@ export function HowItWorksCapsule() {
                   background: "var(--ink)",
                   color: "var(--cream)",
                   fontFamily: "var(--font-mono)",
-                  fontSize: 12,
+                  fontSize: "0.75rem",
                   fontWeight: 800,
                 }}
               >
@@ -66,7 +66,7 @@ export function HowItWorksCapsule() {
               <h3
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: 22,
+                  fontSize: "1.375rem",
                   fontWeight: 800,
                   letterSpacing: "-0.01em",
                   color: "var(--ink)",
@@ -76,7 +76,7 @@ export function HowItWorksCapsule() {
               </h3>
             </div>
             <p
-              className="text-[14px] leading-snug"
+              className="text-[0.875rem] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               {step.body}
@@ -102,7 +102,7 @@ export function SectionHeader({
   return (
     <div className="max-w-[60ch]">
       <p
-        className="mb-2 text-[11px] uppercase"
+        className="mb-2 text-[0.6875rem] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 700,

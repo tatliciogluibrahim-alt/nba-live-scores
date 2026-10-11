@@ -69,7 +69,7 @@ export function DetailCrumbs({
           className="inline-flex min-h-[32px] items-baseline uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: "0.6875rem",
             fontWeight: 600,
             letterSpacing: "0.14em",
             color: "var(--mute-1)",
@@ -82,7 +82,7 @@ export function DetailCrumbs({
           className="uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: "0.6875rem",
             fontWeight: 600,
             letterSpacing: "0.14em",
             color: "var(--mute-2)",

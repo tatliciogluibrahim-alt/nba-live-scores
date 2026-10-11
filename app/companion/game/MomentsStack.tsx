@@ -39,7 +39,7 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
           <div className="h-px flex-1" style={{ background: "var(--line)" }} />
         </div>
         <p
-          className="rounded-[14px] border px-4 py-3 text-[13px]"
+          className="rounded-[14px] border px-4 py-3 text-[0.8125rem]"
           style={{
             background: "var(--paper)",
             borderColor: "var(--line)",
@@ -52,7 +52,7 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
           <button
             type="button"
             onClick={() => setShowAll(true)}
-          className="mt-3 inline-flex min-h-[44px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
+          className="mt-3 inline-flex min-h-[44px] items-center text-[0.75rem] underline underline-offset-4 decoration-dotted"
           style={{
             color: "var(--mute-1)",
             fontWeight: 500,
@@ -80,13 +80,13 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
           }}
         >
           <p
-            className="text-[13px]"
+            className="text-[0.8125rem]"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
             {HIDDEN_CAPTIONS.moments}
           </p>
           <p
-            className="mt-0.5 text-[12px]"
+            className="mt-0.5 text-[0.75rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Tapping reveal will show running scores and big plays.
@@ -95,7 +95,7 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
             type="button"
             onClick={() => setRevealed(true)}
             aria-label="Reveal key moments, hidden by No-Spoilers mode"
-            className="no-noise-reveal-focus mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="no-noise-reveal-focus mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--ink)",
@@ -166,7 +166,7 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="mt-3 inline-flex min-h-[44px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
+          className="mt-3 inline-flex min-h-[44px] items-center text-[0.75rem] underline underline-offset-4 decoration-dotted"
           style={{
             color: "var(--mute-1)",
             fontWeight: 500,
@@ -179,7 +179,7 @@ export function MomentsStack({ plays }: { plays: GamePlay[] }) {
         <button
           type="button"
           onClick={() => setShowAll(false)}
-          className="mt-3 inline-flex min-h-[44px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
+          className="mt-3 inline-flex min-h-[44px] items-center text-[0.75rem] underline underline-offset-4 decoration-dotted"
           style={{
             color: "var(--mute-1)",
             fontWeight: 500,

@@ -60,7 +60,7 @@ function FAQRow({
         className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition active:scale-[0.99]"
       >
         <span
-          className="text-[16px] leading-snug"
+          className="text-[1rem] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 700 }}
         >
           {q}
@@ -72,7 +72,7 @@ function FAQRow({
             background: "var(--cream-2)",
             color: "var(--ink)",
             fontFamily: "var(--font-mono)",
-            fontSize: 14,
+            fontSize: "0.875rem",
             fontWeight: 700,
             transition: "transform 0.2s ease",
             transform: open ? "rotate(45deg)" : "rotate(0deg)",
@@ -84,7 +84,7 @@ function FAQRow({
       {open ? (
         <div className="px-6 pb-5">
           <p
-            className="max-w-[60ch] text-[14px] leading-snug"
+            className="max-w-[60ch] text-[0.875rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {a}

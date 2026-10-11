@@ -54,7 +54,7 @@ export function HeroMoment({
           className="uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: "0.6875rem",
             fontWeight: 600,
             letterSpacing: "0.14em",
             color: accent,
@@ -65,7 +65,7 @@ export function HeroMoment({
       </div>
 
       <h2
-        className="mt-2 text-[19px] leading-tight"
+        className="mt-2 text-[1.1875rem] leading-tight"
         style={{ color: "var(--ink)", fontWeight: 800 }}
       >
         {headline}
@@ -73,7 +73,7 @@ export function HeroMoment({
 
       {context ? (
         <p
-          className="mt-2 text-[13px] leading-snug"
+          className="mt-2 text-[0.8125rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {context}

@@ -78,7 +78,7 @@ export function PickerScreen({
         {title}
       </Display>
       <p
-        className="mb-4 text-[14px] leading-snug"
+        className="mb-4 text-[0.875rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {subtitle}
@@ -105,14 +105,14 @@ export function PickerScreen({
           onChange={(e) => setQuery(e.target.value)}
           placeholder={searchPlaceholder}
           aria-label={searchPlaceholder}
-          className="min-h-[28px] w-full bg-transparent text-[14px] outline-none no-noise-focus-ring"
+          className="min-h-[28px] w-full bg-transparent text-[0.875rem] outline-none no-noise-focus-ring"
           style={{ color: "var(--ink)", fontWeight: 500 }}
         />
       </label>
 
       {grouped.length === 0 ? (
         <p
-          className="px-1 py-6 text-[13px]"
+          className="px-1 py-6 text-[0.8125rem]"
           style={{
             background: "var(--paper)",
             borderColor: "var(--line)",
@@ -163,7 +163,7 @@ export function PickerScreen({
                               // line-height leaves comfortable room
                               // for 2-line marks like "CLE / NYK"
                               // inside the 36px tile.
-                              fontSize: 10,
+                              fontSize: "0.625rem",
                               fontWeight: 700,
                               letterSpacing: "0.02em",
                               textAlign: "center",
@@ -188,7 +188,7 @@ export function PickerScreen({
                             style={{
                               color: "var(--mute-1)",
                               fontFamily: "var(--font-mono)",
-                              fontSize: opt.mark.length > 3 ? 11 : 14,
+                              fontSize: opt.mark.length > 3 ? "0.6875rem" : "0.875rem",
                               fontWeight: 700,
                             }}
                           >
@@ -197,7 +197,7 @@ export function PickerScreen({
                         ) : null}
                         <span className="min-w-0 flex-1">
                           <span
-                            className="block truncate text-[14px] leading-snug"
+                            className="block truncate text-[0.875rem] leading-snug"
                             style={{
                               color: "var(--ink)",
                               fontWeight: 700,
@@ -208,7 +208,7 @@ export function PickerScreen({
                           </span>
                           {opt.secondary ? (
                             <span
-                              className="mt-0.5 block truncate text-[12px]"
+                              className="mt-0.5 block truncate text-[0.75rem]"
                               style={{ color: "var(--mute-1)", fontWeight: 500 }}
                             >
                               {opt.secondary}
@@ -216,7 +216,7 @@ export function PickerScreen({
                           ) : null}
                         </span>
                         <span
-                          className="shrink-0 px-2 py-1 text-[9.5px] uppercase"
+                          className="shrink-0 px-2 py-1 text-[0.59375rem] uppercase"
                           style={{
                             fontFamily: "var(--font-mono)",
                             background: following ? "var(--ink)" : "transparent",

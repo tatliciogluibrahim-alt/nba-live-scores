@@ -37,7 +37,7 @@ export function ContentPageShell({
         style={{ maxWidth: 900 }}
       >
         <p
-          className="mb-3 text-[11px] uppercase"
+          className="mb-3 text-[0.6875rem] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
@@ -61,7 +61,7 @@ export function ContentPageShell({
         </h1>
         {intro ? (
           <p
-            className="mt-5 max-w-[60ch] text-[18px] leading-snug"
+            className="mt-5 max-w-[60ch] text-[1.125rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {intro}
@@ -109,7 +109,7 @@ export function H3({ children }: { children: ReactNode }) {
       className="mt-8 leading-tight"
       style={{
         fontFamily: "var(--font-display)",
-        fontSize: 20,
+        fontSize: "1.25rem",
         fontWeight: 800,
         letterSpacing: "-0.01em",
         color: "var(--ink)",
@@ -123,7 +123,7 @@ export function H3({ children }: { children: ReactNode }) {
 export function P({ children }: { children: ReactNode }) {
   return (
     <p
-      className="text-[16px] leading-relaxed"
+      className="text-[1rem] leading-relaxed"
       style={{ color: "var(--ink)", fontWeight: 500 }}
     >
       {children}
@@ -134,7 +134,7 @@ export function P({ children }: { children: ReactNode }) {
 export function Quote({ children }: { children: ReactNode }) {
   return (
     <blockquote
-      className="border-l-[3px] py-1 pl-5 text-[17px] leading-snug"
+      className="border-l-[3px] py-1 pl-5 text-[1.0625rem] leading-snug"
       style={{
         borderColor: "var(--nba)",
         color: "var(--ink)",
@@ -164,7 +164,7 @@ export function CalloutBox({
       }}
     >
       <p
-        className="mb-2 text-[11px] uppercase"
+        className="mb-2 text-[0.6875rem] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
@@ -175,7 +175,7 @@ export function CalloutBox({
         {eyebrow}
       </p>
       <div
-        className="text-[15px] leading-snug"
+        className="text-[0.9375rem] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 500 }}
       >
         {children}
@@ -190,7 +190,7 @@ export function BulletList({ items }: { items: string[] }) {
       {items.map((item, idx) => (
         <li
           key={idx}
-          className="text-[16px] leading-snug"
+          className="text-[1rem] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 500 }}
         >
           {item}
@@ -212,7 +212,7 @@ export function CompareTable({
       className="overflow-hidden rounded-[14px] border"
       style={{ borderColor: "var(--line)" }}
     >
-      <table className="w-full text-[14px]">
+      <table className="w-full text-[0.875rem]">
         <thead>
           <tr style={{ background: "var(--cream-2)" }}>
             {headers.map((h, idx) => (
@@ -221,7 +221,7 @@ export function CompareTable({
                 className="px-4 py-3 text-left"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 11,
+                  fontSize: "0.6875rem",
                   fontWeight: 700,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",

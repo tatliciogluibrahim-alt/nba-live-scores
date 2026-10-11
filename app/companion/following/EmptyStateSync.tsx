@@ -28,11 +28,11 @@ export function EmptyStateSync() {
         }}
         aria-label="Sync your circle from another device with a code"
       >
-        <span className="text-[13px]" style={{ fontWeight: 600 }}>
+        <span className="text-[0.8125rem]" style={{ fontWeight: 600 }}>
           Already have a circle?
         </span>
         <span
-          className="text-[11px]"
+          className="text-[0.6875rem]"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Sync with a code

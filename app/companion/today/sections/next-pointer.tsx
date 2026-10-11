@@ -29,7 +29,7 @@ export function NextPointer({ item }: { item: UpNextItem }) {
         main={
           // S2 scale (nowness = size): the pointer sits a step BELOW
           // today's rows — it's a signpost, not a slate entry.
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}>
             {away} · {home}
           </span>
         }

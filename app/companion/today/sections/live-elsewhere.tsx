@@ -29,7 +29,7 @@ export function LiveElsewhere({ text, href }: { text: string; href: string }) {
         className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 uppercase transition active:opacity-70"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 11,
+          fontSize: "0.6875rem",
           fontWeight: 700,
           letterSpacing: "0.12em",
           color: "var(--ink)",

@@ -32,7 +32,7 @@ export function RevealResultsButton({
       type="button"
       onClick={() => reveal(gameId)}
       aria-label={`${COPY[kind]}, hidden by No-Spoilers mode`}
-      className={`no-noise-reveal-focus inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98] ${className ?? ""}`}
+      className={`no-noise-reveal-focus inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98] ${className ?? ""}`}
       style={{
         background: "var(--ink)",
         color: "var(--cream)",

@@ -35,13 +35,13 @@ export function BriefSettingsRow() {
         <div className="flex flex-1 items-center justify-between gap-3 py-3 pr-4">
           <div className="min-w-0">
             <p
-              className="text-[14px] leading-snug"
+              className="text-[0.875rem] leading-snug"
               style={{ color: "var(--ink)", fontWeight: 700 }}
             >
               A daily morning email.
             </p>
             <p
-              className="mt-0.5 text-[12px] leading-snug"
+              className="mt-0.5 text-[0.75rem] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               Get a recap of results based on your follows.

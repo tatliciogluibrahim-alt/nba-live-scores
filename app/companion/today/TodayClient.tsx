@@ -433,7 +433,7 @@ function NoSpoilersAmbientDot() {
         className="hidden md:inline"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 600,
           // Aligned to canonical Eyebrow letter-spacing (0.12em) so
           // every caps-mono micro-label on Today reads as one

@@ -22,7 +22,7 @@ export function NoSpoilersBanner({ className }: { className?: string }) {
     >
       <div className="flex-1">
         <p
-          className="text-[10px] uppercase"
+          className="text-[0.625rem] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
@@ -34,7 +34,7 @@ export function NoSpoilersBanner({ className }: { className?: string }) {
           No-Spoilers
         </p>
         <p
-          className="mt-0.5 text-[12px] leading-snug"
+          className="mt-0.5 text-[0.75rem] leading-snug"
           style={{ color: "var(--cream)", fontWeight: 500 }}
         >
           Scores hidden. Schedules stay visible.
@@ -42,7 +42,7 @@ export function NoSpoilersBanner({ className }: { className?: string }) {
       </div>
       <span
         aria-hidden
-        className="shrink-0 self-center rounded-full px-2 py-0.5 text-[10px] uppercase"
+        className="shrink-0 self-center rounded-full px-2 py-0.5 text-[0.625rem] uppercase"
         style={{
           background: "var(--cream)",
           color: "var(--ink)",

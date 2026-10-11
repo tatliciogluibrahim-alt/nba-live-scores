@@ -43,7 +43,7 @@ export function LiveTrackHint({ active }: { active: boolean }) {
     >
       <div className="min-w-0 flex-1">
         <p
-          className="text-[10px] uppercase"
+          className="text-[0.625rem] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
@@ -54,13 +54,13 @@ export function LiveTrackHint({ active }: { active: boolean }) {
           Tip
         </p>
         <p
-          className="mt-1 text-[13px] leading-snug"
+          className="mt-1 text-[0.8125rem] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 600 }}
         >
           Follow the score on your lock screen.
         </p>
         <p
-          className="mt-0.5 text-[12px] leading-snug"
+          className="mt-0.5 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Pin a live game to track it on your lock screen and home-screen widget.
@@ -70,7 +70,7 @@ export function LiveTrackHint({ active }: { active: boolean }) {
         type="button"
         onClick={dismiss}
         aria-label="Dismiss tip"
-        className="-mr-1 -mt-1 shrink-0 p-1 text-[16px] leading-none"
+        className="-mr-1 -mt-1 shrink-0 p-1 text-[1rem] leading-none"
         style={{ color: "var(--mute-2)" }}
       >
         ×

@@ -133,7 +133,7 @@ export function SyncCircleModal({
         <div className="px-4 pb-4 pt-3">
           <Eyebrow>Sync</Eyebrow>
           <h2
-            className="mt-1 text-[20px]"
+            className="mt-1 text-[1.25rem]"
             style={{
               fontFamily: "var(--font-display)",
               color: "var(--ink)",
@@ -143,7 +143,7 @@ export function SyncCircleModal({
             Move your circle
           </h2>
           <p
-            className="mt-1 text-[13px]"
+            className="mt-1 text-[0.8125rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Carry your follows to another device with a short code. Codes
@@ -166,11 +166,11 @@ export function SyncCircleModal({
                   color: "var(--ink)",
                 }}
               >
-                <span className="text-[13px]" style={{ fontWeight: 700 }}>
+                <span className="text-[0.8125rem]" style={{ fontWeight: 700 }}>
                   Show my code
                 </span>
                 <span
-                  className="text-[11px]"
+                  className="text-[0.6875rem]"
                   style={{ color: "var(--mute-1)", fontWeight: 500 }}
                 >
                   Send follows to another device
@@ -186,11 +186,11 @@ export function SyncCircleModal({
                   color: "var(--ink)",
                 }}
               >
-                <span className="text-[13px]" style={{ fontWeight: 700 }}>
+                <span className="text-[0.8125rem]" style={{ fontWeight: 700 }}>
                   Enter a code
                 </span>
                 <span
-                  className="text-[11px]"
+                  className="text-[0.6875rem]"
                   style={{ color: "var(--mute-1)", fontWeight: 500 }}
                 >
                   Pull follows from another device
@@ -208,7 +208,7 @@ export function SyncCircleModal({
               >
                 {generating ? (
                   <p
-                    className="text-[13px]"
+                    className="text-[0.8125rem]"
                     style={{ color: "var(--mute-1)", fontWeight: 500 }}
                   >
                     Generating…
@@ -216,7 +216,7 @@ export function SyncCircleModal({
                 ) : code ? (
                   <>
                     <p
-                      className="mb-1 text-[11px] uppercase"
+                      className="mb-1 text-[0.6875rem] uppercase"
                       style={{
                         fontFamily: "var(--font-mono)",
                         letterSpacing: "0.12em",
@@ -238,7 +238,7 @@ export function SyncCircleModal({
                       {code}
                     </p>
                     <p
-                      className="mt-2 text-center text-[12px]"
+                      className="mt-2 text-center text-[0.75rem]"
                       style={{ color: "var(--mute-1)", fontWeight: 500 }}
                     >
                       On your other device, open Following → Sync → Enter a
@@ -247,7 +247,7 @@ export function SyncCircleModal({
                   </>
                 ) : (
                   <p
-                    className="text-center text-[13px]"
+                    className="text-center text-[0.8125rem]"
                     style={{ color: "var(--critical)", fontWeight: 500 }}
                   >
                     Couldn&apos;t generate a code. Try again.
@@ -274,7 +274,7 @@ export function SyncCircleModal({
                   borderColor: "var(--line)",
                   color: "var(--ink)",
                   fontFamily: "var(--font-mono)",
-                  fontSize: 24,
+                  fontSize: "1.5rem",
                   fontWeight: 700,
                   letterSpacing: "0.16em",
                 }}
@@ -283,7 +283,7 @@ export function SyncCircleModal({
                 type="button"
                 onClick={handlePull}
                 disabled={pulling || input.trim().length < 4}
-                className="mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+                className="mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
                 style={{
                   background: "var(--ink)",
                   color: "var(--cream)",
@@ -296,7 +296,7 @@ export function SyncCircleModal({
 
               {result.kind === "merged" ? (
                 <p
-                  className="mt-3 text-center text-[13px]"
+                  className="mt-3 text-center text-[0.8125rem]"
                   style={{ color: "var(--ink)", fontWeight: 600 }}
                 >
                   {result.added > 0
@@ -305,14 +305,14 @@ export function SyncCircleModal({
                 </p>
               ) : result.kind === "notfound" ? (
                 <p
-                  className="mt-3 text-center text-[12px]"
+                  className="mt-3 text-center text-[0.75rem]"
                   style={{ color: "var(--critical)", fontWeight: 500 }}
                 >
                   That code isn&apos;t valid or has expired.
                 </p>
               ) : result.kind === "error" ? (
                 <p
-                  className="mt-3 text-center text-[12px]"
+                  className="mt-3 text-center text-[0.75rem]"
                   style={{ color: "var(--critical)", fontWeight: 500 }}
                 >
                   Something went wrong. Try again.
@@ -327,7 +327,7 @@ export function SyncCircleModal({
               <button
                 type="button"
                 onClick={() => setMode("menu")}
-                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
                 style={{
                   background: "transparent",
                   color: "var(--ink)",
@@ -340,7 +340,7 @@ export function SyncCircleModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "transparent",
                 color: "var(--ink)",

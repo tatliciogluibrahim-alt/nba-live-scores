@@ -92,7 +92,7 @@ export function WCGamePreviewClient() {
               role="radio"
               aria-checked={active}
               onClick={() => setScenario(s)}
-              className="inline-flex flex-1 items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-semibold uppercase transition active:scale-[0.97]"
+              className="inline-flex flex-1 items-center justify-center rounded-full px-2.5 py-1.5 text-[0.6875rem] font-semibold uppercase transition active:scale-[0.97]"
               style={{
                 background: active ? "var(--ink)" : "transparent",
                 color: active ? "var(--cream)" : "var(--ink)",
@@ -115,7 +115,7 @@ export function WCGamePreviewClient() {
       />
 
       <p
-        className="mx-auto mt-6 max-w-md px-4 text-[11px] leading-snug"
+        className="mx-auto mt-6 max-w-md px-4 text-[0.6875rem] leading-snug"
         style={{
           color: "var(--mute-2)",
           fontFamily: "var(--font-mono)",

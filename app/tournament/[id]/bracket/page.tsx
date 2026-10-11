@@ -93,7 +93,7 @@ export default async function TournamentBracketPage({
             {isWorldCup ? "The bracket." : "Bracket."}
           </h1>
           <p
-            className="mt-2 text-[13px] leading-snug"
+            className="mt-2 text-[0.8125rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {isWorldCup
@@ -107,7 +107,7 @@ export default async function TournamentBracketPage({
         ) : (
           <section className="mt-5">
             <p
-              className="rounded-[14px] border px-4 py-3 text-[13px]"
+              className="rounded-[14px] border px-4 py-3 text-[0.8125rem]"
               style={{
                 background: "var(--paper)",
                 borderColor: "var(--line)",

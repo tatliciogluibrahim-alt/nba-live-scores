@@ -55,13 +55,13 @@ export function PeriodScoreTable({
         style={{
           fontFamily: "var(--font-mono)",
           fontVariantNumeric: "tabular-nums",
-          fontSize: 13,
+          fontSize: "0.8125rem",
         }}
       >
         <thead>
           <tr style={{ borderBottom: "1px solid var(--line)" }}>
             <th
-              className="px-3 py-2 text-[11px] uppercase"
+              className="px-3 py-2 text-[0.6875rem] uppercase"
               style={{
                 color: "var(--mute-1)",
                 fontWeight: 700,
@@ -74,7 +74,7 @@ export function PeriodScoreTable({
             {labels.map((label) => (
               <th
                 key={label}
-                className="px-2 py-2 text-center text-[11px] uppercase"
+                className="px-2 py-2 text-center text-[0.6875rem] uppercase"
                 style={{
                   color: "var(--mute-1)",
                   fontWeight: 700,
@@ -85,7 +85,7 @@ export function PeriodScoreTable({
               </th>
             ))}
             <th
-              className="px-3 py-2 text-right text-[11px] uppercase"
+              className="px-3 py-2 text-right text-[0.6875rem] uppercase"
               style={{
                 color: "var(--mute-1)",
                 fontWeight: 700,

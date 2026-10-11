@@ -20,7 +20,7 @@ export function TheMargin() {
     <section>
       <SecHead name="The Margin" />
       <p
-        className="mt-3 text-[13px] leading-snug"
+        className="mt-3 text-[0.8125rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         A calm morning recap of what your follows did. No noise.
@@ -34,7 +34,7 @@ export function TheMargin() {
           className="inline-flex min-h-[44px] items-center gap-1.5 uppercase transition active:opacity-70"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 12,
+            fontSize: "0.75rem",
             fontWeight: 600,
             letterSpacing: "0.08em",
             color: "var(--ink)",
@@ -50,7 +50,7 @@ export function TheMargin() {
           className="inline-flex min-h-[44px] items-center uppercase transition active:opacity-70"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 12,
+            fontSize: "0.75rem",
             fontWeight: 600,
             letterSpacing: "0.08em",
             color: "var(--mute-1)",

@@ -45,7 +45,7 @@ export default function GlobalError({
         <div style={{ maxWidth: 360, width: "100%", textAlign: "center" }}>
           <p
             style={{
-              fontSize: 11,
+              fontSize: "0.6875rem",
               fontWeight: 600,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
@@ -68,7 +68,7 @@ export default function GlobalError({
           </h1>
           <p
             style={{
-              fontSize: 14,
+              fontSize: "0.875rem",
               lineHeight: 1.4,
               color: "#7a715d",
               fontWeight: 500,
@@ -90,7 +90,7 @@ export default function GlobalError({
               border: 0,
               background: "#17181a",
               color: "#f4f3ef",
-              fontSize: 13,
+              fontSize: "0.8125rem",
               fontWeight: 700,
               letterSpacing: "0.06em",
               textTransform: "uppercase",

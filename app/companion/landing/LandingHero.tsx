@@ -26,7 +26,7 @@ export function LandingHero() {
         {/* ── Left: the statement ───────────────────────────────────────── */}
         <div className="flex flex-col justify-center">
           <p
-            className="nns-hero-rise mb-5 text-[11px] uppercase"
+            className="nns-hero-rise mb-5 text-[0.6875rem] uppercase"
             style={{
               fontFamily: "var(--font-mono)",
               letterSpacing: "0.18em",
@@ -56,7 +56,7 @@ export function LandingHero() {
           </h1>
 
           <p
-            className="nns-hero-rise-3 mt-6 max-w-[44ch] text-[18px] leading-snug"
+            className="nns-hero-rise-3 mt-6 max-w-[44ch] text-[1.125rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             A calm sports companion for the moments that matter. Scores, alerts,
@@ -71,7 +71,7 @@ export function LandingHero() {
           <div className="nns-hero-rise-3 mt-8 flex flex-wrap items-center gap-3">
             <Link
               href="/app"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[14px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[0.875rem] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "var(--ink)",
                 color: "var(--cream)",
@@ -84,7 +84,7 @@ export function LandingHero() {
               href={APP_STORE_URL}
               target="_blank"
               rel="noopener"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[14px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[0.875rem] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "transparent",
                 color: "var(--ink)",
@@ -110,19 +110,19 @@ export function LandingHero() {
             />
             <div className="min-w-0">
               <p
-                className="text-[10px] uppercase"
+                className="text-[0.625rem] uppercase"
                 style={{ fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", color: "var(--mute-1)" }}
               >
                 On your iPhone
               </p>
-              <p className="mt-0.5 text-[14px] leading-snug" style={{ color: "var(--ink)", fontWeight: 600 }}>
+              <p className="mt-0.5 text-[0.875rem] leading-snug" style={{ color: "var(--ink)", fontWeight: 600 }}>
                 Scan to get it on the App Store.
               </p>
               <a
                 href={APP_STORE_URL}
                 target="_blank"
                 rel="noopener"
-                className="mt-1 inline-block text-[12px]"
+                className="mt-1 inline-block text-[0.75rem]"
                 style={{ color: "var(--mute-1)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3 }}
               >
                 Or open the App Store →
@@ -131,7 +131,7 @@ export function LandingHero() {
           </div>
 
           <p
-            className="nns-hero-rise-4 mt-5 text-[13px] leading-snug"
+            className="nns-hero-rise-4 mt-5 text-[0.8125rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             On iPhone, scan the code to install. On Android or desktop, open it
@@ -171,7 +171,7 @@ function NoiseField() {
       <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "31%", fontSize: 28, opacity: 0.09, filter: "blur(0.5px)" }}>
         {row}{row}
       </p>
-      <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "56%", fontSize: 22, opacity: 0.07, filter: "blur(0.6px)", transform: "translateX(-130px)" }}>
+      <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "56%", fontSize: "1.375rem", opacity: 0.07, filter: "blur(0.6px)", transform: "translateX(-130px)" }}>
         {row}{row}
       </p>
       <p className="nns-hero-noise absolute left-0 right-0" style={{ ...base, top: "81%", fontSize: 25, opacity: 0.08, filter: "blur(0.5px)", transform: "translateX(-60px)" }}>
@@ -271,7 +271,7 @@ function PhonePreview() {
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: "0.625rem",
                   fontWeight: 600,
                   letterSpacing: "0.12em",
                   color: "var(--mute-1)",
@@ -292,7 +292,7 @@ function PhonePreview() {
               }}
             >
               <p
-                className="text-[10px] uppercase"
+                className="text-[0.625rem] uppercase"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontWeight: 700,
@@ -306,7 +306,7 @@ function PhonePreview() {
                 className="mt-1 leading-tight"
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: 18,
+                  fontSize: "1.125rem",
                   fontWeight: 800,
                   letterSpacing: "-0.01em",
                   color: "var(--ink)",
@@ -318,7 +318,7 @@ function PhonePreview() {
                 <span
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 11,
+                    fontSize: "0.6875rem",
                     fontWeight: 700,
                     letterSpacing: "0.04em",
                     color: "var(--mute-1)",
@@ -330,7 +330,7 @@ function PhonePreview() {
                 <span
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 18,
+                    fontSize: "1.125rem",
                     fontWeight: 800,
                     color: "var(--ink)",
                     fontVariantNumeric: "tabular-nums",
@@ -340,7 +340,7 @@ function PhonePreview() {
                 </span>
               </div>
               <p
-                className="mt-1 flex items-center gap-1.5 text-[10px] uppercase"
+                className="mt-1 flex items-center gap-1.5 text-[0.625rem] uppercase"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontWeight: 700,
@@ -359,7 +359,7 @@ function PhonePreview() {
 
             {/* Also live — the second followed game that's on right now */}
             <p
-              className="mb-1 text-[10px] uppercase"
+              className="mb-1 text-[0.625rem] uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
@@ -380,7 +380,7 @@ function PhonePreview() {
                 <span
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 11,
+                    fontSize: "0.6875rem",
                     fontWeight: 700,
                     letterSpacing: "0.04em",
                     color: "var(--mute-1)",
@@ -391,7 +391,7 @@ function PhonePreview() {
                 <span
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 14,
+                    fontSize: "0.875rem",
                     fontWeight: 800,
                     color: "var(--ink)",
                     fontVariantNumeric: "tabular-nums",
@@ -401,7 +401,7 @@ function PhonePreview() {
                 </span>
               </span>
               <span
-                className="flex items-center gap-1.5 text-[10px] uppercase"
+                className="flex items-center gap-1.5 text-[0.625rem] uppercase"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontWeight: 700,
@@ -420,7 +420,7 @@ function PhonePreview() {
 
             {/* You Follow */}
             <p
-              className="mb-1 text-[10px] uppercase"
+              className="mb-1 text-[0.625rem] uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
@@ -439,7 +439,7 @@ function PhonePreview() {
                     background: c.live ? "var(--nfl)" : "var(--cream-2)",
                     color: c.live ? "var(--cream)" : "var(--ink)",
                     fontFamily: "var(--font-mono)",
-                    fontSize: 10,
+                    fontSize: "0.625rem",
                     fontWeight: 700,
                     letterSpacing: "0.04em",
                   }}
@@ -458,7 +458,7 @@ function PhonePreview() {
 
             {/* Up next */}
             <p
-              className="mb-1 text-[10px] uppercase"
+              className="mb-1 text-[0.625rem] uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
@@ -476,13 +476,13 @@ function PhonePreview() {
               }}
             >
               <p
-                className="text-[12px]"
+                className="text-[0.75rem]"
                 style={{ color: "var(--ink)", fontWeight: 700 }}
               >
                 {PREVIEW_MOMENT.next.matchup}
               </p>
               <p
-                className="mt-0.5 text-[11px]"
+                className="mt-0.5 text-[0.6875rem]"
                 style={{ color: "var(--mute-1)", fontWeight: 500 }}
               >
                 {PREVIEW_MOMENT.next.detail}
@@ -498,7 +498,7 @@ function PhonePreview() {
               }}
             >
               <p
-                className="text-[10px] uppercase"
+                className="text-[0.625rem] uppercase"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontWeight: 700,
@@ -509,7 +509,7 @@ function PhonePreview() {
                 The Margin
               </p>
               <p
-                className="mt-0.5 text-[12px] leading-snug"
+                className="mt-0.5 text-[0.75rem] leading-snug"
                 style={{ color: "var(--ink)", fontWeight: 600 }}
               >
                 A calm morning recap of what your follows did.
@@ -521,7 +521,7 @@ function PhonePreview() {
         </div>
       </div>
       <figcaption
-        className="mt-4 max-w-[340px] text-center text-[11px] leading-snug"
+        className="mt-4 max-w-[340px] text-center text-[0.6875rem] leading-snug"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 600,
@@ -569,7 +569,7 @@ function PreviewTabBar() {
               style={{
                 fontFamily: "var(--font-display)",
                 fontStretch: "var(--label-stretch)",
-                fontSize: 9,
+                fontSize: "0.5625rem",
                 fontWeight: active ? 800 : 600,
                 letterSpacing: "0.12em",
               }}

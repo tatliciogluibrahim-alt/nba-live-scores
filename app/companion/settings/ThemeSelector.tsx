@@ -97,7 +97,7 @@ export function ThemeSelector() {
               role="radio"
               aria-checked={active}
               onClick={() => pick(opt)}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-2 text-[12px] font-semibold transition active:scale-[0.97]"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-2 text-[0.75rem] font-semibold transition active:scale-[0.97]"
               style={{
                 background: isLight ? "#faf5e8" : "#14100c",
                 color: isLight ? "#1a1612" : "#efe6d2",
@@ -111,7 +111,7 @@ export function ThemeSelector() {
         })}
       </div>
       <p
-        className="mt-2 text-[11px] leading-snug"
+        className="mt-2 text-[0.6875rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {hydrated && choice === "dark"

@@ -46,7 +46,7 @@ export function StakesLine({
         <div className="flex items-baseline gap-2">
           <Eyebrow>{stake.eyebrow}</Eyebrow>
           <p
-            className="text-[13px] leading-snug"
+            className="text-[0.8125rem] leading-snug"
             style={{ color: "var(--ink)", fontWeight: 500 }}
           >
             {shouldRedact ? (
@@ -64,7 +64,7 @@ export function StakesLine({
           visible (historical fact, not a spoiler). Sits under the stake. */}
       {contextSnippet ? (
         <p
-          className={stake ? "mt-1.5 text-[12px] italic leading-snug" : "text-[12px] italic leading-snug"}
+          className={stake ? "mt-1.5 text-[0.75rem] italic leading-snug" : "text-[0.75rem] italic leading-snug"}
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {contextSnippet}

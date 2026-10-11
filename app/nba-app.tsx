@@ -91,7 +91,7 @@ function TonightPulseHero({
                 {statusLabel}
               </StatusPill>
               <span
-                className="truncate text-[11px] font-semibold"
+                className="truncate text-[0.6875rem] font-semibold"
                 style={{ color: "var(--mute-1)" }}
               >
                 {game.matchup}
@@ -123,7 +123,7 @@ function TonightPulseHero({
             >
               <Tension heat={pulse.heat} label="Tension" />
               <div
-                className="mt-1.5 text-[12px] font-medium"
+                className="mt-1.5 text-[0.75rem] font-medium"
                 style={{ color: "var(--ink)" }}
               >
                 {caption}
@@ -131,7 +131,7 @@ function TonightPulseHero({
             </div>
           ) : (
             <div
-              className="mt-2 text-[12px] font-medium"
+              className="mt-2 text-[0.75rem] font-medium"
               style={{ color: "var(--mute-1)" }}
             >
               {caption}
@@ -486,7 +486,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
             </div>
 
             <p
-              className="mb-4 px-1 text-[11px] font-semibold uppercase tracking-[0.12em]"
+              className="mb-4 px-1 text-[0.6875rem] font-semibold uppercase tracking-[0.12em]"
               style={{ color: "var(--mute-2)" }}
             >
               {formatLastUpdated(lastUpdatedAt)}
@@ -516,7 +516,7 @@ export default function NBAApp({ onBack }: { onBack: () => void }) {
               </div>
             ) : !hasLoadedOnce ? (
               <section className="rounded-[14px] bg-[#fbf8f3] p-8 text-center text-[#1a1208] ring-1 ring-[#e8e0d4]">
-                <p className="text-[22px] font-bold">
+                <p className="text-[1.375rem] font-bold">
                   Loading scores…
                 </p>
 

@@ -67,7 +67,7 @@ export function PickYourMoment({
         What are you here for?
       </Display>
       <p
-        className="mb-3 text-[13px] leading-snug"
+        className="mb-3 text-[0.8125rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Pick the moment that matters right now. You can always add more later.
@@ -85,7 +85,7 @@ export function PickYourMoment({
         <button
           type="button"
           onClick={onSkip}
-          className="text-[12px] underline underline-offset-4 decoration-dotted"
+          className="text-[0.75rem] underline underline-offset-4 decoration-dotted"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Show me everything
@@ -113,18 +113,18 @@ function MomentCard({ moment }: { moment: (typeof FOLLOW_MOMENTS)[number] }) {
       }}
       aria-label={`Pick ${moment.name}`}
     >
-      <span aria-hidden style={{ fontSize: 24, lineHeight: 1 }}>
+      <span aria-hidden style={{ fontSize: "1.5rem", lineHeight: 1 }}>
         {moment.icon}
       </span>
       <div className="min-w-0 flex-1">
         <p
-          className="text-[14px] leading-snug"
+          className="text-[0.875rem] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 700 }}
         >
           {moment.name}
         </p>
         <p
-          className="mt-0.5 text-[12px] leading-snug"
+          className="mt-0.5 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {moment.description}
@@ -133,7 +133,7 @@ function MomentCard({ moment }: { moment: (typeof FOLLOW_MOMENTS)[number] }) {
       <span
         aria-hidden
         className="shrink-0"
-        style={{ color: "var(--mute-1)", fontWeight: 600, fontSize: 16 }}
+        style={{ color: "var(--mute-1)", fontWeight: 600, fontSize: "1rem" }}
       >
         →
       </span>

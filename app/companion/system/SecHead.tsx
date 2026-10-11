@@ -37,7 +37,7 @@ export function SecHead({
         style={{
           fontFamily: "var(--font-display)",
           fontStretch: "var(--label-stretch)",
-          fontSize: 11,
+          fontSize: "0.6875rem",
           fontWeight: 800,
           letterSpacing: "0.14em",
           color: "var(--mute-1)",
@@ -51,7 +51,7 @@ export function SecHead({
           className="inline-flex items-center tabular-nums lining-nums"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: "0.625rem",
             letterSpacing: "0.12em",
             color: "var(--mute-2)",
           }}
@@ -59,7 +59,7 @@ export function SecHead({
           {/* C4 (§5 v3): the section count is confident brand chrome. The "?"
               help affordance stays muted (it's a control, not a count). */}
           {count && (
-            <span style={{ color: "var(--mute-1)", fontWeight: 700, fontSize: 11 }}>
+            <span style={{ color: "var(--mute-1)", fontWeight: 700, fontSize: "0.6875rem" }}>
               {count}
             </span>
           )}
@@ -81,7 +81,7 @@ export function SecHead({
                   border: "none",
                   cursor: "pointer",
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: "0.625rem",
                   letterSpacing: "0.12em",
                   color: "var(--mute-2)",
                 }}
@@ -92,7 +92,7 @@ export function SecHead({
                     border: "1px solid var(--mute-2)",
                     borderRadius: 999,
                     padding: "0 5px",
-                    lineHeight: "18px",
+                    lineHeight: "1.125rem",
                   }}
                 >
                   ?

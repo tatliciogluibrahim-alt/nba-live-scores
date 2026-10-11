@@ -49,7 +49,7 @@ export function FollowRow({
             className="block truncate"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: 17,
+              fontSize: "1.0625rem",
               fontWeight: 700,
               letterSpacing: "-0.01em",
               color: wrapped ? "var(--mute-1)" : "var(--ink)",
@@ -61,7 +61,7 @@ export function FollowRow({
             className="mt-[2px] block truncate uppercase"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: "0.6875rem",
               fontWeight: 600,
               letterSpacing: "0.1em",
               color: "var(--mute-2)",
@@ -78,7 +78,7 @@ export function FollowRow({
             className="flex shrink-0 items-center gap-[5px] uppercase"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: "0.625rem",
               fontWeight: 700,
               letterSpacing: "0.12em",
               color: "var(--live-text)",

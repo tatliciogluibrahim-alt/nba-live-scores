@@ -67,7 +67,7 @@ export function BetaFeedbackForm() {
         }}
       >
         <p
-          className="text-[13px] uppercase"
+          className="text-[0.8125rem] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
@@ -78,7 +78,7 @@ export function BetaFeedbackForm() {
           Thank you
         </p>
         <p
-          className="mt-2 text-[16px] leading-snug"
+          className="mt-2 text-[1rem] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 600 }}
         >
           Got it. I read every reply.
@@ -143,7 +143,7 @@ export function BetaFeedbackForm() {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center rounded-full px-5 text-[14px] font-semibold transition active:scale-[0.98]"
+        className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center rounded-full px-5 text-[0.875rem] font-semibold transition active:scale-[0.98]"
         style={{
           background: "var(--ink)",
           color: "var(--cream)",
@@ -156,7 +156,7 @@ export function BetaFeedbackForm() {
 
       {errorText ? (
         <p
-          className="mt-3 text-[13px]"
+          className="mt-3 text-[0.8125rem]"
           style={{ color: "var(--critical)", fontWeight: 500 }}
         >
           {errorText}
@@ -164,7 +164,7 @@ export function BetaFeedbackForm() {
       ) : null}
 
       <p
-        className="mt-3 text-[12px] leading-snug"
+        className="mt-3 text-[0.75rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Be brutal. Nothing you say will hurt my feelings. See{" "}

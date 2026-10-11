@@ -50,7 +50,7 @@ export function StatusPill({
   const t = TONE[tone];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-semibold leading-snug whitespace-nowrap ${
+      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[0.6875rem] font-semibold leading-snug whitespace-nowrap ${
         breathe ? "no-noise-live-fade" : ""
       }`}
       style={{ background: t.bg, color: t.fg }}
@@ -80,7 +80,7 @@ export function Eyebrow({
 }) {
   return (
     <span
-      className="text-[11px] font-semibold uppercase tracking-[0.12em]"
+      className="text-[0.6875rem] font-semibold uppercase tracking-[0.12em]"
       style={{ color: color ?? "var(--mute-1)", ...style }}
     >
       {children}
@@ -141,7 +141,7 @@ export function Segmented<T extends string>({
   size?: "sm" | "md";
 }) {
   const padY = size === "sm" ? "py-1.5" : "py-2";
-  const text = size === "sm" ? "text-[12px]" : "text-[13px]";
+  const text = size === "sm" ? "text-[0.75rem]" : "text-[0.8125rem]";
   return (
     <div
       className="flex gap-0.5 rounded-[10px] p-[3px]"
@@ -193,7 +193,7 @@ export function FilterChip({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold whitespace-nowrap transition active:scale-[0.98] ${
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.75rem] font-semibold whitespace-nowrap transition active:scale-[0.98] ${
         disabled ? "pointer-events-none opacity-25" : ""
       }`}
       style={{
@@ -212,7 +212,7 @@ export function FilterChip({
       {label}
       {typeof count === "number" && (
         <span
-          className="tabular-nums text-[11px]"
+          className="tabular-nums text-[0.6875rem]"
           style={{ opacity: active ? 0.7 : 0.5 }}
         >
           {count}
@@ -235,9 +235,9 @@ const BUTTON_VARIANTS: Record<ButtonVariant, { bg: string; fg: string; bd: strin
 };
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-[12px]",
-  md: "px-3.5 py-2.5 text-[13px]",
-  lg: "px-4 py-3.5 text-[14px]",
+  sm: "px-3 py-1.5 text-[0.75rem]",
+  md: "px-3.5 py-2.5 text-[0.8125rem]",
+  lg: "px-4 py-3.5 text-[0.875rem]",
 };
 
 export function Button({
@@ -306,13 +306,13 @@ export function TeamRow({
       <div className="shrink-0">{logo}</div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="text-[14px] font-bold" style={{ color: "var(--ink)" }}>
+          <span className="text-[0.875rem] font-bold" style={{ color: "var(--ink)" }}>
             {code}
           </span>
           {badge}
         </div>
         {name && !compact && (
-          <div className="truncate text-[11px]" style={{ color: "var(--mute-1)" }}>
+          <div className="truncate text-[0.6875rem]" style={{ color: "var(--mute-1)" }}>
             {name}
           </div>
         )}
@@ -321,7 +321,7 @@ export function TeamRow({
         <div
           className={`tabular-nums ${scoreAnimated ? "no-noise-score-pop" : ""}`}
           style={{
-            fontSize: compact ? 18 : 24,
+            fontSize: compact ? "1.125rem" : "1.5rem",
             fontWeight: 700,
             lineHeight: 1,
             letterSpacing: "-0.01em",
@@ -357,7 +357,7 @@ export function KeyMoment({
       style={{ borderBottom: last ? "none" : "1px solid var(--line)" }}
     >
       <span
-        className="w-10 text-[11px] font-semibold tabular-nums"
+        className="w-10 text-[0.6875rem] font-semibold tabular-nums"
         style={{ color: "var(--mute-1)" }}
       >
         {time}
@@ -368,14 +368,14 @@ export function KeyMoment({
         style={{ background: tint ?? "var(--mute-2)" }}
       />
       <span
-        className="flex-1 text-[13px] font-medium leading-snug"
+        className="flex-1 text-[0.8125rem] font-medium leading-snug"
         style={{ color: "var(--ink)" }}
       >
         {text}
       </span>
       {impact && (
         <span
-          className="text-[12px] font-bold tabular-nums"
+          className="text-[0.75rem] font-bold tabular-nums"
           style={{ color: "var(--ink)" }}
         >
           {impact}
@@ -392,7 +392,7 @@ export function Tension({ heat, label }: { heat: number; label?: string }) {
   return (
     <div className="flex items-center gap-2.5">
       {label && (
-        <span className="text-[11px] font-semibold" style={{ color: "var(--mute-1)" }}>
+        <span className="text-[0.6875rem] font-semibold" style={{ color: "var(--mute-1)" }}>
           {label}
         </span>
       )}
@@ -410,7 +410,7 @@ export function Tension({ heat, label }: { heat: number; label?: string }) {
         />
       </div>
       <span
-        className="w-7 text-right text-[11px] font-bold tabular-nums"
+        className="w-7 text-right text-[0.6875rem] font-bold tabular-nums"
         style={{ color: "var(--ink)" }}
       >
         {pct}
@@ -441,7 +441,7 @@ export function Watch({
   if (compact) {
     return (
       <span
-        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap"
+        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold whitespace-nowrap"
         style={{ background: "var(--cream-2)", color: "var(--ink)" }}
       >
         {TV_ICON}
@@ -456,9 +456,9 @@ export function Watch({
     >
       <div className="flex items-center gap-2" style={{ color: "var(--mute-1)" }}>
         {TV_ICON}
-        <span className="text-[12px] font-semibold">Watch</span>
+        <span className="text-[0.75rem] font-semibold">Watch</span>
       </div>
-      <span className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>
+      <span className="text-[0.8125rem] font-bold" style={{ color: "var(--ink)" }}>
         {label}
       </span>
     </div>
@@ -485,7 +485,7 @@ export function Scenario({
   const s = SCENARIO[kind];
   return (
     <span
-      className="inline-flex items-center gap-1.5 text-[11px] font-semibold"
+      className="inline-flex items-center gap-1.5 text-[0.6875rem] font-semibold"
       style={{ color: s.color }}
     >
       <span

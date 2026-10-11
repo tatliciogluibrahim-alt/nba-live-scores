@@ -65,7 +65,7 @@ export function DifferentiatorPillars() {
                 {p.title}
               </h3>
               <p
-                className="max-w-[60ch] text-[16px] leading-snug"
+                className="max-w-[60ch] text-[1rem] leading-snug"
                 style={{ color: "var(--mute-1)", fontWeight: 500 }}
               >
                 {p.body}

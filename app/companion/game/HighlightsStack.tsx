@@ -55,7 +55,7 @@ export function HighlightsStack({
   const body =
     highlights.length === 0 ? (
         <p
-          className="rounded-[14px] border px-4 py-3 text-[13px]"
+          className="rounded-[14px] border px-4 py-3 text-[0.8125rem]"
           style={{
             background: "var(--paper)",
             borderColor: "var(--line)",
@@ -80,7 +80,7 @@ export function HighlightsStack({
             >
               <Eyebrow>{h.eyebrow}</Eyebrow>
               <p
-                className="mt-1 text-[14px] leading-snug"
+                className="mt-1 text-[0.875rem] leading-snug"
                 style={{
                   color: "var(--ink)",
                   fontWeight: 700,

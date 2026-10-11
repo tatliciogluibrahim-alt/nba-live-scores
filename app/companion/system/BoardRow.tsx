@@ -37,7 +37,7 @@ export function BoardRow({
   const inner = (
     <>
       {idx != null && (
-        <span style={{ fontSize: 10, color: "var(--cream-on-ink-dim)", minWidth: 18 }}>{idx}</span>
+        <span style={{ fontSize: "0.625rem", color: "var(--cream-on-ink-dim)", minWidth: 18 }}>{idx}</span>
       )}
 
       <span className="min-w-0 flex-1" style={{ letterSpacing: "0.02em" }}>
@@ -48,7 +48,7 @@ export function BoardRow({
         <span
           style={{
             fontWeight: 700,
-            fontSize: 17,
+            fontSize: "1.0625rem",
             ...(spoilerGameId && scoreHidden
               ? { position: "relative", zIndex: 1 }
               : {}),
@@ -71,7 +71,7 @@ export function BoardRow({
   const cls = "flex items-center gap-[10px] py-[14px] tabular-nums lining-nums";
   const rowStyle = {
     fontFamily: "var(--font-mono)",
-    fontSize: 15,
+    fontSize: "0.9375rem",
     fontWeight: 600,
     color: "var(--cream-on-ink)",
   };

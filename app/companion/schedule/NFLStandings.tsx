@@ -75,7 +75,7 @@ function StandingsShell() {
 function StandingsNote({ children }: { children: string }) {
   return (
     <p
-      className="py-[13px] text-[13px] leading-snug"
+      className="py-[13px] text-[0.8125rem] leading-snug"
       style={{ color: "var(--mute-1)", fontWeight: 500 }}
     >
       {children}
@@ -90,7 +90,7 @@ function StandingsGate({ onShow }: { onShow: () => void }) {
         className="uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 700,
           letterSpacing: "0.14em",
           color: "var(--mute-1)",
@@ -100,7 +100,7 @@ function StandingsGate({ onShow }: { onShow: () => void }) {
       </p>
       <p
         id="standings-gate-head"
-        className="mt-1 text-[15px] leading-snug"
+        className="mt-1 text-[0.9375rem] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 700 }}
       >
         Standings show results.
@@ -108,7 +108,7 @@ function StandingsGate({ onShow }: { onShow: () => void }) {
       <button
         type="button"
         onClick={onShow}
-        className="no-noise-reveal-focus mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full px-5 text-[13px] font-semibold transition active:scale-[0.98]"
+        className="no-noise-reveal-focus mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full px-5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
         style={{
           background: "var(--ink)",
           color: "var(--cream)",
@@ -133,7 +133,7 @@ const NUM = {
 
 const HEAD_CELL = {
   fontFamily: "var(--font-mono)",
-  fontSize: 9,
+  fontSize: "0.5625rem",
   letterSpacing: "0.16em",
   fontWeight: 600,
   color: "var(--mute-2)",
@@ -235,13 +235,13 @@ function StandingsRow({
   // register as the group tables.
   const record = {
     ...NUM,
-    fontSize: 14,
+    fontSize: "0.875rem",
     fontWeight: row.followed ? 800 : 500,
     color: "var(--ink)",
   } as const;
   const minor = {
     ...NUM,
-    fontSize: 12,
+    fontSize: "0.75rem",
     fontWeight: row.followed ? 700 : 500,
     color: row.followed ? "var(--ink)" : "var(--mute-1)",
   } as const;
@@ -254,7 +254,7 @@ function StandingsRow({
           ...cell,
           ...NUM,
           textAlign: "left",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 600,
           color: "var(--mute-2)",
         }}
@@ -267,7 +267,7 @@ function StandingsRow({
           ...cell,
           textAlign: "left",
           fontWeight: row.followed ? 800 : 600,
-          fontSize: 14,
+          fontSize: "0.875rem",
           letterSpacing: "-0.005em",
           color: "var(--ink)",
         }}

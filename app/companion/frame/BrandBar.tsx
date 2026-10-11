@@ -32,7 +32,7 @@ export function BrandBar({ trailing }: { trailing?: ReactNode }) {
       <div className="flex items-center gap-2">
         <BrandMark size={24} />
         <span
-          className="text-[13px]"
+          className="text-[0.8125rem]"
           style={{ color: "var(--ink)", fontWeight: 700 }}
         >
           No Noise Scores

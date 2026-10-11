@@ -427,7 +427,7 @@ function NotFound({
         Game snapshot unavailable.
       </Display>
       <p
-        className="mt-2 text-[13px]"
+        className="mt-2 text-[0.8125rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         This game isn&apos;t in the current scoreboard, and we don&apos;t have a saved snapshot for it.
@@ -436,7 +436,7 @@ function NotFound({
       {/* Raw ID only shown in dev. Production users never see internals. */}
       {isDev ? (
         <p
-          className="mt-3 text-[11px]"
+          className="mt-3 text-[0.6875rem]"
           style={{
             fontFamily: "var(--font-mono)",
             color: "var(--mute-2)",
@@ -453,7 +453,7 @@ function NotFound({
             type="button"
             onClick={onUnpin}
             aria-label="Remove from Watching"
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--ink)",
@@ -465,7 +465,7 @@ function NotFound({
         ) : (
           <Link
             href="/following"
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--ink)",
@@ -477,7 +477,7 @@ function NotFound({
         )}
         <Link
           href="/app"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",
             color: "var(--cream)",

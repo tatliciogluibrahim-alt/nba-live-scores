@@ -81,7 +81,7 @@ export function NotificationPreview() {
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />
         <span
           aria-hidden
-          className="shrink-0 text-[13px] leading-none"
+          className="shrink-0 text-[0.8125rem] leading-none"
           style={{ color: "var(--mute-1)", fontWeight: 600, fontFamily: "var(--font-mono)" }}
         >
           {open ? "−" : "+"}
@@ -91,7 +91,7 @@ export function NotificationPreview() {
       {open ? (
         <>
           <p
-            className="mb-3 mt-2 text-[13px] leading-snug"
+            className="mb-3 mt-2 text-[0.8125rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Three alert levels. No-Spoilers users never get scores on the lock screen.
@@ -123,7 +123,7 @@ function PresetPreviewCard({ preset }: { preset: AlertPreset }) {
       <div className="flex items-baseline justify-between gap-3">
         <div className="min-w-0">
           <p
-            className="text-[13px]"
+            className="text-[0.8125rem]"
             style={{
               color: "var(--ink)",
               fontWeight: 700,
@@ -133,7 +133,7 @@ function PresetPreviewCard({ preset }: { preset: AlertPreset }) {
             {meta.label}
           </p>
           <p
-            className="mt-0.5 text-[12px]"
+            className="mt-0.5 text-[0.75rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {meta.detail}
@@ -152,7 +152,7 @@ function PresetPreviewCard({ preset }: { preset: AlertPreset }) {
           literally don't fire under NS. */}
       <div className="mt-3 flex items-center gap-2">
         <span
-          className="text-[10px] uppercase"
+          className="text-[0.625rem] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
@@ -170,7 +170,7 @@ function PresetPreviewCard({ preset }: { preset: AlertPreset }) {
 
       {nsPreview.suppressed ? (
         <p
-          className="mt-2 text-[12px] leading-snug"
+          className="mt-2 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500, fontStyle: "italic" }}
         >
           {nsPreview.body}
@@ -224,7 +224,7 @@ function LockScreenPushMock({ preview }: { preview: PreviewExample }) {
             className="truncate uppercase"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: "0.625rem",
               fontWeight: 700,
               letterSpacing: "0.1em",
               color: "rgba(241, 234, 216, 0.7)",
@@ -237,7 +237,7 @@ function LockScreenPushMock({ preview }: { preview: PreviewExample }) {
           className="shrink-0"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: "0.625rem",
             color: "rgba(241, 234, 216, 0.6)",
             letterSpacing: "0.04em",
           }}
@@ -246,13 +246,13 @@ function LockScreenPushMock({ preview }: { preview: PreviewExample }) {
         </span>
       </div>
       <p
-        className="mt-1.5 text-[13px] leading-snug"
+        className="mt-1.5 text-[0.8125rem] leading-snug"
         style={{ color: LOCK_CREAM, fontWeight: 700, letterSpacing: "-0.005em" }}
       >
         {preview.title}
       </p>
       <p
-        className="mt-0.5 text-[12px] leading-snug"
+        className="mt-0.5 text-[0.75rem] leading-snug"
         style={{ color: "rgba(241, 234, 216, 0.78)", fontWeight: 500 }}
       >
         {preview.body}
@@ -292,7 +292,7 @@ function TestPushButton({ preview }: { preview: PreviewExample }) {
   if (status === "unsupported") {
     return (
       <span
-        className="text-[11px]"
+        className="text-[0.6875rem]"
         style={{ color: "var(--mute-2)", fontWeight: 500 }}
       >
         Test n/a
@@ -361,7 +361,7 @@ function TestPushButton({ preview }: { preview: PreviewExample }) {
       onClick={onClick}
       disabled={disabled}
       aria-label="Send a test version of this notification"
-      className="shrink-0 inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold transition active:scale-[0.97]"
+      className="shrink-0 inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1 text-[0.6875rem] font-semibold transition active:scale-[0.97]"
       style={{
         background: "transparent",
         color: disabled ? "var(--mute-2)" : "var(--ink)",

@@ -63,7 +63,7 @@ export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
 
   const monoLink = {
     fontFamily: "var(--font-mono)",
-    fontSize: 12,
+    fontSize: "0.75rem",
     fontWeight: 600,
     letterSpacing: "0.08em",
     color: "var(--ink)",
@@ -95,7 +95,7 @@ export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
               className="uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: "0.625rem",
                 fontWeight: 600,
                 letterSpacing: "0.14em",
                 color: "var(--mute-1)",
@@ -114,7 +114,7 @@ export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
               style={{ color: "var(--mute-1)" }}
               aria-label="Dismiss"
             >
-              <span aria-hidden className="text-[16px] leading-none">
+              <span aria-hidden className="text-[1rem] leading-none">
                 ×
               </span>
             </button>
@@ -130,7 +130,7 @@ export function KnockoutMomentCard({ moment }: { moment: KnockoutMomentItem }) {
               className="tabular-nums lining-nums"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 12,
+                fontSize: "0.75rem",
                 fontWeight: 500,
                 color: "var(--mute-1)",
               }}

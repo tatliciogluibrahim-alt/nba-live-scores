@@ -51,7 +51,7 @@ export function WCBracket() {
     <section className="mt-4">
       {!resolved ? (
         <p
-          className="mb-3 text-[12px] leading-snug"
+          className="mb-3 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-2)", fontWeight: 500 }}
         >
           The bracket fills in as the groups finish. Clinched teams take
@@ -86,7 +86,7 @@ export function WCBracket() {
                 className="flex-1 uppercase transition active:opacity-70"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 11,
+                  fontSize: "0.6875rem",
                   letterSpacing: "0.12em",
                   fontWeight: on ? 700 : 600,
                   color: on ? "var(--ink)" : "var(--mute-2)",
@@ -186,7 +186,7 @@ function NowMark({ kind }: { kind: "now" | "next" }) {
       <span
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 700,
           letterSpacing: "0.18em",
           color: live ? "var(--live-text)" : "var(--ink)",
@@ -225,7 +225,7 @@ export function ByDayView({
   if (groups.length === 0) {
     return (
       <p
-        className="py-[13px] text-[13px]"
+        className="py-[13px] text-[0.8125rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         No knockout matches on the schedule yet.
@@ -242,7 +242,7 @@ export function ByDayView({
           style={{
             padding: "0 0 12px",
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: "0.625rem",
             fontWeight: 700,
             letterSpacing: "0.14em",
           }}
@@ -272,7 +272,7 @@ export function ByDayView({
             style={{
               margin: "36px 0 4px",
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: "0.625rem",
               fontWeight: 700,
               letterSpacing: "0.16em",
               color: "var(--mute-1)",
@@ -327,7 +327,7 @@ function DayGroup({
           className="uppercase"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: "0.625rem",
             fontWeight: 700,
             letterSpacing: "0.2em",
             color: "var(--brand)",
@@ -421,7 +421,7 @@ function BracketMatchRow({
   const aria = `${match.away.label} vs ${match.home.label}`;
 
   const codes = (
-    <span style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
+    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem" }}>
       <BracketCode slot={match.away} />
       <span style={{ color: "var(--mute-1)", fontWeight: 500, padding: "0 6px" }}>·</span>
       <BracketCode slot={match.home} />
@@ -435,7 +435,7 @@ function BracketMatchRow({
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
-          fontSize: 14,
+          fontSize: "0.875rem",
           color: live ? "var(--live-text)" : "var(--ink)",
           ...(resultHidden ? { position: "relative", zIndex: 1 } : {}),
         }}
@@ -468,7 +468,7 @@ function BracketMatchRow({
         className="tabular-nums lining-nums"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           // C4 (§5 v3): index numerals on cream ground carry the brand.
           fontWeight: 700,
           color: "var(--brand)",
@@ -489,7 +489,7 @@ function BracketMatchRow({
   );
 
   const cls = "flex items-center gap-[10px] py-[13px]";
-  const rowStyle = { fontSize: 14, borderBottom: "1px solid var(--line)" };
+  const rowStyle = { fontSize: "0.875rem", borderBottom: "1px solid var(--line)" };
 
   const row = match.href ? (
     <div className={`relative ${cls}`} style={rowStyle}>

@@ -19,7 +19,7 @@ export function WatchingEmpty() {
           elsewhere (Today's "Tell us who you follow" sub, Settings
           row helpers). Tells the user where to act without nagging. */}
       <p
-        className="mb-2 text-[14px] leading-snug"
+        className="mb-2 text-[0.875rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Track a game from Today or Schedule to see it here.
@@ -28,7 +28,7 @@ export function WatchingEmpty() {
         // Native only: teaches the lock-screen / widget payoff of tracking a
         // live game. The web/PWA has neither surface, so it stays hidden.
         <p
-          className="mb-5 text-[13px] leading-snug"
+          className="mb-5 text-[0.8125rem] leading-snug"
           style={{ color: "var(--mute-2)", fontWeight: 500 }}
         >
           Track a live game to follow the score on your lock screen and
@@ -48,14 +48,14 @@ export function WatchingEmpty() {
           aria-label="Go to Today"
         >
           <span className="flex flex-col gap-1">
-            <span className="text-[14px]" style={{ fontWeight: 600 }}>
+            <span className="text-[0.875rem]" style={{ fontWeight: 600 }}>
               See what&apos;s on Today
             </span>
             <span
               className="uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: "0.625rem",
                 fontWeight: 600,
                 letterSpacing: "0.12em",
                 color: "var(--mute-2)",
@@ -64,7 +64,7 @@ export function WatchingEmpty() {
               Worth checking now
             </span>
           </span>
-          <span aria-hidden className="text-[16px]" style={{ color: "var(--mute-1)" }}>
+          <span aria-hidden className="text-[1rem]" style={{ color: "var(--mute-1)" }}>
             →
           </span>
         </Link>
@@ -76,14 +76,14 @@ export function WatchingEmpty() {
           aria-label="Go to Schedule"
         >
           <span className="flex flex-col gap-1">
-            <span className="text-[14px]" style={{ fontWeight: 600 }}>
+            <span className="text-[0.875rem]" style={{ fontWeight: 600 }}>
               Browse the full schedule
             </span>
             <span
               className="uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: "0.625rem",
                 fontWeight: 600,
                 letterSpacing: "0.12em",
                 color: "var(--mute-2)",
@@ -92,7 +92,7 @@ export function WatchingEmpty() {
               Every game on the schedule
             </span>
           </span>
-          <span aria-hidden className="text-[16px]" style={{ color: "var(--mute-1)" }}>
+          <span aria-hidden className="text-[1rem]" style={{ color: "var(--mute-1)" }}>
             →
           </span>
         </Link>

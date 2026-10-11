@@ -22,7 +22,7 @@ export function CalmCard() {
         Calm is a feature.
       </Display>
       <p
-        className="max-w-[28ch] text-[13px] leading-snug"
+        className="max-w-[28ch] text-[0.8125rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Nothing demanding your attention right now.

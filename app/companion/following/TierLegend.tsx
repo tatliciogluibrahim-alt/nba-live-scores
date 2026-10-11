@@ -15,7 +15,7 @@ const LEGEND_COPY =
 
 const MONO_STYLE = {
   fontFamily: "var(--font-mono)",
-  fontSize: 10,
+  fontSize: "0.625rem",
   fontWeight: 600,
   letterSpacing: "0.08em",
   color: "var(--mute-2)",

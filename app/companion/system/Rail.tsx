@@ -105,7 +105,7 @@ export function Rail({
         className="mt-[7px] flex items-center justify-between"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 600,
           letterSpacing: "0.14em",
           color: endColor,

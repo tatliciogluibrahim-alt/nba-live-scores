@@ -127,7 +127,7 @@ export function DesktopSidebarNav({ active }: { active?: Tab }) {
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 13,
+            fontSize: "0.8125rem",
             fontWeight: 700,
             letterSpacing: "0.02em",
             color: "var(--ink)",
@@ -161,7 +161,7 @@ export function DesktopSidebarNav({ active }: { active?: Tab }) {
       {liveRail.length > 0 ? (
         <div className="px-5 pb-3">
           <p
-            className="mb-2 text-[10px] uppercase"
+            className="mb-2 text-[0.625rem] uppercase"
             style={{
               fontFamily: "var(--font-mono)",
               letterSpacing: "0.14em",
@@ -192,7 +192,7 @@ export function DesktopSidebarNav({ active }: { active?: Tab }) {
                       className="truncate uppercase"
                       style={{
                         fontFamily: "var(--font-mono)",
-                        fontSize: 12,
+                        fontSize: "0.75rem",
                         fontWeight: 600,
                         letterSpacing: "0.06em",
                       }}

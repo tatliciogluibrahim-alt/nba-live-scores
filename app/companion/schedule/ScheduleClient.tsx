@@ -185,7 +185,7 @@ function ScopeToggle({
             className="inline-flex min-h-[44px] items-center uppercase transition active:opacity-70"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10.5,
+              fontSize: "0.65625rem",
               letterSpacing: "0.12em",
               fontWeight: on ? 700 : 600,
               color: on ? "var(--cream)" : "var(--mute-1)",
@@ -236,7 +236,7 @@ function CompetitionSwitcher({
             className="inline-flex min-h-[44px] shrink-0 items-center whitespace-nowrap uppercase transition active:opacity-70"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: "0.6875rem",
               letterSpacing: "0.08em",
               fontWeight: on ? 700 : 600,
               color: on ? "var(--ink)" : "var(--mute-2)",
@@ -328,7 +328,7 @@ function WCScheduleBody({
     <div className="mt-4">
       {noSpoilers ? (
         <p
-          className="mb-2 text-[12.5px] leading-snug"
+          className="mb-2 text-[0.78125rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Scores stay hidden. The bracket still fills in as rounds finish.
@@ -357,7 +357,7 @@ function WCScheduleBody({
               className="flex-1 uppercase transition active:opacity-70"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 11,
+                fontSize: "0.6875rem",
                 letterSpacing: "0.12em",
                 fontWeight: on ? 700 : 600,
                 color: on ? "var(--ink)" : "var(--mute-2)",
@@ -423,7 +423,7 @@ function StatusCard({
         className="uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 700,
           letterSpacing: "0.14em",
           color: "var(--mute-1)",
@@ -432,13 +432,13 @@ function StatusCard({
         {eyebrow}
       </p>
       <p
-        className="mt-1 text-[15px] leading-snug"
+        className="mt-1 text-[0.9375rem] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 700 }}
       >
         {headline}
       </p>
       <p
-        className="mt-1 text-[13px] leading-snug"
+        className="mt-1 text-[0.8125rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {detail}
@@ -449,7 +449,7 @@ function StatusCard({
           className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 uppercase transition active:opacity-70"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 12,
+            fontSize: "0.75rem",
             fontWeight: 600,
             letterSpacing: "0.08em",
             color: "var(--ink)",
@@ -540,7 +540,7 @@ function IdleState({
         className="uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 700,
           letterSpacing: "0.14em",
           color: "var(--mute-1)",
@@ -549,13 +549,13 @@ function IdleState({
         {eyebrow}
       </p>
       <p
-        className="mt-1 text-[15px] leading-snug"
+        className="mt-1 text-[0.9375rem] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 700 }}
       >
         {headline}
       </p>
       <p
-        className="mt-1 text-[13px] leading-snug"
+        className="mt-1 text-[0.8125rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {detail}
@@ -566,7 +566,7 @@ function IdleState({
         className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 uppercase transition active:opacity-70"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 12,
+          fontSize: "0.75rem",
           fontWeight: 600,
           letterSpacing: "0.08em",
           color: "var(--ink)",

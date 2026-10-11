@@ -34,7 +34,7 @@ export function MomentRow({
       <div className="flex-1">
         <Eyebrow>{eyebrow}</Eyebrow>
         <p
-          className="mt-1 text-[14px] leading-snug"
+          className="mt-1 text-[0.875rem] leading-snug"
           style={{
             color: "var(--ink)",
             fontWeight: 700,
@@ -45,7 +45,7 @@ export function MomentRow({
         </p>
         {context ? (
           <p
-            className="mt-0.5 text-[12px]"
+            className="mt-0.5 text-[0.75rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {context}

@@ -94,7 +94,7 @@ export function CatchMeUpCard({ game }: { game: Game }) {
               style={{ borderColor: "var(--line)" }}
             >
               <span
-                className="text-[11px] uppercase"
+                className="text-[0.6875rem] uppercase"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontWeight: 700,
@@ -110,7 +110,7 @@ export function CatchMeUpCard({ game }: { game: Game }) {
                   className="tabular-nums"
                   style={{
                     fontFamily: "var(--font-display)",
-                    fontSize: 18,
+                    fontSize: "1.125rem",
                     fontWeight: 700,
                     letterSpacing: "-0.01em",
                     color: "var(--ink)",
@@ -126,7 +126,7 @@ export function CatchMeUpCard({ game }: { game: Game }) {
                   type="button"
                   onClick={handleReveal}
                   aria-label={`Reveal ${row.label} score`}
-                  className="no-noise-reveal-focus inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 text-[12px] transition active:scale-[0.97]"
+                  className="no-noise-reveal-focus inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 text-[0.75rem] transition active:scale-[0.97]"
                   style={{
                     background: "transparent",
                     color: "var(--ink)",
@@ -157,7 +157,7 @@ export function CatchMeUpCard({ game }: { game: Game }) {
                   className="tabular-nums"
                   style={{
                     fontFamily: "var(--font-display)",
-                    fontSize: 18,
+                    fontSize: "1.125rem",
                     letterSpacing: "0.18em",
                     color: "var(--mute-2)",
                     fontWeight: 600,

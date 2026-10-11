@@ -26,11 +26,11 @@ export function AlertsSummary() {
         style={{ background: "var(--paper)", borderColor: "var(--line)" }}
       >
         <div className="min-w-0">
-          <p className="text-[14px]" style={{ color: "var(--ink)", fontWeight: 700 }}>
+          <p className="text-[0.875rem]" style={{ color: "var(--ink)", fontWeight: 700 }}>
             {alertSlotCount} of {alertSlotCap} alert slots used.
           </p>
           <p
-            className="mt-0.5 text-[12px] leading-snug"
+            className="mt-0.5 text-[0.75rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Set each follow&apos;s alerts in Following. Follows are unlimited.
@@ -38,7 +38,7 @@ export function AlertsSummary() {
         </div>
         <span
           aria-hidden
-          className="shrink-0 text-[12px]"
+          className="shrink-0 text-[0.75rem]"
           style={{ color: "var(--mute-1)", fontWeight: 600 }}
         >
           Manage →

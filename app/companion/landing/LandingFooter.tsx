@@ -82,7 +82,7 @@ export function LandingFooter() {
             No Noise Scores
           </p>
           <p
-            className="text-[14px]"
+            className="text-[0.875rem]"
             style={{
               color: "var(--cream-on-dark-2, rgba(241,234,216,0.7))",
               fontWeight: 500,
@@ -97,7 +97,7 @@ export function LandingFooter() {
           {COLUMNS.map((col) => (
             <div key={col.title}>
               <p
-                className="mb-4 text-[11px] uppercase"
+                className="mb-4 text-[0.6875rem] uppercase"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontWeight: 700,
@@ -112,7 +112,7 @@ export function LandingFooter() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-[14px] transition hover:underline"
+                      className="text-[0.875rem] transition hover:underline"
                       style={{
                         color: "var(--cream-on-dark-1, rgba(241,234,216,0.9))",
                         fontWeight: 500,
@@ -137,7 +137,7 @@ export function LandingFooter() {
               href={APP_STORE_URL}
               target="_blank"
               rel="noopener"
-              className="text-[12px] transition hover:underline"
+              className="text-[0.75rem] transition hover:underline"
               style={{
                 color: "var(--cream-on-dark-1, rgba(241,234,216,0.9))",
                 fontWeight: 500,
@@ -149,7 +149,7 @@ export function LandingFooter() {
               href="https://instagram.com/nonoisescores"
               target="_blank"
               rel="noreferrer"
-              className="text-[12px] transition hover:underline"
+              className="text-[0.75rem] transition hover:underline"
               style={{
                 color: "var(--cream-on-dark-1, rgba(241,234,216,0.9))",
                 fontWeight: 500,
@@ -159,7 +159,7 @@ export function LandingFooter() {
             </a>
             <a
               href="mailto:nonoisescores@gmail.com"
-              className="text-[12px] transition hover:underline"
+              className="text-[0.75rem] transition hover:underline"
               style={{
                 color: "var(--cream-on-dark-1, rgba(241,234,216,0.9))",
                 fontWeight: 500,
@@ -169,7 +169,7 @@ export function LandingFooter() {
             </a>
           </div>
           <p
-            className="text-[11px]"
+            className="text-[0.6875rem]"
             style={{
               color: "var(--cream-on-dark-2, rgba(241,234,216,0.5))",
               fontWeight: 500,

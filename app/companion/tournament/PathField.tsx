@@ -43,7 +43,7 @@ export function PathField({ data }: { data: PathData }) {
         className="mb-[16px] flex items-center justify-between uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 600,
           letterSpacing: "0.16em",
         }}
@@ -116,7 +116,7 @@ export function PathField({ data }: { data: PathData }) {
         className="mt-[12px] flex justify-between uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 9,
+          fontSize: "0.5625rem",
           fontWeight: 600,
           letterSpacing: "0.1em",
         }}
@@ -139,7 +139,7 @@ export function PathField({ data }: { data: PathData }) {
       {/* The one calm timing line, cream. */}
       <p
         className="mt-[14px]"
-        style={{ fontSize: 12, fontWeight: 600, color: "var(--cream-on-ink)" }}
+        style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--cream-on-ink)" }}
       >
         {note}
       </p>

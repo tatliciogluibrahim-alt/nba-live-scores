@@ -62,7 +62,7 @@ function EmptyMomentRow({ moment }: { moment: FollowMoment }) {
           style={{
             display: "block",
             fontFamily: "var(--font-display)",
-            fontSize: 17,
+            fontSize: "1.0625rem",
             fontWeight: 700,
             letterSpacing: "-0.01em",
             color: isInactive ? "var(--mute-1)" : "var(--ink)",
@@ -75,7 +75,7 @@ function EmptyMomentRow({ moment }: { moment: FollowMoment }) {
             display: "block",
             marginTop: 2,
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: "0.6875rem",
             fontWeight: 600,
             letterSpacing: "0.1em",
             color: "var(--mute-2)",
@@ -172,11 +172,11 @@ export function FollowingEmpty() {
           }}
           aria-label="Open Alerts & Notifications"
         >
-          <span className="text-[13px]" style={{ fontWeight: 600 }}>
+          <span className="text-[0.8125rem]" style={{ fontWeight: 600 }}>
             Alerts & Notifications
           </span>
           <span
-            className="text-[11px]"
+            className="text-[0.6875rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Notifications · No-Spoilers · Quiet hours
@@ -229,11 +229,11 @@ export function FollowingEmpty() {
             }}
             aria-label="Open Alerts & Notifications"
           >
-            <span className="text-[13px]" style={{ fontWeight: 600 }}>
+            <span className="text-[0.8125rem]" style={{ fontWeight: 600 }}>
               Alerts & Notifications
             </span>
             <span
-              className="text-[11px]"
+              className="text-[0.6875rem]"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               Notifications · No-Spoilers · Quiet hours

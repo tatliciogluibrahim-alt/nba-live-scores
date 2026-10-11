@@ -131,7 +131,7 @@ function QuarterCard({
         className="flex items-baseline justify-between uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 700,
           letterSpacing: "0.16em",
           padding: "9px 12px",
@@ -232,7 +232,7 @@ function FeederRow({
   const aria = `${match.away.label} vs ${match.home.label}`;
 
   const main = (
-    <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600 }}>
+    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: 600 }}>
       {played && match.away.score != null && match.home.score != null ? (
         <>
           {bracketSlotToken(match.away)}{" "}
@@ -278,7 +278,7 @@ function FeederRow({
         style={{
           marginTop: 2,
           fontFamily: "var(--font-mono)",
-          fontSize: 9,
+          fontSize: "0.5625rem",
           letterSpacing: "0.1em",
           color: live ? "var(--live-text)" : "var(--mute-1)",
           fontWeight: 600,
@@ -377,7 +377,7 @@ function SlotCell({
       <span
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 13,
+          fontSize: "0.8125rem",
           fontWeight: bothReal ? 800 : 500,
           color: bothReal ? "var(--ink)" : "var(--mute-2)",
         }}
@@ -407,7 +407,7 @@ function SlotCell({
         style={{
           marginTop: 3,
           fontFamily: "var(--font-mono)",
-          fontSize: 9,
+          fontSize: "0.5625rem",
           letterSpacing: "0.1em",
           color: championSide
             ? "var(--brand)"

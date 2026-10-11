@@ -36,7 +36,7 @@ export function Stamp({ text, variant }: { text: string; variant: StampVariant }
       className="inline-block whitespace-nowrap text-center tabular-nums lining-nums"
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 10,
+        fontSize: "0.625rem",
         fontWeight: isHeavy ? 800 : 700,
         letterSpacing: "0.1em",
         minWidth: 38,

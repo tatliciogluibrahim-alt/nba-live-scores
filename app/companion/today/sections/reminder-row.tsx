@@ -10,7 +10,7 @@ export function ReminderRow({ reminder }: { reminder: ReminderRowData }) {
   const body = (
     <>
       <p
-        className="text-[12.5px] uppercase"
+        className="text-[0.78125rem] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
@@ -21,14 +21,14 @@ export function ReminderRow({ reminder }: { reminder: ReminderRowData }) {
         Reminder
       </p>
       <p
-        className="mt-0.5 text-[13px] leading-snug"
+        className="mt-0.5 text-[0.8125rem] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 600 }}
       >
         {reminder.text}
       </p>
       {reminder.detail ? (
         <p
-          className="mt-0.5 text-[12px]"
+          className="mt-0.5 text-[0.75rem]"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {reminder.detail}

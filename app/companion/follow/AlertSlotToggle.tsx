@@ -53,13 +53,13 @@ export function AlertSlotToggle({
         }}
       >
         <span
-          className="text-[13px]"
+          className="text-[0.8125rem]"
           style={{ color: "var(--ink)", fontWeight: 700 }}
         >
           {enabled ? `${PRESETS[tier].label} alerts on` : "Alerts off"}
         </span>
         <span
-          className="text-[11px]"
+          className="text-[0.6875rem]"
           style={{ color: "var(--mute-1)", fontWeight: 600 }}
         >
           {enabled ? "Turn off" : canEnable ? "Turn on" : "Full"}
@@ -67,7 +67,7 @@ export function AlertSlotToggle({
       </button>
       {!canEnable ? (
         <p
-          className="mb-2 text-[12px] leading-snug"
+          className="mb-2 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Alert slots are full ({alertSlotCount} of {alertSlotCap} on the

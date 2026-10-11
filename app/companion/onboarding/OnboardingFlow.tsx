@@ -261,13 +261,13 @@ export function OnboardingFlow() {
       >
         <div className="flex items-center gap-2">
           <BrandMark size={24} />
-          <span className="text-[13px]" style={{ fontWeight: 700 }}>
+          <span className="text-[0.8125rem]" style={{ fontWeight: 700 }}>
             No Noise Scores
           </span>
         </div>
         <button
           onClick={finish}
-          className="text-[13px]"
+          className="text-[0.8125rem]"
           style={{ color: "var(--mute-1)", fontWeight: 600 }}
         >
           Skip
@@ -307,7 +307,7 @@ export function OnboardingFlow() {
               Your sports, without the feed.
             </h1>
             <p
-              className="mt-4 text-[16px] leading-snug"
+              className="mt-4 text-[1rem] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               Pick what you follow. We&apos;ll keep Today, alerts, widgets,
@@ -330,7 +330,7 @@ export function OnboardingFlow() {
               {nflMoment ? "Pick your team." : "Pick your first follows."}
             </h1>
             <p
-              className="mt-3 text-[15px] leading-snug"
+              className="mt-3 text-[0.9375rem] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               {nflMoment
@@ -364,7 +364,7 @@ export function OnboardingFlow() {
                         }}
                       >
                         <span
-                          className="text-[13px]"
+                          className="text-[0.8125rem]"
                           style={{
                             fontFamily: "var(--font-mono)",
                             fontWeight: 700,
@@ -375,7 +375,7 @@ export function OnboardingFlow() {
                           {t.id}
                         </span>
                         <span
-                          className="text-[9px]"
+                          className="text-[0.5625rem]"
                           style={{
                             fontWeight: 600,
                             color: on ? "var(--cream)" : "var(--mute-1)",
@@ -402,18 +402,18 @@ export function OnboardingFlow() {
                   }}
                 >
                   <span>
-                    <span className="block text-[14px]" style={{ fontWeight: 700 }}>
+                    <span className="block text-[0.875rem]" style={{ fontWeight: 700 }}>
                       Or follow the whole season
                     </span>
                     <span
-                      className="mt-0.5 block text-[11px]"
+                      className="mt-0.5 block text-[0.6875rem]"
                       style={{ color: "var(--mute-1)", fontWeight: 500 }}
                     >
                       Every game, every week. Louder.
                     </span>
                   </span>
                   <span
-                    className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[13px]"
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[0.8125rem]"
                     style={{
                       background: isFollowing("tournament", nflMoment.id)
                         ? nflMoment.accent
@@ -444,18 +444,18 @@ export function OnboardingFlow() {
                     }}
                   >
                     <span>
-                      <span className="block text-[16px]" style={{ fontWeight: 700 }}>
+                      <span className="block text-[1rem]" style={{ fontWeight: 700 }}>
                         {m.name}
                       </span>
                       <span
-                        className="mt-0.5 block text-[12px]"
+                        className="mt-0.5 block text-[0.75rem]"
                         style={{ color: "var(--mute-1)", fontWeight: 500 }}
                       >
                         {m.sub}
                       </span>
                     </span>
                     <span
-                      className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[13px]"
+                      className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[0.8125rem]"
                       style={{
                         background: on ? m.accent : "transparent",
                         border: on ? "none" : "1.5px solid var(--line)",
@@ -475,7 +475,7 @@ export function OnboardingFlow() {
                 opt-in). Just tells them more follows are available later
                 in Following, so the primary action stays the moment pick. */}
             <p
-              className="mt-4 text-[12px] leading-snug"
+              className="mt-4 text-[0.75rem] leading-snug"
               style={{ color: "var(--mute-2)", fontWeight: 500 }}
             >
               You can add more in Following later.
@@ -497,7 +497,7 @@ export function OnboardingFlow() {
               Get quiet alerts for what you follow.
             </h1>
             <p
-              className="mt-3 text-[15px] leading-snug"
+              className="mt-3 text-[0.9375rem] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               Choose how loud each follow gets. Calm by default, and
@@ -518,14 +518,14 @@ export function OnboardingFlow() {
                   style={{ background: preview.dotHex }}
                 />
                 <span
-                  className="text-[10px] uppercase"
+                  className="text-[0.625rem] uppercase"
                   style={{ color: "#8a7d62", fontWeight: 700, letterSpacing: "0.1em" }}
                 >
                   {preview.eyebrow}
                 </span>
               </div>
               <p
-                className="mt-1 text-[15px]"
+                className="mt-1 text-[0.9375rem]"
                 style={{ color: "#efe6d2", fontWeight: 700 }}
               >
                 {preview.headline}
@@ -534,7 +534,7 @@ export function OnboardingFlow() {
 
             {/* Widget discovery — not obvious you can do this. */}
             <p
-              className="mt-4 text-[13px] leading-snug"
+              className="mt-4 text-[0.8125rem] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               Tip: touch and hold your home screen, then add the No Noise
@@ -552,7 +552,7 @@ export function OnboardingFlow() {
         {step < 2 ? (
           <button
             onClick={() => setStep((s) => s + 1)}
-            className="w-full rounded-full py-3.5 text-[15px] font-semibold active:scale-[0.99]"
+            className="w-full rounded-full py-3.5 text-[0.9375rem] font-semibold active:scale-[0.99]"
             style={{ background: "var(--ink)", color: "var(--cream)" }}
           >
             Continue
@@ -577,7 +577,7 @@ export function OnboardingFlow() {
                 if (decided) dismissNotifPrompt();
                 finish();
               }}
-              className="w-full rounded-full py-3.5 text-[15px] font-semibold active:scale-[0.99]"
+              className="w-full rounded-full py-3.5 text-[0.9375rem] font-semibold active:scale-[0.99]"
               style={{ background: "var(--brand)", color: "#fff", opacity: working ? 0.7 : 1 }}
             >
               {working ? "Setting up…" : "Turn on alerts"}
@@ -589,7 +589,7 @@ export function OnboardingFlow() {
                 dismissNotifPrompt();
                 finish();
               }}
-              className="w-full py-2 text-[13px]"
+              className="w-full py-2 text-[0.8125rem]"
               style={{ color: "var(--mute-1)", fontWeight: 600 }}
             >
               Maybe later

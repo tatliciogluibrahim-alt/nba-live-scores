@@ -103,7 +103,7 @@ export function RecoverStep({ platform }: { platform: SetupPlatform }) {
           type="button"
           onClick={() => dismissPushRecovery()}
           aria-label="Dismiss notification recovery card"
-          className="text-[11px] underline underline-offset-4 decoration-dotted"
+          className="text-[0.6875rem] underline underline-offset-4 decoration-dotted"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           Hide
@@ -111,7 +111,7 @@ export function RecoverStep({ platform }: { platform: SetupPlatform }) {
       </div>
 
       <p
-        className="text-[14px] leading-snug"
+        className="text-[0.875rem] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 600 }}
       >
         {summary}
@@ -126,7 +126,7 @@ export function RecoverStep({ platform }: { platform: SetupPlatform }) {
               window.location.href = "app-settings:";
             }
           }}
-          className="mt-3 inline-flex min-h-[40px] items-center justify-center rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+          className="mt-3 inline-flex min-h-[40px] items-center justify-center rounded-full border px-3.5 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.97]"
           style={{
             background: "transparent",
             color: "var(--ink)",
@@ -140,7 +140,7 @@ export function RecoverStep({ platform }: { platform: SetupPlatform }) {
       ) : (
         <div className="mt-3">
           <ol
-            className="list-inside list-decimal space-y-1.5 text-[13px] leading-snug"
+            className="list-inside list-decimal space-y-1.5 text-[0.8125rem] leading-snug"
             style={{ color: "var(--ink-2)", fontWeight: 500 }}
           >
             {steps.map((step, i) => (
@@ -149,7 +149,7 @@ export function RecoverStep({ platform }: { platform: SetupPlatform }) {
           </ol>
           {hint ? (
             <p
-              className="mt-2 text-[12px] leading-snug"
+              className="mt-2 text-[0.75rem] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               {hint}

@@ -62,7 +62,7 @@ export function BriefSubscribeClient() {
         The No Noise Brief.
       </Display>
       <p
-        className="mb-5 text-[14px] leading-snug"
+        className="mb-5 text-[0.875rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         One no-noise email every morning on your followed games only.
@@ -81,7 +81,7 @@ export function BriefSubscribeClient() {
         >
           <Eyebrow color="var(--wc)">Subscribed</Eyebrow>
           <p
-            className="mt-2 text-[16px] leading-snug"
+            className="mt-2 text-[1rem] leading-snug"
             style={{
               color: "var(--ink)",
               fontFamily: "var(--font-display)",
@@ -92,7 +92,7 @@ export function BriefSubscribeClient() {
             You&apos;re on the list.
           </p>
           <p
-            className="mt-2 text-[13px] leading-snug"
+            className="mt-2 text-[0.8125rem] leading-snug"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             First brief lands tomorrow morning. Every email has a
@@ -104,7 +104,7 @@ export function BriefSubscribeClient() {
           <div>
             <label
               htmlFor="brief-email"
-              className="mb-1 block text-[11px] uppercase"
+              className="mb-1 block text-[0.6875rem] uppercase"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
@@ -122,7 +122,7 @@ export function BriefSubscribeClient() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="block w-full rounded-[10px] border px-3 py-2.5 text-[14px] outline-none no-noise-focus-ring"
+              className="block w-full rounded-[10px] border px-3 py-2.5 text-[0.875rem] outline-none no-noise-focus-ring"
               style={{
                 background: "var(--paper)",
                 borderColor: "var(--line)",
@@ -141,7 +141,7 @@ export function BriefSubscribeClient() {
           >
             <Eyebrow>What we&apos;ll send</Eyebrow>
             <p
-              className="mt-1 text-[13px] leading-snug"
+              className="mt-1 text-[0.8125rem] leading-snug"
               style={{ color: "var(--ink)", fontWeight: 500 }}
             >
               {hydrated && follows.length > 0
@@ -166,13 +166,13 @@ export function BriefSubscribeClient() {
             />
             <span>
               <span
-                className="block text-[13px]"
+                className="block text-[0.8125rem]"
                 style={{ color: "var(--ink)", fontWeight: 700 }}
               >
                 Include scores in the email
               </span>
               <span
-                className="mt-0.5 block text-[12px]"
+                className="mt-0.5 block text-[0.75rem]"
                 style={{ color: "var(--mute-1)", fontWeight: 500 }}
               >
                 Turn off for a quieter, spoiler-safe email — matchups only.
@@ -184,7 +184,7 @@ export function BriefSubscribeClient() {
           {error ? (
             <p
               role="alert"
-              className="text-[12px]"
+              className="text-[0.75rem]"
               style={{ color: "var(--critical)", fontWeight: 600 }}
             >
               {error}
@@ -196,7 +196,7 @@ export function BriefSubscribeClient() {
             disabled={
               status === "submitting" || !hydrated || follows.length === 0
             }
-            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",
@@ -215,7 +215,7 @@ export function BriefSubscribeClient() {
           </button>
 
           <p
-            className="text-[11px] leading-snug"
+            className="text-[0.6875rem] leading-snug"
             style={{ color: "var(--mute-2)", fontWeight: 500 }}
           >
             We use your email only to send this one brief. One-click

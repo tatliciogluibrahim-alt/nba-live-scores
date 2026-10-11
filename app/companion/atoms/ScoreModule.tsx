@@ -233,7 +233,7 @@ export function ScoreModule({
       {/* Context line — clock / kickoff / "Final". */}
       {contextLine ? (
         <p
-          className={`${hasScores ? "mt-1.5" : spec.rowGapClass} text-[12px]`}
+          className={`${hasScores ? "mt-1.5" : spec.rowGapClass} text-[0.75rem]`}
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {contextLine}
@@ -268,7 +268,7 @@ function EyebrowText({ children }: { children: ReactNode }) {
       className="uppercase"
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 11,
+        fontSize: "0.6875rem",
         fontWeight: 600,
         letterSpacing: "0.12em",
         color: "var(--mute-1)",

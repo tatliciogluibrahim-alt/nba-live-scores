@@ -96,13 +96,13 @@ export function QuietHoursSelector() {
               </span>
               <span className="min-w-0 flex-1">
                 <span
-                  className="block text-[13px] leading-none"
+                  className="block text-[0.8125rem] leading-none"
                   style={{ color: "var(--ink)", fontWeight: 700 }}
                 >
                   {opt.label}
                 </span>
                 <span
-                  className="mt-1 block text-[11px]"
+                  className="mt-1 block text-[0.6875rem]"
                   style={{ color: "var(--mute-1)", fontWeight: 500 }}
                 >
                   {opt.detail}

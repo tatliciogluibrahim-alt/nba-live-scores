@@ -103,7 +103,7 @@ export function SportsCircleShareModal({
         <div className="px-4 pb-4 pt-3">
           <Eyebrow>Share</Eyebrow>
           <h2
-            className="mt-1 text-[20px]"
+            className="mt-1 text-[1.25rem]"
             style={{
               fontFamily: "var(--font-display)",
               color: "var(--ink)",
@@ -113,7 +113,7 @@ export function SportsCircleShareModal({
             Your sports circle
           </h2>
           <p
-            className="mt-1 text-[13px]"
+            className="mt-1 text-[0.8125rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             A clean card of what you follow. No scores, so it&apos;s safe
@@ -146,7 +146,7 @@ export function SportsCircleShareModal({
 
           {error ? (
             <p
-              className="mt-3 text-center text-[12px]"
+              className="mt-3 text-center text-[0.75rem]"
               style={{ color: "var(--critical)", fontWeight: 500 }}
             >
               {error}
@@ -157,7 +157,7 @@ export function SportsCircleShareModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "transparent",
                 color: "var(--ink)",
@@ -170,7 +170,7 @@ export function SportsCircleShareModal({
               type="button"
               onClick={handleDownload}
               disabled={downloading}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
               style={{
                 background: "var(--ink)",
                 color: "var(--cream)",
@@ -220,7 +220,7 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
           </svg>
           <span
             style={{
-              fontSize: 22,
+              fontSize: "1.375rem",
               fontWeight: 900,
               letterSpacing: "-0.028em",
               color: "#1a1612",
@@ -237,7 +237,7 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
           <p
             style={{
               fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
-              fontSize: 14,
+              fontSize: "0.875rem",
               fontWeight: 700,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
@@ -268,7 +268,7 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
             display weight, kind label in mono. */}
         <div style={{ marginTop: 40, flex: 1 }}>
           {shown.length === 0 ? (
-            <p style={{ fontSize: 18, fontWeight: 500, color: "#6b6147", margin: 0 }}>
+            <p style={{ fontSize: "1.125rem", fontWeight: 500, color: "#6b6147", margin: 0 }}>
               Nothing followed yet. A calm slate.
             </p>
           ) : (
@@ -298,7 +298,7 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
                   />
                   <span
                     style={{
-                      fontSize: 24,
+                      fontSize: "1.5rem",
                       fontWeight: 700,
                       color: "#1a1612",
                       letterSpacing: "-0.01em",
@@ -310,7 +310,7 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
                 <span
                   style={{
                     fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
-                    fontSize: 12,
+                    fontSize: "0.75rem",
                     fontWeight: 600,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
@@ -323,7 +323,7 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
             ))
           )}
           {overflow > 0 ? (
-            <p style={{ fontSize: 16, fontWeight: 600, color: "#6b6147", margin: "14px 0 0" }}>
+            <p style={{ fontSize: "1rem", fontWeight: 600, color: "#6b6147", margin: "14px 0 0" }}>
               + {overflow} more
             </p>
           ) : null}
@@ -344,7 +344,7 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
           <span
             style={{
               fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
-              fontSize: 15,
+              fontSize: "0.9375rem",
               fontWeight: 700,
               letterSpacing: "0.04em",
               color: "#1a1612",
@@ -355,7 +355,7 @@ const CircleCardCanvas = forwardRef<HTMLDivElement, { rows: CircleRow[] }>(
           <span
             style={{
               fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
-              fontSize: 11,
+              fontSize: "0.6875rem",
               fontWeight: 600,
               letterSpacing: "0.1em",
               textTransform: "uppercase",

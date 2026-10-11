@@ -66,7 +66,7 @@ export function WCKnockoutPreview({
         ))
       ) : (
         <p
-          className="py-[13px] text-[13px] leading-snug"
+          className="py-[13px] text-[0.8125rem] leading-snug"
           style={{
             color: "var(--mute-1)",
             fontWeight: 500,
@@ -84,7 +84,7 @@ export function WCKnockoutPreview({
         className="mt-[14px] inline-flex items-center gap-[6px] uppercase transition active:opacity-70"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 12,
+          fontSize: "0.75rem",
           fontWeight: 600,
           letterSpacing: "0.06em",
           color: "var(--mute-1)",
@@ -122,7 +122,7 @@ function KnockoutPreviewRow({
     row.placeholder ? 500 : row.followedSide === side ? 700 : 600;
 
   const main = (
-    <span style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
+    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem" }}>
       <span style={{ color: codeColor, fontWeight: codeWeight("away") }}>
         {row.awayCode}
       </span>
@@ -143,7 +143,7 @@ function KnockoutPreviewRow({
       style={{
         fontFamily: "var(--font-mono)",
         fontWeight: 700,
-        fontSize: 14,
+        fontSize: "0.875rem",
         color: live ? "var(--live-text)" : "var(--ink)",
         ...(resultHidden ? { position: "relative", zIndex: 1 } : {}),
       }}
@@ -169,7 +169,7 @@ function KnockoutPreviewRow({
         className="tabular-nums lining-nums"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           // C4 (§5 v3): index numerals on cream ground carry the brand.
           fontWeight: 700,
           color: "var(--brand)",
@@ -190,7 +190,7 @@ function KnockoutPreviewRow({
   );
 
   const cls = "flex items-center gap-[10px] py-[13px]";
-  const rowStyle = { fontSize: 14, borderBottom: "1px solid var(--line)" };
+  const rowStyle = { fontSize: "0.875rem", borderBottom: "1px solid var(--line)" };
 
   const renderedRow = row.href ? (
     <div className={`relative ${cls}`} style={rowStyle}>

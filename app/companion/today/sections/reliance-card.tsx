@@ -76,7 +76,7 @@ export function RelianceCard({ prompt }: { prompt: ReliancePrompt }) {
         className="uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: "0.625rem",
           fontWeight: 600,
           letterSpacing: "0.14em",
           color: "var(--mute-1)",
@@ -85,7 +85,7 @@ export function RelianceCard({ prompt }: { prompt: ReliancePrompt }) {
         Quick check
       </p>
       <p
-        className="mt-1 text-[14px] leading-snug"
+        className="mt-1 text-[0.875rem] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 700 }}
       >
         Could you rely on the alerts for that match?
@@ -99,7 +99,7 @@ export function RelianceCard({ prompt }: { prompt: ReliancePrompt }) {
             className="uppercase transition active:opacity-70"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: "0.6875rem",
               letterSpacing: "0.08em",
               fontWeight: 600,
               color: "var(--ink)",

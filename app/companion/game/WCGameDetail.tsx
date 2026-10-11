@@ -275,7 +275,7 @@ export function WCGameDetail({
                   style={{
                     padding: "13px 0",
                     fontFamily: "var(--font-mono)",
-                    fontSize: 13,
+                    fontSize: "0.8125rem",
                     fontWeight: 600,
                   }}
                 >
@@ -356,7 +356,7 @@ export function WCGameDetail({
               type="button"
               onClick={() => setShareOpen(true)}
               className="inline-flex min-h-[40px] items-center gap-1.5 transition active:scale-[0.99]"
-              style={{ color: "var(--ink)", fontWeight: 600, fontSize: 13 }}
+              style={{ color: "var(--ink)", fontWeight: 600, fontSize: "0.8125rem" }}
             >
               Share this match
               <span aria-hidden>→</span>
@@ -406,7 +406,7 @@ function InkEventRow({
         className="shrink-0"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 12,
+          fontSize: "0.75rem",
           fontWeight: 700,
           minWidth: 32,
           color: "var(--cream-on-ink)",
@@ -416,7 +416,7 @@ function InkEventRow({
       </span>
       <span
         className="min-w-0 flex-1"
-        style={{ fontSize: 14, fontWeight: 600, color: "var(--cream-on-ink)" }}
+        style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--cream-on-ink)" }}
       >
         {event.playerName || eventLabel(event)}
         {dim ? (
@@ -424,7 +424,7 @@ function InkEventRow({
             style={{
               color: "var(--cream-on-ink-dim)",
               fontWeight: 500,
-              fontSize: 12,
+              fontSize: "0.75rem",
             }}
           >
             {" "}
@@ -445,7 +445,7 @@ function GoalStamp({ children }: { children: string }) {
       className="inline-block shrink-0 whitespace-nowrap uppercase"
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 10,
+        fontSize: "0.625rem",
         fontWeight: 700,
         letterSpacing: "0.1em",
         padding: "3px 7px",

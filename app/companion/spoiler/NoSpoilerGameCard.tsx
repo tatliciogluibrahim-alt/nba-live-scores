@@ -71,7 +71,7 @@ export function NoSpoilerGameCard({
     >
       <div className="flex items-center justify-between gap-3">
         <span
-          className="text-[13px]"
+          className="text-[0.8125rem]"
           style={{
             color: "var(--ink)",
             fontWeight: 700,
@@ -85,7 +85,7 @@ export function NoSpoilerGameCard({
           className="tabular-nums"
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: 18,
+            fontSize: "1.125rem",
             letterSpacing: "0.18em",
             color: "var(--mute-1)",
           }}
@@ -105,7 +105,7 @@ export function NoSpoilerGameCard({
           }
         }}
         aria-label={aria}
-        className="no-noise-reveal-focus mt-2 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+        className="no-noise-reveal-focus mt-2 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
         style={{
           background: "transparent",
           color: "var(--ink)",

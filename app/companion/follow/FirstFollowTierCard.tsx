@@ -131,13 +131,13 @@ export function FirstFollowTierCard({ active = true }: { active?: boolean }) {
         <>
           <header className="mb-1">
             <p
-              className="text-[15px] leading-tight"
+              className="text-[0.9375rem] leading-tight"
               style={{ color: "var(--ink)", fontWeight: 700 }}
             >
               How loud should alerts be?
             </p>
             <p
-              className="mt-1 text-[12px] leading-snug"
+              className="mt-1 text-[0.75rem] leading-snug"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               You picked {subjectName}. Choose a level. You can change
@@ -184,13 +184,13 @@ export function FirstFollowTierCard({ active = true }: { active?: boolean }) {
                     </span>
                     <span className="min-w-0">
                       <span
-                        className="block text-[13px] leading-tight"
+                        className="block text-[0.8125rem] leading-tight"
                         style={{ color: "var(--ink)", fontWeight: 700 }}
                       >
                         {meta.label}
                       </span>
                       <span
-                        className="mt-0.5 block text-[12px] leading-snug"
+                        className="mt-0.5 block text-[0.75rem] leading-snug"
                         style={{ color: "var(--mute-1)", fontWeight: 500 }}
                       >
                         {meta.detail}
@@ -210,7 +210,7 @@ export function FirstFollowTierCard({ active = true }: { active?: boolean }) {
             type="button"
             onClick={() => applyTier(currentTier)}
             aria-label={`Keep ${PRESETS[currentTier].label} alerts`}
-            className="mt-3 inline-flex min-h-[40px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="mt-3 inline-flex min-h-[40px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",
@@ -225,7 +225,7 @@ export function FirstFollowTierCard({ active = true }: { active?: boolean }) {
         // doesn't jump on dismissal. The card unmounts via the
         // markFirstFollowEducated() timer set up in the effect above.
         <p
-          className="text-[14px] leading-snug"
+          className="text-[0.875rem] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 700 }}
           role="status"
           aria-live="polite"

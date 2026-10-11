@@ -229,7 +229,7 @@ export function NFLGameDetail({
                     style={{
                       padding: "13px 0",
                       fontFamily: "var(--font-mono)",
-                      fontSize: 13,
+                      fontSize: "0.8125rem",
                       fontWeight: 600,
                     }}
                   >
@@ -268,7 +268,7 @@ export function NFLGameDetail({
                         aria-hidden
                         style={{
                           fontFamily: "var(--font-mono)",
-                          fontSize: 10,
+                          fontSize: "0.625rem",
                           fontWeight: 700,
                           letterSpacing: "0.06em",
                           color: "var(--mute-1)",
@@ -284,7 +284,7 @@ export function NFLGameDetail({
                           style={{
                             color: "var(--mute-1)",
                             fontWeight: 500,
-                            fontSize: 12.5,
+                            fontSize: "0.78125rem",
                           }}
                         >
                           {" "}
@@ -376,10 +376,10 @@ function ScoringRow({ play }: { play: NFLScoringPlayLite }) {
         className="shrink-0"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 12,
+          fontSize: "0.75rem",
           fontWeight: 700,
           minWidth: 54,
-          lineHeight: "20px",
+          lineHeight: "1.25rem",
           color: "var(--cream-on-ink)",
         }}
       >
@@ -388,9 +388,9 @@ function ScoringRow({ play }: { play: NFLScoringPlayLite }) {
       <span
         className="min-w-0 flex-1"
         style={{
-          fontSize: 14,
+          fontSize: "0.875rem",
           fontWeight: 600,
-          lineHeight: "20px",
+          lineHeight: "1.25rem",
           color: "var(--cream-on-ink)",
         }}
       >
@@ -400,7 +400,7 @@ function ScoringRow({ play }: { play: NFLScoringPlayLite }) {
             style={{
               color: "var(--cream-on-ink-dim)",
               fontWeight: 500,
-              fontSize: 12,
+              fontSize: "0.75rem",
             }}
           >
             {" "}
@@ -412,9 +412,9 @@ function ScoringRow({ play }: { play: NFLScoringPlayLite }) {
         className="shrink-0"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 13,
+          fontSize: "0.8125rem",
           fontWeight: 700,
-          lineHeight: "20px",
+          lineHeight: "1.25rem",
           color: "var(--cream-on-ink)",
         }}
       >

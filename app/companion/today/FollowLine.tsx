@@ -20,7 +20,7 @@ const MAX_VISIBLE = 5;
 
 const LABEL_STYLE = {
   fontFamily: "var(--font-mono)",
-  fontSize: 10,
+  fontSize: "0.625rem",
   fontWeight: 600,
   letterSpacing: "0.16em",
   color: "var(--mute-2)",
@@ -29,7 +29,7 @@ const LABEL_STYLE = {
 
 const NAMES_STYLE = {
   fontFamily: "var(--font-mono)",
-  fontSize: 13,
+  fontSize: "0.8125rem",
   fontWeight: 600,
   letterSpacing: "0.04em",
 } as const;

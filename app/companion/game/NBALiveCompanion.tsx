@@ -303,14 +303,14 @@ export function NBALiveCompanion({
         ) : null}
         {spoileryLine ? (
           <p
-            className={`${seriesDots.length > 0 ? "mt-2" : ""} text-[13px] leading-snug`}
+            className={`${seriesDots.length > 0 ? "mt-2" : ""} text-[0.8125rem] leading-snug`}
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
             {spoileryLine}
           </p>
         ) : noSpoilers && hasSpoilerySeriesText ? (
           <p
-            className={`${seriesDots.length > 0 ? "mt-2" : ""} text-[12px]`}
+            className={`${seriesDots.length > 0 ? "mt-2" : ""} text-[0.75rem]`}
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             {HIDDEN_CAPTIONS.series}
@@ -540,7 +540,7 @@ function HiddenAgateRow({
       style={{
         borderBottom: "1px solid var(--line)",
         fontFamily: "var(--font-mono)",
-        fontSize: 13,
+        fontSize: "0.8125rem",
         fontWeight: 600,
       }}
     >
@@ -574,7 +574,7 @@ function FreshnessIndicator({ lastFetched }: { lastFetched: number }) {
       aria-label={`Feed checked ${secondsAgo} seconds ago`}
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 10,
+        fontSize: "0.625rem",
         fontWeight: 600,
         letterSpacing: "0.1em",
         color: "var(--mute-2)",
@@ -619,7 +619,7 @@ function RecapCollapsed({
     >
       <Eyebrow color="var(--nba)">Recap</Eyebrow>
       <p
-        className="mt-1.5 text-[15px] leading-snug"
+        className="mt-1.5 text-[0.9375rem] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 600 }}
       >
         {noSpoilers && recap.headlineSpoilery ? (
@@ -636,7 +636,7 @@ function RecapCollapsed({
         type="button"
         onClick={onOpen}
         aria-label="Read the full recap"
-        className="mt-2 inline-flex min-h-[32px] items-center text-[12px]"
+        className="mt-2 inline-flex min-h-[32px] items-center text-[0.75rem]"
         style={{ color: "var(--mute-1)", fontWeight: 600 }}
       >
         Read recap →

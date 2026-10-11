@@ -191,7 +191,7 @@ export function SevenDotStrip({
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: dotLabel.length > 2 ? 10 : 11,
+                  fontSize: dotLabel.length > 2 ? "0.625rem" : "0.6875rem",
                   fontWeight: 700,
                   letterSpacing: 0,
                   lineHeight: 1,
@@ -300,7 +300,7 @@ function PlayedGameDetail({
             type="button"
             onClick={onClose}
             aria-label="Close game details"
-            className="no-noise-reveal-focus inline-flex min-h-[44px] items-center text-[11px] underline underline-offset-4 decoration-dotted"
+            className="no-noise-reveal-focus inline-flex min-h-[44px] items-center text-[0.6875rem] underline underline-offset-4 decoration-dotted"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Close
@@ -309,7 +309,7 @@ function PlayedGameDetail({
 
         {scores && dot.awayCode && dot.homeCode ? (
           <p
-            className="mt-2 text-[20px] leading-none"
+            className="mt-2 text-[1.25rem] leading-none"
             style={{
               color: "var(--ink)",
               fontFamily: "var(--font-mono)",
@@ -328,7 +328,7 @@ function PlayedGameDetail({
           <Link
             href={`/game/${dot.gameId}`}
             aria-label={`Open Game ${dot.number}`}
-            className="mt-3 inline-flex min-h-[44px] items-center text-[12px] underline underline-offset-4 decoration-dotted"
+            className="mt-3 inline-flex min-h-[44px] items-center text-[0.75rem] underline underline-offset-4 decoration-dotted"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             Open game

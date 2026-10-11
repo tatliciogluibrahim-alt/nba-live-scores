@@ -128,7 +128,7 @@ export function ProgressRail({
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: "0.5625rem",
             fontWeight: 600,
             letterSpacing: "0.12em",
             color: "var(--mute-2)",
@@ -139,7 +139,7 @@ export function ProgressRail({
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: "0.5625rem",
             fontWeight: 600,
             letterSpacing: "0.12em",
             color: isFinal ? "var(--ink)" : "var(--mute-2)",

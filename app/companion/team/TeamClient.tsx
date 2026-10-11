@@ -246,7 +246,7 @@ function TeamHeader({
             background: "var(--nba-soft)",
             color: "var(--nba)",
             fontFamily: "var(--font-mono)",
-            fontSize: team.id.length > 3 ? 12 : 14,
+            fontSize: team.id.length > 3 ? "0.75rem" : "0.875rem",
             fontWeight: 800,
             letterSpacing: "0.02em",
           }}
@@ -297,7 +297,7 @@ function AlertStatePill({
         }}
       />
       <span
-        className="text-[11px] uppercase"
+        className="text-[0.6875rem] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           fontWeight: 600,
@@ -358,7 +358,7 @@ function NextGameBlock({
           {game.gameContext || "NBA"}
         </Eyebrow>
         <p
-          className="mt-2 text-[16px] leading-snug"
+          className="mt-2 text-[1rem] leading-snug"
           style={{
             color: "var(--ink)",
             fontFamily: "var(--font-display)",
@@ -369,14 +369,14 @@ function NextGameBlock({
           vs {opponentName}
         </p>
         <p
-          className="mt-1 text-[13px] leading-snug"
+          className="mt-1 text-[0.8125rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           {detail}
         </p>
         {game.broadcasts[0] ? (
           <p
-            className="mt-2 text-[11px] uppercase"
+            className="mt-2 text-[0.6875rem] uppercase"
             style={{
               fontFamily: "var(--font-mono)",
               fontWeight: 600,
@@ -400,7 +400,7 @@ function NextGameEmpty({ teamName }: { teamName: string }) {
         <div className="h-px flex-1" style={{ background: "var(--line)" }} />
       </div>
       <p
-        className="rounded-[14px] border px-4 py-3 text-[13px]"
+        className="rounded-[14px] border px-4 py-3 text-[0.8125rem]"
         style={{
           background: "var(--paper)",
           borderColor: "var(--line)",
@@ -459,7 +459,7 @@ function CurrentSeriesLink({
       >
         <div className="min-w-0 flex-1">
           <p
-            className="text-[14px] leading-snug"
+            className="text-[0.875rem] leading-snug"
             style={{
               color: "var(--ink)",
               fontWeight: 700,
@@ -470,7 +470,7 @@ function CurrentSeriesLink({
           </p>
           {summary ? (
             <p
-              className="mt-0.5 text-[12px]"
+              className="mt-0.5 text-[0.75rem]"
               style={{ color: "var(--mute-1)", fontWeight: 500 }}
             >
               {hidden ? HIDDEN_CAPTIONS.series : summary}
@@ -555,7 +555,7 @@ function RecentResults({
                       {dayLabel} · {isAway ? "@" : "vs"} {oppCode}
                     </Eyebrow>
                     <p
-                      className="mt-1 text-[13px]"
+                      className="mt-1 text-[0.8125rem]"
                       style={{
                         color: "var(--ink)",
                         fontWeight: 700,
@@ -566,7 +566,7 @@ function RecentResults({
                     </p>
                   </div>
                   <span
-                    className="tabular-nums shrink-0 text-[14px]"
+                    className="tabular-nums shrink-0 text-[0.875rem]"
                     style={{
                       color: "var(--ink)",
                       fontFamily: "var(--font-mono)",
@@ -631,7 +631,7 @@ function TeamPresetSection({
             type="button"
             onClick={() => removeFollow("team", teamAbbr)}
             aria-label={`Unfollow ${teamName}`}
-            className="mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.98]"
+            className="mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "transparent",
               color: "var(--ink)",
@@ -647,13 +647,13 @@ function TeamPresetSection({
           style={{ background: "var(--paper)", borderColor: "var(--line)" }}
         >
           <p
-            className="text-[13px]"
+            className="text-[0.8125rem]"
             style={{ color: "var(--ink)", fontWeight: 600 }}
           >
             Get told when {teamName} plays.
           </p>
           <p
-            className="mt-1 text-[12px]"
+            className="mt-1 text-[0.75rem]"
             style={{ color: "var(--mute-1)", fontWeight: 500 }}
           >
             New follows use your default alert level. Change it later
@@ -663,7 +663,7 @@ function TeamPresetSection({
             type="button"
             onClick={() => addFollow("team", teamAbbr)}
             aria-label={`Follow ${teamName}`}
-            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",
@@ -688,13 +688,13 @@ function TeamNotFound({ abbr }: { abbr: string }) {
         Team not in the directory.
       </Display>
       <p
-        className="mt-2 text-[13px]"
+        className="mt-2 text-[0.8125rem]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Try following one from the picker.
       </p>
       <p
-        className="mt-3 text-[11px]"
+        className="mt-3 text-[0.6875rem]"
         style={{
           fontFamily: "var(--font-mono)",
           color: "var(--mute-2)",
@@ -707,7 +707,7 @@ function TeamNotFound({ abbr }: { abbr: string }) {
       <div className="mt-4 flex items-center gap-2">
         <Link
           href="/following/team"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
           style={{
             background: "transparent",
             color: "var(--ink)",
@@ -718,7 +718,7 @@ function TeamNotFound({ abbr }: { abbr: string }) {
         </Link>
         <Link
           href="/app"
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-[0.98]"
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-4 py-2 text-[0.8125rem] font-semibold transition active:scale-[0.98]"
           style={{
             background: "var(--ink)",
             color: "var(--cream)",

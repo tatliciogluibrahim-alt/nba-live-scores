@@ -16,7 +16,7 @@ export function Placeholder({
   return (
     <section className="mx-auto max-w-md px-4 pb-12 pt-2">
       <p
-        className="text-[10px] uppercase"
+        className="text-[0.625rem] uppercase"
         style={{
           fontFamily: "var(--font-mono)",
           letterSpacing: "0.14em",
@@ -37,7 +37,7 @@ export function Placeholder({
         {title}
       </h1>
       <p
-        className="mt-3 text-[14px] leading-[1.5]"
+        className="mt-3 text-[0.875rem] leading-[1.5]"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {body}
@@ -51,7 +51,7 @@ export function Placeholder({
         }}
       >
         <p
-          className="text-[10px] uppercase"
+          className="text-[0.625rem] uppercase"
           style={{
             fontFamily: "var(--font-mono)",
             letterSpacing: "0.12em",
@@ -62,7 +62,7 @@ export function Placeholder({
           Build status
         </p>
         <p
-          className="mt-1 text-[13px]"
+          className="mt-1 text-[0.8125rem]"
           style={{ color: "var(--ink)", fontWeight: 600 }}
         >
           {stage}

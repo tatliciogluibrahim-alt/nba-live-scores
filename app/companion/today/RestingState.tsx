@@ -35,7 +35,7 @@ export function RestingState({ items }: { items: UpNextItem[] }) {
         Quiet for now.
       </Display>
       <p
-        className="mt-3 text-[14px] leading-snug"
+        className="mt-3 text-[0.875rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         Nothing live right now. That&apos;s the point.
@@ -49,7 +49,7 @@ export function RestingState({ items }: { items: UpNextItem[] }) {
             className="mt-4 inline-flex min-h-[40px] items-center gap-1.5 uppercase transition active:opacity-70"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: "0.6875rem",
               fontWeight: 700,
               letterSpacing: "0.12em",
               color: "var(--ink)",

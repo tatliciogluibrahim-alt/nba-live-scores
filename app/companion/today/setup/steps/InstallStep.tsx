@@ -50,13 +50,13 @@ export function InstallStep({
       </div>
 
       <p
-        className="text-[14px] leading-snug"
+        className="text-[0.875rem] leading-snug"
         style={{ color: "var(--ink)", fontWeight: 600 }}
       >
         Add to your home screen for instant access to your sports circle.
       </p>
       <p
-        className="mt-1 text-[12px] leading-snug"
+        className="mt-1 text-[0.75rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
         {platform === "ios"
@@ -70,7 +70,7 @@ export function InstallStep({
             type="button"
             onClick={onAndroidInstall}
             aria-label="Install No Noise Scores"
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3.5 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.97]"
             style={{
               background: "var(--ink)",
               color: "var(--cream)",
@@ -83,7 +83,7 @@ export function InstallStep({
             type="button"
             onClick={() => dismissInstallPrompt()}
             aria-label="Not now"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.97]"
             style={{
               background: "transparent",
               color: "var(--mute-1)",
@@ -103,7 +103,7 @@ export function InstallStep({
               onClick={() => setShowIosSteps((v) => !v)}
               aria-expanded={showIosSteps}
               aria-label="How to add to Home Screen on iPhone"
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full px-3.5 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.97]"
               style={{
                 background: "var(--ink)",
                 color: "var(--cream)",
@@ -116,7 +116,7 @@ export function InstallStep({
               type="button"
               onClick={() => dismissInstallPrompt()}
               aria-label="Not now"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[12px] font-semibold transition active:scale-[0.97]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition active:scale-[0.97]"
               style={{
                 background: "transparent",
                 color: "var(--mute-1)",
@@ -129,7 +129,7 @@ export function InstallStep({
 
           {showIosSteps ? (
             <ol
-              className="mt-3 space-y-1 pl-5 text-[12px] leading-snug"
+              className="mt-3 space-y-1 pl-5 text-[0.75rem] leading-snug"
               style={{
                 color: "var(--mute-1)",
                 fontWeight: 500,

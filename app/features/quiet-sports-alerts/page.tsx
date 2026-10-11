@@ -119,7 +119,7 @@ function H3Inline({ children }: { children: React.ReactNode }) {
       className="mt-8 mb-1 leading-tight"
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 13,
+        fontSize: "0.8125rem",
         fontWeight: 700,
         letterSpacing: "0.06em",
         textTransform: "uppercase",
