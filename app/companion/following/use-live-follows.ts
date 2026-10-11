@@ -1,142 +1,156 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { buildSeriesKey } from "../../nba/lib/series-keys";
 import { wcFeedUrl } from "../dev/preview-mode";
+import { readFeed, FEED_KEYS } from "../hooks/feed-cache";
+import { useVisibilityPoll } from "../hooks/use-visibility-poll";
+import { momentSport } from "../state/moments";
+import type { Follow, Sport } from "../state/types";
 
-// Detect which follows have a live game right now. Returns a Set of
-// follow identifiers (team abbreviation, country code, or series key)
-// that match at least one in-progress game.
+// Which follows have a live game right now. Drives the LIVE NOW section and
+// the breathing "Live" tag on Following's rows.
 //
-// Used by FollowingDashboard to render a calm pulsing dot on the
-// FollowCard — the user knows immediately which of their follows is
-// playing without leaving the Following tab.
+// Persona sweep 2026-10-11: this read only the NBA and Summer Soccer feeds,
+// so a Steelers follow sat under UP NEXT while the Steelers were playing.
+// NFL is read now, and every key is sport-scoped (Path B): "nfl:team:CLE"
+// (Browns) and "nba:team:CLE" (Cavaliers) can never light each other.
 //
-// Detection is best-effort: one fetch on mount, cached for the session.
-// If either API fails we return an empty set and the dot simply doesn't
-// render. No functional impact.
+// Best-effort: a failed feed reads as "nothing live" for that sport, never
+// as an error. Seeded from the shared feed cache (the slate Today or
+// Watching just fetched) so a tab switch paints the right section at once,
+// then refreshed on a slow, visibility-aware poll.
 
-type ApiGame = {
-  status: "live" | "upcoming" | "final";
-  away: { abbreviation: string };
-  home: { abbreviation: string };
+const POLL_MS = 60_000;
+
+/** The slice of a scoreboard game this needs. NBA games also carry their
+ *  playoff context. */
+export type LiveFeedGame = {
+  status: string;
+  away?: { abbreviation?: string };
+  home?: { abbreviation?: string };
+  /** NBA: "" outside a playoff series. */
+  seriesRound?: string;
+  /** NBA: names the Play-In, which has no series round. */
+  gameContext?: string;
 };
 
-type WCGame = {
-  status: "live" | "upcoming" | "final";
-  away: { abbreviation: string };
-  home: { abbreviation: string };
-};
+type LiveKind = "team" | "country" | "series" | "tournament";
 
-type ParticipantFollowKind = "team" | "country" | "series";
-
-export function liveFollowKey(
-  kind: ParticipantFollowKind,
-  id: string
-): string {
-  return `${kind}:${id.trim().toUpperCase()}`;
+function liveKey(sport: Sport, kind: LiveKind, id = ""): string {
+  return `${sport}:${kind}:${id.trim().toUpperCase()}`;
 }
 
-export function useLiveFollows(): Set<string> {
-  const [liveIds, setLiveIds] = useState<Set<string>>(new Set());
+/** NBA follows are NBA Playoffs follows. ESPN's NBA feed also carries
+ *  preseason and regular-season games, which must not light them (the same
+ *  rule the Brief adopted 2026-10-03). */
+function isNBAPlayoffGame(g: LiveFeedGame): boolean {
+  return (g.seriesRound ?? "") !== "" || /play-?in/i.test(g.gameContext ?? "");
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [nbaRes, wcRes] = await Promise.all([
-          fetch("/api/live-scores", { cache: "no-store" }).catch(() => null),
-          fetch(wcFeedUrl(), { cache: "no-store" }).catch(() => null),
-        ]);
+/** Pure: the set of live keys across the three feeds. */
+export function buildLiveFollowKeys(feeds: {
+  nba?: readonly LiveFeedGame[];
+  wc?: readonly LiveFeedGame[];
+  nfl?: readonly LiveFeedGame[];
+}): Set<string> {
+  const ids = new Set<string>();
 
-        const nbaJson = nbaRes?.ok
-          ? ((await nbaRes.json()) as { games?: ApiGame[] })
-          : { games: [] };
-        const wcJson = wcRes?.ok
-          ? ((await wcRes.json()) as { games?: WCGame[] })
-          : { games: [] };
+  for (const g of feeds.nba ?? []) {
+    if (g.status !== "live" || !isNBAPlayoffGame(g)) continue;
+    const away = g.away?.abbreviation;
+    const home = g.home?.abbreviation;
+    if (away) ids.add(liveKey("nba", "team", away));
+    if (home) ids.add(liveKey("nba", "team", home));
+    if (away && home) {
+      ids.add(
+        liveKey("nba", "series", buildSeriesKey(away.toUpperCase(), home.toUpperCase()))
+      );
+    }
+    ids.add(liveKey("nba", "tournament"));
+  }
 
-        const ids = new Set<string>();
+  for (const g of feeds.wc ?? []) {
+    if (g.status !== "live") continue;
+    if (g.away?.abbreviation) ids.add(liveKey("wc", "country", g.away.abbreviation));
+    if (g.home?.abbreviation) ids.add(liveKey("wc", "country", g.home.abbreviation));
+    ids.add(liveKey("wc", "tournament"));
+  }
 
-        // NBA live games → team abbreviations + series key
-        for (const g of nbaJson.games ?? []) {
-          if (g.status !== "live") continue;
-          if (g.away?.abbreviation) {
-            ids.add(liveFollowKey("team", g.away.abbreviation));
-          }
-          if (g.home?.abbreviation) {
-            ids.add(liveFollowKey("team", g.home.abbreviation));
-          }
-          if (g.away?.abbreviation && g.home?.abbreviation) {
-            ids.add(
-              liveFollowKey(
-                "series",
-                buildSeriesKey(g.away.abbreviation, g.home.abbreviation)
-              )
-            );
-          }
-        }
+  for (const g of feeds.nfl ?? []) {
+    if (g.status !== "live") continue;
+    if (g.away?.abbreviation) ids.add(liveKey("nfl", "team", g.away.abbreviation));
+    if (g.home?.abbreviation) ids.add(liveKey("nfl", "team", g.home.abbreviation));
+    ids.add(liveKey("nfl", "tournament"));
+  }
 
-        // WC live games → country codes
-        for (const g of wcJson.games ?? []) {
-          if (g.status !== "live") continue;
-          if (g.away?.abbreviation) {
-            ids.add(liveFollowKey("country", g.away.abbreviation));
-          }
-          if (g.home?.abbreviation) {
-            ids.add(liveFollowKey("country", g.home.abbreviation));
-          }
-        }
+  return ids;
+}
 
-        // Tournament follows: if ANY live game exists, the tournament is live
-        if (ids.size > 0) {
-          // Mark tournament IDs as live. We use prefixes that match the
-          // dispatcher's tournament-follow convention.
-          const hasNBALive = (nbaJson.games ?? []).some(
-            (g) => g.status === "live"
-          );
-          const hasWCLive = (wcJson.games ?? []).some(
-            (g) => g.status === "live"
-          );
-          if (hasNBALive) ids.add("nba-playoffs-live");
-          if (hasWCLive) ids.add("wc-live");
-        }
+/** Does this follow have a live game? The follow's MOMENT decides the
+ *  sport. A whole-competition follow is live while any of its games is. */
+export function isFollowLive(
+  follow: Pick<Follow, "momentId" | "kind" | "id" | "scopeId">,
+  live: ReadonlySet<string>
+): boolean {
+  const sport = momentSport(follow.momentId);
+  if (!sport) return false;
+  if (follow.kind === "tournament") return live.has(liveKey(sport, "tournament"));
+  return live.has(liveKey(sport, follow.kind, follow.scopeId ?? follow.id));
+}
 
-        if (!cancelled) setLiveIds(ids);
-      } catch {
-        // Best-effort. No-op on failure.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+function followedSports(follows: readonly Pick<Follow, "momentId">[]): Sport[] {
+  const out = new Set<Sport>();
+  for (const f of follows) {
+    const sport = momentSport(f.momentId);
+    if (sport) out.add(sport);
+  }
+  return Array.from(out).sort();
+}
+
+function seedFromFeedCache(sports: readonly Sport[]): Set<string> {
+  return buildLiveFollowKeys({
+    nba: sports.includes("nba")
+      ? readFeed<{ games?: LiveFeedGame[] }>(FEED_KEYS.liveScores)?.games
+      : undefined,
+    wc: sports.includes("wc") ? readFeed<LiveFeedGame[]>(FEED_KEYS.worldCup) : undefined,
+    nfl: sports.includes("nfl") ? readFeed<LiveFeedGame[]>(FEED_KEYS.nfl) : undefined,
+  });
+}
+
+async function fetchGames(url: string): Promise<LiveFeedGame[]> {
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { games?: LiveFeedGame[] };
+    return Array.isArray(json.games) ? json.games : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Live keys for the sports these follows cover (only those feeds are
+ *  read). Pass the result to isFollowLive. */
+export function useLiveFollows(
+  follows: readonly Pick<Follow, "momentId">[]
+): Set<string> {
+  const sports = followedSports(follows);
+  const [liveIds, setLiveIds] = useState<Set<string>>(() =>
+    seedFromFeedCache(sports)
+  );
+
+  useVisibilityPoll(
+    async (isCancelled) => {
+      const [nba, wc, nfl] = await Promise.all([
+        sports.includes("nba") ? fetchGames("/api/live-scores") : [],
+        sports.includes("wc") ? fetchGames(wcFeedUrl()) : [],
+        sports.includes("nfl") ? fetchGames("/api/nfl-scores") : [],
+      ]);
+      if (isCancelled()) return;
+      setLiveIds(buildLiveFollowKeys({ nba, wc, nfl }));
+    },
+    () => POLL_MS
+  );
 
   return liveIds;
-}
-
-/** Check if a follow has a live game. Handles each follow kind:
- *  - team: abbreviation is in the live set
- *  - country: country code is in the live set
- *  - series: series key (sorted "AWAY-HOME") is in the live set
- *  - tournament: special "nba-playoffs-live" / "wc-live" markers
- *
- *  Path B note: liveFollowKey is not yet sport-scoped. This hook only
- *  fetches NBA + WC today, so the sole cross-sport risk is an NFL "CLE"
- *  team follow lighting up on a live NBA "CLE" game. When NFL live data is
- *  threaded into useLiveFollows (Phase 22 build step), scope the key by
- *  sport (nba:CLE vs nfl:CLE) and pass the follow's momentSport here. */
-export function isFollowLive(
-  kind: string,
-  id: string,
-  liveIds: Set<string>
-): boolean {
-  if (kind === "team" || kind === "country" || kind === "series") {
-    return liveIds.has(liveFollowKey(kind, id));
-  }
-  if (kind === "tournament") {
-    if (id.startsWith("nba-playoffs")) return liveIds.has("nba-playoffs-live");
-    if (id.startsWith("fifa-world-cup")) return liveIds.has("wc-live");
-  }
-  return false;
 }

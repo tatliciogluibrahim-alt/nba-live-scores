@@ -4,53 +4,65 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Display } from "../atoms/Display";
 import { Eyebrow } from "../atoms/Eyebrow";
-import { useFollows } from "../providers";
+import { useFollows, useNoSpoilers } from "../providers";
 import {
   composeBrief,
+  type BriefNFLGame,
   type BriefPayload,
   type BriefWCGame,
 } from "../../lib/brief/compose-brief";
 import type { Game } from "../../nba/types";
+import { nflBriefSlate, previewIncludesScores } from "./brief-preview-data";
 
 // /brief/preview — renders the user's brief as it would arrive in
 // their inbox, using their current localStorage follows + today's
-// NBA feed. No email is sent.
+// NBA, Summer Soccer and NFL feeds. No email is sent.
 //
 // Used for:
 //   • Design / copy review by the operator.
 //   • A "see what the brief looks like" preview on the subscribe page.
 //   • A self-test path that doesn't need a Resend API key.
 //
-// Same composeBrief() logic as the cron — so what you see here is
-// exactly what the cron would send tomorrow morning.
+// Same composeBrief() logic and the same three feeds as the send-briefs
+// cron, so what you see here is what the cron would send. One difference
+// on purpose: the preview honors this device's No-Spoilers setting and
+// leaves scores out when it is on (or a follow hides spoilers).
 
 export function BriefPreviewClient() {
   const { follows, hydrated } = useFollows();
+  const noSpoilers = useNoSpoilers();
   const [games, setGames] = useState<Game[]>([]);
   const [wcGames, setWcGames] = useState<BriefWCGame[]>([]);
+  const [nflGames, setNflGames] = useState<BriefNFLGame[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // Fetch NBA + Summer Soccer in parallel so the preview matches the
-      // cron (which now folds WC matches into the brief). Either feed
-      // failing just drops that sport's rows; the preview still renders.
+      // Fetch NBA, Summer Soccer and NFL in parallel, the cron's three
+      // feeds. Any feed failing just drops that sport's rows; the preview
+      // still renders. (NFL was missing until 2026-10-11, so an NFL
+      // follower saw an empty Today during their own game.)
       try {
-        const [nbaRes, wcRes] = await Promise.all([
-          fetch("/api/live-scores", { cache: "no-store" }),
-          fetch("/api/world-cup", { cache: "no-store" }),
+        const [nbaRes, wcRes, nflRes] = await Promise.all([
+          fetch("/api/live-scores", { cache: "no-store" }).catch(() => null),
+          fetch("/api/world-cup", { cache: "no-store" }).catch(() => null),
+          fetch("/api/nfl-scores", { cache: "no-store" }).catch(() => null),
         ]);
-        if (nbaRes.ok) {
+        if (nbaRes?.ok) {
           const json = (await nbaRes.json()) as {
             games?: Game[];
             seriesGames?: Game[];
           };
           if (!cancelled) setGames(json.seriesGames ?? json.games ?? []);
         }
-        if (wcRes.ok) {
+        if (wcRes?.ok) {
           const json = (await wcRes.json()) as { games?: BriefWCGame[] };
           if (!cancelled) setWcGames(json.games ?? []);
+        }
+        if (nflRes?.ok) {
+          const slate = nflBriefSlate(await nflRes.json());
+          if (!cancelled) setNflGames(slate);
         }
       } catch {
         // Swallow — loaded still flips so the UI leaves its shell.
@@ -63,13 +75,15 @@ export function BriefPreviewClient() {
     };
   }, []);
 
+  const includeScores = previewIncludesScores(noSpoilers, follows);
+
   const payload = useMemo<BriefPayload | null>(() => {
     if (!hydrated || !loaded) return null;
     return composeBrief({
       subscriber: {
         email: "preview@nonoisescores.app",
         follows,
-        includeScores: true,
+        includeScores,
         unsubscribeToken: "preview",
         // 0 sentinel — preview composer doesn't read createdAt, and
         // strict React lint flags Date.now() inside useMemo as impure.
@@ -77,8 +91,9 @@ export function BriefPreviewClient() {
       },
       nba: games,
       wc: wcGames,
+      nfl: nflGames,
     });
-  }, [hydrated, loaded, follows, games, wcGames]);
+  }, [hydrated, loaded, follows, includeScores, games, wcGames, nflGames]);
 
   return (
     <main className="mx-auto max-w-md px-4 pb-4 pt-1">
@@ -93,6 +108,14 @@ export function BriefPreviewClient() {
         Preview only. This is what your morning brief looks like, built
         from today&apos;s games and your current follows.
       </p>
+      {payload && !includeScores ? (
+        <p
+          className="mt-1 text-[12px] leading-snug"
+          style={{ color: "var(--mute-2)", fontWeight: 500 }}
+        >
+          Scores stay hidden while No-Spoilers is on.
+        </p>
+      ) : null}
 
       {!payload ? (
         <div
