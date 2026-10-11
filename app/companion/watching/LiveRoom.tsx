@@ -14,7 +14,10 @@ import { useIsNative } from "../dev/native-detect";
 import { slotState, MAX_LOCK_SCREEN_SLOTS } from "../system/lock-screen-slots";
 import { computeLiveActivityProgress } from "../../lib/push/live-activity-progress";
 import { withGameOrigin } from "../game/game-origin";
+import { situationView } from "../game/nfl-situation";
+import { SituationText } from "../game/SituationText";
 import { parseScoreLine, trackedStampText } from "./watching-data";
+import { useSinceLastLook } from "./use-last-seen";
 import type { PinnedItem, WatchingPayload } from "./watching-data";
 
 // LiveRoom — the live tracking register.
@@ -29,7 +32,7 @@ import type { PinnedItem, WatchingPayload } from "./watching-data";
 // Watching IS the live surface, so the Live Room takes the ink register at
 // full strength: a solid ink field holding one board row per live pin, each
 // with its own progress rail, a promoted lock-screen slot meter in the label
-// row, and a cream "switch to the closest game" pill. Mirrors
+// row (native), and a cream "switch to the closest game" pill. Mirrors
 // docs/superpowers/design-directions/d-watching.html + d-docking.html.
 //
 // Gates on ANY live pin (≥1) — Watching is the tracking surface, so a live
@@ -38,6 +41,11 @@ import type { PinnedItem, WatchingPayload } from "./watching-data";
 // WatchingDashboard. Rendered in both the mobile and desktop branches (D4b);
 // the wrapper bleeds edge-to-edge with -mx-4 on mobile and md:-mx-[18px] on
 // desktop, like the Today ALSO LIVE band.
+//
+// Persona sweep (2026-10-11): the live count showed twice on the web ("3
+// GAMES LIVE" in the pagehead and "3 LIVE" here), so the room keeps only the
+// native lock-screen slot meter. The ◉ row mark means a lock-screen slot,
+// which only exists in the native app; the web shows plain ordinals.
 
 export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
   const noSpoilers = useNoSpoilers();
@@ -50,11 +58,9 @@ export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
   // LiveActivitySync poll grants lock-screen slots in.
   const liveIds = liveItems.map((i) => i.id);
   const used = slotState(liveIds, liveIds[0] ?? "").used;
-  // Native shows the promoted lock-screen slot meter; web has no lock screen,
-  // so it shows a plain live count instead.
-  const meter = native
-    ? `◉ ${used} of ${MAX_LOCK_SCREEN_SLOTS} lock screen slots`
-    : `${liveItems.length} live`;
+  // Native shows the promoted lock-screen slot meter. The web has no lock
+  // screen, and the pagehead above already counts the live games.
+  const meter = native ? `◉ ${used} of ${MAX_LOCK_SCREEN_SLOTS} lock screen slots` : null;
 
   // Only surface the closest-game pill when one live game is meaningfully
   // tighter (single-digit margin) — a "no ambiguity, no nag" gate.
@@ -96,7 +102,7 @@ export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
           padding: "16px 18px 18px",
         }}
       >
-        {/* Label row: LIVE ROOM + promoted meter */}
+        {/* Label row: LIVE ROOM + the native lock-screen slot meter */}
         <div
           className="mb-1 flex items-baseline justify-between uppercase"
           style={{
@@ -115,13 +121,21 @@ export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
             />
             Live room
           </span>
-          <span className="tabular-nums lining-nums" style={{ color: "var(--cream-on-ink)" }}>
-            {meter}
-          </span>
+          {meter ? (
+            <span className="tabular-nums lining-nums" style={{ color: "var(--cream-on-ink)" }}>
+              {meter}
+            </span>
+          ) : null}
         </div>
 
         {liveItems.map((item, i) => (
-          <LiveRoomRow key={item.id} item={item} idx={i} liveIds={liveIds} />
+          <LiveRoomRow
+            key={item.id}
+            item={item}
+            idx={i}
+            liveIds={liveIds}
+            native={native}
+          />
         ))}
 
         {showClosest && payload.closestLive ? (
@@ -136,14 +150,21 @@ export function LiveRoomField({ payload }: { payload: WatchingPayload }) {
 // Spoiler-wrapped exactly like Today's ALSO LIVE band (global toggle OR a
 // per-follow hide frosts it; one tap reveals just this game, session-scoped),
 // so the ink chrome shows WHAT is live without leaking WHO's ahead.
+//
+// Under the row, two quiet lines when they have something to say: the NFL
+// situation ("IND ball · 1st & Goal at PIT 3") and, on return, what the
+// score was at your last look ("Was 16–17", the changed score tinted). Both
+// are absent for a game hidden by No-Spoilers.
 function LiveRoomRow({
   item,
   idx,
   liveIds,
+  native,
 }: {
   item: PinnedItem;
   idx: number;
   liveIds: string[];
+  native: boolean;
 }) {
   const globalNoSpoilers = useNoSpoilers();
   const followHidden = useFollowHidesGame(
@@ -155,13 +176,16 @@ function LiveRoomRow({
   const { isRevealed } = useReveal();
   const resultHidden = hidden && !isRevealed(item.id);
 
-  // ◉ marks the first MAX_LOCK_SCREEN_SLOTS live pins (the lock-screen slot
-  // holders); any overflow live pin falls back to its running ordinal.
-  const holds = slotState(liveIds, item.id).holds;
+  // ◉ marks a lock-screen slot holder (the first MAX_LOCK_SCREEN_SLOTS live
+  // pins), native only. The web, and any overflow live pin, use the ordinal.
+  const holds = native && slotState(liveIds, item.id).holds;
   const mark = holds ? "◉" : String(idx + 1).padStart(2, "0");
 
   const [awayScore, homeScore] = parseScoreLine(item.scoreLine);
   const score = `${awayScore ?? 0}–${homeScore ?? 0}`;
+
+  const situation = item.source === "nfl" ? situationView(item.situation, resultHidden) : null;
+  const { since, ref } = useSinceLastLook(item.id, awayScore, homeScore, resultHidden);
 
   const sport = item.source;
   const accent =
@@ -179,6 +203,7 @@ function LiveRoomRow({
   return (
     <GameSpoilerScope gameId={item.id} hidden={hidden}>
       <div
+        ref={ref}
         className="relative block"
         style={{
           borderTop: idx === 0 ? "none" : "1px solid var(--line-on-ink)",
@@ -209,6 +234,8 @@ function LiveRoomRow({
               fontSize: 21,
               fontWeight: 800,
               letterSpacing: "0.01em",
+              // The changed score, tinted until it has been seen.
+              ...(since.changed ? { color: "var(--live-text)" } : {}),
               ...(resultHidden ? { position: "relative", zIndex: 1 } : {}),
             }}
           >
@@ -221,6 +248,33 @@ function LiveRoomRow({
             →
           </span>
         </div>
+
+        {situation || since.changed ? (
+          <div
+            className="flex items-baseline gap-3"
+            style={{
+              marginTop: 6,
+              paddingLeft: 28,
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.02em",
+              lineHeight: 1.4,
+              color: "var(--cream-on-ink-dim)",
+            }}
+          >
+            {situation ? (
+              <span className="min-w-0 flex-1">
+                <SituationText view={situation} markColor="var(--cream-on-ink)" />
+              </span>
+            ) : (
+              <span className="flex-1" />
+            )}
+            {since.changed ? (
+              <span className="shrink-0 tabular-nums lining-nums">{since.was}</span>
+            ) : null}
+          </div>
+        ) : null}
 
         <div
           className="relative"

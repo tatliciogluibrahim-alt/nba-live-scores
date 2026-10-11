@@ -4,7 +4,7 @@
 import type { StatusTone } from "../atoms/StatusPill";
 import type { PinnedGame } from "../state/types";
 import type { NBAGame, WCGameLite } from "../today/today-data";
-import type { NFLGameLite } from "../../api/nfl-scores/normalize";
+import type { NFLGameLite, NFLSituation } from "../../api/nfl-scores/normalize";
 import { withGameOrigin } from "../game/game-origin";
 
 export type PinnedSource = "nba" | "wc" | "nfl";
@@ -38,6 +38,10 @@ export type PinnedItem = {
   spoilerKind: "live" | "final" | "series";
 
   href: string;                // "/game/{id}"
+
+  /** NFL only, live only: the down and distance for the row's situation
+   *  line. The row drops it for a game hidden by No-Spoilers. */
+  situation?: NFLSituation;
 };
 
 export type StalePin = {
@@ -228,6 +232,7 @@ function nflToPinned(g: NFLGameLite, pinnedAt: number): PinnedItem {
     spoilerSubject: `${g.away.abbreviation} vs ${g.home.abbreviation}`,
     spoilerKind: g.status === "final" ? "final" : "live",
     href: withGameOrigin(`/game/${g.id}`, "watching"),
+    ...(g.status === "live" && g.situation ? { situation: g.situation } : {}),
   };
 }
 

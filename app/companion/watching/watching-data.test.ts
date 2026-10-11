@@ -121,6 +121,37 @@ describe("buildWatchingPayload NFL pins (Phase 22)", () => {
     });
     expect(items[0].contextEyebrow).toBe("NFL · Preseason Wk 2");
   });
+
+  it("a live NFL pin carries the down and distance for its row (persona sweep 2026-10-11)", () => {
+    const situation = { possession: "IND", downDistance: "1st & Goal at PIT 3", redZone: true };
+    const { items } = buildWatchingPayload({
+      nba: [],
+      wc: [],
+      nfl: [
+        nflGame({
+          status: "live",
+          statusText: "Q3 12:08",
+          period: 3,
+          situation,
+          away: { name: "Colts", abbreviation: "IND", score: 13 },
+          home: { name: "Steelers", abbreviation: "PIT", score: 17 },
+        }),
+      ],
+      pinned: [{ gameId: "nfl1", pinnedAt: 1 }],
+    });
+    expect(items[0].situation).toEqual(situation);
+  });
+
+  it("a break reads as a break on the row stamp", () => {
+    const { items } = buildWatchingPayload({
+      nba: [],
+      wc: [],
+      nfl: [nflGame({ status: "live", statusText: "End of 1st", period: 2 })],
+      pinned: [{ gameId: "nfl1", pinnedAt: 1 }],
+    });
+    expect(trackedStampText(items[0])).toBe("End of 1st");
+    expect(items[0].situation).toBeUndefined();
+  });
 });
 
 describe("buildWatchingMeta (mobile pagehead meta)", () => {

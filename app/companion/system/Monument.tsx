@@ -4,6 +4,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Spoiler } from "../spoiler/Spoiler";
 import { useEffectiveNoSpoilers, useReveal } from "../spoiler/reveal";
+import { SituationText } from "../game/SituationText";
+import type { SituationView } from "../game/nfl-situation";
 import { winnerSide } from "./emphasis";
 import { Rail } from "./Rail";
 import type { RegisterRung } from "./register";
@@ -20,7 +22,15 @@ import type { RegisterRung } from "./register";
 // Numerals: 100px / wght 800 / lh .88 / ls -.04em (d-mix), dropping to 84px
 // when either score reaches three digits so a 128–124 pair fits at 390px.
 // Second scorerow tucks up 6px (d-docking UX-M8) so the pair reads as one
-// unit.
+// unit. Hidden by No-Spoilers, the rows hold placeholder chips, which are
+// taller than the numerals (padding + border): the tuck made the two chips
+// overlap (persona sweep, 2026-10-11), so a hidden pair sits a small gap
+// apart instead.
+//
+// Situation (NFL, live): one quiet line under the scores, "PIT ball · 1st &
+// Goal at IND 1", with a small RED ZONE mark. The caller passes it only for
+// a game that is shown (situationView is null when hidden), so a hidden
+// game has no possession or yard line in the DOM.
 //
 // Emphasis: at final, winnerSide (spec §2) inks the winner and mutes the
 // loser; live shows the Game Pulse leader (ink = ahead / mute = behind). On
@@ -49,6 +59,7 @@ export function Monument({
   homeScore,
   kicker,
   deck,
+  situation,
   agateLine,
   progress,
   sport,
@@ -64,6 +75,8 @@ export function Monument({
   homeScore: number | null;
   kicker: ReactNode;
   deck?: string;
+  /** NFL live situation line. Null/absent for a hidden game. */
+  situation?: SituationView | null;
   agateLine?: string;
   progress: number;
   sport: "nba" | "wc" | "nfl";
@@ -190,12 +203,27 @@ export function Monument({
         spoilerSubject={spoilerSubject}
         raiseStyle={raiseWhenHidden}
         interactive={!deliberate}
+        tuck={!(hiddenNow && hasScores)}
       />
+
+      {situation ? (
+        <p
+          style={{
+            marginTop: 14,
+            fontSize: 14,
+            lineHeight: 1.5,
+            fontWeight: isPeak ? 600 : 500,
+            color: deckColor,
+          }}
+        >
+          <SituationText view={situation} markColor={teamColor} />
+        </p>
+      ) : null}
 
       {deck && (
         <p
           style={{
-            marginTop: 14,
+            marginTop: situation ? 2 : 14,
             fontSize: 14,
             lineHeight: 1.5,
             fontWeight: isPeak ? 600 : 500,
@@ -274,6 +302,7 @@ function ScoreRow({
   spoilerSubject,
   raiseStyle,
   interactive = true,
+  tuck = true,
 }: {
   first?: boolean;
   name: string;
@@ -285,11 +314,15 @@ function ScoreRow({
   spoilerSubject?: string;
   raiseStyle?: { position: "relative"; zIndex: number };
   interactive?: boolean;
+  /** Tuck the second row up 6px under the first (the numerals' pairing).
+   *  Off while hidden: the placeholder chips are taller than the digits,
+   *  so a tucked pair overlapped. */
+  tuck?: boolean;
 }) {
   return (
     <div
       className="flex items-center justify-between"
-      style={{ marginTop: first ? 0 : -6 }}
+      style={{ marginTop: first ? 0 : tuck ? -6 : 6 }}
     >
       <span
         className="min-w-0 flex-1 truncate pr-3"

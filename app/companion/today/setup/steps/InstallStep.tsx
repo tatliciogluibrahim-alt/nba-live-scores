@@ -43,17 +43,10 @@ export function InstallStep({
       }}
       aria-label="Install for game alerts"
     >
+      {/* One dismissal: "Not now" below. A second "Hide" link here did the
+          same thing (persona sweep, 2026-10-11). */}
       <div className="mb-2 flex items-center justify-between gap-3">
         <Eyebrow>Install</Eyebrow>
-        <button
-          type="button"
-          onClick={() => dismissInstallPrompt()}
-          aria-label="Dismiss install prompt"
-          className="text-[11px] underline underline-offset-4 decoration-dotted"
-          style={{ color: "var(--mute-1)", fontWeight: 500 }}
-        >
-          Hide
-        </button>
       </div>
 
       <p

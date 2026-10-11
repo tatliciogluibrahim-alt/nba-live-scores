@@ -14,6 +14,9 @@ import { TrackControl } from "./TrackControl";
 import { InkField } from "../system/InkField";
 import { PeriodScoreTable } from "./PeriodScoreTable";
 import { useNFLDetail } from "./use-nfl-detail";
+import { nflHeroScore } from "./nfl-hero-score";
+import { situationView } from "./nfl-situation";
+import { formatLeaderLine } from "./nfl-leader-line";
 import type { NFLScoringPlayLite } from "../../api/nfl-game-detail/normalize";
 
 // NFL game detail — the System D read (Phase 22). Monument lead, then the
@@ -84,6 +87,30 @@ export function NFLGameDetail({
   // Newest-first: the live read leads with the most recent score, the same
   // order the WC match-events field uses.
   const scoringPlays = [...(detail?.scoringPlays ?? [])].reverse();
+
+  // The hero never trails the SCORING list (persona sweep 2026-10-11): the
+  // scoreboard comes through a 30s cache, the summary fresh, so right after
+  // a score the list ran ahead. Take whichever is newer in game time. The
+  // numbers still render through the Monument's Spoiler, so a hidden game
+  // shows placeholders either way.
+  const hero = nflHeroScore(
+    {
+      status,
+      period: game.period,
+      clock: game.clock,
+      away: game.away.score,
+      home: game.home.score,
+    },
+    detail?.scoringPlays ?? []
+  );
+
+  // The live situation line ("PIT ball · 1st & Goal at IND 1"), only for a
+  // game that is shown: nothing at all, not even possession, when hidden.
+  // It comes from the scoreboard, so it waits while the hero runs on a newer
+  // scoring play (a down and distance from before a touchdown, beside the
+  // touchdown's score, reads wrong). The scoreboard catches up within ~30s.
+  const situation =
+    isLive && hero.from === "scoreboard" ? situationView(game.situation, hidden) : null;
   const leaders = detail?.leaders ?? [];
   const periodScores = detail?.periodScores ?? { away: [], home: [] };
   const hasPeriods =
@@ -150,11 +177,11 @@ export function NFLGameDetail({
         stage: weekTail(game),
         sport: "nfl",
         awayCode: game.away.abbreviation,
-        awayScore: game.away.score,
+        awayScore: hero.away,
         homeCode: game.home.abbreviation,
         awayName: game.away.name,
         homeName: game.home.name,
-        homeScore: game.home.score,
+        homeScore: hero.home,
         statusLine: game.statusText || "",
         subline: weekTail(game),
         accentHex: NFL_ACCENT_HEX,
@@ -177,10 +204,11 @@ export function NFLGameDetail({
             status={status}
             awayName={game.away.name}
             homeName={game.home.name}
-            awayScore={isUpcoming ? null : game.away.score}
-            homeScore={isUpcoming ? null : game.home.score}
+            awayScore={isUpcoming ? null : hero.away}
+            homeScore={isUpcoming ? null : hero.home}
             progress={progress}
             kicker={monumentKicker}
+            situation={situation}
             gameId={game.id}
             spoilerSubject={subject}
           />
@@ -265,7 +293,11 @@ export function NFLGameDetail({
                       </span>
                     </span>
                   }
-                  note={leader.tdNote ? `${leader.line} · ${leader.tdNote}` : leader.line}
+                  note={
+                    leader.tdNote
+                      ? `${formatLeaderLine(leader.line)} · ${leader.tdNote}`
+                      : formatLeaderLine(leader.line)
+                  }
                 />
               ))}
             </section>

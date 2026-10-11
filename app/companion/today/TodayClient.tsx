@@ -36,6 +36,8 @@ import { CalmCard } from "./sections/calm-card";
 import { CalmEndCard } from "./sections/calm-end-card";
 import { RelianceCard } from "./sections/reliance-card";
 import { KnockoutMomentCard } from "./sections/knockout-moment-card";
+import { LiveElsewhere } from "./sections/live-elsewhere";
+import { liveElsewhereLine, mastheadLiveTarget } from "./live-links";
 
 // Today composition. One screen, three states layered on the same shape:
 //   1. North Star — live hero + follows + up next + finals + reminder
@@ -85,6 +87,16 @@ export function TodayClient() {
   // retired DesktopScoreboard grid used to.
   const scoreboard = hydrated ? payload.scoreboard : [];
   const liveCount = scoreboard.filter((t) => t.status === "live").length;
+  // Where "N LIVE →" goes (persona sweep 2026-10-11: it opened an empty
+  // Watching): the live game when there's one, Watching only when it holds
+  // every live game, otherwise Schedule.
+  const liveTarget = mastheadLiveTarget(scoreboard);
+  // No follows while games are on: one calm line with the real count in
+  // place of "Nothing demanding your attention right now."
+  const liveElsewhere =
+    hydrated && followsHydrated && follows.length === 0
+      ? liveElsewhereLine(payload.feedLive)
+      : null;
 
   // ── System D agate-slate index continuation (Task 8, all widths in D4b) ──
   // The lead Monument is 01 and the ALSO LIVE band carries 02..0N; the slate
@@ -158,10 +170,17 @@ export function TodayClient() {
   });
   const [latchedVisitAsk, setLatchedVisitAsk] =
     useState<TodayVisitAsk | null>(null);
+  // Hold every ask (install, alerts, recovery, first-follow education, the
+  // Brief) while a followed or tracked game is live: the score comes first,
+  // and the cards stacked under it mid-game (persona sweep 2026-10-11).
+  // Nothing latches until the slate has loaded, so an ask can't claim the
+  // visit in the moment before a live game appears. A held ask comes back
+  // when the game ends.
+  const holdAsks = hydrated && liveCount > 0;
   const visitAsk =
     latchedVisitAsk ??
     resolveTodayVisitAsk(
-      setup.resolved,
+      setup.resolved && hydrated && !holdAsks,
       setup.step,
       firstFollowEducationDue
     );
@@ -176,9 +195,10 @@ export function TodayClient() {
   }, [latchedVisitAsk, visitAsk]);
 
   const setupAsk = setup.step ? `setup:${setup.step}` : null;
-  const showCurrentSetupAsk = setupAsk !== null && visitAsk === setupAsk;
-  const showFirstFollowEducation = visitAsk === "firstFollow";
-  const showBriefPrompt = visitAsk === "brief";
+  const showCurrentSetupAsk =
+    !holdAsks && setupAsk !== null && visitAsk === setupAsk;
+  const showFirstFollowEducation = !holdAsks && visitAsk === "firstFollow";
+  const showBriefPrompt = !holdAsks && visitAsk === "brief";
 
   return (
     <PullToRefresh onRefresh={refetch}>
@@ -193,7 +213,12 @@ export function TodayClient() {
       <h1 className="sr-only">Today</h1>
 
       <div className="-mx-4 md:mx-0 mb-5">
-        <Masthead liveCount={liveCount} rightExtra={<NoSpoilersAmbientDot />} />
+        <Masthead
+          liveCount={liveCount}
+          liveHref={liveTarget?.href}
+          liveLabel={liveTarget?.label}
+          rightExtra={<NoSpoilersAmbientDot />}
+        />
       </div>
 
       {/* Setup — top slot. Only the foundational follow step renders here;
@@ -334,8 +359,16 @@ export function TodayClient() {
 
               {/* Quiet-day payoff: when nothing's live, nothing's next,
                   nothing just wrapped — and the reminder isn't already
-                  filling the page. */}
-              {payload.isQuietDay && !payload.reminder ? <CalmCard /> : null}
+                  filling the page. With no follows while games are on, the
+                  calm line says how many are live and points to Schedule
+                  instead of claiming nothing is happening. */}
+              {payload.isQuietDay && !payload.reminder ? (
+                liveElsewhere ? (
+                  <LiveElsewhere text={liveElsewhere.text} href={liveElsewhere.href} />
+                ) : (
+                  <CalmCard />
+                )
+              ) : null}
 
               {/* You follow — mobile only. The de-chipped System D follow line
                   sits at the foot of the slate (per d-mix), just above The

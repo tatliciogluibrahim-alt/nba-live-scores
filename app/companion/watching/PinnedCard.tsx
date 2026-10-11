@@ -11,6 +11,7 @@ import {
 } from "../spoiler/reveal";
 import { usePinned, useNoSpoilers } from "../providers";
 import { parseScoreLine, trackedStampText } from "./watching-data";
+import { useSinceLastLook } from "./use-last-seen";
 import type { PinnedItem, StalePin } from "./watching-data";
 
 // Tracked rows — System D agate (D2 Task 5, all widths in D4b).
@@ -83,20 +84,31 @@ function TrackedAgateInner({
   const hiddenNow = useEffectiveNoSpoilers(item.id);
   const winner = hiddenNow ? null : winnerSide(awayScore, homeScore, item.status);
 
+  // What changed since your last look (persona sweep 2026-10-11): a game
+  // that went final while you were away tints its score and notes what it
+  // was ("Was 7–6") until the row has been on screen a few seconds. Never
+  // for a hidden game.
+  const { since, ref } = useSinceLastLook(item.id, awayScore, homeScore, hiddenNow);
+
   return (
-    <AgateRow
-      idx={idx}
-      main={<TrackedMatchup away={item.awayCode} home={item.homeCode} winner={winner} />}
-      score={
-        <Spoiler gameId={item.id} ariaSubject={item.spoilerSubject}>
-          {`${awayScore ?? 0}–${homeScore ?? 0}`}
-        </Spoiler>
-      }
-      stamp={hideStamp ? undefined : <Stamp text={trackedStampText(item)} variant="faint" />}
-      href={item.href}
-      spoilerGameId={item.id}
-      linkLabel={`Open ${item.spoilerSubject}`}
-    />
+    <div ref={ref}>
+      <AgateRow
+        idx={idx}
+        main={<TrackedMatchup away={item.awayCode} home={item.homeCode} winner={winner} />}
+        note={since.was ?? undefined}
+        score={
+          <span style={since.changed ? { color: "var(--live-text)" } : undefined}>
+            <Spoiler gameId={item.id} ariaSubject={item.spoilerSubject}>
+              {`${awayScore ?? 0}–${homeScore ?? 0}`}
+            </Spoiler>
+          </span>
+        }
+        stamp={hideStamp ? undefined : <Stamp text={trackedStampText(item)} variant="faint" />}
+        href={item.href}
+        spoilerGameId={item.id}
+        linkLabel={`Open ${item.spoilerSubject}`}
+      />
+    </div>
   );
 }
 
