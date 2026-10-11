@@ -18,6 +18,7 @@ import { situationView } from "../game/nfl-situation";
 import { SituationText } from "../game/SituationText";
 import { parseScoreLine, trackedStampText } from "./watching-data";
 import { useSinceLastLook } from "./use-last-seen";
+import { gameAccessibleName } from "../system/spoken";
 import type { PinnedItem, WatchingPayload } from "./watching-data";
 
 // LiveRoom — the live tracking register.
@@ -213,11 +214,23 @@ function LiveRoomRow({
       >
         <Link
           href={item.href}
-          aria-label={`Open ${item.spoilerSubject}, live`}
+          // Scores (never for a hidden game) and the live status in words,
+          // where the old name was only "Open X vs Y, live".
+          aria-label={gameAccessibleName({
+            sport,
+            awayName: item.awayName,
+            homeName: item.homeName,
+            awayScore: resultHidden ? null : awayScore,
+            homeScore: resultHidden ? null : homeScore,
+            state: "live",
+            statusText: trackedStampText(item),
+            hidden: resultHidden,
+            action: `Open ${sport === "wc" ? "match" : "game"} details.`,
+          })}
           className="absolute inset-0 active:opacity-80"
         />
         <div
-          className="flex items-center gap-[10px] tabular-nums lining-nums"
+          className="nns-agate flex items-center gap-[10px] tabular-nums lining-nums"
           style={{ fontFamily: "var(--font-mono)" }}
         >
           <span style={{ fontSize: "0.625rem", color: "var(--cream-on-ink-dim)", minWidth: 18 }}>
@@ -229,6 +242,9 @@ function LiveRoomRow({
           >
             {item.awayCode} · {item.homeCode}
           </span>
+          {/* Score, stamp and arrow move under the matchup together when
+              Larger Text leaves no room for one line (.nns-agate). */}
+          <span className="nns-agate-tail flex shrink-0 items-center gap-[10px]">
           <span
             style={{
               fontSize: "1.3125rem",
@@ -246,6 +262,7 @@ function LiveRoomRow({
           <Stamp text={trackedStampText(item)} variant="onInk" />
           <span aria-hidden style={{ color: "var(--cream-on-ink-dim)" }}>
             →
+          </span>
           </span>
         </div>
 

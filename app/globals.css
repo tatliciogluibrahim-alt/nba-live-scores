@@ -190,6 +190,25 @@ html, body {
   }
 }
 
+/* Larger Text (accessibility pass, 2026-10-11): an agate row whose text
+   has grown past what one line holds moves its tail (note, score, stamp,
+   arrow) under the main text as one right-aligned group, so a matchup
+   never breaks at its dot ("CIN ·" over "PIT"). Measured in the row's own
+   em, so it happens only when the text is large for the row: a 390px
+   screen is about 25em wide at the default size and 17em at 150%. The
+   wrap never fires at default sizes, since the main text shrinks first. */
+.nns-agate {
+  container-type: inline-size;
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+@container (max-width: 19em) {
+  .nns-agate-tail {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+}
+
 /* Courtside C3: the same arena tokens serve two masters — the manual
    whole-app dark toggle (data-theme on <html>) AND the room-scoped
    arena (data-chassis on a subtree). A room flips to the arena while a

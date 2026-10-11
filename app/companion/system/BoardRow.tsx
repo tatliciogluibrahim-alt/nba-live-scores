@@ -44,6 +44,10 @@ export function BoardRow({
         {matchup}
       </span>
 
+      {/* Score, stamp and arrow move under the matchup together when Larger
+          Text leaves no room for one line (.nns-agate in globals.css). */}
+      <span className="nns-agate-tail flex shrink-0 items-center gap-[10px]">
+
       {score != null && score !== "" && (
         <span
           style={{
@@ -65,10 +69,11 @@ export function BoardRow({
           →
         </span>
       )}
+      </span>
     </>
   );
 
-  const cls = "flex items-center gap-[10px] py-[14px] tabular-nums lining-nums";
+  const cls = "nns-agate flex items-center gap-[10px] py-[14px] tabular-nums lining-nums";
   const rowStyle = {
     fontFamily: "var(--font-mono)",
     fontSize: "0.9375rem",

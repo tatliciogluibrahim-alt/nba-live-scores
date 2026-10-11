@@ -41,12 +41,16 @@ export function FollowRow({
         onClick={onToggleExpand}
         aria-expanded={expanded}
         aria-controls={bodyId}
-        className="flex w-full items-center gap-3 text-left transition active:opacity-80"
+        // nns-agate: under Larger Text the LIVE tag and tier stamp move
+        // below the name, which had shrunk to "Pit t…" at 200%.
+        className="nns-agate flex w-full items-center gap-3 text-left transition active:opacity-80"
         style={{ padding: "14px 0" }}
       >
         <span className="min-w-0 flex-1">
+          {/* Two lines before an ellipsis: under Larger Text a name beside
+              its tier stamp read "Pittsburgh Ste…" at 150%. */}
           <span
-            className="block truncate"
+            className="line-clamp-2 break-words"
             style={{
               fontFamily: "var(--font-display)",
               fontSize: "1.0625rem",
@@ -71,6 +75,7 @@ export function FollowRow({
           </span>
         </span>
 
+        <span className="nns-agate-tail flex shrink-0 items-center gap-3">
         {isLive ? (
           // The pulsing dot means live, exclusively (spec §5). --live is
           // the one "right now" accent across D1/D2/D3.
@@ -94,6 +99,7 @@ export function FollowRow({
         ) : null}
 
         <Stamp text={stamp.text} variant={stamp.variant} />
+        </span>
       </button>
 
       {/* Row expansion — the shared FollowCard drawer, animated open via the

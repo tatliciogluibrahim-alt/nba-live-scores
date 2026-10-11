@@ -302,7 +302,9 @@ function NFLGameRow({
 
   const inner = (
     <div
-      className="flex items-baseline justify-between gap-3 py-[11px]"
+      // nns-agate: under Larger Text the score and stamp move below the
+      // matchup instead of clipping it ("SEA at W" at 200%).
+      className="nns-agate flex items-baseline justify-between gap-3 py-[11px]"
       style={{ borderBottom: "1px solid var(--line)" }}
     >
       {/* L3 emphasis: your team's row carries full ink + the identity
@@ -340,7 +342,7 @@ function NFLGameRow({
           {game.home.abbreviation}
         </span>
       </span>
-      <span className="flex shrink-0 items-baseline gap-2">
+      <span className="nns-agate-tail flex shrink-0 items-baseline gap-2">
         {scoreOrNet ? (
           <span
             style={{

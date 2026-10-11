@@ -7,6 +7,7 @@ import { useEffectiveNoSpoilers, useReveal } from "../spoiler/reveal";
 import { SituationText } from "../game/SituationText";
 import type { SituationView } from "../game/nfl-situation";
 import { winnerSide } from "./emphasis";
+import { gameAccessibleName } from "./spoken";
 import { Rail } from "./Rail";
 import type { RegisterRung } from "./register";
 
@@ -65,6 +66,8 @@ export function Monument({
   sport,
   rung,
   status,
+  statusText,
+  deckIsSafe = false,
   href,
   gameId,
   spoilerSubject,
@@ -82,6 +85,13 @@ export function Monument({
   sport: "nba" | "wc" | "nfl";
   rung: RegisterRung;
   status: "live" | "upcoming" | "final";
+  /** The compact status ("Q3 2:09", "End of 1st", "Halftime"). Spoken in
+   *  the card's VoiceOver name, which replaces the visible kicker. */
+  statusText?: string;
+  /** The caller already made the deck safe for a hidden game (safeText,
+   *  neutral period line), so it renders as plain text: no chip frame,
+   *  and VoiceOver reads it instead of "score hidden". */
+  deckIsSafe?: boolean;
   href?: string;
   gameId?: string;
   spoilerSubject?: string;
@@ -167,7 +177,21 @@ export function Monument({
           href={href}
           className={kickerClass}
           style={kickerStyle}
-          aria-label={`${awayName} · ${homeName}. Open ${sport === "wc" ? "match" : "game"} details.`}
+          // One sentence for VoiceOver: scores (never for a hidden game),
+          // the live status in words, the action. The old name dropped the
+          // status and left the scores as loose numbers (accessibility
+          // pass, 2026-10-11).
+          aria-label={gameAccessibleName({
+            sport,
+            awayName,
+            homeName,
+            awayScore,
+            homeScore,
+            state: status,
+            statusText: statusText ?? "",
+            hidden: hiddenNow,
+            action: `Open ${sport === "wc" ? "match" : "game"} details.`,
+          })}
         >
           <span aria-hidden className="absolute inset-0" />
           {kicker}
@@ -181,30 +205,36 @@ export function Monument({
         </p>
       )}
 
-      <ScoreRow
-        first
-        name={awayName}
-        score={awayScore}
-        color={awayColor}
-        teamColor={teamColor}
-        fontSize={scoreFontSize}
-        gameId={gameId}
-        spoilerSubject={spoilerSubject}
-        raiseStyle={raiseWhenHidden}
-        interactive={!deliberate}
-      />
-      <ScoreRow
-        name={homeName}
-        score={homeScore}
-        color={homeColor}
-        teamColor={teamColor}
-        fontSize={scoreFontSize}
-        gameId={gameId}
-        spoilerSubject={spoilerSubject}
-        raiseStyle={raiseWhenHidden}
-        interactive={!deliberate}
-        tuck={!(hiddenNow && hasScores)}
-      />
+      {/* A linked monument speaks as one sentence (the link's name above),
+          so the rows stay out of VoiceOver instead of repeating it as loose
+          numbers. Nothing in them is interactive then: hidden chips are
+          placeholders and "Show score" sits outside. */}
+      <div aria-hidden={href ? true : undefined}>
+        <ScoreRow
+          first
+          name={awayName}
+          score={awayScore}
+          color={awayColor}
+          teamColor={teamColor}
+          fontSize={scoreFontSize}
+          gameId={gameId}
+          spoilerSubject={spoilerSubject}
+          raiseStyle={raiseWhenHidden}
+          interactive={!deliberate}
+        />
+        <ScoreRow
+          name={homeName}
+          score={homeScore}
+          color={homeColor}
+          teamColor={teamColor}
+          fontSize={scoreFontSize}
+          gameId={gameId}
+          spoilerSubject={spoilerSubject}
+          raiseStyle={raiseWhenHidden}
+          interactive={!deliberate}
+          tuck={!(hiddenNow && hasScores)}
+        />
+      </div>
 
       {situation ? (
         <p
@@ -231,7 +261,7 @@ export function Monument({
             ...raiseWhenHidden,
           }}
         >
-          {gameId ? (
+          {gameId && !deckIsSafe ? (
             <Spoiler ariaSubject={spoilerSubject} gameId={gameId} interactive={!deliberate}>
               {deck}
             </Spoiler>
@@ -328,7 +358,9 @@ function ScoreRow({
         className="min-w-0 flex-1 truncate pr-3"
         style={{
           fontFamily: "var(--font-display)",
-          fontSize: "1.4375rem",
+          // Grows with Larger Text up to 28px, where a long name
+          // ("Commanders") still fits beside the numerals at 390px.
+          fontSize: "min(1.4375rem, 28px)",
           fontWeight: 700,
           letterSpacing: 0,
           color: teamColor,

@@ -74,6 +74,11 @@ export function AgateRow({
         {main}
       </span>
 
+      {/* The tail (note, score, stamp, arrow) moves under the main text as
+          one right-aligned group when Larger Text makes the row too narrow
+          for one line (.nns-agate in globals.css), so "CIN · PIT" never
+          breaks at its dot. */}
+      <span className="nns-agate-tail flex shrink-0 items-center gap-[10px]">
       {note && (
         <span style={{ color: "var(--mute-1)", fontWeight: 500, fontSize: "0.78125rem" }}>{note}</span>
       )}
@@ -102,10 +107,11 @@ export function AgateRow({
           →
         </span>
       )}
+      </span>
     </>
   );
 
-  const cls = "flex items-center gap-[10px] py-[13px]";
+  const cls = "nns-agate flex items-center gap-[10px] py-[13px]";
   const rowStyle = { fontSize: "0.875rem", borderBottom: "1px solid var(--line)" };
 
   if (href) {

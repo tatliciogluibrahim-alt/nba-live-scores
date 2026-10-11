@@ -297,9 +297,14 @@ export function FrontPageLead({
                     style={
                       // On the peak field the kicker is already full
                       // cream (contrast law) — no accent-on-accent.
+                      // NFL takes the text-grade blue: --nfl as text read
+                      // 4.42:1 in the arena (accessibility pass).
                       rung === "peak"
                         ? undefined
-                        : { color: accent, fontWeight: 700 }
+                        : {
+                            color: sport === "nfl" ? "var(--nfl-text)" : accent,
+                            fontWeight: 700,
+                          }
                     }
                   >
                     Live · {primeMinutes(game.statusLine)}
@@ -311,6 +316,10 @@ export function FrontPageLead({
               </>
             }
             deck={safeDeck}
+            // safeText already cleared the deck for a hidden game, so it
+            // reads plainly (and to VoiceOver) instead of in a chip.
+            deckIsSafe
+            statusText={game.statusLine}
             situation={live?.situation ?? null}
             href={deck.href}
             gameId={game.gameId}

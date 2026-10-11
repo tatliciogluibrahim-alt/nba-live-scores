@@ -108,7 +108,7 @@ export function Masthead({
         {liveCount > 0 && (
           <Link
             href={liveHref}
-            className="no-noise-reveal-focus inline-flex shrink-0 items-center gap-1 tabular-nums transition active:scale-[0.97]"
+            className="no-noise-reveal-focus -my-[14px] -mr-[8px] inline-flex min-h-[44px] shrink-0 items-center gap-1 pl-[6px] pr-[8px] tabular-nums transition active:scale-[0.97]"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,

@@ -18,6 +18,7 @@ import { nflHeroScore } from "./nfl-hero-score";
 import { situationView } from "./nfl-situation";
 import { formatLeaderLine } from "./nfl-leader-line";
 import type { NFLScoringPlayLite } from "../../api/nfl-game-detail/normalize";
+import { scoringPlayLabel } from "../system/spoken";
 
 // NFL game detail — the System D read (Phase 22). Monument lead, then the
 // score story: SCORING (the ink field, football's answer to soccer's match
@@ -159,7 +160,8 @@ export function NFLGameDetail({
         // (seen live 2026-08-29, DET@IND) — the muted tail truncates instead.
         <span
           className="shrink-0 whitespace-nowrap"
-          style={isPeak ? undefined : { color: "var(--nfl)", fontWeight: 700 }}
+          // Text-grade blue: --nfl as text measured 4.42:1 in the arena.
+          style={isPeak ? undefined : { color: "var(--nfl-text)", fontWeight: 700 }}
         >
           Live · {game.statusText}
         </span>
@@ -242,7 +244,12 @@ export function NFLGameDetail({
                   </button>
                 ) : (
                   scoringPlays.map((play) => (
-                    <ScoringRow key={play.id} play={play} />
+                    <ScoringRow
+                      key={play.id}
+                      play={play}
+                      away={game.away}
+                      home={game.home}
+                    />
                   ))
                 )}
               </InkField>
@@ -359,10 +366,36 @@ export function NFLGameDetail({
 // One scoring play on the SCORING ink field: mono quarter + clock, the play
 // with its team dimmed after it, and the running score at the right. Mirrors
 // the WC InkEventRow so the two sports' score stories read the same.
-function ScoringRow({ play }: { play: NFLScoringPlayLite }) {
+function ScoringRow({
+  play,
+  away,
+  home,
+}: {
+  play: NFLScoringPlayLite;
+  away: { name: string; abbreviation: string };
+  home: { name: string; abbreviation: string };
+}) {
   const quarter =
     play.period >= 5 ? "OT" : play.period >= 1 ? `Q${play.period}` : "";
   const stamp = [quarter, play.clock].filter(Boolean).join(" ");
+  // VoiceOver reads one sentence that names the scoring team and both
+  // running scores, where the row's cells read as "0–7" with no team
+  // (accessibility pass, 2026-10-11). The visible cells stay out of it.
+  const teamName =
+    play.teamCode === away.abbreviation
+      ? away.name
+      : play.teamCode === home.abbreviation
+        ? home.name
+        : null;
+  const spoken = scoringPlayLabel({
+    when: stamp,
+    text: play.text,
+    teamName,
+    awayName: away.name,
+    homeName: home.name,
+    awayScore: play.awayScore,
+    homeScore: play.homeScore,
+  });
   return (
     // Items align to the TOP, not the center: a pass-TD line ("Erik Ezukanma
     // 6 Yd pass from Cooper Rush") is longer than any soccer scorer name and
@@ -372,7 +405,9 @@ function ScoringRow({ play }: { play: NFLScoringPlayLite }) {
       className="flex items-start gap-3 tabular-nums lining-nums"
       style={{ padding: "13px 0" }}
     >
+      <span className="sr-only">{spoken}</span>
       <span
+        aria-hidden
         className="shrink-0"
         style={{
           fontFamily: "var(--font-mono)",
@@ -386,6 +421,7 @@ function ScoringRow({ play }: { play: NFLScoringPlayLite }) {
         {stamp}
       </span>
       <span
+        aria-hidden
         className="min-w-0 flex-1"
         style={{
           fontSize: "0.875rem",
@@ -409,6 +445,7 @@ function ScoringRow({ play }: { play: NFLScoringPlayLite }) {
         ) : null}
       </span>
       <span
+        aria-hidden
         className="shrink-0"
         style={{
           fontFamily: "var(--font-mono)",
