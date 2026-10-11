@@ -103,7 +103,7 @@ export function FollowRow({
         className="grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none"
         style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
       >
-        <div className="overflow-hidden">
+        <div className="overflow-hidden" inert={!expanded}>
           <div id={bodyId} className="pb-4 pt-1">
             <FollowDrawerBody follow={follow} name={name} wrapped={wrapped} />
           </div>

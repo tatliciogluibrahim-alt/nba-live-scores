@@ -39,14 +39,16 @@ export function NoSpoilersProCard() {
           className="text-[14px] leading-snug"
           style={{ color: "var(--ink)", fontWeight: 700 }}
         >
-          Coming later.
+          Part of a paid tier, later.
         </p>
         <ul
           className="mt-2 space-y-1 text-[13px] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
           <li>• Alerts on every follow (free covers your first {alertSlotCap}).</li>
-          <li>• Selective No-Spoilers, per follow.</li>
+          {/* Live for everyone during the beta; it was listed as "coming
+              later" while it already worked (persona sweep, 2026-10-11). */}
+          <li>• Selective No-Spoilers, per follow. Free during the beta.</li>
           <li>• No ads, either way.</li>
         </ul>
       </div>

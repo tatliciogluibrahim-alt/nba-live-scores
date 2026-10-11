@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
-import { FEED_KEYS, readFeed, writeFeed } from "../hooks/feed-cache";
+import { FEED_KEYS, readSeedFeeds, writeFeed } from "../hooks/feed-cache";
 import type { Game } from "../../nba/types";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
@@ -79,16 +79,20 @@ async function fetchNFL(): Promise<NFLGameLite[]> {
       seasonType?: number;
     };
     const games = json.games ?? [];
-    if (games.some((g) => g.status !== "final")) return games;
+    const done = (list: NFLGameLite[]) => {
+      writeFeed(FEED_KEYS.nfl, list);
+      return list;
+    };
+    if (games.some((g) => g.status !== "final")) return done(games);
     const next = nextNFLWeek(json.seasonType ?? 0, json.week ?? 0);
-    if (!next) return games;
+    if (!next) return done(games);
     const res2 = await fetch(
       `/api/nfl-scores?week=${next.week}&seasontype=${next.seasonType}`,
       { cache: "no-store" }
     );
-    if (!res2.ok) return games;
+    if (!res2.ok) return done(games);
     const json2 = (await res2.json()) as { games?: NFLGameLite[] };
-    return [...games, ...(json2.games ?? [])];
+    return done([...games, ...(json2.games ?? [])]);
   } catch {
     return [];
   }
@@ -125,15 +129,21 @@ export function useWatchingData() {
   const { pinned, hydrated: pinnedHydrated } = usePinned();
   // Seed from the shared feed cache so a tab switch paints the last-known
   // slate instantly (the poll refreshes within its interval).
+  // Seeds only with all three feeds cached (readSeedFeeds), so a pin is
+  // never judged against a feed that hasn't loaded yet.
   const [data, setData] = useState<Fetched>(() => {
-    const ls = readFeed<{ games: NBAGame[]; recent: NBAGame[] }>(
-      FEED_KEYS.liveScores
-    );
-    const wc = readFeed<WCGameLite[]>(FEED_KEYS.worldCup);
-    // NFL isn't cached in the shared feed (Today's cache is nba+wc); it
-    // loads on the first poll. Seed empty so the seed shape stays cheap.
-    if (!ls && !wc) return { nba: [], wc: [], nfl: [], updatedAt: null };
-    return { nba: ls?.games ?? [], wc: wc ?? [], nfl: [], updatedAt: new Date() };
+    const seed = readSeedFeeds<
+      { games: NBAGame[]; recent: NBAGame[] },
+      WCGameLite[],
+      NFLGameLite[]
+    >();
+    if (!seed) return { nba: [], wc: [], nfl: [], updatedAt: null };
+    return {
+      nba: seed.liveScores.games,
+      wc: seed.worldCup,
+      nfl: seed.nfl,
+      updatedAt: new Date(),
+    };
   });
   const dataRef = useRef<Fetched>(data);
   // Last-committed feed signature — skip the re-render + updatedAt bump on a

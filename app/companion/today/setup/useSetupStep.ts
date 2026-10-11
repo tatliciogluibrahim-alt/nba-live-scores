@@ -28,7 +28,7 @@ export type UseSetupStepResult = {
   setPermission: (p: SetupPermission) => void;
 };
 
-function detectPlatform(): SetupPlatform {
+export function detectPlatform(): SetupPlatform {
   if (typeof navigator === "undefined") return "unknown";
   const ua = navigator.userAgent;
   if (/iPad|iPhone|iPod/.test(ua)) return "ios";
@@ -36,7 +36,7 @@ function detectPlatform(): SetupPlatform {
   return "desktop";
 }
 
-function detectStandalone(): boolean {
+export function detectStandalone(): boolean {
   if (typeof window === "undefined") return false;
   return (
     window.matchMedia?.("(display-mode: standalone)").matches === true ||
@@ -44,7 +44,7 @@ function detectStandalone(): boolean {
   );
 }
 
-function readPermission(): SetupPermission {
+export function readPermission(): SetupPermission {
   if (typeof window === "undefined") return "default";
   if (!("Notification" in window)) return "unsupported";
   return window.Notification.permission as SetupPermission;

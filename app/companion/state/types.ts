@@ -180,7 +180,7 @@ export const PRESETS: Record<
   // lists. The copy describes what each tier actually delivers now: Quiet is
   // the start, the final, and genuine classics; Companion adds the beats;
   // Full Details is every moment.
-  quiet: { label: "Quiet", detail: "Start, final, and the big moments." },
+  quiet: { label: "Quiet", detail: "Start, final, and the rare big moment." },
   companion: { label: "Companion", detail: "The beats that matter for your team." },
   all: { label: "Full Details", detail: "Every moment, every game." },
 };

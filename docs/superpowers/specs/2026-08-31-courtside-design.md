@@ -93,6 +93,10 @@ legibility".
 Radii: 20 card · 999 pill · 8 chip. Hit targets: 44px everywhere, the
 reveal target is the whole row. Motion: one cross-fade (arena), one
 develop (reveal), one haptic (reveal commit); nothing else animates.
+Amended 2026-10-11 (owner, persona sweep): on a linked card (Today's lead
+Monument) the hidden chips are placeholders and every tap opens the game;
+one explicit "Show score" control reveals in place. The chip-as-reveal
+target holds everywhere else (agate rows, the game page itself).
 Amended 2026-10-01 (owner): on the closed surfaces the score numerals
 roll to their new value when the score changes (SwiftUI numeric text),
 and a reveal there pushes the chip out as the digits come up. The haptic

@@ -38,7 +38,7 @@ export function AlertSlotToggle({
         disabled={!canEnable}
         aria-label={
           canEnable
-            ? `${enabled ? "Disable" : "Enable"} alerts for ${subjectName}`
+            ? `${enabled ? "Turn off" : "Turn on"} alerts for ${subjectName}`
             : `Alert slots are full. Turn one off to enable alerts for ${subjectName}.`
         }
         className="mb-2 inline-flex min-h-[44px] w-full items-center justify-between rounded-[12px] border px-3 py-2 text-left transition active:scale-[0.99]"
@@ -62,7 +62,7 @@ export function AlertSlotToggle({
           className="text-[11px]"
           style={{ color: "var(--mute-1)", fontWeight: 600 }}
         >
-          {enabled ? "Manage" : canEnable ? "Turn on" : "Full"}
+          {enabled ? "Turn off" : canEnable ? "Turn on" : "Full"}
         </span>
       </button>
       {!canEnable ? (

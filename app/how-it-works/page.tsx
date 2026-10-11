@@ -41,7 +41,7 @@ export default function HowItWorksPage() {
       </P>
       <BulletList
         items={[
-          "Quiet. Start and final only.",
+          "Quiet. Start, final, and the rare big moment.",
           "Companion. Start, key breaks, final.",
           "Full Details. Scores, close finishes, comebacks, big runs.",
         ]}

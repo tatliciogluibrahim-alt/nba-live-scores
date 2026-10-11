@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  onboardingAlertAction,
   resolveSetupStep,
   resolveTodayVisitAsk,
   shouldShowBriefPrompt,
@@ -177,5 +178,37 @@ describe("resolveTodayVisitAsk", () => {
 
   it("uses the Brief only when no activation ask remains", () => {
     expect(resolveTodayVisitAsk(true, null, false)).toBe("brief");
+  });
+});
+
+// Onboarding's "Turn on alerts" on the web. Before 2026-10-11 it did nothing
+// outside the native wrapper and still recorded the alerts decision, which
+// switched off Today's own Enable step: a web user tapped it, was never
+// asked, and got no pushes while Following read "Companion alerts on".
+describe("onboardingAlertAction", () => {
+  const web = (
+    platform: "ios" | "android" | "desktop" | "unknown",
+    standalone: boolean,
+    permission: "default" | "granted" | "denied" | "unsupported"
+  ) => onboardingAlertAction({ platform, standalone, permission });
+
+  it("asks wherever the browser can show the prompt", () => {
+    expect(web("desktop", false, "default")).toBe("ask");
+    expect(web("android", false, "default")).toBe("ask");
+    expect(web("ios", true, "default")).toBe("ask");
+  });
+
+  it("subscribes straight away when permission is already granted", () => {
+    expect(web("desktop", false, "granted")).toBe("subscribe");
+  });
+
+  it("leaves the decision open on iPhone before the app is on the home screen", () => {
+    // iOS web push needs the installed app; Today's Install step leads there.
+    expect(web("ios", false, "default")).toBe("later");
+  });
+
+  it("leaves the decision open with no Notification API or after a denial", () => {
+    expect(web("desktop", false, "unsupported")).toBe("later");
+    expect(web("android", false, "denied")).toBe("later");
   });
 });

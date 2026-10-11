@@ -5,11 +5,13 @@
 // re-open it from any state.
 //
 // Visual: mono agate, muted-2, hairline top+bottom, ✕ right-aligned.
-// Copy (exact, locked): "QUIET: start and final. COMPANION: key moments.
+// Copy (exact, locked 2026-10-11 to match the significance engine, which lets
+// a followed team's rare big moment such as overtime break through Quiet):
+// "QUIET: start, final, rare big moments. COMPANION: key moments.
 //   FULL DETAILS: everything."
 
 const LEGEND_COPY =
-  "QUIET: start and final. COMPANION: key moments. FULL DETAILS: everything.";
+  "QUIET: start, final, rare big moments. COMPANION: key moments. FULL DETAILS: everything.";
 
 const MONO_STYLE = {
   fontFamily: "var(--font-mono)",

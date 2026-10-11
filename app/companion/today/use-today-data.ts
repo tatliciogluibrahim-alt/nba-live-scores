@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFollows, usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
-import { FEED_KEYS, readFeed, writeFeed } from "../hooks/feed-cache";
+import { FEED_KEYS, readSeedFeeds, writeFeed } from "../hooks/feed-cache";
 import { localDayKey } from "../hooks/local-day";
 import {
   buildTodayPayload,
@@ -125,19 +125,24 @@ async function fetchNFL(): Promise<{ games: NFLGameLite[] }> {
     if (!res.ok) return { games: [] };
     const json = (await res.json()) as NFLWeekPayload;
     const games = json.games ?? [];
-    if (games.some((g) => g.status !== "final")) return { games };
+    // Shared with Watching's seed (feed-cache): same list either tab fetches.
+    const done = (list: NFLGameLite[]) => {
+      writeFeed(FEED_KEYS.nfl, list);
+      return { games: list };
+    };
+    if (games.some((g) => g.status !== "final")) return done(games);
 
     const next = nextNFLWeek(json.seasonType ?? 0, json.week ?? 0);
-    if (!next) return { games };
+    if (!next) return done(games);
     const res2 = await fetch(
       `/api/nfl-scores?week=${next.week}&seasontype=${next.seasonType}`,
       { cache: "no-store" }
     );
-    if (!res2.ok) return { games };
+    if (!res2.ok) return done(games);
     const json2 = (await res2.json()) as NFLWeekPayload;
     // Keep the wrapped week: Quiet Wrap reads recent finals from the same
     // array, and its own 3-day window decides what still belongs there.
-    return { games: [...games, ...(json2.games ?? [])] };
+    return done([...games, ...(json2.games ?? [])]);
   } catch {
     return { games: [] };
   }
@@ -148,21 +153,24 @@ async function fetchNFL(): Promise<{ games: NFLGameLite[] }> {
 // refreshes within its interval; if nothing's cached (fresh load) we
 // fall back to empty + loading shell as before.
 function seedData(): FetchedData {
-  const ls = readFeed<{ games: NBAGame[]; recent: NBAGame[] }>(
-    FEED_KEYS.liveScores
-  );
-  const wc = readFeed<WCGameLite[]>(FEED_KEYS.worldCup);
-  if (!ls && !wc) {
+  // All three feeds or none (readSeedFeeds): a seed without NFL painted
+  // Today with its NFL lead missing until the next poll.
+  const seed = readSeedFeeds<
+    { games: NBAGame[]; recent: NBAGame[] },
+    WCGameLite[],
+    NFLGameLite[]
+  >();
+  if (!seed) {
     return { nba: [], nbaRecent: [], wc: [], champion: null, nfl: [], updatedAt: null };
   }
   return {
-    nba: ls?.games ?? [],
-    nbaRecent: ls?.recent ?? [],
-    wc: wc ?? [],
+    nba: seed.liveScores.games,
+    nbaRecent: seed.liveScores.recent,
+    wc: seed.worldCup,
     // Champion isn't cached (server-derived); it repopulates on the first
     // poll. Null until then.
     champion: null,
-    nfl: [],
+    nfl: seed.nfl,
     updatedAt: new Date(),
   };
 }

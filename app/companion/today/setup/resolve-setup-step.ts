@@ -78,6 +78,22 @@ export function resolveSetupStep(s: SetupState): SetupStepId | null {
   return null;
 }
 
+/** What onboarding's "Turn on alerts" can do on the web right now.
+ *  "ask" shows the browser prompt, "subscribe" re-creates the subscription
+ *  when permission is already granted, and "later" leaves the alerts
+ *  decision open (iOS before install, no Notification API, or a prior
+ *  denial) so Today's own Install, Enable or Recover step still runs.
+ *  Native onboarding has its own path and never calls this. */
+export function onboardingAlertAction(s: {
+  platform: SetupPlatform;
+  standalone: boolean;
+  permission: SetupPermission;
+}): "ask" | "subscribe" | "later" {
+  if (s.permission === "unsupported" || s.permission === "denied") return "later";
+  if (s.platform === "ios" && !s.standalone) return "later";
+  return s.permission === "granted" ? "subscribe" : "ask";
+}
+
 /** The Daily Brief is a secondary ask. Keep it out of Today until setup has
  *  resolved and there is no setup card competing for the visit. */
 export function shouldShowBriefPrompt(

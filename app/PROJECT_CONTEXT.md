@@ -409,6 +409,19 @@ for byte (Week 2 checked).
    hours. Move the check to a scheduler that keeps time (cron-job.org
    with failure emails, or an uptime monitor) before the playoffs.
 
+6. Sunday persona sweep (2026-10-11, Week 5 1 PM slate, six agents). Top 5
+   in `docs/qa/2026-10-11-sunday-persona-sweep.md`:
+   - Watching flashes "archived" with live Remove buttons (P0, cheap fix).
+   - Alerts don't do what the screen says (web "Turn on alerts" is a
+     no-op, "Manage" turns alerts off, Quiet is described two ways).
+   - The live card goes blank between scores (no down and distance, breaks
+     read "Q2 15:00", the rail labels read as a clock).
+   - A No-Spoilers reveal is one natural tap away on Today.
+   - The front door is stuck in June (stale changelog and beta copy, no
+     NFL page, empty Today for no-follow visitors).
+   No spoiler leaks found anywhere. Items 1, 2 and 4 FIXED the same day
+   (owner call on Quiet: copy follows the engine). Items 3 and 5 open.
+
 **Open decision for the owner:** Full Details is "every moment, every
 game". Measured: about 17 pushes per game for a team follow (max 25),
 up to 289 a week and 59 in one hour for a whole-season follow. The

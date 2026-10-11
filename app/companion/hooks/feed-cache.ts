@@ -28,6 +28,7 @@ const DEFAULT_MAX_AGE_MS = 45_000;
 export const FEED_KEYS = {
   liveScores: "feed:live-scores",
   worldCup: "feed:world-cup",
+  nfl: "feed:nfl-scores",
 } as const;
 
 export function writeFeed<T>(key: string, value: T): void {
@@ -44,4 +45,22 @@ export function readFeed<T>(
   if (!entry) return undefined;
   if (Date.now() - entry.at > maxAgeMs) return undefined;
   return entry.value as T;
+}
+
+/** The three shared feeds for a tab's seed, or nothing. A tab paints from
+ *  the cache only when EVERY feed is there: seeding NBA + Summer Soccer
+ *  while NFL had no entry made Watching show every tracked NFL game as
+ *  "This game isn't in the live feed" (with a Remove button) and dropped
+ *  Today's NFL lead until the next poll (persona sweep, 2026-10-11).
+ *  Missing any one, the hook cold-loads behind its loading shell. */
+export function readSeedFeeds<L = unknown, W = unknown, N = unknown>():
+  | { liveScores: L; worldCup: W; nfl: N }
+  | undefined {
+  const liveScores = readFeed<L>(FEED_KEYS.liveScores);
+  const worldCup = readFeed<W>(FEED_KEYS.worldCup);
+  const nfl = readFeed<N>(FEED_KEYS.nfl);
+  if (liveScores === undefined || worldCup === undefined || nfl === undefined) {
+    return undefined;
+  }
+  return { liveScores, worldCup, nfl };
 }

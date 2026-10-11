@@ -2,6 +2,35 @@
 
 ---
 
+## Fixes from the Sunday persona sweep (2026-10-11)
+
+Six test agents used the app through the Week 5 1 PM slate, each as a
+different kind of fan (docs/qa/2026-10-11-sunday-persona-sweep.md). This
+batch fixes the three findings that broke trust.
+
+- **Watching no longer says your live games are gone.** Coming back to
+  Watching briefly showed every tracked NFL game as "This game isn't in the
+  live feed", each with a Remove button. The tab painted from cached NBA and
+  Summer Soccer data while NFL was never cached. Now NFL is cached too, and
+  a tab only paints from the cache with all three feeds there. Today's NFL
+  lead no longer pops in late either.
+- **Alerts do what the screen says.**
+  - On the web, onboarding's "Turn on alerts" now asks for permission and
+    subscribes, the same way Today does. Before, it asked nothing and still
+    switched off Today's own alerts step.
+  - On iPhone before install, it leaves the choice to the Install step.
+  - "Manage" on a follow is now "Turn off", which is what the tap did.
+  - Quiet reads "Start, final, and the rare big moment" everywhere. That is
+    what the alert engine sends.
+- **No-Spoilers reveals are deliberate.** On Today's lead, the hidden score
+  was the reveal button, so the tap that opens the game spoiled it. Now the
+  whole card opens the game, and a "Show score" control reveals in place.
+  The follow drawer stops reading "Spoilers shown" while No-Spoilers is on
+  for everything. Settings stops calling per-follow No-Spoilers "coming
+  later", since it already works.
+
+---
+
 ## The Brief stops counting preseason games (2026-10-03)
 
 Saturday's Brief went out with a single row, MIA at TOR in the "NBA

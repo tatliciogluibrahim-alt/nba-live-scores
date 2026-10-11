@@ -30,8 +30,9 @@ export default function QuietSportsAlertsPage() {
       </P>
       <H3Inline>Quiet</H3Inline>
       <P>
-        Start and final only. Tipoff or kickoff buzz, then a buzz when
-        the game ends. Two pushes per game, max.
+        Start and final, plus the rare big moment like overtime. A buzz at
+        tipoff or kickoff, a buzz when the game ends, and one more only if
+        the game earns it. Usually two pushes a game.
       </P>
       <H3Inline>Companion</H3Inline>
       <P>

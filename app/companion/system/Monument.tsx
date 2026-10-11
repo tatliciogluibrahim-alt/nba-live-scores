@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Spoiler } from "../spoiler/Spoiler";
-import { useEffectiveNoSpoilers } from "../spoiler/reveal";
+import { useEffectiveNoSpoilers, useReveal } from "../spoiler/reveal";
 import { winnerSide } from "./emphasis";
 import { Rail } from "./Rail";
 import type { RegisterRung } from "./register";
@@ -35,10 +35,12 @@ import type { RegisterRung } from "./register";
 //
 // Navigation contract: the WHOLE monument is the tap target (spec §2 — the
 // kicker chevron is the affordance marker, not the hit area). The kicker
-// <Link> stretches over the section via an absolute overlay. Spoiler reveal
-// buttons must never nest inside an anchor, so while a game is hidden the
-// spoiler-bearing rows are raised above the overlay (reveal tap wins there);
-// once revealed they drop back under it and every tap navigates.
+// <Link> stretches over the section via an absolute overlay. A linked,
+// hidden monument (Today's lead) keeps every tap navigating: its chips are
+// placeholders and one explicit "Show score" control reveals in place. The
+// chips used to be reveal buttons raised above the overlay, so the tap that
+// opens the game spoiled it (persona sweep, 2026-10-11). Without a link
+// (the game page itself) the chips stay reveal buttons.
 
 export function Monument({
   awayName,
@@ -86,6 +88,9 @@ export function Monument({
   // the quiet-wrap precedent for hooks with an optional gameId.
   // See: app/companion/today/sections/quiet-wrap.tsx QuietWrapAgateInner.
   const hiddenNow = useEffectiveNoSpoilers(gameId ?? "");
+  const { reveal } = useReveal();
+  // Linked + hidden: chips are placeholders, "Show score" is the reveal.
+  const deliberate = Boolean(href && gameId && hiddenNow);
 
   // Final winner (spec §2). Live uses the leader pulse instead.
   const win = winnerSide(awayScore, homeScore, status);
@@ -131,11 +136,12 @@ export function Monument({
   } as const;
   const kickerClass = "mb-4 flex items-center gap-2 uppercase";
 
-  // While hidden, spoiler-bearing rows float above the overlay link so the
-  // reveal tap wins on them; revealed, they drop back and taps navigate.
-  const raiseWhenHidden = hiddenNow
-    ? ({ position: "relative", zIndex: 1 } as const)
-    : undefined;
+  // Without a link, hidden spoiler-bearing rows float above any overlay so
+  // the reveal tap wins on them. A linked monument never raises them.
+  const raiseWhenHidden =
+    hiddenNow && !deliberate
+      ? ({ position: "relative", zIndex: 1 } as const)
+      : undefined;
 
   return (
     <section className="relative" style={outerStyle}>
@@ -172,6 +178,7 @@ export function Monument({
         gameId={gameId}
         spoilerSubject={spoilerSubject}
         raiseStyle={raiseWhenHidden}
+        interactive={!deliberate}
       />
       <ScoreRow
         name={homeName}
@@ -182,6 +189,7 @@ export function Monument({
         gameId={gameId}
         spoilerSubject={spoilerSubject}
         raiseStyle={raiseWhenHidden}
+        interactive={!deliberate}
       />
 
       {deck && (
@@ -196,7 +204,7 @@ export function Monument({
           }}
         >
           {gameId ? (
-            <Spoiler ariaSubject={spoilerSubject} gameId={gameId}>
+            <Spoiler ariaSubject={spoilerSubject} gameId={gameId} interactive={!deliberate}>
               {deck}
             </Spoiler>
           ) : (
@@ -219,7 +227,7 @@ export function Monument({
           }}
         >
           {gameId ? (
-            <Spoiler ariaSubject={spoilerSubject} gameId={gameId}>
+            <Spoiler ariaSubject={spoilerSubject} gameId={gameId} interactive={!deliberate}>
               {agateLine}
             </Spoiler>
           ) : (
@@ -227,6 +235,24 @@ export function Monument({
           )}
         </p>
       )}
+
+      {deliberate && gameId ? (
+        <button
+          type="button"
+          onClick={() => reveal(gameId)}
+          aria-label={`Show the score${spoilerSubject ? ` for ${spoilerSubject}` : ""}`}
+          className="no-noise-reveal-focus relative z-[1] mt-2 inline-flex min-h-[44px] items-center uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.14em",
+            color: kickerColor,
+          }}
+        >
+          Show score
+        </button>
+      ) : null}
 
       {(status === "live" || status === "final") && (
         <div style={{ marginTop: 18 }}>
@@ -247,6 +273,7 @@ function ScoreRow({
   gameId,
   spoilerSubject,
   raiseStyle,
+  interactive = true,
 }: {
   first?: boolean;
   name: string;
@@ -257,6 +284,7 @@ function ScoreRow({
   gameId?: string;
   spoilerSubject?: string;
   raiseStyle?: { position: "relative"; zIndex: number };
+  interactive?: boolean;
 }) {
   return (
     <div
@@ -292,7 +320,7 @@ function ScoreRow({
             ...raiseStyle,
           }}
         >
-          <Spoiler ariaSubject={spoilerSubject} gameId={gameId}>
+          <Spoiler ariaSubject={spoilerSubject} gameId={gameId} interactive={interactive}>
             {score}
           </Spoiler>
         </span>

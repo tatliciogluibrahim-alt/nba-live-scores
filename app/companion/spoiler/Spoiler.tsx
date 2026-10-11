@@ -39,12 +39,18 @@ export function Spoiler({
   children,
   ariaSubject,
   gameId,
+  interactive = true,
 }: {
   children: ReactNode;
   /** Subject text used in aria-label, e.g. "Knicks vs Cavaliers". */
   ariaSubject?: string;
   /** When set, reveal is shared across all of this game's surfaces. */
   gameId?: string;
+  /** False renders the hidden chip as a placeholder, not a reveal button.
+   *  For cards that are themselves a link to the game (Today's lead): the
+   *  natural tap there opens the game, and the card offers its own
+   *  explicit "Show score" control (persona sweep, 2026-10-11). */
+  interactive?: boolean;
 }) {
   // Effective hidden state honors the per-follow GameSpoilerScope, not just the
   // global toggle — so selective No-Spoilers (the paid feature) actually hides
@@ -85,6 +91,31 @@ export function Spoiler({
   // and the Monument gets a monumental one. No blur — there is nothing
   // behind the frost to hide. Reduce Transparency needs no special case
   // for the same reason.
+  const chipStyle = {
+    display: "inline-block",
+    padding: "0.05em 0.45em",
+    margin: 0,
+    border: "1.5px solid var(--chip-line)",
+    borderRadius: "0.35em",
+    background: "var(--chip-bg)",
+    font: "inherit",
+    color: "var(--mute-1)",
+    letterSpacing: "0.08em",
+    userSelect: "none",
+    fontVariantNumeric: "tabular-nums",
+  } as const;
+
+  if (!interactive) {
+    return (
+      <span className="tabular-nums" style={chipStyle}>
+        <span aria-hidden>{redactScore(children)}</span>
+        <span className="sr-only">
+          {ariaSubject ? `${ariaSubject} score hidden by No-Spoilers.` : "Score hidden by No-Spoilers."}
+        </span>
+      </span>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -102,20 +133,7 @@ export function Spoiler({
       }}
       aria-label={label}
       className="no-noise-reveal-focus tabular-nums"
-      style={{
-        display: "inline-block",
-        padding: "0.05em 0.45em",
-        margin: 0,
-        border: "1.5px solid var(--chip-line)",
-        borderRadius: "0.35em",
-        background: "var(--chip-bg)",
-        font: "inherit",
-        color: "var(--mute-1)",
-        letterSpacing: "0.08em",
-        cursor: "pointer",
-        userSelect: "none",
-        fontVariantNumeric: "tabular-nums",
-      }}
+      style={{ ...chipStyle, cursor: "pointer" }}
     >
       <span aria-hidden>{redactScore(children)}</span>
     </button>

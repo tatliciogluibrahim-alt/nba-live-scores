@@ -341,7 +341,7 @@ Do not do yet:
 Internal keys (`quiet | companion | all`) are unchanged. Reference:
 `app/companion/state/types.ts` PRESETS.
 
-- **Quiet** (key: `quiet`) — Start and final only.
+- **Quiet** (key: `quiet`) — Start, final, and the rare big moment.
 - **Companion** (key: `companion`) — Start, quarter breaks, halftime (WC),
   scores (WC goals / NFL touchdowns when built), final.
 - **Full Details** (key: `all`) — Everything: scores, close finishes, comebacks.
@@ -355,6 +355,11 @@ Rename history:
   tier only fired on close games, which isn't always true. "Full Details"
   reads as the comprehensive tier. Soccer scores + NFL touchdowns belong
   in **Companion**, not the top tier.
+
+- 2026-10-11: Quiet copy now matches the significance engine (2026-07-14):
+  a directly followed team's rare big moment breaks through Quiet (NFL
+  overtime, NBA comeback or close finish). "Start and final only" was
+  false. Owner call after the persona sweep: copy follows the code.
 
 When writing copy or comments that mention tiers, use the current
 labels (Quiet / Companion / Full Details). Internal types still

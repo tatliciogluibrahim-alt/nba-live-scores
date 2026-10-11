@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Eyebrow } from "../atoms/Eyebrow";
 import { PRESETS, type AlertPreset, type Follow } from "../state/types";
-import { useFollows } from "../providers";
+import { useFollows, useNoSpoilers } from "../providers";
 import { PresetRow } from "./PresetRow";
 
 // Single follow row on the Following dashboard. Body navigates to the
@@ -123,6 +123,10 @@ export function FollowDrawerBody({
   // a game's participants (team / country / series). Tournament follows
   // are too broad — that's what the global toggle is for.
   const canSelectiveHide = follow.kind !== "tournament";
+  // Global No-Spoilers already hides this follow's games. The per-follow
+  // toggle used to read "Spoilers shown · Tap to hide" right beside a
+  // Settings screen saying No-Spoilers is on (persona sweep, 2026-10-11).
+  const globalNoSpoilers = useNoSpoilers();
   const presetMeta = PRESETS[follow.alertTier];
 
   function handlePreset(next: AlertPreset) {
@@ -157,7 +161,7 @@ export function FollowDrawerBody({
         type="button"
         onClick={handleAlertToggle}
         disabled={!canEnable || wrapped}
-        aria-label={`${follow.alertEnabled ? "Disable" : "Enable"} alerts for ${name}`}
+        aria-label={`${follow.alertEnabled ? "Turn off" : "Turn on"} alerts for ${name}`}
         // Disabled state used to rely on opacity alone, which read
         // as just "slightly faded" rather than "you can't do this
         // right now." The dashed border makes the affordance
@@ -184,7 +188,9 @@ export function FollowDrawerBody({
           className="text-[11px]"
           style={{ color: "var(--mute-1)", fontWeight: 600 }}
         >
-          {follow.alertEnabled ? "Manage" : canEnable ? "Turn on" : "Full"}
+          {/* Says what the tap does. "Manage" turned alerts off in one tap
+              (persona sweep, 2026-10-11); the tier choice lives below. */}
+          {follow.alertEnabled ? "Turn off" : canEnable ? "Turn on" : "Full"}
         </span>
       </button>
       {!canEnable ? (
@@ -211,7 +217,19 @@ export function FollowDrawerBody({
           The global toggle in Settings hides everything; this hides
           only this follow's games, even with the global toggle off.
           Tap-to-reveal still applies on each game. */}
-      {canSelectiveHide ? (
+      {canSelectiveHide && globalNoSpoilers ? (
+        <div className="mt-3">
+          <Eyebrow>No-Spoilers</Eyebrow>
+          <p
+            className="mt-2 text-[12px] leading-snug"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            Hidden. No-Spoilers is on for everything, so {name} scores stay
+            hidden until you reveal a game. Turn it off in Settings to choose
+            team by team.
+          </p>
+        </div>
+      ) : canSelectiveHide ? (
         <div className="mt-3">
           <Eyebrow>No-Spoilers</Eyebrow>
           <button
@@ -447,12 +465,14 @@ export function FollowCard({ data }: { data: FollowCardData }) {
       </div>
 
       {/* Drawer animates open via a grid-rows 0fr→1fr transition (CSS-only, no
-          JS height measuring); the body stays mounted so it can ease. */}
+          JS height measuring); the body stays mounted so it can ease. Inert
+          while collapsed, so VoiceOver and Tab can't reach Unfollow or the
+          alert controls of a drawer that looks closed. */}
       <div
         className="grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none"
         style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
       >
-        <div className="overflow-hidden">
+        <div className="overflow-hidden" inert={!expanded}>
           <div
             id={`follow-${follow.kind}-${follow.id}-body`}
             className="border-t px-3 py-3"

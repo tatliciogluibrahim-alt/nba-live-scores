@@ -8,6 +8,14 @@ import { SportsBallLoader } from "../atoms/SportsBallLoader";
 import { useReducedMotion } from "../hooks/use-reduced-motion";
 import { notifyNativePushPermissionChanged } from "../push/native-push-events";
 import { markPushPermissionDeniedThisSession } from "../push/permission-session";
+import { usePushSubscription } from "../push/use-push-subscription";
+import { buildFollowSyncState } from "../push/follow-sync";
+import { onboardingAlertAction } from "../today/setup/resolve-setup-step";
+import {
+  detectPlatform,
+  detectStandalone,
+  readPermission,
+} from "../today/setup/useSetupStep";
 import { FOLLOW_MOMENTS } from "../following/FollowChoice";
 import { tournamentPhase } from "../following/data/tournament-phase";
 import { NFL_TEAMS } from "../following/data/nfl-teams";
@@ -120,6 +128,49 @@ export function OnboardingFlow() {
     addMomentFollow,
     removeMomentFollow,
   } = useFollows();
+
+  const { subscribe } = usePushSubscription();
+
+  // Web path for "Turn on alerts" (native goes through requestNotifications).
+  // Same flow as Today's Enable step: ask, then subscribe with the follows.
+  // Returns whether the browser gave a real answer. Only then is the alerts
+  // decision recorded; otherwise Today's Install / Enable step still asks.
+  async function enableWebAlerts(): Promise<boolean> {
+    // Never ask before there's something to be alerted about.
+    if (follows.length === 0) return false;
+    const action = onboardingAlertAction({
+      platform: detectPlatform(),
+      standalone: detectStandalone(),
+      permission: readPermission(),
+    });
+    if (action === "later") return false;
+    if (action === "ask") {
+      const result = await window.Notification.requestPermission();
+      if (result === "denied") {
+        markPushPermissionDeniedThisSession();
+        return true;
+      }
+      // Closed without choosing: Today asks again.
+      if (result !== "granted") return false;
+    }
+    try {
+      const sync = buildFollowSyncState(follows);
+      // Capped so onboarding never sticks on "Setting up…": subscribe()
+      // waits on navigator.serviceWorker.ready, which never settles when no
+      // worker activates. Today's Enable step and Settings can retry.
+      await Promise.race([
+        subscribe({
+          alerts: sync.alerts,
+          spoilerFollows: sync.spoilerFollows,
+          noSpoilers: prefs.noSpoilers,
+        }),
+        new Promise((resolve) => setTimeout(resolve, 6000)),
+      ]);
+    } catch {
+      /* subscription failed: Settings can retry */
+    }
+    return true;
+  }
 
   const [phase, setPhase] = useState<"idle" | "active" | "done">("idle");
   const [step, setStep] = useState(0);
@@ -504,10 +555,18 @@ export function OnboardingFlow() {
               disabled={working}
               onClick={async () => {
                 setWorking(true);
-                await requestNotifications(follows.length > 0);
+                let decided = true;
+                if (isCapacitorNative()) {
+                  await requestNotifications(follows.length > 0);
+                } else {
+                  decided = await enableWebAlerts();
+                }
                 // Record the notification decision so the Today FirstRunStrip
-                // doesn't re-ask the same thing right after onboarding.
-                dismissNotifPrompt();
+                // doesn't re-ask the same thing right after onboarding. On the
+                // web only a real browser answer counts: before 2026-10-11 this
+                // button asked nothing on the web yet still recorded the
+                // decision, which switched off Today's Enable step for good.
+                if (decided) dismissNotifPrompt();
                 finish();
               }}
               className="w-full rounded-full py-3.5 text-[15px] font-semibold active:scale-[0.99]"
