@@ -14,6 +14,7 @@ import { Spoiler } from "../spoiler/Spoiler";
 import { useNoSpoilers, useFollows } from "../providers";
 import { teamFollowCodes } from "../state/moments";
 import { groupByWindow } from "./nfl-windows";
+import { NFLStandings } from "./NFLStandings";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import {
   nflPagerLabel,
@@ -23,9 +24,10 @@ import {
 
 // NFL Schedule — the By-week view (adaptive view model: NFL's chronological
 // spine is the week, not the day). A week header + one ruled agate row per
-// game, with a prev/next week pager. Standings is a placeholder until the
-// season produces real records. The schedule is public data, browsable
-// pre-season; live/final score states light up once games are played.
+// game, with a prev/next week pager. Standings renders ESPN's division
+// tables (NFLStandings, gated under No-Spoilers). The schedule is public
+// data, browsable pre-season; live/final score states light up once games
+// are played.
 
 export function NFLScheduleBody({
   views,
@@ -94,8 +96,11 @@ export function NFLScheduleBody({
               />
               {/* L3 doctrine (Preseason Review #4): the week reads by
                   broadcast WINDOW, not as a flat 16-row wall — THU NIGHT /
-                  SUN 1 PM / SUN 4 PM / SUN NIGHT / MON NIGHT, ET-defined.
-                  Games arrive date-sorted, so grouping preserves order. */}
+                  SUN 1 PM / SUN 4 PM / SUN NIGHT / MON NIGHT. ET decides
+                  which games share a window; the header is written in the
+                  device's zone, like the kickoff times under it (a Central
+                  user reads "SUN · 3 PM" over 3:05 and 3:25). Games arrive
+                  date-sorted, so grouping preserves order. */}
               {groupByWindow(schedule.games).map((w) => (
                 <div key={`${w.label}-${w.games[0].id}`}>
                   <WindowHead label={w.label} />
@@ -113,7 +118,7 @@ export function NFLScheduleBody({
           )}
         </>
       ) : (
-        <StandingsPlaceholder />
+        <NFLStandings />
       )}
     </div>
   );
@@ -384,16 +389,5 @@ function NFLGameRow({
         {inner}
       </div>
     </GameSpoilerScope>
-  );
-}
-
-function StandingsPlaceholder() {
-  return (
-    <p
-      className="py-[13px] text-[13px] leading-snug"
-      style={{ color: "var(--mute-1)", fontWeight: 500 }}
-    >
-      Standings open once the season kicks off.
-    </p>
   );
 }
