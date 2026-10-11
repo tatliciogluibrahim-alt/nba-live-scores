@@ -63,7 +63,8 @@ export function LiveTrackHint({ active }: { active: boolean }) {
           className="mt-0.5 text-[0.75rem] leading-snug"
           style={{ color: "var(--mute-1)", fontWeight: 500 }}
         >
-          Pin a live game to track it on your lock screen and home-screen widget.
+          Open a live game and tap Track on Lock Screen. The score stays on your
+          lock screen and home-screen widget.
         </p>
       </div>
       <button

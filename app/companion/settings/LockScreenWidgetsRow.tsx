@@ -26,8 +26,9 @@ export function LockScreenWidgetsRow() {
         className="mt-1.5 text-[0.8125rem] leading-snug"
         style={{ color: "var(--mute-1)", fontWeight: 500 }}
       >
-        Pin a live game to follow its score on your lock screen. Up to 3 at
-        once. Add a widget to keep scores on your home or lock screen.
+        Open a live game and tap Track on Lock Screen to keep its score on
+        your lock screen. Up to 3 at once. Add a widget to keep scores on
+        your home or lock screen.
       </p>
 
       <ul
