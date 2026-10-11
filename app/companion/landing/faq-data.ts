@@ -25,7 +25,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     q: "Does it have spoilers?",
-    a: "Only when you want them. Turn No-Spoilers on in Alerts & Notifications and scores, headlines, and outcomes blur across every screen, including push previews. Tap to reveal one at a time.",
+    a: "Only when you want them. Turn on No-Spoilers in Settings and scores, headlines, and results stay hidden on every screen, including push previews. Tap to reveal one game at a time.",
   },
   {
     q: "Is the NFL live?",

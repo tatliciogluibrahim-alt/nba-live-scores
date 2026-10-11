@@ -6,41 +6,53 @@ import {
   CalloutBox,
 } from "../companion/landing/ContentPageShell";
 import { BetaSignupForm } from "../companion/beta/BetaSignupForm";
+import { APP_STORE_URL } from "../lib/app-store";
 
 export const metadata = {
-  title: "Friend beta | No Noise Scores",
+  title: "Beta testing | No Noise Scores",
   description:
-    "Help test No Noise Scores. Install it, follow your team, and tell me what feels right and what doesn't.",
+    "No Noise Scores is on the App Store. Help test what's next: leave your email, use it for real, and tell me what feels right and what doesn't.",
   alternates: { canonical: "https://nonoisescores.app/beta" },
 };
+
+// /beta — the testers page. The app is public on the App Store now, so
+// this is no longer a gate to get in. What the signup form actually does
+// (BetaSignupForm → /api/beta/signup): it records an email plus two
+// free-text answers, sends no confirmation, and the follow-up is a manual
+// note from Ibrahim. The copy promises exactly that and nothing more.
+
+const linkStyle = {
+  color: "var(--ink)",
+  textDecoration: "underline",
+  textDecorationThickness: "1px",
+  textUnderlineOffset: "3px",
+} as const;
 
 export default function BetaPage() {
   return (
     <ContentPageShell
       eyebrow="Beta"
-      headline="Help me test it."
-      intro="No Noise Scores is in friend beta. If you're the kind of person who turns off ESPN notifications because they're too loud, I'd love your feedback."
+      headline="Help me test what's next."
+      intro="No Noise Scores is on the App Store and free for anyone. I'm also looking for people to try new things before they ship. If you're the kind of person who turns off ESPN notifications because they're too loud, I'd love your feedback."
     >
       <P>
-        I&apos;m looking for a small group of testers who&apos;ll use
-        it for real. Follow a team or country you actually care about,
-        install it on your phone, leave notifications on for a week,
-        and tell me what feels right and what doesn&apos;t.
+        Testing means using it for real. Follow a team you actually care
+        about, leave alerts on for a week, and tell me what feels right and
+        what doesn&apos;t.
       </P>
 
       <H2>What you&apos;d get</H2>
       <BulletList
         items={[
-          "Early access to every feature.",
-          "Direct line to me. I read every reply.",
-          "First look at whatever ships next.",
+          "A direct line to me. I read every reply.",
+          "A note from me when there's something new to try.",
         ]}
       />
 
       <H2>What I&apos;d love from you</H2>
       <BulletList
         items={[
-          "Install the app on your phone (home screen install).",
+          "Get the app on your phone. On iPhone, that's the App Store.",
           "Follow something you actually care about.",
           "Leave alerts on for a week. Tell me if they hit at the right time.",
           "Try No-Spoilers for a game you watch on delay. Tell me if anything leaked.",
@@ -50,8 +62,8 @@ export default function BetaPage() {
 
       <H2>Sign up</H2>
       <P>
-        Drop your email below and I&apos;ll reach out when the next wave
-        opens.
+        Leave your email and I&apos;ll reach out when there&apos;s something
+        new to test.
       </P>
       <BetaSignupForm />
       <P>
@@ -60,64 +72,37 @@ export default function BetaPage() {
           href="https://instagram.com/nonoisescores"
           target="_blank"
           rel="noreferrer"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
+          style={linkStyle}
         >
           @nonoisescores
         </a>{" "}
         on Instagram or email{" "}
-        <a
-          href="mailto:nonoisescores@gmail.com"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
-        >
+        <a href="mailto:nonoisescores@gmail.com" style={linkStyle}>
           nonoisescores@gmail.com
         </a>
         .
       </P>
 
-      <H2>Already in the beta?</H2>
+      <H2>Already using it?</H2>
       <P>
         After a week of real use,{" "}
-        <a
-          href="/beta/feedback"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
-        >
+        <a href="/beta/feedback" style={linkStyle}>
           send feedback
         </a>
-        . Three short fields, no marketing form energy.
+        . A few short fields, no marketing form energy.
       </P>
 
-      <CalloutBox eyebrow="Heads up">
-        On iPhone, push notifications only work after you add the site to
-        your home screen. Open it in Safari, tap Share, then{" "}
-        <strong style={{ color: "var(--ink)" }}>Add to Home Screen</strong>.
-        See the{" "}
-        <a
-          href="/guides/how-to-add-to-iphone-home-screen"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
-        >
-          install guide
+      <CalloutBox eyebrow="Getting it">
+        On iPhone, the{" "}
+        <a href={APP_STORE_URL} target="_blank" rel="noopener" style={linkStyle}>
+          App Store app
         </a>{" "}
-        if you&apos;ve never done it before.
+        is the simplest way in. You can also add the web app to your home
+        screen from Safari. See the{" "}
+        <a href="/guides/how-to-add-to-iphone-home-screen" style={linkStyle}>
+          iPhone guide
+        </a>{" "}
+        for both. On Android or a computer, open it in any browser.
       </CalloutBox>
     </ContentPageShell>
   );

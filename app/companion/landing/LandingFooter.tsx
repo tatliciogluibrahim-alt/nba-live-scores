@@ -23,10 +23,10 @@ const COLUMNS = [
     title: "Guides",
     links: [
       {
-        label: "Add to iPhone home screen",
+        label: "Get it on iPhone",
         href: "/guides/how-to-add-to-iphone-home-screen",
       },
-      { label: "Follow vs Pin", href: "/guides/follow-vs-pin" },
+      { label: "Follow vs Watching", href: "/guides/follow-vs-pin" },
       {
         label: "Watch games later without spoilers",
         href: "/guides/watch-games-later-without-spoilers",
@@ -41,6 +41,7 @@ const COLUMNS = [
         href: "/compare/apple-sports-alternative",
       },
       { label: "vs ESPN app", href: "/compare/espn-app-alternative" },
+      { label: "NFL season", href: "/nfl" },
       { label: "NBA Playoff alerts", href: "/nba-playoffs-alerts" },
       { label: "Summer Soccer 2026 app", href: "/world-cup-2026-app" },
     ],
@@ -52,7 +53,7 @@ const COLUMNS = [
       { label: "About", href: "/about" },
       { label: "Privacy", href: "/privacy" },
       { label: "Changelog", href: "/changelog" },
-      { label: "Friend beta", href: "/beta" },
+      { label: "Beta testing", href: "/beta" },
     ],
   },
 ];

@@ -62,6 +62,12 @@ function fixtureLine(f: WCStaticFixture, country: CountryEntry): string {
 // is what most pre-tournament searches actually want. Content focuses
 // on group context, the schedule, the brand pitch ("calm companion"),
 // and the cross-link to the live experience.
+//
+// Since the final (2026-07-19) the copy reads in the past tense. The one
+// result it states, Spain 1-0 Argentina in the final, comes from the
+// frozen record (scripts/fixtures/wc-frozen-schedule-2026.json, the same
+// champion production froze). The advancement line is the 48-team rule:
+// top two per group plus the eight best third-placed teams.
 
 // Pre-render every country at build time. Switching to dynamic later
 // would require revalidation logic — for now, every page is a static
@@ -100,7 +106,7 @@ export async function generateMetadata({
   }
 
   const title = `${country.name} World Cup 2026 schedule | No Noise Scores`;
-  const description = `${country.name} are in Group ${country.group} at the 2026 World Cup. Follow ${country.name}'s path with kickoff and full-time alerts. A calm sports companion. No feeds, no ads, no noise.`;
+  const description = `${country.name} played in Group ${country.group} at the 2026 World Cup. Their group matches with kickoff times, and how No Noise Scores followed the tournament. A calm sports companion. No feeds, no ads, no noise.`;
   const canonical = `https://nonoisescores.app/wc/${country.id.toLowerCase()}`;
 
   return {
@@ -186,19 +192,18 @@ export default async function CountryLandingPage({
       <ContentPageShell
         eyebrow={`World Cup 2026 · Group ${country.group}`}
         headline={`${country.flag}  ${country.name} at the 2026 World Cup.`}
-        intro={`${country.name} are in Group ${country.group} at the 2026 World Cup. Follow ${country.name} on No Noise Scores for their group, their path through the knockout rounds, and kickoff and full-time alerts on every match.`}
+        intro={`${country.name} played in Group ${country.group} at the 2026 World Cup, which ran from June 11 to July 19. On No Noise Scores, following ${country.name} meant their group, their path through the knockout rounds, and kickoff and full-time alerts on every match.`}
       >
         <H2>Group {country.group}</H2>
         <P>
-          {country.name} play three group-stage matches against:
+          {country.name} played three group-stage matches, against:
         </P>
         <BulletList
           items={mates.map((m) => `${m.flag}  ${m.name}`)}
         />
         <P>
-          Top two from Group {country.group} advance to the Round of 32
-          knockouts. The best four third-place finishers across all
-          groups also move on.
+          The top two in each group went through to the Round of 32,
+          along with the eight best third-placed teams.
         </P>
 
         {fixtures.length > 0 ? (
@@ -208,30 +213,13 @@ export default async function CountryLandingPage({
               All three group-stage matches, with kickoff times in ET:
             </P>
             <BulletList items={fixtures.map((f) => fixtureLine(f, country))} />
-            <P>
-              <a
-                href={appLink}
-                style={{
-                  color: "var(--ink)",
-                  textDecoration: "underline",
-                  textDecorationThickness: "1px",
-                  textUnderlineOffset: "3px",
-                  fontWeight: 600,
-                }}
-              >
-                See the live Group {country.group} standings →
-              </a>
-            </P>
           </>
         ) : null}
 
-        <H2>Follow {country.name} on No Noise Scores</H2>
+        <H2>How the tournament ended</H2>
         <P>
-          Pick {country.name} as your Summer Soccer country. You get a
-          country page showing the live group standings, the next
-          match (opponent, time, channel), and a path-to-final
-          visualization. Push alerts fire at kickoff and full time
-          for every {country.name} match.
+          Spain beat Argentina 1-0 in the final on July 19. The final
+          Group {country.group} table is still in the app.
         </P>
         <P>
           <a
@@ -244,23 +232,32 @@ export default async function CountryLandingPage({
               fontWeight: 600,
             }}
           >
-            Open {country.name} in No Noise Scores →
+            See the final Group {country.group} table →
           </a>
         </P>
 
-        <H2>Watching matches on delay?</H2>
-        <CalloutBox eyebrow="No-Spoilers ready">
-          Turn on No-Spoilers in Settings. Group standings, scores, and
-          recap cards stay blurred. The push you get at full time will
-          read &quot;Match wrapped. Tap when you&apos;re ready.&quot;.
-          No score, no winner. Watch the replay on your own clock.
+        <H2>{country.name} on No Noise Scores</H2>
+        <P>
+          During the tournament, following {country.name} gave you a
+          country page with the live group table, the next match
+          (opponent, time, channel), and the path to the final. Push
+          alerts went out at kickoff and full time for every{" "}
+          {country.name} match.
+        </P>
+
+        <H2>Watched on delay?</H2>
+        <CalloutBox eyebrow="No-Spoilers">
+          With No-Spoilers on, scores and group standings stayed hidden
+          until you tapped, and the full-time push read &quot;Match
+          wrapped. Tap when you&apos;re ready.&quot; No score, no winner.
+          It works the same way for the NFL season now.
         </CalloutBox>
 
         <H2>About No Noise Scores</H2>
         <P>
           A calm sports companion for the moments that matter. Follow
-          what matters. Skip the rest. No feeds, no ads, no noise. Just
-          the scores, alerts, and recaps for what you care about.
+          what matters. Skip the rest. Scores, alerts, and recaps for what
+          you follow, with no feeds and no ads.
         </P>
         <P>
           <a
@@ -272,7 +269,19 @@ export default async function CountryLandingPage({
               textUnderlineOffset: "3px",
             }}
           >
-            More about the Summer Soccer pages
+            How the app followed Summer Soccer
+          </a>
+          , or{" "}
+          <a
+            href="/nfl"
+            style={{
+              color: "var(--ink)",
+              textDecoration: "underline",
+              textDecorationThickness: "1px",
+              textUnderlineOffset: "3px",
+            }}
+          >
+            what it&apos;s following now
           </a>
           .
         </P>

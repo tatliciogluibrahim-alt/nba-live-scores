@@ -16,11 +16,18 @@ export const metadata = {
   },
 };
 
+const linkStyle = {
+  color: "var(--ink)",
+  textDecoration: "underline",
+  textDecorationThickness: "1px",
+  textUnderlineOffset: "3px",
+} as const;
+
 export default function WatchLaterGuide() {
   return (
     <ContentPageShell
       eyebrow="Guide"
-      headline="Watch on delay. Skip the spoilers."
+      headline="How to watch a game later without spoilers."
       intro="If you're watching a game later, here's how to stay spoiler-free across the apps on your phone."
     >
       <P>
@@ -36,18 +43,16 @@ export default function WatchLaterGuide() {
 
       <H2>Step 1. Turn No-Spoilers on</H2>
       <P>
-        Open the app. Tap{" "}
-        <strong style={{ color: "var(--ink)" }}>
-          Alerts & Notifications
-        </strong>{" "}
-        in the bottom nav. Toggle{" "}
-        <strong style={{ color: "var(--ink)" }}>No-Spoilers</strong> at
-        the top of the screen.
+        Open the app and go to Settings. On your phone, it&apos;s at the
+        bottom of the Following tab. On a computer, it&apos;s in the
+        sidebar. Turn on{" "}
+        <strong style={{ color: "var(--ink)" }}>No-Spoilers</strong>{" "}
+        at the top of the page.
       </P>
       <P>
-        That&apos;s the one switch. From this point forward, every
-        score, headline, series state, and recap is blurred until you
-        tap to reveal. Push notification bodies stay vague.
+        That&apos;s the one switch. From this point forward, every score,
+        headline, series state, and recap stays hidden until you tap to
+        reveal. Push notification bodies stay vague.
       </P>
 
       <H2>Step 2. Confirm the contract</H2>
@@ -57,9 +62,9 @@ export default function WatchLaterGuide() {
       <BulletList
         items={[
           "Open Today. You should see a small muted dot in the header indicating No-Spoilers is on.",
-          "Tap into any game you've already played. Score should be blurred. Headline should be \"Game wrapped.\" not \"X took it.\"",
-          "Tap your team's series page. Series state should be \"Series context hidden.\" not \"NY leads 3-1.\"",
-          "If you have alerts on, the next push you get should not name a score or winner.",
+          "Open a game that's already over. The score should be placeholder dots, and nothing on the page should name the winner.",
+          "On an NFL game page, the scoring plays should fold into one hidden row, with no top performers.",
+          "If you have alerts on, the next push you get should not name a score, a winner, or a player.",
         ]}
       />
       <P>
@@ -68,56 +73,53 @@ export default function WatchLaterGuide() {
 
       <CalloutBox eyebrow="What to do about other apps">
         Open your phone&apos;s notification settings and silence push
-        from anything that might spoil: ESPN, NBA, theScore,
-        group chats, Twitter / X, Bluesky, Threads. You can re-enable
+        from anything that might spoil: ESPN, league apps, theScore,
+        group chats, X, Bluesky, Threads. You can turn them back on
         after the game.
       </CalloutBox>
 
       <H2>Step 3. During the game</H2>
       <P>
         Open the app while you watch if you want a real-time companion.
-        The score stays blurred. Series state stays hidden. The Quiet
-        Recap card that fires at the end of the night stays hidden too.
+        The score stays hidden. So do the scoring plays and the wrap on
+        Today at the end of the night.
       </P>
       <P>
-        Want to peek at the score? Tap the blurred number. It
-        reveals just that one element, not the whole page. The blur
-        comes back on the next visit unless you turn No-Spoilers off.
+        Want to peek at the score? Tap the hidden score. It reveals that
+        one game, not the whole page. It hides again on your next visit,
+        unless you turn No-Spoilers off.
+      </P>
+      <P>
+        Alerts keep their timing. An NFL touchdown push reads &quot;A
+        touchdown was scored.&quot; and nothing more. On Companion, though,
+        touchdown pushes only come for your own team, so the buzz itself is
+        a hint. For a game you&apos;re saving, turn that follow&apos;s
+        alerts off until you&apos;ve watched.
       </P>
 
       <H2>Step 4. When you&apos;re done</H2>
       <P>
-        Watched the game? Turn No-Spoilers off in{" "}
-        <strong style={{ color: "var(--ink)" }}>
-          Alerts & Notifications
-        </strong>
-        . You don&apos;t need to leave it on. Though many users do
-        because it keeps the app calmer overall.
+        Watched the game? Turn No-Spoilers off in Settings. Or leave it on
+        if you like the app calmer.
       </P>
 
       <H2>If you watch on delay regularly</H2>
       <P>
-        Keep No-Spoilers on as your default. The reveal mechanic per
-        element means you can use the app live too. Just tap any score
-        you want to see. The &ldquo;hide first, reveal on demand&rdquo; model is
-        actually the right default for anyone who finds sports apps
-        overwhelming, not just delay-watchers.
+        Keep No-Spoilers on as your default. Reveal works one game at a
+        time, so you can still follow a live game. Tap the score you want
+        to see.
       </P>
 
       <P>
         More on the contract:{" "}
-        <a
-          href="/features/no-spoilers"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
-        >
-          how No-Spoilers actually works
+        <a href="/features/no-spoilers" style={linkStyle}>
+          how No-Spoilers works
         </a>
-        .
+        . Recording an NFL game?{" "}
+        <a href="/nfl" style={linkStyle}>
+          The NFL page
+        </a>{" "}
+        walks through the late game.
       </P>
     </ContentPageShell>
   );

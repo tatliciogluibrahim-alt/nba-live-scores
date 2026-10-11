@@ -5,6 +5,14 @@ import {
   CompareTable,
   BulletList,
 } from "../../companion/landing/ContentPageShell";
+import { APP_STORE_URL } from "../../lib/app-store";
+
+const linkStyle = {
+  color: "var(--ink)",
+  textDecoration: "underline",
+  textDecorationThickness: "1px",
+  textUnderlineOffset: "3px",
+} as const;
 
 export const metadata = {
   title: "No Noise Scores vs ESPN app | No Noise Scores",
@@ -58,7 +66,7 @@ export default function VsESPNPage() {
           "Breaking news. This isn't a newsroom.",
           "Video highlights inside the app. What mattered shows up as short editorial bullets, not clips.",
           "Fantasy integration. Out of scope.",
-          "Betting context. Won't ship; conflicts with the brand.",
+          "Betting context. Won't ship, since it conflicts with the brand.",
         ]}
       />
 
@@ -69,8 +77,8 @@ export default function VsESPNPage() {
           "Editorial voice. \"Knicks took it.\" not \"Knicks SHOCK Cavaliers in stunning upset.\"",
           "Per-follow alert tiers. Calibrate noise per object, not in aggregate.",
           "No-Spoilers that actually holds. Hide everything across every screen, push previews included.",
-          "Recap cards instead of feeds. After a game finishes, you get a calm artifact, not a stream of takes.",
-          "Watching tab. Pin one game and have a focused tracker for the night.",
+          "Recap cards instead of feeds. After a game finishes, you get a calm recap, not a stream of takes.",
+          "Watching tab. Add a game to keep it in view while it's on, or track it on your Lock Screen in the iPhone app.",
         ]}
       />
 
@@ -97,15 +105,16 @@ export default function VsESPNPage() {
       <P>
         Try No Noise Scores.{" "}
         <a
-          href="/app"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
+          href={APP_STORE_URL}
+          target="_blank"
+          rel="noopener"
+          style={linkStyle}
         >
-          open the app
+          Get it on the App Store
+        </a>
+        , or{" "}
+        <a href="/app" style={linkStyle}>
+          open it in your browser
         </a>
         . You can keep ESPN installed too. They&apos;re not mutually
         exclusive.

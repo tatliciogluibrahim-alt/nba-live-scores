@@ -1,8 +1,13 @@
 // How it works — four-step capsule. The four concepts that define the
-// app: Follow → Alert → Pin → No-Spoilers. Each one is one short
+// app: Follow → Alert → Track → No-Spoilers. Each one is one short
 // sentence. No marketing inflation, no bullet points. The capsule sits
 // between the hero and the moments band so the visitor understands the
 // vocabulary before they see what we cover.
+//
+// "Pin" is a dead word in the app (2026-07-03): the verbs are "Add to
+// Watching" on the web and "Track on Lock Screen" in the iPhone app.
+// No-Spoilers no longer blurs (2026-08-31): hidden scores are placeholder
+// dots, revealed one game at a time.
 
 const STEPS = [
   {
@@ -14,12 +19,12 @@ const STEPS = [
     body: "Per-follow notifications. Three volume levels. You decide which moments buzz your phone.",
   },
   {
-    title: "Pin",
-    body: "Pin one game. It lives on the Watching tab until the game ends. Tracking, not alerts.",
+    title: "Track",
+    body: "Add one game to Watching to keep it in view. On iPhone, it can sit on your Lock Screen too. Tracking, not alerts.",
   },
   {
     title: "No-Spoilers",
-    body: "Blur every score, headline, and outcome. Push previews stay vague. Reveal anything with a tap.",
+    body: "Hide every score and result until you're ready. Push previews stay vague. Reveal one game with a tap.",
   },
 ];
 

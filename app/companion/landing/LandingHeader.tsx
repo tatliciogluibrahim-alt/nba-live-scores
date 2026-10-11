@@ -24,14 +24,17 @@ export function LandingHeader({ sticky = false }: { sticky?: boolean }) {
           : { background: "var(--cream)" }),
       }}
     >
+      {/* Phone widths: tighter side padding + no-wrap on the lockup and the
+          pill, so neither breaks onto two lines at 390px (a search visitor
+          on a phone lands on these content pages). sm+ is unchanged. */}
       <div
-        className="mx-auto flex items-center justify-between px-8 py-4 md:px-12 lg:px-20"
+        className="mx-auto flex items-center justify-between gap-3 px-5 py-4 sm:px-8 md:px-12 lg:px-20"
         style={{ maxWidth: 1280 }}
       >
-        <Link href="/" className="flex items-center gap-2.5" aria-label="No Noise Scores home">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="No Noise Scores home">
           <BrandMark size={26} />
           <span
-            className="text-[17px]"
+            className="whitespace-nowrap text-[17px]"
             style={{
               fontFamily: "var(--font-display)",
               fontWeight: 800,
@@ -62,7 +65,7 @@ export function LandingHeader({ sticky = false }: { sticky?: boolean }) {
               phone bridge. "Get the app" stays for mobile SEO traffic. */}
           <Link
             href="/app"
-            className="inline-flex min-h-[40px] items-center justify-center rounded-full px-4 text-[13px] font-semibold transition active:scale-[0.98]"
+            className="inline-flex min-h-[40px] items-center justify-center whitespace-nowrap rounded-full px-4 text-[13px] font-semibold transition active:scale-[0.98]"
             style={{ background: "var(--ink)", color: "var(--cream)", border: "1px solid var(--ink)" }}
           >
             Open in browser

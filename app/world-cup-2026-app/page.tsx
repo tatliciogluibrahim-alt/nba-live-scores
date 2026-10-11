@@ -9,114 +9,111 @@ import {
 export const metadata = {
   title: "World Cup 2026 app | No Noise Scores",
   description:
-    "A calm World Cup 2026 companion. Pick your country, follow your group and the path to the final, and get kickoff and full-time alerts. No feeds, no noise.",
+    "How No Noise Scores followed the 2026 World Cup, June 11 to July 19. Country pages, the group tables, the bracket, and kickoff and full-time alerts. No feeds, no noise.",
   alternates: {
     canonical: "https://nonoisescores.app/world-cup-2026-app",
   },
 };
+
+// Past tense since the final (2026-07-19). Facts come from the frozen
+// record (scripts/fixtures/wc-frozen-schedule-2026.json, the same frozen
+// champion production serves): 104 fixtures from June 11 to July 19, and
+// the final, ARG 0 at ESP 1, Spain champions. The advancement rule is
+// the 48-team format's: top two per group plus the eight best third-
+// placed teams (the app's own tournament footnote says the same).
+// The SEO title keeps the factual "World Cup" name. New sentences use
+// "Summer Soccer", the name inside the app.
+
+const linkStyle = {
+  color: "var(--ink)",
+  textDecoration: "underline",
+  textDecorationThickness: "1px",
+  textUnderlineOffset: "3px",
+} as const;
 
 export default function WorldCup2026Page() {
   return (
     <ContentPageShell
       eyebrow="World Cup 2026"
       headline="A calm companion for the 2026 World Cup."
-      intro="Pick your country. Your group, the path to the final, and kickoff and full-time pings, all the way through the knockouts."
+      intro="The tournament ran from June 11 to July 19. Fans picked a country and got its group, its path to the final, and kickoff and full-time alerts all the way through the knockouts."
     >
       <P>
-        The 2026 World Cup is a 32-day event across the US, Canada, and
-        Mexico. Most football apps either treat it like a regular-season
-        schedule or drown you in a generic soccer-everywhere feed. This one
-        is the opposite: a calm tournament companion built for this
-        specific month. (Inside the app the tournament is labelled
+        The 2026 World Cup was played across the US, Canada, and Mexico.
+        No Noise Scores followed it as a tournament companion: your
+        country, your group, and the bracket, without a soccer-everywhere
+        feed around them. (Inside the app the tournament was labeled
         &quot;Summer Soccer&quot;. Same event, calmer name.)
       </P>
+      <P>
+        Spain beat Argentina 1-0 in the final on July 19.
+      </P>
 
-      <H2>What the Summer Soccer pages do</H2>
+      <H2>What the app did for Summer Soccer</H2>
       <BulletList
         items={[
-          "Pick your country. You see your country's path through the tournament. Group, opponents, knockout bracket.",
+          "Pick your country, and you saw its path through the tournament. Group, opponents, knockout bracket.",
           "Live scores and your country's standing through the group stage and into the knockout rounds.",
-          "Group strip with your group's live standings.",
-          "Path timeline. Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final.",
-          "Stakes line: \"Top two in Group X advance. Best four third-place finishers also move on.\"",
-          "Country's next match block. Opponent, time, channel.",
+          "Your group's table, with live standings during the group stage.",
+          "The path to the final: Round of 32, Round of 16, quarterfinals, semifinals, final.",
+          "Stakes lines that said what each match meant. The top two in each group went through, along with the eight best third-placed teams.",
+          "Your country's next match. Opponent, time, channel.",
         ]}
       />
 
-      <H2>What the alerts do</H2>
+      <H2>What the alerts did</H2>
       <P>
-        Follow your country, turn alerts on, and we&apos;ll send a push
-        when:
+        Follow your country, turn alerts on, and a push arrived when:
       </P>
       <BulletList
         items={[
-          "Kickoff. Your country's match just started.",
-          "Full time. The match just ended.",
+          "Kickoff. Your country's match had just started.",
+          "Full time. The match had just ended.",
         ]}
       />
       <P>
-        Tournament alerts (Summer Soccer as a follow object) cover the
-        same plus tournament-wide moments (final-day kickoff, group-stage
-        wrap, etc).
+        Companion and Full Details added halftime, the second half, and
+        goals.
       </P>
 
-      <CalloutBox eyebrow="No-Spoilers ready">
-        Watching the match on delay tonight? Turn No-Spoilers on. Group
-        standings, scores, and recap cards stay blurred. The push you
-        get at full-time will read &quot;Match wrapped. Tap when
-        you&apos;re ready.&quot; No score, no winner.
+      <CalloutBox eyebrow="No-Spoilers">
+        Watching a match on delay? With No-Spoilers on, scores and group
+        standings stayed hidden until you tapped, and the full-time push
+        read &quot;Match wrapped. Tap when you&apos;re ready.&quot; No
+        score, no winner. It works the same way for the{" "}
+        <a href="/nfl" style={linkStyle}>
+          NFL season
+        </a>{" "}
+        now.
       </CalloutBox>
 
-      <H2>How it&apos;s different from FotMob / SofaScore</H2>
+      <H2>How it compared to FotMob and SofaScore</H2>
       <P>
         FotMob and SofaScore are excellent soccer-stats apps. They
         cover every league, every season, with heatmaps, expected
         goals, and deep lineups.
       </P>
       <P>
-        That&apos;s not what we are. We&apos;re a calm tournament
-        companion focused on the Summer Soccer specifically. No heatmaps,
-        no xG, no formations grid. If you want those stats, FotMob is
-        the right tool. If you want a calm place to track your country
-        through a one-month-long event without the rest of the
-        soccer-world noise, that&apos;s us.
+        That&apos;s not what this is. No Noise Scores was a calm
+        tournament companion for Summer Soccer specifically. No heatmaps,
+        no xG, no formations grid. For those stats, FotMob is the right
+        tool. For a calm place to track your country through the
+        tournament without the rest of the soccer-world noise, that was
+        us.
       </P>
 
-      <H2>Set it up</H2>
+      <H2>What&apos;s still there</H2>
       <P>
-        Install the app (
-        <a
-          href="/guides/how-to-add-to-iphone-home-screen"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
-        >
-          iPhone install guide
-        </a>
-        ). Open it, tap{" "}
-        <strong style={{ color: "var(--ink)" }}>Following</strong>, pick
-        a country from the Summer Soccer section. Turn alerts on.
+        Each country&apos;s page in the app still shows its final group
+        table.
       </P>
       <P>
-        On the country page you see your country&apos;s next match, its
-        live state during a game, and its path through the knockout
-        rounds.
-      </P>
-
-      <P>
-        <a
-          href="/app"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
-        >
+        <a href="/app" style={linkStyle}>
           Open the app
+        </a>
+        , or see{" "}
+        <a href="/nfl" style={linkStyle}>
+          what it&apos;s following now
         </a>
         .
       </P>

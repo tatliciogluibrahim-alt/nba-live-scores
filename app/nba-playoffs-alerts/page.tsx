@@ -9,18 +9,34 @@ import {
 export const metadata = {
   title: "NBA Playoffs alerts | No Noise Scores",
   description:
-    "Follow your team through the playoffs. Tipoff, close-game, final, series-wrap pushes for the moments you want.",
+    "How No Noise Scores handled the NBA Playoffs: tipoff, quarter-break, close-game, and final alerts for the moments you want.",
   alternates: {
     canonical: "https://nonoisescores.app/nba-playoffs-alerts",
   },
 };
+
+// The 2026 playoffs wrapped in June, and concluded moments drop off the
+// follow picker, so this page explains what the moment did and points to
+// the NFL. Alert contents are read off the code: the preset matrix
+// (lib/push/preset-matcher.ts), the close-game and comeback thresholds
+// (lib/push/event-detector.ts: Q4 last 5 minutes within 5 points, a
+// 15-point lead cut to 5), and the No-Spoilers final push copy
+// (lib/push/dispatcher.ts). There is no series-wrap push, so the page no
+// longer promises one.
+
+const linkStyle = {
+  color: "var(--ink)",
+  textDecoration: "underline",
+  textDecorationThickness: "1px",
+  textUnderlineOffset: "3px",
+} as const;
 
 export default function NBAPlayoffsAlertsPage() {
   return (
     <ContentPageShell
       eyebrow="NBA Playoffs"
       headline="Calm alerts for the playoffs."
-      intro="Tipoff, key breaks, close finishes, final, series-wrap. Pushes for the moments that matter."
+      intro="Tipoff, key breaks, close finishes, final. Pushes for the moments that matter."
     >
       <P>
         Most sports apps treat playoff games the same way they treat
@@ -32,12 +48,11 @@ export default function NBAPlayoffsAlertsPage() {
       <BulletList
         items={[
           "Tipoff. Your team's playoff game just started.",
-          "End of quarter. Q1 wrapped, Q2 wrapped, halftime, end of Q3.",
-          "Last quarter. Q4 is about to start.",
-          "Close-game. The final minutes of a 3-point game.",
-          "Comeback. A 15+ point lead just got erased.",
+          "End of quarter. The first quarter, halftime, and the end of the third.",
+          "Second half. Play resumes after halftime.",
+          "Close game. The last five minutes of the fourth, within five points.",
+          "Comeback. A 15-point lead cut to five or fewer.",
           "Final. Your team's game just ended.",
-          "Series-wrap. A series just got decided.",
         ]}
       />
 
@@ -49,9 +64,9 @@ export default function NBAPlayoffsAlertsPage() {
       </P>
       <BulletList
         items={[
-          "Quiet: Tipoff and Final only. Two pushes per game.",
-          "Companion: Tipoff, end-of-Q, last quarter, Final. Around 4–5 per game.",
-          "Full Details: adds close-game and comeback. Around 6–8 per dramatic game.",
+          "Quiet: tipoff, final, and the rare big moment. Usually two pushes a game.",
+          "Companion: tipoff, the end of each quarter, the second half, and the final.",
+          "Full Details: adds close finishes, comebacks, and big individual moments.",
         ]}
       />
 
@@ -63,63 +78,37 @@ export default function NBAPlayoffsAlertsPage() {
         more win.&quot;), and the next-game line on the recap card.
       </P>
       <P>
-        That means your alerts come with context. The final-buzz push
-        knows whether the series just wrapped, whether your team faces
-        elimination, whether the series is 3-3 with a Game 7 looming.
+        Stakes shape the alerts too. A Game 7 or an elimination game
+        counts for more, so its close finish can reach even a Quiet
+        follow.
       </P>
 
-      <CalloutBox eyebrow="Series-wrap alerts">
-        When a series ends, you get one final push that names the result
-        and the advancement: &quot;Series · NY took it 4-2. They
-        advance.&quot; If No-Spoilers is on, you get &quot;Series
-        wrapped. Tap when you&apos;re ready.&quot;
+      <CalloutBox eyebrow="No-Spoilers">
+        With No-Spoilers on, the final push reads &quot;Game&apos;s done.
+        Tap when you&apos;re ready.&quot; No score, no winner. Close-game
+        and comeback alerts are skipped entirely.
       </CalloutBox>
 
       <H2>What you don&apos;t get</H2>
       <BulletList
         items={[
           "No \"Top story\" pushes. Not our brand.",
-          "No \"Don't miss the playoffs!\" hype pushes.",
+          "No \"Don't miss the playoffs\" hype pushes.",
           "No betting odds in the push body.",
           "No social-share-prompts in the push body.",
           "No re-engagement pings if you stop using the app for a week.",
         ]}
       />
 
-      <H2>How to set it up</H2>
+      <H2>This season</H2>
       <P>
-        Install the app on your phone (
-        <a
-          href="/guides/how-to-add-to-iphone-home-screen"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
-        >
-          iPhone install guide
+        The 2026 playoffs wrapped in June, so NBA follows are closed for
+        now. The NFL season is on.{" "}
+        <a href="/nfl" style={linkStyle}>
+          See how alerts work for the NFL
         </a>
-        ; on Android, Chrome will prompt). Open it, tap{" "}
-        <strong style={{ color: "var(--ink)" }}>Following</strong>, add
-        your team or a specific playoff series. Tap the row, set the
-        tier to Companion or higher. Done.
-      </P>
-      <P>
-        Notifications will start firing at tipoff of the next game.
-      </P>
-
-      <P>
-        Try it.{" "}
-        <a
-          href="/app"
-          style={{
-            color: "var(--ink)",
-            textDecoration: "underline",
-            textDecorationThickness: "1px",
-            textUnderlineOffset: "3px",
-          }}
-        >
+        , or{" "}
+        <a href="/app" style={linkStyle}>
           open No Noise Scores
         </a>
         .

@@ -20,7 +20,7 @@ export default function BetaFeedbackPage() {
     <ContentPageShell
       eyebrow="Beta feedback"
       headline="Tell me what's working."
-      intro="Three short fields. Be specific, be brutal, and don't be polite."
+      intro="A few short fields. Be specific, be brutal, and don't be polite."
     >
       <P>
         You&apos;ve been using the app for at least a week. What does

@@ -95,7 +95,7 @@ export function BetaFeedbackForm() {
         background: "var(--paper)",
         borderColor: "var(--line)",
       }}
-      aria-label="Friend beta feedback"
+      aria-label="Beta feedback"
     >
       <div className="space-y-4">
         <FormField
