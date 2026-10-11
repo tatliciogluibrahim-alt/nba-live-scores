@@ -75,7 +75,10 @@ export function FollowingDashboard() {
   // still owns the follow (in case they want to look back at the
   // series detail), but the card signals it won't drive new alerts.
   const wrappedSeries = useWrappedSeries();
-  const liveFollows = useLiveFollows();
+  // Live keys are sport-scoped and include NFL (persona sweep 2026-10-11:
+  // a live Steelers follow sat under UP NEXT). Only followed sports' feeds
+  // are read.
+  const liveFollows = useLiveFollows(follows);
 
   const cards: FollowCardData[] = follows.map((f) => {
     const identity = resolveFollowIdentity(f);
@@ -101,7 +104,7 @@ export function FollowingDashboard() {
           (tournamentPhase(f.id) === "concluded" ||
             (f.id.startsWith("nba-playoffs") &&
               wrappedSeries.has(NBA_PLAYOFFS_WRAPPED)))),
-      isLive: isFollowLive(f.kind, f.id, liveFollows),
+      isLive: isFollowLive(f, liveFollows),
     };
   });
 
