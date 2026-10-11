@@ -65,7 +65,7 @@ function fixtureLine(f: WCStaticFixture, country: CountryEntry): string {
 //
 // Since the final (2026-07-19) the copy reads in the past tense. The one
 // result it states, Spain 1-0 Argentina in the final, comes from the
-// frozen record (scripts/fixtures/wc-frozen-schedule-2026.json, the same
+// frozen record (app/lib/wc-record-2026.json, the same
 // champion production froze). The advancement line is the 48-team rule:
 // top two per group plus the eight best third-placed teams.
 

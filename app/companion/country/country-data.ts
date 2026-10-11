@@ -11,6 +11,7 @@ import {
   type CountryEntry,
 } from "../following/data/countries";
 import type { Stake } from "../stakes/derive-stakes";
+import { knockoutFinishLine } from "./country-finish";
 
 // ── Shapes ────────────────────────────────────────────────────────────
 
@@ -354,10 +355,19 @@ export function buildCountryPayload(
       return (a.standing?.position ?? 99) - (b.standing?.position ?? 99);
     });
 
-  // Live, state-aware group stake for the selected country.
+  // The Path line. Once the team's tournament is over, its finish
+  // (champion, the final, third place, the round it went out in).
+  // Otherwise the live, state-aware group line.
   const ownStanding = table.get(country.id);
-  const groupStake =
-    anyPlayed && ownStanding
+  const finish = knockoutFinishLine(
+    country.id,
+    country.name,
+    fixtures,
+    (c) => dirByCode.get(c)?.name
+  );
+  const groupStake: Stake | null = finish
+    ? { eyebrow: "Path", line: finish, spoilery: true }
+    : anyPlayed && ownStanding
       ? buildGroupStake(
           country,
           toGroupStanding(
@@ -486,8 +496,9 @@ export type WCScheduleFixtureLite = {
   statusText: string;
   stage: string;
   group: string;
-  home: { name: string; abbreviation: string; score: number };
-  away: { name: string; abbreviation: string; score: number };
+  // `winner` decides a shootout, where the score is level.
+  home: { name: string; abbreviation: string; score: number; winner?: boolean };
+  away: { name: string; abbreviation: string; score: number; winner?: boolean };
   broadcasts: string[];
 };
 

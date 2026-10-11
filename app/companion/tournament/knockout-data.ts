@@ -99,6 +99,13 @@ export function roundKeyFromStage(stage: string): KnockoutRoundKey | null {
   return null;
 }
 
+/** The display label for a stage ("quarterfinals" → "Quarterfinals").
+ *  Group stages and anything unknown pass through as given. */
+export function roundLabelFromStage(stage: string): string {
+  const key = roundKeyFromStage(stage);
+  return ROUND_ORDER.find((r) => r.key === key)?.label ?? stage;
+}
+
 function fmtDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";

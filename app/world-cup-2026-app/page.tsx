@@ -16,7 +16,7 @@ export const metadata = {
 };
 
 // Past tense since the final (2026-07-19). Facts come from the frozen
-// record (scripts/fixtures/wc-frozen-schedule-2026.json, the same frozen
+// record (app/lib/wc-record-2026.json, the same frozen
 // champion production serves): 104 fixtures from June 11 to July 19, and
 // the final, ARG 0 at ESP 1, Spain champions. The advancement rule is
 // the 48-team format's: top two per group plus the eight best third-

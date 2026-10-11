@@ -4,6 +4,8 @@ import { WC_LEAGUE } from "../../../lib/wc-league";
 import { resolveFrozenChampion } from "../../../lib/wc-champion-store";
 import type { WCChampion } from "../../../lib/wc-champion";
 import { normalizeFixture, type ESPNEvent } from "./normalize";
+import { wcRecord2026 } from "../../../lib/wc-record-2026";
+import { tournamentPhase } from "../../../companion/following/data/tournament-phase";
 
 export const dynamic = "force-dynamic";
 
@@ -192,6 +194,16 @@ async function buildPayload(now: number): Promise<WCSchedulePayload> {
 
 export async function GET() {
   const now = Date.now();
+
+  // After the final, the frozen record answers (app/lib/wc-record-2026.ts).
+  // ESPN stopped answering this route's date-range queries for the
+  // tournament, and a live fetch returned no fixtures at all (2026-10-11).
+  if (tournamentPhase("fifa-world-cup-2026", new Date(now)) === "concluded") {
+    return NextResponse.json(
+      { ...wcRecord2026(), fetchedAt: now },
+      { headers: { "Cache-Control": "public, max-age=3600, s-maxage=86400" } }
+    );
+  }
 
   // Serve a warm cache when we have one.
   try {

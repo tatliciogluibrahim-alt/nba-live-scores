@@ -6,6 +6,7 @@ import { PresetRow } from "../following/PresetRow";
 import { AlertSlotToggle } from "../follow/AlertSlotToggle";
 import { useFollows } from "../providers";
 import { type AlertPreset } from "../state/types";
+import { tournamentPhase } from "../following/data/tournament-phase";
 
 // Country follow + preset block. Mirrors SeriesPresetSection in structure
 // but uses country-specific copy. Stage 11 cleanup could factor a shared
@@ -30,6 +31,11 @@ export function CountryPresetSection({
     (f) => f.kind === "country" && f.id === countryCode
   );
   const isFollowed = Boolean(existing);
+  // Countries are Summer Soccer follows. Once the final is played there is
+  // nothing left to be told about, so a new follow is not offered (the
+  // tournament-phase contract: concluded can't be newly followed). An
+  // existing follow keeps its controls, so it can still be removed.
+  const concluded = tournamentPhase("fifa-world-cup-2026") === "concluded";
 
   function handleFollow() {
     addFollow("country", countryCode);
@@ -79,6 +85,18 @@ export function CountryPresetSection({
           >
             Unfollow country
           </button>
+        </div>
+      ) : concluded ? (
+        <div>
+          <Display as="p" size="sm">
+            Summer Soccer 2026 is over.
+          </Display>
+          <p
+            className="mt-1 text-[12px]"
+            style={{ color: "var(--mute-1)", fontWeight: 500 }}
+          >
+            {countryName} has no more matches to follow. Its results stay here.
+          </p>
         </div>
       ) : (
         <div>

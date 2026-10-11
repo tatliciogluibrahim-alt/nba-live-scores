@@ -17,6 +17,7 @@ import { Spoiler } from "../spoiler/Spoiler";
 import { GameSpoilerScope } from "../spoiler/reveal";
 import { followHidesParticipants } from "../spoiler/follow-match";
 import type { CountryPayload } from "./country-data";
+import { roundLabelFromStage } from "../tournament/knockout-data";
 
 // Single-screen Summer Soccer Country Dashboard. Composition only.
 
@@ -73,11 +74,10 @@ export function CountryClient({ countryCode }: { countryCode: string }) {
 // stakes line → alerts. CountryPresetSection stays mounted as-is
 // (moment-row restyle is D4b polish).
 
-// "round-of-32" → "Round of 32"; already-pretty stages pass through.
+// "round-of-32" → "Round of 32", "quarterfinals" → "Quarterfinals", one
+// label set with the bracket. Group stages pass through.
 function prettyStage(stage: string): string {
-  if (!stage.includes("-")) return stage;
-  const words = stage.split("-").join(" ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return roundLabelFromStage(stage);
 }
 
 const PATH_ORDER = ["group", "r32", "r16", "qf", "sf", "final"];

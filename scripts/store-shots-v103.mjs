@@ -36,7 +36,7 @@ const detailPhiNe = JSON.parse(await readFile("scripts/fixtures/nfl-detail-40187
 // World Cup record (Spain champions) — no invented results anywhere.
 const nbaG5 = JSON.parse(await readFile("scripts/fixtures/nba-finals-g5-2026.json", "utf8"));
 const nbaG5Detail = JSON.parse(await readFile("scripts/fixtures/nba-detail-401859967.json", "utf8"));
-const wcFrozen = JSON.parse(await readFile("scripts/fixtures/wc-frozen-schedule-2026.json", "utf8"));
+const wcFrozen = JSON.parse(await readFile("app/lib/wc-record-2026.json", "utf8"));
 
 // Shot 1 live-hero state: the browser clock is FROZEN mid-Sunday of real
 // week 1 (Sep 13, 2:45 PM ET), so the 1 PM slate is in the third quarter

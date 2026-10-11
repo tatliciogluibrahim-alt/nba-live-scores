@@ -41,7 +41,7 @@ const week4 = await fixture("nfl-week4-2026.json");
 const detailSeaWsh = await fixture("nfl-detail-401872955.json");
 const nbaG5 = await fixture("nba-finals-g5-2026.json");
 const nbaG5Detail = await fixture("nba-detail-401859967.json");
-const wcFrozen = await fixture("wc-frozen-schedule-2026.json");
+const wcFrozen = JSON.parse(await readFile("app/lib/wc-record-2026.json", "utf8"));
 const NO_NFL = { games: [], week: 0, seasonType: 0 };
 
 // ── Seeds (Path B v2 follow schema) ─────────────────────────────────────
