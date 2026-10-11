@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useFollows, useUserPrefs } from "../providers";
 import { isCapacitorNative } from "../dev/native-detect";
 import { BrandMark } from "../frame/BrandMark";
@@ -21,6 +22,7 @@ import { tournamentPhase } from "../following/data/tournament-phase";
 import { NFL_TEAMS } from "../following/data/nfl-teams";
 import type { Follow } from "../state/types";
 import { momentSport } from "../state/moments";
+import { isAppSurfacePath, isMobileUserAgent } from "./app-surface";
 
 // First-run onboarding — shown ONCE to truly-fresh installs (no follows
 // yet, hasn't completed onboarding). Three steps:
@@ -174,6 +176,7 @@ export function OnboardingFlow() {
 
   const [phase, setPhase] = useState<"idle" | "active" | "done">("idle");
   const [step, setStep] = useState(0);
+  const pathname = usePathname();
   const [working, setWorking] = useState(false);
   const reduceMotion = useReducedMotion();
 
@@ -202,11 +205,16 @@ export function OnboardingFlow() {
       window.matchMedia("(min-width: 768px)").matches;
     if (isDesktopWeb) return;
 
+    // App surfaces only. A phone visitor from search who lands on /nfl or a
+    // guide reads that page; onboarding waits for the app (app-surface.ts).
+    // Re-checked on navigation, so opening the app from that page starts it.
+    if (!isAppSurfacePath(pathname ?? "", isMobileUserAgent(navigator.userAgent))) return;
+
     // Latch from hydrated localStorage state (an external system) — a
     // one-time activation, not a render-derived value.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPhase("active");
-  }, [phase, hydrated, prefs.onboardingComplete, follows.length]);
+  }, [phase, hydrated, prefs.onboardingComplete, follows.length, pathname]);
 
   // Split the followable slate: NFL gets the team-first treatment, any
   // other active moment keeps the card row. Derived per render — cheap,

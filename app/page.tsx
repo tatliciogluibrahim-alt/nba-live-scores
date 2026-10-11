@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { CompanionFrame } from "./companion/frame/CompanionFrame";
 import { TodayClient } from "./companion/today/TodayClient";
 import { LandingShell } from "./companion/landing/LandingShell";
+import { isMobileUserAgent as isMobileUA } from "./companion/onboarding/app-surface";
 
 // Home metadata. The layout's bare "No Noise Scores" told a search result
 // nothing, so the home title pairs the name with the locked tagline (52
@@ -46,14 +47,11 @@ export const metadata: Metadata = {
 // send desktop UAs so they see the landing — which is exactly the
 // content we want indexed.
 
-const MOBILE_UA_RE =
-  /Mobile|Android|iPhone|iPod|Mini|webOS|BlackBerry|IEMobile|Opera Mini/i;
-
 async function isMobileUserAgent(): Promise<boolean> {
   try {
     const h = await headers();
-    const ua = h.get("user-agent") ?? "";
-    return MOBILE_UA_RE.test(ua);
+    // One phone test, shared with onboarding's app-surface check.
+    return isMobileUA(h.get("user-agent") ?? "");
   } catch {
     return false;
   }
