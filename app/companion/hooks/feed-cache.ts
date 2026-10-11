@@ -17,7 +17,7 @@
 // In-memory + module-scoped: dies on full reload, which is correct (a
 // fresh page load should fetch fresh).
 
-type CacheEntry = { value: unknown; at: number };
+type CacheEntry = { value: unknown; at: number; maxAgeMs?: number };
 
 const store = new Map<string, CacheEntry>();
 
@@ -31,19 +31,19 @@ export const FEED_KEYS = {
   nfl: "feed:nfl-scores",
 } as const;
 
-export function writeFeed<T>(key: string, value: T): void {
-  store.set(key, { value, at: Date.now() });
+/** `maxAgeMs` lets a writer on a slow cadence (a sport the user doesn't
+ *  follow, refreshed every few minutes) keep its entry seedable that long. */
+export function writeFeed<T>(key: string, value: T, maxAgeMs?: number): void {
+  store.set(key, { value, at: Date.now(), maxAgeMs });
 }
 
-/** Returns the cached value if present and fresher than maxAgeMs,
- *  otherwise undefined. */
-export function readFeed<T>(
-  key: string,
-  maxAgeMs: number = DEFAULT_MAX_AGE_MS
-): T | undefined {
+/** Returns the cached value if present and fresher than maxAgeMs (the
+ *  reader's, else the writer's, else the default), otherwise undefined. */
+export function readFeed<T>(key: string, maxAgeMs?: number): T | undefined {
   const entry = store.get(key);
   if (!entry) return undefined;
-  if (Date.now() - entry.at > maxAgeMs) return undefined;
+  const limit = maxAgeMs ?? entry.maxAgeMs ?? DEFAULT_MAX_AGE_MS;
+  if (Date.now() - entry.at > limit) return undefined;
   return entry.value as T;
 }
 

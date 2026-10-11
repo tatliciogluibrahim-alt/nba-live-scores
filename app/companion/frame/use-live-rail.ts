@@ -104,7 +104,18 @@ export function useLiveRail(): LiveRailPip[] {
   }, [pinned]);
 
   const hydrated = followsHydrated && pinnedHydrated;
-  const active = hydrated && (follows.length > 0 || pinned.length > 0);
+  // The rail shows NBA and Summer Soccer games only, so it polls only for
+  // someone who follows one of those. Before 2026-10-11 any follow or pin
+  // switched it on, so NFL fans fetched both feeds every minute for a rail
+  // that could never show their games. (A pinned NBA or Summer Soccer game
+  // with no follow in that sport no longer surfaces here, which is rare
+  // while both moments are wrapped.)
+  const active =
+    hydrated &&
+    follows.some((f) => {
+      const sport = momentSport(f.momentId);
+      return sport === "nba" || sport === "wc";
+    });
 
   // Clear stale pips when the user has nothing followed or pinned (the poll
   // is disabled then, so it won't clear them itself).

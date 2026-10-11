@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { normalizeNFLGame, type ESPNNFLEvent, type NFLGameLite } from "./normalize";
 import { NFL_SEASON_YEAR } from "../../companion/following/data/nfl-dates";
+import { freshForSeconds, KV_KEEP_SECONDS } from "./cache-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
 const SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 const ESPN_TIMEOUT_MS = 8000;
 const CACHE_PREFIX = "nns:nfl:scoreboard:v1";
-const CACHE_TTL_SECONDS = 30; // NFL plays are slow; 30s is plenty for live
+// Freshness windows live in cache-policy.ts (10s while a game is live).
 
 export type NFLSchedulePayload = {
   games: NFLGameLite[];
@@ -87,7 +88,7 @@ export async function GET(req: Request) {
   // Warm cache.
   try {
     const cached = await kv.get<NFLSchedulePayload>(key);
-    if (cached && now - cached.fetchedAt < CACHE_TTL_SECONDS * 1000) {
+    if (cached && now - cached.fetchedAt < freshForSeconds(cached) * 1000) {
       return NextResponse.json(cached, { headers: { "Cache-Control": "no-store" } });
     }
   } catch {
@@ -97,7 +98,8 @@ export async function GET(req: Request) {
   try {
     const payload = await fetchScoreboard(week, seasonType);
     try {
-      await kv.set(key, payload, { ex: CACHE_TTL_SECONDS });
+      // Kept longer than it's fresh so the outage fallback below has it.
+      await kv.set(key, payload, { ex: KV_KEEP_SECONDS });
     } catch {
       /* best-effort */
     }

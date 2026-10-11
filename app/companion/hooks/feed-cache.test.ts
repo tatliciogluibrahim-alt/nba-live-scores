@@ -46,3 +46,22 @@ describe("readSeedFeeds", () => {
     }
   });
 });
+
+describe("per-entry max age", () => {
+  it("keeps a slow feed seedable for as long as its writer asked", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-10-11T17:00:00Z"));
+      cache.writeFeed(cache.FEED_KEYS.liveScores, { games: [], recent: [] }, 6 * 60_000);
+      cache.writeFeed(cache.FEED_KEYS.worldCup, [], 6 * 60_000);
+      vi.setSystemTime(new Date("2026-10-11T17:04:00Z"));
+      cache.writeFeed(cache.FEED_KEYS.nfl, []);
+      expect(cache.readSeedFeeds()).toBeDefined();
+      vi.setSystemTime(new Date("2026-10-11T17:06:30Z"));
+      cache.writeFeed(cache.FEED_KEYS.nfl, []); // NFL fresh, so only NBA + WC can expire
+      expect(cache.readSeedFeeds()).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

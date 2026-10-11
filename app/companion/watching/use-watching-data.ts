@@ -5,6 +5,7 @@ import { usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import { FEED_KEYS, readSeedFeeds, writeFeed } from "../hooks/feed-cache";
+import { feedsDue, SLOW_FEED_CACHE_MS } from "../hooks/feed-cadence";
 import type { Game } from "../../nba/types";
 import type { NBAGame, WCGameLite } from "../today/today-data";
 import type { NFLGameLite } from "../../api/nfl-scores/normalize";
@@ -27,7 +28,7 @@ const EMPTY: WatchingPayload = {
   closestLive: null,
 };
 
-async function fetchNBA(): Promise<NBAGame[]> {
+async function fetchNBA(cacheMs?: number): Promise<NBAGame[]> {
   try {
     const res = await fetch("/api/live-scores", { cache: "no-store" });
     if (!res.ok) return [];
@@ -38,17 +39,18 @@ async function fetchNBA(): Promise<NBAGame[]> {
     const games = json.games ?? [];
     // Write the same { games, recent } shape Today caches so neither
     // hook clobbers the other's richer entry in the shared feed cache.
-    writeFeed(FEED_KEYS.liveScores, {
-      games,
-      recent: json.seriesGames ?? games,
-    });
+    writeFeed(
+      FEED_KEYS.liveScores,
+      { games, recent: json.seriesGames ?? games },
+      cacheMs
+    );
     return games;
   } catch {
     return [];
   }
 }
 
-async function fetchWC(): Promise<WCGameLite[]> {
+async function fetchWC(cacheMs?: number): Promise<WCGameLite[]> {
   try {
     // wcFeedUrl() honors ?preview=wc-day to swap in simulation data
     // when the harness is active.
@@ -56,7 +58,7 @@ async function fetchWC(): Promise<WCGameLite[]> {
     if (!res.ok) return [];
     const json = (await res.json()) as { games?: WCGameLite[] };
     const games = json.games ?? [];
-    writeFeed(FEED_KEYS.worldCup, games);
+    writeFeed(FEED_KEYS.worldCup, games, cacheMs);
     return games;
   } catch {
     return [];
@@ -157,9 +159,35 @@ export function useWatchingData() {
   // resolution doesn't get blown away by the next poll of the live feeds.
   const [snapshotItems, setSnapshotItems] = useState<PinnedItem[]>([]);
 
+  // Poll cadence (feed-cadence.ts). Watching needs a sport fresh only when a
+  // tracked game is in it: with every pin placed in the NFL feed, NBA and
+  // Summer Soccer refresh every few minutes instead of every tick.
+  const pinnedIdsRef = useRef<string[] | null>(null);
+  useEffect(() => {
+    pinnedIdsRef.current = pinnedHydrated ? pinned.map((p) => p.gameId) : null;
+  }, [pinned, pinnedHydrated]);
+  const interest = useCallback((): ReadonlySet<string> | null => {
+    const ids = pinnedIdsRef.current;
+    if (ids === null) return null;
+    const nflIds = new Set(dataRef.current.nfl.map((g) => g.id));
+    return ids.every((id) => nflIds.has(id)) ? new Set(["nfl"]) : null;
+  }, []);
+  const lastFetched = useRef({ nba: 0, wc: 0 });
+
   // Single fetch+commit path shared by the poll loop and refetch.
   const loadInto = useCallback(async (isCancelled: () => boolean) => {
-    const [nba, wc, nfl] = await Promise.all([fetchNBA(), fetchWC(), fetchNFL()]);
+    const sports = interest();
+    const now = Date.now();
+    const due = feedsDue({ sports, lastFetched: lastFetched.current, now });
+    const cacheMs = (sport: string) =>
+      sports === null || sports.has(sport) ? undefined : SLOW_FEED_CACHE_MS;
+    if (due.nba) lastFetched.current.nba = now;
+    if (due.wc) lastFetched.current.wc = now;
+    const [nba, wc, nfl] = await Promise.all([
+      due.nba ? fetchNBA(cacheMs("nba")) : Promise.resolve(dataRef.current.nba),
+      due.wc ? fetchWC(cacheMs("wc")) : Promise.resolve(dataRef.current.wc),
+      fetchNFL(),
+    ]);
     if (isCancelled()) return;
     const sig =
       JSON.stringify(nba) + "|" + JSON.stringify(wc) + "|" + JSON.stringify(nfl);
@@ -172,7 +200,7 @@ export function useWatchingData() {
     dataRef.current = next;
     setData(next);
     setHasLoadedOnce(true);
-  }, []);
+  }, [interest]);
 
   // Live-feed poll. The snapshot-resolution effect below is separate
   // and untouched — it reacts to livePayload.stalePins, not to this
@@ -180,11 +208,13 @@ export function useWatchingData() {
   useVisibilityPoll(
     (isCancelled) => loadInto(isCancelled),
     () => {
+      // Only a tracked game being live speeds the poll up.
       const current = dataRef.current;
+      const tracked = new Set(pinnedIdsRef.current ?? []);
+      const liveTracked = (games: { id: string; status: string }[]) =>
+        games.some((g) => tracked.has(g.id) && g.status === "live");
       const hasLive =
-        current.nba.some((g) => g.status === "live") ||
-        current.wc.some((g) => g.status === "live") ||
-        current.nfl.some((g) => g.status === "live");
+        liveTracked(current.nba) || liveTracked(current.wc) || liveTracked(current.nfl);
       return hasLive ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
     }
   );

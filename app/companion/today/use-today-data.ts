@@ -5,6 +5,8 @@ import { useFollows, usePinned } from "../providers";
 import { wcFeedUrl } from "../dev/preview-mode";
 import { useVisibilityPoll } from "../hooks/use-visibility-poll";
 import { FEED_KEYS, readSeedFeeds, writeFeed } from "../hooks/feed-cache";
+import { feedsDue, interestSports, SLOW_FEED_CACHE_MS } from "../hooks/feed-cadence";
+import { momentSport } from "../state/moments";
 import { localDayKey } from "../hooks/local-day";
 import {
   buildTodayPayload,
@@ -64,7 +66,7 @@ type FetchedData = {
   updatedAt: Date | null;
 };
 
-async function fetchNBA(): Promise<{ games: NBAGame[]; recent: NBAGame[] }> {
+async function fetchNBA(cacheMs?: number): Promise<{ games: NBAGame[]; recent: NBAGame[] }> {
   try {
     const res = await fetch("/api/live-scores", { cache: "no-store" });
     if (!res.ok) return { games: [], recent: [] };
@@ -78,14 +80,14 @@ async function fetchNBA(): Promise<{ games: NBAGame[]; recent: NBAGame[] }> {
     // when they fall outside the current week boundary.
     const recent = json.seriesGames ?? games;
     const result = { games, recent };
-    writeFeed(FEED_KEYS.liveScores, result);
+    writeFeed(FEED_KEYS.liveScores, result, cacheMs);
     return result;
   } catch {
     return { games: [], recent: [] };
   }
 }
 
-async function fetchWC(): Promise<{
+async function fetchWC(cacheMs?: number): Promise<{
   games: WCGameLite[];
   champion: WCChampion | null;
 }> {
@@ -100,7 +102,7 @@ async function fetchWC(): Promise<{
       champion?: WCChampion | null;
     };
     const games = json.games ?? [];
-    writeFeed(FEED_KEYS.worldCup, games);
+    writeFeed(FEED_KEYS.worldCup, games, cacheMs);
     return { games, champion: json.champion ?? null };
   } catch {
     return { games: [], champion: null };
@@ -209,6 +211,31 @@ export function useTodayData() {
     };
   }, []);
 
+  // Poll cadence (feed-cadence.ts): sports the user follows stay on the
+  // tick, others refresh every few minutes. The poll reads follows and
+  // tracked games through refs, kept current after each render.
+  const interestInputs = useRef({
+    hydrated: false,
+    followSports: [] as (string | null)[],
+    pinnedIds: [] as string[],
+  });
+  useEffect(() => {
+    interestInputs.current = {
+      hydrated: followsHydrated && pinnedHydrated,
+      followSports: follows.map((f) => momentSport(f.momentId)),
+      pinnedIds: pinned.map((p) => p.gameId),
+    };
+  }, [follows, pinned, followsHydrated, pinnedHydrated]);
+  const interest = useCallback(
+    () =>
+      interestSports({
+        ...interestInputs.current,
+        nflIds: new Set(dataRef.current.nfl.map((g) => g.id)),
+      }),
+    []
+  );
+  const lastFetched = useRef({ nba: 0, wc: 0 });
+
   // Single fetch+commit path shared by the poll loop and the manual
   // refetch. `isCancelled` guards the post-await setState (the poll
   // passes the primitive's accessor; refetch passes a no-op since a
@@ -272,23 +299,37 @@ export function useTodayData() {
       setData(dataRef.current);
       if (res.games.length > 0) setHasLoadedOnce(true);
     };
-    await Promise.allSettled([
-      fetchNBA().then(applyNba),
-      fetchWC().then(applyWc),
-      fetchNFL().then(applyNfl),
-    ]);
+    const sports = interest();
+    const now = Date.now();
+    const due = feedsDue({ sports, lastFetched: lastFetched.current, now });
+    // A slow-cadence feed stays seedable until its next refresh.
+    const cacheMs = (sport: string) =>
+      sports === null || sports.has(sport) ? undefined : SLOW_FEED_CACHE_MS;
+    const tasks: Promise<unknown>[] = [fetchNFL().then(applyNfl)];
+    if (due.nba) {
+      lastFetched.current.nba = now;
+      tasks.push(fetchNBA(cacheMs("nba")).then(applyNba));
+    }
+    if (due.wc) {
+      lastFetched.current.wc = now;
+      tasks.push(fetchWC(cacheMs("wc")).then(applyWc));
+    }
+    await Promise.allSettled(tasks);
     // Both settled — flip even if both came back empty so a genuinely
     // quiet day leaves the loading shell instead of hanging.
     if (!isCancelled()) setHasLoadedOnce(true);
-  }, []);
+  }, [interest]);
 
   useVisibilityPoll(
     (isCancelled) => loadInto(isCancelled),
     () => {
+      // Only a live game in a sport this user sees speeds the poll up.
       const current = dataRef.current;
+      const sports = interest();
+      const sees = (sport: string) => sports === null || sports.has(sport);
       const hasLive =
-        current.nba.some((g) => g.status === "live") ||
-        current.wc.some((g) => g.status === "live") ||
+        (sees("nba") && current.nba.some((g) => g.status === "live")) ||
+        (sees("wc") && current.wc.some((g) => g.status === "live")) ||
         current.nfl.some((g) => g.status === "live");
       return hasLive ? LIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
     }
