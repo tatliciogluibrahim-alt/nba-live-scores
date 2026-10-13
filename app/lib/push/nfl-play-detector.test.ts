@@ -194,3 +194,99 @@ describe("detectNFLPlays — missed field goals are not big plays (2026 Week 5)"
     expect(events).toHaveLength(0);
   });
 });
+
+describe("detectNFLPlays — big plays are runs and catches, never nullified (2026 Weeks 4-5)", () => {
+  // The Tuesday shift, 2026-10-13: kickoff and punt returns of 40+ yards
+  // pushed "Big play" on Full Details (9 in Week 5 on a season follow), and
+  // a 90-yard return wiped out by a penalty pushed anyway. The design
+  // (docs/nfl-design.md) defines a big play as a 40+ yard rush or
+  // reception. Play texts are ESPN's, verbatim.
+  const input = (drivePlays: NFLDrivePlay[]) => ({
+    gameId: "g1",
+    awayCode: "ARZ",
+    homeCode: "NYG",
+    awayScore: 0,
+    homeScore: 0,
+    scoringPlays: [],
+    drivePlays,
+    firedPlayIds: [],
+  });
+
+  it("does not push a kickoff return as a big play", () => {
+    const { events } = detectNFLPlays(
+      input([
+        {
+          id: "kr",
+          statYardage: 55,
+          type: { text: "Kickoff" },
+          text: "C.Ryland kicks 65 yards from ARZ 35 to NYG 0. T.Tracy pushed ob at ARZ 45 for 55 yards (K.Clark).",
+        },
+      ])
+    );
+    expect(events).toHaveLength(0);
+  });
+
+  it("does not push a punt return as a big play", () => {
+    const { events } = detectNFLPlays(
+      input([
+        {
+          id: "pr",
+          statYardage: 41,
+          type: { text: "Punt" },
+          text: "E.Evans punts 51 yards to PHI 42, Center-J.Cardona. B.Covey pushed ob at LA 17 for 41 yards (O.Speights).",
+        },
+      ])
+    );
+    expect(events).toHaveLength(0);
+  });
+
+  it("never pushes a play nullified by penalty", () => {
+    const { events } = detectNFLPlays(
+      input([
+        {
+          // PHI at JAX, Week 5: the 90-yard return that never counted.
+          id: "nullified-kr",
+          statYardage: 90,
+          type: { text: "Kickoff Return Touchdown" },
+          text: "J.Elliott kicks 55 yards from PHI 35 to JAX 10. J.Cameron for 90 yards, TOUCHDOWN NULLIFIED by Penalty.Penalty on PHI-A.Epenesa, Illegal Formation, offsetting, enforced at PHI 35 - No Play.",
+        },
+        {
+          // A field goal taken off the board reads as a 41-yard "Penalty".
+          id: "nullified-fg",
+          statYardage: 41,
+          type: { text: "Penalty" },
+          text: "M.Gay 41 yard field goal is GOOD, NULLIFIED by Penalty, Center-A.Ward, Holder-A.Cole.PENALTY on KC-P.Woods, Illegal Formation, 5 yards, enforced at KC 23 - No Play.",
+        },
+        {
+          // Not seen yet, but a wiped-out turnover never happened either.
+          id: "nullified-int",
+          statYardage: 0,
+          isTurnover: true,
+          type: { text: "Interception" },
+          text: "J.Allen pass deep left INTERCEPTED by T.Brown, NULLIFIED by Penalty.PENALTY on MIA, Defensive Holding, 5 yards - No Play.",
+        },
+      ])
+    );
+    expect(events).toHaveLength(0);
+  });
+
+  it("still pushes a 40+ yard run and catch", () => {
+    const { events } = detectNFLPlays(
+      input([
+        {
+          id: "rush",
+          statYardage: 53,
+          type: { text: "Rush" },
+          text: "(Shotgun) O.Gordon left tackle pushed ob at MIN 11 for 53 yards (B.Murphy; H.Smith).",
+        },
+        {
+          id: "rec",
+          statYardage: 60,
+          type: { text: "Pass Reception" },
+          text: "(Shotgun) D.Watson pass deep left to D.Boston to PIT 14 for 60 yards (D.Everette).",
+        },
+      ])
+    );
+    expect(events.map((e) => e.type)).toEqual(["nfl-big-play-rush", "nfl-big-play-rec"]);
+  });
+});

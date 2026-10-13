@@ -13,7 +13,7 @@ import {
   type CachedNFLGameState,
 } from "../nfl-event-detector";
 import { scanNFLGamePlays } from "../nfl-play-scan";
-import { isBigPlayYardage } from "../nfl-play-detector";
+import { isBigPlayYardage, isNullified } from "../nfl-play-detector";
 import { DEDUPE_TTL_SECONDS } from "../dedupe";
 import {
   buildLiveActivityOfferPayload,
@@ -145,13 +145,16 @@ export function replayNFLGame(
   const accounting: PlayAccounting[] = [];
   for (const p of timeline.plays) {
     const scoring = scoringById.get(p.id);
+    // The same rules as the live detector: a nullified play never counts.
     const kind: PlayAccounting["kind"] | null = scoring
       ? "scoring"
-      : p.isTurnover && !p.scoringPlay
-        ? "turnover"
-        : !p.scoringPlay && isBigPlayYardage(p)
-          ? "big-play"
-          : null;
+      : isNullified(p)
+        ? null
+        : p.isTurnover && !p.scoringPlay
+          ? "turnover"
+          : !p.scoringPlay && isBigPlayYardage(p)
+            ? "big-play"
+            : null;
     if (!kind) continue;
     const detectedAtMs = detectedAt.get(p.id);
     accounting.push({

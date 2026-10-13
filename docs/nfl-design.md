@@ -60,6 +60,15 @@ scoring summary, and yardage. Parsing it gives:
 | `nfl-big-play-rec` | Reception ≥ 40 yards (regardless of TD) | All only |
 | `nfl-turnover` | INT or fumble lost | All only (moved out of Companion 2026-09-20: no score change, ~2 per game both teams) |
 
+Big plays are runs and catches only: plays ESPN types `Rush` or `Pass
+Reception` (`isBigPlayYardage`). Kick and punt returns, missed field
+goals and penalties don't count even when `statYardage` reads 40+, and a
+play ESPN marks NULLIFIED never pushes at all, big play or turnover
+(`isNullified`). Settled by the owner 2026-10-13 after the Tuesday shift
+found 11 missed field goals, 9 returns and a nullified 90-yard return
+pushing as big plays in Week 5. A return that scores still pushes as a
+touchdown.
+
 "Own-team only" is enforced literally since 2026-09-20: every per-play
 event carries `teamCode` (the scoring team, or the offense on a big play
 or turnover) and the dispatcher grants the personal boost only when the

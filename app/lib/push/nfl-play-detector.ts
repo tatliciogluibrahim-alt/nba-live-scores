@@ -10,12 +10,22 @@ import { scoreEvent } from "./significance";
 
 export const BIG_PLAY_YARDS = 40;
 
-/** A 40+ yard gain. A field goal attempt carries the kick distance in
- *  statYardage, so a missed 50-yarder read as a 50-yard big play. Kicks are
- *  not gains. */
+/** A big play is a 40+ yard run or catch (docs/nfl-design.md), and only
+ *  that. statYardage on other plays isn't a gain: a missed field goal
+ *  carries its kick distance, a kickoff or punt its return yards, and a
+ *  field goal wiped out by a penalty reads as a long "Penalty" (the
+ *  Tuesday shift, 2026-10-13: 11 misses and 9 returns pushed in Week 5).
+ *  ESPN types the two that count "Rush" and "Pass Reception". */
 export function isBigPlayYardage(p: Pick<NFLDrivePlay, "statYardage" | "type">): boolean {
   const typeText = (p.type?.text ?? "").toLowerCase();
-  return (p.statYardage ?? 0) >= BIG_PLAY_YARDS && !/^field goal/.test(typeText);
+  return (p.statYardage ?? 0) >= BIG_PLAY_YARDS && /\b(rush|reception)\b/.test(typeText);
+}
+
+/** A play ESPN took off the board ("TOUCHDOWN NULLIFIED by Penalty",
+ *  "field goal is GOOD, NULLIFIED by Penalty"). It never happened, so it
+ *  never pushes: not as a big play, not as a turnover. */
+export function isNullified(p: Pick<NFLDrivePlay, "text">): boolean {
+  return /\bnullified\b/i.test(p.text ?? "");
 }
 
 export type NFLScoringPlay = {
@@ -110,7 +120,7 @@ export function detectNFLPlays(input: NFLPlayInput): NFLPlayResult {
   const driveTeam = input.driveTeamCode?.trim();
   const driveBase = driveTeam ? { ...base, teamCode: driveTeam } : base;
   for (const p of input.drivePlays ?? []) {
-    if (!p.id || fired.has(p.id) || p.scoringPlay) continue;
+    if (!p.id || fired.has(p.id) || p.scoringPlay || isNullified(p)) continue;
     const text = (p.text ?? "").toLowerCase();
     const typeText = (p.type?.text ?? "").toLowerCase();
     const yards = p.statYardage ?? 0;

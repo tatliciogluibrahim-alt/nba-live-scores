@@ -2,6 +2,29 @@
 
 ---
 
+## Big plays are runs and catches (2026-10-13)
+
+The Tuesday shift's Week 5 replay found Full Details pushing "Big play"
+for plays that weren't 40-yard gains:
+
+- Missed field goals of 40+ yards, 11 in the week. ESPN stores the kick
+  distance in the same field as yards gained. The shift fixed this itself.
+- Kickoff and punt returns of 40+ yards, 9 in the week.
+- A 90-yard kickoff return that a penalty wiped out.
+
+Owner call: a big play is a 40+ yard run or catch, as the design always
+said, and a play ESPN marks nullified never pushes. A return that scores
+still pushes as a touchdown.
+
+Measured on the replay:
+- Week 5 season follow, Full Details: 276 to 256 pushes.
+- The loudest three-team hour: 26 to 23, back inside its ceiling of 23.
+- Team follow max: 24 to 22.
+- Week 4 season follow: 294 to 279.
+- Quiet and Companion: unchanged.
+
+---
+
 ## Closing out the persona sweep (2026-10-11)
 
 Everything else the six test agents found is fixed (Week 5, 1 PM slate,

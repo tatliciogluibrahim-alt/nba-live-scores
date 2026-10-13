@@ -433,6 +433,14 @@ for byte (Week 2 checked).
    build (re-archive v1.0.4 first if it isn't uploaded yet, otherwise
    v1.0.5). Larger Text itself needs no native build.
 
+**Tuesday shift, 2026-10-13 (Week 5, ESPN direct):** Contract PASS,
+Budget FAIL on one line (three-team Full Details hour 24 against a
+ceiling of 23). It fixed missed field goals pushing as big plays (branch
+merged). The owner then settled its three questions: big plays are runs
+and catches only, nullified plays never push, and the ceiling stays 23.
+Replayed after: Budget PASS, that hour 23, season follow Full Details
+276 to 256, Quiet and Companion unchanged.
+
 **Open decision for the owner:** Full Details is "every moment, every
 game". Measured: about 17 pushes per game for a team follow (max 25),
 up to 289 a week and 59 in one hour for a whole-season follow. The
