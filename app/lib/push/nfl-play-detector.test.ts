@@ -165,3 +165,32 @@ describe("detectNFLPlays — team attribution (own-team Companion gate)", () => 
     expect(events[0].teamCode).toBeUndefined();
   });
 });
+
+describe("detectNFLPlays — missed field goals are not big plays (2026 Week 5)", () => {
+  // NYG at WSH, 2026-10-11: D.Zvada missed from 50, 57 and 46. ESPN puts the
+  // kick distance in statYardage, so each miss pushed "Big play" on Full
+  // Details. A big play is a 40+ yard rush or reception (docs/nfl-design.md).
+  const nygAtWsh = JSON.parse(
+    readFileSync(
+      new URL("./replay/__fixtures__/nfl-summary-401872988-nyg-at-wsh.json", import.meta.url),
+      "utf8"
+    )
+  ) as { drives: { previous: { plays: NFLDrivePlay[] }[] } };
+  const plays = nygAtWsh.drives.previous.flatMap((d) => d.plays);
+  const misses = plays.filter((p) => p.type?.text === "Field Goal Missed");
+
+  it("does not push a missed field goal as a big play", () => {
+    expect(misses.map((p) => p.statYardage)).toEqual([50, 57, 46]);
+    const { events } = detectNFLPlays({
+      gameId: "401872988",
+      awayCode: "NYG",
+      homeCode: "WSH",
+      awayScore: 0,
+      homeScore: 0,
+      scoringPlays: [],
+      drivePlays: misses,
+      firedPlayIds: [],
+    });
+    expect(events).toHaveLength(0);
+  });
+});

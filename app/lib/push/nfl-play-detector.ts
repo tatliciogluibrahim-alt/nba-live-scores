@@ -10,6 +10,14 @@ import { scoreEvent } from "./significance";
 
 export const BIG_PLAY_YARDS = 40;
 
+/** A 40+ yard gain. A field goal attempt carries the kick distance in
+ *  statYardage, so a missed 50-yarder read as a 50-yard big play. Kicks are
+ *  not gains. */
+export function isBigPlayYardage(p: Pick<NFLDrivePlay, "statYardage" | "type">): boolean {
+  const typeText = (p.type?.text ?? "").toLowerCase();
+  return (p.statYardage ?? 0) >= BIG_PLAY_YARDS && !/^field goal/.test(typeText);
+}
+
 export type NFLScoringPlay = {
   id: string;
   type?: { abbreviation?: string; text?: string };
@@ -119,7 +127,7 @@ export function detectNFLPlays(input: NFLPlayInput): NFLPlayResult {
       });
       continue;
     }
-    if (yards >= BIG_PLAY_YARDS) {
+    if (isBigPlayYardage(p)) {
       const isRec = /reception|pass/.test(typeText) || / pass /.test(text);
       const type: PushEvent["type"] = isRec ? "nfl-big-play-rec" : "nfl-big-play-rush";
       fired.add(p.id);
