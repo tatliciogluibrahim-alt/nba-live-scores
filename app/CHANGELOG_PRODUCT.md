@@ -2,6 +2,33 @@
 
 ---
 
+## Held scores stay off the lock screen, and the launch kit (2026-10-13)
+
+- **Courtside C4b.** A No-Spoilers game on the lock screen used to
+  receive the real score in every update and only hide it on the tile.
+  Now the server sends a held tile no digits at all, the final included,
+  and Reveal fetches the score when you tap. Builds before v1.0.5 keep
+  getting real digits, hidden on the tile as before. The server half is
+  live. The tile half ships with v1.0.5.
+- **The Reveal button now reveals at once.** iOS ran it in the widget
+  extension, where the activity can't be updated, so in v1.0.4 a tap
+  showed the score only with the next server update (about a minute
+  during a game, never after the final). It now runs in the app. Ships
+  with v1.0.5.
+- **Launch KPIs.** Installs and day-1 and day-7 retention are now
+  counted on the device and sent as plain counts, no device id, from app
+  screens only. They're on the admin page with the push funnel.
+- **Scan health check.** /api/health/scan-nfl answers 503 when the push
+  scan stops, for an uptime monitor that keeps time.
+- **The launch kit** is in docs/marketing: Show HN, an X thread,
+  Product Hunt, an essay, r/nfl and r/SideProject posts, Threads and
+  Bluesky, a case study, an outreach list and a launch day checklist.
+  v1.0.5 is its gate.
+- Cleanup: three Tuesday shift branches deleted. The September 29 fix was
+  already in main. The October 6 branch's real-game test was kept.
+
+---
+
 ## Big plays are runs and catches (2026-10-13)
 
 The Tuesday shift's Week 5 replay found Full Details pushing "Big play"

@@ -393,9 +393,10 @@ The prompt is a five-phase runbook that produces:
 Strategy lives in `docs/LAUNCH_PLAN.md`. Output directory is
 `docs/marketing/` (currently has only a README).
 
-Do not run the marketing phase prematurely. Wait for the explicit
-trigger. Until then, marketing artifacts stay un-generated and
-`docs/marketing/` stays empty (except for its README).
+The marketing phase ran on 2026-10-13 (owner: "do it all"), adapted to
+the NFL season. The artifacts are in `docs/marketing/` and the KPI
+instrumentation is live (see PROJECT_CONTEXT). Re-running it means
+refreshing those files, not starting over.
 
 ## Free vs. paid model (in copy already)
 

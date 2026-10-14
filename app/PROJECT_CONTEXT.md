@@ -385,6 +385,14 @@ for byte (Week 2 checked).
 1. **v1.0.4 (build 20) APPROVED by Apple 2026-10-13.** It was submitted
    for manual release, so it waits on the owner's "Release This Version".
    Then check the lock screen tile on Thursday Night Football (Oct 15).
+   Known in v1.0.4: the lock screen Reveal button only reveals with the
+   next server update (iOS ran the intent in the widget extension). Fixed
+   for v1.0.5.
+   **v1.0.5 is ready to archive** (2026-10-13): Courtside C4b (held scores
+   never enter ActivityKit, reveal fetches the score), the reveal intent
+   running in the app (RevealScoreIntent.swift in both targets), and the
+   2026-10-11 mute token. Bump to 1.0.5 build 21, archive by CLI, upload
+   with Organizer. It is the launch gate.
    History: the v1.0.4 device pass + submit. v1.0.4 now also carries the
    score roll and the reveal haptic (2026-10-01). Check: DEBUG demo
    `-NNDemoLiveActivity live` scores twice (10s and 20s after the tile
@@ -405,7 +413,20 @@ for byte (Week 2 checked).
    opening score 0 of 16, kickoff fix clean) but ran on the backup data.
    Next run Tuesday Oct 6, 18:00 UTC, on Week 4. The remote branch
    `tuesday-shift/2026-09-29-nfl-kickoff-body` can be deleted.
-3. C4b (held scores out of ActivityKit), designed in the Courtside spec.
+3. C4b BUILT 2026-10-13 (see item 1). Verified end to end in the
+   simulator: a held demo tile for DEN at LAC showed no digits, and a tap
+   fetched 23-17 from production.
+3b. **Launch kit generated 2026-10-13** (the marketing phase, owner: "do
+   it all"): `docs/marketing/`. Recommended launch: Tuesday Oct 27 or
+   Nov 3, after v1.0.5 is live. KPI instrumentation:
+   - Client: `app/companion/kpi/KpiBeacon.tsx`, mounted in CompanionFrame
+     (app screens only). localStorage `nns:kpi:first`,
+     `nns:kpi:sent:<event>`.
+   - Server: POST `/api/metrics/kpi` { event: first_open | d1 | d7,
+     cohort: YYYY-MM-DD, surface: ios | pwa | web }. KV
+     `nns:kpi:v1:<event>:<cohort>:<surface>` (120-day TTL) and
+     `nns:kpi:v1:total:first_open:<surface>`. Counts only, no device id.
+   - Readout: the admin page's "Launch KPIs" section.
 4. Store shots 2+3 rerun, Courtside C5. (NFL Standings shipped 2026-10-11.)
 5. The nfl-scan-watchdog is `*/15` but GitHub runs it about 4 times a day
    (measured Sep 29 to Oct 1), so a stalled scan could go unnoticed for
