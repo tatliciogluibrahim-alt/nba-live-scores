@@ -290,3 +290,37 @@ describe("detectNFLPlays — big plays are runs and catches, never nullified (20
     expect(events.map((e) => e.type)).toEqual(["nfl-big-play-rush", "nfl-big-play-rec"]);
   });
 });
+
+describe("detectNFLPlays — a whole real game (PIT at CLE, 2026 Week 4)", () => {
+  // From the Tuesday shift of 2026-10-06 (its branch was never merged, and
+  // the rule it argued for landed 2026-10-13). Every drive of a real game:
+  // only the three 40+ yard catches are big plays, and C.Boswell's 48-yard
+  // miss, which carries statYardage 48, is not.
+  const game = JSON.parse(
+    readFileSync(
+      new URL("./replay/__fixtures__/nfl-summary-401872964-pit-at-cle.json", import.meta.url),
+      "utf8"
+    )
+  ) as {
+    drives: { previous: { team?: { abbreviation?: string }; plays: NFLDrivePlay[] }[] };
+  };
+
+  it("pushes only the real runs and catches of 40+ yards", () => {
+    const notes = game.drives.previous.flatMap((d) =>
+      detectNFLPlays({
+        ...base,
+        awayCode: "PIT",
+        homeCode: "CLE",
+        scoringPlays: [],
+        driveTeamCode: d.team?.abbreviation,
+        drivePlays: d.plays,
+        firedPlayIds: [],
+      })
+        .events.filter((e) => e.type.startsWith("nfl-big-play"))
+        .map((e) => e.note ?? "")
+    );
+    expect(notes.some((n) => /field goal/i.test(n))).toBe(false);
+    expect(notes).toHaveLength(3);
+    expect(notes.every((n) => / pass /.test(n))).toBe(true);
+  });
+});
