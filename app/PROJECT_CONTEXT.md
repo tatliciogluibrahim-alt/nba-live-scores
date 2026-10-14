@@ -382,7 +382,10 @@ runs started at 14:35 and 16:15), which is why the routine moved from
 for byte (Week 2 checked).
 
 **Next, in order:**
-1. Owner: the v1.0.4 device pass + submit. v1.0.4 now also carries the
+1. **v1.0.4 (build 20) APPROVED by Apple 2026-10-13.** It was submitted
+   for manual release, so it waits on the owner's "Release This Version".
+   Then check the lock screen tile on Thursday Night Football (Oct 15).
+   History: the v1.0.4 device pass + submit. v1.0.4 now also carries the
    score roll and the reveal haptic (2026-10-01). Check: DEBUG demo
    `-NNDemoLiveActivity live` scores twice (10s and 20s after the tile
    appears, so lock the phone once the tile is up) and both numerals
@@ -406,8 +409,10 @@ for byte (Week 2 checked).
 4. Store shots 2+3 rerun, Courtside C5. (NFL Standings shipped 2026-10-11.)
 5. The nfl-scan-watchdog is `*/15` but GitHub runs it about 4 times a day
    (measured Sep 29 to Oct 1), so a stalled scan could go unnoticed for
-   hours. Move the check to a scheduler that keeps time (cron-job.org
-   with failure emails, or an uptime monitor) before the playoffs.
+   hours. **Built 2026-10-13:** `/api/health/scan-nfl` answers 503 once the
+   scan heartbeat is 10 minutes old. Owner step: in cron-job.org, add a job
+   that GETs https://nonoisescores.app/api/health/scan-nfl every 5 minutes
+   with failure notifications on. The GitHub watchdog stays as a backup.
 
 6. Sunday persona sweep (2026-10-11, Week 5 1 PM slate, six agents). Top 5
    in `docs/qa/2026-10-11-sunday-persona-sweep.md`:
@@ -441,12 +446,12 @@ and catches only, nullified plays never push, and the ceiling stays 23.
 Replayed after: Budget PASS, that hour 23, season follow Full Details
 276 to 256, Quiet and Companion unchanged.
 
-**Open decision for the owner:** Full Details is "every moment, every
-game". Measured: about 17 pushes per game for a team follow (max 25),
-up to 289 a week and 59 in one hour for a whole-season follow. The
-intended answer is Companion (about 8 per game, max 13). Thinning Full
-Details changes that tier's promise; decide explicitly (the budget in
-`app/lib/push/replay/noise-budget.ts` is where the decision lands).
+**Decided 2026-10-13 (owner): Full Details stays as it is.** It is "every
+moment, every game": about 17 pushes per game for a team follow and about
+256 a week for a whole-season follow (Week 5, after big plays became runs
+and catches only). Companion is the intended default for most fans. The
+budget in `app/lib/push/replay/noise-budget.ts` is unchanged, and the
+three-team ceiling stays 23.
 
 ### 2026-10-11: closing out the persona sweep
 
