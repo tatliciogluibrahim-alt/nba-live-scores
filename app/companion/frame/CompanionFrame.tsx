@@ -4,6 +4,7 @@ import { TabBar } from "./TabBar";
 import { DesktopSidebarNav } from "./DesktopSidebarNav";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { NavDepthTracker } from "./NavDepthTracker";
+import { KpiBeacon } from "../kpi/KpiBeacon";
 
 // Per-screen frame: scroll surface + fixed bottom tab bar (mobile)
 // or left sidebar rail (desktop, md+). The TabBar reserves ~72px at
@@ -67,6 +68,7 @@ export function CompanionFrame({
     >
       <PreviewModeBanner />
       <NavDepthTracker />
+      <KpiBeacon />
       {desktopNav ? <DesktopSidebarNav active={activeTab} /> : null}
       {desktopNav ? <KeyboardShortcuts /> : null}
       <div className={desktopNav ? "md:pl-[220px]" : ""}>{children}</div>

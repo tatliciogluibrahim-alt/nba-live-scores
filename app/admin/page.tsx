@@ -29,6 +29,8 @@ import { listIosTokens } from "../lib/push/ios-token-store";
 import { subscriberCount } from "../lib/brief/subscriber-store";
 import { betaSubscriberCount } from "../lib/beta/subscriber-store";
 import { readFunnel } from "../lib/push/funnel-metrics";
+import { readKpis } from "../lib/kpi/kpi-store";
+import { retentionRows } from "../lib/kpi/kpi";
 
 // Constant-time compare to defeat timing oracles. Mirrors the same
 // pattern used in /api/admin/push/status. Returns false if either
@@ -132,7 +134,16 @@ export default async function AdminPage({
   }
 
   // All reads run in parallel. Each one is independent.
-  const [webCount, webSubs, iosTokens, briefCount, betaCount, funnel] =
+  // Launch KPIs (app/lib/kpi): the last 45 days. Devices label a cohort
+  // with their own local day, so a row near midnight can sit a day off ET.
+  const kpiNow = new Date();
+  const kpiToday = kpiNow.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const kpiDays = Array.from({ length: 45 }, (_, k) =>
+    new Date(kpiNow.getTime() - k * 86_400_000).toLocaleDateString("en-CA", {
+      timeZone: "America/New_York",
+    })
+  );
+  const [webCount, webSubs, iosTokens, briefCount, betaCount, funnel, kpis] =
     await Promise.all([
       subscriptionCount(),
       listSubscriptions(),
@@ -140,7 +151,15 @@ export default async function AdminPage({
       subscriberCount(),
       betaSubscriberCount(),
       readFunnel(),
+      readKpis(kpiDays),
     ]);
+  const kpiRows = retentionRows(kpis.cohorts, kpiToday);
+  // D7 across every cohort that has reached day 7, weighted by size.
+  const d7Ready = kpiRows.filter((r) => r.d7Rate !== null);
+  const d7Size = d7Ready.reduce((n, r) => n + r.size, 0);
+  const d7All = d7Size
+    ? Math.round((d7Ready.reduce((n, r) => n + r.d7, 0) / d7Size) * 100)
+    : null;
 
   // Activation funnel: of the unique devices that saw the notification
   // prompt, how many granted. prompt_shown is deduped client-side.
@@ -325,6 +344,53 @@ export default async function AdminPage({
           </p>
         </Section>
 
+        <Section title="Launch KPIs (app opens)">
+          <div style={statGridStyle}>
+            <Stat label="iPhone app installs" value={kpis.totals.ios} sub="first opens, all time" />
+            <Stat label="Installed web app" value={kpis.totals.pwa} sub="first opens, all time" />
+            <Stat label="Browser visitors" value={kpis.totals.web} sub="first opens, all time" />
+            <Stat
+              label="D7 retention"
+              value={d7All === null ? "pending" : `${d7All}%`}
+              sub={`${d7Size.toLocaleString()} installs old enough`}
+            />
+          </div>
+          {kpiRows.length > 0 ? (
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>First open (device day)</th>
+                  <th style={thNumStyle}>Installs</th>
+                  <th style={thNumStyle}>D1</th>
+                  <th style={thNumStyle}>D7</th>
+                </tr>
+              </thead>
+              <tbody>
+                {kpiRows.map((r) => (
+                  <tr key={r.cohort}>
+                    <td style={tdStyle}>{r.cohort}</td>
+                    <td style={tdNumStyle}>{r.size}</td>
+                    <td style={tdNumStyle}>
+                      {r.d1Rate === null ? "pending" : `${Math.round(r.d1Rate * 100)}%`}
+                    </td>
+                    <td style={tdNumStyle}>
+                      {r.d7Rate === null ? "pending" : `${Math.round(r.d7Rate * 100)}%`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : null}
+          <p style={mutedStyle}>
+            Counted on the device and sent as plain counts, no device id.
+            An install is the first open of the iPhone app or the installed
+            web app. D1 and D7 mean it opened again exactly 1 or 7 days
+            later. A day reads pending until it has come. Browser visits
+            are counted but stay out of retention. Push grants are in the
+            activation funnel above.
+          </p>
+        </Section>
+
         <Section title="Delivery retention">
           <div style={statGridStyle}>
             <Stat
@@ -444,13 +510,15 @@ function Stat({
   sub,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   sub?: string;
 }) {
   return (
     <div style={statCardStyle}>
       <div style={statLabelStyle}>{label}</div>
-      <div style={statValueStyle}>{value.toLocaleString()}</div>
+      <div style={statValueStyle}>
+        {typeof value === "number" ? value.toLocaleString() : value}
+      </div>
       {sub ? <div style={statSubStyle}>{sub}</div> : null}
     </div>
   );
