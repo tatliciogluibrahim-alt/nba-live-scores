@@ -368,6 +368,11 @@ export type LiveActivityContentState = {
    *  back to the codes, and older app builds ignore unknown keys. */
   awayName?: string;
   homeName?: string;
+  /** Courtside C4b: the score is held. awayScore/homeScore are 0 and carry
+   *  nothing, and the tile draws the held chip. Sent only to tokens whose
+   *  build can draw it (live-activity-held.ts). Builds without it ignore
+   *  the key, and decode it as false. */
+  held?: boolean;
 };
 
 /** Set once when starting via push-to-start. Decoded by `ActivityAttributes`. */

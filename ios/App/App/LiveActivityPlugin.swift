@@ -23,6 +23,7 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getActiveActivities", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "clearReveal", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "areActivitiesEnabled", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "capabilities", returnType: CAPPluginReturnPromise),
     ]
 
     // Must match WidgetStore.appGroup / WidgetStore.revealKey in the widget
@@ -76,9 +77,18 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         Task { [weak self] in
             for await tokenData in activity.pushTokenUpdates {
                 let hex = tokenData.map { String(format: "%02x", $0) }.joined()
+                // Courtside C4b: what the server needs to hold this token's
+                // scores. The activity's own redaction (the token can reach
+                // the web before start() resolves), that this build draws a
+                // held state, and whether this device already revealed it.
+                let revealed = UserDefaults(suiteName: Self.appGroup)?
+                    .bool(forKey: Self.revealKey(gameId)) ?? false
                 self?.notifyListeners("pushToken", data: [
                     "gameId": gameId,
                     "token": hex,
+                    "redacted": activity.attributes.redacted,
+                    "heldCapable": true,
+                    "revealed": revealed,
                 ])
             }
         }
@@ -156,7 +166,9 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             // right point in the match instead of empty.
             progress: call.getDouble("progress") ?? 0,
             awayName: call.getString("awayName") ?? "",
-            homeName: call.getString("homeName") ?? ""
+            homeName: call.getString("homeName") ?? "",
+            // C4b: a redacted tile starts without digits when the web asks.
+            held: call.getBool("held") ?? false
         )
 
         do {
@@ -262,6 +274,13 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
     // Group. When the user newly enables global/selective No-Spoilers, the
     // web clears this flag before restarting the Activity with redacted=true;
     // otherwise the replacement would immediately reveal itself again.
+    // What this build can do, for the web layer. `held`: Courtside C4b, the
+    // tile draws a held state from ContentState, so the server may send a
+    // held activity zeros instead of digits.
+    @objc func capabilities(_ call: CAPPluginCall) {
+        call.resolve(["held": true])
+    }
+
     @objc func clearReveal(_ call: CAPPluginCall) {
         guard let gameId = call.getString("gameId"), !gameId.isEmpty else {
             call.resolve()

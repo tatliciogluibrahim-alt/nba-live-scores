@@ -42,6 +42,13 @@ export type StoredActivityToken = {
   /** Whether the device build is a sandbox (Xcode debug) install. */
   sandbox: boolean;
   createdAt: number;
+  /** Courtside C4b (live-activity-held.ts). The activity started with the
+   *  No-Spoilers attribute. */
+  redacted?: boolean;
+  /** The app build can draw a held state, so it can be sent zeros. */
+  heldCapable?: boolean;
+  /** The device revealed this game, so pushes carry digits again. */
+  revealed?: boolean;
 };
 
 /** Register (or refresh) a Live Activity push token for a game. */
@@ -49,12 +56,18 @@ export async function registerActivityToken(input: {
   token: string;
   gameId: string;
   sandbox?: boolean;
+  redacted?: boolean;
+  heldCapable?: boolean;
+  revealed?: boolean;
 }): Promise<void> {
   const record: StoredActivityToken = {
     token: input.token,
     gameId: input.gameId,
     sandbox: input.sandbox ?? true,
     createdAt: Date.now(),
+    ...(input.redacted ? { redacted: true } : {}),
+    ...(input.heldCapable ? { heldCapable: true } : {}),
+    ...(input.revealed ? { revealed: true } : {}),
   };
   // The token value gets its TTL inline via `ex`. The game-set key
   // can't carry a TTL on `sadd` itself, so we chain an `expire` call
@@ -91,6 +104,17 @@ export async function listActivityTokensForGame(
  *  loop iterates this to know which games to push updates for. */
 export async function listActivityGameIds(): Promise<string[]> {
   return (await kv.smembers<string[]>(GAMES_INDEX)) ?? [];
+}
+
+/** The device revealed this token's game (C4b): later pushes carry
+ *  digits. A no-op for a token the store doesn't know. Keeps the TTL. */
+export async function markActivityTokenRevealed(token: string): Promise<boolean> {
+  const record = await kv.get<StoredActivityToken>(tokenKey(token));
+  if (!record) return false;
+  await kv.set(tokenKey(token), { ...record, revealed: true }, {
+    ex: ACTIVITY_KEY_TTL_SECONDS,
+  });
+  return true;
 }
 
 /** Remove a single token (APNs 410, or the device reported the activity

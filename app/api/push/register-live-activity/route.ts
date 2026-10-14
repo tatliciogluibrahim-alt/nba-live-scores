@@ -29,6 +29,10 @@ type Body = {
   gameId?: unknown;
   sandbox?: unknown;
   end?: unknown;
+  /** Courtside C4b flags (live-activity-held.ts). Booleans, optional. */
+  redacted?: unknown;
+  heldCapable?: unknown;
+  revealed?: unknown;
 };
 
 export async function POST(req: Request) {
@@ -76,6 +80,9 @@ export async function POST(req: Request) {
       token,
       gameId,
       sandbox: body.sandbox !== false,
+      redacted: body.redacted === true,
+      heldCapable: body.heldCapable === true,
+      revealed: body.revealed === true,
     });
     return NextResponse.json({
       ok: true,

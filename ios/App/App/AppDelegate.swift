@@ -47,6 +47,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     /// `-NNDemoState`. Any field left out keeps the sample value. With an
     /// override the tile holds still (no scripted scores).
     private struct DemoOverride: Decodable {
+        // A real game id (and its sport) lets a held demo's Reveal button
+        // fetch that game's score from the server (Courtside C4b).
+        var gameId: String?, sport: String?
         var awayCode: String?, homeCode: String?
         var awayName: String?, homeName: String?
         var awayScore: Int?, homeScore: Int?
@@ -65,15 +68,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let o = demoOverride()
         let away = o?.awayCode ?? "DET", home = o?.homeCode ?? "GB"
         let attrs = NoNoiseGameAttributes(
-            matchup: "\(away) vs \(home)", stage: o?.stage ?? "NFL \u{00b7} Week 4", sport: "nfl",
-            redacted: kind == "held", gameId: "demo-\(kind)")
+            matchup: "\(away) vs \(home)", stage: o?.stage ?? "NFL \u{00b7} Week 4",
+            sport: o?.sport ?? "nfl",
+            redacted: kind == "held", gameId: o?.gameId ?? "demo-\(kind)")
         let final = kind == "final"
+        // C4b: a held demo starts the way the server sends a held tile, with
+        // no digits at all.
+        let held = kind == "held"
         let state = NoNoiseGameAttributes.ContentState(
-            awayCode: away, awayScore: o?.awayScore ?? (final ? 31 : 24),
-            homeCode: home, homeScore: o?.homeScore ?? (final ? 27 : 17),
+            awayCode: away, awayScore: held ? 0 : (o?.awayScore ?? (final ? 31 : 24)),
+            homeCode: home, homeScore: held ? 0 : (o?.homeScore ?? (final ? 27 : 17)),
             statusLine: o?.statusLine ?? (final ? "Final" : "Q3 8:12"), subline: o?.subline ?? "WEEK 4",
             accentHex: "#1f3a6b", progress: o?.progress ?? (final ? 1 : 0.62),
-            awayName: o?.awayName ?? "Lions", homeName: o?.homeName ?? "Packers")
+            awayName: o?.awayName ?? "Lions", homeName: o?.homeName ?? "Packers",
+            held: held)
         do {
             let activity = try Activity.request(
                 attributes: attrs,

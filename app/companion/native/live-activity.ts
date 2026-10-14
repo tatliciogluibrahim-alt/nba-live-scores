@@ -62,9 +62,22 @@ export type LiveActivityStartInput = {
    *  C4). Optional: the tile falls back to the codes. */
   awayName?: string;
   homeName?: string;
+  /** Courtside C4b: start without digits. Only for a redacted activity on
+   *  a build that reports `held` in capabilities(), with scores sent as 0.
+   *  Older builds ignore it, which is why the scores stay real for them. */
+  held?: boolean;
 };
 
-export type LiveActivityPushTokenEvent = { gameId: string; token: string };
+/** The token event. C4b builds add what the server needs to hold scores
+ *  per token: the activity's own redaction attribute, that the build can
+ *  draw a held state, and whether this device already revealed the game. */
+export type LiveActivityPushTokenEvent = {
+  gameId: string;
+  token: string;
+  redacted?: boolean;
+  heldCapable?: boolean;
+  revealed?: boolean;
+};
 
 export type ActiveLiveActivity = {
   gameId: string;
@@ -90,6 +103,9 @@ type LiveActivityPlugin = {
    *  older native build shipped before this method degrades to `null`
    *  (unknown) rather than crashing the dispatch. */
   areActivitiesEnabled?(): Promise<{ enabled: boolean }>;
+  /** What this native build can do. `held`: Courtside C4b, the tile draws
+   *  a held state from ContentState. Builds before C4b reject it. */
+  capabilities?(): Promise<{ held?: boolean }>;
   addListener(
     eventName: "pushToken",
     listener: (data: LiveActivityPushTokenEvent) => void
@@ -160,6 +176,26 @@ export async function areLiveActivitiesEnabled(): Promise<boolean | null> {
     console.warn("[LiveActivity] areActivitiesEnabled failed:", err);
     return null;
   }
+}
+
+/** Can this build start and draw a held Live Activity (Courtside C4b)?
+ *  Asked once per launch. False off-native and on builds before C4b,
+ *  which reject the unknown method through the Capacitor proxy. */
+let heldCapable: Promise<boolean> | null = null;
+export function liveActivityHeldCapable(): Promise<boolean> {
+  if (heldCapable) return heldCapable;
+  heldCapable = (async () => {
+    const plugin = getPlugin();
+    if (!plugin) return false;
+    try {
+      if (typeof plugin.capabilities !== "function") return false;
+      const res = await plugin.capabilities();
+      return res?.held === true;
+    } catch {
+      return false;
+    }
+  })();
+  return heldCapable;
 }
 
 /** End the Live Activity for a game (final / unpinned). Returns false when

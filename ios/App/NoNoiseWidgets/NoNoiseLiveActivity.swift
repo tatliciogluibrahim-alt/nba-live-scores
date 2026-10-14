@@ -265,12 +265,13 @@ struct IslandExpandedBody: View {
 
 // MARK: - Interactive No-Spoilers reveal (iOS 17+)
 //
-// Tapping the held block flips a per-game flag in the App Group. The score
-// the lock screen shows after reveal is the one already in ContentState
-// (the server still sends real scores to every token; keeping digits out of
-// ActivityKit for held activities is the separate protocol change in the
-// Courtside spec follow-ups). We re-render the activity so it re-reads the
-// flag immediately; future server pushes re-read it too, so it stays open.
+// Tapping the held block reveals the game on this device.
+// - Courtside C4b: a held state (`held`) carries no digits, so the intent
+//   asks the server for the score. The same call marks the token revealed,
+//   so later pushes carry digits. No answer (no network, unknown game) and
+//   the tile stays held. The rest of the tile still opens the app.
+// - Activities from before C4b carry real digits that the tile hides: the
+//   per-game App Group flag alone reveals them, as before.
 @available(iOS 17.0, *)
 struct RevealScoreIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Reveal score"
@@ -282,14 +283,50 @@ struct RevealScoreIntent: LiveActivityIntent {
     init(gameId: String) { self.gameId = gameId }
 
     func perform() async throws -> some IntentResult {
-        WidgetStore.setRevealed(gameId)
-        // Re-push current content so the tile re-renders and picks up the
-        // flag now, not on the next score update.
         for activity in Activity<NoNoiseGameAttributes>.activities
         where activity.attributes.gameId == gameId {
-            await activity.update(activity.content)
+            var state = activity.content.state
+            if state.held {
+                let token = activity.pushToken.map { $0.map { String(format: "%02x", $0) }.joined() }
+                guard let score = await RevealClient.reveal(
+                    gameId: gameId, sport: activity.attributes.sport, token: token
+                ) else { continue }
+                state.awayScore = score.away
+                state.homeScore = score.home
+                state.held = false
+                WidgetStore.setRevealed(gameId)
+                await activity.update(ActivityContent(state: state, staleDate: activity.content.staleDate))
+            } else {
+                WidgetStore.setRevealed(gameId)
+                // Re-push current content so the tile re-renders and picks up
+                // the flag now, not on the next score update.
+                await activity.update(activity.content)
+            }
         }
         return .result()
+    }
+}
+
+/// POST /api/push/live-activity-reveal (Courtside C4b): the current score
+/// for a held game, and the token marked revealed. Nil on any failure, so a
+/// reveal never shows a score it doesn't have.
+enum RevealClient {
+    static let endpoint = URL(string: "https://nonoisescores.app/api/push/live-activity-reveal")!
+
+    struct Score: Decodable { let awayScore: Int; let homeScore: Int }
+
+    static func reveal(gameId: String, sport: String, token: String?) async -> (away: Int, home: Int)? {
+        var request = URLRequest(url: endpoint, timeoutInterval: 8)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var body: [String: String] = ["gameId": gameId, "sport": sport]
+        if let token { body["token"] = token }
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let score = try? JSONDecoder().decode(Score.self, from: data)
+        else { return nil }
+        return (score.awayScore, score.homeScore)
     }
 }
 
@@ -301,8 +338,9 @@ struct NoNoiseLiveActivity: Widget {
             // Hide the score only while redacted AND not yet revealed on
             // this device. The reveal flag is device-local (App Group), so
             // the next server score push can't re-hide it.
-            let held = context.attributes.redacted
-                && !WidgetStore.isRevealed(context.attributes.gameId)
+            // C4b: a held state has no digits to show, whatever the flag.
+            let held = context.state.held || (context.attributes.redacted
+                && !WidgetStore.isRevealed(context.attributes.gameId))
             CourtsideLockView(
                 state: context.state,
                 sport: context.attributes.sport,
@@ -315,8 +353,9 @@ struct NoNoiseLiveActivity: Widget {
             let s = context.state
             let sport = context.attributes.sport
             let phase = GamePhase(statusLine: s.statusLine)
-            let held = context.attributes.redacted
-                && !WidgetStore.isRevealed(context.attributes.gameId)
+            // C4b: a held state has no digits to show, whatever the flag.
+            let held = context.state.held || (context.attributes.redacted
+                && !WidgetStore.isRevealed(context.attributes.gameId))
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     Text(headerText(s, stage: context.attributes.stage, phase: phase))

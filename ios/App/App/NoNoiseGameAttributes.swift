@@ -23,18 +23,24 @@ struct NoNoiseGameAttributes: ActivityAttributes {
         // pushes from a server that predates the field decode to "".
         var awayName: String
         var homeName: String
+        // Courtside C4b: the score is held. awayScore/homeScore carry nothing
+        // (the server sends 0) and every view draws the held chip, whatever
+        // the device reveal flag says. Only builds that report the held
+        // capability are ever sent it. Decodes false when absent.
+        var held: Bool
 
         // Custom decode so a missing `progress` field falls back to 0.
         // Prevents Codable decode failure if an old update push arrives
         // before the server side has been deployed.
         init(awayCode: String, awayScore: Int, homeCode: String, homeScore: Int,
              statusLine: String, subline: String, accentHex: String, progress: Double,
-             awayName: String = "", homeName: String = "") {
+             awayName: String = "", homeName: String = "", held: Bool = false) {
             self.awayCode = awayCode; self.awayScore = awayScore
             self.homeCode = homeCode; self.homeScore = homeScore
             self.statusLine = statusLine; self.subline = subline
             self.accentHex = accentHex; self.progress = progress
             self.awayName = awayName; self.homeName = homeName
+            self.held = held
         }
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -48,6 +54,7 @@ struct NoNoiseGameAttributes: ActivityAttributes {
             progress = (try? c.decode(Double.self, forKey: .progress)) ?? 0
             awayName = (try? c.decode(String.self, forKey: .awayName)) ?? ""
             homeName = (try? c.decode(String.self, forKey: .homeName)) ?? ""
+            held = (try? c.decode(Bool.self, forKey: .held)) ?? false
         }
     }
     // Set once at start, never changes:

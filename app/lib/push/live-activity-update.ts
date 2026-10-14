@@ -31,6 +31,7 @@ import {
   type LiveActivityContentState,
 } from "./apns-sender";
 import { runChunked } from "./run-chunked";
+import { contentForToken } from "./live-activity-held";
 
 // Per-game APNs fan-out concurrency. Same cap as the regular
 // dispatcher — Apple's HTTP/2 endpoint pools fine at 10 in flight
@@ -188,7 +189,9 @@ export async function pushLiveActivityUpdates(
         const res = await sendApnsLiveActivity({
           pushToken: t.token,
           event: isFinal ? "end" : "update",
-          contentState: input.contentState,
+          // C4b: a held token gets zeros and held: true, never digits
+          // (the final included). Everyone else gets the real score.
+          contentState: contentForToken(input.contentState, t),
           sandbox: t.sandbox,
           staleDate: isFinal ? undefined : nowSec + STALE_AFTER_S,
           dismissalDate: isFinal ? nowSec + FINAL_LINGER_S : undefined,

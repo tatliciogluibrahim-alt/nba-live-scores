@@ -10,6 +10,7 @@ import type { NFLGameLite } from "../../api/nfl-scores/normalize";
 import { buildWatchingPayload, type PinnedItem } from "../watching/watching-data";
 import {
   startLiveActivity,
+  liveActivityHeldCapable,
   endLiveActivity,
   clearLiveActivityReveal,
   addLiveActivityPushTokenListener,
@@ -99,9 +100,11 @@ function parseScore(line: string | null): { away: number; home: number } {
 
 function itemToStartInput(
   item: PinnedItem,
-  redacted: boolean
+  redacted: boolean,
+  held = false
 ): LiveActivityStartInput {
-  const { away, home } = parseScore(item.scoreLine);
+  // Courtside C4b: a held start carries no digits at all.
+  const { away, home } = held ? { away: 0, home: 0 } : parseScore(item.scoreLine);
   // item.source is already the sport (nba | wc | nfl) — pass it through so an
   // NFL Live Activity gets the right accent + 15-minute-quarter progress.
   const sport: LiveActivityStartInput["sport"] = item.source;
@@ -131,6 +134,7 @@ function itemToStartInput(
     // right point in the match instead of starting at 0.
     progress: computeLiveActivityProgress(sport, item.detailLine, status),
     redacted,
+    ...(held ? { held: true } : {}),
   };
 }
 
@@ -155,12 +159,17 @@ function gameIsHidden(
   );
 }
 
-async function postRegister(gameId: string, token: string): Promise<void> {
+async function postRegister(
+  gameId: string,
+  token: string,
+  // Courtside C4b: what the server needs to hold this token's scores.
+  held: { redacted: boolean; heldCapable: boolean; revealed: boolean }
+): Promise<void> {
   await postWithRetry({
     kind: "live-activity",
     endpoint: "/api/push/register-live-activity",
     token,
-    body: { gameId, token, sandbox: LIVE_ACTIVITY_SANDBOX },
+    body: { gameId, token, sandbox: LIVE_ACTIVITY_SANDBOX, ...held },
   });
 }
 
@@ -282,8 +291,11 @@ export function LiveActivitySync() {
 
       for (const desired of plan.start) {
         if (unsafeToRestart.has(desired.gameId)) continue;
+        // C4b: a redacted tile on a held-capable build starts without
+        // digits. Older builds get the real score and hide it themselves.
+        const held = desired.redacted && (await liveActivityHeldCapable());
         const ok = await startLiveActivity(
-          itemToStartInput(desired.value, desired.redacted)
+          itemToStartInput(desired.value, desired.redacted, held)
         );
         if (ok) activeRef.current.set(desired.gameId, desired.redacted);
       }
@@ -320,9 +332,19 @@ export function LiveActivitySync() {
     let unsub: (() => void) | null = null;
     let cancelled = false;
     (async () => {
-      const remove = await addLiveActivityPushTokenListener(({ gameId, token }) => {
+      const remove = await addLiveActivityPushTokenListener((data) => {
+        const { gameId, token } = data;
         tokensRef.current.set(gameId, token);
-        void postRegister(gameId, token);
+        // C4b builds report the activity's own redaction (the token can
+        // arrive before start() resolves); older builds fall back to ours.
+        void postRegister(gameId, token, {
+          redacted:
+            typeof data.redacted === "boolean"
+              ? data.redacted
+              : activeRef.current.get(gameId) === true,
+          heldCapable: data.heldCapable === true,
+          revealed: data.revealed === true,
+        });
       });
       if (cancelled) {
         remove();

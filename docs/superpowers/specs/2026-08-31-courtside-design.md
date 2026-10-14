@@ -209,7 +209,26 @@ https://claude.ai/artifact/8fx6XJEiWYvrtBzRXfaAwo
   is suspended within seconds, so the demo holds a background task until
   its second score.
 
-## C4b: held scores out of ActivityKit (designed, not built)
+## C4b: held scores out of ActivityKit (BUILT 2026-10-13, native ships in v1.0.5)
+
+Built as designed. Server is live and backward compatible: builds before
+C4b never report `heldCapable`, so they keep getting real digits.
+- Server: `live-activity-held.ts` (the fan-out rule, tested),
+  `StoredActivityToken` flags, `/api/push/live-activity-reveal` (returns
+  the scan's latest score, then marks the token revealed; a token is
+  optional for local tiles).
+- Web: `liveActivityHeldCapable()` asks the build once. A redacted tile on
+  a capable build starts with zeros and `held`. Token registration
+  forwards `redacted`, `heldCapable` and `revealed` from the native event.
+- Native: `ContentState.held`, the plugin's `capabilities`, the richer
+  pushToken event, views draw held when `state.held`, `RevealScoreIntent`
+  calls `RevealClient`. DEBUG demo: `-NNDemoLiveActivity held` starts with
+  no digits, and `-NNDemoState` takes a real `gameId` and `sport` so the
+  reveal can fetch a real score.
+- Not built: the replay-lab profile from point 5 (the fan-out table test
+  covers the rule).
+
+Design:
 
 Today the server pushes real digits to every Live Activity token and the
 tile only hides them. Closing the redaction rule for ActivityKit:
