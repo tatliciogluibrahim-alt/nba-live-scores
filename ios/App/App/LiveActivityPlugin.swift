@@ -26,11 +26,6 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "capabilities", returnType: CAPPluginReturnPromise),
     ]
 
-    // Must match WidgetStore.appGroup / WidgetStore.revealKey in the widget
-    // extension. The App target cannot import extension-only types, so the
-    // tiny shared-storage contract is repeated here deliberately.
-    private static let appGroup = "group.com.nonoisescores.app"
-    private static func revealKey(_ gameId: String) -> String { "reveal:\(gameId)" }
 
     // Dictionary of active Live Activities keyed by gameId.
     // Type-erased storage because @available can't annotate stored
@@ -81,8 +76,7 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
                 // scores. The activity's own redaction (the token can reach
                 // the web before start() resolves), that this build draws a
                 // held state, and whether this device already revealed it.
-                let revealed = UserDefaults(suiteName: Self.appGroup)?
-                    .bool(forKey: Self.revealKey(gameId)) ?? false
+                let revealed = RevealFlags.isRevealed(gameId)
                 self?.notifyListeners("pushToken", data: [
                     "gameId": gameId,
                     "token": hex,
@@ -286,8 +280,7 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             call.resolve()
             return
         }
-        let defaults = UserDefaults(suiteName: Self.appGroup)
-        defaults?.removeObject(forKey: Self.revealKey(gameId))
+        RevealFlags.clear(gameId)
         call.resolve()
     }
 }

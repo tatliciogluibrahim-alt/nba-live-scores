@@ -17,6 +17,8 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		AABB00022FC9300100000002 /* NoNoiseGameAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00012FC9300100000001 /* NoNoiseGameAttributes.swift */; };
 		AABB00032FC9300100000003 /* NoNoiseGameAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00012FC9300100000001 /* NoNoiseGameAttributes.swift */; };
+		AABB000B2FC930010000000B /* RevealScoreIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB000A2FC930010000000A /* RevealScoreIntent.swift */; };
+		AABB000C2FC930010000000C /* RevealScoreIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB000A2FC930010000000A /* RevealScoreIntent.swift */; };
 		AABB00052FC9300100000005 /* LiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00042FC9300100000004 /* LiveActivityPlugin.swift */; };
 		AABB00072FC9300100000007 /* NoNoiseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00062FC9300100000006 /* NoNoiseViewController.swift */; };
 		AABB00092FC9300100000009 /* WidgetBridgePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00082FC9300100000008 /* WidgetBridgePlugin.swift */; };
@@ -62,6 +64,7 @@
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		AABB00012FC9300100000001 /* NoNoiseGameAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoNoiseGameAttributes.swift; sourceTree = "<group>"; };
+		AABB000A2FC930010000000A /* RevealScoreIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevealScoreIntent.swift; sourceTree = "<group>"; };
 		AABB00042FC9300100000004 /* LiveActivityPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityPlugin.swift; sourceTree = "<group>"; };
 		AABB00062FC9300100000006 /* NoNoiseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoNoiseViewController.swift; sourceTree = "<group>"; };
 		AABB00082FC9300100000008 /* WidgetBridgePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridgePlugin.swift; sourceTree = "<group>"; };
@@ -137,6 +140,7 @@
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				AABB00012FC9300100000001 /* NoNoiseGameAttributes.swift */,
+				AABB000A2FC930010000000A /* RevealScoreIntent.swift */,
 				AABB00042FC9300100000004 /* LiveActivityPlugin.swift */,
 				AABB00062FC9300100000006 /* NoNoiseViewController.swift */,
 				AABB00082FC9300100000008 /* WidgetBridgePlugin.swift */,
@@ -277,6 +281,7 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				AABB00022FC9300100000002 /* NoNoiseGameAttributes.swift in Sources */,
+				AABB000B2FC930010000000B /* RevealScoreIntent.swift in Sources */,
 				AABB00052FC9300100000005 /* LiveActivityPlugin.swift in Sources */,
 				AABB00072FC9300100000007 /* NoNoiseViewController.swift in Sources */,
 				AABB00092FC9300100000009 /* WidgetBridgePlugin.swift in Sources */,
@@ -288,6 +293,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AABB00032FC9300100000003 /* NoNoiseGameAttributes.swift in Sources */,
+				AABB000C2FC930010000000C /* RevealScoreIntent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

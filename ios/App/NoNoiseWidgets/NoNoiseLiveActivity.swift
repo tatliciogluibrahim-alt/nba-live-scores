@@ -263,72 +263,10 @@ struct IslandExpandedBody: View {
     }
 }
 
-// MARK: - Interactive No-Spoilers reveal (iOS 17+)
+// MARK: - Interactive No-Spoilers reveal
 //
-// Tapping the held block reveals the game on this device.
-// - Courtside C4b: a held state (`held`) carries no digits, so the intent
-//   asks the server for the score. The same call marks the token revealed,
-//   so later pushes carry digits. No answer (no network, unknown game) and
-//   the tile stays held. The rest of the tile still opens the app.
-// - Activities from before C4b carry real digits that the tile hides: the
-//   per-game App Group flag alone reveals them, as before.
-@available(iOS 17.0, *)
-struct RevealScoreIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "Reveal score"
-
-    @Parameter(title: "Game")
-    var gameId: String
-
-    init() {}
-    init(gameId: String) { self.gameId = gameId }
-
-    func perform() async throws -> some IntentResult {
-        for activity in Activity<NoNoiseGameAttributes>.activities
-        where activity.attributes.gameId == gameId {
-            var state = activity.content.state
-            if state.held {
-                let token = activity.pushToken.map { $0.map { String(format: "%02x", $0) }.joined() }
-                guard let score = await RevealClient.reveal(
-                    gameId: gameId, sport: activity.attributes.sport, token: token
-                ) else { continue }
-                state.awayScore = score.away
-                state.homeScore = score.home
-                state.held = false
-                WidgetStore.setRevealed(gameId)
-                await activity.update(ActivityContent(state: state, staleDate: activity.content.staleDate))
-            } else {
-                WidgetStore.setRevealed(gameId)
-                // Re-push current content so the tile re-renders and picks up
-                // the flag now, not on the next score update.
-                await activity.update(activity.content)
-            }
-        }
-        return .result()
-    }
-}
-
-/// POST /api/push/live-activity-reveal (Courtside C4b): the current score
-/// for a held game, and the token marked revealed. Nil on any failure, so a
-/// reveal never shows a score it doesn't have.
-enum RevealClient {
-    static let endpoint = URL(string: "https://nonoisescores.app/api/push/live-activity-reveal")!
-
-    struct Score: Decodable { let awayScore: Int; let homeScore: Int }
-
-    static func reveal(gameId: String, sport: String, token: String?) async -> (away: Int, home: Int)? {
-        var request = URLRequest(url: endpoint, timeoutInterval: 8)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        var body: [String: String] = ["gameId": gameId, "sport": sport]
-        if let token { body["token"] = token }
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        guard let (data, response) = try? await URLSession.shared.data(for: request),
-              (response as? HTTPURLResponse)?.statusCode == 200,
-              let score = try? JSONDecoder().decode(Score.self, from: data)
-        else { return nil }
-        return (score.awayScore, score.homeScore)
-    }
-}
+// RevealScoreIntent and RevealClient live in ios/App/App/RevealScoreIntent.swift,
+// compiled into both targets so the intent runs in the app's process.
 
 // MARK: - Widget configuration (lock screen + Dynamic Island)
 
